@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Five Orchestration Patterns — Decision Framework (Extension)</title>
+<style>
+  :root{
+    --bg:#faf8f5; --paper:#ffffff; --ink:#2b2622; --ink-soft:#5c544c;
+    --line:#e7e0d8; --accent:#c96442; --accent-soft:#f4e6df; --accent-deep:#a44a2e;
+    --teal:#3a7d7b; --teal-soft:#e0efee; --gold:#b8860b; --gold-soft:#f6edd6;
+    --green:#3f7d4f; --green-soft:#e3f0e6; --red:#b3402f; --red-soft:#f7e3df;
+    --purple:#6b5b95; --purple-soft:#ece8f3;
+    --sidebar:#f3eee7; --shadow:0 1px 3px rgba(43,38,34,.08),0 6px 24px rgba(43,38,34,.06);
+    --radius:14px; --maxw:780px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.65; font-size:17px; -webkit-font-smoothing:antialiased;
+  }
+  #progressBar{position:fixed;top:0;left:0;height:4px;width:0;background:linear-gradient(90deg,var(--accent),var(--gold));z-index:200;transition:width .15s ease}
+  .layout{display:flex;max-width:1260px;margin:0 auto}
+  aside{
+    position:sticky;top:0;align-self:flex-start;height:100vh;overflow-y:auto;
+    width:300px;flex:none;padding:22px 16px 40px;background:var(--sidebar);
+    border-right:1px solid var(--line);
+  }
+  aside h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin:18px 8px 8px}
+  .brandbox{padding:6px 8px 14px;border-bottom:1px solid var(--line);margin-bottom:8px}
+  .brandbox .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;line-height:1.25}
+  .brandbox .sub{font-size:12.5px;color:var(--ink-soft);margin-top:6px}
+  .backlink{display:inline-flex;align-items:center;gap:6px;margin:10px 8px 2px;font-size:12.5px;color:var(--accent-deep);text-decoration:none;font-weight:600}
+  .backlink:hover{text-decoration:underline}
+  .toc-prog{font-size:12px;color:var(--ink-soft);margin:14px 8px 4px;display:flex;justify-content:space-between;align-items:center}
+  .toc-prog b{color:var(--accent)}
+  nav a{display:flex;gap:8px;align-items:flex-start;text-decoration:none;color:var(--ink);
+    padding:7px 10px;border-radius:9px;font-size:14px;line-height:1.35;transition:background .15s}
+  nav a:hover{background:#ece4d9}
+  nav a.active{background:var(--accent-soft);color:var(--accent-deep);font-weight:600}
+  nav a .num{flex:none;width:22px;height:22px;border-radius:50%;background:#e3dacd;color:var(--ink-soft);
+    font-size:11.5px;display:flex;align-items:center;justify-content:center;font-weight:700;margin-top:1px}
+  nav a.active .num{background:var(--accent);color:#fff}
+  nav a.done .num{background:var(--green);color:#fff}
+  nav a.done .num::after{content:"✓"}
+  nav a.done .num span{display:none}
+  .nav-sec{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);
+    font-weight:700;margin:16px 10px 4px;display:flex;align-items:center;gap:6px}
+  main{flex:1;min-width:0;padding:0 28px 120px}
+  .wrap{max-width:var(--maxw);margin:0 auto}
+  header.hero{max-width:var(--maxw);margin:0 auto;padding:40px 0 18px;text-align:left}
+  .extbanner{display:flex;gap:12px;align-items:flex-start;background:var(--purple-soft);border:1px solid #cfc6e3;
+    border-radius:var(--radius);padding:14px 18px;margin:0 0 20px;font-size:14px;box-shadow:var(--shadow)}
+  .extbanner .ebadge{flex:none;background:var(--purple);color:#fff;font-weight:700;font-size:11.5px;letter-spacing:.06em;
+    text-transform:uppercase;padding:5px 11px;border-radius:999px;margin-top:1px}
+  .extbanner b{color:#4c3f70}
+  .hero .eyebrow{color:var(--accent);font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:13px}
+  .hero h1{font-size:40px;line-height:1.1;margin:10px 0 8px;letter-spacing:-.02em}
+  .hero p.lead{font-size:19px;color:var(--ink-soft);margin:0 0 18px}
+  .crosslink{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:14px 18px;margin:18px 0;font-size:14.5px;box-shadow:var(--shadow)}
+  .crosslink a{color:var(--accent-deep);font-weight:600;text-decoration:none}
+  .crosslink a:hover{text-decoration:underline}
+  .pillrow{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}
+  .pill{background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:6px 13px;font-size:13px;color:var(--ink-soft);box-shadow:var(--shadow)}
+  .examnote{background:var(--gold-soft);border:1px solid #e7d9a9;border-radius:var(--radius);padding:16px 18px;margin:22px 0;font-size:14.5px}
+  .examnote b{color:#8a6508}
+  .aboutbox{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;margin:22px 0;box-shadow:var(--shadow)}
+  .aboutbox .lab{font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;margin-bottom:6px}
+  section.lesson{max-width:var(--maxw);margin:0 auto;padding:46px 0 10px;scroll-margin-top:14px;border-top:1px solid var(--line)}
+  .sec-divider{max-width:var(--maxw);margin:38px auto 0;padding-top:30px}
+  .sec-divider .badge{display:inline-block;background:var(--accent);color:#fff;font-weight:700;
+    font-size:12px;letter-spacing:.07em;text-transform:uppercase;padding:5px 12px;border-radius:999px}
+  .sec-divider h2{font-size:30px;margin:12px 0 4px;letter-spacing:-.01em}
+  .sec-divider p{color:var(--ink-soft);margin:0}
+  .lesson .lmeta{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+  .lesson .ltag{font-size:12px;color:var(--accent);font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+  .lesson .ltime{font-size:12.5px;color:var(--ink-soft);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+  .lesson h3.ltitle{font-size:28px;margin:2px 0 4px;letter-spacing:-.01em;line-height:1.15}
+  .lesson h4{font-size:19px;margin:30px 0 8px;letter-spacing:-.005em}
+  .lesson h5{font-size:16px;margin:20px 0 6px;color:var(--accent-deep)}
+  .lesson p{margin:10px 0}
+  .lesson ul,.lesson ol{margin:10px 0;padding-left:22px}
+  .lesson li{margin:6px 0}
+  .emoji{font-style:normal}
+  blockquote.ex{margin:14px 0;padding:14px 18px;background:var(--teal-soft);border-left:4px solid var(--teal);border-radius:0 10px 10px 0;font-style:italic;color:#2c4f4e}
+  .objectives{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:14px 18px;margin:14px 0;box-shadow:var(--shadow)}
+  .objectives .lab{font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;margin-bottom:4px}
+  .objectives ul{margin:6px 0 2px;padding-left:20px}
+  .objectives li{font-size:14.5px}
+  .verify{display:inline-block;background:#fdeede;color:#8a5a1a;border:1px solid #ecc98f;border-radius:6px;
+    padding:0 7px;font-size:12px;font-weight:700;letter-spacing:.02em;vertical-align:middle}
+  .verifynote{background:#fdf6ea;border:1px dashed #e0c993;border-radius:10px;padding:10px 14px;margin:12px 0;font-size:13.5px;color:#6f5526}
+  .verifynote b{color:#8a5a1a}
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  table{border-collapse:collapse;width:100%;font-size:14px;background:var(--paper);min-width:540px}
+  th,td{text-align:left;padding:11px 13px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--accent-soft);color:var(--accent-deep);font-weight:700;font-size:13px}
+  tbody tr:last-child td{border-bottom:none}
+  td:first-child,th:first-child{font-weight:600}
+  pre.code{background:#2b2622;color:#f4ece2;border-radius:12px;padding:16px 18px;margin:16px 0;overflow-x:auto;
+    font-family:"SF Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+    font-size:13.5px;line-height:1.55;box-shadow:var(--shadow);border:1px solid #3a332d}
+  pre.code code{font-family:inherit;white-space:pre;display:block}
+  pre.code .cmt{color:#b08a6a}
+  pre.code .key{color:#e0a878}
+  pre.code .frontmatter{color:#9bd0c2}
+  code.inline{background:var(--accent-soft);color:var(--accent-deep);padding:1px 6px;border-radius:5px;
+    font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:14px}
+  .codelabel{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);font-weight:700;margin:18px 0 -8px}
+  .callout{border-radius:var(--radius);padding:0;margin:18px 0;box-shadow:var(--shadow);overflow:hidden;border:1px solid var(--line)}
+  .callout .chead{display:flex;align-items:center;gap:9px;padding:12px 16px;cursor:pointer;font-weight:700;font-size:15px;user-select:none}
+  .callout .cbody{padding:2px 18px 16px;font-size:15px}
+  .callout .cbody ul{margin:6px 0;padding-left:20px}
+  .callout.collapsed .cbody{display:none}
+  .callout .chev{margin-left:auto;transition:transform .2s;font-size:13px;opacity:.6}
+  .callout.collapsed .chev{transform:rotate(-90deg)}
+  .keyc{border-color:#d9c98f}.keyc .chead{background:var(--gold-soft);color:#8a6508}
+  .tip{border-color:#a7d3d1}.tip .chead{background:var(--teal-soft);color:var(--teal)}
+  .try{border-color:#bfdcc6}.try .chead{background:var(--green-soft);color:var(--green)}
+  .anti{border-color:#e6bcb4}.anti .chead{background:var(--red-soft);color:var(--red)}
+  figure.svgfig{margin:22px 0;text-align:center;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+  figure.svgfig svg{max-width:100%;height:auto}
+  figure.svgfig figcaption{font-size:13px;color:var(--ink-soft);margin-top:10px}
+  .mcq{background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--accent);
+    border-radius:var(--radius);padding:16px 18px;margin:22px 0;box-shadow:var(--shadow)}
+  .mcq .qlab{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;display:flex;align-items:center;gap:7px}
+  .mcq .qtext{font-weight:600;margin:8px 0 12px;font-size:16px}
+  .mcq .opt{display:block;width:100%;text-align:left;background:var(--bg);border:1.5px solid var(--line);
+    border-radius:10px;padding:11px 14px;margin:7px 0;cursor:pointer;font-size:14.5px;font-family:inherit;color:var(--ink);transition:all .14s}
+  .mcq .opt:hover:not(:disabled){border-color:var(--accent);background:var(--accent-soft)}
+  .mcq .opt:disabled{cursor:default}
+  .mcq .opt.correct{border-color:var(--green);background:var(--green-soft);font-weight:600}
+  .mcq .opt.wrong{border-color:var(--red);background:var(--red-soft)}
+  .mcq .opt .mark{float:right;font-weight:700}
+  .mcq .fb{display:none;margin-top:12px;padding:12px 14px;border-radius:10px;font-size:14px;line-height:1.55}
+  .mcq .fb.show{display:block}
+  .mcq .fb.ok{background:var(--green-soft);border:1px solid #bfdcc6}
+  .mcq .fb.no{background:var(--red-soft);border:1px solid #e6bcb4}
+  .reveal{background:var(--paper);border:1px dashed var(--accent);border-radius:var(--radius);padding:16px 18px;margin:22px 0}
+  .reveal .plab{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;display:flex;align-items:center;gap:7px}
+  .reveal .q{font-weight:600;margin:8px 0 12px;font-size:16px}
+  .reveal button.revealbtn{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:9px 16px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+  .reveal button.revealbtn:hover{background:var(--accent-deep)}
+  .reveal .ans{display:none;margin-top:12px;padding:12px 14px;background:var(--teal-soft);border-radius:10px;font-size:14.5px;border:1px solid #a7d3d1}
+  .reveal .ans.show{display:block}
+  .quizblock{background:linear-gradient(180deg,#fff,#fbf6f0);border:2px solid var(--accent-soft);border-radius:18px;padding:22px 22px 24px;margin:30px auto;max-width:var(--maxw);box-shadow:var(--shadow)}
+  .quizblock h4{margin-top:0;display:flex;align-items:center;gap:9px}
+  .quizblock .qscore{font-size:14px;color:var(--ink-soft);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-weight:600}
+  .quizblock .scorebar{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:8px}
+  .resultbox{display:none;margin-top:16px;padding:16px;border-radius:12px;font-weight:600;text-align:center;font-size:16px}
+  .resultbox.show{display:block}
+  .resultbox.pass{background:var(--green-soft);border:1px solid #bfdcc6;color:var(--green)}
+  .resultbox.mid{background:var(--gold-soft);border:1px solid #e7d9a9;color:#8a6508}
+  .sources{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;margin:26px 0;box-shadow:var(--shadow);font-size:14px}
+  .sources ol{margin:8px 0;padding-left:22px}
+  .sources li{margin:7px 0;word-break:break-word}
+  .sources a{color:var(--accent-deep);text-decoration:none}
+  .sources a:hover{text-decoration:underline}
+  .nextbox{background:linear-gradient(180deg,#fff,#f4efe9);border:2px dashed var(--accent-soft);border-radius:18px;padding:20px 22px;margin:26px auto;max-width:var(--maxw);box-shadow:var(--shadow)}
+  .nextbox a{color:var(--accent-deep);font-weight:700;text-decoration:none}
+  .nextbox a:hover{text-decoration:underline}
+  footer{max-width:var(--maxw);margin:40px auto 0;padding-top:24px;border-top:1px solid var(--line);color:var(--ink-soft);font-size:13.5px}
+  .sourcebadge{display:inline-flex;gap:7px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:5px 13px;font-size:12.5px;color:var(--ink-soft)}
+  .analogy{font-size:13px;background:var(--accent-soft);color:var(--accent-deep);border-radius:6px;padding:1px 7px;font-weight:600}
+  .menubtn{display:none;position:fixed;top:12px;left:12px;z-index:210;background:var(--accent);color:#fff;border:none;border-radius:10px;width:44px;height:44px;font-size:20px;cursor:pointer;box-shadow:var(--shadow)}
+  .scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:205}
+  @media(max-width:980px){
+    .menubtn{display:block}
+    aside{position:fixed;left:0;top:0;z-index:206;transform:translateX(-105%);transition:transform .25s;box-shadow:var(--shadow);width:280px}
+    aside.open{transform:translateX(0)}
+    .scrim.open{display:block}
+    main{padding:60px 16px 110px}
+    .hero h1{font-size:31px}
+  }
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+<button class="menubtn" onclick="toggleNav()" aria-label="Menu" aria-expanded="false">☰</button>
+<div class="scrim" id="scrim" onclick="toggleNav()"></div>
+
+<div class="layout">
+<!-- SIDEBAR -->
+<aside id="sidebar">
+  <div class="brandbox">
+    <div class="logo"><span class="emoji">🧭</span> The Five Orchestration Patterns</div>
+    <div class="sub">Extension · CCA-F Domain 1 · architect-depth</div>
+  </div>
+  <a class="backlink" href="../introduction-to-subagents.html"><span class="emoji">←</span> Back to the base course</a>
+  <nav class="cspine" aria-label="Course track">
+    <div class="cspine-h">📚 Subagents track · Lesson 2 of 4</div>
+    <ol class="cspine-list">
+      <li><a href="../introduction-to-subagents.html">Base · Introduction to Subagents</a></li>
+      <li class="cspine-cur" aria-current="page">S-E1 · The Five Orchestration Patterns</li>
+      <li><a href="subagents-as-sdk-primitive.html">S-E2 · Subagents as a Programmable Primitive</a></li>
+      <li><a href="orchestrator-worker-at-scale.html">S-E3 · Orchestrator-Worker at Scale</a></li>
+    </ol>
+  </nav>
+  <style>
+  .cspine{margin:10px 8px 14px;padding:10px 12px;border:1px solid var(--line,#e7e0d8);border-radius:10px;background:rgba(0,0,0,.02)}
+  .cspine-h{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft,#5c544c);margin-bottom:7px}
+  .cspine-list{list-style:none;margin:0;padding:0}
+  .cspine-list li{font-size:12.5px;line-height:1.3;padding:3px 0;color:var(--ink-soft,#5c544c)}
+  .cspine-list a{color:var(--ink,#2b2622);text-decoration:none}
+  .cspine-list a:hover{color:var(--accent,#c96442);text-decoration:underline}
+  .cspine-cur{font-weight:700;color:var(--accent-deep,#a44a2e)!important}
+  .cspine-cur::before{content:"▸ "}
+  </style>
+  <div class="toc-prog">Progress <span><b id="progPct">0%</b></span></div>
+  <nav id="toc"></nav>
+</aside>
+
+<!-- MAIN -->
+<main>
+<div class="wrap">
+<nav class="cnav" aria-label="Course navigation">
+  <a class="cnav-home" href="../../../Launchpad.html">⌂ Launchpad</a>
+  <span class="cnav-side"><a class="cnav-prev" href="../introduction-to-subagents.html">← Introduction to Subagents (base)</a><a class="cnav-next" href="subagents-as-sdk-primitive.html">Next: Subagents as a Programmable Primitive (S-E2) →</a></span>
+</nav>
+<style>
+.cnav{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:10px 0 18px;padding:10px 14px;border:1px solid var(--line,#e7e0d8);border-radius:12px;background:rgba(0,0,0,.02);font:600 13.5px/1.2 system-ui,-apple-system,'Segoe UI',sans-serif}
+.cnav a{text-decoration:none;color:var(--ink,#2b2622);padding:7px 13px;border-radius:8px;background:rgba(0,0,0,.05);white-space:nowrap;transition:background .15s,color .15s}
+.cnav a:hover{background:var(--accent,#c96442);color:#fff}
+.cnav .cnav-home{background:var(--accent,#c96442);color:#fff}
+.cnav .cnav-home:hover{filter:brightness(.92)}
+.cnav .cnav-side{display:flex;gap:8px;flex-wrap:wrap}
+</style>
+
+<header class="hero" id="top">
+  <div class="extbanner">
+    <span class="ebadge">Extension</span>
+    <div><b>Beyond the Academy course.</b> This is researched material compiled from Anthropic primary sources (the "Building Effective AI Agents" and "How we built our multi-agent research system" engineering posts, plus the Claude Agent SDK / Claude Code subagent docs). It is <b>not part of the original Academy "Introduction to Subagents" course</b> — it extends it into the full orchestration vocabulary that CCA-F Domain 1 tests.</div>
+  </div>
+
+  <div class="eyebrow">Anthropic sources · Extension S-E1 · 200-level</div>
+  <h1>The Five Orchestration Patterns — Decision Framework</h1>
+  <p class="lead">Workflows vs. agents, the augmented LLM, the five named patterns, the autonomous loop, and a simplicity-first ladder for choosing the least complex architecture that solves the problem — then how subagents implement all of it.</p>
+
+  <div class="crosslink">
+    <p style="margin:0 0 6px"><span class="emoji">🔗</span> <strong>This builds on the base course.</strong> The base "Introduction to Subagents" course ends with <strong>Lesson 4 — the decision rule</strong> (when to delegate, when not to). This extension widens that single rule into the full set of orchestration patterns and a 7-rung escalation ladder. Start here: <a href="../introduction-to-subagents.html">← Introduction to Subagents (base course)</a>.</p>
+  </div>
+
+  <div class="pillrow">
+    <span class="pill"><span class="emoji">🧱</span> 5 patterns + agent loop</span>
+    <span class="pill"><span class="emoji">🧠</span> Inline MCQs + reveals</span>
+    <span class="pill"><span class="emoji">🏆</span> 2 lesson quizzes + final check</span>
+    <span class="pill"><span class="emoji">🎨</span> 8 inline SVG diagrams</span>
+    <span class="pill"><span class="emoji">📐</span> 7-rung decision ladder</span>
+  </div>
+
+  <div class="aboutbox">
+    <div class="lab"><span class="emoji">🧭</span> What you'll be able to do</div>
+    <ul style="margin:6px 0;padding-left:20px;font-size:15px">
+      <li><strong>Classify</strong> any architecture as a <em>workflow</em> (predefined code paths) or an <em>agent</em> (model-directed at runtime).</li>
+      <li><strong>Name and select</strong> the five workflow patterns — prompt chaining, routing, parallelization, orchestrator-workers, evaluator-optimizer — by their fit signals.</li>
+      <li><strong>Apply the simplicity-first rule</strong> and walk the 7-rung escalation ladder to justify the least-complex pattern.</li>
+      <li><strong>Reason about the production case study</strong> — the multi-agent research system — with its exact performance and cost numbers.</li>
+      <li><strong>Map patterns onto subagents</strong> — context isolation, the no-nesting constraint, and graduating to the Workflow tool.</li>
+    </ul>
+  </div>
+
+  <div class="examnote">
+    <b>🎯 Why this matters for the CCA-F exam.</b> Every section reinforces <b>Domain 1 — Agentic Architecture &amp; Orchestration (27%)</b>, the largest graded domain. Expect scenario questions that ask you to <b>classify workflow vs. agent</b>, <b>pick the right pattern</b> for a described task, and <b>justify escalating (or not) to multi-agent</b>. The quizzes below are weighted toward exactly those judgment calls.
+  </div>
+
+  <div class="verifynote">
+    <b><span class="emoji">⚠️</span> Point-in-time note (preserved from the source).</b> "Building Effective Agents" (Dec 2024) and the multi-agent post (June 2025) are older than six months. The <em>conceptual patterns are stable canon</em>; the <em>numbers</em> in the multi-agent post are tied to Claude Opus&nbsp;4 / Sonnet&nbsp;4 and one specific eval. Treat them as point-in-time facts, not perpetual benchmarks. <span class="verify">VERIFY</span> if reused in a context implying current model performance.
+  </div>
+</header>
+
+<!-- ======================= SECTION 1 DIVIDER ======================= -->
+<div class="sec-divider" id="secA">
+  <span class="badge"><span class="emoji">🧱</span> Foundations</span>
+  <h2>The line, the building block</h2>
+  <p>Before the patterns: the one architectural distinction the exam keeps testing, and the unit every pattern is built from.</p>
+</div>
+
+<!-- LESSON 1 — Workflows vs Agents -->
+<section class="lesson" id="l1" data-lesson="1">
+  <div class="lmeta"><span class="ltag"><span class="emoji">🪢</span> Section 1</span><span class="ltime">⏱ ~7 min · concept</span></div>
+  <h3 class="ltitle">Workflows vs. Agents</h3>
+
+  <div class="objectives">
+    <div class="lab">What you'll be able to do</div>
+    <ul>
+      <li>State the hard architectural line Anthropic draws between workflows and agents</li>
+      <li>Use "who controls the path?" to classify any given system</li>
+      <li>Place the five named patterns and the autonomous loop on the right side of that line</li>
+    </ul>
+  </div>
+
+  <p><strong>Why before how:</strong> if you cannot tell a workflow from an agent, every later "which pattern?" decision is built on sand. The exam tests this distinction directly, so it goes first.</p>
+
+  <p>Anthropic groups everything under the umbrella term <strong>"agentic systems"</strong> but draws a hard line between two sub-types:</p>
+  <ul>
+    <li><strong>Workflows</strong> — "systems where LLMs and tools are orchestrated through <em>predefined code paths</em>."</li>
+    <li><strong>Agents</strong> — "systems where LLMs <em>dynamically direct their own processes and tool usage</em>, maintaining control over how they accomplish tasks."</li>
+  </ul>
+
+  <p>The dividing question is <strong>who controls the path</strong> — the developer's code (workflow) or the model itself at runtime (agent). Hold onto that single test; it is the most reliable classifier on the exam.</p>
+
+  <p><span class="analogy">Analogy</span> A workflow is a <em>railway</em>: the track is laid in advance and the train can only go where the rails go. An agent is a <em>taxi driver</em>: you give a destination, and the driver chooses the route, reroutes around traffic, and decides when to stop for fuel. (Author analogy, not a product fact.)</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 220" role="img" aria-label="Workflow controlled by predefined code paths versus agent controlled by the model at runtime">
+      <defs><style>.t{font:700 13px sans-serif;fill:#2b2622}.s{font:400 11px sans-serif;fill:#5c544c}.w{font:600 11px sans-serif;fill:#fff}</style>
+      <marker id="aw1" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#3a7d7b"/></marker>
+      <marker id="aw2" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#c96442"/></marker></defs>
+      <rect x="14" y="34" width="320" height="170" rx="14" fill="#fff" stroke="#3a7d7b" stroke-width="2"/>
+      <text class="t" x="174" y="58" text-anchor="middle">Workflow — predefined code paths</text>
+      <rect x="34" y="92" width="60" height="34" rx="8" fill="#e0efee"/><text class="s" x="64" y="113" text-anchor="middle">step 1</text>
+      <rect x="134" y="92" width="60" height="34" rx="8" fill="#e0efee"/><text class="s" x="164" y="113" text-anchor="middle">step 2</text>
+      <rect x="234" y="92" width="60" height="34" rx="8" fill="#e0efee"/><text class="s" x="264" y="113" text-anchor="middle">step 3</text>
+      <line x1="94" y1="109" x2="132" y2="109" stroke="#3a7d7b" stroke-width="2" marker-end="url(#aw1)"/>
+      <line x1="194" y1="109" x2="232" y2="109" stroke="#3a7d7b" stroke-width="2" marker-end="url(#aw1)"/>
+      <text class="s" x="174" y="160" text-anchor="middle" style="font-style:italic">developer's code decides the route</text>
+      <rect x="366" y="34" width="320" height="170" rx="14" fill="#fff" stroke="#c96442" stroke-width="2"/>
+      <text class="t" x="526" y="58" text-anchor="middle">Agent — model-directed at runtime</text>
+      <circle cx="526" cy="118" r="30" fill="#f4e6df" stroke="#c96442" stroke-width="1.5"/><text class="s" x="526" y="122" text-anchor="middle">LLM</text>
+      <path d="M526 88 C 470 70, 430 96, 440 120" fill="none" stroke="#c96442" stroke-width="1.5" marker-end="url(#aw2)"/>
+      <path d="M556 118 C 612 110, 620 86, 600 78" fill="none" stroke="#c96442" stroke-width="1.5" marker-end="url(#aw2)"/>
+      <path d="M526 148 C 470 168, 470 130, 500 130" fill="none" stroke="#c96442" stroke-width="1.5" marker-end="url(#aw2)"/>
+      <text class="s" x="526" y="190" text-anchor="middle" style="font-style:italic">the model chooses each next step</text>
+    </svg>
+    <figcaption>Same building blocks, opposite control. The five named patterns are workflows; the autonomous loop (Section 6) is the agent case.</figcaption>
+  </figure>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">A team builds a system: a script calls the model to extract fields, then always calls it again to format them into JSON — same two steps every time, in code. Workflow or agent?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>Workflow.</strong> The steps are orchestrated through <em>predefined code paths</em> — the script controls the route, not the model. It would only become an agent if the model itself decided, at runtime, what steps to take and which tools to use.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="1">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">What single question best classifies a system as workflow vs. agent?</div>
+    <button class="opt">How many LLM calls does it make?</button>
+    <button class="opt">Who controls the path — the developer's code, or the model at runtime?</button>
+    <button class="opt">Does it use tools or not?</button>
+    <button class="opt">Does it run in parallel or sequentially?</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>Workflows orchestrate through predefined code paths; agents let the model dynamically direct its own process. Tool use, call count, and parallelism don't decide it — control of the path does.</div>
+  </div>
+
+  <div class="callout keyc collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaway<span class="chev">▼</span></div>
+  <div class="cbody"><p>Both are "agentic systems." The line is control of the path: <strong>workflow = predefined code paths; agent = model dynamically directs itself.</strong> The five patterns ahead are all workflows; only the loop in Section 6 is a true agent.</p></div></div>
+</section>
+
+<!-- LESSON 2 — Augmented LLM -->
+<section class="lesson" id="l2" data-lesson="2">
+  <div class="lmeta"><span class="ltag"><span class="emoji">⚙️</span> Section 2</span><span class="ltime">⏱ ~5 min · concept</span></div>
+  <h3 class="ltitle">The Augmented LLM — the building block</h3>
+
+  <div class="objectives">
+    <div class="lab">What you'll be able to do</div>
+    <ul>
+      <li>Name the three augmentations that turn a raw model into the unit every pattern composes</li>
+      <li>Explain why you get the single augmented call right <em>before</em> reaching for any multi-step pattern</li>
+    </ul>
+  </div>
+
+  <p>Every pattern in this lesson is composed from one repeated unit: the <strong>augmented LLM</strong> — "an LLM enhanced with augmentations such as <strong>retrieval, tools, and memory</strong>." Current models "can actively use these capabilities — generating their own search queries, selecting appropriate tools, and determining what information to retain."</p>
+
+  <p><strong>Why this matters first:</strong> the patterns <em>compose</em> augmented LLMs; they don't replace the need to get one right. Before reaching for any multi-step pattern, make sure the single augmented call is well-built — good tooling, retrieval, and a tailored interface.</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 200" role="img" aria-label="A core LLM augmented with retrieval, tools, and memory">
+      <defs><style>.t{font:700 13px sans-serif;fill:#2b2622}.s{font:400 11px sans-serif;fill:#5c544c}</style>
+      <marker id="ag" markerWidth="9" markerHeight="9" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#c96442"/></marker></defs>
+      <circle cx="350" cy="100" r="48" fill="#f4e6df" stroke="#c96442" stroke-width="2"/>
+      <text class="t" x="350" y="98" text-anchor="middle">LLM</text>
+      <text class="s" x="350" y="116" text-anchor="middle">core</text>
+      <rect x="60" y="36" width="150" height="40" rx="10" fill="#e0efee" stroke="#3a7d7b"/><text class="s" x="135" y="60" text-anchor="middle">Retrieval (search / RAG)</text>
+      <rect x="60" y="124" width="150" height="40" rx="10" fill="#f6edd6" stroke="#b8860b"/><text class="s" x="135" y="148" text-anchor="middle">Memory</text>
+      <rect x="490" y="80" width="150" height="40" rx="10" fill="#e3f0e6" stroke="#3f7d4f"/><text class="s" x="565" y="104" text-anchor="middle">Tools</text>
+      <line x1="210" y1="56" x2="306" y2="90" stroke="#c96442" stroke-width="1.5" marker-end="url(#ag)"/>
+      <line x1="210" y1="144" x2="306" y2="112" stroke="#c96442" stroke-width="1.5" marker-end="url(#ag)"/>
+      <line x1="490" y1="100" x2="400" y2="100" stroke="#c96442" stroke-width="1.5" marker-end="url(#ag)"/>
+      <text class="s" x="350" y="184" text-anchor="middle" style="font-style:italic">the model generates queries, picks tools, decides what to retain</text>
+    </svg>
+    <figcaption>The augmented LLM: retrieval + tools + memory. Patterns assemble many of these; they do not substitute for a well-built one.</figcaption>
+  </figure>
+
+  <div class="mcq" data-mcq data-correct="2">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Which three augmentations define the "augmented LLM" building block?</div>
+    <button class="opt">Speed, cost, and color</button>
+    <button class="opt">Routing, chaining, and voting</button>
+    <button class="opt">Retrieval, tools, and memory</button>
+    <button class="opt">Opus, Sonnet, and Haiku</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>The augmented LLM is "enhanced with augmentations such as retrieval, tools, and memory" — and current models actively use them (generating queries, selecting tools, deciding what to retain).</div>
+  </div>
+</section>
+
+<!-- ======================= SECTION 2 DIVIDER ======================= -->
+<div class="sec-divider" id="secB">
+  <span class="badge"><span class="emoji">🧩</span> The five patterns</span>
+  <h2>Five workflow patterns</h2>
+  <p>Each is a way to compose augmented LLMs through predefined code paths. Learn each by its <em>fit signal</em> — the situation that makes it the right call.</p>
+</div>
+
+<!-- LESSON 3 — Prompt Chaining -->
+<section class="lesson" id="l3" data-lesson="3">
+  <div class="lmeta"><span class="ltag"><span class="emoji">🔗</span> Pattern 1</span><span class="ltime">⏱ ~8 min · pattern</span></div>
+  <h3 class="ltitle">Prompt Chaining</h3>
+
+  <p><strong>Definition.</strong> Prompt chaining "decomposes a task into a sequence of steps, where <em>each LLM call processes the output of the previous one</em>."</p>
+
+  <p><strong>Gate checks.</strong> "You can add programmatic checks (a 'gate' in the diagram) on any intermediate steps to ensure the process is still on track." The gate is plain code — it can stop, retry, or reroute the chain before bad output propagates.</p>
+
+  <p><strong>When to use.</strong> "Ideal for situations where the task can be easily and cleanly decomposed into fixed subtasks." It trades "off latency for higher accuracy by making each LLM call an easier task."</p>
+
+  <p><strong>Concrete examples (from the source):</strong></p>
+  <ul>
+    <li>"Generating marketing copy, then translating it into a different language."</li>
+    <li>"Writing an outline of a document, checking that the outline meets certain criteria, then writing the document based on the outline."</li>
+  </ul>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 170" role="img" aria-label="Prompt chaining: linear steps with a programmatic gate between them">
+      <defs><style>.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 10.5px sans-serif;fill:#5c544c}.w{font:700 10px sans-serif;fill:#fff}</style>
+      <marker id="ac" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#c96442"/></marker></defs>
+      <rect x="20" y="58" width="120" height="48" rx="10" fill="#f4e6df" stroke="#c96442"/><text class="t" x="80" y="80" text-anchor="middle">LLM call 1</text><text class="s" x="80" y="96" text-anchor="middle">outline</text>
+      <line x1="140" y1="82" x2="184" y2="82" stroke="#c96442" stroke-width="2" marker-end="url(#ac)"/>
+      <polygon points="186,82 214,62 242,82 214,102" fill="#f6edd6" stroke="#b8860b" stroke-width="1.5"/><text class="s" x="214" y="86" text-anchor="middle">gate</text>
+      <line x1="242" y1="82" x2="286" y2="82" stroke="#c96442" stroke-width="2" marker-end="url(#ac)"/>
+      <rect x="288" y="58" width="120" height="48" rx="10" fill="#f4e6df" stroke="#c96442"/><text class="t" x="348" y="80" text-anchor="middle">LLM call 2</text><text class="s" x="348" y="96" text-anchor="middle">draft</text>
+      <line x1="408" y1="82" x2="452" y2="82" stroke="#c96442" stroke-width="2" marker-end="url(#ac)"/>
+      <rect x="454" y="58" width="120" height="48" rx="10" fill="#f4e6df" stroke="#c96442"/><text class="t" x="514" y="80" text-anchor="middle">LLM call 3</text><text class="s" x="514" y="96" text-anchor="middle">polish</text>
+      <line x1="574" y1="82" x2="618" y2="82" stroke="#c96442" stroke-width="2" marker-end="url(#ac)"/>
+      <rect x="620" y="62" width="62" height="40" rx="8" fill="#e3f0e6" stroke="#3f7d4f"/><text class="s" x="651" y="86" text-anchor="middle">output</text>
+      <text class="s" x="214" y="128" text-anchor="middle" style="font-style:italic">gate = programmatic check; fail → stop / retry</text>
+    </svg>
+    <figcaption>Each call consumes the previous call's output. A code "gate" between steps verifies the chain is still on track before it continues.</figcaption>
+  </figure>
+
+  <p><strong>Maps to subagents.</strong> A chain is typically implemented in <em>code paths</em> (a predefined sequence), not by delegation — but any step that needs context isolation can itself be a tool-restricted subagent.</p>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">Chaining "trades off latency for higher accuracy." Why would breaking one prompt into several sequential calls <em>raise</em> accuracy?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans">Because it makes "each LLM call an easier task." A single mega-prompt asks the model to do everything at once; splitting it lets each call focus on one cleanly-decomposable subtask — at the cost of more round-trips (latency).</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="0">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">What is the purpose of a "gate" in a prompt chain?</div>
+    <button class="opt">A programmatic check on an intermediate step to ensure the process is still on track</button>
+    <button class="opt">A way to run the steps in parallel</button>
+    <button class="opt">A second model that votes on the answer</button>
+    <button class="opt">A router that classifies the input</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>The gate is a programmatic check on intermediate steps. Parallel runs = parallelization; voting = a parallelization variant; classify-and-dispatch = routing.</div>
+  </div>
+</section>
+
+<!-- LESSON 4 — Routing -->
+<section class="lesson" id="l4" data-lesson="4">
+  <div class="lmeta"><span class="ltag"><span class="emoji">🔀</span> Pattern 2</span><span class="ltime">⏱ ~8 min · pattern</span></div>
+  <h3 class="ltitle">Routing</h3>
+
+  <p><strong>Definition.</strong> Routing "<em>classifies an input and directs it to a specialized followup task</em>."</p>
+
+  <p><strong>Why it helps.</strong> "This workflow allows for separation of concerns, and building more specialized prompts." Without routing, optimizing for one kind of input tends to hurt others.</p>
+
+  <p><strong>When to use.</strong> "Complex tasks where there are <em>distinct categories that are better handled separately</em>, and where classification can be handled accurately." That second clause is the trap: if the classifier is unreliable, routing hurts.</p>
+
+  <p><strong>Concrete examples (from the source):</strong> "Directing different types of customer service queries (general questions, refund requests, technical support) into different downstream processes, prompts, and tools." A second example — routing easy/common questions to a smaller model and hard/unusual ones to a more capable model — optimizes cost and speed.</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 220" role="img" aria-label="Routing: a classifier directs input to one of several specialized branches">
+      <defs><style>.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 10.5px sans-serif;fill:#5c544c}</style>
+      <marker id="ar" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#c96442"/></marker></defs>
+      <rect x="20" y="86" width="100" height="48" rx="10" fill="#e7e0d8"/><text class="s" x="70" y="114" text-anchor="middle">input</text>
+      <line x1="120" y1="110" x2="160" y2="110" stroke="#c96442" stroke-width="2" marker-end="url(#ar)"/>
+      <polygon points="164,110 208,80 252,110 208,140" fill="#f4e6df" stroke="#c96442" stroke-width="1.5"/><text class="t" x="208" y="108" text-anchor="middle">classify</text><text class="s" x="208" y="124" text-anchor="middle">router</text>
+      <line x1="252" y1="96" x2="300" y2="50" stroke="#c96442" stroke-width="2" marker-end="url(#ar)"/>
+      <line x1="252" y1="110" x2="300" y2="110" stroke="#c96442" stroke-width="2" marker-end="url(#ar)"/>
+      <line x1="252" y1="124" x2="300" y2="170" stroke="#c96442" stroke-width="2" marker-end="url(#ar)"/>
+      <rect x="304" y="30" width="200" height="40" rx="9" fill="#e0efee" stroke="#3a7d7b"/><text class="s" x="404" y="54" text-anchor="middle">general questions → small model</text>
+      <rect x="304" y="90" width="200" height="40" rx="9" fill="#f6edd6" stroke="#b8860b"/><text class="s" x="404" y="114" text-anchor="middle">refund requests → refund flow</text>
+      <rect x="304" y="150" width="200" height="40" rx="9" fill="#f7e3df" stroke="#b3402f"/><text class="s" x="404" y="174" text-anchor="middle">technical support → expert + tools</text>
+    </svg>
+    <figcaption>Classify once, then dispatch to a specialized prompt / model / tool-set per category. Reliable classification is the precondition.</figcaption>
+  </figure>
+
+  <p><strong>Maps to subagents.</strong> This is exactly how Claude decides <em>which</em> subagent to invoke — "Claude determines whether to invoke them based on each subagent's <code class="inline">description</code> field." <strong>A well-written <code class="inline">description</code> is a router classifier.</strong> The base-course Lesson 3 insight ("the description controls <em>when</em> a subagent launches") is, in pattern terms, routing.</p>
+
+  <div class="mcq" data-mcq data-correct="3">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Routing is the right pattern when…</div>
+    <button class="opt">subtasks can't be predicted until runtime</button>
+    <button class="opt">you need multiple attempts for higher confidence</button>
+    <button class="opt">each call should process the previous call's output</button>
+    <button class="opt">there are distinct categories better handled separately, and classification can be done accurately</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>Routing = classify-then-dispatch into distinct categories, and it depends on accurate classification. Unpredictable subtasks → orchestrator-workers; multi-attempt confidence → parallelization (voting); previous-output chaining → prompt chaining.</div>
+  </div>
+</section>
+
+<!-- LESSON 5 — Parallelization -->
+<section class="lesson" id="l5" data-lesson="5">
+  <div class="lmeta"><span class="ltag"><span class="emoji">⫴</span> Pattern 3</span><span class="ltime">⏱ ~9 min · pattern</span></div>
+  <h3 class="ltitle">Parallelization — Sectioning &amp; Voting</h3>
+
+  <p><strong>Definition.</strong> "LLMs can sometimes work simultaneously on a task and have their outputs aggregated programmatically." There are two variations — and the exam wants you to tell them apart:</p>
+  <ul>
+    <li><strong>Sectioning</strong> — "breaking a task into <em>independent subtasks</em> run in parallel." (Different work, in parallel.)</li>
+    <li><strong>Voting</strong> — "running the <em>same task</em> multiple times to get diverse outputs." (Same work, for redundancy/confidence.)</li>
+  </ul>
+
+  <p><strong>When to use.</strong> Effective "when the divided subtasks can be parallelized for speed, or when multiple perspectives or attempts are needed for higher confidence results."</p>
+
+  <p><strong>Concrete examples (from the source):</strong></p>
+  <ul>
+    <li><em>Sectioning:</em> guardrails where one model instance processes the user query while another screens it for inappropriate content (separate attention per concern); also automated evals where each LLM call assesses a different aspect of performance.</li>
+    <li><em>Voting:</em> "Reviewing a piece of code for vulnerabilities, where several different prompts review and flag the code if they find a problem."</li>
+  </ul>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 250" role="img" aria-label="Parallelization: sectioning splits different subtasks; voting runs the same task several times and aggregates">
+      <defs><style>.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 10px sans-serif;fill:#5c544c}.h{font:700 11px sans-serif;fill:#a44a2e}</style>
+      <marker id="ap" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#c96442"/></marker></defs>
+      <text class="h" x="170" y="22" text-anchor="middle">SECTIONING — different subtasks</text>
+      <rect x="20" y="34" width="70" height="34" rx="8" fill="#e7e0d8"/><text class="s" x="55" y="55" text-anchor="middle">task</text>
+      <line x1="90" y1="44" x2="124" y2="40" stroke="#c96442" stroke-width="1.5" marker-end="url(#ap)"/>
+      <line x1="90" y1="51" x2="124" y2="64" stroke="#c96442" stroke-width="1.5" marker-end="url(#ap)"/>
+      <line x1="90" y1="58" x2="124" y2="88" stroke="#c96442" stroke-width="1.5" marker-end="url(#ap)"/>
+      <rect x="126" y="28" width="90" height="26" rx="7" fill="#e0efee" stroke="#3a7d7b"/><text class="s" x="171" y="45" text-anchor="middle">subtask A</text>
+      <rect x="126" y="58" width="90" height="26" rx="7" fill="#e0efee" stroke="#3a7d7b"/><text class="s" x="171" y="75" text-anchor="middle">subtask B</text>
+      <rect x="126" y="88" width="90" height="26" rx="7" fill="#e0efee" stroke="#3a7d7b"/><text class="s" x="171" y="105" text-anchor="middle">subtask C</text>
+      <line x1="216" y1="41" x2="250" y2="64" stroke="#c96442" stroke-width="1.5" marker-end="url(#ap)"/>
+      <line x1="216" y1="71" x2="250" y2="71" stroke="#c96442" stroke-width="1.5" marker-end="url(#ap)"/>
+      <line x1="216" y1="101" x2="250" y2="78" stroke="#c96442" stroke-width="1.5" marker-end="url(#ap)"/>
+      <rect x="252" y="55" width="80" height="34" rx="8" fill="#e3f0e6" stroke="#3f7d4f"/><text class="s" x="292" y="76" text-anchor="middle">aggregate</text>
+      <text class="h" x="520" y="22" text-anchor="middle">VOTING — same task ×N</text>
+      <rect x="386" y="50" width="70" height="34" rx="8" fill="#e7e0d8"/><text class="s" x="421" y="71" text-anchor="middle">one task</text>
+      <line x1="456" y1="58" x2="490" y2="40" stroke="#c96442" stroke-width="1.5" marker-end="url(#ap)"/>
+      <line x1="456" y1="67" x2="490" y2="67" stroke="#c96442" stroke-width="1.5" marker-end="url(#ap)"/>
+      <line x1="456" y1="76" x2="490" y2="94" stroke="#c96442" stroke-width="1.5" marker-end="url(#ap)"/>
+      <rect x="492" y="28" width="100" height="24" rx="7" fill="#f6edd6" stroke="#b8860b"/><text class="s" x="542" y="44" text-anchor="middle">prompt run 1</text>
+      <rect x="492" y="55" width="100" height="24" rx="7" fill="#f6edd6" stroke="#b8860b"/><text class="s" x="542" y="71" text-anchor="middle">prompt run 2</text>
+      <rect x="492" y="82" width="100" height="24" rx="7" fill="#f6edd6" stroke="#b8860b"/><text class="s" x="542" y="98" text-anchor="middle">prompt run 3</text>
+      <line x1="592" y1="40" x2="624" y2="62" stroke="#c96442" stroke-width="1.5" marker-end="url(#ap)"/>
+      <line x1="592" y1="67" x2="624" y2="67" stroke="#c96442" stroke-width="1.5" marker-end="url(#ap)"/>
+      <line x1="592" y1="94" x2="624" y2="74" stroke="#c96442" stroke-width="1.5" marker-end="url(#ap)"/>
+      <rect x="626" y="52" width="60" height="34" rx="8" fill="#e3f0e6" stroke="#3f7d4f"/><text class="s" x="656" y="73" text-anchor="middle">vote</text>
+      <text class="s" x="170" y="150" text-anchor="middle" style="font-style:italic">split the work for speed / separate attention</text>
+      <text class="s" x="520" y="150" text-anchor="middle" style="font-style:italic">repeat for confidence / catch more cases</text>
+    </svg>
+    <figcaption>Sectioning splits <em>different</em> subtasks across parallel calls; voting runs the <em>same</em> task several times and aggregates the verdicts.</figcaption>
+  </figure>
+
+  <p><strong>Maps to subagents (SDK + Claude Code).</strong> "Multiple subagents can run concurrently, dramatically speeding up complex workflows." The docs' example runs <code class="inline">style-checker</code>, <code class="inline">security-scanner</code>, and <code class="inline">test-coverage</code> simultaneously, "reducing review time from minutes to seconds." Each parallel worker gets isolation: "Each subagent runs in its own context window."</p>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">You run the same vulnerability-review prompt three times with slightly different framings and flag the code if <em>any</em> run finds a problem. Sectioning or voting?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>Voting.</strong> It's the <em>same task</em> run multiple times for higher confidence — the verbatim source example. Sectioning would instead split the review into <em>different</em> independent subtasks (e.g., one call per concern) running in parallel.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="1">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">The clearest distinction between sectioning and voting is:</div>
+    <button class="opt">Sectioning is faster; voting is cheaper</button>
+    <button class="opt">Sectioning runs different subtasks in parallel; voting runs the same task multiple times</button>
+    <button class="opt">Sectioning uses subagents; voting uses code paths</button>
+    <button class="opt">Sectioning needs a gate; voting needs a router</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>Sectioning = independent subtasks in parallel (split the work). Voting = the same task repeated for diverse outputs / higher confidence (redundancy). Both are variations of parallelization.</div>
+  </div>
+</section>
+
+<!-- LESSON 6 — Orchestrator-Workers -->
+<section class="lesson" id="l6" data-lesson="6">
+  <div class="lmeta"><span class="ltag"><span class="emoji">🎯</span> Pattern 4</span><span class="ltime">⏱ ~10 min · pattern · most exam-relevant</span></div>
+  <h3 class="ltitle">Orchestrator-Workers</h3>
+
+  <p><strong>Definition.</strong> "A central LLM <em>dynamically breaks down tasks, delegates them to worker LLMs, and synthesizes their results</em>."</p>
+
+  <p><strong>The key difference vs. parallelization.</strong> "Its flexibility — subtasks <em>aren't pre-defined</em>, but determined by the orchestrator based on the specific input." In parallelization you (the developer) decide the splits up front; here the <em>orchestrator</em> decides them at runtime. That one word — <em>predefined vs. determined-at-runtime</em> — is the exam's favorite distractor.</p>
+
+  <p><strong>When to use.</strong> "Well-suited for complex tasks where you <em>can't predict the subtasks needed</em>."</p>
+
+  <p><strong>Concrete examples (from the source):</strong> "Coding products that make complex changes to multiple files each time"; also search tasks that gather and synthesize information from multiple sources.</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 240" role="img" aria-label="Orchestrator-workers: a central orchestrator dynamically spawns workers and synthesizes their results">
+      <defs><style>.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 10.5px sans-serif;fill:#5c544c}.w{font:700 11px sans-serif;fill:#fff}</style>
+      <marker id="ao" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#c96442"/></marker>
+      <marker id="ao2" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#3f7d4f"/></marker></defs>
+      <rect x="280" y="20" width="140" height="46" rx="12" fill="#c96442"/><text class="w" x="350" y="40" text-anchor="middle">Orchestrator</text><text class="w" x="350" y="56" text-anchor="middle" style="opacity:.9">(central LLM)</text>
+      <line x1="300" y1="66" x2="150" y2="118" stroke="#c96442" stroke-width="1.8" marker-end="url(#ao)"/>
+      <line x1="345" y1="66" x2="350" y2="118" stroke="#c96442" stroke-width="1.8" marker-end="url(#ao)"/>
+      <line x1="400" y1="66" x2="550" y2="118" stroke="#c96442" stroke-width="1.8" marker-end="url(#ao)"/>
+      <text class="s" x="225" y="98" text-anchor="middle">delegates (decided at runtime)</text>
+      <rect x="90" y="120" width="120" height="42" rx="10" fill="#e0efee" stroke="#3a7d7b"/><text class="s" x="150" y="146" text-anchor="middle">worker 1</text>
+      <rect x="290" y="120" width="120" height="42" rx="10" fill="#e0efee" stroke="#3a7d7b"/><text class="s" x="350" y="146" text-anchor="middle">worker 2</text>
+      <rect x="490" y="120" width="120" height="42" rx="10" fill="#e0efee" stroke="#3a7d7b"/><text class="s" x="550" y="146" text-anchor="middle">worker 3</text>
+      <line x1="150" y1="162" x2="320" y2="210" stroke="#3f7d4f" stroke-width="1.6" marker-end="url(#ao2)"/>
+      <line x1="350" y1="162" x2="350" y2="206" stroke="#3f7d4f" stroke-width="1.6" marker-end="url(#ao2)"/>
+      <line x1="550" y1="162" x2="380" y2="210" stroke="#3f7d4f" stroke-width="1.6" marker-end="url(#ao2)"/>
+      <rect x="276" y="206" width="148" height="30" rx="9" fill="#e3f0e6" stroke="#3f7d4f"/><text class="t" x="350" y="225" text-anchor="middle">synthesize results</text>
+    </svg>
+    <figcaption>The orchestrator decides the subtasks at runtime (not in advance), delegates to workers, then synthesizes their outputs into one result.</figcaption>
+  </figure>
+
+  <p><strong>Maps to subagents.</strong> This is the <em>native shape</em> of Claude Code / Agent SDK subagent delegation: a main agent spawns focused workers via the <code class="inline">Agent</code> tool and receives "the subagent's final message verbatim as the Agent tool result." If you remember one pattern↔subagent mapping for the exam, make it this one.</p>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">A coding agent must edit "an unknown number of files that depend on the bug" — you can't list the files before you start. Orchestrator-workers or parallelization?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>Orchestrator-workers.</strong> The subtasks (which files to change) "can't be predicted" and must be "determined by the orchestrator based on the specific input." Parallelization requires you to define the splits up front, which you can't do here. Coding changes across multiple files is the verbatim source example for this pattern.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="2">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">What is the single key difference between orchestrator-workers and parallelization?</div>
+    <button class="opt">Orchestrator-workers is faster</button>
+    <button class="opt">Orchestrator-workers always uses more subagents</button>
+    <button class="opt">In orchestrator-workers the subtasks are determined at runtime by the orchestrator, not pre-defined</button>
+    <button class="opt">Parallelization can't synthesize results</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>"The key difference from parallelization is its flexibility — subtasks aren't pre-defined, but determined by the orchestrator based on the specific input." Speed and worker-count aren't the defining line.</div>
+  </div>
+</section>
+
+<!-- LESSON 7 — Evaluator-Optimizer -->
+<section class="lesson" id="l7" data-lesson="7">
+  <div class="lmeta"><span class="ltag"><span class="emoji">♻️</span> Pattern 5</span><span class="ltime">⏱ ~8 min · pattern</span></div>
+  <h3 class="ltitle">Evaluator-Optimizer</h3>
+
+  <p><strong>Definition.</strong> "One LLM call <em>generates a response</em> while another provides <em>evaluation and feedback in a loop</em>."</p>
+
+  <p><strong>When to use.</strong> "Particularly effective when we have <em>clear evaluation criteria</em>, and when <em>iterative refinement provides measurable value</em>." Two fit signals: (1) responses can be demonstrably improved by feedback, and (2) the LLM can provide that feedback — "analogous to a human writer's revision process."</p>
+
+  <p><strong>Concrete examples (from the source):</strong> "Literary translation where there are nuances that the translator LLM might not capture initially, but where an evaluator LLM can provide useful critiques." Also complex search requiring multiple rounds, where the evaluator decides whether further searches are warranted.</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 200" role="img" aria-label="Evaluator-optimizer: a generator and an evaluator exchange output and feedback in a loop until criteria are met">
+      <defs><style>.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 10.5px sans-serif;fill:#5c544c}</style>
+      <marker id="ae" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#c96442"/></marker>
+      <marker id="ae2" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#3a7d7b"/></marker></defs>
+      <rect x="80" y="76" width="150" height="50" rx="12" fill="#f4e6df" stroke="#c96442" stroke-width="1.5"/><text class="t" x="155" y="98" text-anchor="middle">Generator</text><text class="s" x="155" y="114" text-anchor="middle">produces a response</text>
+      <rect x="470" y="76" width="150" height="50" rx="12" fill="#e0efee" stroke="#3a7d7b" stroke-width="1.5"/><text class="t" x="545" y="98" text-anchor="middle">Evaluator</text><text class="s" x="545" y="114" text-anchor="middle">critiques vs. criteria</text>
+      <path d="M230 90 C 330 70, 380 70, 468 90" fill="none" stroke="#c96442" stroke-width="2" marker-end="url(#ae)"/>
+      <text class="s" x="350" y="66" text-anchor="middle">response</text>
+      <path d="M468 112 C 380 134, 330 134, 232 112" fill="none" stroke="#3a7d7b" stroke-width="2" marker-end="url(#ae2)"/>
+      <text class="s" x="350" y="150" text-anchor="middle">feedback (loop until criteria met)</text>
+      <line x1="620" y1="101" x2="664" y2="101" stroke="#3f7d4f" stroke-width="2" marker-end="url(#ae)"/>
+      <rect x="640" y="0" width="0" height="0"/>
+      <text class="s" x="672" y="92" text-anchor="middle">✓</text><text class="s" x="676" y="106" text-anchor="middle">done</text>
+    </svg>
+    <figcaption>Generate → critique → revise, looping until the explicit criteria are met. The loop only pays off when criteria are clear and feedback measurably helps.</figcaption>
+  </figure>
+
+  <p><strong>Maps to subagents.</strong> Implement the evaluator as a separate <em>tool-restricted</em> subagent — e.g., a read-only reviewer that critiques the generator's output before the loop continues.</p>
+
+  <div class="mcq" data-mcq data-correct="0">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Evaluator-optimizer is "particularly effective" when…</div>
+    <button class="opt">there are clear evaluation criteria and iterative refinement provides measurable value</button>
+    <button class="opt">the subtasks are unpredictable</button>
+    <button class="opt">you need to classify inputs into categories</button>
+    <button class="opt">the same task must run in parallel for speed</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>Clear criteria + measurable value from iteration are the fit signals — plus the LLM being able to provide useful feedback (like a writer's revision process). The others describe orchestrator-workers, routing, and parallelization.</div>
+  </div>
+</section>
+
+<!-- LESSON 1 (SECTION) QUIZ — patterns -->
+<div class="quizblock" data-quiz="1">
+  <div class="scorebar"><h4 style="margin:0"><span class="emoji">🏆</span> Quiz A — The five patterns</h4><span class="qscore" data-score>0 / 5</span></div>
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q1</div><div class="qtext">A support system classifies each ticket as billing / technical / general and sends it to a tailored prompt. Which pattern?</div>
+    <button class="opt">Prompt chaining</button><button class="opt">Parallelization (voting)</button><button class="opt">Routing</button><button class="opt">Evaluator-optimizer</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Classify-then-dispatch into distinct categories is routing — the verbatim customer-service example.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="1" data-inquiz>
+    <div class="qlab">Q2</div><div class="qtext">A translator LLM produces a draft; an evaluator LLM critiques nuance; the translator revises, looping until quality criteria are met. Which pattern?</div>
+    <button class="opt">Orchestrator-workers</button><button class="opt">Evaluator-optimizer</button><button class="opt">Routing</button><button class="opt">Sectioning</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Generate-and-critique in a loop with clear criteria = evaluator-optimizer; literary translation is its verbatim example.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="3" data-inquiz>
+    <div class="qlab">Q3</div><div class="qtext">Three differently-framed prompts each independently review the same code for vulnerabilities and any of them can flag it. Which pattern (and variation)?</div>
+    <button class="opt">Routing</button><button class="opt">Prompt chaining</button><button class="opt">Orchestrator-workers</button><button class="opt">Parallelization — voting</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Same task run multiple times for confidence = voting, a variation of parallelization. It's the source's verbatim code-vulnerability example.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="0" data-inquiz>
+    <div class="qlab">Q4</div><div class="qtext">A coding agent makes "complex changes to multiple files each time" and the affected files can't be listed in advance. Which pattern?</div>
+    <button class="opt">Orchestrator-workers</button><button class="opt">Parallelization — sectioning</button><button class="opt">Prompt chaining</button><button class="opt">Routing</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Subtasks determined at runtime by a central LLM = orchestrator-workers; multi-file coding changes is its verbatim example. Sectioning needs pre-defined splits.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q5</div><div class="qtext">"Write an outline, check it meets criteria, then write the doc from the outline" — each step consuming the last. Which pattern?</div>
+    <button class="opt">Routing</button><button class="opt">Voting</button><button class="opt">Prompt chaining (with a gate)</button><button class="opt">Orchestrator-workers</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Each LLM call processes the previous call's output, with a programmatic gate checking the outline = prompt chaining. It's the verbatim source example.</div>
+  </div>
+  <div class="resultbox" data-result></div>
+</div>
+
+<!-- ======================= SECTION 3 DIVIDER ======================= -->
+<div class="sec-divider" id="secC">
+  <span class="badge"><span class="emoji">🚦</span> Choosing</span>
+  <h2>The agent loop &amp; the decision framework</h2>
+  <p>When the path can't be predefined at all — and the simplicity-first ladder for choosing the least-complex option.</p>
+</div>
+
+<!-- LESSON 8 — Autonomous Agents -->
+<section class="lesson" id="l8" data-lesson="8">
+  <div class="lmeta"><span class="ltag"><span class="emoji">🛰️</span> Section 6</span><span class="ltime">⏱ ~7 min · concept</span></div>
+  <h3 class="ltitle">Autonomous Agents — the loop</h3>
+
+  <p>The five patterns are workflows. The autonomous <strong>agent</strong> is the other side of the line from Section 1 — and it operates as a loop, not a fixed sequence.</p>
+
+  <p><strong>How they operate.</strong> Agents "begin their work with either a command from, or interactive discussion with, the human user. Once the task is clear, agents <em>plan and operate independently</em>, potentially returning to the human for further information or judgement." Critically: "During execution, it's crucial for the agents to gain <strong>'ground truth' from the environment at each step</strong> (such as tool call results or code execution) to assess its progress."</p>
+
+  <p><strong>When to use.</strong> "Open-ended problems where it's difficult or impossible to predict the required number of steps, and where you can't hardcode a fixed path."</p>
+
+  <p><strong>The caution.</strong> Autonomy means <em>higher costs and the potential for compounding errors</em>. Anthropic recommends extensive testing in sandboxes plus appropriate guardrails. This caution is the bridge to the decision framework: more autonomy is not free.</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 220" role="img" aria-label="The autonomous agent loop: plan, act with a tool, observe ground truth from the environment, repeat until done">
+      <defs><style>.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 10.5px sans-serif;fill:#5c544c}</style>
+      <marker id="al" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#c96442"/></marker></defs>
+      <rect x="20" y="92" width="110" height="40" rx="10" fill="#e7e0d8"/><text class="s" x="75" y="116" text-anchor="middle">human command</text>
+      <line x1="130" y1="112" x2="168" y2="112" stroke="#c96442" stroke-width="2" marker-end="url(#al)"/>
+      <circle cx="260" cy="112" r="44" fill="#f4e6df" stroke="#c96442" stroke-width="2"/><text class="t" x="260" y="108" text-anchor="middle">plan</text><text class="t" x="260" y="124" text-anchor="middle">+ act</text>
+      <path d="M304 112 L 392 112" stroke="#c96442" stroke-width="2" marker-end="url(#al)"/><text class="s" x="348" y="102" text-anchor="middle">tool call</text>
+      <rect x="394" y="88" width="130" height="48" rx="10" fill="#e0efee" stroke="#3a7d7b"/><text class="t" x="459" y="108" text-anchor="middle">environment</text><text class="s" x="459" y="124" text-anchor="middle">ground truth</text>
+      <path d="M459 136 C 459 196, 260 196, 260 158" fill="none" stroke="#3a7d7b" stroke-width="2" marker-end="url(#al)"/>
+      <text class="s" x="360" y="190" text-anchor="middle" style="font-style:italic">observe result → assess progress → loop</text>
+      <line x1="304" y1="96" x2="580" y2="60" stroke="#3f7d4f" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#al)"/>
+      <rect x="566" y="44" width="120" height="34" rx="9" fill="#e3f0e6" stroke="#3f7d4f"/><text class="s" x="626" y="65" text-anchor="middle">done / return</text>
+    </svg>
+    <figcaption>The agent loops: plan, act with a tool, observe ground truth from the environment, assess progress, repeat — until the task is done or it returns to the human.</figcaption>
+  </figure>
+
+  <div class="callout anti collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">⚠️</span> The cost of autonomy<span class="chev">▼</span></div>
+  <div class="cbody"><p>Agents trade predictability for flexibility. Their autonomy means <strong>higher costs</strong> and <strong>compounding errors</strong> (a wrong step early can cascade). That's why "ground truth at each step" matters — it's the feedback that keeps the loop honest — and why Anthropic pairs agents with <strong>sandbox testing + guardrails</strong>. Don't reach for an agent loop when a fixed workflow would do.</p></div></div>
+
+  <div class="mcq" data-mcq data-correct="1">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Why must an autonomous agent gain "ground truth" from the environment at each step?</div>
+    <button class="opt">To reduce token cost</button>
+    <button class="opt">To assess its progress, since the path and step-count can't be predicted in advance</button>
+    <button class="opt">Because tools refuse to run otherwise</button>
+    <button class="opt">To classify the input before routing</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>Ground truth (tool results, code execution) lets the agent assess progress on an open-ended task with no hardcodable path — that feedback is what keeps the loop on track and limits compounding errors.</div>
+  </div>
+</section>
+
+<!-- LESSON 9 — Decision Framework -->
+<section class="lesson" id="l9" data-lesson="9">
+  <div class="lmeta"><span class="ltag"><span class="emoji">🚦</span> Section 7</span><span class="ltime">⏱ ~10 min · framework · high-yield</span></div>
+  <h3 class="ltitle">The Decision Framework — simplicity first</h3>
+
+  <div class="objectives">
+    <div class="lab">What you'll be able to do</div>
+    <ul>
+      <li>State the simplicity-first rule and the single-call default in the source's own words</li>
+      <li>Walk the 7-rung escalation ladder and justify stopping at the lowest rung that works</li>
+      <li>State the workflow-vs-agent tradeoff that governs the top of the ladder</li>
+    </ul>
+  </div>
+
+  <p><strong>The core rule (verbatim).</strong> "When building applications with LLMs, we recommend finding the <em>simplest solution possible</em>, and only increasing complexity when needed. This might mean <em>not building agentic systems at all</em>."</p>
+
+  <p><strong>The single-call default.</strong> "For many applications… optimizing single LLM calls with retrieval and in-context examples is usually enough." Most problems never need a pattern.</p>
+
+  <p><strong>Escalation guidance (verbatim).</strong> "Start with simple prompts, optimize them with comprehensive evaluation, and add multi-step agentic systems only when simpler solutions fall short."</p>
+
+  <p><strong>The governing tradeoff.</strong> "Workflows offer <em>predictability and consistency</em> for well-defined tasks, whereas agents are the better option when <em>flexibility and model-driven decision-making</em> are needed at scale."</p>
+
+  <h4>The 7-rung escalation ladder</h4>
+  <p>Synthesized from the guidance above: climb only as high as you must. Each rung is justified by a fit signal; stop at the lowest rung that solves the problem.</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 360" role="img" aria-label="A seven-rung escalation ladder from a single augmented LLM call up to an autonomous agent loop">
+      <defs><style>.rt{font:700 12px sans-serif;fill:#2b2622}.rs{font:400 10px sans-serif;fill:#5c544c}.rn{font:700 12px sans-serif;fill:#fff}</style></defs>
+      <text class="rs" x="350" y="18" text-anchor="middle" style="font-style:italic">↑ more complex / more autonomy / higher cost — only climb when simpler falls short</text>
+      <g>
+        <rect x="120" y="300" width="460" height="40" rx="9" fill="#e3f0e6" stroke="#3f7d4f"/><circle cx="148" cy="320" r="13" fill="#3f7d4f"/><text class="rn" x="148" y="324" text-anchor="middle">1</text><text class="rt" x="176" y="318">Single augmented LLM call</text><text class="rs" x="176" y="332">retrieval + tools + examples — use if it suffices</text>
+        <rect x="120" y="256" width="460" height="40" rx="9" fill="#e0efee" stroke="#3a7d7b"/><circle cx="148" cy="276" r="13" fill="#3a7d7b"/><text class="rn" x="148" y="280" text-anchor="middle">2</text><text class="rt" x="176" y="274">Prompt chaining</text><text class="rs" x="176" y="288">fixed, cleanly decomposable steps</text>
+        <rect x="120" y="212" width="460" height="40" rx="9" fill="#e0efee" stroke="#3a7d7b"/><circle cx="148" cy="232" r="13" fill="#3a7d7b"/><text class="rn" x="148" y="236" text-anchor="middle">3</text><text class="rt" x="176" y="230">Routing</text><text class="rs" x="176" y="244">distinct input categories handled best separately</text>
+        <rect x="120" y="168" width="460" height="40" rx="9" fill="#f6edd6" stroke="#b8860b"/><circle cx="148" cy="188" r="13" fill="#b8860b"/><text class="rn" x="148" y="192" text-anchor="middle">4</text><text class="rt" x="176" y="186">Parallelization (sectioning / voting)</text><text class="rs" x="176" y="200">independent subtasks or multi-attempt confidence</text>
+        <rect x="120" y="124" width="460" height="40" rx="9" fill="#f6edd6" stroke="#b8860b"/><circle cx="148" cy="144" r="13" fill="#b8860b"/><text class="rn" x="148" y="148" text-anchor="middle">5</text><text class="rt" x="176" y="142">Orchestrator-workers</text><text class="rs" x="176" y="156">subtasks unpredictable, determined at runtime</text>
+        <rect x="120" y="80" width="460" height="40" rx="9" fill="#f4e6df" stroke="#c96442"/><circle cx="148" cy="100" r="13" fill="#c96442"/><text class="rn" x="148" y="104" text-anchor="middle">6</text><text class="rt" x="176" y="98">Evaluator-optimizer</text><text class="rs" x="176" y="112">clear criteria + iterative refinement adds value</text>
+        <rect x="120" y="36" width="460" height="40" rx="9" fill="#f7e3df" stroke="#b3402f"/><circle cx="148" cy="56" r="13" fill="#b3402f"/><text class="rn" x="148" y="60" text-anchor="middle">7</text><text class="rt" x="176" y="54">Autonomous agent loop</text><text class="rs" x="176" y="68">open-ended, unpredictable step count, no fixed path</text>
+      </g>
+    </svg>
+    <figcaption>The 7-rung ladder (rungs 2–6 are the five workflow patterns). Start at rung 1; escalate only when the rung below "falls short."</figcaption>
+  </figure>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">A product manager proposes a multi-agent system for a task that a single well-built LLM call with retrieval already handles at the needed quality. What does the framework say?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>Don't build it.</strong> "Find the simplest solution possible, and only increase complexity when needed — this might mean not building agentic systems at all." For many applications, "optimizing single LLM calls with retrieval and in-context examples is usually enough." Escalate only when simpler solutions <em>fall short</em>.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="0">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">The workflow-vs-agent tradeoff, per the source, is best stated as:</div>
+    <button class="opt">Workflows give predictability and consistency for well-defined tasks; agents are better when flexibility and model-driven decisions are needed at scale</button>
+    <button class="opt">Workflows are always cheaper, so always pick a workflow</button>
+    <button class="opt">Agents are always more accurate than workflows</button>
+    <button class="opt">Workflows can't use tools; agents can</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>That's the verbatim tradeoff. The framework's spirit is simplicity-first: prefer the predictable workflow unless flexibility/model-driven decisions at scale justify an agent.</div>
+  </div>
+</section>
+
+<!-- ======================= SECTION 4 DIVIDER ======================= -->
+<div class="sec-divider" id="secD">
+  <span class="badge"><span class="emoji">🏗️</span> In production</span>
+  <h2>Case study &amp; implementation</h2>
+  <p>Orchestrator-workers at scale (with exact numbers), and how subagents physically implement every pattern.</p>
+</div>
+
+<!-- LESSON 10 — Multi-Agent Research System -->
+<section class="lesson" id="l10" data-lesson="10">
+  <div class="lmeta"><span class="ltag"><span class="emoji">🔬</span> Case study</span><span class="ltime">⏱ ~12 min · production reference</span></div>
+  <h3 class="ltitle">Orchestrator-Workers at Scale: the Multi-Agent Research System</h3>
+
+  <p>Anthropic's multi-agent research post is the <strong>production reference architecture for Pattern 4</strong>. It turns the abstract orchestrator-workers diagram into a shipped system — with measured numbers you should be able to recall on the exam.</p>
+
+  <h4>The reference architecture</h4>
+  <ul>
+    <li>A <strong>lead agent</strong> analyzes the query, develops a strategy, and spawns subagents.</li>
+    <li><strong>Subagents operate in parallel</strong>, each with its own context window: "Subagents facilitate compression by operating in parallel with their own context windows, exploring different aspects of the question simultaneously."</li>
+    <li>Subagents perform web searches, use interleaved thinking to evaluate results, and return findings to the lead agent, which synthesizes and decides whether more research is needed.</li>
+    <li>A dedicated <strong>CitationAgent</strong> then "processes the documents and research report to identify specific locations for citations," ensuring proper attribution.</li>
+  </ul>
+
+  <p><strong>Why multi-agent works here.</strong> "The essence of search is compression: distilling insights from a vast corpus." Parallel subagents with separate context windows each compress a slice — together exceeding what a single context window could hold.</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 300" role="img" aria-label="Multi-agent research architecture: a lead agent spawns parallel research subagents, synthesizes findings, then a citation agent adds attribution">
+      <defs><style>.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 10px sans-serif;fill:#5c544c}.w{font:700 11px sans-serif;fill:#fff}</style>
+      <marker id="am" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#c96442"/></marker>
+      <marker id="am2" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#3f7d4f"/></marker></defs>
+      <rect x="20" y="118" width="96" height="46" rx="10" fill="#e7e0d8"/><text class="s" x="68" y="146" text-anchor="middle">user query</text>
+      <line x1="116" y1="141" x2="152" y2="141" stroke="#c96442" stroke-width="2" marker-end="url(#am)"/>
+      <rect x="154" y="116" width="130" height="50" rx="12" fill="#c96442"/><text class="w" x="219" y="138" text-anchor="middle">Lead agent</text><text class="w" x="219" y="154" text-anchor="middle" style="opacity:.9">strategy + spawn</text>
+      <line x1="284" y1="128" x2="340" y2="56" stroke="#c96442" stroke-width="1.6" marker-end="url(#am)"/>
+      <line x1="284" y1="141" x2="340" y2="141" stroke="#c96442" stroke-width="1.6" marker-end="url(#am)"/>
+      <line x1="284" y1="154" x2="340" y2="226" stroke="#c96442" stroke-width="1.6" marker-end="url(#am)"/>
+      <rect x="342" y="34" width="150" height="44" rx="10" fill="#e0efee" stroke="#3a7d7b"/><text class="s" x="417" y="52" text-anchor="middle">subagent · own context</text><text class="s" x="417" y="68" text-anchor="middle">search + interleaved thinking</text>
+      <rect x="342" y="119" width="150" height="44" rx="10" fill="#e0efee" stroke="#3a7d7b"/><text class="s" x="417" y="137" text-anchor="middle">subagent · own context</text><text class="s" x="417" y="153" text-anchor="middle">parallel exploration</text>
+      <rect x="342" y="204" width="150" height="44" rx="10" fill="#e0efee" stroke="#3a7d7b"/><text class="s" x="417" y="222" text-anchor="middle">subagent · own context</text><text class="s" x="417" y="238" text-anchor="middle">compresses a slice</text>
+      <line x1="492" y1="56" x2="540" y2="120" stroke="#3f7d4f" stroke-width="1.5" marker-end="url(#am2)"/>
+      <line x1="492" y1="141" x2="540" y2="141" stroke="#3f7d4f" stroke-width="1.5" marker-end="url(#am2)"/>
+      <line x1="492" y1="226" x2="540" y2="162" stroke="#3f7d4f" stroke-width="1.5" marker-end="url(#am2)"/>
+      <rect x="542" y="116" width="140" height="50" rx="12" fill="#e3f0e6" stroke="#3f7d4f"/><text class="t" x="612" y="138" text-anchor="middle">synthesize</text><text class="s" x="612" y="154" text-anchor="middle">→ more research?</text>
+      <line x1="612" y1="166" x2="612" y2="216" stroke="#b8860b" stroke-width="2" marker-end="url(#am)"/>
+      <rect x="540" y="218" width="144" height="44" rx="10" fill="#f6edd6" stroke="#b8860b"/><text class="t" x="612" y="236" text-anchor="middle">CitationAgent</text><text class="s" x="612" y="252" text-anchor="middle">adds attribution</text>
+    </svg>
+    <figcaption>Lead agent → parallel subagents (each its own context window) → synthesis loop → CitationAgent for attribution. A shipped orchestrator-workers system.</figcaption>
+  </figure>
+
+  <h4>Effort-scaling heuristics (given to the lead agent, verbatim)</h4>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Query type</th><th>Suggested allocation</th></tr></thead>
+      <tbody>
+        <tr><td>Simple fact-finding</td><td>"1 agent with 3-10 tool calls"</td></tr>
+        <tr><td>Direct comparisons</td><td>"2-4 subagents with 10-15 calls each"</td></tr>
+        <tr><td>Complex research</td><td>"more than 10 subagents with clearly divided responsibilities"</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Purpose: "These guidelines help the lead agent <em>allocate resources efficiently and prevent overinvestment in simple queries</em>." (Same simplicity-first spirit as the decision ladder — applied inside a running system.)</p>
+
+  <h4>Headline performance &amp; cost facts (recall these exactly)</h4>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Fact</th><th>Number (point-in-time)</th></tr></thead>
+      <tbody>
+        <tr><td>Multi-agent (Opus 4 lead + Sonnet 4 subagents) vs. single-agent Opus 4, internal research eval</td><td>outperformed by <strong>90.2%</strong></td></tr>
+        <tr><td>Token use: agents vs. chat</td><td>about <strong>4×</strong> more tokens</td></tr>
+        <tr><td>Token use: multi-agent systems vs. chat</td><td>about <strong>15×</strong> more tokens</td></tr>
+        <tr><td>BrowseComp: variance explained by token usage alone</td><td><strong>80%</strong> (model choice &amp; tool-call count next)</td></tr>
+        <tr><td>Parallelism (lead spawns parallel subagents; subagents use 3+ tools in parallel)</td><td>cut research time by up to <strong>90%</strong> for complex queries</td></tr>
+        <tr><td>Improved tool-description rewrite <span class="verify">VERIFY</span></td><td><strong>40%</strong> decrease in task completion time</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="verifynote"><b><span class="emoji">⚠️</span> <span class="verify">VERIFY</span> note (preserved from source):</b> confirm the <b>40%</b> figure refers to the tool-description experiment specifically. And per the top-of-page note, all numbers here are tied to Claude Opus&nbsp;4 / Sonnet&nbsp;4 and one eval — treat as point-in-time, not perpetual benchmarks.</div>
+
+  <h4>The economic gate — when multi-agent is worth it</h4>
+  <p>"There's a real tension between autonomy and reliability." Multi-agent systems "require tasks where the value of the task is high enough to pay for the increased performance." They excel at "valuable tasks that involve <strong>heavy parallelization</strong>, information that exceeds single context windows." They are <strong>not</strong> suited to tasks where all agents need to share the same context, or where there are many tight dependencies between agents.</p>
+
+  <div class="callout keyc collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> The multi-agent decision, in one line<span class="chev">▼</span></div>
+  <div class="cbody"><p>Multi-agent earns its <strong>~15× token cost</strong> only when the task is <strong>high-value</strong>, <strong>heavily parallelizable</strong>, and <strong>exceeds a single context window</strong> — and when agents <em>don't</em> need to share context or carry tight inter-agent dependencies. If agents must share context or depend tightly on each other, a single agent or a simpler workflow is the better call.</p></div></div>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">A task needs all sub-tasks to share one evolving context and has tight step-to-step dependencies, but it's only moderately valuable. Good fit for multi-agent?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>No.</strong> Multi-agent is "not suited to tasks where all agents need to share the same context or have many tight dependencies between agents," and it "requires tasks where the value… is high enough to pay for the increased performance" (~15× tokens). This task fails on shared context, dependencies, <em>and</em> value. Use a single agent or a simpler workflow.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="2">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">By how much did the multi-agent system (Opus 4 lead + Sonnet 4 subagents) outperform single-agent Opus 4 on the internal research eval?</div>
+    <button class="opt">15%</button>
+    <button class="opt">40%</button>
+    <button class="opt">90.2%</button>
+    <button class="opt">4×</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>90.2% on the internal research eval. (4× and 15× are the token-use multipliers for agents and multi-agent systems vs. chat; 40% is the tool-description completion-time figure.)</div>
+  </div>
+</section>
+
+<!-- LESSON 11 — Subagents implement the patterns -->
+<section class="lesson" id="l11" data-lesson="11">
+  <div class="lmeta"><span class="ltag"><span class="emoji">🧰</span> Implementation</span><span class="ltime">⏱ ~12 min · how-to</span></div>
+  <h3 class="ltitle">How Subagents Implement These Patterns</h3>
+
+  <div class="objectives">
+    <div class="lab">What you'll be able to do</div>
+    <ul>
+      <li>Map routing, parallelization, and orchestrator-workers onto concrete subagent mechanics</li>
+      <li>State exactly what crosses the parent→subagent context boundary (and what doesn't)</li>
+      <li>Apply the no-nesting constraint and know when to graduate to the Workflow tool</li>
+    </ul>
+  </div>
+
+  <p><strong>What a subagent is.</strong> "Subagents are separate agent instances that your main agent can spawn to handle focused subtasks" — to "isolate context for focused subtasks, run multiple analyses in parallel, and apply specialized instructions without bloating the main agent's prompt." In Claude Code: "Each subagent runs in its own context window with a custom system prompt, specific tool access, and independent permissions."</p>
+
+  <h4>How subagents realize each pattern</h4>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Pattern</th><th>Subagent mechanic</th></tr></thead>
+      <tbody>
+        <tr><td>Routing</td><td>Claude matches a task to a subagent's <code class="inline">description</code> (a router classifier); or you invoke it explicitly by name ("Use the code-reviewer agent to…").</td></tr>
+        <tr><td>Parallelization</td><td>"Multiple subagents can run concurrently"; each runs in an isolated context window so parallel work doesn't pollute the main conversation.</td></tr>
+        <tr><td>Orchestrator-workers</td><td>The main agent delegates via the <code class="inline">Agent</code> tool and synthesizes the verbatim final messages returned by workers.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>A filesystem subagent definition (Claude Code)</h4>
+  <div class="codelabel">Subagent config — YAML frontmatter + markdown body</div>
+  <pre class="code"><code><span class="frontmatter">---</span>
+<span class="key">name:</span> code-reviewer
+<span class="key">description:</span> Reviews code for quality and best practices
+<span class="key">tools:</span> Read, Glob, Grep
+<span class="key">model:</span> sonnet
+<span class="frontmatter">---</span>
+You are a code reviewer. When invoked, analyze the code and provide
+specific, actionable feedback on quality, security, and best practices.</code></pre>
+  <p>"The frontmatter defines the subagent's metadata and configuration. The body becomes the system prompt." Key <code class="inline">AgentDefinition</code> fields (SDK): <code class="inline">description</code> (required — drives routing), <code class="inline">prompt</code> (required — system prompt), <code class="inline">tools</code>/<code class="inline">disallowedTools</code> (capability restriction), <code class="inline">model</code> (<code class="inline">sonnet</code>/<code class="inline">opus</code>/<code class="inline">haiku</code>/<code class="inline">inherit</code> or full ID), plus <code class="inline">skills</code>, <code class="inline">memory</code>, <code class="inline">mcpServers</code>, <code class="inline">maxTurns</code>, <code class="inline">background</code>, <code class="inline">effort</code>, <code class="inline">permissionMode</code>.</p>
+
+  <h4>Context isolation — what crosses the boundary</h4>
+  <p>This is an architecture-decision point. "A subagent's context window starts fresh (no parent conversation)… The only channel from parent to subagent is the <code class="inline">Agent</code> tool's prompt string." The subagent receives its own system prompt + the Agent tool prompt + project <code class="inline">CLAUDE.md</code> (if <code class="inline">settingSources</code> loads it) + tool defs. It does <strong>not</strong> receive the parent's conversation history, tool results, or system prompt.</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 230" role="img" aria-label="Context boundary: only the Agent tool prompt crosses from parent to subagent, and only the final message returns">
+      <defs><style>.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 10px sans-serif;fill:#5c544c}</style>
+      <marker id="ab" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#c96442"/></marker>
+      <marker id="ab2" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#3f7d4f"/></marker></defs>
+      <rect x="20" y="34" width="250" height="160" rx="14" fill="#fff" stroke="#c96442" stroke-width="2"/>
+      <text class="t" x="145" y="58" text-anchor="middle">Parent agent</text>
+      <text class="s" x="145" y="80" text-anchor="middle">conversation history</text>
+      <text class="s" x="145" y="98" text-anchor="middle">tool results · system prompt</text>
+      <text class="s" x="145" y="170" text-anchor="middle" style="font-style:italic">none of this crosses →</text>
+      <path d="M270 102 L 430 102" stroke="#c96442" stroke-width="2.4" marker-end="url(#ab)"/>
+      <text class="s" x="350" y="92" text-anchor="middle">Agent tool prompt string</text>
+      <text class="s" x="350" y="118" text-anchor="middle" style="font-style:italic">the ONLY channel in</text>
+      <rect x="432" y="34" width="248" height="160" rx="14" fill="#faf6f1" stroke="#5c544c" stroke-width="1.5" stroke-dasharray="6 4"/>
+      <text class="t" x="556" y="58" text-anchor="middle">Subagent — fresh context</text>
+      <text class="s" x="556" y="82" text-anchor="middle">own system prompt</text>
+      <text class="s" x="556" y="100" text-anchor="middle">+ Agent prompt + tool defs</text>
+      <text class="s" x="556" y="118" text-anchor="middle">+ CLAUDE.md (if loaded)</text>
+      <path d="M430 168 L 272 168" stroke="#3f7d4f" stroke-width="2.4" marker-end="url(#ab2)"/>
+      <text class="s" x="350" y="186" text-anchor="middle">← final message only (verbatim)</text>
+    </svg>
+    <figcaption>One channel in (the Agent tool prompt), one channel out (the verbatim final message). The parent's history, tool results, and system prompt never cross.</figcaption>
+  </figure>
+
+  <div class="callout anti collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🚫</span> Critical constraint — no nesting<span class="chev">▼</span></div>
+  <div class="cbody"><p>"Subagents cannot spawn their own subagents." The orchestration tree is therefore <strong>one level deep by default</strong> — a main agent and its workers, not arbitrarily nested agents. When you design an orchestrator-workers system on subagents, the orchestrator is the <em>only</em> layer that delegates.</p></div></div>
+
+  <div class="callout tip collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">📈</span> Scaling beyond a few workers — the Workflow tool<span class="chev">▼</span></div>
+  <div class="cbody"><p>"Subagents work well for a few delegated tasks per turn. For runs that coordinate <strong>dozens to hundreds of agents</strong>, use the <code class="inline">Workflow</code> tool, which moves the orchestration into a script the runtime executes <em>outside the conversation context</em>." This is the graduation path: a handful of workers → subagents; large-scale fan-out → Workflow tool.</p></div></div>
+
+  <p><strong>Built-in subagents (Claude Code):</strong> <strong>Explore</strong> (Haiku, read-only, codebase search), <strong>Plan</strong> (inherits model, read-only, used in plan mode), <strong>General-purpose</strong> (inherits model, all tools, complex multi-step work).</p>
+
+  <p><strong>Managing them — the <code class="inline">/agents</code> command:</strong> opens a tabbed interface; the <strong>Running</strong> tab shows live subagents and the <strong>Library</strong> tab creates/edits/deletes them ("the recommended way"). Scope precedence (highest→lowest): managed settings (org) → <code class="inline">--agents</code> CLI flag (session) → <code class="inline">.claude/agents/</code> (project) → <code class="inline">~/.claude/agents/</code> (user) → plugin <code class="inline">agents/</code> directory.</p>
+
+  <div class="verifynote"><b><span class="emoji">⚠️</span> <span class="verify">VERIFY</span> (naming, preserved from source):</b> the delegation tool was "renamed from <code class="inline">Task</code> to <code class="inline">Agent</code> in Claude Code v2.1.63"; the current SDK emits <code class="inline">Agent</code> in <code class="inline">tool_use</code> blocks but still uses <code class="inline">Task</code> in the <code class="inline">system:init</code> tools list. Verify against the current version before citing a specific version number.</div>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">You want a worker subagent to coordinate its <em>own</em> team of sub-workers, and you also need to fan out across ~200 agents. What does the source tell you?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>Two facts collide.</strong> First, "subagents cannot spawn their own subagents" — the tree is one level deep, so a worker can't run its own sub-workers. Second, for runs coordinating "dozens to hundreds of agents," you graduate to the <code class="inline">Workflow</code> tool, which runs the orchestration in a script outside the conversation context — not by nesting subagents.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="1">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">What is the ONLY channel from a parent agent into a subagent's fresh context?</div>
+    <button class="opt">The parent's full conversation history</button>
+    <button class="opt">The Agent tool's prompt string</button>
+    <button class="opt">The parent's system prompt</button>
+    <button class="opt">The parent's tool results</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>"The only channel from parent to subagent is the Agent tool's prompt string." The subagent gets its own system prompt + that prompt + tool defs + CLAUDE.md (if loaded) — never the parent's history, results, or system prompt.</div>
+  </div>
+</section>
+
+<!-- ======================= FINAL CHECK ======================= -->
+<div class="sec-divider" id="final">
+  <span class="badge"><span class="emoji">🧠</span> Final check</span>
+  <h2>Final Knowledge Check</h2>
+  <p>Eight source-grounded questions spanning the whole lesson — weighted toward CCA-F Domain 1 pattern-selection and workflow-vs-agent judgment. No hints; answer, then check.</p>
+</div>
+
+<div class="quizblock" data-quiz="final" style="margin-top:20px">
+  <div class="scorebar"><h4 style="margin:0"><span class="emoji">🧠</span> Final Knowledge Check (8 questions)</h4><span class="qscore" data-score>0 / 8</span></div>
+
+  <div class="mcq" data-mcq data-correct="1" data-inquiz>
+    <div class="qlab">Q1</div><div class="qtext">A system runs the model through the same coded sequence of steps every time, with no model-chosen branching. It is a…</div>
+    <button class="opt">Agent</button><button class="opt">Workflow</button><button class="opt">Neither — it's just a prompt</button><button class="opt">Orchestrator</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Predefined code paths = workflow. An agent would let the model dynamically direct its own process and tool use.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q2</div><div class="qtext">Which is the single building block every pattern composes?</div>
+    <button class="opt">A router</button><button class="opt">A gate</button><button class="opt">The augmented LLM (retrieval + tools + memory)</button><button class="opt">A CitationAgent</button>
+    <div class="fb"></div><div class="fbmsg" hidden>All patterns compose augmented LLMs — models enhanced with retrieval, tools, and memory.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="0" data-inquiz>
+    <div class="qlab">Q3</div><div class="qtext">Subtasks are "determined by the orchestrator based on the specific input" rather than pre-defined. Which pattern?</div>
+    <button class="opt">Orchestrator-workers</button><button class="opt">Parallelization — sectioning</button><button class="opt">Routing</button><button class="opt">Prompt chaining</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Runtime-determined (not pre-defined) subtasks is the defining mark of orchestrator-workers vs. parallelization.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="3" data-inquiz>
+    <div class="qlab">Q4</div><div class="qtext">Per the simplicity-first rule, the right first move for most LLM applications is…</div>
+    <button class="opt">An autonomous agent loop</button><button class="opt">A multi-agent system</button><button class="opt">Orchestrator-workers</button><button class="opt">Optimizing a single LLM call with retrieval and in-context examples</button>
+    <div class="fb"></div><div class="fbmsg" hidden>"For many applications, optimizing single LLM calls with retrieval and in-context examples is usually enough." Escalate only when simpler solutions fall short — it might mean not building agentic systems at all.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q5</div><div class="qtext">In the multi-agent research system, which component adds proper attribution at the end?</div>
+    <button class="opt">The lead agent</button><button class="opt">Each research subagent</button><button class="opt">The CitationAgent</button><button class="opt">The gate</button>
+    <div class="fb"></div><div class="fbmsg" hidden>The CitationAgent "processes the documents and research report to identify specific locations for citations." The lead agent strategizes and synthesizes; subagents search.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="1" data-inquiz>
+    <div class="qlab">Q6</div><div class="qtext">Roughly how many more tokens do multi-agent systems use versus chat interactions?</div>
+    <button class="opt">About 4×</button><button class="opt">About 15×</button><button class="opt">About 90.2×</button><button class="opt">About 2×</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Agents use ~4× tokens vs. chat; multi-agent systems use ~15×. The 90.2% is the research-eval improvement, not a token multiplier.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="0" data-inquiz>
+    <div class="qlab">Q7</div><div class="qtext">Which is TRUE about subagent orchestration?</div>
+    <button class="opt">Subagents cannot spawn their own subagents (the tree is one level deep)</button><button class="opt">Subagents inherit the parent's full conversation history</button><button class="opt">Subagents share the parent's system prompt</button><button class="opt">Subagents return their entire transcript to the parent</button>
+    <div class="fb"></div><div class="fbmsg" hidden>No nesting: subagents can't spawn subagents. The parent's history/system prompt don't cross; only the verbatim final message returns.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="3" data-inquiz>
+    <div class="qlab">Q8</div><div class="qtext">Multi-agent is a poor fit when…</div>
+    <button class="opt">the task is high-value and heavily parallelizable</button><button class="opt">information exceeds a single context window</button><button class="opt">subagents can explore independent slices</button><button class="opt">all agents must share the same context and have many tight dependencies</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Multi-agent is "not suited to tasks where all agents need to share the same context or have many tight dependencies between agents." The other three are exactly where it excels.</div>
+  </div>
+  <div class="resultbox" data-result></div>
+</div>
+
+<!-- SOURCES -->
+<div class="sources" id="sources">
+  <h4 style="margin:0 0 6px"><span class="emoji">📄</span> Sources</h4>
+  <p style="margin:4px 0 8px;color:var(--ink-soft);font-size:13.5px">Every substantive claim in this extension traces to these Anthropic primary sources. No facts beyond them were introduced; author analogies are labelled inline.</p>
+  <ol>
+    <li>Anthropic — <em>Building Effective AI Agents</em>: <a href="https://www.anthropic.com/engineering/building-effective-agents">anthropic.com/engineering/building-effective-agents</a> (Dec 19, 2024)</li>
+    <li>Anthropic — <em>Building Effective AI Agents</em> (research mirror): <a href="https://www.anthropic.com/research/building-effective-agents">anthropic.com/research/building-effective-agents</a></li>
+    <li>Anthropic — <em>How we built our multi-agent research system</em>: <a href="https://www.anthropic.com/engineering/multi-agent-research-system">anthropic.com/engineering/multi-agent-research-system</a> (June 13, 2025)</li>
+    <li>Claude Agent SDK — <em>Subagents in the SDK</em>: <a href="https://code.claude.com/docs/en/agent-sdk/subagents">code.claude.com/docs/en/agent-sdk/subagents</a></li>
+    <li>Claude Code — <em>Create custom subagents</em>: <a href="https://code.claude.com/docs/en/sub-agents">code.claude.com/docs/en/sub-agents</a></li>
+  </ol>
+</div>
+
+<!-- WHAT'S NEXT -->
+<div class="nextbox">
+  <div style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;margin-bottom:6px"><span class="emoji">➡️</span> What's next</div>
+  <p style="margin:4px 0"><strong>Extension S-E2 — Subagents as a Programmable Primitive.</strong> The next extension goes from <em>patterns</em> to <em>programming</em>: how to invoke subagents from the SDK as a building block (the <code class="inline">agents</code> parameter, programmatic vs. filesystem definitions, tool restriction, and the Workflow-tool graduation in code).</p>
+  <p style="margin:6px 0 0"><a href="subagents-as-sdk-primitive.html">Continue → Subagents as a Programmable Primitive (S-E2)</a> <span style="color:var(--ink-soft);font-size:13px">— file may not exist yet.</span></p>
+</div>
+
+<footer>
+  <p><span class="sourcebadge"><span class="emoji">📄</span> Extension material · built faithfully from the captured citations file — every claim traces to an Anthropic source. No external facts introduced; <span class="verify">VERIFY</span> flags preserved; author analogies labelled.</span></p>
+  <p style="margin-top:14px">The Five Orchestration Patterns · Extension for the Claude Certified Architect — Foundations prep · <a href="../introduction-to-subagents.html" style="color:var(--accent)">← Back to base course</a> · <a href="#top" style="color:var(--accent)">Back to top ↑</a></p>
+</footer>
+
+</div><!-- /wrap -->
+</main>
+</div><!-- /layout -->
+
+<script>
+(function(){
+  "use strict";
+  /* ---------- Build TOC ---------- */
+  var sections=[
+    {title:"Foundations",lessons:[[1,"Workflows vs. Agents"],[2,"The Augmented LLM"]]},
+    {title:"The five patterns",lessons:[[3,"Prompt Chaining"],[4,"Routing"],[5,"Parallelization"],[6,"Orchestrator-Workers"],[7,"Evaluator-Optimizer"]]},
+    {title:"Choosing",lessons:[[8,"Autonomous Agents"],[9,"Decision Framework"]]},
+    {title:"In production",lessons:[[10,"Multi-Agent Research System"],[11,"Subagents Implement the Patterns"]]}
+  ];
+  var toc=document.getElementById('toc');
+  var lessonEls=Array.prototype.slice.call(document.querySelectorAll('section.lesson'));
+  var TOTAL_LESSONS=lessonEls.length;
+  sections.forEach(function(sec){
+    var h=document.createElement('div');h.className='nav-sec';h.textContent=sec.title;toc.appendChild(h);
+    sec.lessons.forEach(function(l){
+      var a=document.createElement('a');a.href='#l'+l[0];a.dataset.target='l'+l[0];
+      a.innerHTML='<span class="num"><span>'+l[0]+'</span></span><span>'+l[1]+'</span>';
+      a.addEventListener('click',function(){if(window.innerWidth<=980)toggleNav();});
+      toc.appendChild(a);
+    });
+  });
+  // final check link
+  var fh=document.createElement('div');fh.className='nav-sec';fh.textContent='Assessment';toc.appendChild(fh);
+  var fa=document.createElement('a');fa.href='#final';fa.dataset.target='final';
+  fa.innerHTML='<span class="num"><span>★</span></span><span>Final knowledge check</span>';
+  fa.addEventListener('click',function(){if(window.innerWidth<=980)toggleNav();});
+  toc.appendChild(fa);
+
+  /* ---------- Progress bar + active nav + completion ---------- */
+  var navLinks=Array.prototype.slice.call(document.querySelectorAll('nav a'));
+  var seen={};
+  function onScroll(){
+    var doc=document.documentElement;
+    var scrollTop=window.scrollY||doc.scrollTop;
+    var height=doc.scrollHeight-doc.clientHeight;
+    var pct=height>0?(scrollTop/height*100):0;
+    document.getElementById('progressBar').style.width=pct+'%';
+    var mid=scrollTop+window.innerHeight*0.32;
+    var current=null;
+    lessonEls.forEach(function(el){
+      if(el.offsetTop<=mid)current=el;
+      if(el.offsetTop<=scrollTop+window.innerHeight*0.6){seen[el.id]=true;}
+    });
+    navLinks.forEach(function(a){a.classList.remove('active');});
+    if(current){
+      var act=document.querySelector('nav a[data-target="'+current.id+'"]');
+      if(act)act.classList.add('active');
+    }
+    navLinks.forEach(function(a){if(seen[a.dataset.target])a.classList.add('done');});
+    var doneCount=lessonEls.filter(function(el){return seen[el.id];}).length;
+    document.getElementById('progPct').textContent=Math.round(doneCount/TOTAL_LESSONS*100)+'%';
+  }
+  window.addEventListener('scroll',onScroll,{passive:true});
+  window.addEventListener('resize',onScroll);
+  onScroll();
+
+  /* ---------- Mobile nav ---------- */
+  window.toggleNav=function(){
+    var open=document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('scrim').classList.toggle('open');
+    var b=document.querySelector('.menubtn');if(b)b.setAttribute('aria-expanded',open?'true':'false');
+  };
+
+  /* ---------- Collapsible callouts ---------- */
+  window.toggleCall=function(head){
+    var c=head.parentElement;c.classList.toggle('collapsed');
+    head.setAttribute('aria-expanded', c.classList.contains('collapsed')?'false':'true');
+  };
+  document.querySelectorAll('.callout .chead').forEach(function(head){
+    head.setAttribute('role','button');
+    head.setAttribute('tabindex','0');
+    head.setAttribute('aria-expanded', head.parentElement.classList.contains('collapsed')?'false':'true');
+    head.addEventListener('keydown',function(e){
+      if(e.key==='Enter'||e.key===' '||e.key==='Spacebar'){e.preventDefault();window.toggleCall(head);}
+    });
+  });
+
+  /* ---------- Predict / reveal ---------- */
+  window.doReveal=function(btn){
+    var ans=btn.parentElement.querySelector('.ans');
+    ans.classList.add('show');
+    btn.textContent='Answer shown ✓';
+    btn.disabled=true;btn.style.opacity='.6';btn.style.cursor='default';
+  };
+
+  /* ---------- MCQ logic ---------- */
+  document.querySelectorAll('.mcq[data-mcq]').forEach(function(mcq){
+    var correct=parseInt(mcq.getAttribute('data-correct'),10);
+    var opts=Array.prototype.slice.call(mcq.querySelectorAll('.opt'));
+    var fb=mcq.querySelector('.fb');
+    if(fb){fb.setAttribute('aria-live','polite');fb.setAttribute('role','status');}
+    var msgEl=mcq.querySelector('.fbmsg');
+    var msg=msgEl?msgEl.innerHTML:'';
+    var answered=false;
+    opts.forEach(function(opt,i){
+      opt.addEventListener('click',function(){
+        if(answered)return;answered=true;
+        var isCorrect=(i===correct);
+        opts.forEach(function(o,j){
+          o.disabled=true;
+          if(j===correct){o.classList.add('correct');if(!o.querySelector('.mark'))appendMark(o,'✓');}
+        });
+        if(!isCorrect){opt.classList.add('wrong');appendMark(opt,'✗');}
+        fb.classList.add('show');
+        fb.classList.add(isCorrect?'ok':'no');
+        fb.innerHTML='<strong>'+(isCorrect?'Correct! ':'Not quite. ')+'</strong>'+msg;
+        var quiz=mcq.closest('.quizblock');
+        if(quiz&&mcq.hasAttribute('data-inquiz')){
+          mcq.dataset.result=isCorrect?'1':'0';
+          updateQuiz(quiz);
+        }
+      });
+    });
+  });
+  function appendMark(opt,sym){var s=document.createElement('span');s.className='mark';s.textContent=sym;opt.appendChild(s);}
+
+  /* ---------- Quiz scoring ---------- */
+  function updateQuiz(quiz){
+    var mcqs=Array.prototype.slice.call(quiz.querySelectorAll('.mcq[data-inquiz]'));
+    var total=mcqs.length;
+    var answered=mcqs.filter(function(m){return m.dataset.result!==undefined;});
+    var score=mcqs.filter(function(m){return m.dataset.result==='1';}).length;
+    var scoreEl=quiz.querySelector('[data-score]');
+    if(scoreEl)scoreEl.textContent=score+' / '+total;
+    if(answered.length===total){
+      var box=quiz.querySelector('[data-result]');
+      var pct=score/total*100;
+      box.classList.add('show');
+      box.classList.remove('pass','mid');
+      if(pct>=75){box.classList.add('pass');box.innerHTML='🎉 '+score+'/'+total+' — strong work! Pattern selection is locked in.';}
+      else if(pct>=50){box.classList.add('mid');box.innerHTML='👍 '+score+'/'+total+' — solid. Skim the misses above and you\'re set.';}
+      else{box.classList.add('mid');box.innerHTML='📖 '+score+'/'+total+' — worth a re-read before moving on.';}
+    }
+  }
+})();
+</script>
+</body>
+</html>

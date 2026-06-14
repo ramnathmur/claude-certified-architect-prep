@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCP at a Builder Level — CCA-F Extension</title>
+<style>
+  :root{
+    --bg:#faf8f5; --paper:#ffffff; --ink:#2b2622; --ink-soft:#5c544c;
+    --line:#e7e0d8; --accent:#c96442; --accent-soft:#f4e6df; --accent-deep:#a44a2e;
+    --teal:#3a7d7b; --teal-soft:#e0efee; --gold:#b8860b; --gold-soft:#f6edd6;
+    --green:#3f7d4f; --green-soft:#e3f0e6; --red:#b3402f; --red-soft:#f7e3df;
+    --purple:#6b4f9e; --purple-soft:#ece4f6;
+    --sidebar:#f3eee7; --shadow:0 1px 3px rgba(43,38,34,.08),0 6px 24px rgba(43,38,34,.06);
+    --radius:14px; --maxw:780px;
+    --code-bg:#2b2622; --code-ink:#f4ece3;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.65; font-size:17px; -webkit-font-smoothing:antialiased;
+  }
+  #progressBar{position:fixed;top:0;left:0;height:4px;width:0;background:linear-gradient(90deg,var(--accent),var(--gold));z-index:200;transition:width .15s ease}
+  .layout{display:flex;max-width:1260px;margin:0 auto}
+  aside{
+    position:sticky;top:0;align-self:flex-start;height:100vh;overflow-y:auto;
+    width:300px;flex:none;padding:22px 16px 40px;background:var(--sidebar);
+    border-right:1px solid var(--line);
+  }
+  aside h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin:18px 8px 8px}
+  .brandbox{padding:6px 8px 14px;border-bottom:1px solid var(--line);margin-bottom:8px}
+  .brandbox .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;line-height:1.2}
+  .brandbox .sub{font-size:12.5px;color:var(--ink-soft);margin-top:6px}
+  .brandbox .extbadge{display:inline-block;margin-top:10px;background:var(--purple-soft);color:var(--purple);
+    font-weight:700;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:999px;border:1px solid #d3c4ec}
+  .backlink{display:inline-flex;align-items:center;gap:6px;margin-top:12px;font-size:12.5px;color:var(--accent);text-decoration:none;font-weight:600}
+  .backlink:hover{text-decoration:underline}
+  .toc-prog{font-size:12px;color:var(--ink-soft);margin:10px 8px 4px;display:flex;justify-content:space-between;align-items:center}
+  .toc-prog b{color:var(--accent)}
+  nav a{display:flex;gap:8px;align-items:flex-start;text-decoration:none;color:var(--ink);
+    padding:7px 10px;border-radius:9px;font-size:14px;line-height:1.35;transition:background .15s}
+  nav a:hover{background:#ece4d9}
+  nav a.active{background:var(--accent-soft);color:var(--accent-deep);font-weight:600}
+  nav a .num{flex:none;width:22px;height:22px;border-radius:50%;background:#e3dacd;color:var(--ink-soft);
+    font-size:11.5px;display:flex;align-items:center;justify-content:center;font-weight:700;margin-top:1px}
+  nav a.active .num{background:var(--accent);color:#fff}
+  nav a.done .num{background:var(--green);color:#fff}
+  nav a.done .num::after{content:"✓"}
+  nav a.done .num span{display:none}
+  .nav-sec{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);
+    font-weight:700;margin:16px 10px 4px;display:flex;align-items:center;gap:6px}
+  main{flex:1;min-width:0;padding:0 28px 120px}
+  .wrap{max-width:var(--maxw);margin:0 auto}
+  header.hero{max-width:var(--maxw);margin:0 auto;padding:40px 0 22px;text-align:left}
+  .hero .eyebrow{color:var(--purple);font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:13px}
+  .hero h1{font-size:42px;line-height:1.1;margin:10px 0 8px;letter-spacing:-.02em}
+  .hero p.lead{font-size:19px;color:var(--ink-soft);margin:0 0 18px}
+  .pillrow{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}
+  .pill{background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:6px 13px;font-size:13px;color:var(--ink-soft);box-shadow:var(--shadow)}
+  .extbanner{background:linear-gradient(180deg,#f3eefb,#ece4f6);border:1px solid #d3c4ec;border-radius:var(--radius);
+    padding:16px 18px;margin:6px 0 18px;font-size:14.5px;color:#3f2f63;display:flex;gap:12px;align-items:flex-start}
+  .extbanner .bt{flex:none;font-size:22px;line-height:1.1}
+  .extbanner b{color:var(--purple)}
+  .crosslink{background:var(--teal-soft);border:1px solid #a7d3d1;border-radius:var(--radius);padding:14px 18px;margin:14px 0;font-size:14.5px;color:#244e4d}
+  .crosslink a{color:var(--teal);font-weight:700}
+  .examnote{background:var(--gold-soft);border:1px solid #e7d9a9;border-radius:var(--radius);padding:16px 18px;margin:22px 0;font-size:14.5px}
+  .examnote b{color:#8a6508}
+  section.lesson{max-width:var(--maxw);margin:0 auto;padding:46px 0 10px;scroll-margin-top:14px;border-top:1px solid var(--line)}
+  section.lesson:first-of-type{border-top:none}
+  .sec-divider{max-width:var(--maxw);margin:38px auto 0;padding-top:30px}
+  .sec-divider .badge{display:inline-block;background:var(--accent);color:#fff;font-weight:700;
+    font-size:12px;letter-spacing:.07em;text-transform:uppercase;padding:5px 12px;border-radius:999px}
+  .sec-divider h2{font-size:30px;margin:12px 0 4px;letter-spacing:-.01em}
+  .sec-divider p{color:var(--ink-soft);margin:0}
+  .lesson .lmeta{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+  .lesson .ltag{font-size:12px;color:var(--accent);font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+  .lesson .ltime{font-size:12.5px;color:var(--ink-soft);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+  .lesson .ldomain{font-size:11.5px;color:var(--purple);background:var(--purple-soft);border:1px solid #d3c4ec;border-radius:999px;padding:3px 10px;font-weight:700}
+  .lesson h3.ltitle{font-size:28px;margin:2px 0 4px;letter-spacing:-.01em;line-height:1.15}
+  .lesson h4{font-size:19px;margin:30px 0 8px;letter-spacing:-.005em}
+  .lesson h5{font-size:16px;margin:20px 0 6px;color:var(--accent-deep)}
+  .lesson p{margin:10px 0}
+  .lesson ul,.lesson ol{margin:10px 0;padding-left:22px}
+  .lesson li{margin:6px 0}
+  .emoji{font-style:normal}
+  code.inl{background:var(--accent-soft);color:var(--accent-deep);border-radius:5px;padding:1px 6px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.86em}
+  blockquote.ex{margin:14px 0;padding:14px 18px;background:var(--teal-soft);border-left:4px solid var(--teal);border-radius:0 10px 10px 0;font-style:italic;color:#2c4f4e}
+  .objectives{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:14px 18px;margin:14px 0;box-shadow:var(--shadow)}
+  .objectives .lab{font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;margin-bottom:4px}
+  .objectives ul{margin:6px 0 2px;padding-left:20px}
+  .objectives li{font-size:14.5px}
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  table{border-collapse:collapse;width:100%;font-size:14px;background:var(--paper);min-width:520px}
+  th,td{text-align:left;padding:11px 13px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--accent-soft);color:var(--accent-deep);font-weight:700;font-size:13px}
+  tbody tr:last-child td{border-bottom:none}
+  td:first-child,th:first-child{font-weight:600}
+  .codewrap{margin:16px 0;border-radius:12px;overflow:hidden;border:1px solid #3a332d;box-shadow:var(--shadow)}
+  .codewrap .clab{background:#403830;color:#d8cabb;font-size:12px;font-weight:600;letter-spacing:.03em;
+    padding:7px 14px;display:flex;align-items:center;gap:8px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace}
+  .codewrap .clab .dot{width:9px;height:9px;border-radius:50%;background:#c96442}
+  pre{margin:0;background:var(--code-bg);color:var(--code-ink);padding:14px 16px;overflow-x:auto;
+    font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:13px;line-height:1.6}
+  pre code{font-family:inherit;white-space:pre}
+  .callout{border-radius:var(--radius);padding:0;margin:18px 0;box-shadow:var(--shadow);overflow:hidden;border:1px solid var(--line)}
+  .callout .chead{display:flex;align-items:center;gap:9px;padding:12px 16px;cursor:pointer;font-weight:700;font-size:15px;user-select:none}
+  .callout .cbody{padding:2px 18px 16px;font-size:15px}
+  .callout .cbody ul{margin:6px 0;padding-left:20px}
+  .callout.collapsed .cbody{display:none}
+  .callout .chev{margin-left:auto;transition:transform .2s;font-size:13px;opacity:.6}
+  .callout.collapsed .chev{transform:rotate(-90deg)}
+  .key{border-color:#d9c98f}.key .chead{background:var(--gold-soft);color:#8a6508}
+  .tip{border-color:#a7d3d1}.tip .chead{background:var(--teal-soft);color:var(--teal)}
+  .try{border-color:#bfdcc6}.try .chead{background:var(--green-soft);color:var(--green)}
+  .warn{border-color:#e6bcb4}.warn .chead{background:var(--red-soft);color:var(--red)}
+  .verify{display:inline-block;background:#fff4d6;border:1px solid #e7d9a9;color:#8a6508;border-radius:6px;
+    padding:1px 7px;font-size:11.5px;font-weight:700;letter-spacing:.03em;vertical-align:middle}
+  .verifynote{font-size:13px;background:#fffaf0;border:1px dashed #e7d9a9;border-radius:8px;padding:8px 12px;margin:8px 0;color:#7a5a08}
+  .analogy{font-size:13px;background:var(--accent-soft);color:var(--accent-deep);border-radius:6px;padding:1px 7px;font-weight:600}
+  figure.svgfig{margin:22px 0;text-align:center;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+  figure.svgfig svg{max-width:100%;height:auto}
+  figure.svgfig figcaption{font-size:13px;color:var(--ink-soft);margin-top:10px}
+  .mcq{background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--accent);
+    border-radius:var(--radius);padding:16px 18px;margin:22px 0;box-shadow:var(--shadow)}
+  .mcq .qlab{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;display:flex;align-items:center;gap:7px}
+  .mcq .qtext{font-weight:600;margin:8px 0 12px;font-size:16px}
+  .mcq .opt{display:block;width:100%;text-align:left;background:var(--bg);border:1.5px solid var(--line);
+    border-radius:10px;padding:11px 14px;margin:7px 0;cursor:pointer;font-size:14.5px;font-family:inherit;color:var(--ink);transition:all .14s}
+  .mcq .opt:hover:not(:disabled){border-color:var(--accent);background:var(--accent-soft)}
+  .mcq .opt:disabled{cursor:default}
+  .mcq .opt.correct{border-color:var(--green);background:var(--green-soft);font-weight:600}
+  .mcq .opt.wrong{border-color:var(--red);background:var(--red-soft)}
+  .mcq .opt .mark{float:right;font-weight:700}
+  .mcq .fb{display:none;margin-top:12px;padding:12px 14px;border-radius:10px;font-size:14px;line-height:1.55}
+  .mcq .fb.show{display:block}
+  .mcq .fb.ok{background:var(--green-soft);border:1px solid #bfdcc6}
+  .mcq .fb.no{background:var(--red-soft);border:1px solid #e6bcb4}
+  .reveal{background:var(--paper);border:1px dashed var(--accent);border-radius:var(--radius);padding:16px 18px;margin:22px 0}
+  .reveal .plab{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;display:flex;align-items:center;gap:7px}
+  .reveal .q{font-weight:600;margin:8px 0 12px;font-size:16px}
+  .reveal button.revealbtn{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:9px 16px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+  .reveal button.revealbtn:hover{background:var(--accent-deep)}
+  .reveal .ans{display:none;margin-top:12px;padding:12px 14px;background:var(--teal-soft);border-radius:10px;font-size:14.5px;border:1px solid #a7d3d1}
+  .reveal .ans.show{display:block}
+  .quizblock{background:linear-gradient(180deg,#fff,#fbf6f0);border:2px solid var(--accent-soft);border-radius:18px;padding:22px 22px 24px;margin:30px auto;max-width:var(--maxw);box-shadow:var(--shadow)}
+  .quizblock h4{margin-top:0;display:flex;align-items:center;gap:9px}
+  .quizblock .qscore{font-size:14px;color:var(--ink-soft);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-weight:600}
+  .quizblock .scorebar{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:8px}
+  .resultbox{display:none;margin-top:16px;padding:16px;border-radius:12px;font-weight:600;text-align:center;font-size:16px}
+  .resultbox.show{display:block}
+  .resultbox.pass{background:var(--green-soft);border:1px solid #bfdcc6;color:var(--green)}
+  .resultbox.mid{background:var(--gold-soft);border:1px solid #e7d9a9;color:#8a6508}
+  footer{max-width:var(--maxw);margin:40px auto 0;padding-top:24px;border-top:1px solid var(--line);color:var(--ink-soft);font-size:13.5px}
+  footer a{color:var(--accent)}
+  .sources{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:16px 20px;margin:18px 0;box-shadow:var(--shadow)}
+  .sources ol{margin:8px 0;padding-left:22px}
+  .sources li{font-size:13.5px;margin:6px 0;word-break:break-word}
+  .sources a{color:var(--teal)}
+  .sourcebadge{display:inline-flex;gap:7px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:5px 13px;font-size:12.5px;color:var(--ink-soft)}
+  .nextbox{background:linear-gradient(180deg,#f3eefb,#ece4f6);border:1px solid #d3c4ec;border-radius:var(--radius);padding:18px 20px;margin:24px 0;font-size:14.5px}
+  .nextbox a{color:var(--purple);font-weight:700}
+  .menubtn{display:none;position:fixed;top:12px;left:12px;z-index:210;background:var(--accent);color:#fff;border:none;border-radius:10px;width:44px;height:44px;font-size:20px;cursor:pointer;box-shadow:var(--shadow)}
+  .scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:205}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+  @media(max-width:980px){
+    .menubtn{display:block}
+    aside{position:fixed;left:0;top:0;z-index:206;transform:translateX(-105%);transition:transform .25s;box-shadow:var(--shadow);width:290px}
+    aside.open{transform:translateX(0)}
+    .scrim.open{display:block}
+    main{padding:60px 16px 110px}
+    .hero h1{font-size:32px}
+  }
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+<button class="menubtn" onclick="toggleNav()" aria-label="Menu" aria-expanded="false">☰</button>
+<div class="scrim" id="scrim" onclick="toggleNav()"></div>
+
+<div class="layout">
+<!-- SIDEBAR -->
+<aside id="sidebar">
+  <div class="brandbox">
+    <div class="logo"><span class="emoji">🔌</span> MCP at a Builder Level</div>
+    <div class="sub">CCA-F extension lesson — the integration standard, from an architect's seat</div>
+    <div class="extbadge">Extension · beyond the Academy course</div>
+    <a class="backlink" href="../claude-101.html">← Back to the base course (Claude 101)</a>
+  </div>
+  <nav class="cspine" aria-label="Course track">
+    <div class="cspine-h">📚 Claude 101 track · Lesson 4 of 7</div>
+    <ol class="cspine-list">
+      <li><a href="../claude-101.html">Base · Claude 101</a></li>
+      <li><a href="tool-use-agent-loop.html">C-E1 · Tool-Use Agent Loop</a></li>
+      <li><a href="context-management-reliability.html">C-E2 · Context Management &amp; Reliability</a></li>
+      <li class="cspine-cur" aria-current="page">C-E3 · MCP at a Builder Level</li>
+      <li><a href="prompt-caching-economics.html">C-E4 · Prompt Caching Economics</a></li>
+      <li><a href="prompt-engineering-depth.html">C-E5 · Prompt Engineering Depth</a></li>
+      <li><a href="claude-code-configuration.html">C-E6 · Claude Code Configuration</a></li>
+    </ol>
+  </nav>
+  <style>
+  .cspine{margin:10px 8px 14px;padding:10px 12px;border:1px solid var(--line,#e7e0d8);border-radius:10px;background:rgba(0,0,0,.02)}
+  .cspine-h{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft,#5c544c);margin-bottom:7px}
+  .cspine-list{list-style:none;margin:0;padding:0;counter-reset:cs}
+  .cspine-list li{font-size:12.5px;line-height:1.3;padding:3px 0;color:var(--ink-soft,#5c544c)}
+  .cspine-list a{color:var(--ink,#2b2622);text-decoration:none}
+  .cspine-list a:hover{color:var(--accent,#c96442);text-decoration:underline}
+  .cspine-cur{font-weight:700;color:var(--accent-deep,#a44a2e)!important}
+  .cspine-cur::before{content:"▸ "}
+  </style>
+  <div class="toc-prog">Lesson progress <span><b id="progPct">0%</b></span></div>
+  <nav id="toc"></nav>
+</aside>
+
+<!-- MAIN -->
+<main>
+<div class="wrap">
+<nav class="cnav" aria-label="Course navigation">
+  <a class="cnav-home" href="../../../Launchpad.html">⌂ Launchpad</a>
+  <span class="cnav-side"><a class="cnav-prev" href="context-management-reliability.html">← Context Management &amp; Reliability (C-E2)</a><a class="cnav-next" href="prompt-caching-economics.html">Next: Prompt Caching Economics (C-E4) →</a></span>
+</nav>
+<style>
+.cnav{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:10px 0 18px;padding:10px 14px;border:1px solid var(--line,#e7e0d8);border-radius:12px;background:rgba(0,0,0,.02);font:600 13.5px/1.2 system-ui,-apple-system,'Segoe UI',sans-serif}
+.cnav a{text-decoration:none;color:var(--ink,#2b2622);padding:7px 13px;border-radius:8px;background:rgba(0,0,0,.05);white-space:nowrap;transition:background .15s,color .15s}
+.cnav a:hover{background:var(--accent,#c96442);color:#fff}
+.cnav .cnav-home{background:var(--accent,#c96442);color:#fff}
+.cnav .cnav-home:hover{filter:brightness(.92)}
+.cnav .cnav-side{display:flex;gap:8px;flex-wrap:wrap}
+</style>
+
+<header class="hero" id="top">
+  <div class="eyebrow">CCA-F Extension · Domain 4 (Tool Design &amp; MCP Integration, 18%) + Domain 1/2 crossover</div>
+  <h1>MCP at a Builder Level</h1>
+  <p class="lead">The Model Context Protocol is the wiring standard that lets any AI app talk to any tool, data source, or workflow through one shared contract. This lesson drops below the "USB-C for AI" headline into the actual mechanics — <code class="inl">host / client / server</code> roles, the three server primitives, transports, and the JSON-RPC handshake an architect has to reason about.</p>
+  <div class="pillrow">
+    <span class="pill"><span class="emoji">🔌</span> 10 sections</span>
+    <span class="pill"><span class="emoji">❓</span> Inline MCQs + predict-reveals</span>
+    <span class="pill"><span class="emoji">🏆</span> 2 quizzes (scored)</span>
+    <span class="pill"><span class="emoji">🎨</span> 7 diagrams</span>
+    <span class="pill"><span class="emoji">🔧</span> Real JSON-RPC messages</span>
+  </div>
+
+  <div class="extbanner">
+    <span class="bt">🧩</span>
+    <div>
+      <b>Extension — beyond the Academy course.</b> This lesson is <b>web-researched material grounded in the official MCP specification and Anthropic's docs</b> (modelcontextprotocol.io's introduction, architecture, server-concepts, client-concepts, and transports pages; the original Anthropic MCP announcement; the Claude Messages API MCP-connector docs; and the Claude Code MCP docs). It is <b>not</b> part of the original Claude 101 Academy course. Every substantive claim traces to the sources listed at the end. Version-sensitive facts carry an inline <span class="verify">⚠ VERIFY</span> note.
+    </div>
+  </div>
+
+  <div class="crosslink">
+    <span class="emoji">🔗</span> <strong>Builds on Claude 101, extends C-E1.</strong> Extension <strong>C-E1 — <a href="tool-use-agent-loop.html">The Tool-Use Agent Loop</a></strong> taught you the <code class="inl">while stop_reason == "tool_use"</code> cycle: the model decides → you execute the tool → you feed the result back. MCP doesn't replace that loop — it <em>standardizes the packaging and transport</em> around it so the same loop works across any server. If the loop is fuzzy, <a href="tool-use-agent-loop.html">revisit C-E1 first</a>, then come back here to see how MCP wires it up.
+  </div>
+
+  <div class="examnote">
+    <b>🎯 Why this matters for the CCA-F exam.</b> Domain 4 (<b>Tool Design &amp; MCP Integration, 18%</b>) is the primary target. The single highest-yield facts: the <b>M-A-U control split</b> (Tools = Model, Resources = Application, Prompts = User), the <b>one-client-per-server</b> rule, the two transports (<b>stdio</b> vs <b>Streamable HTTP</b>), and the <b>JSON-RPC 2.0</b> wire protocol. There is Domain 1/2 crossover where MCP meets the tool-use loop and Anthropic's product surfaces. The quizzes are weighted toward those D4 mechanics.
+  </div>
+</header>
+
+<!-- ============ SECTION 1 ============ -->
+<div class="sec-divider" id="sec1">
+  <span class="badge"><span class="emoji">①</span> Why it exists</span>
+  <h2>Why MCP Exists — the M×N Problem</h2>
+  <p>Before the standard: every (AI app × data source) pair was a bespoke integration. MCP collapses that.</p>
+</div>
+
+<section class="lesson" id="l1" data-lesson>
+  <div class="lmeta"><span class="ltag"><span class="emoji">🔌</span> Section 1</span><span class="ltime">⏱ ~11 min</span><span class="ldomain">Domain 4 · Domain 1</span></div>
+  <h3 class="ltitle">The integration explosion MCP was built to kill</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>State the M×N integration problem and how MCP collapses it to M+N</li>
+      <li>Define MCP and recall its origin (open standard, Anthropic, Nov 2024)</li>
+      <li>Draw the scope boundary: MCP standardizes context <em>exchange</em>, not the model's <em>reasoning</em></li>
+    </ul>
+  </div>
+
+  <h4>Why before how</h4>
+  <p>Imagine you have <strong>M</strong> AI applications (Claude, ChatGPT, an IDE, a custom agent) and <strong>N</strong> systems they each want to reach (GitHub, a database, a search engine, a calendar). Without a shared standard, every app needs a bespoke integration for every system — that's <strong>M×N</strong> custom connectors, and each one is built, tested, and maintained separately. Add one new app and you owe N new integrations; add one new data source and you owe M. The cost explodes multiplicatively.</p>
+  <p>Anthropic framed the pain directly: "Even the most sophisticated models are constrained by their isolation from data—trapped behind information silos and legacy systems." (source: Anthropic announcement) MCP is the answer: "a universal, open standard for connecting AI systems with data sources, replacing fragmented integrations with a single protocol." (source: Anthropic announcement) Each app implements MCP <em>once</em>; each data source implements MCP <em>once</em>. M×N collapses to <strong>M+N</strong>.</p>
+
+  <h4>What MCP actually is</h4>
+  <blockquote class="ex">"MCP (Model Context Protocol) is an open-source standard for connecting AI applications to external systems." (source: modelcontextprotocol.io/introduction)</blockquote>
+  <p>It connects three categories of thing — and keep these in mind, because they map directly onto the three server primitives in Section 3: "AI applications like Claude or ChatGPT can connect to data sources (e.g. local files, databases), tools (e.g. search engines, calculators) and workflows (e.g. specialized prompts)." (source: modelcontextprotocol.io/introduction)</p>
+
+  <blockquote class="ex">Analogy <span class="analogy">— this one is the docs' own analogy.</span> "Think of MCP like a USB-C port for AI applications. Just as USB-C provides a standardized way to connect electronic devices, MCP provides a standardized way to connect AI applications to external systems." (source: modelcontextprotocol.io/introduction) Before USB-C, every device had its own charger and cable; after it, one port fits everything. MCP is that port for AI integrations.</blockquote>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 720 250" role="img" aria-label="The M times N integration problem collapsing to M plus N with MCP in the middle">
+      <defs><style>.app{fill:#c96442}.sys{fill:#3a7d7b}.lab{font:600 10px sans-serif;fill:#fff}.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 10px sans-serif;fill:#5c544c}.ln{stroke:#cdbfae;stroke-width:1}.hub{fill:#6b4f9e}</style></defs>
+      <text class="t" x="120" y="20" text-anchor="middle">Without MCP: M × N connectors</text>
+      <text class="t" x="560" y="20" text-anchor="middle">With MCP: M + N (one each)</text>
+      <!-- left tangle -->
+      <line class="ln" x1="40" y1="60" x2="200" y2="60"/><line class="ln" x1="40" y1="60" x2="200" y2="110"/><line class="ln" x1="40" y1="60" x2="200" y2="160"/>
+      <line class="ln" x1="40" y1="110" x2="200" y2="60"/><line class="ln" x1="40" y1="110" x2="200" y2="110"/><line class="ln" x1="40" y1="110" x2="200" y2="160"/>
+      <line class="ln" x1="40" y1="160" x2="200" y2="60"/><line class="ln" x1="40" y1="160" x2="200" y2="110"/><line class="ln" x1="40" y1="160" x2="200" y2="160"/>
+      <rect class="app" x="14" y="48" width="52" height="24" rx="6"/><text class="lab" x="40" y="64" text-anchor="middle">app 1</text>
+      <rect class="app" x="14" y="98" width="52" height="24" rx="6"/><text class="lab" x="40" y="114" text-anchor="middle">app 2</text>
+      <rect class="app" x="14" y="148" width="52" height="24" rx="6"/><text class="lab" x="40" y="164" text-anchor="middle">app 3</text>
+      <rect class="sys" x="200" y="48" width="52" height="24" rx="6"/><text class="lab" x="226" y="64" text-anchor="middle">sys A</text>
+      <rect class="sys" x="200" y="98" width="52" height="24" rx="6"/><text class="lab" x="226" y="114" text-anchor="middle">sys B</text>
+      <rect class="sys" x="200" y="148" width="52" height="24" rx="6"/><text class="lab" x="226" y="164" text-anchor="middle">sys C</text>
+      <text class="s" x="135" y="200" text-anchor="middle">9 bespoke connectors — and it grows multiplicatively.</text>
+      <!-- right hub -->
+      <rect class="app" x="400" y="48" width="52" height="24" rx="6"/><text class="lab" x="426" y="64" text-anchor="middle">app 1</text>
+      <rect class="app" x="400" y="98" width="52" height="24" rx="6"/><text class="lab" x="426" y="114" text-anchor="middle">app 2</text>
+      <rect class="app" x="400" y="148" width="52" height="24" rx="6"/><text class="lab" x="426" y="164" text-anchor="middle">app 3</text>
+      <rect class="hub" x="520" y="86" width="80" height="50" rx="10"/><text class="lab" x="560" y="108" text-anchor="middle">MCP</text><text class="lab" x="560" y="122" text-anchor="middle">standard</text>
+      <rect class="sys" x="660" y="48" width="52" height="24" rx="6"/><text class="lab" x="686" y="64" text-anchor="middle">sys A</text>
+      <rect class="sys" x="660" y="98" width="52" height="24" rx="6"/><text class="lab" x="686" y="114" text-anchor="middle">sys B</text>
+      <rect class="sys" x="660" y="148" width="52" height="24" rx="6"/><text class="lab" x="686" y="164" text-anchor="middle">sys C</text>
+      <line class="ln" x1="452" y1="60" x2="520" y2="100"/><line class="ln" x1="452" y1="110" x2="520" y2="110"/><line class="ln" x1="452" y1="160" x2="520" y2="122"/>
+      <line class="ln" x1="600" y1="100" x2="660" y2="60"/><line class="ln" x1="600" y1="110" x2="660" y2="110"/><line class="ln" x1="600" y1="122" x2="660" y2="160"/>
+      <text class="s" x="560" y="200" text-anchor="middle">Each side speaks MCP once. Add an app → +1, not +N.</text>
+    </svg>
+    <figcaption>Diagram (a): the M×N integration explosion (left) collapses to M+N (right) once both sides implement one shared protocol. This is the economic argument for MCP.</figcaption>
+  </figure>
+
+  <h4>Origin and scope</h4>
+  <p>MCP was announced by Anthropic on <strong>November 25, 2024</strong> as "a new standard for connecting AI assistants to the systems where data lives, including content repositories, business tools, and development environments." Anthropic committed to "building MCP as a collaborative, open-source project and ecosystem." (source: Anthropic announcement) It is now "supported across a wide range of clients and servers," including Claude, ChatGPT, Visual Studio Code, and Cursor. (source: modelcontextprotocol.io/introduction)</p>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Scope boundary — the testable nuance<span class="chev">▼</span></div>
+  <div class="cbody"><p>"MCP focuses solely on the protocol for context exchange—it does not dictate how AI applications use LLMs or manage the provided context." (source: modelcontextprotocol.io/architecture) MCP standardizes the <strong>exchange</strong> — how context moves between an app and a system — <strong>not</strong> the model's reasoning, prompting, or context management. Those live above the protocol. Don't conflate "MCP" with "agent design."</p></div></div>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">You have 5 AI apps and 8 data sources. Without a standard, roughly how many integrations? With MCP?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>Without:</strong> 5 × 8 = <strong>40</strong> bespoke connectors. <strong>With MCP:</strong> 5 + 8 = <strong>13</strong> (each app speaks MCP once, each source speaks MCP once). That collapse from multiplicative to additive is the whole reason the standard exists — "replacing fragmented integrations with a single protocol." (source: Anthropic announcement)</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="2">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Which statement correctly describes MCP's scope?</div>
+    <button class="opt">It dictates how the model reasons over the context it receives</button>
+    <button class="opt">It is a closed Anthropic-proprietary API</button>
+    <button class="opt">It standardizes context <em>exchange</em> between apps and systems, not the model's reasoning</button>
+    <button class="opt">It replaces the tool-use loop entirely</button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden>"MCP focuses solely on the protocol for context exchange—it does not dictate how AI applications use LLMs or manage the provided context." It's an open standard, and it packages the same tool-use loop rather than replacing it.</div>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li>MCP turns the <strong>M×N</strong> integration explosion into <strong>M+N</strong>: each side implements the protocol once.</li>
+    <li>It's "an open-source standard for connecting AI applications to external systems" — the docs' own analogy is a <strong>USB-C port for AI</strong>.</li>
+    <li>Open standard, announced by <strong>Anthropic, Nov 25 2024</strong>; broad client/server ecosystem.</li>
+    <li><strong>Scope:</strong> standardizes context <em>exchange</em>, not the model's reasoning.</li>
+  </ul></div></div>
+</section>
+
+<!-- ============ SECTION 2 ============ -->
+<div class="sec-divider" id="sec2">
+  <span class="badge"><span class="emoji">②</span> Architecture</span>
+  <h2>Host, Client, Server — and One Client per Server</h2>
+  <p>The role distinctions are heavily tested. The one-client-per-server rule is the single most testable architecture fact.</p>
+</div>
+
+<section class="lesson" id="l2" data-lesson>
+  <div class="lmeta"><span class="ltag"><span class="emoji">🏛️</span> Section 2</span><span class="ltime">⏱ ~14 min</span><span class="ldomain">Domain 4</span></div>
+  <h3 class="ltitle">The three participants and the connection rule</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Define host, client, and server, and explain how they relate</li>
+      <li>State and apply the <strong>one-client-per-server</strong> rule</li>
+      <li>Distinguish the data layer (inner) from the transport layer (outer)</li>
+    </ul>
+  </div>
+
+  <h4>The three participants</h4>
+  <p>MCP "follows a client-server architecture where an MCP host — an AI application like Claude Code or Claude Desktop — establishes connections to one or more MCP servers." (source: modelcontextprotocol.io/architecture) The verbatim definitions:</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Participant</th><th>Verbatim definition</th><th>Plain English</th></tr></thead>
+    <tbody>
+      <tr><td>MCP Host</td><td>"The AI application that coordinates and manages one or multiple MCP clients."</td><td>The app the user actually interacts with (VS Code, Claude Desktop, Claude Code).</td></tr>
+      <tr><td>MCP Client</td><td>"A component that maintains a connection to an MCP server and obtains context from an MCP server for the MCP host to use."</td><td>A protocol-level connector the host spins up internally — one per server.</td></tr>
+      <tr><td>MCP Server</td><td>"A program that provides context to MCP clients."</td><td>The program exposing tools/resources/prompts; local or remote.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Note the framing: "the <em>host</em> is the application users interact with, while <em>clients</em> are the protocol-level components that enable server connections... Each client handles one direct communication with one server." (source: modelcontextprotocol.io/client-concepts)</p>
+
+  <h4>The one-client-per-server rule</h4>
+  <p>This is the single most testable architecture fact, so internalize it precisely. The MCP host "accomplishes this by creating <strong>one MCP client for each MCP server</strong>. <strong>Each MCP client maintains a dedicated connection with its corresponding MCP server.</strong>" (source: modelcontextprotocol.io/architecture) A host with three servers has three clients. There is no client that multiplexes across servers, and no server shared by two clients of the same host.</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 720 270" role="img" aria-label="One host containing multiple clients, each with a dedicated one-to-one connection to its own server">
+      <defs><marker id="ah2" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#3a7d7b"/></marker>
+        <style>.h{fill:#f4e6df;stroke:#c96442}.cl{fill:#c96442}.sv{fill:#3a7d7b}.t{font:700 12px sans-serif;fill:#2b2622}.l{font:600 10px sans-serif;fill:#fff}.s{font:400 9.5px sans-serif;fill:#5c544c}.conn{stroke:#3a7d7b;stroke-width:2;marker-end:url(#ah2)}</style></defs>
+      <rect class="h" x="20" y="40" width="250" height="200" rx="14"/>
+      <text class="t" x="145" y="62" text-anchor="middle">MCP Host (e.g. VS Code)</text>
+      <text class="s" x="145" y="78" text-anchor="middle">the app the user interacts with</text>
+      <rect class="cl" x="50" y="92" width="190" height="34" rx="8"/><text class="l" x="145" y="113" text-anchor="middle">Client 1</text>
+      <rect class="cl" x="50" y="138" width="190" height="34" rx="8"/><text class="l" x="145" y="159" text-anchor="middle">Client 2</text>
+      <rect class="cl" x="50" y="184" width="190" height="34" rx="8"/><text class="l" x="145" y="205" text-anchor="middle">Client 3</text>
+      <line class="conn" x1="240" y1="109" x2="470" y2="109"/>
+      <line class="conn" x1="240" y1="155" x2="470" y2="155"/>
+      <line class="conn" x1="240" y1="201" x2="470" y2="201"/>
+      <rect class="sv" x="470" y="92" width="220" height="34" rx="8"/><text class="l" x="580" y="113" text-anchor="middle">Server A — Sentry (remote)</text>
+      <rect class="sv" x="470" y="138" width="220" height="34" rx="8"/><text class="l" x="580" y="159" text-anchor="middle">Server B — GitHub (remote)</text>
+      <rect class="sv" x="470" y="184" width="220" height="34" rx="8"/><text class="l" x="580" y="205" text-anchor="middle">Server C — filesystem (local)</text>
+      <text class="s" x="360" y="250" text-anchor="middle">One dedicated client ↔ one server. 3 servers ⇒ 3 clients, no sharing, no multiplexing.</text>
+    </svg>
+    <figcaption>Diagram (b): one host, many clients — but strictly one client per server, each on its own dedicated connection. This is the most testable architecture rule in Domain 4.</figcaption>
+  </figure>
+
+  <h4>The worked example — VS Code + Sentry</h4>
+  <blockquote class="ex">"Visual Studio Code acts as an MCP host. When Visual Studio Code establishes a connection to an MCP server, such as the Sentry MCP server, the Visual Studio Code runtime instantiates an MCP client object that maintains the connection to the Sentry MCP server. When Visual Studio Code subsequently connects to another MCP server... the Visual Studio Code runtime instantiates an additional MCP client object." (source: modelcontextprotocol.io/architecture)</blockquote>
+
+  <div class="callout tip collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">⚠️</span> The trap: two connections to one remote server<span class="chev">▼</span></div>
+  <div class="cbody"><p>"Local MCP servers that use the STDIO transport typically serve a single MCP client, whereas remote MCP servers that use the Streamable HTTP transport will typically serve many MCP clients." But from a single host's perspective, a remote server reached over two connections is still served by <strong>two distinct clients</strong> — "Client3 and Client4 both connect to remote Server C" in the architecture diagram. The rule holds: each connection has its own client. (source: modelcontextprotocol.io/architecture) And remember: "MCP server refers to the program that serves context data, regardless of where it runs. MCP servers can execute locally or remotely." Server is a <em>role</em>, not a location.</p></div></div>
+
+  <h4>Two layers: data (inner) vs transport (outer)</h4>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Layer</th><th>What it defines (verbatim)</th></tr></thead>
+    <tbody>
+      <tr><td>Data layer (inner)</td><td>"Defines the JSON-RPC based protocol for client-server communication, including lifecycle management, and core primitives, such as tools, resources, prompts and notifications."</td></tr>
+      <tr><td>Transport layer (outer)</td><td>"Defines the communication mechanisms and channels that enable data exchange between clients and servers, including transport-specific connection establishment, message framing, and authorization."</td></tr>
+    </tbody>
+  </table></div>
+  <p>"Conceptually the data layer is the inner layer, while the transport layer is the outer layer." (source: modelcontextprotocol.io/architecture) The data layer is <em>what</em> you say (JSON-RPC messages, primitives, lifecycle); the transport layer is <em>how the bytes travel</em> (stdio or HTTP — Section 5). The same data-layer messages ride over either transport unchanged.</p>
+
+  <div class="mcq" data-mcq data-correct="1">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">A single VS Code host connects to the Sentry server and the GitHub server. How many MCP clients exist?</div>
+    <button class="opt">One — the host multiplexes both connections</button>
+    <button class="opt">Two — one dedicated client per server</button>
+    <button class="opt">Zero — the host talks to servers directly</button>
+    <button class="opt">Four — two per server for redundancy</button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden>The host "creat[es] one MCP client for each MCP server," each on a dedicated connection. Two servers ⇒ two clients. No multiplexing, no sharing.</div>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li><strong>Host</strong> = the AI app; <strong>client</strong> = the per-connection protocol component; <strong>server</strong> = the program providing context.</li>
+    <li><strong>One client per server</strong> — a dedicated 1:1 connection. N servers ⇒ N clients. (Most testable fact.)</li>
+    <li>"Server" is a role, not a location — local or remote.</li>
+    <li><strong>Data layer (inner)</strong> = JSON-RPC, primitives, lifecycle; <strong>transport layer (outer)</strong> = how bytes travel + authorization.</li>
+  </ul></div></div>
+</section>
+
+<!-- ============ SECTION 3 ============ -->
+<div class="sec-divider" id="sec3">
+  <span class="badge"><span class="emoji">③</span> Server primitives</span>
+  <h2>Tools, Resources, Prompts — the M-A-U Split</h2>
+  <p>The "who controls it" distinction is the highest-yield exam fact in all of Domain 4.</p>
+</div>
+
+<section class="lesson" id="l3" data-lesson>
+  <div class="lmeta"><span class="ltag"><span class="emoji">🧰</span> Section 3</span><span class="ltime">⏱ ~16 min</span><span class="ldomain">Domain 4</span></div>
+  <h3 class="ltitle">Three building blocks, three controllers</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Name the three server primitives and what each does</li>
+      <li>Master the <strong>M-A-U control split</strong> — who controls Tools, Resources, and Prompts</li>
+      <li>Recall how resources are addressed (URIs) and how prompts surface (slash commands)</li>
+    </ul>
+  </div>
+
+  <h4>The control split — memorize this first</h4>
+  <p>"Servers provide functionality through three building blocks." (source: modelcontextprotocol.io/server-concepts) The exam will test <em>who controls each one</em> more than anything else, so lead with it:</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Primitive</th><th>What it is (verbatim)</th><th>Who controls it</th></tr></thead>
+    <tbody>
+      <tr><td>Tools</td><td>"Functions that your LLM can actively call, and decides when to use them based on user requests."</td><td><strong>Model</strong></td></tr>
+      <tr><td>Resources</td><td>"Passive data sources that provide read-only access to information for context, such as file contents, database schemas, or API documentation."</td><td><strong>Application</strong></td></tr>
+      <tr><td>Prompts</td><td>"Pre-built instruction templates that tell the model to work with specific tools and resources."</td><td><strong>User</strong></td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🎯</span> The M-A-U mnemonic (highest-yield fact)<span class="chev">▼</span></div>
+  <div class="cbody"><p><strong>T</strong>ools = <strong>M</strong>odel-controlled · <strong>R</strong>esources = <strong>A</strong>pplication-controlled · <strong>P</strong>rompts = <strong>U</strong>ser-controlled. Read top-to-bottom: <strong>M-A-U</strong>. The model <em>decides</em> when to call a tool; the application <em>decides</em> which resources to pull into context; the user <em>explicitly invokes</em> a prompt. "This three-way control split is the most heavily tested MCP fact." (source: modelcontextprotocol.io/server-concepts)</p></div></div>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 720 230" role="img" aria-label="The M-A-U control split: Tools controlled by the model, Resources by the application, Prompts by the user">
+      <defs><style>.cap{font:700 13px sans-serif;fill:#fff}.who{font:700 12px sans-serif;fill:#fff}.d{font:400 10px sans-serif;fill:#fff}.t{font:700 12px sans-serif;fill:#2b2622}</style></defs>
+      <text class="t" x="360" y="22" text-anchor="middle">Three server primitives — three different controllers (M-A-U)</text>
+      <!-- Tools -->
+      <rect x="20" y="44" width="216" height="150" rx="12" fill="#c96442"/>
+      <text class="cap" x="128" y="74" text-anchor="middle">🧰 TOOLS</text>
+      <text class="who" x="128" y="100" text-anchor="middle">Model-controlled</text>
+      <text class="d" x="128" y="124" text-anchor="middle">model decides when to call</text>
+      <text class="d" x="128" y="142" text-anchor="middle">writes DBs, calls APIs, acts</text>
+      <text class="d" x="128" y="170" text-anchor="middle" style="fill:#ffe">tools/list · tools/call</text>
+      <!-- Resources -->
+      <rect x="252" y="44" width="216" height="150" rx="12" fill="#3a7d7b"/>
+      <text class="cap" x="360" y="74" text-anchor="middle">📄 RESOURCES</text>
+      <text class="who" x="360" y="100" text-anchor="middle">Application-controlled</text>
+      <text class="d" x="360" y="124" text-anchor="middle">app decides what to include</text>
+      <text class="d" x="360" y="142" text-anchor="middle">read-only data, by URI</text>
+      <text class="d" x="360" y="170" text-anchor="middle" style="fill:#eff">resources/list · resources/read</text>
+      <!-- Prompts -->
+      <rect x="484" y="44" width="216" height="150" rx="12" fill="#6b4f9e"/>
+      <text class="cap" x="592" y="74" text-anchor="middle">💬 PROMPTS</text>
+      <text class="who" x="592" y="100" text-anchor="middle">User-controlled</text>
+      <text class="d" x="592" y="124" text-anchor="middle">user explicitly invokes</text>
+      <text class="d" x="592" y="142" text-anchor="middle">slash commands, e.g. /plan</text>
+      <text class="d" x="592" y="170" text-anchor="middle" style="fill:#eee">prompts/list · prompts/get</text>
+      <text class="t" x="360" y="216" text-anchor="middle" style="fill:#a44a2e">M · A · U — Model, Application, User</text>
+    </svg>
+    <figcaption>Diagram (c): the M-A-U control split. The model controls Tools, the application controls Resources, the user controls Prompts — each with its own discovery/invocation methods.</figcaption>
+  </figure>
+
+  <h4>3.1 Tools — model-controlled</h4>
+  <ul>
+    <li>"Tools enable AI models to perform actions. Each tool defines a specific operation with typed inputs and outputs. The model requests tool execution based on context."</li>
+    <li>"Tools are schema-defined interfaces that LLMs can invoke. MCP uses JSON Schema for validation."</li>
+    <li>"Tools are model-controlled, meaning AI models can discover and invoke them automatically. <strong>However, MCP emphasizes human oversight.</strong>" Tools "may require user consent prior to execution."</li>
+    <li><strong>Methods:</strong> <code class="inl">tools/list</code> ("Discover available tools") and <code class="inl">tools/call</code> ("Execute a specific tool"). (source: modelcontextprotocol.io/server-concepts)</li>
+  </ul>
+
+  <h4>3.2 Resources — application-controlled</h4>
+  <p>"Resources provide structured access to information that the AI application can retrieve and provide to models as context." The key distinction: the <em>application</em>, not the model, decides whether/how to include a resource — "Resources are application-driven."</p>
+  <ul>
+    <li><strong>URIs.</strong> "Each resource has a unique URI (e.g., <code class="inl">file:///path/to/document.md</code>) and declares its MIME type."</li>
+    <li><strong>Direct resources</strong> — fixed URIs, e.g. <code class="inl">calendar://events/2024</code>.</li>
+    <li><strong>Resource templates</strong> — dynamic URIs with parameters, e.g. <code class="inl">travel://activities/{city}/{category}</code>.</li>
+    <li><strong>Methods:</strong> <code class="inl">resources/list</code>, <code class="inl">resources/templates/list</code>, <code class="inl">resources/read</code>, <code class="inl">resources/subscribe</code>. (source: modelcontextprotocol.io/server-concepts)</li>
+  </ul>
+
+  <h4>3.3 Prompts — user-controlled</h4>
+  <p>"Prompts provide reusable templates... parameterized prompts for a domain." Crucially, "They are user-controlled, requiring <strong>explicit invocation</strong> rather than automatic triggering." They surface as "Slash commands (typing '/' to see available prompts like <code class="inl">/plan-vacation</code>), Command palettes... Dedicated UI buttons... Context menus."</p>
+  <ul>
+    <li><strong>Methods:</strong> <code class="inl">prompts/list</code> ("Discover available prompts") and <code class="inl">prompts/get</code> ("Retrieve prompt details"). (source: modelcontextprotocol.io/server-concepts)</li>
+  </ul>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">A server exposes a "send_email" capability that the model should be able to fire on its own, and a "vacation_planner" template a user picks from a menu. Which primitive is each?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>send_email = a Tool</strong> (model-controlled — the model decides when to call it, though human oversight/consent is emphasized). <strong>vacation_planner = a Prompt</strong> (user-controlled — "requiring explicit invocation," typically via a <code class="inl">/</code> slash command). If instead you had read-only flight data the app pulls in for context, that'd be a <strong>Resource</strong> (application-controlled), addressed by a URI.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="3">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">In the M-A-U split, who controls <em>Resources</em>?</div>
+    <button class="opt">The model — it decides when to read them</button>
+    <button class="opt">The user — via slash commands</button>
+    <button class="opt">The server author exclusively</button>
+    <button class="opt">The application — resources are application-driven, read-only context</button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden>Resources are <strong>Application</strong>-controlled (the "A" in M-A-U): "Resources are application-driven." The app decides what to pull into context. Tools are Model-controlled; Prompts are User-controlled.</div>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li><strong>M-A-U:</strong> Tools = Model, Resources = Application, Prompts = User. (Highest-yield fact.)</li>
+    <li>Tools <em>act</em> (JSON-Schema typed), but "MCP emphasizes human oversight" + consent.</li>
+    <li>Resources are read-only, addressed by <strong>URIs</strong> (direct or templated).</li>
+    <li>Prompts require <strong>explicit user invocation</strong> — typically <code class="inl">/</code> slash commands.</li>
+  </ul></div></div>
+</section>
+
+<!-- SECTION QUIZ A -->
+<div class="quizblock" data-quiz="1">
+  <div class="scorebar"><h4 style="margin:0"><span class="emoji">🏆</span> Checkpoint Quiz A — Why, Architecture &amp; Primitives</h4><span class="qscore" data-score>0 / 4</span></div>
+  <p style="font-size:14px;color:var(--ink-soft);margin-top:0">Source-grounded. Answer each, then read the explanation.</p>
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q1</div><div class="qtext">MCP turns the integration problem from M×N into…</div>
+    <button class="opt">N²</button><button class="opt">M×N still, but documented</button><button class="opt">M+N — each side implements the protocol once</button><button class="opt">A single connector for everything</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>"Replacing fragmented integrations with a single protocol." Each app speaks MCP once, each source once ⇒ M+N, not M×N.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="1" data-inquiz>
+    <div class="qlab">Q2</div><div class="qtext">A host connects to three MCP servers. How many MCP clients does it create?</div>
+    <button class="opt">One shared client</button><button class="opt">Three — one dedicated client per server</button><button class="opt">Six</button><button class="opt">Zero — servers connect to the host</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>"One MCP client for each MCP server," each maintaining a dedicated connection. Three servers ⇒ three clients.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="0" data-inquiz>
+    <div class="qlab">Q3</div><div class="qtext">Tools, Resources, and Prompts are controlled (in order) by…</div>
+    <button class="opt">Model, Application, User (M-A-U)</button><button class="opt">User, Model, Application</button><button class="opt">Application, User, Model</button><button class="opt">Server, Server, Server</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>M-A-U: Tools = Model-controlled, Resources = Application-controlled, Prompts = User-controlled. The most heavily tested MCP fact.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="3" data-inquiz>
+    <div class="qlab">Q4</div><div class="qtext">The data layer (inner) and transport layer (outer) differ in that…</div>
+    <button class="opt">The data layer carries bytes; the transport layer defines primitives</button><button class="opt">They are the same layer renamed</button><button class="opt">The transport layer defines JSON-RPC; the data layer defines auth</button><button class="opt">The data layer defines JSON-RPC + primitives + lifecycle; the transport layer defines how bytes travel + authorization</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>Data layer (inner) = JSON-RPC protocol, primitives, lifecycle. Transport layer (outer) = connection establishment, message framing, authorization.</div>
+  </div>
+  <div class="resultbox" data-result></div>
+</div>
+
+<!-- ============ SECTION 4 ============ -->
+<div class="sec-divider" id="sec4">
+  <span class="badge"><span class="emoji">④</span> Client primitives</span>
+  <h2>Client Primitives — What the Host Offers Back</h2>
+  <p>Sampling, Roots, and Elicitation flow the other direction: server → client.</p>
+</div>
+
+<section class="lesson" id="l4" data-lesson>
+  <div class="lmeta"><span class="ltag"><span class="emoji">🔁</span> Section 4</span><span class="ltime">⏱ ~13 min</span><span class="ldomain">Domain 4 · Domain 2</span></div>
+  <h3 class="ltitle">The features clients expose to servers</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Name the three client primitives and their methods</li>
+      <li>Explain why Sampling keeps servers model-independent</li>
+      <li>Recall that Roots are advisory (not enforced) and Elicitation never asks for secrets</li>
+    </ul>
+  </div>
+
+  <h4>The direction flips</h4>
+  <p>Section 3 was server → client (the server offers tools/resources/prompts). Now the direction flips: "clients may provide several features to servers. These client features allow server authors to build richer interactions." (source: modelcontextprotocol.io/client-concepts) Three primary client features:</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Feature</th><th>What it does (verbatim)</th><th>Method</th></tr></thead>
+    <tbody>
+      <tr><td>Sampling</td><td>"Sampling allows servers to request LLM completions through the client, enabling an agentic workflow. This approach puts the client in complete control of user permissions and security measures."</td><td><code class="inl">sampling/createMessage</code></td></tr>
+      <tr><td>Roots</td><td>"Roots allow clients to specify which directories servers should focus on, communicating intended scope through a coordination mechanism."</td><td><code class="inl">roots/list</code> (+ <code class="inl">roots/list_changed</code>)</td></tr>
+      <tr><td>Elicitation</td><td>"Elicitation enables servers to request specific information from users during interactions, providing a structured way for servers to gather information on demand."</td><td><code class="inl">elicitation/create</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 720 200" role="img" aria-label="Server-to-client primitives: sampling, roots, and elicitation flow from server to client">
+      <defs><marker id="ah3" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#6b4f9e"/></marker>
+        <style>.box{fill:#ece4f6;stroke:#6b4f9e}.t{font:700 12px sans-serif;fill:#2b2622}.m{font:600 10.5px sans-serif;fill:#6b4f9e}.d{font:400 10px sans-serif;fill:#5c544c}.fl{stroke:#6b4f9e;stroke-width:2;marker-end:url(#ah3)}</style></defs>
+      <rect x="30" y="40" width="150" height="120" rx="12" fill="#3a7d7b"/><text class="t" x="105" y="95" text-anchor="middle" fill="#fff">MCP Server</text><text class="d" x="105" y="113" text-anchor="middle" fill="#fff">requests these</text>
+      <rect x="540" y="40" width="150" height="120" rx="12" fill="#c96442"/><text class="t" x="615" y="95" text-anchor="middle" fill="#fff">MCP Client</text><text class="d" x="615" y="113" text-anchor="middle" fill="#fff">(in the host)</text>
+      <line class="fl" x1="180" y1="62" x2="540" y2="62"/><text class="m" x="360" y="56" text-anchor="middle">sampling/createMessage → an LLM completion</text>
+      <line class="fl" x1="180" y1="100" x2="540" y2="100"/><text class="m" x="360" y="94" text-anchor="middle">roots/list → filesystem boundaries (advisory)</text>
+      <line class="fl" x1="180" y1="138" x2="540" y2="138"/><text class="m" x="360" y="132" text-anchor="middle">elicitation/create → ask the user (never secrets)</text>
+      <text class="d" x="360" y="178" text-anchor="middle">The client mediates each — it controls permissions, model access, and what the user sees.</text>
+    </svg>
+    <figcaption>Diagram (d): client primitives flow server → client. The client stays in control: it mediates the model (sampling), advises scope (roots), and brokers user input (elicitation).</figcaption>
+  </figure>
+
+  <h4>4.1 Sampling — keeps servers model-independent</h4>
+  <p>"Sampling enables servers to perform AI-dependent tasks without directly integrating with or paying for AI models. Instead, servers can request that the client—which already has AI model access—handle these tasks on their behalf." This is the key architectural payoff: a server author can "want access to a language model, but want to stay <strong>model-independent</strong> and not include a language model SDK in their MCP server." (source: modelcontextprotocol.io/architecture)</p>
+  <p>It's <strong>human-in-the-loop by design</strong> with multiple checkpoints: "Users review and can modify both the initial request and the generated response before it returns to the server." Request params include <code class="inl">messages</code>, <code class="inl">modelPreferences</code> (with <code class="inl">hints</code>, <code class="inl">costPriority</code>, <code class="inl">speedPriority</code>, <code class="inl">intelligencePriority</code>), <code class="inl">systemPrompt</code>, and <code class="inl">maxTokens</code>.</p>
+
+  <h4>4.2 Roots — advisory, not enforced</h4>
+  <p>"Roots are a mechanism for clients to communicate filesystem access boundaries to servers... <strong>While roots communicate intended boundaries, they do not enforce security restrictions.</strong> Actual security must be enforced at the operating system level, via file permissions and/or sandboxing." Roots "are exclusively filesystem paths and always use the <code class="inl">file://</code> URI scheme," e.g. <code class="inl">{"uri": "file:///Users/agent/travel-planning", "name": "Travel Planning Workspace"}</code>.</p>
+  <div class="callout warn collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">⚠️</span> SHOULD, not MUST — and why<span class="chev">▼</span></div>
+  <div class="cbody"><p>"The specification requires that servers 'SHOULD respect root boundaries,' and not that they 'MUST enforce' them, because servers run code the client cannot control." (source: modelcontextprotocol.io/client-concepts) Roots are a <em>coordination hint</em>, not a security boundary — never treat them as a sandbox. Dynamic changes flow via the <code class="inl">roots/list_changed</code> notification.</p></div></div>
+
+  <h4>4.3 Elicitation — ask the user, never for secrets</h4>
+  <p>"Elicitation provides a structured way for servers to gather necessary information on demand. Instead of requiring all information up front or failing when data is missing, servers can pause their operations to request specific inputs from users." The request carries a <code class="inl">message</code> plus a JSON <code class="inl">schema</code> for the fields requested.</p>
+  <div class="verifynote"><span class="verify">⚠ VERIFY</span> <strong>Privacy guardrail:</strong> "Elicitation never requests passwords or API keys. Clients warn about suspicious requests and let users review data before sending." Maturity is version-sensitive: the architecture page labels <strong>Tasks</strong> as "(Experimental)." Elicitation and Sampling appear as standard client features in current docs with no experimental label, but confirm GA status against the dated spec at modelcontextprotocol.io/specification/latest before asserting it in production. (source: client-concepts, architecture)</div>
+  <p>A fourth client-side utility — <strong>Logging</strong> — "enables servers to send log messages to clients for debugging and monitoring," distinct from the three primary primitives.</p>
+
+  <div class="mcq" data-mcq data-correct="2">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Why does Sampling matter architecturally for a server author?</div>
+    <button class="opt">It lets the server skip the JSON-RPC handshake</button>
+    <button class="opt">It enforces filesystem boundaries</button>
+    <button class="opt">It lets the server use an LLM while staying model-independent — no model SDK or billing in the server</button>
+    <button class="opt">It bypasses human-in-the-loop review</button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden>Sampling lets a server "perform AI-dependent tasks without directly integrating with or paying for AI models" — the client (which has model access) handles it. The server stays model-independent, and the client keeps human-in-the-loop control.</div>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li>Client primitives flow server → client: <strong>Sampling</strong> (<code class="inl">sampling/createMessage</code>), <strong>Roots</strong> (<code class="inl">roots/list</code>), <strong>Elicitation</strong> (<code class="inl">elicitation/create</code>).</li>
+    <li>Sampling keeps servers <strong>model-independent</strong> and is human-in-the-loop.</li>
+    <li>Roots are <strong>advisory</strong> ("SHOULD respect," not "MUST enforce") — OS-level security still required.</li>
+    <li>Elicitation <strong>never requests passwords or API keys</strong>. <span class="verify">⚠ VERIFY</span> primitive maturity.</li>
+  </ul></div></div>
+</section>
+
+<!-- ============ SECTION 5 ============ -->
+<div class="sec-divider" id="sec5">
+  <span class="badge"><span class="emoji">⑤</span> Transports</span>
+  <h2>Transports — stdio vs Streamable HTTP</h2>
+  <p>Two standard transports. The HTTP+SSE deprecation has a nuance you must get right.</p>
+</div>
+
+<section class="lesson" id="l5" data-lesson>
+  <div class="lmeta"><span class="ltag"><span class="emoji">🚚</span> Section 5</span><span class="ltime">⏱ ~15 min</span><span class="ldomain">Domain 4</span></div>
+  <h3 class="ltitle">How the bytes actually travel</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Distinguish stdio (local subprocess) from Streamable HTTP (remote, current standard)</li>
+      <li>Get the HTTP+SSE deprecation nuance right — SSE survives <em>inside</em> Streamable HTTP</li>
+      <li>Recall the three Streamable-HTTP security warnings</li>
+    </ul>
+  </div>
+
+  <h4>The two standard transports</h4>
+  <p>"The protocol currently defines two standard transport mechanisms... 1. stdio... 2. Streamable HTTP." "Clients <strong>SHOULD</strong> support stdio whenever possible." Over either, "MCP uses JSON-RPC to encode messages. JSON-RPC messages <strong>MUST</strong> be UTF-8 encoded." (source: transports docs)</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 720 260" role="img" aria-label="stdio transport as a local subprocess versus Streamable HTTP as a remote multi-client server">
+      <defs><marker id="ah5" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#5c544c"/></marker>
+        <style>.t{font:700 12px sans-serif;fill:#2b2622}.l{font:600 10px sans-serif;fill:#fff}.s{font:400 9.5px sans-serif;fill:#5c544c}.fl{stroke:#5c544c;stroke-width:1.8;marker-end:url(#ah5)}.fl2{stroke:#5c544c;stroke-width:1.8;marker-end:url(#ah5);stroke-dasharray:4 3}</style></defs>
+      <!-- stdio -->
+      <text class="t" x="180" y="20" text-anchor="middle">stdio — local subprocess</text>
+      <rect x="40" y="40" width="120" height="50" rx="10" fill="#c96442"/><text class="l" x="100" y="62" text-anchor="middle">Host / Client</text><text class="s" x="100" y="78" text-anchor="middle" fill="#fff">launches ↓</text>
+      <rect x="40" y="150" width="120" height="50" rx="10" fill="#3a7d7b"/><text class="l" x="100" y="172" text-anchor="middle">Server</text><text class="s" x="100" y="188" text-anchor="middle" fill="#fff">subprocess</text>
+      <line class="fl" x1="100" y1="90" x2="100" y2="148"/>
+      <text class="s" x="180" y="112" >stdin →</text><text class="s" x="180" y="128">stdout ←</text>
+      <text class="s" x="180" y="144">stderr = logs</text>
+      <text class="s" x="180" y="222" text-anchor="middle">one client, no network, newline-delimited JSON</text>
+      <!-- Streamable HTTP -->
+      <text class="t" x="540" y="20" text-anchor="middle">Streamable HTTP — remote (current standard)</text>
+      <rect x="400" y="44" width="110" height="36" rx="8" fill="#c96442"/><text class="l" x="455" y="66" text-anchor="middle">Client 1</text>
+      <rect x="400" y="92" width="110" height="36" rx="8" fill="#c96442"/><text class="l" x="455" y="114" text-anchor="middle">Client 2</text>
+      <rect x="400" y="140" width="110" height="36" rx="8" fill="#c96442"/><text class="l" x="455" y="162" text-anchor="middle">Client 3</text>
+      <rect x="600" y="80" width="100" height="60" rx="10" fill="#3a7d7b"/><text class="l" x="650" y="106" text-anchor="middle">Server</text><text class="s" x="650" y="122" text-anchor="middle" fill="#fff">/mcp endpoint</text>
+      <line class="fl" x1="510" y1="62" x2="600" y2="96"/><line class="fl" x1="510" y1="110" x2="600" y2="110"/><line class="fl" x1="510" y1="158" x2="600" y2="124"/>
+      <text class="s" x="555" y="200" text-anchor="middle">POST + GET on ONE endpoint;</text>
+      <text class="s" x="555" y="216" text-anchor="middle">optional SSE streams server msgs; serves many clients</text>
+    </svg>
+    <figcaption>Diagram (e): stdio runs the server as a local subprocess over stdin/stdout (one client, no network); Streamable HTTP runs an independent remote server on one POST+GET endpoint serving many clients, optionally streaming via SSE.</figcaption>
+  </figure>
+
+  <h4>5.1 stdio (local)</h4>
+  <ul>
+    <li>"The client launches the MCP server as a subprocess."</li>
+    <li>"The server reads JSON-RPC messages from its standard input (<code class="inl">stdin</code>) and sends messages to its standard output (<code class="inl">stdout</code>)."</li>
+    <li>"Messages are delimited by newlines, and <strong>MUST NOT</strong> contain embedded newlines."</li>
+    <li>"The server <strong>MAY</strong> write UTF-8 strings to its standard error (<code class="inl">stderr</code>) for logging purposes."</li>
+    <li>"The server <strong>MUST NOT</strong> write anything to its <code class="inl">stdout</code> that is not a valid MCP message." Use stdio for local subprocess servers with "optimal performance with no network overhead." (source: transports, architecture)</li>
+  </ul>
+
+  <h4>5.2 Streamable HTTP (remote — current standard)</h4>
+  <ul>
+    <li>"The server operates as an independent process that can handle multiple client connections. This transport uses HTTP POST and GET requests. Server can optionally make use of Server-Sent Events (SSE) to stream multiple server messages."</li>
+    <li>"The server <strong>MUST</strong> provide a single HTTP endpoint path (hereafter referred to as the <strong>MCP endpoint</strong>) that supports both POST and GET methods," e.g. <code class="inl">https://example.com/mcp</code>.</li>
+    <li>Clients "include an <code class="inl">Accept</code> header, listing both <code class="inl">application/json</code> and <code class="inl">text/event-stream</code>."</li>
+    <li><strong>Session:</strong> the server <strong>MAY</strong> assign an <code class="inl">Mcp-Session-Id</code> header at init; clients <strong>MUST</strong> echo it on subsequent requests.</li>
+    <li><strong>Version header:</strong> the client <strong>MUST</strong> include <code class="inl">MCP-Protocol-Version: &lt;protocol-version&gt;</code> on all subsequent requests, e.g. <code class="inl">MCP-Protocol-Version: 2025-11-25</code> (the current canonical spec revision, verified 2026-06-06); if the header is absent the server <strong>SHOULD</strong> assume an earlier default per the spec's backwards-compatibility rule (historically <code class="inl">2025-03-26</code>).</li>
+    <li><strong>Auth:</strong> "supports standard HTTP authentication methods including bearer tokens, API keys, and custom headers. MCP recommends using OAuth."</li>
+  </ul>
+
+  <h4>5.3 The HTTP+SSE deprecation — the nuance</h4>
+  <p>Streamable HTTP "replaces the HTTP+SSE transport from protocol version 2024-11-05" — explicitly called "the deprecated HTTP+SSE transport." But here is the nuance the exam loves:</p>
+  <div class="callout warn collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🎯</span> SSE is NOT gone — read carefully<span class="chev">▼</span></div>
+  <div class="cbody"><p>What was deprecated is the <strong>standalone HTTP+SSE transport</strong> — the older two-endpoint design with a separate SSE endpoint and an <code class="inl">endpoint</code> event. <strong>SSE itself survives</strong> as an optional streaming mechanism <em>inside</em> Streamable HTTP. So "SSE is deprecated" is only half-true: the standalone transport is deprecated; SSE-as-a-streaming-mechanism lives on. (source: transports docs)</p>
+  <p>Product-surface confirmation: Claude Code's docs say "The SSE (Server-Sent Events) transport is deprecated. Use HTTP servers instead, where available." Claude Code accepts <code class="inl">streamable-http</code> as an alias for <code class="inl">http</code> — "The MCP specification uses the name <code class="inl">streamable-http</code> for this transport." (source: code.claude.com/mcp)</p></div></div>
+  <div class="verifynote"><span class="verify">✓ VERIFIED 2026-06-06</span> <strong>Protocol version strings.</strong> The current canonical "latest" spec revision is <code class="inl">2025-11-25</code> (confirmed at modelcontextprotocol.io/specification/latest). <code class="inl">2025-06-18</code> and <code class="inl">2025-03-26</code> are prior revisions (the latter is still the documented backwards-compatibility fallback). Re-verify before exam day — spec dates roll forward. (source: modelcontextprotocol.io/specification/latest, transports, mcp-connector)</div>
+
+  <h4>5.4 Security warnings (Streamable HTTP)</h4>
+  <ol>
+    <li>"Servers <strong>MUST</strong> validate the <code class="inl">Origin</code> header on all incoming connections to prevent DNS rebinding attacks."</li>
+    <li>"When running locally, servers <strong>SHOULD</strong> bind only to localhost (127.0.0.1) rather than all network interfaces (0.0.0.0)."</li>
+    <li>"Servers <strong>SHOULD</strong> implement proper authentication for all connections."</li>
+  </ol>
+  <p>"Without these protections, attackers could use DNS rebinding to interact with local MCP servers from remote websites." (source: transports docs) MCP is also transport-agnostic: clients/servers "MAY implement additional custom transport mechanisms," but must "preserve the JSON-RPC message format and lifecycle requirements."</p>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">An exam item says "SSE has been removed from MCP." True or false — and what's the precise correction?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>False (and a classic trap).</strong> What was deprecated is the <em>standalone HTTP+SSE transport</em> (the two-endpoint 2024-11-05 design). SSE itself <strong>survives inside Streamable HTTP</strong> as an optional way for the server to stream multiple messages. Saying "SSE is gone" loses the nuance the spec is careful about.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="1">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Which transport runs the server as a local subprocess communicating over stdin/stdout?</div>
+    <button class="opt">Streamable HTTP</button>
+    <button class="opt">stdio</button>
+    <button class="opt">The deprecated standalone HTTP+SSE transport</button>
+    <button class="opt">WebSocket</button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden>stdio: "The client launches the MCP server as a subprocess," reading from <code>stdin</code> and writing to <code>stdout</code>. Streamable HTTP is the remote, multi-client transport. "Clients SHOULD support stdio whenever possible."</div>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li>Two standard transports: <strong>stdio</strong> (local subprocess, one client, no network) and <strong>Streamable HTTP</strong> (remote, many clients, one POST+GET endpoint).</li>
+    <li>The <strong>standalone HTTP+SSE</strong> transport (2024-11-05) is deprecated — but <strong>SSE survives inside Streamable HTTP</strong>.</li>
+    <li>Streamable HTTP security: validate <code class="inl">Origin</code> (MUST), bind localhost (SHOULD), authenticate (SHOULD).</li>
+    <li><span class="verify">⚠ VERIFY</span> the canonical protocol-version string and that the deprecation hasn't become removal.</li>
+  </ul></div></div>
+</section>
+
+<!-- ============ SECTION 6 ============ -->
+<div class="sec-divider" id="sec6">
+  <span class="badge"><span class="emoji">⑥</span> Wire protocol</span>
+  <h2>JSON-RPC 2.0 &amp; the Initialize Handshake</h2>
+  <p>The data layer's message format, and the capability negotiation that opens every connection.</p>
+</div>
+
+<section class="lesson" id="l6" data-lesson>
+  <div class="lmeta"><span class="ltag"><span class="emoji">📡</span> Section 6</span><span class="ltime">⏱ ~15 min</span><span class="ldomain">Domain 4</span></div>
+  <h3 class="ltitle">How a connection opens and stays in sync</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Distinguish requests, responses, and notifications in JSON-RPC 2.0</li>
+      <li>Walk the <code class="inl">initialize</code> handshake and its three purposes</li>
+      <li>Read the real initialize request/response JSON and capability semantics</li>
+    </ul>
+  </div>
+
+  <h4>Three message types</h4>
+  <p>"The data layer implements a JSON-RPC 2.0 based exchange protocol." "Client and servers send requests to each other and respond accordingly. <strong>Notifications can be used when no response is required.</strong>" (source: architecture)</p>
+  <ul>
+    <li><strong>Requests</strong> — have an <code class="inl">id</code>; expect a response.</li>
+    <li><strong>Responses</strong> — echo the same <code class="inl">id</code>.</li>
+    <li><strong>Notifications</strong> — "without expecting a response"; <strong>no</strong> <code class="inl">id</code>.</li>
+  </ul>
+  <p>MCP "is a stateful protocol that requires lifecycle management. The purpose of lifecycle management is to negotiate the capabilities that both client and server support."</p>
+
+  <h4>The initialize handshake — three purposes</h4>
+  <ol>
+    <li><strong>Protocol Version Negotiation</strong> — "ensures both client and server are using compatible protocol versions... If a mutually compatible version is not negotiated, the connection should be terminated."</li>
+    <li><strong>Capability Discovery</strong> — "The <code class="inl">capabilities</code> object allows each party to declare what features they support."</li>
+    <li><strong>Identity Exchange</strong> — "The <code class="inl">clientInfo</code> and <code class="inl">serverInfo</code> objects provide identification and versioning information."</li>
+  </ol>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 720 240" role="img" aria-label="The initialize handshake sequence: initialize request, initialize response, then initialized notification">
+      <defs><marker id="ah6" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#c96442"/></marker>
+        <style>.t{font:700 12px sans-serif;fill:#2b2622}.m{font:600 11px sans-serif;fill:#a44a2e}.s{font:400 9.5px sans-serif;fill:#5c544c}.life{stroke:#5c544c;stroke-width:1.5}.req{stroke:#c96442;stroke-width:2.2;marker-end:url(#ah6)}</style></defs>
+      <text class="t" x="120" y="26" text-anchor="middle">Client</text>
+      <text class="t" x="600" y="26" text-anchor="middle">Server</text>
+      <line class="life" x1="120" y1="36" x2="120" y2="220"/>
+      <line class="life" x1="600" y1="36" x2="600" y2="220"/>
+      <line class="req" x1="120" y1="64" x2="596" y2="64"/><text class="m" x="360" y="56" text-anchor="middle">① initialize request</text><text class="s" x="360" y="78" text-anchor="middle">id:1 · protocolVersion · capabilities · clientInfo</text>
+      <line class="req" x1="600" y1="120" x2="124" y2="120"/><text class="m" x="360" y="112" text-anchor="middle">② initialize response</text><text class="s" x="360" y="134" text-anchor="middle">id:1 · result.protocolVersion · capabilities · serverInfo</text>
+      <line class="req" x1="120" y1="176" x2="596" y2="176"/><text class="m" x="360" y="168" text-anchor="middle">③ notifications/initialized</text><text class="s" x="360" y="190" text-anchor="middle">no id — client signals "ready". Normal traffic begins.</text>
+      <text class="s" x="360" y="216" text-anchor="middle">If no mutually compatible version is negotiated, the connection should be terminated.</text>
+    </svg>
+    <figcaption>Diagram (f): the initialize handshake — request (with capabilities) → response (with capabilities) → <code>notifications/initialized</code>. Capability negotiation happens before any real traffic.</figcaption>
+  </figure>
+
+  <h4>The real messages</h4>
+  <div class="codewrap">
+    <div class="clab"><span class="dot"></span> Request · initialize</div>
+    <pre><code>{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "initialize",
+  "params": {
+    "protocolVersion": "2025-11-25",
+    "capabilities": { "elicitation": {} },
+    "clientInfo": { "name": "example-client", "version": "1.0.0" }
+  }
+}</code></pre>
+  </div>
+  <div class="codewrap">
+    <div class="clab"><span class="dot"></span> Response · initialize result</div>
+    <pre><code>{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "protocolVersion": "2025-11-25",
+    "capabilities": {
+      "tools": { "listChanged": true },
+      "resources": {}
+    },
+    "serverInfo": { "name": "example-server", "version": "1.0.0" }
+  }
+}</code></pre>
+  </div>
+  <p><strong>Capability semantics:</strong> <code class="inl">"tools": {"listChanged": true}</code> means "The server supports the tools primitive AND can send <code class="inl">tools/list_changed</code> notifications when its tool list changes." On the client side, <code class="inl">"elicitation": {}</code> means "The client declares it can work with user interaction requests (can receive <code class="inl">elicitation/create</code> method calls)." (source: architecture)</p>
+
+  <div class="codewrap">
+    <div class="clab"><span class="dot"></span> Notification · client signals ready</div>
+    <pre><code>{ "jsonrpc": "2.0", "method": "notifications/initialized" }</code></pre>
+  </div>
+  <p>Notice: <strong>no</strong> <code class="inl">id</code> field. After this, normal traffic begins. A later tool-list change is also a notification: <code class="inl">{"jsonrpc": "2.0", "method": "notifications/tools/list_changed"}</code> — "only sent by servers that declared <code class="inl">'listChanged': true</code>." To cancel an in-flight request, "the client <strong>SHOULD</strong> explicitly send an MCP <code class="inl">CancelledNotification</code>."</p>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">You see a JSON-RPC message with a <code class="inl">method</code> but no <code class="inl">id</code> field. What kind of message is it, and what does the sender expect back?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans">It's a <strong>notification</strong>. No <code class="inl">id</code> ⇒ no response is expected or sent ("Notifications can be used when no response is required"). Examples: <code class="inl">notifications/initialized</code> (client is ready) and <code class="inl">notifications/tools/list_changed</code> (the tool list changed). Requests, by contrast, carry an <code class="inl">id</code> and get a matching-<code class="inl">id</code> response.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="2">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">What does the <code class="inl">initialize</code> handshake accomplish?</div>
+    <button class="opt">It transfers the first tool result</button>
+    <button class="opt">It opens an SSE stream and nothing else</button>
+    <button class="opt">It negotiates the protocol version, discovers capabilities, and exchanges identity</button>
+    <button class="opt">It authenticates the user with OAuth</button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden>Three purposes: protocol-version negotiation (terminate if incompatible), capability discovery (the <code>capabilities</code> object), and identity exchange (<code>clientInfo</code>/<code>serverInfo</code>). Then the client sends <code>notifications/initialized</code>.</div>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li>Data layer = <strong>JSON-RPC 2.0</strong>: requests (have <code class="inl">id</code>), responses (echo <code class="inl">id</code>), notifications (no <code class="inl">id</code>, no response).</li>
+    <li>Every connection opens with <code class="inl">initialize</code>: version negotiation + capability discovery + identity exchange.</li>
+    <li>Capabilities like <code class="inl">"tools": {"listChanged": true}</code> declare both support and change-notification ability.</li>
+    <li>Client then sends <code class="inl">notifications/initialized</code> (no <code class="inl">id</code>) before normal traffic.</li>
+  </ul></div></div>
+</section>
+
+<!-- ============ SECTION 7 ============ -->
+<div class="sec-divider" id="sec7">
+  <span class="badge"><span class="emoji">⑦</span> Discovery + invocation</span>
+  <h2>The <code style="color:#fff">*/list</code> &amp; <code style="color:#fff">*/call</code> Method Catalog</h2>
+  <p>How a client discovers what a server offers, then invokes it.</p>
+</div>
+
+<section class="lesson" id="l7" data-lesson>
+  <div class="lmeta"><span class="ltag"><span class="emoji">🔎</span> Section 7</span><span class="ltime">⏱ ~12 min</span><span class="ldomain">Domain 4</span></div>
+  <h3 class="ltitle">Discover, then call</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>State the <code class="inl">*/list</code> / <code class="inl">*/call</code> discovery pattern and why it's dynamic</li>
+      <li>Read the real <code class="inl">tools/list</code> and <code class="inl">tools/call</code> messages</li>
+      <li>Place each method in the consolidated catalog</li>
+    </ul>
+  </div>
+
+  <h4>The discovery pattern</h4>
+  <p>"Each primitive type has associated methods for discovery (<code class="inl">*/list</code>), retrieval (<code class="inl">*/get</code>), and in some cases, execution (<code class="inl">tools/call</code>). MCP clients will use the <code class="inl">*/list</code> methods to discover available primitives... This design allows listings to be <strong>dynamic</strong>." (source: architecture) Because discovery is a live method call rather than a static manifest, a server can change what it offers and announce it with a <code class="inl">*/list_changed</code> notification.</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 720 200" role="img" aria-label="The discover, call, observe loop: tools/list then tools/call then result fed back to the model">
+      <defs><marker id="ah7" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#3a7d7b"/></marker>
+        <style>.b{rx:10}.t{font:700 11px sans-serif;fill:#fff}.s{font:400 9.5px sans-serif;fill:#5c544c}.ar{stroke:#3a7d7b;stroke-width:2.2;fill:none;marker-end:url(#ah7)}</style></defs>
+      <rect x="20" y="70" width="140" height="56" rx="10" fill="#6b4f9e"/><text class="t" x="90" y="94" text-anchor="middle">1 · DISCOVER</text><text class="s" x="90" y="112" text-anchor="middle" fill="#fff">tools/list</text>
+      <line class="ar" x1="160" y1="98" x2="214" y2="98"/>
+      <rect x="214" y="70" width="150" height="56" rx="10" fill="#c96442"/><text class="t" x="289" y="94" text-anchor="middle">2 · CALL</text><text class="s" x="289" y="112" text-anchor="middle" fill="#fff">tools/call (name, arguments)</text>
+      <line class="ar" x1="364" y1="98" x2="418" y2="98"/>
+      <rect x="418" y="70" width="150" height="56" rx="10" fill="#3a7d7b"/><text class="t" x="493" y="94" text-anchor="middle">3 · EXECUTE</text><text class="s" x="493" y="112" text-anchor="middle" fill="#fff">server runs it</text>
+      <line class="ar" x1="568" y1="98" x2="622" y2="98"/>
+      <rect x="622" y="70" width="80" height="56" rx="10" fill="#3f7d4f"/><text class="t" x="662" y="94" text-anchor="middle">4 · OBSERVE</text><text class="s" x="662" y="112" text-anchor="middle" fill="#fff">content[]</text>
+      <path class="ar" d="M662 70 C 662 30, 90 30, 90 66"/>
+      <text class="s" x="360" y="30" text-anchor="middle">result feeds back to the model — same discover→call→observe loop as C-E1, now standardized</text>
+    </svg>
+    <figcaption>Diagram (g): the discover → call → observe loop. <code>tools/list</code> finds what's available; <code>tools/call</code> runs it; the typed <code>content</code> array flows back to the model — the C-E1 loop, standardized across every server.</figcaption>
+  </figure>
+
+  <h4>tools/list — discovery</h4>
+  <p>"The <code class="inl">tools/list</code> request is simple, containing no parameters":</p>
+  <div class="codewrap">
+    <div class="clab"><span class="dot"></span> Request · tools/list</div>
+    <pre><code>{ "jsonrpc": "2.0", "id": 2, "method": "tools/list" }</code></pre>
+  </div>
+  <p>The response returns a <code class="inl">tools</code> array where each tool carries <code class="inl">name</code>, <code class="inl">title</code>, <code class="inl">description</code>, and <code class="inl">inputSchema</code> (JSON Schema).</p>
+
+  <h4>tools/call — invocation</h4>
+  <div class="codewrap">
+    <div class="clab"><span class="dot"></span> Request · tools/call</div>
+    <pre><code>{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/call",
+  "params": {
+    "name": "weather_current",
+    "arguments": { "location": "San Francisco", "units": "imperial" }
+  }
+}</code></pre>
+  </div>
+  <p>The response returns a <code class="inl">content</code> array of typed blocks (e.g. <code class="inl">{"type": "text", "text": "..."}</code>). "Tool responses return an array of content objects, allowing for rich, multi-format responses (text, images, resources, etc.)." (source: architecture)</p>
+
+  <h4>The consolidated method catalog</h4>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Method</th><th>Type</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code class="inl">initialize</code></td><td>request</td><td>Open connection, negotiate version + capabilities</td></tr>
+      <tr><td><code class="inl">notifications/initialized</code></td><td>notification</td><td>Client signals readiness</td></tr>
+      <tr><td><code class="inl">tools/list</code></td><td>request</td><td>Discover available tools (no params)</td></tr>
+      <tr><td><code class="inl">tools/call</code></td><td>request</td><td>Execute a tool (<code class="inl">name</code>, <code class="inl">arguments</code>)</td></tr>
+      <tr><td><code class="inl">resources/list</code></td><td>request</td><td>List direct resources</td></tr>
+      <tr><td><code class="inl">resources/templates/list</code></td><td>request</td><td>Discover resource templates</td></tr>
+      <tr><td><code class="inl">resources/read</code></td><td>request</td><td>Retrieve resource contents</td></tr>
+      <tr><td><code class="inl">resources/subscribe</code></td><td>request</td><td>Monitor resource changes</td></tr>
+      <tr><td><code class="inl">prompts/list</code></td><td>request</td><td>Discover prompts</td></tr>
+      <tr><td><code class="inl">prompts/get</code></td><td>request</td><td>Retrieve full prompt definition</td></tr>
+      <tr><td><code class="inl">sampling/createMessage</code></td><td>request (server→client)</td><td>Request an LLM completion</td></tr>
+      <tr><td><code class="inl">elicitation/create</code></td><td>request (server→client)</td><td>Request user input</td></tr>
+      <tr><td><code class="inl">roots/list</code></td><td>request (server→client)</td><td>Get filesystem roots</td></tr>
+      <tr><td><code class="inl">roots/list_changed</code></td><td>notification</td><td>Roots boundary changed</td></tr>
+      <tr><td><code class="inl">notifications/tools/list_changed</code></td><td>notification</td><td>Tool list changed</td></tr>
+    </tbody>
+  </table></div>
+  <p>(sources: architecture, server-concepts, client-concepts, code.claude.com/mcp)</p>
+  <div class="verifynote"><span class="verify">⚠ VERIFY</span> Some response/notification shapes — the full <code class="inl">tools/call</code> content-type enumeration, <code class="inl">resources/unsubscribe</code>, completion methods — were not separately fetched from the dated spec. If asserting the <em>complete</em> method set, cross-check modelcontextprotocol.io/specification/latest. (source: research notes)</div>
+
+  <div class="mcq" data-mcq data-correct="0">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Which pair of methods discovers and then invokes a tool?</div>
+    <button class="opt"><code class="inl">tools/list</code> then <code class="inl">tools/call</code></button>
+    <button class="opt"><code class="inl">tools/get</code> then <code class="inl">tools/run</code></button>
+    <button class="opt"><code class="inl">resources/read</code> then <code class="inl">tools/call</code></button>
+    <button class="opt"><code class="inl">prompts/list</code> then <code class="inl">prompts/get</code></button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden><code>tools/list</code> (discovery, no params) → <code>tools/call</code> (execution, with <code>name</code> + <code>arguments</code>). The <code>prompts/list</code> → <code>prompts/get</code> pair is for prompts, not tools.</div>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li>Pattern: <code class="inl">*/list</code> discovers, <code class="inl">*/get</code> retrieves, <code class="inl">tools/call</code> executes — and listings are <strong>dynamic</strong>.</li>
+    <li><code class="inl">tools/list</code> takes no params; <code class="inl">tools/call</code> takes <code class="inl">name</code> + <code class="inl">arguments</code> and returns a typed <code class="inl">content</code> array.</li>
+    <li>The catalog spans server primitives (<code class="inl">tools/*</code>, <code class="inl">resources/*</code>, <code class="inl">prompts/*</code>) and client primitives (<code class="inl">sampling/*</code>, <code class="inl">elicitation/*</code>, <code class="inl">roots/*</code>).</li>
+  </ul></div></div>
+</section>
+
+<!-- ============ SECTION 8 ============ -->
+<div class="sec-divider" id="sec8">
+  <span class="badge"><span class="emoji">⑧</span> MCP with Claude</span>
+  <h2>MCP with Claude — Connector vs Claude Code Host</h2>
+  <p>Keep MCP-the-standard distinct from Anthropic's product surfaces that consume it.</p>
+</div>
+
+<section class="lesson" id="l8" data-lesson>
+  <div class="lmeta"><span class="ltag"><span class="emoji">🤖</span> Section 8</span><span class="ltime">⏱ ~15 min</span><span class="ldomain">Domain 4 · Domain 1</span></div>
+  <h3 class="ltitle">Two Anthropic surfaces that speak MCP</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Keep MCP-the-standard distinct from Anthropic's product implementations</li>
+      <li>Recall the Messages API MCP connector's limits (remote-only, tool-calls-only, beta header)</li>
+      <li>Recall Claude Code's <code class="inl">claude mcp add</code>, the three scopes, and the <code class="inl">--</code> separator</li>
+    </ul>
+  </div>
+
+  <p>One framing first: <strong>MCP the open standard</strong> (modelcontextprotocol.io) is distinct from <strong>Anthropic's product implementations</strong> that <em>consume</em> it — the Messages API connector, Claude Code, Claude Desktop, and Claude.ai connectors. Don't let a product limitation get mistaken for a protocol limitation.</p>
+
+  <h4>8.1 The Messages API MCP connector</h4>
+  <p>"Claude's Model Context Protocol (MCP) connector feature enables you to connect to remote MCP servers directly from the Messages API <strong>without a separate MCP client</strong>." Two components: an <code class="inl">mcp_servers</code> array (each with <code class="inl">type: "url"</code>, an <code class="inl">https://</code> <code class="inl">url</code>, a <code class="inl">name</code>, optional <code class="inl">authorization_token</code>) and a <code class="inl">tools</code> array with one <code class="inl">mcp_toolset</code> per server.</p>
+  <div class="callout warn collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🚧</span> The connector's hard limits (testable)<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li><strong>Tool calls only:</strong> "Of the feature set of the MCP specification, only <strong>tool calls</strong> are currently supported." (No resources/prompts via this path.)</li>
+    <li><strong>Remote only:</strong> "The server must be publicly exposed through HTTP... <strong>Local STDIO servers cannot be connected directly.</strong>"</li>
+    <li><strong>Platform matrix:</strong> available on the Claude API, Claude Platform on AWS, and Microsoft Foundry, but "not currently available on Amazon Bedrock or Vertex AI."</li>
+    <li><strong>Data retention:</strong> "This feature is <strong>not</strong> eligible for Zero Data Retention (ZDR)."</li>
+    <li>Response blocks: <code class="inl">mcp_tool_use</code> (includes <code class="inl">server_name</code>) and <code class="inl">mcp_tool_result</code> (includes <code class="inl">tool_use_id</code>, <code class="inl">is_error</code>, <code class="inl">content</code>). Tool filtering supports allowlist/denylist — "Denylisting write or destructive tools is recommended when building read-only assistants."</li>
+  </ul>
+  <p>(source: mcp-connector docs)</p></div></div>
+  <div class="verifynote"><span class="verify">⚠ VERIFY</span> <strong>Required beta header:</strong> <code class="inl">"anthropic-beta": "mcp-client-2025-11-20"</code>. "The previous version (<code class="inl">mcp-client-2025-04-04</code>) is deprecated." Beta header strings rotate — re-verify before publishing. Platform availability is also subject to change. (source: mcp-connector docs)</div>
+  <p>For local servers, prompts, or resources, the TypeScript SDK offers client-side helpers (<code class="inl">mcpTools</code>, <code class="inl">mcpMessages</code>, <code class="inl">mcpResourceToContent</code>, <code class="inl">mcpResourceToFile</code>): "Use the <code class="inl">mcp_servers</code> API parameter when you have remote servers... and only need tool support. Use the client-side helpers when you need local servers, prompts, resources, or more control."</p>
+
+  <h4>8.2 Claude Code as an MCP host</h4>
+  <p>Claude Code "can connect to hundreds of external tools and data sources through the Model Context Protocol." Unlike the connector, Claude Code is a full host — it consumes all three server primitives and supports all transports.</p>
+  <div class="codewrap">
+    <div class="clab"><span class="dot"></span> claude mcp add — the three primary transports</div>
+    <pre><code># Remote HTTP (recommended)
+claude mcp add --transport http notion https://mcp.notion.com/mcp
+
+# Remote SSE (deprecated)
+claude mcp add --transport sse &lt;name&gt; &lt;url&gt;
+
+# Local stdio — note the -- separator
+claude mcp add --env AIRTABLE_API_KEY=YOUR_KEY \
+  --transport stdio airtable -- npx -y airtable-mcp-server</code></pre>
+  </div>
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">➖</span> The <code class="inl">--</code> separator (testable detail)<span class="chev">▼</span></div>
+  <div class="cbody"><p>"For stdio servers, the <code class="inl">--</code> (double dash) separates Claude's own options... from the command and arguments that run the server. <strong>Everything after <code class="inl">--</code> is passed to the server untouched.</strong>" So <code class="inl">--env</code> and <code class="inl">--transport</code> are Claude Code's flags; <code class="inl">npx -y airtable-mcp-server</code> after the <code class="inl">--</code> is the server's launch command. (source: code.claude.com/mcp)</p></div></div>
+
+  <h4>The three scopes</h4>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Scope</th><th>Visibility (verbatim)</th><th>Stored in</th></tr></thead>
+    <tbody>
+      <tr><td>Local (default)</td><td>"Available only to you in the current project"</td><td><code class="inl">~/.claude.json</code></td></tr>
+      <tr><td>Project</td><td>"Shared with everyone in the project via <code class="inl">.mcp.json</code> file"</td><td><code class="inl">.mcp.json</code> (version-controlled)</td></tr>
+      <tr><td>User</td><td>"Available to you across all projects"</td><td><code class="inl">~/.claude.json</code></td></tr>
+    </tbody>
+  </table></div>
+  <p>Precedence (highest → lowest): <strong>Local → Project → User → Plugin-provided → claude.ai connectors</strong>, and "fields are not merged across scopes." Claude Code surfaces the primitives natively: prompts as <code class="inl">/mcp__servername__promptname</code> slash commands; resources via <code class="inl">@server:protocol://resource/path</code> (e.g. <code class="inl">@github:issue://123</code>); elicitation as automatic interactive dialogs. Management: <code class="inl">claude mcp list</code>, <code class="inl">claude mcp get</code>, <code class="inl">claude mcp remove</code>, and the in-session <code class="inl">/mcp</code> panel. Claude Code can even be a server itself: <code class="inl">claude mcp serve</code> "Start[s] Claude as a stdio MCP server." (source: code.claude.com/mcp)</p>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">You want Claude on the Messages API to use a local stdio MCP server's <em>prompts</em>. Will the <code class="inl">mcp_servers</code> connector parameter do it?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>No — on two counts.</strong> The Messages API connector is (1) <strong>remote-only</strong> ("Local STDIO servers cannot be connected directly") and (2) <strong>tool-calls-only</strong> ("only tool calls are currently supported" — no prompts/resources). For local servers, prompts, or resources you use the TypeScript SDK's client-side helpers, or run a full host like Claude Code. These are <em>product</em> limits, not protocol limits.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="1">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">In <code class="inl">claude mcp add --transport stdio airtable -- npx -y airtable-mcp-server</code>, what does the <code class="inl">--</code> do?</div>
+    <button class="opt">It comments out the rest of the line</button>
+    <button class="opt">It separates Claude's own flags from the command that runs the server (everything after is passed untouched)</button>
+    <button class="opt">It sets the server to read-only mode</button>
+    <button class="opt">It marks the transport as deprecated</button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden>"Everything after <code>--</code> is passed to the server untouched." Before it: Claude Code's flags (<code>--transport</code>, <code>--env</code>). After it: the server's launch command (<code>npx -y airtable-mcp-server</code>).</div>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li><strong>MCP the standard ≠ Anthropic's product surfaces</strong> that consume it.</li>
+    <li>Messages API <strong>connector</strong>: remote-only, <strong>tool-calls-only</strong>, <span class="verify">⚠ VERIFY</span> beta header <code class="inl">mcp-client-2025-11-20</code>, not ZDR-eligible.</li>
+    <li>Claude Code is a <strong>full host</strong>: <code class="inl">claude mcp add</code>, three scopes (Local→Project→User precedence), the <code class="inl">--</code> separator for stdio.</li>
+    <li>Claude Code consumes all three primitives (slash-command prompts, <code class="inl">@</code>-referenced resources, auto elicitation) and can be a server via <code class="inl">claude mcp serve</code>.</li>
+  </ul></div></div>
+</section>
+
+<!-- ============ SECTION 9 ============ -->
+<div class="sec-divider" id="sec9">
+  <span class="badge"><span class="emoji">⑨</span> Security</span>
+  <h2>Security &amp; Builder Concerns</h2>
+  <p>Permissioning, trust before connecting, and prompt-injection risk.</p>
+</div>
+
+<section class="lesson" id="l9" data-lesson>
+  <div class="lmeta"><span class="ltag"><span class="emoji">🛡️</span> Section 9</span><span class="ltime">⏱ ~12 min</span><span class="ldomain">Domain 4</span></div>
+  <h3 class="ltitle">Trust is the first design decision</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Recall the human-oversight mechanisms for model-controlled tools</li>
+      <li>State the "trust the server before connecting" rule and the prompt-injection risk</li>
+      <li>Tie together the security boundaries: consent, advisory roots, transport hardening</li>
+    </ul>
+  </div>
+
+  <h4>Tools act — so gate them</h4>
+  <p>Tools are model-controlled, "However, MCP emphasizes human oversight." The recommended mechanisms: "Displaying available tools in the UI... Approval dialogs for individual tool executions... Permission settings for pre-approving certain safe operations... Activity logs that show all tool executions." And "Tools may require user consent prior to execution, helping to ensure users maintain control over actions taken by a model." (source: server-concepts)</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 720 210" role="img" aria-label="Layered MCP security boundaries from consent to transport hardening">
+      <defs><style>.t{font:700 11px sans-serif;fill:#fff}.s{font:400 9.5px sans-serif;fill:#5c544c}.h{font:700 12px sans-serif;fill:#2b2622}</style></defs>
+      <text class="h" x="360" y="20" text-anchor="middle">Layered builder-side controls</text>
+      <rect x="30" y="36" width="158" height="62" rx="10" fill="#c96442"/><text class="t" x="109" y="60" text-anchor="middle">Tool consent</text><text class="s" x="109" y="78" text-anchor="middle" fill="#fff">approval dialogs,</text><text class="s" x="109" y="91" text-anchor="middle" fill="#fff">activity logs</text>
+      <rect x="200" y="36" width="158" height="62" rx="10" fill="#6b4f9e"/><text class="t" x="279" y="60" text-anchor="middle">Sampling gate</text><text class="s" x="279" y="78" text-anchor="middle" fill="#fff">human-in-the-loop,</text><text class="s" x="279" y="91" text-anchor="middle" fill="#fff">review before+after</text>
+      <rect x="370" y="36" width="158" height="62" rx="10" fill="#3a7d7b"/><text class="t" x="449" y="60" text-anchor="middle">Roots = advisory</text><text class="s" x="449" y="78" text-anchor="middle" fill="#fff">OS perms / sandbox</text><text class="s" x="449" y="91" text-anchor="middle" fill="#fff">do the real enforcing</text>
+      <rect x="540" y="36" width="150" height="62" rx="10" fill="#b8860b"/><text class="t" x="615" y="60" text-anchor="middle">Transport</text><text class="s" x="615" y="78" text-anchor="middle" fill="#fff">Origin check, localhost</text><text class="s" x="615" y="91" text-anchor="middle" fill="#fff">bind, auth</text>
+      <rect x="30" y="116" width="660" height="56" rx="10" fill="#f7e3df" stroke="#b3402f"/>
+      <text class="h" x="360" y="140" text-anchor="middle" fill="#b3402f">⚠ Trust the server BEFORE connecting</text>
+      <text class="s" x="360" y="160" text-anchor="middle">"Servers that fetch external content can expose you to prompt injection risk." Elicitation never asks for secrets.</text>
+    </svg>
+    <figcaption>Diagram (h): builder-side controls stack — tool consent, sampling's human-in-the-loop, advisory roots backed by OS enforcement, and transport hardening — all sitting on top of the foundational rule: trust the server before you connect it.</figcaption>
+  </figure>
+
+  <h4>Trust before connecting — and the prompt-injection risk</h4>
+  <blockquote class="ex">"Verify you trust each server before connecting it. Servers that fetch external content can expose you to prompt injection risk." (source: code.claude.com/mcp)</blockquote>
+  <p>A connected server can inject content into the model's context; if that server pulls in attacker-controlled external content, that content can carry instructions. This is why Claude Code "prompts for approval before using project-scoped servers from <code class="inl">.mcp.json</code> files" — a server checked into a shared repo shouldn't run on a teammate's machine without explicit consent.</p>
+
+  <h4>The other boundaries, recalled</h4>
+  <ul>
+    <li><strong>Sampling is permission-gated at the client:</strong> it "puts the client in complete control of user permissions and security measures," with human-in-the-loop review before and after the model call.</li>
+    <li><strong>Roots are advisory, not a boundary:</strong> "Roots serve as a coordination mechanism... not a security boundary. Actual security must be enforced at the operating system level."</li>
+    <li><strong>Transport hardening</strong> (Section 5): validate <code class="inl">Origin</code>, bind localhost, authenticate.</li>
+    <li><strong>Elicitation</strong> "never requests passwords or API keys."</li>
+    <li><strong>Self-served caveat:</strong> when exposing Claude Code via <code class="inl">claude mcp serve</code>, "your own client is responsible for implementing user confirmation for individual tool calls." (source: code.claude.com/mcp, client-concepts, transports)</li>
+  </ul>
+
+  <div class="mcq" data-mcq data-correct="2">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Why does connecting an untrusted MCP server raise a prompt-injection concern?</div>
+    <button class="opt">Because servers can read your OAuth tokens by default</button>
+    <button class="opt">Because roots enforce a hard sandbox that can be escaped</button>
+    <button class="opt">Because a server that fetches external content can feed attacker-controlled instructions into the model's context</button>
+    <button class="opt">Because JSON-RPC notifications bypass all approval dialogs</button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden>"Servers that fetch external content can expose you to prompt injection risk." That content lands in context and may carry instructions — so "verify you trust each server before connecting it," and approve project-scoped <code>.mcp.json</code> servers explicitly.</div>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li>Model-controlled tools demand <strong>human oversight</strong>: approval dialogs, pre-approval settings, activity logs, consent.</li>
+    <li><strong>Trust the server before connecting</strong> — external-content servers carry <strong>prompt-injection</strong> risk; project-scoped <code class="inl">.mcp.json</code> needs explicit approval.</li>
+    <li>Boundaries stack: sampling is client-gated, roots are advisory (OS enforces), transport hardening + no-secrets elicitation.</li>
+  </ul></div></div>
+</section>
+
+<!-- ============ SECTION 10 ============ -->
+<div class="sec-divider" id="sec10">
+  <span class="badge"><span class="emoji">⑩</span> MCP vs raw tool use</span>
+  <h2>How MCP Relates to Raw Tool Use</h2>
+  <p>It's a standardized packaging/transport layer over the same C-E1 loop.</p>
+</div>
+
+<section class="lesson" id="l10" data-lesson>
+  <div class="lmeta"><span class="ltag"><span class="emoji">🔗</span> Section 10</span><span class="ltime">⏱ ~10 min</span><span class="ldomain">Domain 4 · Domain 2</span></div>
+  <h3 class="ltitle">Same loop, standardized wrapper</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>State the one-sentence relationship between MCP and native tool use</li>
+      <li>Explain why MCP tools and native tools are indistinguishable to the model</li>
+      <li>Connect <code class="inl">tools/list</code>/<code class="inl">tools/call</code> back to the C-E1 discover→call→observe cycle</li>
+    </ul>
+  </div>
+
+  <h4>The one clean sentence</h4>
+  <p>MCP is a <strong>standardized packaging-and-transport layer over the same tool-use loop you already know.</strong> When Claude decides to call an MCP tool, "the AI application intercepts the tool call, routes it to the appropriate MCP server, executes it, and returns the results back to the LLM as part of the conversation flow" — exactly the discover → call → observe cycle of native tool use from C-E1, but with <code class="inl">tools/list</code> / <code class="inl">tools/call</code> standardized across every server. (source: architecture)</p>
+
+  <h4>Why the model can't tell the difference</h4>
+  <p>The host "fetches available tools from all connected MCP servers and combines them into a <strong>unified tool registry</strong> that the language model can access." So "from the model's perspective MCP tools and natively-defined tools are indistinguishable." On the Messages API this is literally true: MCP tools flow through the same tool-use machinery, surfacing as <code class="inl">mcp_tool_use</code> / <code class="inl">mcp_tool_result</code> blocks parallel to ordinary <code class="inl">tool_use</code> / <code class="inl">tool_result</code>. (source: architecture, mcp-connector)</p>
+
+  <div class="callout tip collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🧭</span> The mental model to carry into the exam<span class="chev">▼</span></div>
+  <div class="cbody"><p>C-E1 taught the <em>loop</em> (model decides → execute → feed result back). MCP doesn't change that loop — it <strong>standardizes the contract</strong> around it so the loop works against any server: the schema format (JSON Schema), the discovery method (<code class="inl">tools/list</code>), the invocation method (<code class="inl">tools/call</code>), the result shape (typed <code class="inl">content</code> array), and the transport. Write the loop once; point it at any MCP server. That reusability is the architect's payoff.</p></div></div>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">Does adopting MCP change the fundamental agent loop from C-E1 (model decides → execute → feed result back)?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>No.</strong> The loop is unchanged. MCP standardizes the <em>packaging and transport</em> around it — discovery (<code class="inl">tools/list</code>), invocation (<code class="inl">tools/call</code>), schema (JSON Schema), result shape, and how bytes travel. The host merges MCP tools into a unified registry, so "from the model's perspective MCP tools and natively-defined tools are indistinguishable." You're running the C-E1 loop over a standardized wire.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="3">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">From the model's perspective, MCP tools versus natively-defined tools are…</div>
+    <button class="opt">Completely separate — the model knows which is which and calls them differently</button>
+    <button class="opt">Only usable via slash commands</button>
+    <button class="opt">Slower because of the extra protocol layer</button>
+    <button class="opt">Indistinguishable — the host merges them into one unified tool registry</button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden>The host "combines them into a unified tool registry," so "MCP tools and natively-defined tools are indistinguishable" to the model. MCP standardizes packaging/transport over the same C-E1 loop.</div>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li>MCP = a <strong>standardized packaging/transport layer</strong> over the same C-E1 tool-use loop — it doesn't change the loop.</li>
+    <li>The host merges MCP tools into a <strong>unified registry</strong>; MCP and native tools are <strong>indistinguishable</strong> to the model.</li>
+    <li>On the Messages API: <code class="inl">mcp_tool_use</code>/<code class="inl">mcp_tool_result</code> parallel ordinary <code class="inl">tool_use</code>/<code class="inl">tool_result</code>.</li>
+  </ul></div></div>
+</section>
+
+<!-- FINAL QUIZ -->
+<div class="quizblock" data-quiz="final">
+  <div class="scorebar"><h4 style="margin:0"><span class="emoji">🧠</span> Final Knowledge Check (10 questions)</h4><span class="qscore" data-score>0 / 10</span></div>
+  <p style="font-size:14px;color:var(--ink-soft);margin-top:0">Spans the whole extension, weighted toward Domain 4 mechanics (M-A-U, one-client-per-server, transports, JSON-RPC). No hints — answer, then check.</p>
+
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q1</div><div class="qtext">MCP exists primarily to…</div>
+    <button class="opt">Replace the transformer attention mechanism</button><button class="opt">Define how models should reason over context</button><button class="opt">Collapse M×N bespoke integrations into M+N via one open protocol</button><button class="opt">Provide a closed Anthropic-only connector API</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>"Replacing fragmented integrations with a single protocol." Open standard; each side implements MCP once ⇒ M+N.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="1" data-inquiz>
+    <div class="qlab">Q2</div><div class="qtext">A host connects to four MCP servers. The number of MCP clients is…</div>
+    <button class="opt">One</button><button class="opt">Four — one dedicated client per server</button><button class="opt">Two</button><button class="opt">Eight</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>"One MCP client for each MCP server," each on a dedicated connection. Four servers ⇒ four clients.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="3" data-inquiz>
+    <div class="qlab">Q3</div><div class="qtext">In the M-A-U split, Prompts are controlled by the…</div>
+    <button class="opt">Model</button><button class="opt">Application</button><button class="opt">Server author</button><button class="opt">User — explicit invocation, e.g. slash commands</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>Prompts are User-controlled (the "U"): "requiring explicit invocation," typically via <code>/</code> slash commands.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="0" data-inquiz>
+    <div class="qlab">Q4</div><div class="qtext">Which client primitive lets a server use an LLM while staying model-independent?</div>
+    <button class="opt">Sampling (<code class="inl">sampling/createMessage</code>)</button><button class="opt">Roots (<code class="inl">roots/list</code>)</button><button class="opt">Elicitation (<code class="inl">elicitation/create</code>)</button><button class="opt">Logging</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>Sampling: the client (which has model access) handles completions on the server's behalf, so the server needs no model SDK — it stays model-independent.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q5</div><div class="qtext">Which statement about transports is correct?</div>
+    <button class="opt">stdio is the remote, multi-client transport</button><button class="opt">SSE has been entirely removed from MCP</button><button class="opt">Streamable HTTP is the current remote standard; standalone HTTP+SSE is deprecated but SSE survives inside Streamable HTTP</button><button class="opt">Streamable HTTP requires two separate endpoints</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>Streamable HTTP (one POST+GET endpoint) is the current remote standard. The standalone HTTP+SSE transport is deprecated, but SSE persists as an optional streaming mechanism within Streamable HTTP.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="1" data-inquiz>
+    <div class="qlab">Q6</div><div class="qtext">A JSON-RPC 2.0 message with a <code class="inl">method</code> but no <code class="inl">id</code> is a…</div>
+    <button class="opt">Request expecting a response</button><button class="opt">Notification — no response expected</button><button class="opt">Malformed message that's rejected</button><button class="opt">Response to a prior request</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>No <code>id</code> ⇒ a notification; "no response is expected or sent." E.g. <code>notifications/initialized</code>.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q7</div><div class="qtext">The <code class="inl">initialize</code> handshake exists to…</div>
+    <button class="opt">Stream the first SSE event</button><button class="opt">Read the first resource</button><button class="opt">Negotiate protocol version, discover capabilities, and exchange identity</button><button class="opt">Authenticate via OAuth only</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>Three purposes: version negotiation (terminate if incompatible), capability discovery, identity exchange. Then the client sends <code>notifications/initialized</code>.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="0" data-inquiz>
+    <div class="qlab">Q8</div><div class="qtext">To discover then execute a tool, a client calls…</div>
+    <button class="opt"><code class="inl">tools/list</code> then <code class="inl">tools/call</code></button><button class="opt"><code class="inl">prompts/list</code> then <code class="inl">prompts/get</code></button><button class="opt"><code class="inl">resources/read</code> then <code class="inl">resources/subscribe</code></button><button class="opt"><code class="inl">roots/list</code> then <code class="inl">sampling/createMessage</code></button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden><code>tools/list</code> (no params) discovers; <code>tools/call</code> (<code>name</code> + <code>arguments</code>) executes and returns a typed <code>content</code> array.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="3" data-inquiz>
+    <div class="qlab">Q9</div><div class="qtext">The Messages API MCP connector supports…</div>
+    <button class="opt">Local STDIO servers, all primitives</button><button class="opt">Remote servers, prompts and resources</button><button class="opt">Local servers, tool calls only</button><button class="opt">Remote (HTTPS) servers, tool calls only — local STDIO cannot connect directly</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>"Only tool calls are currently supported" and "Local STDIO servers cannot be connected directly." A product limit, not a protocol limit. <span class="verify">VERIFY</span> the beta header.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="1" data-inquiz>
+    <div class="qlab">Q10</div><div class="qtext">How does MCP relate to the raw tool-use loop from C-E1?</div>
+    <button class="opt">It replaces the loop with a new reasoning mechanism</button><button class="opt">It's a standardized packaging/transport layer over the same loop; MCP and native tools are indistinguishable to the model</button><button class="opt">It only works for prompts, not tools</button><button class="opt">It forces a slower, separate execution path</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>Same discover→call→observe loop; the host merges MCP tools into a unified registry, so they're "indistinguishable" from native tools. MCP standardizes the wire, not the loop.</div>
+  </div>
+  <div class="resultbox" data-result></div>
+</div>
+
+<!-- WHAT'S NEXT -->
+<div class="nextbox">
+  <strong>➡️ What's next.</strong> This is extension <strong>C-E3</strong>. You've now seen MCP from a builder's seat — roles, the M-A-U split, transports, JSON-RPC, and how it all packages the same C-E1 loop. The next extension, <strong>C-E4 — "Prompt Caching Economics,"</strong> drops into the cost mechanics of re-sending stable context (cache writes vs reads, minimum prefixes, TTLs) — the economic layer beneath everything you've built here. Continue to <a href="prompt-caching-economics.html">Prompt Caching Economics →</a>
+</div>
+
+<!-- SOURCES -->
+<section class="lesson" id="sources" data-lesson style="border-top:1px solid var(--line)">
+  <div class="lmeta"><span class="ltag"><span class="emoji">📚</span> Sources</span></div>
+  <h3 class="ltitle">Sources</h3>
+  <p>Every substantive claim in this extension traces to the official sources below (the source manifest from the grounding citations file). No facts beyond these sources were introduced; the one labeled analogy (USB-C) is the docs' own framing, and version-sensitive facts carry inline <span class="verify">⚠ VERIFY</span> notes.</p>
+  <div class="sources">
+    <ol>
+      <li>What is MCP? (intro / USB-C framing) — <a href="https://modelcontextprotocol.io/introduction">modelcontextprotocol.io/introduction</a></li>
+      <li>Architecture overview (participants, layers, JSON-RPC, lifecycle) — <a href="https://modelcontextprotocol.io/docs/learn/architecture">modelcontextprotocol.io/docs/learn/architecture</a></li>
+      <li>Server concepts (Tools / Resources / Prompts, control model, methods) — <a href="https://modelcontextprotocol.io/docs/learn/server-concepts">modelcontextprotocol.io/docs/learn/server-concepts</a></li>
+      <li>Client concepts (Sampling / Roots / Elicitation) — <a href="https://modelcontextprotocol.io/docs/learn/client-concepts">modelcontextprotocol.io/docs/learn/client-concepts</a></li>
+      <li>Transports (stdio, Streamable HTTP, HTTP+SSE deprecation) — <a href="https://modelcontextprotocol.io/docs/concepts/transports">modelcontextprotocol.io/docs/concepts/transports</a></li>
+      <li>Anthropic MCP announcement (Nov 25, 2024) — <a href="https://www.anthropic.com/news/model-context-protocol">anthropic.com/news/model-context-protocol</a></li>
+      <li>MCP connector on the Messages API — <a href="https://platform.claude.com/docs/en/agents-and-tools/mcp-connector">platform.claude.com/docs/en/agents-and-tools/mcp-connector</a></li>
+      <li>Claude Code MCP support &amp; <code class="inl">claude mcp add</code> — <a href="https://code.claude.com/docs/en/mcp">code.claude.com/docs/en/mcp</a></li>
+    </ol>
+  </div>
+  <div class="examnote">
+    <b>📌 [VERIFY] flags preserved from the source.</b> Version-sensitive facts surfaced inline in this lesson: (1) the current canonical protocol-version string — <strong>confirmed <code class="inl">2025-11-25</code> as of 2026-06-06</strong> (<code class="inl">2025-06-18</code> / <code class="inl">2025-03-26</code> are prior revisions; 2025-03-26 remains the documented fallback default); (2) the MCP connector beta header <code class="inl">mcp-client-2025-11-20</code> (previous <code class="inl">mcp-client-2025-04-04</code> deprecated); (3) maturity of client primitives (Tasks is "Experimental"; Sampling/Elicitation/Roots GA status unverified against the dated spec); (4) transport naming/status — Streamable HTTP current, standalone HTTP+SSE deprecated but SSE survives inside it (confirm deprecation hasn't become removal); (5) MCP connector platform availability ("not on Amazon Bedrock or Vertex AI"); (6) the complete method set / <code class="inl">tools/call</code> content types / <code class="inl">resources/unsubscribe</code>. Re-verify each against the live docs (modelcontextprotocol.io/specification/latest) at build/publish time.
+  </div>
+</section>
+
+<footer>
+  <p><span class="sourcebadge"><span class="emoji">📄</span> Extension lesson · built faithfully from the source-of-truth citations file — every claim traces to the official MCP spec and Anthropic docs. No external facts introduced; [VERIFY] flags preserved.</span></p>
+  <p style="margin-top:14px">MCP at a Builder Level · CCA-F extension (C-E3) · <a href="../claude-101.html">← Base course</a> · <a href="tool-use-agent-loop.html">← C-E1: Tool-Use Loop</a> · <a href="context-management-reliability.html">← C-E2: Context Management</a> · <a href="prompt-caching-economics.html">Next: Prompt Caching Economics →</a> · <a href="#top">Back to top ↑</a></p>
+</footer>
+
+</div><!-- /wrap -->
+</main>
+</div><!-- /layout -->
+
+<script>
+(function(){
+  "use strict";
+  /* ---------- Build TOC ---------- */
+  var sections=[
+    {title:"Why it exists",lessons:[["l1","The M×N integration problem"]]},
+    {title:"Architecture",lessons:[["l2","Host, client, server + 1-per-server"]]},
+    {title:"Server primitives",lessons:[["l3","Tools / Resources / Prompts (M-A-U)"]]},
+    {title:"Client primitives",lessons:[["l4","Sampling, Roots, Elicitation"]]},
+    {title:"Transports",lessons:[["l5","stdio vs Streamable HTTP"]]},
+    {title:"Wire protocol",lessons:[["l6","JSON-RPC 2.0 & initialize"]]},
+    {title:"Discovery + invocation",lessons:[["l7","*/list and */call catalog"]]},
+    {title:"MCP with Claude",lessons:[["l8","Connector vs Claude Code host"]]},
+    {title:"Security",lessons:[["l9","Trust, consent, prompt injection"]]},
+    {title:"MCP vs raw tool use",lessons:[["l10","Same loop, standardized wrapper"]]},
+    {title:"Reference",lessons:[["sources","Sources & [VERIFY] flags"]]}
+  ];
+  var toc=document.getElementById('toc');
+  var navOrder=[];
+  sections.forEach(function(sec){
+    var h=document.createElement('div');h.className='nav-sec';h.textContent=sec.title;toc.appendChild(h);
+    sec.lessons.forEach(function(l){
+      var a=document.createElement('a');a.href='#'+l[0];a.dataset.target=l[0];
+      a.innerHTML='<span class="num"><span>'+(navOrder.length+1)+'</span></span><span>'+l[1]+'</span>';
+      a.addEventListener('click',function(){if(window.innerWidth<=980)toggleNav();});
+      toc.appendChild(a);
+      navOrder.push(l[0]);
+    });
+  });
+  var TOTAL=navOrder.length; // dynamic denominator — no off-by-one
+
+  /* ---------- Progress bar + active nav + completion ---------- */
+  var navLinks=Array.prototype.slice.call(document.querySelectorAll('nav a'));
+  var lessonEls=Array.prototype.slice.call(document.querySelectorAll('section.lesson'));
+  var seen={};
+  function onScroll(){
+    var doc=document.documentElement;
+    var scrollTop=window.scrollY||doc.scrollTop;
+    var height=doc.scrollHeight-doc.clientHeight;
+    var pct=height>0?(scrollTop/height*100):0;
+    document.getElementById('progressBar').style.width=pct+'%';
+    var mid=scrollTop+window.innerHeight*0.32;
+    var current=null;
+    lessonEls.forEach(function(el){
+      if(el.offsetTop<=mid)current=el;
+      if(el.offsetTop<=scrollTop+window.innerHeight*0.6){seen[el.id]=true;}
+    });
+    navLinks.forEach(function(a){a.classList.remove('active');});
+    if(current){
+      var act=document.querySelector('nav a[data-target="'+current.id+'"]');
+      if(act)act.classList.add('active');
+    }
+    navLinks.forEach(function(a){if(seen[a.dataset.target])a.classList.add('done');});
+    var doneCount=0;
+    navOrder.forEach(function(id){if(seen[id])doneCount++;});
+    document.getElementById('progPct').textContent=Math.round(doneCount/TOTAL*100)+'%';
+  }
+  window.addEventListener('scroll',onScroll,{passive:true});
+  window.addEventListener('resize',onScroll);
+  onScroll();
+
+  /* ---------- Mobile nav ---------- */
+  window.toggleNav=function(){
+    var open=document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('scrim').classList.toggle('open');
+    var b=document.querySelector('.menubtn');if(b)b.setAttribute('aria-expanded',open?'true':'false');
+  };
+
+  /* ---------- Collapsible callouts ---------- */
+  window.toggleCall=function(head){
+    var c=head.parentElement;c.classList.toggle('collapsed');
+    head.setAttribute('aria-expanded', c.classList.contains('collapsed')?'false':'true');
+  };
+  document.querySelectorAll('.callout .chead').forEach(function(head){
+    head.setAttribute('role','button');
+    head.setAttribute('tabindex','0');
+    head.setAttribute('aria-expanded', head.parentElement.classList.contains('collapsed')?'false':'true');
+    head.addEventListener('keydown',function(e){
+      if(e.key==='Enter'||e.key===' '||e.key==='Spacebar'){e.preventDefault();window.toggleCall(head);}
+    });
+  });
+
+  /* ---------- Predict / reveal ---------- */
+  window.doReveal=function(btn){
+    var ans=btn.parentElement.querySelector('.ans');
+    ans.classList.add('show');
+    btn.textContent='Answer shown ✓';
+    btn.disabled=true;btn.style.opacity='.6';btn.style.cursor='default';
+  };
+
+  /* ---------- MCQ logic ---------- */
+  document.querySelectorAll('.mcq[data-mcq]').forEach(function(mcq){
+    var correct=parseInt(mcq.getAttribute('data-correct'),10);
+    var opts=Array.prototype.slice.call(mcq.querySelectorAll('.opt'));
+    var fb=mcq.querySelector('.fb');
+    var msgEl=mcq.querySelector('.fbmsg');
+    var msg=msgEl?msgEl.innerHTML:'';
+    var answered=false;
+    opts.forEach(function(opt,i){
+      opt.addEventListener('click',function(){
+        if(answered)return;answered=true;
+        var isCorrect=(i===correct);
+        opts.forEach(function(o,j){
+          o.disabled=true;
+          if(j===correct){o.classList.add('correct');if(!o.querySelector('.mark'))appendMark(o,'✓');}
+        });
+        if(!isCorrect){opt.classList.add('wrong');appendMark(opt,'✗');}
+        fb.classList.add('show');
+        fb.classList.add(isCorrect?'ok':'no');
+        fb.innerHTML='<strong>'+(isCorrect?'Correct! ':'Not quite. ')+'</strong>'+msg;
+        var quiz=mcq.closest('.quizblock');
+        if(quiz&&mcq.hasAttribute('data-inquiz')){
+          mcq.dataset.result=isCorrect?'1':'0';
+          updateQuiz(quiz);
+        }
+      });
+    });
+  });
+  function appendMark(opt,sym){var s=document.createElement('span');s.className='mark';s.textContent=sym;opt.appendChild(s);}
+
+  /* ---------- Quiz scoring ---------- */
+  function updateQuiz(quiz){
+    var mcqs=Array.prototype.slice.call(quiz.querySelectorAll('.mcq[data-inquiz]'));
+    var total=mcqs.length;
+    var answered=mcqs.filter(function(m){return m.dataset.result!==undefined;});
+    var score=mcqs.filter(function(m){return m.dataset.result==='1';}).length;
+    var scoreEl=quiz.querySelector('[data-score]');
+    if(scoreEl)scoreEl.textContent=score+' / '+total;
+    if(answered.length===total){
+      var box=quiz.querySelector('[data-result]');
+      var pct=score/total*100;
+      box.classList.add('show');
+      box.classList.remove('pass','mid');
+      if(pct>=75){box.classList.add('pass');box.innerHTML='🎉 '+score+'/'+total+' — strong work! You\'ve got MCP at a builder level.';}
+      else if(pct>=50){box.classList.add('mid');box.innerHTML='👍 '+score+'/'+total+' — solid. Skim the misses above and you\'re set.';}
+      else{box.classList.add('mid');box.innerHTML='📖 '+score+'/'+total+' — worth a re-read of these sections before moving on.';}
+    }
+  }
+})();
+</script>
+</body>
+</html>

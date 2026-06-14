@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Launchpad — Claude Certified Architect · Foundations</title>
+<style>
+  /* ============================================================
+     DESIGN TOKENS  (inherited from the lesson design system,
+     extended with one extra category hue: --plum)
+     ============================================================ */
+  :root{
+    --bg:#faf8f5; --paper:#ffffff; --ink:#2b2622; --ink-soft:#5c544c; --ink-faint:#8c8278;
+    --line:#e7e0d8; --line-soft:#efe9e1;
+    --accent:#c96442; --accent-soft:#f4e6df; --accent-deep:#a44a2e;
+    --teal:#3a7d7b; --teal-soft:#e0efee; --teal-deep:#2c5f5d;
+    --gold:#b8860b; --gold-soft:#f6edd6; --gold-deep:#8a6508;
+    --green:#3f7d4f; --green-soft:#e3f0e6; --green-deep:#2f5e3b;
+    --red:#b3402f; --red-soft:#f7e3df;
+    --plum:#7a5e8e; --plum-soft:#efe9f3; --plum-deep:#5d456f;
+    --wine:#9b3b52; --wine-soft:#f3e3e7; --wine-deep:#7a2c40;
+    --sidebar:#f3eee7;
+    --shadow:0 1px 3px rgba(43,38,34,.08),0 6px 24px rgba(43,38,34,.06);
+    --shadow-lg:0 2px 6px rgba(43,38,34,.08),0 18px 48px rgba(43,38,34,.10);
+    --radius:14px; --radius-lg:20px;
+    --maxw:1120px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.6; font-size:17px; -webkit-font-smoothing:antialiased;
+  }
+  .emoji{font-style:normal}
+  a{color:inherit}
+  .shell{max-width:var(--maxw);margin:0 auto;padding:0 28px}
+
+  /* slim top aggregate bar */
+  #topbar{position:fixed;top:0;left:0;height:4px;width:0;
+    background:linear-gradient(90deg,var(--accent),var(--gold));z-index:200;transition:width .4s ease}
+
+  /* ============================================================
+     HERO
+     ============================================================ */
+  header.hero{padding:64px 0 30px}
+  .hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:48px;align-items:center}
+  .eyebrow{color:var(--accent);font-weight:700;letter-spacing:.10em;text-transform:uppercase;font-size:13px}
+  .hero h1{font-size:52px;line-height:1.04;margin:14px 0 10px;letter-spacing:-.025em;text-wrap:balance}
+  .hero p.lead{font-size:20px;color:var(--ink-soft);margin:0 0 24px;max-width:36ch;text-wrap:pretty}
+  .examfacts{font-size:14.5px;color:var(--ink-soft);margin:6px 0 0;letter-spacing:.01em;font-weight:600}
+
+  /* hero progress panel (right column) */
+  .hero-panel{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-lg);
+    padding:26px 26px 22px;box-shadow:var(--shadow-lg);position:relative;overflow:hidden}
+  .hero-panel .glow{position:absolute;inset:-40% -20% auto auto;width:280px;height:280px;
+    background:radial-gradient(circle,var(--accent-soft),transparent 68%);opacity:.7;pointer-events:none}
+  .hero-panel .panel-head{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;
+    text-transform:uppercase;letter-spacing:.07em;color:var(--ink-soft);position:relative}
+  .ring-row{display:flex;align-items:center;gap:22px;margin:16px 0 4px;position:relative}
+  .ring-big{flex:none}
+  .ring-big text.pct{font:800 30px -apple-system,sans-serif;fill:var(--ink)}
+  .ring-meta .big{font-size:17px;font-weight:700;line-height:1.25;text-wrap:balance}
+  .ring-meta .small{font-size:13.5px;color:var(--ink-soft);margin-top:3px}
+  .modschip{display:inline-flex;align-items:center;gap:6px;margin-top:10px;font-size:12.5px;white-space:nowrap;
+    background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:4px 11px;color:var(--ink-soft)}
+
+  /* ============================================================
+     FEATURED  "Continue / Start here"
+     ============================================================ */
+  .featured{margin:14px 0 8px}
+  .featured-card{display:grid;grid-template-columns:236px 1fr auto;gap:28px;align-items:center;
+    background:linear-gradient(110deg,#fff, #fdf6f1);border:1px solid var(--accent-soft);
+    border-radius:var(--radius-lg);padding:24px 28px;box-shadow:var(--shadow-lg);position:relative;overflow:hidden}
+  .featured-card .illo{width:236px;height:148px;border-radius:14px;overflow:hidden;flex:none}
+  .featured-card .illo svg{display:block;width:100%;height:100%}
+  .featured-body .kick{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;
+    text-transform:uppercase;letter-spacing:.07em;color:var(--accent);
+    background:var(--accent-soft);border-radius:999px;padding:5px 12px}
+  .featured-body h2{font-size:30px;margin:12px 0 6px;letter-spacing:-.02em;line-height:1.12}
+  .featured-body p{margin:0;color:var(--ink-soft);font-size:16px;max-width:52ch}
+  .featured-body .why{margin-top:12px;font-size:14px;color:var(--ink-soft);display:flex;align-items:center;gap:8px}
+  .featured-cta{display:flex;flex-direction:column;gap:10px;align-items:stretch;min-width:172px}
+
+  /* shared buttons */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    font-family:inherit;font-size:15px;font-weight:700;border-radius:11px;padding:12px 20px;
+    cursor:pointer;text-decoration:none;border:1.5px solid transparent;transition:transform .12s,box-shadow .15s,background .15s}
+  .btn:active{transform:translateY(1px)}
+  .btn-primary{background:var(--accent);color:#fff;box-shadow:0 2px 0 var(--accent-deep)}
+  .btn-primary:hover{background:var(--accent-deep)}
+  .btn-ghost{background:var(--paper);color:var(--ink);border-color:var(--line)}
+  .btn-ghost:hover{border-color:var(--accent);color:var(--accent-deep)}
+  .btn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+  .btn-lg{font-size:16px;padding:14px 22px}
+  .btn-block{width:100%}
+
+  /* ============================================================
+     SECTION HEADINGS
+     ============================================================ */
+  .sec-head{display:flex;align-items:baseline;gap:14px;margin:54px 0 6px;flex-wrap:wrap}
+  .sec-head h2{font-size:15px;font-weight:800;text-transform:uppercase;letter-spacing:.10em;color:var(--ink-soft);margin:0}
+  .sec-head .rule{flex:1;height:1px;background:var(--line);min-width:40px}
+  .sec-sub{color:var(--ink-soft);font-size:15px;margin:2px 0 22px;max-width:64ch}
+
+  /* legend */
+  .legend{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 8px}
+  .legend .lg{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-soft);
+    background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:5px 11px}
+  .legend .dot{width:10px;height:10px;border-radius:3px;flex:none}
+
+  /* ============================================================
+     TRACK LADDER
+     ============================================================ */
+  .track{margin:26px 0 8px}
+  .track-rail{position:relative;padding-left:0}
+  /* base course card spans full width and reads as the "trunk" */
+  .ext-stack{position:relative;margin:14px 0 0 34px;padding-left:34px;
+    border-left:2px solid var(--line)}
+  .ext-stack::before{content:"";position:absolute;left:-7px;top:-14px;width:12px;height:12px;
+    border-radius:50%;background:var(--paper);border:2px solid var(--line)}
+  .ladder-label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+    color:var(--ink-faint);margin:0 0 12px 34px;display:flex;align-items:center;gap:8px}
+  .ladder-label .arrow{color:var(--accent)}
+  .ext-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+
+  /* connector node for each extension */
+  .ext-item{position:relative}
+  .ext-item::before{content:"";position:absolute;left:-41px;top:42px;width:34px;height:2px;background:var(--line)}
+  .ext-item::after{content:"";position:absolute;left:-47px;top:37px;width:11px;height:11px;border-radius:50%;
+    background:var(--paper);border:2px solid var(--line)}
+
+  /* ============================================================
+     CARD COMPONENT
+     ============================================================ */
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius-lg);
+    box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;
+    transition:transform .14s,box-shadow .18s,border-color .18s;position:relative}
+  .card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+  .card.is-base{border-width:1px}
+  .card .illo{position:relative;height:150px;overflow:hidden}
+  .card.is-base .illo{height:172px}
+  .card .illo svg{display:block;width:100%;height:100%}
+  .card .pad{padding:18px 20px 20px;display:flex;flex-direction:column;flex:1}
+  .pill-domain{display:inline-flex;align-items:center;gap:7px;align-self:flex-start;
+    font-size:12px;font-weight:700;letter-spacing:.02em;border-radius:999px;padding:5px 12px;line-height:1}
+  .pill-domain .w{opacity:.72;font-weight:700}
+  .card h3{font-size:21px;margin:11px 0 4px;letter-spacing:-.015em;line-height:1.18;text-wrap:balance}
+  .card.is-base h3{font-size:26px}
+  .card .blurb{margin:2px 0 0;color:var(--ink-soft);font-size:14.5px;line-height:1.5;text-wrap:pretty}
+  .card .meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;font-size:12.5px;color:var(--ink-soft)}
+  .card .meta .chip{background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:3px 10px;display:inline-flex;gap:5px;align-items:center;white-space:nowrap}
+  .card .foot{display:flex;align-items:center;gap:14px;margin-top:auto;padding-top:18px}
+  .card .state{display:flex;align-items:center;gap:11px;flex:1;min-width:0}
+  .ring-sm{flex:none}
+  .sdot{width:11px;height:11px;border-radius:50%;flex:none;box-shadow:inset 0 0 0 2px rgba(43,38,34,.07)}
+  .state-txt{display:flex;flex-direction:column;gap:2px}
+  .state-txt .s{font-size:13px;font-weight:700;line-height:1.15}
+  .state-txt .h{font-size:11.5px;color:var(--ink-faint)}
+  .card .actions{display:flex;align-items:center;gap:8px}
+  .mark{appearance:none;background:transparent;border:1.5px solid var(--line-soft);color:var(--ink-soft);
+    font-family:inherit;font-size:12.5px;font-weight:700;border-radius:10px;padding:8px 11px;cursor:pointer;
+    display:inline-flex;align-items:center;gap:6px;transition:all .14s;white-space:nowrap}
+  .mark:hover{border-color:var(--green);color:var(--green-deep)}
+  .mark:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+  .card.done .mark{background:var(--green-soft);border-color:#bfdcc6;color:var(--green-deep)}
+  .launch{background:var(--accent);color:#fff;border:1.5px solid transparent;box-shadow:0 2px 0 var(--accent-deep);
+    font-family:inherit;font-size:15px;font-weight:800;border-radius:10px;padding:12px 22px;cursor:pointer;
+    text-decoration:none;display:inline-flex;align-items:center;gap:7px;transition:background .14s,transform .12s}
+  .launch:hover{background:var(--accent-deep)}
+  .launch:active{transform:translateY(1px)}
+  .launch:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+  /* done ribbon */
+  .card .ribbon{position:absolute;top:14px;right:14px;z-index:3;display:none;
+    background:var(--green);color:#fff;font-size:12px;font-weight:800;letter-spacing:.03em;
+    border-radius:999px;padding:5px 12px;box-shadow:var(--shadow);align-items:center;gap:6px}
+  .card.done .ribbon{display:inline-flex}
+
+  /* queued / coming soon */
+  .card.queued{background:#fcfaf7}
+  .card.queued .illo{filter:saturate(.35) opacity(.8)}
+  .card.queued h3,.card.queued .blurb{color:var(--ink-faint)}
+  .card .soon{display:none}
+  .card.queued .soon{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;
+    font-size:12px;font-weight:700;letter-spacing:.03em;color:var(--ink-faint);
+    background:var(--sidebar);border:1px dashed var(--line);border-radius:999px;padding:6px 13px;margin-top:auto}
+  .card.queued .foot{display:none}
+
+  /* ============================================================
+     CELEBRATION TOAST
+     ============================================================ */
+  #toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(140%);
+    background:var(--ink);color:#fff;border-radius:14px;padding:13px 20px;font-size:15px;font-weight:600;
+    box-shadow:var(--shadow-lg);z-index:300;display:flex;align-items:center;gap:10px;transition:transform .35s cubic-bezier(.2,.8,.2,1);max-width:90vw}
+  #toast.show{transform:translateX(-50%) translateY(0)}
+  #toast .em{font-size:20px}
+
+  /* ============================================================
+     FOOTER
+     ============================================================ */
+  footer{margin:64px 0 70px;padding-top:26px;border-top:1px solid var(--line);
+    display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;color:var(--ink-soft);font-size:13.5px}
+  footer .brand{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--ink)}
+  .reset{appearance:none;background:none;border:1px solid var(--line);color:var(--ink-soft);
+    font-family:inherit;font-size:13px;border-radius:9px;padding:7px 13px;cursor:pointer}
+  .reset:hover{border-color:var(--red);color:var(--red)}
+  .reset:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+  /* skip link */
+  .skip{position:absolute;left:-9999px;top:8px;background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;z-index:400}
+  .skip:focus{left:16px}
+
+  /* ============================================================
+     RESPONSIVE
+     ============================================================ */
+  @media(max-width:920px){
+    .hero-grid{grid-template-columns:1fr;gap:30px}
+    .hero h1{font-size:40px}
+    .featured-card{grid-template-columns:1fr;gap:18px}
+    .featured-card .illo{width:100%;height:150px}
+    .featured-cta{min-width:0}
+    .ext-grid{grid-template-columns:1fr}
+  }
+  @media(max-width:560px){
+    .shell{padding:0 18px}
+    .hero h1{font-size:33px}
+    .ext-stack{margin-left:14px;padding-left:22px}
+    .ladder-label{margin-left:14px}
+    .ext-item::before{left:-25px;width:22px}
+    .ext-item::after{left:-29px}
+    .card .foot{flex-direction:column;align-items:stretch}
+    .card .actions{justify-content:space-between}
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none!important;scroll-behavior:auto!important}
+  }
+</style>
+</head>
+<body>
+<a href="#maincontent" class="skip">Skip to content</a>
+<div id="topbar" aria-hidden="true"></div>
+
+<div class="shell">
+
+  <!-- ===================== HERO ===================== -->
+  <header class="hero">
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <div class="eyebrow">Claude Certified Architect · Foundations</div>
+        <h1>Your Launchpad to&nbsp;the&nbsp;CCA&#8209;F exam</h1>
+        <p class="lead">A calm, self-paced home for every interactive lesson — a basics&#8202;→&#8202;advanced ladder you can work through at your own speed.</p>
+        <p class="examfacts" aria-label="Exam snapshot">60 questions&nbsp; ·&nbsp; 120 min&nbsp; ·&nbsp; pass at 720</p>
+        <p class="studytools" aria-label="Study tools" style="margin-top:14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+          <a href="EXAM-DIGEST.html" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-weight:700;font-size:13.5px;color:#fff;background:var(--accent,#c96442);border-radius:10px;padding:8px 14px">📑 Cram sheet</a>
+          <a href="practice/README.md" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-weight:600;font-size:13.5px;color:var(--ink,#2b2622);background:var(--paper,#fff);border:1px solid var(--line,#e7e0d8);border-radius:10px;padding:8px 14px">📝 Practice bank &amp; checkpoints</a>
+        </p>
+      </div>
+
+      <!-- hero progress panel -->
+      <div class="hero-panel">
+        <div class="glow" aria-hidden="true"></div>
+        <div class="panel-head"><span class="emoji">📈</span> Your progress</div>
+        <div class="ring-row">
+          <div class="ring-big" id="heroRing"></div>
+          <div class="ring-meta">
+            <div class="big" id="heroMsg">Ready for liftoff.</div>
+            <div class="small" id="heroSub">Start with Claude 101 below.</div>
+            <span class="modschip"><span class="emoji">🚀</span> <span id="heroCount">0 of 4</span> modules complete</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===================== MAIN ===================== -->
+  <main id="maincontent" tabindex="-1">
+
+  <!-- ===================== FEATURED ===================== -->
+  <section class="featured" aria-label="Suggested next lesson">
+    <div class="featured-card" id="featured"><!-- rendered by JS --></div>
+  </section>
+
+  <!-- ===================== COURSES ===================== -->
+  <section id="tracks">
+    <div class="sec-head">
+      <h2>Course library</h2>
+      <span class="rule"></span>
+    </div>
+    <p class="sec-sub">Each <strong>base course</strong> sits at the top of its track; its <strong>extensions</strong> branch beneath it, going deeper into one exam domain. Work top-to-bottom, or jump to the domain you need.</p>
+    <div class="legend" id="legend"><!-- domain legend rendered by JS --></div>
+
+    <div class="tier-filter" id="tierFilter" role="group" aria-label="Filter lessons by tier"><!-- tier toggle rendered by JS --></div>
+
+    <div id="trackHost"><!-- tracks rendered by JS --></div>
+  </section>
+  </main>
+
+  <!-- ===================== FOOTER ===================== -->
+  <footer>
+    <div class="brand"><span class="emoji">✳️</span> CCA-F Launchpad</div>
+    <div style="flex:1;min-width:40px"></div>
+    <span>Progress saved on this browser only · works fully offline</span>
+    <button class="reset" id="resetBtn" type="button">Reset progress</button>
+  </footer>
+
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ================================================================
+   CCA-F LAUNCHPAD  —  self-contained, offline, file:// friendly
+   ----------------------------------------------------------------
+   Everything below is data-driven. To add a card when a queued
+   extension ships, edit the DATA array (see DESIGN NOTES §"add a
+   card"). No other code changes required.
+   ================================================================ */
+
+/* ---------- DOMAIN PALETTE (exam domains → category colors) ---------- */
+var DOMAINS = {
+  foundations:{ name:'Foundations', weight:'all domains', color:'var(--ink-soft)', soft:'var(--sidebar)',  deep:'var(--ink)',        hex:'#5c544c' },
+  d1:{ name:'Agentic Architecture & Orchestration', weight:'27%', color:'var(--wine)',   soft:'var(--wine-soft)',   deep:'var(--wine-deep)',   hex:'#9b3b52' },
+  d2:{ name:'Claude Code Configuration',             weight:'20%', color:'var(--teal)',   soft:'var(--teal-soft)',   deep:'var(--teal-deep)',   hex:'#3a7d7b' },
+  d3:{ name:'Prompt Engineering & Structured Output',weight:'20%', color:'var(--gold)',   soft:'var(--gold-soft)',   deep:'var(--gold-deep)',   hex:'#b8860b' },
+  d4:{ name:'Tool Design & MCP',                     weight:'18%', color:'var(--green)',  soft:'var(--green-soft)',  deep:'var(--green-deep)',  hex:'#3f7d4f' },
+  d5:{ name:'Context Management & Reliability',      weight:'15%', color:'var(--plum)',   soft:'var(--plum-soft)',   deep:'var(--plum-deep)',   hex:'#7a5e8e' }
+};
+
+/* ---------- COURSE DATA (the single source of truth) ---------- */
+var DATA = [
+  {
+    id:'track-claude-101',
+    base:{ id:'claude-101', title:'Claude 101', domain:'foundations', illo:'foundations',
+           href:'courses/claude-101/claude-101.html', level:'Base course', lessons:'14 lessons',
+           blurb:'From "what is Claude" to Projects, connectors, Research, and the full toolkit — the foundation everything else builds on.' },
+    extensions:[
+      { id:'tool-use-agent-loop', title:'The Tool-Use Agent Loop', domain:'d4', illo:'agentloop', status:'live',
+        href:'courses/claude-101/extensions/tool-use-agent-loop.html', level:'Extension', lessons:'Domain 4 deep-dive',
+        blurb:'How Claude calls a tool, reads the result, and loops until the goal is met.' },
+      { id:'c-e2', code:'C-E2', title:'Context Management & Reliability', domain:'d5', illo:'context', status:'live',
+        href:'courses/claude-101/extensions/context-management-reliability.html', level:'Extension', lessons:'Domain 5 deep-dive',
+        blurb:'Keeping long sessions coherent, recovering from failure, and managing the context window.' },
+      { id:'c-e3', code:'C-E3', title:'MCP at a Builder Level', domain:'d4', illo:'mcp', status:'live',
+        href:'courses/claude-101/extensions/mcp-at-a-builder-level.html', level:'Extension', lessons:'Domain 4 deep-dive',
+        blurb:'The Model Context Protocol from a builder\u2019s seat — servers, tools, and wiring it all up.' },
+      { id:'c-e4', code:'C-E4', title:'Prompt Caching Economics', domain:'d5', illo:'caching', status:'live',
+        href:'courses/claude-101/extensions/prompt-caching-economics.html', level:'Extension', lessons:'Domain 5 deep-dive',
+        blurb:'When caching pays off, how to structure prompts for it, and the cost math behind it.' },
+      { id:'c-e5', code:'C-E5', title:'Prompt Engineering Depth + Model Selection', domain:'d3', illo:'prompt', status:'live',
+        href:'courses/claude-101/extensions/prompt-engineering-depth.html', level:'Extension', lessons:'Domain 3 deep-dive',
+        blurb:'Advanced prompting patterns and choosing the right model for the job.' },
+      { id:'c-e6', code:'C-E6', title:'Claude Code Configuration & Workflows', domain:'d2', illo:'config', status:'live', tier:'101',
+        href:'courses/claude-101/extensions/claude-code-configuration.html', level:'Extension', lessons:'Domain 2 deep-dive',
+        blurb:'The whole config surface: CLAUDE.md memory, settings precedence, permissions, hooks, skills/subagents/plugins, MCP, and headless workflows — the exam’s biggest domain.' }
+    ]
+  },
+  {
+    id:'track-subagents',
+    base:{ id:'intro-subagents', title:'Introduction to Subagents', domain:'d1', illo:'subagents', status:'live',
+           href:'courses/introduction-to-subagents/introduction-to-subagents.html', level:'Base course', lessons:'4 lessons',
+           blurb:'What subagents are, why they exist, and when to reach for one instead of a single long prompt.' },
+    extensions:[
+      { id:'orchestration-patterns', title:'The Five Orchestration Patterns', domain:'d1', illo:'orchestration', status:'live',
+        href:'courses/introduction-to-subagents/extensions/orchestration-patterns.html', level:'Extension', lessons:'Domain 1 deep-dive',
+        blurb:'Prompt-chaining, routing, parallelization, orchestrator-worker, and evaluator-optimizer.' },
+      { id:'s-e2', code:'S-E2', title:'Subagents as a Programmable Primitive', domain:'d1', illo:'subagents', status:'live',
+        href:'courses/introduction-to-subagents/extensions/subagents-as-sdk-primitive.html', level:'Extension', lessons:'Domain 1 deep-dive',
+        blurb:'Treating a subagent as a callable unit you compose, parameterize, and reuse.' },
+      { id:'s-e3', code:'S-E3', title:'Orchestrator-Worker at Scale + Failure Modes', domain:'d1', illo:'orchestration', status:'live',
+        href:'courses/introduction-to-subagents/extensions/orchestrator-worker-at-scale.html', level:'Extension', lessons:'Domain 1 deep-dive',
+        blurb:'Running many workers under one orchestrator — and the failure modes to design around.' },
+      { id:'s-e3-202', code:'S-E3', title:'Orchestrator-Worker at Scale — Deep Mastery', domain:'d1', illo:'orchestration', status:'live', tier:'202',
+        href:'courses/introduction-to-subagents/deep-mastery/orchestrator-worker-at-scale-202.html', level:'202 · Deep Mastery', lessons:'Interactive · simulator + 8 failure modes',
+        blurb:'The deep companion to the S-E3 exam lesson: a live cost-vs-reliability simulator, a steppable orchestrator→worker→CitationAgent pipeline, and all eight failure modes as interactive demos.' }
+    ]
+  }
+  ,
+  {
+    id:'track-mcq-practice',
+    base:{ id:'mcq-practice', title:'MCQ Practice Exam', domain:'foundations', illo:'mcq', status:'live',
+           href:'mcq-practice/index.html', level:'Practice tool', lessons:'All 5 domains · Fresh questions every run',
+           blurb:'Generate fresh, Claude-created CCA-F practice questions on demand. Full exam or per domain, exam-level or learning mode — with per-distractor explanations, concept tags, and a QA filter. Runs via Python CLI; sessions open in your browser.' },
+    extensions:[]
+  }
+];
+
+/* ================================================================
+   SVG ILLUSTRATION LIBRARY  (abstract, geometric, domain-tinted)
+   Each returns a 16:9-ish <svg> string. `c` = domain hex.
+   ================================================================ */
+function ILLO(type, c){
+  var w=400,h=210, soft='#ffffff';
+  var bg='<rect width="'+w+'" height="'+h+'" fill="'+c+'" opacity="0.08"/>';
+  var dots='';
+  for(var i=0;i<5;i++){ for(var j=0;j<3;j++){ dots+='<circle cx="'+(30+i*88)+'" cy="'+(28+j*70)+'" r="2.2" fill="'+c+'" opacity="0.16"/>'; } }
+  var inner='';
+  switch(type){
+    case 'foundations': // ascending stacked bars = a ladder of lessons
+      inner=''+
+        '<g opacity="0.95">'+
+        '<rect x="60"  y="140" width="56" height="34" rx="8" fill="'+c+'" opacity="0.45"/>'+
+        '<rect x="128" y="116" width="56" height="58" rx="8" fill="'+c+'" opacity="0.6"/>'+
+        '<rect x="196" y="86"  width="56" height="88" rx="8" fill="'+c+'" opacity="0.78"/>'+
+        '<rect x="264" y="52"  width="56" height="122" rx="8" fill="'+c+'"/>'+
+        '<circle cx="292" cy="40" r="9" fill="'+soft+'" stroke="'+c+'" stroke-width="3"/>'+
+        '</g>';
+      break;
+    case 'agentloop': // a loop with a node and arrowhead
+      inner=''+
+        '<g fill="none" stroke="'+c+'" stroke-width="10" stroke-linecap="round">'+
+        '<path d="M150 105 a55 55 0 1 1 12 36" />'+
+        '</g>'+
+        '<path d="M150 142 l4 -34 l28 18 z" fill="'+c+'"/>'+
+        '<circle cx="205" cy="105" r="20" fill="'+c+'"/>'+
+        '<circle cx="205" cy="105" r="8" fill="'+soft+'"/>';
+      break;
+    case 'subagents': // one big node branching to small ones
+      inner=''+
+        '<g stroke="'+c+'" stroke-width="6" opacity="0.55">'+
+        '<line x1="150" y1="105" x2="250" y2="55"/>'+
+        '<line x1="150" y1="105" x2="270" y2="105"/>'+
+        '<line x1="150" y1="105" x2="250" y2="155"/>'+
+        '</g>'+
+        '<circle cx="150" cy="105" r="30" fill="'+c+'"/>'+
+        '<circle cx="150" cy="105" r="12" fill="'+soft+'"/>'+
+        '<circle cx="258" cy="50"  r="16" fill="'+c+'" opacity="0.8"/>'+
+        '<circle cx="282" cy="105" r="16" fill="'+c+'" opacity="0.8"/>'+
+        '<circle cx="258" cy="160" r="16" fill="'+c+'" opacity="0.8"/>';
+      break;
+    case 'orchestration': // mesh of connected nodes
+      inner=''+
+        '<g stroke="'+c+'" stroke-width="4" opacity="0.4">'+
+        '<line x1="120" y1="70" x2="200" y2="140"/><line x1="200" y1="140" x2="290" y2="70"/>'+
+        '<line x1="120" y1="70" x2="290" y2="70"/><line x1="200" y1="60" x2="200" y2="140"/>'+
+        '</g>'+
+        '<circle cx="200" cy="60"  r="18" fill="'+c+'"/>'+
+        '<circle cx="120" cy="70"  r="14" fill="'+c+'" opacity="0.78"/>'+
+        '<circle cx="290" cy="70"  r="14" fill="'+c+'" opacity="0.78"/>'+
+        '<circle cx="200" cy="148" r="22" fill="'+c+'" opacity="0.9"/>';
+      break;
+    case 'context': // concentric arcs = a context window
+      inner=''+
+        '<g fill="none" stroke="'+c+'" stroke-linecap="round">'+
+        '<circle cx="200" cy="105" r="60" stroke-width="8" opacity="0.25"/>'+
+        '<path d="M200 45 a60 60 0 0 1 52 30" stroke-width="10"/>'+
+        '<circle cx="200" cy="105" r="34" stroke-width="8" opacity="0.5"/>'+
+        '</g>'+
+        '<circle cx="200" cy="105" r="13" fill="'+c+'"/>';
+      break;
+    case 'mcp': // central hub + radiating plugs
+      inner=''+
+        '<g stroke="'+c+'" stroke-width="6" opacity="0.5">'+
+        '<line x1="200" y1="105" x2="120" y2="60"/><line x1="200" y1="105" x2="120" y2="150"/>'+
+        '<line x1="200" y1="105" x2="285" y2="60"/><line x1="200" y1="105" x2="285" y2="150"/>'+
+        '</g>'+
+        '<rect x="176" y="86" width="48" height="40" rx="9" fill="'+c+'"/>'+
+        '<rect x="92"  y="46" width="40" height="28" rx="7" fill="'+c+'" opacity="0.78"/>'+
+        '<rect x="92"  y="136" width="40" height="28" rx="7" fill="'+c+'" opacity="0.78"/>'+
+        '<rect x="270" y="46" width="40" height="28" rx="7" fill="'+c+'" opacity="0.78"/>'+
+        '<rect x="270" y="136" width="40" height="28" rx="7" fill="'+c+'" opacity="0.78"/>';
+      break;
+    case 'caching': // stacked offset layers
+      inner=''+
+        '<g>'+
+        '<rect x="120" y="120" width="160" height="40" rx="9" fill="'+c+'" opacity="0.35"/>'+
+        '<rect x="135" y="92"  width="160" height="40" rx="9" fill="'+c+'" opacity="0.6"/>'+
+        '<rect x="150" y="64"  width="160" height="40" rx="9" fill="'+c+'"/>'+
+        '<circle cx="170" cy="84" r="7" fill="'+soft+'"/>'+
+        '</g>';
+      break;
+    case 'prompt': // three stacked blocks (stage / task / rules)
+      inner=''+
+        '<g>'+
+        '<rect x="120" y="52"  width="160" height="32" rx="8" fill="'+c+'"/>'+
+        '<rect x="120" y="92"  width="130" height="32" rx="8" fill="'+c+'" opacity="0.72"/>'+
+        '<rect x="120" y="132" width="160" height="32" rx="8" fill="'+c+'" opacity="0.5"/>'+
+        '<circle cx="300" cy="108" r="6" fill="'+c+'" opacity="0.72"/>'+
+        '</g>';
+      break;
+    case 'mcq': // four answer-option bars, top one selected/filled
+      inner=''+
+        '<rect x="80" y="44"  width="240" height="30" rx="8" fill="'+c+'"/>'+
+        '<circle cx="102" cy="59" r="9" fill="'+soft+'"/>'+
+        '<rect x="80" y="82"  width="240" height="30" rx="8" fill="'+c+'" opacity="0.28"/>'+
+        '<circle cx="102" cy="97"  r="9" fill="none" stroke="'+c+'" stroke-width="2.5" opacity="0.55"/>'+
+        '<rect x="80" y="120" width="240" height="30" rx="8" fill="'+c+'" opacity="0.28"/>'+
+        '<circle cx="102" cy="135" r="9" fill="none" stroke="'+c+'" stroke-width="2.5" opacity="0.55"/>'+
+        '<rect x="80" y="158" width="240" height="30" rx="8" fill="'+c+'" opacity="0.28"/>'+
+        '<circle cx="102" cy="173" r="9" fill="none" stroke="'+c+'" stroke-width="2.5" opacity="0.55"/>';
+      break;
+    case 'config': // three setting sliders at different positions = configuration dials
+      inner=''+
+        '<rect x="70" y="58"  width="260" height="6" rx="3" fill="'+c+'" opacity="0.28"/>'+
+        '<circle cx="150" cy="61"  r="13" fill="'+c+'"/>'+
+        '<rect x="70" y="102" width="260" height="6" rx="3" fill="'+c+'" opacity="0.28"/>'+
+        '<circle cx="250" cy="105" r="13" fill="'+c+'"/>'+
+        '<rect x="70" y="146" width="260" height="6" rx="3" fill="'+c+'" opacity="0.28"/>'+
+        '<circle cx="110" cy="149" r="13" fill="'+c+'"/>';
+      break;
+    default:
+      inner='<circle cx="200" cy="105" r="40" fill="'+c+'"/>';
+  }
+  return '<svg viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="xMidYMid slice" role="img" aria-hidden="true">'+bg+dots+inner+'</svg>';
+}
+
+/* ================================================================
+   PROGRESS RING  (SVG)  pct 0..100
+   ================================================================ */
+function ring(pct, size, stroke, color){
+  var r=(size-stroke)/2, cx=size/2, c=2*Math.PI*r;
+  var off=c*(1-pct/100);
+  return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'" role="img" aria-label="'+Math.round(pct)+'% complete">'+
+    '<circle cx="'+cx+'" cy="'+cx+'" r="'+r+'" fill="none" stroke="var(--line)" stroke-width="'+stroke+'"/>'+
+    '<circle cx="'+cx+'" cy="'+cx+'" r="'+r+'" fill="none" stroke="'+color+'" stroke-width="'+stroke+'" '+
+      'stroke-linecap="round" stroke-dasharray="'+c.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'" '+
+      'transform="rotate(-90 '+cx+' '+cx+')" style="transition:stroke-dashoffset .5s ease"/>'+
+    '</svg>';
+}
+function ringBig(pct){
+  var size=104, stroke=11, r=(size-stroke)/2, cx=size/2, c=2*Math.PI*r, off=c*(1-pct/100);
+  return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'" role="img" aria-label="Overall progress '+Math.round(pct)+' percent">'+
+    '<defs><linearGradient id="hg" x1="0" y1="0" x2="1" y2="1">'+
+      '<stop offset="0" stop-color="var(--accent)"/><stop offset="1" stop-color="var(--gold)"/></linearGradient></defs>'+
+    '<circle cx="'+cx+'" cy="'+cx+'" r="'+r+'" fill="none" stroke="var(--line)" stroke-width="'+stroke+'"/>'+
+    '<circle cx="'+cx+'" cy="'+cx+'" r="'+r+'" fill="none" stroke="url(#hg)" stroke-width="'+stroke+'" '+
+      'stroke-linecap="round" stroke-dasharray="'+c.toFixed(1)+'" stroke-dashoffset="'+off.toFixed(1)+'" '+
+      'transform="rotate(-90 '+cx+' '+cx+')" style="transition:stroke-dashoffset .6s ease"/>'+
+    '<text class="pct" x="'+cx+'" y="'+(cx+1)+'" text-anchor="middle" dominant-baseline="central">'+Math.round(pct)+'%</text>'+
+    '</svg>';
+}
+
+/* ================================================================
+   STATE  (localStorage)
+   key: "cca-launchpad:v1:progress" -> { "<cardId>": "in-progress" | "done" }
+   ================================================================ */
+var STORE_KEY='cca-launchpad:v1:progress';
+function loadState(){
+  try{ return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
+  catch(e){ return {}; }
+}
+function saveState(s){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(s)); }catch(e){}
+}
+var STATE = loadState();
+function statusOf(id){ return STATE[id] || 'not-started'; }
+function setStatus(id, st){
+  if(st==='not-started'){ delete STATE[id]; } else { STATE[id]=st; }
+  saveState(STATE);
+}
+
+/* flatten all SHIPPED launchable cards in ladder order */
+function shippedCards(){
+  var out=[];
+  DATA.forEach(function(t){
+    if(t.base.status!=='queued') out.push(t.base);
+    t.extensions.forEach(function(e){ if(e.status!=='queued') out.push(e); });
+  });
+  return out;
+}
+
+/* ================================================================
+   RENDER
+   ================================================================ */
+function stateLabel(st){
+  if(st==='done') return {s:'Done', h:'Completed', pct:100, color:'var(--green)'};
+  if(st==='in-progress') return {s:'In progress', h:'Pick up where you left off', pct:50, color:'var(--accent)'};
+  return {s:'Not started', h:'Ready when you are', pct:0, color:'var(--line)'};
+}
+
+function cardHTML(card, isBase){
+  var dom=DOMAINS[card.domain];
+  var queued=(card.status==='queued');
+  var st=statusOf(card.id);
+  var sl=stateLabel(st);
+  var tier=card.tier||'101';
+  var tierStyle=(tier==='202')?'background:var(--plum,#7a5e8e);color:#fff':'background:var(--line-soft,#efe9e1);color:var(--ink-soft,#5c544c)';
+  var cls='card '+(isBase?'is-base ':'')+(queued?'queued ':'')+(st==='done'?'done ':'')+(tier==='202'?'tier-202 ':'');
+  var pillStyle='background:'+dom.soft+';color:'+dom.deep+';';
+  var html='';
+  html+='<article class="'+cls.trim()+'" data-card="'+card.id+'" data-domain="'+card.domain+'" data-tier="'+tier+'">';
+  html+= '<span class="ribbon"><span class="emoji">✓</span> Completed</span>';
+  html+= '<div class="illo" style="background:'+dom.soft+'">'+ILLO(card.illo, dom.hex)+'</div>';
+  html+= '<div class="pad">';
+  html+=  '<span class="pill-domain" style="'+pillStyle+'"><span class="dotw" style="width:8px;height:8px;border-radius:3px;background:'+dom.color+';display:inline-block"></span>'+dom.name+' <span class="w">· '+dom.weight+'</span></span>';
+  html+=  '<span class="tier-badge" style="display:inline-block;margin-left:6px;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;border-radius:999px;padding:2px 8px;vertical-align:middle;'+tierStyle+'">'+(tier==='202'?'202 · Deep Mastery':'101 · Exam Prep')+'</span>';
+  html+=  '<h3>'+(card.code?('<span style="color:'+dom.color+';font-weight:800">'+card.code+'</span> · '):'')+card.title+'</h3>';
+  html+=  '<p class="blurb">'+card.blurb+'</p>';
+  html+=  '<div class="meta"><span class="chip"><span class="emoji">'+(isBase?'📘':'🧩')+'</span> '+card.level+'</span><span class="chip">'+card.lessons+'</span></div>';
+  if(queued){
+    html+= '<span class="soon"><span class="emoji">🔒</span> Coming soon</span>';
+  } else {
+    html+= '<div class="foot">';
+    html+=   '<div class="state">';
+    html+=     '<span class="sdot" data-ring style="background:'+sl.color+'"></span>';
+    html+=     '<span class="state-txt"><span class="s" data-s style="color:'+(st==='done'?'var(--green-deep)':(st==='in-progress'?'var(--accent-deep)':'var(--ink-soft)'))+'">'+sl.s+'</span><span class="h" data-h>'+sl.h+'</span></span>';
+    html+=   '</div>';
+    html+=   '<div class="actions">';
+    html+=     '<button class="mark" type="button" data-mark aria-pressed="'+(st==='done')+'"><span class="emoji" data-mark-em>'+(st==='done'?'✓':'○')+'</span> <span data-mark-tx>'+(st==='done'?'Completed':'Mark done')+'</span></button>';
+    html+=     '<a class="launch" href="'+card.href+'" data-launch><span>Launch</span> <span class="emoji">→</span></a>';
+    html+=   '</div>';
+    html+= '</div>';
+  }
+  html+= '</div>';
+  html+='</article>';
+  return html;
+}
+
+function renderTracks(){
+  var host=document.getElementById('trackHost');
+  var html='';
+  DATA.forEach(function(t){
+    html+='<div class="track">';
+    html+=  '<div class="track-rail">';
+    html+=    cardHTML(t.base, true);
+    if(t.extensions.length){
+      html+=  '<div class="ladder-label"><span class="arrow emoji">↳</span> Go deeper — extensions for '+t.base.title+'</div>';
+      html+=  '<div class="ext-stack"><div class="ext-grid">';
+      t.extensions.forEach(function(e){
+        html+='<div class="ext-item">'+cardHTML(e, false)+'</div>';
+      });
+      html+=  '</div></div>';
+    }
+    html+=  '</div>';
+    html+='</div>';
+  });
+  host.innerHTML=html;
+  wireCards();
+}
+
+function renderLegend(){
+  var el=document.getElementById('legend');
+  var order=['d1','d2','d3','d4','d5'];
+  var html='';
+  order.forEach(function(k){
+    var d=DOMAINS[k];
+    html+='<span class="lg"><span class="dot" style="background:'+d.color+'"></span>'+d.name+' <strong style="color:var(--ink);margin-left:2px">'+d.weight+'</strong></span>';
+  });
+  el.innerHTML=html;
+}
+
+/* ---------- featured "continue / start here" ---------- */
+function renderFeatured(){
+  var ship=shippedCards();
+  var next=null, allDone=true, anyStarted=false;
+  for(var i=0;i<ship.length;i++){
+    var s=statusOf(ship[i].id);
+    if(s!=='done'){ allDone=false; if(!next) next=ship[i]; }
+    if(s!=='not-started') anyStarted=true;
+  }
+  var el=document.getElementById('featured');
+  if(allDone){ next=ship[ship.length-1]; }
+  var dom=DOMAINS[next.domain];
+  var st=statusOf(next.id);
+  var kick = allDone ? '🎉 You\u2019ve finished every shipped module'
+           : st==='in-progress' ? '↺ Continue where you left off'
+           : anyStarted ? '➜ Your suggested next step' : '✦ Start here';
+  var cta = st==='in-progress' ? 'Continue' : (allDone ? 'Revisit' : 'Start lesson');
+  var why = allDone
+      ? 'Revisit any track to refresh before exam day.'
+      : (next.level==='Base course' ? 'The foundation the rest of the ladder builds on.'
+                                    : 'A focused deep-dive into '+dom.name+' ('+dom.weight+').');
+  el.innerHTML =
+    '<div class="illo" style="background:'+dom.soft+'">'+ILLO(next.illo, dom.hex)+'</div>'+
+    '<div class="featured-body">'+
+      '<span class="kick">'+kick+'</span>'+
+      '<h2>'+next.title+'</h2>'+
+      '<p>'+next.blurb+'</p>'+
+      '<div class="why"><span class="emoji">'+(next.level==='Base course'?'📘':'🧩')+'</span> '+why+'</div>'+
+    '</div>'+
+    '<div class="featured-cta">'+
+      '<a class="btn btn-primary btn-lg btn-block" href="'+next.href+'" data-feat-launch="'+next.id+'">'+cta+' <span class="emoji">→</span></a>'+
+      '<span style="text-align:center;font-size:13px;color:var(--ink-soft)">'+next.level+' · '+next.lessons+'</span>'+
+    '</div>';
+}
+
+/* ---------- aggregate (hero) ---------- */
+function renderHero(){
+  var ship=shippedCards();
+  var done=ship.filter(function(c){return statusOf(c.id)==='done';}).length;
+  var total=ship.length;
+  var pct= total? (done/total*100) : 0;
+  document.getElementById('heroRing').innerHTML=ringBig(pct);
+  document.getElementById('heroCount').textContent=done+' of '+total;
+  document.getElementById('topbar').style.width=pct+'%';
+  var msg,sub;
+  if(done===0){ msg='Ready for liftoff.'; sub='Start with Claude 101 below.'; }
+  else if(done===total){ msg='Every module complete! 🎉'; sub='You\u2019ve cleared the whole ladder — revisit anytime.'; }
+  else if(pct>=60){ msg='Almost there — strong streak!'; sub='Just '+(total-done)+' module'+((total-done)>1?'s':'')+' left to go.'; }
+  else { msg='Nice momentum.'; sub='Keep the streak going — next step is queued up below.'; }
+  document.getElementById('heroMsg').textContent=msg;
+  document.getElementById('heroSub').textContent=sub;
+}
+
+/* ================================================================
+   INTERACTION
+   ================================================================ */
+function toast(msg, em){
+  var t=document.getElementById('toast');
+  t.innerHTML='<span class="em emoji">'+(em||'✓')+'</span> '+msg;
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t=setTimeout(function(){ t.classList.remove('show'); }, 2600);
+}
+
+var DONE_MSGS=['Nice work — that\u2019s one more down!','Module complete. Keep it rolling!','Great pace — onto the next!','Logged. Your streak thanks you.'];
+
+function refreshCardVisual(card){
+  var el=document.querySelector('[data-card="'+card.id+'"]');
+  if(!el) return;
+  var isBase=el.classList.contains('is-base');
+  var st=statusOf(card.id);
+  var sl=stateLabel(st);
+  el.classList.toggle('done', st==='done');
+  var rEl=el.querySelector('[data-ring]'); if(rEl) rEl.style.background=sl.color;
+  var sEl=el.querySelector('[data-s]'); if(sEl){ sEl.textContent=sl.s; sEl.style.color = st==='done'?'var(--green-deep)':(st==='in-progress'?'var(--accent-deep)':'var(--ink-soft)'); }
+  var hEl=el.querySelector('[data-h]'); if(hEl) hEl.textContent=sl.h;
+  var mk=el.querySelector('[data-mark]');
+  if(mk){
+    mk.setAttribute('aria-pressed', st==='done');
+    el.querySelector('[data-mark-em]').textContent = st==='done'?'✓':'○';
+    el.querySelector('[data-mark-tx]').textContent = st==='done'?'Completed':'Mark done';
+  }
+}
+
+function findCard(id){
+  var f=null;
+  DATA.forEach(function(t){
+    if(t.base.id===id) f=t.base;
+    t.extensions.forEach(function(e){ if(e.id===id) f=e; });
+  });
+  return f;
+}
+
+function wireCards(){
+  document.querySelectorAll('[data-card]').forEach(function(el){
+    var id=el.getAttribute('data-card');
+    var card=findCard(id);
+    var mark=el.querySelector('[data-mark]');
+    var launch=el.querySelector('[data-launch]');
+    if(mark){
+      mark.addEventListener('click', function(){
+        var now=statusOf(id);
+        if(now==='done'){ setStatus(id,'not-started'); }
+        else { setStatus(id,'done'); toast(DONE_MSGS[Math.floor(Math.random()*DONE_MSGS.length)], '🎉'); }
+        refreshCardVisual(card);
+        renderHero(); renderFeatured();
+      });
+    }
+    if(launch){
+      // plain anchor navigates (file:// safe). Mark in-progress on the way out.
+      launch.addEventListener('click', function(){
+        if(statusOf(id)==='not-started'){ setStatus(id,'in-progress'); }
+        // visual refresh happens; navigation proceeds normally
+        refreshCardVisual(card); renderHero(); renderFeatured();
+      });
+    }
+  });
+}
+
+/* featured launch also marks in-progress */
+document.addEventListener('click', function(e){
+  var a=e.target.closest && e.target.closest('[data-feat-launch]');
+  if(a){
+    var id=a.getAttribute('data-feat-launch');
+    if(statusOf(id)==='not-started'){ setStatus(id,'in-progress'); renderHero(); }
+  }
+});
+
+/* reset */
+document.getElementById('resetBtn').addEventListener('click', function(){
+  if(confirm('Reset all progress on this browser? This cannot be undone.')){
+    STATE={}; saveState(STATE);
+    renderTracks(); applyTierFilter(); renderHero(); renderFeatured();
+    toast('Progress reset.', '↺');
+  }
+});
+
+/* re-sync when returning from a lesson (back button / bfcache) */
+window.addEventListener('pageshow', function(){
+  STATE=loadState();
+  document.querySelectorAll('[data-card]').forEach(function(el){
+    refreshCardVisual(findCard(el.getAttribute('data-card')));
+  });
+  renderHero(); renderFeatured();
+});
+
+/* ================================================================
+   TIER FILTER  (All / 101 Exam-Prep / 202 Deep Mastery)
+   ================================================================ */
+var TIER_KEY='cca-launchpad:v1:tier';
+function loadTier(){ try{ return localStorage.getItem(TIER_KEY)||'all'; }catch(e){ return 'all'; } }
+function saveTier(t){ try{ localStorage.setItem(TIER_KEY,t); }catch(e){} }
+var TIERS=[
+  {k:'all', label:'All', sub:'Everything'},
+  {k:'101', label:'101 · Exam Prep', sub:'Pass the exam'},
+  {k:'202', label:'202 · Deep Mastery', sub:'Go deeper'}
+];
+function renderTierFilter(){
+  var host=document.getElementById('tierFilter');
+  if(!host) return;
+  var cur=loadTier();
+  var html='<span class="tf-label">View:</span>';
+  TIERS.forEach(function(t){
+    var on=(t.k===cur);
+    var base='display:inline-flex;flex-direction:column;gap:1px;cursor:pointer;border-radius:10px;padding:6px 14px;border:1px solid var(--line);font:inherit;line-height:1.1;transition:background .15s,border-color .15s;';
+    var active=on?'background:var(--accent);border-color:var(--accent);color:#fff;':'background:var(--paper,#fff);color:var(--ink);';
+    html+='<button type="button" class="tf-btn" data-tier-btn="'+t.k+'" aria-pressed="'+on+'" style="'+base+active+'">'+
+            '<span style="font-weight:700;font-size:13px">'+t.label+'</span>'+
+            '<span style="font-size:10.5px;opacity:.75">'+t.sub+'</span>'+
+          '</button>';
+  });
+  host.innerHTML=html;
+  host.querySelectorAll('[data-tier-btn]').forEach(function(b){
+    b.addEventListener('click', function(){
+      saveTier(b.getAttribute('data-tier-btn'));
+      renderTierFilter();
+      applyTierFilter();
+    });
+  });
+}
+function applyTierFilter(){
+  var cur=loadTier();
+  // show/hide individual cards by data-tier
+  document.querySelectorAll('article[data-card]').forEach(function(a){
+    var t=a.getAttribute('data-tier')||'101';
+    a.style.display=(cur==='all'||t===cur)?'':'none';
+  });
+  // collapse empty ext-stacks / ladder labels and empty tracks
+  document.querySelectorAll('#trackHost .track').forEach(function(tr){
+    var visibleCards=Array.prototype.filter.call(tr.querySelectorAll('article[data-card]'),function(a){return a.style.display!=='none';});
+    tr.style.display=visibleCards.length?'':'none';
+    var ext=tr.querySelector('.ext-stack'), lab=tr.querySelector('.ladder-label');
+    if(ext){
+      var extVisible=Array.prototype.filter.call(ext.querySelectorAll('article[data-card]'),function(a){return a.style.display!=='none';});
+      ext.style.display=extVisible.length?'':'none';
+      if(lab) lab.style.display=extVisible.length?'':'none';
+    }
+  });
+}
+
+/* ---------- boot ---------- */
+renderLegend();
+renderTracks();
+renderTierFilter();
+applyTierFilter();
+renderHero();
+renderFeatured();
+</script>
+</body>
+</html>

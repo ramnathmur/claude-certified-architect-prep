@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Subagents as a Programmable Primitive (CLI → Agent SDK) — Extension</title>
+<style>
+  :root{
+    --bg:#faf8f5; --paper:#ffffff; --ink:#2b2622; --ink-soft:#5c544c;
+    --line:#e7e0d8; --accent:#c96442; --accent-soft:#f4e6df; --accent-deep:#a44a2e;
+    --teal:#3a7d7b; --teal-soft:#e0efee; --gold:#b8860b; --gold-soft:#f6edd6;
+    --green:#3f7d4f; --green-soft:#e3f0e6; --red:#b3402f; --red-soft:#f7e3df;
+    --purple:#6b5b95; --purple-soft:#ece8f3;
+    --sidebar:#f3eee7; --shadow:0 1px 3px rgba(43,38,34,.08),0 6px 24px rgba(43,38,34,.06);
+    --radius:14px; --maxw:780px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.65; font-size:17px; -webkit-font-smoothing:antialiased;
+  }
+  #progressBar{position:fixed;top:0;left:0;height:4px;width:0;background:linear-gradient(90deg,var(--accent),var(--gold));z-index:200;transition:width .15s ease}
+  .layout{display:flex;max-width:1260px;margin:0 auto}
+  aside{
+    position:sticky;top:0;align-self:flex-start;height:100vh;overflow-y:auto;
+    width:300px;flex:none;padding:22px 16px 40px;background:var(--sidebar);
+    border-right:1px solid var(--line);
+  }
+  aside h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin:18px 8px 8px}
+  .brandbox{padding:6px 8px 14px;border-bottom:1px solid var(--line);margin-bottom:8px}
+  .brandbox .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;line-height:1.25}
+  .brandbox .sub{font-size:12.5px;color:var(--ink-soft);margin-top:6px}
+  .backlink{display:inline-flex;align-items:center;gap:6px;margin:10px 8px 2px;font-size:12.5px;color:var(--accent-deep);text-decoration:none;font-weight:600}
+  .backlink:hover{text-decoration:underline}
+  .toc-prog{font-size:12px;color:var(--ink-soft);margin:14px 8px 4px;display:flex;justify-content:space-between;align-items:center}
+  .toc-prog b{color:var(--accent)}
+  nav a{display:flex;gap:8px;align-items:flex-start;text-decoration:none;color:var(--ink);
+    padding:7px 10px;border-radius:9px;font-size:14px;line-height:1.35;transition:background .15s}
+  nav a:hover{background:#ece4d9}
+  nav a.active{background:var(--accent-soft);color:var(--accent-deep);font-weight:600}
+  nav a .num{flex:none;width:22px;height:22px;border-radius:50%;background:#e3dacd;color:var(--ink-soft);
+    font-size:11.5px;display:flex;align-items:center;justify-content:center;font-weight:700;margin-top:1px}
+  nav a.active .num{background:var(--accent);color:#fff}
+  nav a.done .num{background:var(--green);color:#fff}
+  nav a.done .num::after{content:"✓"}
+  nav a.done .num span{display:none}
+  .nav-sec{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);
+    font-weight:700;margin:16px 10px 4px;display:flex;align-items:center;gap:6px}
+  main{flex:1;min-width:0;padding:0 28px 120px}
+  .wrap{max-width:var(--maxw);margin:0 auto}
+  header.hero{max-width:var(--maxw);margin:0 auto;padding:40px 0 18px;text-align:left}
+  .extbanner{display:flex;gap:12px;align-items:flex-start;background:var(--purple-soft);border:1px solid #cfc6e3;
+    border-radius:var(--radius);padding:14px 18px;margin:0 0 20px;font-size:14px;box-shadow:var(--shadow)}
+  .extbanner .ebadge{flex:none;background:var(--purple);color:#fff;font-weight:700;font-size:11.5px;letter-spacing:.06em;
+    text-transform:uppercase;padding:5px 11px;border-radius:999px;margin-top:1px}
+  .extbanner b{color:#4c3f70}
+  .hero .eyebrow{color:var(--accent);font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:13px}
+  .hero h1{font-size:40px;line-height:1.1;margin:10px 0 8px;letter-spacing:-.02em}
+  .hero p.lead{font-size:19px;color:var(--ink-soft);margin:0 0 18px}
+  .crosslink{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:14px 18px;margin:18px 0;font-size:14.5px;box-shadow:var(--shadow)}
+  .crosslink a{color:var(--accent-deep);font-weight:600;text-decoration:none}
+  .crosslink a:hover{text-decoration:underline}
+  .pillrow{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}
+  .pill{background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:6px 13px;font-size:13px;color:var(--ink-soft);box-shadow:var(--shadow)}
+  .examnote{background:var(--gold-soft);border:1px solid #e7d9a9;border-radius:var(--radius);padding:16px 18px;margin:22px 0;font-size:14.5px}
+  .examnote b{color:#8a6508}
+  .aboutbox{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;margin:22px 0;box-shadow:var(--shadow)}
+  .aboutbox .lab{font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;margin-bottom:6px}
+  section.lesson{max-width:var(--maxw);margin:0 auto;padding:46px 0 10px;scroll-margin-top:14px;border-top:1px solid var(--line)}
+  .sec-divider{max-width:var(--maxw);margin:38px auto 0;padding-top:30px}
+  .sec-divider .badge{display:inline-block;background:var(--accent);color:#fff;font-weight:700;
+    font-size:12px;letter-spacing:.07em;text-transform:uppercase;padding:5px 12px;border-radius:999px}
+  .sec-divider h2{font-size:30px;margin:12px 0 4px;letter-spacing:-.01em}
+  .sec-divider p{color:var(--ink-soft);margin:0}
+  .lesson .lmeta{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+  .lesson .ltag{font-size:12px;color:var(--accent);font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+  .lesson .ltime{font-size:12.5px;color:var(--ink-soft);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+  .lesson h3.ltitle{font-size:28px;margin:2px 0 4px;letter-spacing:-.01em;line-height:1.15}
+  .lesson h4{font-size:19px;margin:30px 0 8px;letter-spacing:-.005em}
+  .lesson h5{font-size:16px;margin:20px 0 6px;color:var(--accent-deep)}
+  .lesson p{margin:10px 0}
+  .lesson ul,.lesson ol{margin:10px 0;padding-left:22px}
+  .lesson li{margin:6px 0}
+  .emoji{font-style:normal}
+  blockquote.ex{margin:14px 0;padding:14px 18px;background:var(--teal-soft);border-left:4px solid var(--teal);border-radius:0 10px 10px 0;font-style:italic;color:#2c4f4e}
+  .objectives{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:14px 18px;margin:14px 0;box-shadow:var(--shadow)}
+  .objectives .lab{font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;margin-bottom:4px}
+  .objectives ul{margin:6px 0 2px;padding-left:20px}
+  .objectives li{font-size:14.5px}
+  .verify{display:inline-block;background:#fdeede;color:#8a5a1a;border:1px solid #ecc98f;border-radius:6px;
+    padding:0 7px;font-size:12px;font-weight:700;letter-spacing:.02em;vertical-align:middle}
+  .verifynote{background:#fdf6ea;border:1px dashed #e0c993;border-radius:10px;padding:10px 14px;margin:12px 0;font-size:13.5px;color:#6f5526}
+  .verifynote b{color:#8a5a1a}
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  table{border-collapse:collapse;width:100%;font-size:14px;background:var(--paper);min-width:540px}
+  th,td{text-align:left;padding:11px 13px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--accent-soft);color:var(--accent-deep);font-weight:700;font-size:13px}
+  tbody tr:last-child td{border-bottom:none}
+  td:first-child,th:first-child{font-weight:600}
+  pre.code{background:#2b2622;color:#f4ece2;border-radius:12px;padding:16px 18px;margin:16px 0;overflow-x:auto;
+    font-family:"SF Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+    font-size:13.5px;line-height:1.55;box-shadow:var(--shadow);border:1px solid #3a332d}
+  pre.code code{font-family:inherit;white-space:pre;display:block}
+  pre.code .cmt{color:#b08a6a}
+  pre.code .key{color:#e0a878}
+  pre.code .str{color:#9bd0c2}
+  pre.code .frontmatter{color:#9bd0c2}
+  code.inline{background:var(--accent-soft);color:var(--accent-deep);padding:1px 6px;border-radius:5px;
+    font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:14px}
+  .codelabel{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);font-weight:700;margin:18px 0 -8px}
+  .callout{border-radius:var(--radius);padding:0;margin:18px 0;box-shadow:var(--shadow);overflow:hidden;border:1px solid var(--line)}
+  .callout .chead{display:flex;align-items:center;gap:9px;padding:12px 16px;cursor:pointer;font-weight:700;font-size:15px;user-select:none}
+  .callout .cbody{padding:2px 18px 16px;font-size:15px}
+  .callout .cbody ul{margin:6px 0;padding-left:20px}
+  .callout.collapsed .cbody{display:none}
+  .callout .chev{margin-left:auto;transition:transform .2s;font-size:13px;opacity:.6}
+  .callout.collapsed .chev{transform:rotate(-90deg)}
+  .keyc{border-color:#d9c98f}.keyc .chead{background:var(--gold-soft);color:#8a6508}
+  .tip{border-color:#a7d3d1}.tip .chead{background:var(--teal-soft);color:var(--teal)}
+  .try{border-color:#bfdcc6}.try .chead{background:var(--green-soft);color:var(--green)}
+  .anti{border-color:#e6bcb4}.anti .chead{background:var(--red-soft);color:var(--red)}
+  figure.svgfig{margin:22px 0;text-align:center;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+  figure.svgfig svg{max-width:100%;height:auto}
+  figure.svgfig figcaption{font-size:13px;color:var(--ink-soft);margin-top:10px}
+  .mcq{background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--accent);
+    border-radius:var(--radius);padding:16px 18px;margin:22px 0;box-shadow:var(--shadow)}
+  .mcq .qlab{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;display:flex;align-items:center;gap:7px}
+  .mcq .qtext{font-weight:600;margin:8px 0 12px;font-size:16px}
+  .mcq .opt{display:block;width:100%;text-align:left;background:var(--bg);border:1.5px solid var(--line);
+    border-radius:10px;padding:11px 14px;margin:7px 0;cursor:pointer;font-size:14.5px;font-family:inherit;color:var(--ink);transition:all .14s}
+  .mcq .opt:hover:not(:disabled){border-color:var(--accent);background:var(--accent-soft)}
+  .mcq .opt:disabled{cursor:default}
+  .mcq .opt.correct{border-color:var(--green);background:var(--green-soft);font-weight:600}
+  .mcq .opt.wrong{border-color:var(--red);background:var(--red-soft)}
+  .mcq .opt .mark{float:right;font-weight:700}
+  .mcq .fb{display:none;margin-top:12px;padding:12px 14px;border-radius:10px;font-size:14px;line-height:1.55}
+  .mcq .fb.show{display:block}
+  .mcq .fb.ok{background:var(--green-soft);border:1px solid #bfdcc6}
+  .mcq .fb.no{background:var(--red-soft);border:1px solid #e6bcb4}
+  .reveal{background:var(--paper);border:1px dashed var(--accent);border-radius:var(--radius);padding:16px 18px;margin:22px 0}
+  .reveal .plab{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;display:flex;align-items:center;gap:7px}
+  .reveal .q{font-weight:600;margin:8px 0 12px;font-size:16px}
+  .reveal button.revealbtn{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:9px 16px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+  .reveal button.revealbtn:hover{background:var(--accent-deep)}
+  .reveal .ans{display:none;margin-top:12px;padding:12px 14px;background:var(--teal-soft);border-radius:10px;font-size:14.5px;border:1px solid #a7d3d1}
+  .reveal .ans.show{display:block}
+  .quizblock{background:linear-gradient(180deg,#fff,#fbf6f0);border:2px solid var(--accent-soft);border-radius:18px;padding:22px 22px 24px;margin:30px auto;max-width:var(--maxw);box-shadow:var(--shadow)}
+  .quizblock h4{margin-top:0;display:flex;align-items:center;gap:9px}
+  .quizblock .qscore{font-size:14px;color:var(--ink-soft);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-weight:600}
+  .quizblock .scorebar{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:8px}
+  .resultbox{display:none;margin-top:16px;padding:16px;border-radius:12px;font-weight:600;text-align:center;font-size:16px}
+  .resultbox.show{display:block}
+  .resultbox.pass{background:var(--green-soft);border:1px solid #bfdcc6;color:var(--green)}
+  .resultbox.mid{background:var(--gold-soft);border:1px solid #e7d9a9;color:#8a6508}
+  .sources{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;margin:26px 0;box-shadow:var(--shadow);font-size:14px}
+  .sources ol{margin:8px 0;padding-left:22px}
+  .sources li{margin:7px 0;word-break:break-word}
+  .sources a{color:var(--accent-deep);text-decoration:none}
+  .sources a:hover{text-decoration:underline}
+  .nextbox{background:linear-gradient(180deg,#fff,#f4efe9);border:2px dashed var(--accent-soft);border-radius:18px;padding:20px 22px;margin:26px auto;max-width:var(--maxw);box-shadow:var(--shadow)}
+  .nextbox a{color:var(--accent-deep);font-weight:700;text-decoration:none}
+  .nextbox a:hover{text-decoration:underline}
+  footer{max-width:var(--maxw);margin:40px auto 0;padding-top:24px;border-top:1px solid var(--line);color:var(--ink-soft);font-size:13.5px}
+  .sourcebadge{display:inline-flex;gap:7px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:5px 13px;font-size:12.5px;color:var(--ink-soft)}
+  .analogy{font-size:13px;background:var(--accent-soft);color:var(--accent-deep);border-radius:6px;padding:1px 7px;font-weight:600}
+  .menubtn{display:none;position:fixed;top:12px;left:12px;z-index:210;background:var(--accent);color:#fff;border:none;border-radius:10px;width:44px;height:44px;font-size:20px;cursor:pointer;box-shadow:var(--shadow)}
+  .scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:205}
+  @media(max-width:980px){
+    .menubtn{display:block}
+    aside{position:fixed;left:0;top:0;z-index:206;transform:translateX(-105%);transition:transform .25s;box-shadow:var(--shadow);width:280px}
+    aside.open{transform:translateX(0)}
+    .scrim.open{display:block}
+    main{padding:60px 16px 110px}
+    .hero h1{font-size:31px}
+  }
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+<button class="menubtn" onclick="toggleNav()" aria-label="Menu" aria-expanded="false">☰</button>
+<div class="scrim" id="scrim" onclick="toggleNav()"></div>
+
+<div class="layout">
+<!-- SIDEBAR -->
+<aside id="sidebar">
+  <div class="brandbox">
+    <div class="logo"><span class="emoji">🧩</span> Subagents as a Programmable Primitive</div>
+    <div class="sub">Extension · CCA-F Domain 1 (27%) + Domain 2 (20%) · architect-depth</div>
+  </div>
+  <a class="backlink" href="../introduction-to-subagents.html"><span class="emoji">←</span> Back to the base course</a>
+  <nav class="cspine" aria-label="Course track">
+    <div class="cspine-h">📚 Subagents track · Lesson 3 of 4</div>
+    <ol class="cspine-list">
+      <li><a href="../introduction-to-subagents.html">Base · Introduction to Subagents</a></li>
+      <li><a href="orchestration-patterns.html">S-E1 · The Five Orchestration Patterns</a></li>
+      <li class="cspine-cur" aria-current="page">S-E2 · Subagents as a Programmable Primitive</li>
+      <li><a href="orchestrator-worker-at-scale.html">S-E3 · Orchestrator-Worker at Scale</a></li>
+    </ol>
+  </nav>
+  <style>
+  .cspine{margin:10px 8px 14px;padding:10px 12px;border:1px solid var(--line,#e7e0d8);border-radius:10px;background:rgba(0,0,0,.02)}
+  .cspine-h{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft,#5c544c);margin-bottom:7px}
+  .cspine-list{list-style:none;margin:0;padding:0}
+  .cspine-list li{font-size:12.5px;line-height:1.3;padding:3px 0;color:var(--ink-soft,#5c544c)}
+  .cspine-list a{color:var(--ink,#2b2622);text-decoration:none}
+  .cspine-list a:hover{color:var(--accent,#c96442);text-decoration:underline}
+  .cspine-cur{font-weight:700;color:var(--accent-deep,#a44a2e)!important}
+  .cspine-cur::before{content:"▸ "}
+  </style>
+  <div class="toc-prog">Progress <span><b id="progPct">0%</b></span></div>
+  <nav id="toc"></nav>
+</aside>
+
+<!-- MAIN -->
+<main>
+<div class="wrap">
+<nav class="cnav" aria-label="Course navigation">
+  <a class="cnav-home" href="../../../Launchpad.html">⌂ Launchpad</a>
+  <span class="cnav-side"><a class="cnav-prev" href="orchestration-patterns.html">← The Five Orchestration Patterns (S-E1)</a><a class="cnav-next" href="orchestrator-worker-at-scale.html">Next: Orchestrator-Worker at Scale (S-E3) →</a></span>
+</nav>
+<style>
+.cnav{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:10px 0 18px;padding:10px 14px;border:1px solid var(--line,#e7e0d8);border-radius:12px;background:rgba(0,0,0,.02);font:600 13.5px/1.2 system-ui,-apple-system,'Segoe UI',sans-serif}
+.cnav a{text-decoration:none;color:var(--ink,#2b2622);padding:7px 13px;border-radius:8px;background:rgba(0,0,0,.05);white-space:nowrap;transition:background .15s,color .15s}
+.cnav a:hover{background:var(--accent,#c96442);color:#fff}
+.cnav .cnav-home{background:var(--accent,#c96442);color:#fff}
+.cnav .cnav-home:hover{filter:brightness(.92)}
+.cnav .cnav-side{display:flex;gap:8px;flex-wrap:wrap}
+</style>
+
+<header class="hero" id="top">
+  <div class="extbanner">
+    <span class="ebadge">Extension</span>
+    <div><b>Beyond the Academy course.</b> This is web-researched material grounded in cited Anthropic primary sources — the Claude Agent SDK subagents / TypeScript / Python references, the Claude Code "create custom subagents" and "workflows" docs, and the "Building agents with the Claude Agent SDK" and "Building effective agents" posts. It is <b>not part of the original Academy "Introduction to Subagents" course</b> — it turns subagents from a CLI feature into a <b>thing you program</b>, which is the core of CCA-F Domain 1.</div>
+  </div>
+
+  <div class="eyebrow">Anthropic sources · Extension S-E2 · 300-level · code-heavy</div>
+  <h1>Subagents as a Programmable Primitive (CLI → Agent SDK)</h1>
+  <p class="lead">From <em>"/agents in the CLI"</em> to <em>"a subagent is an object you declare in code."</em> The <code class="inline">AgentDefinition</code> shape, the <code class="inline">agents</code> parameter, the single-channel delegation model, context isolation, the no-nesting rule, least-privilege tools, the CLI ↔ SDK 1:1 mapping, and graduating to the Workflow tool.</p>
+
+  <div class="crosslink">
+    <p style="margin:0 0 6px"><span class="emoji">🔗</span> <strong>Where this sits in the ladder.</strong> It builds on the <a href="../introduction-to-subagents.html">← Introduction to Subagents (base course)</a> — the "what is a subagent / when to delegate" foundation — and follows <strong>S-E1, the five orchestration patterns</strong> (<a href="orchestration-patterns.html">orchestration-patterns.html</a>). S-E1 named the patterns; this lesson shows the <em>primitive</em> those patterns are built from, in actual SDK and filesystem code.</p>
+  </div>
+
+  <div class="pillrow">
+    <span class="pill"><span class="emoji">🧱</span> AgentDefinition, field-by-field</span>
+    <span class="pill"><span class="emoji">🧠</span> 7 inline MCQs + reveals</span>
+    <span class="pill"><span class="emoji">🏆</span> 10-question scored quiz</span>
+    <span class="pill"><span class="emoji">🎨</span> 10 inline SVG diagrams</span>
+    <span class="pill"><span class="emoji">💻</span> TS · Python · YAML code</span>
+  </div>
+
+  <div class="aboutbox">
+    <div class="lab"><span class="emoji">🧭</span> What you'll be able to do</div>
+    <ul style="margin:6px 0;padding-left:20px;font-size:15px">
+      <li><strong>Declare</strong> a subagent as an <code class="inline">AgentDefinition</code> in TypeScript and Python — and avoid the camelCase-in-Python <code class="inline">TypeError</code> trap.</li>
+      <li><strong>Pass</strong> programmatic subagents via the <code class="inline">agents</code> parameter and reason about precedence vs. filesystem definitions.</li>
+      <li><strong>Trace the delegation flow</strong>: the Agent (formerly Task) tool, the prompt string as the only channel in, the final message as the only channel out.</li>
+      <li><strong>Apply the guardrails</strong>: no nested subagents, least-privilege tool allow-lists, per-subagent model selection, permission-mode precedence, <code class="inline">maxTurns</code>.</li>
+      <li><strong>Map</strong> <code class="inline">/agents</code> and <code class="inline">.claude/agents/&lt;name&gt;.md</code> frontmatter 1:1 onto the SDK, and know when to graduate to the Workflow tool.</li>
+    </ul>
+  </div>
+
+  <div class="examnote">
+    <b>🎯 Why this matters for the CCA-F exam.</b> This lesson is weighted to <b>Domain 1 — Agentic Architecture &amp; Orchestration (27%)</b>, the heaviest graded domain, with strong <b>Domain 2 — Claude Code Configuration (20%)</b> crossover. Expect questions on the <b>delegation model</b> (single channel in/out), <b>context isolation</b>, the <b>no-nesting rule</b>, and the <b>CLI ↔ SDK field mapping</b>. The quizzes target exactly those mechanics.
+  </div>
+
+  <div class="verifynote">
+    <b><span class="emoji">⚠️</span> Point-in-time note (preserved from the source).</b> This lesson states several <em>version-sensitive</em> facts — the SDK field rosters, the <code class="inline">Task</code>→<code class="inline">Agent</code> rename at <b>v2.1.63</b>, the Workflow version gates (<b>TS SDK v0.3.149+</b> / <b>Claude Code v2.1.154+</b>), and the workflow concurrency caps. Each carries a <span class="verify">VERIFY</span> note where it appears. The SDK moves fast; reconfirm exact numbers against the live docs before relying on them.
+  </div>
+</header>
+
+<!-- ======================= SECTION A DIVIDER ======================= -->
+<div class="sec-divider" id="secA">
+  <span class="badge"><span class="emoji">🧱</span> The primitive</span>
+  <h2>From a CLI feature to an object you declare</h2>
+  <p>What a subagent <em>is</em> once you stop clicking <code class="inline">/agents</code> and start writing code: a typed record with a description, a prompt, a tool allow-list, and a handful of operational flags.</p>
+</div>
+
+<!-- LESSON 1 — Hook -->
+<section class="lesson" id="l1" data-lesson="1">
+  <div class="lmeta"><span class="ltag"><span class="emoji">🚪</span> Section 1</span><span class="ltime">⏱ ~6 min · concept</span></div>
+  <h3 class="ltitle">Hook — subagents as a thing you <em>program</em></h3>
+
+  <div class="objectives">
+    <div class="lab">What you'll be able to do</div>
+    <ul>
+      <li>Explain the shift from the <code class="inline">/agents</code> CLI UI to subagents-as-code</li>
+      <li>Name the three ways a subagent can come into existence</li>
+      <li>Say why this is the heart of the 27% Domain 1</li>
+    </ul>
+  </div>
+
+  <p><strong>Why before how:</strong> in the base course you met subagents through the <code class="inline">/agents</code> command — a tabbed UI where you click "create," fill in a description, pick tools, and save. That's the <em>operator's</em> view. The architect's view is different: a subagent is a <strong>typed object you can construct, parameterize, and pass into a <code class="inline">query()</code> at runtime</strong>. Once you see it that way, every orchestration pattern from S-E1 becomes something you assemble in code, not something you configure by hand.</p>
+
+  <p>The docs make the shift explicit. Subagents can be created <strong>three ways</strong>:</p>
+  <ul>
+    <li><strong>Programmatically</strong> — the <code class="inline">agents</code> parameter in <code class="inline">query()</code> options. This is "the documented recommended approach for SDK apps."</li>
+    <li><strong>Filesystem-based</strong> — Markdown files at <code class="inline">.claude/agents/*.md</code> with YAML frontmatter.</li>
+    <li><strong>The built-in <code class="inline">general-purpose</code> subagent</strong> — always invocable via the Agent tool, with no definition at all.</li>
+  </ul>
+
+  <p><span class="analogy">Analogy</span> The CLI <code class="inline">/agents</code> UI is like hiring through a form on a careers page; the SDK <code class="inline">AgentDefinition</code> is like writing a job description in code that a factory function can generate on demand — same role, but now you can stamp out a stricter variant with a more capable model whenever a task warrants it. (Author analogy, not a product fact.)</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 210" role="img" aria-label="Three ways to create a subagent: programmatic agents parameter, filesystem markdown, and the built-in general-purpose agent">
+      <defs><style>.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 10.5px sans-serif;fill:#5c544c}.h{font:700 11px sans-serif;fill:#a44a2e}</style>
+      <marker id="ah" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#c96442"/></marker></defs>
+      <rect x="18" y="40" width="200" height="90" rx="12" fill="#f4e6df" stroke="#c96442" stroke-width="1.5"/>
+      <text class="t" x="118" y="64" text-anchor="middle">Programmatic</text>
+      <text class="s" x="118" y="84" text-anchor="middle">agents={...} in query()</text>
+      <text class="s" x="118" y="102" text-anchor="middle">recommended for SDK apps</text>
+      <rect x="250" y="40" width="200" height="90" rx="12" fill="#e0efee" stroke="#3a7d7b" stroke-width="1.5"/>
+      <text class="t" x="350" y="64" text-anchor="middle">Filesystem</text>
+      <text class="s" x="350" y="84" text-anchor="middle">.claude/agents/*.md</text>
+      <text class="s" x="350" y="102" text-anchor="middle">version-controlled, reusable</text>
+      <rect x="482" y="40" width="200" height="90" rx="12" fill="#f6edd6" stroke="#b8860b" stroke-width="1.5"/>
+      <text class="t" x="582" y="64" text-anchor="middle">general-purpose</text>
+      <text class="s" x="582" y="84" text-anchor="middle">built-in, no definition</text>
+      <text class="s" x="582" y="102" text-anchor="middle">invoke via the Agent tool</text>
+      <rect x="270" y="160" width="160" height="36" rx="9" fill="#e3f0e6" stroke="#3f7d4f"/><text class="t" x="350" y="183" text-anchor="middle">a running subagent</text>
+      <line x1="118" y1="130" x2="300" y2="160" stroke="#c96442" stroke-width="1.6" marker-end="url(#ah)"/>
+      <line x1="350" y1="130" x2="350" y2="158" stroke="#c96442" stroke-width="1.6" marker-end="url(#ah)"/>
+      <line x1="582" y1="130" x2="400" y2="160" stroke="#c96442" stroke-width="1.6" marker-end="url(#ah)"/>
+    </svg>
+    <figcaption>Three doors to the same primitive. This lesson lives mostly in the first (programmatic) door, then maps it back onto the second (filesystem).</figcaption>
+  </figure>
+
+  <div class="mcq" data-mcq data-correct="2">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Which way of creating a subagent is the documented <em>recommended</em> approach for SDK applications?</div>
+    <button class="opt">Filesystem <code class="inline">.claude/agents/*.md</code> files</button>
+    <button class="opt">The built-in <code class="inline">general-purpose</code> subagent</button>
+    <button class="opt">Programmatically, via the <code class="inline">agents</code> parameter in <code class="inline">query()</code></button>
+    <button class="opt">The <code class="inline">/agents</code> CLI UI</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>For SDK apps the recommended path is programmatic — pass an <code class="inline">agents</code> record/dict of <code class="inline">AgentDefinition</code>s into <code class="inline">query()</code>. Filesystem files suit version-controlled team agents; <code class="inline">general-purpose</code> needs no definition; <code class="inline">/agents</code> is the CLI operator view.</div>
+  </div>
+
+  <div class="callout keyc collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaway<span class="chev">▼</span></div>
+  <div class="cbody"><p>A subagent is not a UI artifact — it's a <strong>declarable object</strong>. Three doors lead to it (programmatic / filesystem / built-in <code class="inline">general-purpose</code>), but they all resolve to the same runtime worker. Architects reach for the programmatic door because it lets them <em>parameterize</em> agents at runtime.</p></div></div>
+</section>
+
+<!-- LESSON 2 — AgentDefinition -->
+<section class="lesson" id="l2" data-lesson="2">
+  <div class="lmeta"><span class="ltag"><span class="emoji">🧱</span> Section 2</span><span class="ltime">⏱ ~11 min · core · code-heavy</span></div>
+  <h3 class="ltitle">The <code class="inline">AgentDefinition</code> object — every field</h3>
+
+  <div class="objectives">
+    <div class="lab">What you'll be able to do</div>
+    <ul>
+      <li>Recite the required vs. optional fields of <code class="inline">AgentDefinition</code></li>
+      <li>Write the TS and Python shapes — and avoid the camelCase-in-Python <code class="inline">TypeError</code></li>
+      <li>Explain what <code class="inline">description</code> drives, and the "omit <code class="inline">tools</code> → inherit all" rule</li>
+    </ul>
+  </div>
+
+  <p>A subagent is declared as an <strong><code class="inline">AgentDefinition</code></strong>: a record (TS) / dataclass (Python) holding the subagent's <strong>routing description</strong>, <strong>system prompt</strong>, <strong>tool allow-list</strong>, <strong>model</strong>, and operational flags. The orchestrator decides whether to invoke it based on the <code class="inline">description</code> field — so that field is doing double duty as documentation <em>and</em> as the router signal.</p>
+
+  <p><strong>Only two fields are required:</strong> <code class="inline">description</code> and <code class="inline">prompt</code>. Everything else is optional. Here is the exact TypeScript shape, verbatim from the TS reference:</p>
+
+  <div class="codelabel">TypeScript — <span class="verify">VERIFY</span> field roster against the live TS reference</div>
+  <pre class="code"><code><span class="key">type</span> AgentDefinition = {
+  description: <span class="key">string</span>;
+  tools?: <span class="key">string</span>[];
+  disallowedTools?: <span class="key">string</span>[];
+  prompt: <span class="key">string</span>;
+  model?: <span class="key">string</span>;
+  mcpServers?: AgentMcpServerSpec[];
+  skills?: <span class="key">string</span>[];
+  initialPrompt?: <span class="key">string</span>;
+  maxTurns?: <span class="key">number</span>;
+  background?: <span class="key">boolean</span>;
+  memory?: <span class="str">"user"</span> | <span class="str">"project"</span> | <span class="str">"local"</span>;
+  effort?: <span class="str">"low"</span> | <span class="str">"medium"</span> | <span class="str">"high"</span> | <span class="str">"xhigh"</span> | <span class="str">"max"</span> | <span class="key">number</span>;
+  permissionMode?: PermissionMode;
+  criticalSystemReminder_EXPERIMENTAL?: <span class="key">string</span>;
+};</code></pre>
+
+  <p>And the Python dataclass shape, verbatim from the Python reference:</p>
+
+  <div class="codelabel">Python — note the field order differs; required fields first</div>
+  <pre class="code"><code><span class="key">@dataclass</span>
+<span class="key">class</span> AgentDefinition:
+    description: <span class="key">str</span>
+    prompt: <span class="key">str</span>
+    tools: <span class="key">list</span>[<span class="key">str</span>] | <span class="key">None</span> = <span class="key">None</span>
+    disallowedTools: <span class="key">list</span>[<span class="key">str</span>] | <span class="key">None</span> = <span class="key">None</span>
+    model: <span class="key">str</span> | <span class="key">None</span> = <span class="key">None</span>
+    skills: <span class="key">list</span>[<span class="key">str</span>] | <span class="key">None</span> = <span class="key">None</span>
+    memory: Literal[<span class="str">"user"</span>, <span class="str">"project"</span>, <span class="str">"local"</span>] | <span class="key">None</span> = <span class="key">None</span>
+    mcpServers: <span class="key">list</span>[<span class="key">str</span> | <span class="key">dict</span>[<span class="key">str</span>, Any]] | <span class="key">None</span> = <span class="key">None</span>
+    initialPrompt: <span class="key">str</span> | <span class="key">None</span> = <span class="key">None</span>
+    maxTurns: <span class="key">int</span> | <span class="key">None</span> = <span class="key">None</span>
+    background: <span class="key">bool</span> | <span class="key">None</span> = <span class="key">None</span>
+    effort: EffortLevel | <span class="key">int</span> | <span class="key">None</span> = <span class="key">None</span>
+    permissionMode: PermissionMode | <span class="key">None</span> = <span class="key">None</span></code></pre>
+
+  <div class="callout anti collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🐍</span> The camelCase-in-Python gotcha (it raises a TypeError)<span class="chev">▼</span></div>
+  <div class="cbody"><p><code class="inline">AgentDefinition</code> field names use <strong>camelCase even in Python</strong> — <code class="inline">disallowedTools</code>, <code class="inline">permissionMode</code>, <code class="inline">maxTurns</code>, <code class="inline">initialPrompt</code> — to match the wire format shared with the TS SDK. This differs from <code class="inline">ClaudeAgentOptions</code>, which uses Python snake_case (<code class="inline">disallowed_tools</code>, <code class="inline">permission_mode</code>). Because <code class="inline">AgentDefinition</code> is a dataclass, <strong>passing a snake_case keyword raises a <code class="inline">TypeError</code> at construction time</strong>. So: <code class="inline">AgentDefinition(maxTurns=5)</code> ✅ — <code class="inline">AgentDefinition(max_turns=5)</code> ✗.</p></div></div>
+
+  <h4>SVG (a) — the <code class="inline">AgentDefinition</code> anatomy</h4>
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 360" role="img" aria-label="AgentDefinition object as a labeled card: two required fields, then optional fields grouped by purpose">
+      <defs><style>.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 11px sans-serif;fill:#5c544c}.m{font:700 11px monospace;fill:#a44a2e}.r{font:700 10px sans-serif;fill:#fff}.h{font:700 11px sans-serif;fill:#a44a2e}</style></defs>
+      <rect x="20" y="14" width="660" height="332" rx="14" fill="#fff" stroke="#c96442" stroke-width="2"/>
+      <text class="t" x="40" y="40">AgentDefinition</text>
+      <!-- required -->
+      <rect x="40" y="54" width="280" height="58" rx="9" fill="#f7e3df" stroke="#b3402f"/>
+      <rect x="40" y="54" width="62" height="18" rx="6" fill="#b3402f"/><text class="r" x="71" y="67" text-anchor="middle">REQUIRED</text>
+      <text class="m" x="50" y="92">description</text><text class="s" x="50" y="106">routing signal — when to use it</text>
+      <rect x="340" y="54" width="320" height="58" rx="9" fill="#f7e3df" stroke="#b3402f"/>
+      <rect x="340" y="54" width="62" height="18" rx="6" fill="#b3402f"/><text class="r" x="371" y="67" text-anchor="middle">REQUIRED</text>
+      <text class="m" x="350" y="92">prompt</text><text class="s" x="350" y="106">the subagent's system prompt (role)</text>
+      <!-- tools group -->
+      <text class="h" x="40" y="138">tools &amp; permissions</text>
+      <rect x="40" y="146" width="200" height="40" rx="8" fill="#e3f0e6" stroke="#3f7d4f"/><text class="m" x="50" y="164">tools</text><text class="s" x="50" y="179">allow-list · omit → inherit all</text>
+      <rect x="252" y="146" width="200" height="40" rx="8" fill="#e3f0e6" stroke="#3f7d4f"/><text class="m" x="262" y="164">disallowedTools</text><text class="s" x="262" y="179">denylist (applied first)</text>
+      <rect x="464" y="146" width="196" height="40" rx="8" fill="#e3f0e6" stroke="#3f7d4f"/><text class="m" x="474" y="164">permissionMode</text><text class="s" x="474" y="179">tool-permission mode</text>
+      <!-- model group -->
+      <text class="h" x="40" y="210">model &amp; reasoning</text>
+      <rect x="40" y="218" width="200" height="40" rx="8" fill="#e0efee" stroke="#3a7d7b"/><text class="m" x="50" y="236">model</text><text class="s" x="50" y="251">sonnet/opus/haiku/inherit/ID</text>
+      <rect x="252" y="218" width="200" height="40" rx="8" fill="#e0efee" stroke="#3a7d7b"/><text class="m" x="262" y="236">effort</text><text class="s" x="262" y="251">low…max | number</text>
+      <rect x="464" y="218" width="196" height="40" rx="8" fill="#e0efee" stroke="#3a7d7b"/><text class="m" x="474" y="236">maxTurns</text><text class="s" x="474" y="251">turn cap</text>
+      <!-- context group -->
+      <text class="h" x="40" y="282">context &amp; runtime</text>
+      <rect x="40" y="290" width="148" height="40" rx="8" fill="#f6edd6" stroke="#b8860b"/><text class="m" x="50" y="308">skills</text><text class="s" x="50" y="323">preload into context</text>
+      <rect x="198" y="290" width="148" height="40" rx="8" fill="#f6edd6" stroke="#b8860b"/><text class="m" x="208" y="308">memory</text><text class="s" x="208" y="323">user/project/local</text>
+      <rect x="356" y="290" width="148" height="40" rx="8" fill="#f6edd6" stroke="#b8860b"/><text class="m" x="366" y="308">mcpServers</text><text class="s" x="366" y="323">MCP by name/config</text>
+      <rect x="514" y="290" width="146" height="40" rx="8" fill="#f6edd6" stroke="#b8860b"/><text class="m" x="524" y="308">background</text><text class="s" x="524" y="323">non-blocking run</text>
+    </svg>
+    <figcaption>Two required fields (<code class="inline">description</code>, <code class="inline">prompt</code>) plus optional groups: tools/permissions, model/reasoning, and context/runtime. <code class="inline">initialPrompt</code> and the experimental <code class="inline">criticalSystemReminder_EXPERIMENTAL</code> (TS) round out the roster.</figcaption>
+  </figure>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Field</th><th>Type</th><th>Req</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><code class="inline">description</code></td><td>string</td><td><b>Yes</b></td><td>When to use this agent; drives orchestrator routing</td></tr>
+      <tr><td><code class="inline">prompt</code></td><td>string</td><td><b>Yes</b></td><td>The subagent's system prompt (role + behavior)</td></tr>
+      <tr><td><code class="inline">tools</code></td><td>string[]</td><td>No</td><td>Allow-list of tool names. <b>If omitted, inherits all tools</b></td></tr>
+      <tr><td><code class="inline">disallowedTools</code></td><td>string[]</td><td>No</td><td>Tool names to remove from the agent's set</td></tr>
+      <tr><td><code class="inline">model</code></td><td>string</td><td>No</td><td>Override: <code class="inline">'sonnet'</code>/<code class="inline">'opus'</code>/<code class="inline">'haiku'</code>/<code class="inline">'inherit'</code>, or a full ID. Omitted &rarr; <code class="inline">inherit</code> (the main model)</td></tr>
+      <tr><td><code class="inline">skills</code></td><td>string[]</td><td>No</td><td>Skill names to <b>preload</b> at startup; unlisted skills still invocable via Skill tool</td></tr>
+      <tr><td><code class="inline">memory</code></td><td>'user'|'project'|'local'</td><td>No</td><td>Persistent-memory source/scope</td></tr>
+      <tr><td><code class="inline">mcpServers</code></td><td>(string|object)[]</td><td>No</td><td>MCP servers by name or inline config</td></tr>
+      <tr><td><code class="inline">maxTurns</code></td><td>number</td><td>No</td><td>Max agentic turns before the agent stops</td></tr>
+      <tr><td><code class="inline">background</code></td><td>boolean</td><td>No</td><td>Run as a non-blocking background task</td></tr>
+      <tr><td><code class="inline">effort</code></td><td>low…max | number</td><td>No</td><td>Reasoning-effort level</td></tr>
+      <tr><td><code class="inline">permissionMode</code></td><td>PermissionMode</td><td>No</td><td>Permission mode for tool execution</td></tr>
+      <tr><td><code class="inline">initialPrompt</code></td><td>string</td><td>No</td><td>Auto-submitted as first user turn <b>when the agent runs as the main thread</b> (<code class="inline">--agent</code>)</td></tr>
+      <tr><td><code class="inline">criticalSystemReminder_EXPERIMENTAL</code> (TS)</td><td>string</td><td>No</td><td>Experimental reminder appended to the system prompt</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="verifynote"><b><span class="emoji">⚠️</span> <span class="verify">VERIFY</span> (preserved from source):</b> there is <b>no <code class="inline">mode</code> or <code class="inline">source</code> field</b> in the current <code class="inline">AgentDefinition</code> — the closest analog is <code class="inline">permissionMode</code> (tool-permission mode) and, at the filesystem level, the scope/location of the definition file. The newer/experimental fields (<code class="inline">background</code>, <code class="inline">effort</code>, <code class="inline">initialPrompt</code>, <code class="inline">criticalSystemReminder_EXPERIMENTAL</code>) may change — confirm against the live TS/Python reference.</div>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">You define a subagent with no <code class="inline">tools</code> field at all. What tool access does it get?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>All of them.</strong> "If omitted, <code class="inline">tools</code> inherits all tools." To restrict a subagent, you must explicitly list an allow-list (or use <code class="inline">disallowedTools</code> as a denylist). Omitting <code class="inline">tools</code> is the "full access" combo — which is the opposite of least privilege.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="1">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">In the Python SDK, which constructor call is correct?</div>
+    <button class="opt"><code class="inline">AgentDefinition(description=..., prompt=..., max_turns=5)</code></button>
+    <button class="opt"><code class="inline">AgentDefinition(description=..., prompt=..., maxTurns=5)</code></button>
+    <button class="opt"><code class="inline">AgentDefinition(desc=..., system_prompt=..., maxTurns=5)</code></button>
+    <button class="opt"><code class="inline">AgentDefinition(description=..., prompt=..., permission_mode='plan')</code></button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden><code class="inline">AgentDefinition</code> fields are camelCase even in Python — <code class="inline">maxTurns</code>, not <code class="inline">max_turns</code>. A snake_case keyword raises a <code class="inline">TypeError</code> at construction. (The snake_case style belongs to <code class="inline">ClaudeAgentOptions</code>, not <code class="inline">AgentDefinition</code>.)</div>
+  </div>
+</section>
+
+<!-- LESSON 3 — the agents parameter -->
+<section class="lesson" id="l3" data-lesson="3">
+  <div class="lmeta"><span class="ltag"><span class="emoji">📦</span> Section 3</span><span class="ltime">⏱ ~9 min · core · code-heavy</span></div>
+  <h3 class="ltitle">The <code class="inline">agents</code> parameter — programmatic vs. filesystem</h3>
+
+  <div class="objectives">
+    <div class="lab">What you'll be able to do</div>
+    <ul>
+      <li>Write the <code class="inline">agents</code> type for TS and Python, and identify what the dict <em>key</em> means</li>
+      <li>State the precedence rule (programmatic vs. filesystem) and the full filesystem ladder</li>
+      <li>Choose programmatic vs. filesystem definitions for a given scenario</li>
+    </ul>
+  </div>
+
+  <p>You pass programmatic subagents through one option. Its type is small but exact:</p>
+  <ul>
+    <li><strong>TypeScript</strong> <code class="inline">Options</code>: <code class="inline">agents?: Record&lt;string, AgentDefinition&gt;</code></li>
+    <li><strong>Python</strong> <code class="inline">ClaudeAgentOptions</code>: <code class="inline">agents: dict[str, AgentDefinition] | None = None</code></li>
+  </ul>
+  <p>In both, <strong>the key is the agent's name</strong> and the value is its definition. Here is the verbatim Python invocation — note <code class="inline">"Agent"</code> in <code class="inline">allowed_tools</code> (we'll see why in §4):</p>
+
+  <div class="codelabel">Python — the <code class="inline">agents={...}</code> query example (verbatim)</div>
+  <pre class="code"><code><span class="key">import</span> asyncio
+<span class="key">from</span> claude_agent_sdk <span class="key">import</span> query, ClaudeAgentOptions, AgentDefinition
+
+<span class="key">async def</span> main():
+    <span class="key">async for</span> message <span class="key">in</span> query(
+        prompt=<span class="str">"Review the authentication module for security issues"</span>,
+        options=ClaudeAgentOptions(
+            <span class="cmt"># Auto-approve these tools, including Agent for subagent invocation</span>
+            allowed_tools=[<span class="str">"Read"</span>, <span class="str">"Grep"</span>, <span class="str">"Glob"</span>, <span class="str">"Agent"</span>],
+            agents={
+                <span class="str">"code-reviewer"</span>: AgentDefinition(
+                    description=<span class="str">"Expert code review specialist. Use for quality, security, and maintainability reviews."</span>,
+                    prompt=<span class="str">"""You are a code review specialist..."""</span>,
+                    tools=[<span class="str">"Read"</span>, <span class="str">"Grep"</span>, <span class="str">"Glob"</span>],
+                    model=<span class="str">"sonnet"</span>,
+                ),
+                <span class="str">"test-runner"</span>: AgentDefinition(
+                    description=<span class="str">"Runs and analyzes test suites. Use for test execution and coverage analysis."</span>,
+                    prompt=<span class="str">"""You are a test execution specialist..."""</span>,
+                    tools=[<span class="str">"Bash"</span>, <span class="str">"Read"</span>, <span class="str">"Grep"</span>],
+                ),
+            },
+        ),
+    ):
+        <span class="key">if</span> hasattr(message, <span class="str">"result"</span>):
+            print(message.result)
+
+asyncio.run(main())</code></pre>
+
+  <p>The TS equivalent uses <code class="inline">allowedTools: [..., "Agent"]</code> and <code class="inline">agents: { "code-reviewer": { description, prompt, tools, model } }</code> — the same shape, camelCase throughout.</p>
+
+  <h4>Precedence — who wins on a name clash</h4>
+  <p>The headline rule: <strong>programmatically defined agents take precedence over filesystem-based agents with the same name.</strong> Within the filesystem world there's a fuller ladder (highest → lowest):</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 230" role="img" aria-label="Precedence ladder: programmatic agents override filesystem; filesystem ladder from managed settings down to plugin agents">
+      <defs><style>.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 11px sans-serif;fill:#5c544c}.w{font:700 11px sans-serif;fill:#fff}</style>
+      <marker id="ap2" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#6b5b95"/></marker></defs>
+      <rect x="40" y="18" width="620" height="40" rx="10" fill="#6b5b95"/><text class="w" x="350" y="43" text-anchor="middle">PROGRAMMATIC agents={} — wins over any filesystem agent of the same name</text>
+      <line x1="350" y1="58" x2="350" y2="76" stroke="#6b5b95" stroke-width="2" marker-end="url(#ap2)"/>
+      <rect x="120" y="80" width="460" height="26" rx="7" fill="#f7e3df" stroke="#b3402f"/><text class="s" x="350" y="98" text-anchor="middle">Managed settings (org policy)</text>
+      <rect x="120" y="110" width="460" height="26" rx="7" fill="#f4e6df" stroke="#c96442"/><text class="s" x="350" y="128" text-anchor="middle">--agents CLI flag (session, JSON inline)</text>
+      <rect x="120" y="140" width="460" height="26" rx="7" fill="#f6edd6" stroke="#b8860b"/><text class="s" x="350" y="158" text-anchor="middle">.claude/agents/ (project)</text>
+      <rect x="120" y="170" width="460" height="26" rx="7" fill="#e0efee" stroke="#3a7d7b"/><text class="s" x="350" y="188" text-anchor="middle">~/.claude/agents/ (user)</text>
+      <rect x="120" y="200" width="460" height="26" rx="7" fill="#e3f0e6" stroke="#3f7d4f"/><text class="s" x="350" y="218" text-anchor="middle">plugin agents/ directory</text>
+    </svg>
+    <figcaption>Programmatic definitions sit above the whole filesystem stack. Inside the filesystem: managed &gt; <code class="inline">--agents</code> flag &gt; project &gt; user &gt; plugin.</figcaption>
+  </figure>
+
+  <h4>When to use each</h4>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Use programmatic <code class="inline">agents</code> when…</th><th>Use filesystem <code class="inline">.claude/agents/*.md</code> when…</th></tr></thead>
+    <tbody>
+      <tr><td>Building an SDK app</td><td>You want reusable, version-controlled team agents</td></tr>
+      <tr><td>Agents are dynamic / runtime-parameterized (e.g. a factory returning a stricter agent on a more capable model)</td><td>Prompts are complex / long</td></tr>
+      <tr><td>The definition is generated in code</td><td>Windows workaround: long programmatic prompts can hit the 8191-char command-line limit — use file-based instead</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">A project ships a <code class="inline">.claude/agents/code-reviewer.md</code>, and your SDK app also passes <code class="inline">agents={"code-reviewer": ...}</code>. Which definition runs?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>The programmatic one.</strong> "Programmatically defined agents take precedence over filesystem-based agents with the same name." The file is shadowed for that name as long as your code defines it.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="0">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">In <code class="inline">agents: Record&lt;string, AgentDefinition&gt;</code>, what does the key represent?</div>
+    <button class="opt">The agent's name (used to invoke / route to it)</button>
+    <button class="opt">The agent's model alias</button>
+    <button class="opt">The tool allow-list</button>
+    <button class="opt">The permission mode</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>The key is the agent's name; the value is its <code class="inline">AgentDefinition</code>. In filesystem terms, the key corresponds to frontmatter <code class="inline">name</code> / the file's identity.</div>
+  </div>
+</section>
+
+<!-- ======================= SECTION B DIVIDER ======================= -->
+<div class="sec-divider" id="secB">
+  <span class="badge"><span class="emoji">🔁</span> The delegation model</span>
+  <h2>One channel in, one channel out</h2>
+  <p>How a delegation actually runs: the Agent tool fires, a fresh subagent context spins up, work happens in isolation, and only a final message comes back. This is the most-tested mechanic in Domain 1.</p>
+</div>
+
+<!-- LESSON 4 — runtime delegation -->
+<section class="lesson" id="l4" data-lesson="4">
+  <div class="lmeta"><span class="ltag"><span class="emoji">🛰️</span> Section 4</span><span class="ltime">⏱ ~9 min · core</span></div>
+  <h3 class="ltitle">Runtime delegation — the Agent (formerly Task) tool</h3>
+
+  <div class="objectives">
+    <div class="lab">What you'll be able to do</div>
+    <ul>
+      <li>Describe how the parent delegates via the Agent tool, and what returns</li>
+      <li>Distinguish automatic vs. explicit invocation</li>
+      <li>Explain why <code class="inline">Agent</code> must be in <code class="inline">allowedTools</code> to auto-approve delegation</li>
+    </ul>
+  </div>
+
+  <p>The main agent delegates by calling the <strong><code class="inline">Agent</code> tool</strong> (the built-in subagent / Task tool). The subagent then runs in <strong>its own fresh conversation</strong>: "Intermediate tool calls and results stay inside the subagent; <strong>only its final message returns to the parent</strong>."</p>
+
+  <h4>SVG (c) — the delegation flow</h4>
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 250" role="img" aria-label="Parent calls the Agent tool with a prompt string, the subagent runs in its own context, only the final message returns">
+      <defs><style>.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 10.5px sans-serif;fill:#5c544c}.w{font:700 10px sans-serif;fill:#fff}.h{font:700 11px sans-serif;fill:#a44a2e}</style>
+      <marker id="ad" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#c96442"/></marker>
+      <marker id="ad2" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#3f7d4f"/></marker></defs>
+      <rect x="18" y="80" width="150" height="90" rx="12" fill="#f4e6df" stroke="#c96442" stroke-width="2"/>
+      <text class="t" x="93" y="118" text-anchor="middle">Parent agent</text><text class="s" x="93" y="138" text-anchor="middle">main conversation</text>
+      <rect x="250" y="92" width="120" height="66" rx="10" fill="#6b5b95"/><text class="w" x="310" y="120" text-anchor="middle">Agent tool</text><text class="w" x="310" y="138" text-anchor="middle" style="font-weight:400">(formerly Task)</text>
+      <rect x="470" y="60" width="212" height="130" rx="12" fill="#e0efee" stroke="#3a7d7b" stroke-width="2"/>
+      <text class="t" x="576" y="84" text-anchor="middle">Subagent</text><text class="s" x="576" y="104" text-anchor="middle">own fresh context</text>
+      <text class="s" x="576" y="124" text-anchor="middle">intermediate tool calls</text>
+      <text class="s" x="576" y="142" text-anchor="middle">&amp; results stay inside</text>
+      <text class="s" x="576" y="174" text-anchor="middle" style="font-style:italic">isolated window</text>
+      <!-- in -->
+      <path d="M168 108 L 248 108" stroke="#c96442" stroke-width="2.4" marker-end="url(#ad)"/>
+      <path d="M370 108 L 468 108" stroke="#c96442" stroke-width="2.4" marker-end="url(#ad)"/>
+      <text class="h" x="200" y="60" text-anchor="middle">prompt string =</text><text class="h" x="200" y="74" text-anchor="middle">the ONLY channel in</text>
+      <!-- out -->
+      <path d="M468 168 C 360 220, 200 200, 168 150" fill="none" stroke="#3f7d4f" stroke-width="2.4" marker-end="url(#ad2)"/>
+      <text class="s" x="330" y="232" text-anchor="middle" style="font-style:italic">← only the final message returns (verbatim)</text>
+    </svg>
+    <figcaption>The parent → Agent tool (prompt string) → subagent's own context → final message back. Everything between is invisible to the parent.</figcaption>
+  </figure>
+
+  <div class="verifynote"><b><span class="emoji">⚠️</span> <span class="verify">VERIFY</span> — the Task → Agent rename (v2.1.63):</b> "The tool name was renamed from <code class="inline">"Task"</code> to <code class="inline">"Agent"</code> in Claude Code v2.1.63." Current SDK releases emit <code class="inline">"Agent"</code> in <code class="inline">tool_use</code> blocks but still use <code class="inline">"Task"</code> in the <code class="inline">system:init</code> tools list and in <code class="inline">result.permission_denials[].tool_name</code> — <b>check both</b> <code class="inline">"Task"</code> and <code class="inline">"Agent"</code> for compatibility. At the filesystem/CLI level, existing <code class="inline">Task(...)</code> references in settings and agent definitions still work as aliases. Reconfirm the exact version and emit behavior against the live docs.</div>
+
+  <h4>Auto-approve: include <code class="inline">Agent</code> in <code class="inline">allowedTools</code></h4>
+  <p>This is the single most common cause of "Claude won't delegate." <strong>To auto-approve delegation, include <code class="inline">Agent</code> in <code class="inline">allowedTools</code>.</strong> Without it, Agent invocations fall through to the <code class="inline">canUseTool</code> callback, or are denied in <code class="inline">dontAsk</code> mode. That's why every example in §3 lists <code class="inline">"Agent"</code> alongside <code class="inline">Read</code>/<code class="inline">Grep</code>/<code class="inline">Glob</code>.</p>
+
+  <h4>Automatic vs. explicit invocation</h4>
+  <ul>
+    <li><strong>Automatic</strong> — Claude matches the task to a subagent's <code class="inline">description</code> and delegates on its own.</li>
+    <li><strong>Explicit</strong> — you name it in the prompt: <em>"Use the code-reviewer agent to check the authentication module"</em> — which bypasses automatic matching.</li>
+  </ul>
+  <p><strong>Detection.</strong> Subagent invocations appear as <code class="inline">tool_use</code> blocks where <code class="inline">name</code> is <code class="inline">"Agent"</code> (or legacy <code class="inline">"Task"</code>); messages from inside a subagent carry a <code class="inline">parent_tool_use_id</code>; <code class="inline">block.input.subagent_type</code> names the agent.</p>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">Your subagents are well-described but Claude keeps doing the work itself instead of delegating. Your <code class="inline">allowedTools</code> is <code class="inline">["Read","Grep","Glob"]</code>. What's the most likely fix?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>Add <code class="inline">"Agent"</code> to <code class="inline">allowedTools</code>.</strong> Without it, the delegation tool isn't auto-approved — invocations fall to the <code class="inline">canUseTool</code> callback or get denied in <code class="inline">dontAsk</code> mode. (Secondary fixes: name the subagent explicitly, or sharpen its <code class="inline">description</code>.)</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="2">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">After the v2.1.63 rename, where does the <em>legacy</em> name <code class="inline">"Task"</code> still appear in SDK output?</div>
+    <button class="opt">Only in <code class="inline">tool_use</code> blocks</button>
+    <button class="opt">Nowhere — it was fully removed</button>
+    <button class="opt">In the <code class="inline">system:init</code> tools list and <code class="inline">permission_denials[].tool_name</code></button>
+    <button class="opt">In <code class="inline">parent_tool_use_id</code></button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>Current SDK releases emit <code class="inline">"Agent"</code> in <code class="inline">tool_use</code> blocks but still use <code class="inline">"Task"</code> in the <code class="inline">system:init</code> tools list and in <code class="inline">result.permission_denials[].tool_name</code> — so robust code checks for both.</div>
+  </div>
+</section>
+
+<!-- LESSON 5 — single channel -->
+<section class="lesson" id="l5" data-lesson="5">
+  <div class="lmeta"><span class="ltag"><span class="emoji">🪢</span> Section 5</span><span class="ltime">⏱ ~8 min · core · most exam-relevant</span></div>
+  <h3 class="ltitle">The prompt string is the ONLY channel — "fresh but not empty"</h3>
+
+  <div class="objectives">
+    <div class="lab">What you'll be able to do</div>
+    <ul>
+      <li>State the single-channel rule and its design consequence (self-contain every delegation)</li>
+      <li>List what a subagent <em>receives</em> vs. <em>does not receive</em></li>
+      <li>Explain "fresh but not empty" context inheritance</li>
+    </ul>
+  </div>
+
+  <p>This is the rule the exam tests most. "<strong>The only channel from parent to subagent is the Agent tool's prompt string</strong>, so include any file paths, error messages, or decisions the subagent needs directly in that prompt." There is <em>no shared memory</em> between parent and subagent within a single delegation.</p>
+
+  <p>But "fresh" doesn't mean "empty." The subagent's context starts with <strong>no parent history</strong>, yet it inherits its own system prompt, the Agent tool's prompt string, project CLAUDE.md (via <code class="inline">settingSources</code>), and tool definitions per its definition.</p>
+
+  <h4>SVG (d) — what crosses the boundary vs. what doesn't</h4>
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 270" role="img" aria-label="Two columns: what the subagent receives versus what it does not receive across the boundary">
+      <defs><style>.t{font:700 13px sans-serif;fill:#2b2622}.s{font:400 11px sans-serif;fill:#2c4f4e}.x{font:400 11px sans-serif;fill:#7a3328}.g{font:700 11px sans-serif;fill:#3f7d4f}.r{font:700 11px sans-serif;fill:#b3402f}</style></defs>
+      <rect x="16" y="40" width="320" height="216" rx="12" fill="#e3f0e6" stroke="#3f7d4f" stroke-width="1.5"/>
+      <text class="g" x="176" y="30" text-anchor="middle">RECEIVES ✓ (crosses the boundary)</text>
+      <text class="s" x="34" y="74">• Its own system prompt (AgentDefinition.prompt)</text>
+      <text class="s" x="34" y="98">&nbsp;&nbsp;+ the Agent tool's prompt string</text>
+      <text class="s" x="34" y="126">• Project CLAUDE.md (via settingSources)</text>
+      <text class="s" x="34" y="150">&nbsp;&nbsp;+ the memory hierarchy</text>
+      <text class="s" x="34" y="178">• Tool definitions (inherited, or the</text>
+      <text class="s" x="34" y="202">&nbsp;&nbsp;subset in `tools`)</text>
+      <text class="s" x="34" y="230">• A git-status snapshot + env details</text>
+      <rect x="364" y="40" width="320" height="216" rx="12" fill="#f7e3df" stroke="#b3402f" stroke-width="1.5"/>
+      <text class="r" x="524" y="30" text-anchor="middle">DOES NOT RECEIVE ✗</text>
+      <text class="x" x="382" y="78">• The parent's conversation history</text>
+      <text class="x" x="382" y="102">&nbsp;&nbsp;or tool results</text>
+      <text class="x" x="382" y="138">• Preloaded skill content, unless listed</text>
+      <text class="x" x="382" y="162">&nbsp;&nbsp;in AgentDefinition.skills</text>
+      <text class="x" x="382" y="198">• The parent's system prompt</text>
+      <line x1="350" y1="48" x2="350" y2="248" stroke="#b08a6a" stroke-width="1" stroke-dasharray="4 4"/>
+    </svg>
+    <figcaption>"Fresh but not empty." The subagent gets its own prompt, the Agent tool's prompt, CLAUDE.md, and tool defs — never the parent's history, results, or system prompt; never unlisted skill content.</figcaption>
+  </figure>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>The subagent <b>receives</b></th><th>The subagent <b>does NOT receive</b></th></tr></thead>
+    <tbody>
+      <tr><td>Its own system prompt (<code class="inline">AgentDefinition.prompt</code>) + the Agent tool's prompt</td><td>The parent's conversation history or tool results</td></tr>
+      <tr><td>Project CLAUDE.md (loaded via <code class="inline">settingSources</code>)</td><td>Preloaded skill content, unless listed in <code class="inline">AgentDefinition.skills</code></td></tr>
+      <tr><td>Tool definitions (inherited from parent, or the subset in <code class="inline">tools</code>)</td><td>The parent's system prompt</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p><span class="analogy">Analogy</span> Delegating to a subagent is like emailing a contractor who has never seen your project: they know their own trade (system prompt) and the company handbook (CLAUDE.md), but they did <em>not</em> sit in your earlier meetings. If a decision was made in a meeting they missed, you must restate it in the email — or it never reaches them. (Author analogy, not a product fact.)</p>
+
+  <div class="callout tip collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🧰</span> Design rule — self-contain every delegation<span class="chev">▼</span></div>
+  <div class="cbody"><p>Pass concrete <strong>file paths</strong>, exact <strong>error strings</strong>, and prior <strong>decisions</strong> in the invocation prompt. If a rule must reach the subagent (e.g. "ignore <code class="inline">vendor/</code>"), <strong>restate it in the delegation prompt</strong> — the subagent does not see the parent's earlier context.</p></div></div>
+
+  <div class="verifynote"><b><span class="emoji">↩️</span> Return-value caveat:</b> the parent receives the subagent's final message <em>verbatim</em> as the Agent tool result, but may <strong>summarize</strong> it in its own response. To preserve subagent output verbatim in the user-facing answer, instruct that in the <b>main</b> <code class="inline">query()</code> prompt / <code class="inline">systemPrompt</code>.</div>
+
+  <div class="mcq" data-mcq data-correct="3">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">A subagent needs to skip <code class="inline">vendor/</code>, a rule established earlier in the parent's conversation. How does it learn the rule?</div>
+    <button class="opt">It inherits the parent's conversation history</button>
+    <button class="opt">It reads the parent's system prompt</button>
+    <button class="opt">It automatically shares memory with the parent</button>
+    <button class="opt">You must restate the rule in the delegation prompt string</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>The prompt string is the only channel in. The subagent doesn't see the parent's history or system prompt, so any rule established earlier must be restated directly in the delegation prompt.</div>
+  </div>
+</section>
+
+<!-- LESSON 6 — context isolation -->
+<section class="lesson" id="l6" data-lesson="6">
+  <div class="lmeta"><span class="ltag"><span class="emoji">🛡️</span> Section 6</span><span class="ltime">⏱ ~7 min · concept</span></div>
+  <h3 class="ltitle">Context isolation — why subagents protect the main thread</h3>
+
+  <div class="objectives">
+    <div class="lab">What you'll be able to do</div>
+    <ul>
+      <li>Explain how isolated context windows save the main thread's budget</li>
+      <li>Recognize the "filtering through large datasets" fit signal</li>
+      <li>Recall the persistence detail (separate transcript files, immune to main compaction)</li>
+    </ul>
+  </div>
+
+  <p>The single channel out is also a context-management feature. Because "intermediate tool calls and results stay inside the subagent; only its final message returns," a <code class="inline">research-assistant</code> can "explore dozens of files without any of that content accumulating in the main conversation. The parent receives a concise summary, not every file the subagent read."</p>
+
+  <p>The engineering framing: "Subagents use their own isolated context windows, and only send relevant information back to the orchestrator" — ideal for "tasks requiring filtering through large datasets where most information won't be useful." This ties to the agent loop: <strong>gather context → take action → verify work → repeat</strong>. (This connects to context management — see C-E2 if you've covered it.)</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 200" role="img" aria-label="Main thread context stays small while a subagent absorbs dozens of files and returns only a summary">
+      <defs><style>.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 10.5px sans-serif;fill:#5c544c}</style>
+      <marker id="ai" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#3f7d4f"/></marker></defs>
+      <rect x="20" y="40" width="180" height="120" rx="12" fill="#f4e6df" stroke="#c96442" stroke-width="2"/>
+      <text class="t" x="110" y="66" text-anchor="middle">Main thread</text>
+      <rect x="40" y="80" width="140" height="14" rx="4" fill="#e3f0e6"/><text class="s" x="110" y="112" text-anchor="middle">window stays small —</text><text class="s" x="110" y="128" text-anchor="middle">holds only the summary</text>
+      <rect x="430" y="22" width="250" height="156" rx="12" fill="#e0efee" stroke="#3a7d7b" stroke-width="2"/>
+      <text class="t" x="555" y="46" text-anchor="middle">research-assistant subagent</text>
+      <rect x="450" y="60" width="48" height="22" rx="4" fill="#fff" stroke="#3a7d7b"/><rect x="504" y="60" width="48" height="22" rx="4" fill="#fff" stroke="#3a7d7b"/><rect x="558" y="60" width="48" height="22" rx="4" fill="#fff" stroke="#3a7d7b"/><rect x="612" y="60" width="48" height="22" rx="4" fill="#fff" stroke="#3a7d7b"/>
+      <rect x="450" y="88" width="48" height="22" rx="4" fill="#fff" stroke="#3a7d7b"/><rect x="504" y="88" width="48" height="22" rx="4" fill="#fff" stroke="#3a7d7b"/><rect x="558" y="88" width="48" height="22" rx="4" fill="#fff" stroke="#3a7d7b"/><rect x="612" y="88" width="48" height="22" rx="4" fill="#fff" stroke="#3a7d7b"/>
+      <text class="s" x="555" y="138" text-anchor="middle">dozens of files explored here,</text><text class="s" x="555" y="154" text-anchor="middle">never crossing into the main thread</text>
+      <path d="M428 110 C 320 150, 240 130, 202 110" fill="none" stroke="#3f7d4f" stroke-width="2.4" marker-end="url(#ai)"/>
+      <text class="s" x="312" y="166" text-anchor="middle" style="font-style:italic">← concise summary only</text>
+    </svg>
+    <figcaption>The subagent's isolated window absorbs the search/log/file noise; the main conversation receives a concise summary. This is the context-budget win.</figcaption>
+  </figure>
+
+  <div class="callout tip collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">💾</span> Persistence detail<span class="chev">▼</span></div>
+  <div class="cbody"><p>Subagent transcripts are stored in <strong>separate files</strong> and are <strong>unaffected by main-conversation compaction</strong>; they persist within their session and are cleaned up per <code class="inline">cleanupPeriodDays</code> (default 30 days). Subagents support auto-compaction at ~95% capacity (override via <code class="inline">CLAUDE_AUTOCOMPACT_PCT_OVERRIDE</code>).</p></div></div>
+
+  <p><strong>When to reach for it.</strong> Use a subagent "when a side task would flood your main conversation with search results, logs, or file contents you won't reference again" — e.g. "run the test suite and report only the failing tests with their error messages."</p>
+
+  <div class="mcq" data-mcq data-correct="1">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">What is the primary context-management benefit of delegating a file-heavy search to a subagent?</div>
+    <button class="opt">The subagent runs faster than the main thread</button>
+    <button class="opt">The file contents stay in the subagent's isolated window; only a summary returns to the main thread</button>
+    <button class="opt">The subagent can spawn its own subagents to parallelize</button>
+    <button class="opt">The parent's compaction also clears the subagent transcript</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>Isolation means the search results/files accumulate in the subagent's own window, and only a concise summary returns — protecting the main thread's budget. (Subagents can't spawn subagents, and their transcripts are immune to main-conversation compaction.)</div>
+  </div>
+</section>
+
+<!-- ======================= SECTION C DIVIDER ======================= -->
+<div class="sec-divider" id="secC">
+  <span class="badge"><span class="emoji">🚧</span> Guardrails &amp; scale</span>
+  <h2>The rules that keep delegation safe — and the graduation to Workflows</h2>
+  <p>No nesting, least privilege, model selection, permission precedence, and the moment a handful of delegations becomes a coordinated script.</p>
+</div>
+
+<!-- LESSON 7 — guardrails -->
+<section class="lesson" id="l7" data-lesson="7">
+  <div class="lmeta"><span class="ltag"><span class="emoji">🚫</span> Section 7</span><span class="ltime">⏱ ~11 min · core</span></div>
+  <h3 class="ltitle">Guardrails — no nesting, least privilege, model, permissions, turns</h3>
+
+  <div class="objectives">
+    <div class="lab">What you'll be able to do</div>
+    <ul>
+      <li>State the no-nesting rule and what to do instead</li>
+      <li>Apply least-privilege tool allow-lists (and the denylist-first ordering)</li>
+      <li>Reason about per-subagent model selection, permission-mode precedence, and <code class="inline">maxTurns</code></li>
+    </ul>
+  </div>
+
+  <h4>The core rule: no nested subagents</h4>
+  <p>"<strong>Subagents cannot spawn their own subagents. Don't include <code class="inline">Agent</code> in a subagent's <code class="inline">tools</code> array.</strong>" If your workflow needs nested delegation, "use Skills or chain subagents from the main conversation." This is also why plan mode uses the read-only <strong>Plan</strong> subagent — "This prevents infinite nesting."</p>
+
+  <h4>SVG (e) — the no-nesting rule</h4>
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 210" role="img" aria-label="A parent can spawn subagents, but a subagent cannot spawn a sub-subagent">
+      <defs><style>.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 10.5px sans-serif;fill:#5c544c}</style>
+      <marker id="an" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#3f7d4f"/></marker></defs>
+      <rect x="270" y="16" width="160" height="40" rx="10" fill="#f4e6df" stroke="#c96442" stroke-width="2"/><text class="t" x="350" y="41" text-anchor="middle">Parent (main thread)</text>
+      <line x1="320" y1="56" x2="200" y2="88" stroke="#3f7d4f" stroke-width="2" marker-end="url(#an)"/>
+      <line x1="380" y1="56" x2="500" y2="88" stroke="#3f7d4f" stroke-width="2" marker-end="url(#an)"/>
+      <rect x="120" y="90" width="160" height="40" rx="10" fill="#e0efee" stroke="#3a7d7b"/><text class="t" x="200" y="115" text-anchor="middle">Subagent A</text>
+      <rect x="420" y="90" width="160" height="40" rx="10" fill="#e0efee" stroke="#3a7d7b"/><text class="t" x="500" y="115" text-anchor="middle">Subagent B</text>
+      <!-- forbidden nesting -->
+      <rect x="120" y="160" width="160" height="36" rx="10" fill="#f7e3df" stroke="#b3402f" stroke-dasharray="5 4"/><text class="s" x="200" y="183" text-anchor="middle" style="fill:#b3402f">sub-subagent</text>
+      <line x1="200" y1="130" x2="200" y2="156" stroke="#b3402f" stroke-width="2" stroke-dasharray="4 4"/>
+      <text class="t" x="232" y="148" style="fill:#b3402f;font-size:18px">✗</text>
+      <text class="s" x="350" y="180" text-anchor="middle">The tree is ONE level deep. Need nesting?</text>
+      <text class="s" x="350" y="196" text-anchor="middle">Use Skills, or chain subagents from the main conversation.</text>
+    </svg>
+    <figcaption>A parent delegates to workers; a worker cannot delegate further. Never put <code class="inline">Agent</code> in a subagent's <code class="inline">tools</code>.</figcaption>
+  </figure>
+
+  <p><strong>Note:</strong> <code class="inline">Agent(agent_type)</code> allow-listing only matters for an agent running as the <em>main thread</em> via <code class="inline">claude --agent</code>; it "has no effect in subagent definitions."</p>
+
+  <h4>Least privilege — tool allow-lists</h4>
+  <p>Omit <code class="inline">tools</code> → inherits all; specify <code class="inline">tools</code> → allow-list only. Ordering matters: <strong><code class="inline">disallowedTools</code> is a denylist applied first</strong>, then <code class="inline">tools</code> resolves against the remainder; a tool in both is removed.</p>
+
+  <h4>SVG (f) — least-privilege tool combos</h4>
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 200" role="img" aria-label="Four documented tool combinations by use case, from read-only to full access">
+      <defs><style>.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 10.5px monospace;fill:#2c4f4e}.u{font:700 11px sans-serif;fill:#a44a2e}</style></defs>
+      <rect x="18" y="24" width="320" height="72" rx="10" fill="#e0efee" stroke="#3a7d7b"/><text class="u" x="34" y="46">Read-only analysis</text><text class="s" x="34" y="72">Read · Grep · Glob</text>
+      <rect x="362" y="24" width="320" height="72" rx="10" fill="#f6edd6" stroke="#b8860b"/><text class="u" x="378" y="46">Test execution</text><text class="s" x="378" y="72">Bash · Read · Grep</text>
+      <rect x="18" y="108" width="320" height="72" rx="10" fill="#e3f0e6" stroke="#3f7d4f"/><text class="u" x="34" y="130">Code modification</text><text class="s" x="34" y="156">Read · Edit · Write · Grep · Glob</text>
+      <rect x="362" y="108" width="320" height="72" rx="10" fill="#f7e3df" stroke="#b3402f"/><text class="u" x="378" y="130">Full access</text><text class="s" x="378" y="156">omit `tools` (inherits all)</text>
+    </svg>
+    <figcaption>Grant only what the job needs. "Full access" = omit <code class="inline">tools</code> — convenient, but the opposite of least privilege.</figcaption>
+  </figure>
+
+  <div class="verifynote"><b><span class="emoji">🔒</span> Never-available tools:</b> some UI/session tools are <b>never</b> available to subagents even if listed — <code class="inline">Agent</code>, <code class="inline">AskUserQuestion</code>, <code class="inline">EnterPlanMode</code>, <code class="inline">ExitPlanMode</code> (unless <code class="inline">permissionMode: plan</code>), <code class="inline">ScheduleWakeup</code>, <code class="inline">WaitForMcpServers</code>.</div>
+
+  <h4>Per-subagent model selection</h4>
+  <p>Set <code class="inline">model</code> to <code class="inline">sonnet</code>/<code class="inline">opus</code>/<code class="inline">haiku</code>/<code class="inline">inherit</code> or a full ID; it defaults to <code class="inline">inherit</code> if omitted. Resolution order: <code class="inline">CLAUDE_CODE_SUBAGENT_MODEL</code> env var → per-invocation <code class="inline">model</code> param → definition <code class="inline">model</code> → main model. <strong>Cost lever:</strong> route routine work to Haiku.</p>
+
+  <h4>Permission-mode precedence</h4>
+  <p>A subagent may override <code class="inline">permissionMode</code>, <strong>except</strong> a parent in <code class="inline">bypassPermissions</code> or <code class="inline">acceptEdits</code> takes precedence and cannot be overridden; under parent <code class="inline">auto</code> mode the subagent inherits auto and its frontmatter <code class="inline">permissionMode</code> is ignored.</p>
+
+  <h4><code class="inline">maxTurns</code> and timeout</h4>
+  <p><code class="inline">maxTurns</code> caps agentic turns before the subagent stops. <span class="verify">VERIFY</span>: no explicit wall-clock <em>timeout</em> field is documented for <code class="inline">AgentDefinition</code> — verify timeout behavior against the live docs.</p>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">A teammate wants a "manager" subagent that spawns its own team of worker subagents. What does the source say, and what's the right alternative?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>Not allowed.</strong> "Subagents cannot spawn their own subagents" — never put <code class="inline">Agent</code> in a subagent's <code class="inline">tools</code>. The right alternatives: <strong>use Skills</strong> for nested behavior, or <strong>chain subagents from the main conversation</strong>. For large fan-out, graduate to the Workflow tool (§9).</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="0">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">When both <code class="inline">disallowedTools</code> and <code class="inline">tools</code> are set, how are they resolved?</div>
+    <button class="opt"><code class="inline">disallowedTools</code> is applied first (denylist), then <code class="inline">tools</code> resolves against the remainder; a tool in both is removed</button>
+    <button class="opt"><code class="inline">tools</code> always wins, even over the denylist</button>
+    <button class="opt">They're merged into one big allow-list</button>
+    <button class="opt">Setting both raises an error</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>The denylist is applied first, then the allow-list resolves against what's left. A tool named in both ends up removed.</div>
+  </div>
+</section>
+
+<!-- LESSON 8 — CLI <-> SDK mapping -->
+<section class="lesson" id="l8" data-lesson="8">
+  <div class="lmeta"><span class="ltag"><span class="emoji">🔀</span> Section 8</span><span class="ltime">⏱ ~9 min · core · Domain 2</span></div>
+  <h3 class="ltitle">CLI ↔ SDK mapping — the 1:1 field bridge</h3>
+
+  <div class="objectives">
+    <div class="lab">What you'll be able to do</div>
+    <ul>
+      <li>Read <code class="inline">.claude/agents/&lt;name&gt;.md</code> frontmatter and map it to <code class="inline">AgentDefinition</code></li>
+      <li>Identify the filesystem-only fields (<code class="inline">hooks</code>, <code class="inline">isolation</code>, <code class="inline">color</code>) absent from the SDK type</li>
+      <li>Explain what the <code class="inline">/agents</code> UI and <code class="inline">--agents</code> flag do</li>
+    </ul>
+  </div>
+
+  <p>The <code class="inline">/agents</code> command opens a tabbed UI (Running / Library) to create, edit, delete, and inspect subagents; it writes Markdown files with YAML frontmatter. Those fields map <strong>1:1</strong> to the SDK's <code class="inline">AgentDefinition</code>. Here's a verbatim file:</p>
+
+  <div class="codelabel">.claude/agents/code-reviewer.md (frontmatter + body = the system prompt)</div>
+  <pre class="code"><code><span class="frontmatter">---
+name: code-reviewer
+description: Reviews code for quality and best practices
+tools: Read, Glob, Grep
+model: sonnet
+---</span>
+
+You are a code reviewer. When invoked, analyze the code and provide
+specific, actionable feedback on quality, security, and best practices.</code></pre>
+
+  <p>Only <code class="inline">name</code> and <code class="inline">description</code> are required in frontmatter. The Markdown <strong>body</strong> is the system prompt — i.e. the SDK <code class="inline">prompt</code>.</p>
+
+  <h4>SVG (b) — frontmatter ↔ <code class="inline">agents:{}</code></h4>
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 280" role="img" aria-label="Two columns bridging filesystem frontmatter fields to the SDK AgentDefinition fields">
+      <defs><style>.t{font:700 12px sans-serif;fill:#2b2622}.m{font:700 11px monospace;fill:#a44a2e}.s{font:400 10px sans-serif;fill:#5c544c}</style>
+      <marker id="amap" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#6b5b95"/></marker></defs>
+      <rect x="16" y="34" width="300" height="232" rx="12" fill="#e0efee" stroke="#3a7d7b" stroke-width="1.5"/>
+      <text class="t" x="166" y="26" text-anchor="middle">.claude/agents/&lt;name&gt;.md frontmatter</text>
+      <text class="m" x="34" y="64">name:</text>
+      <text class="m" x="34" y="92">description:</text>
+      <text class="m" x="34" y="120">tools: (comma list)</text>
+      <text class="m" x="34" y="148">disallowedTools:</text>
+      <text class="m" x="34" y="176">model:</text>
+      <text class="m" x="34" y="204">(markdown body)</text>
+      <text class="m" x="34" y="232">hooks / isolation / color</text>
+      <rect x="384" y="34" width="300" height="232" rx="12" fill="#ece8f3" stroke="#6b5b95" stroke-width="1.5"/>
+      <text class="t" x="534" y="26" text-anchor="middle">agents: { "&lt;name&gt;": AgentDefinition }</text>
+      <text class="m" x="402" y="64">the dict/record KEY</text>
+      <text class="m" x="402" y="92">description</text>
+      <text class="m" x="402" y="120">tools (string[])</text>
+      <text class="m" x="402" y="148">disallowedTools</text>
+      <text class="m" x="402" y="176">model</text>
+      <text class="m" x="402" y="204">prompt</text>
+      <text class="s" x="402" y="232" style="fill:#b3402f">— NOT in the SDK type —</text>
+      <line x1="200" y1="60" x2="398" y2="60" stroke="#6b5b95" stroke-width="1.4" marker-end="url(#amap)"/>
+      <line x1="200" y1="88" x2="398" y2="88" stroke="#6b5b95" stroke-width="1.4" marker-end="url(#amap)"/>
+      <line x1="200" y1="116" x2="398" y2="116" stroke="#6b5b95" stroke-width="1.4" marker-end="url(#amap)"/>
+      <line x1="200" y1="144" x2="398" y2="144" stroke="#6b5b95" stroke-width="1.4" marker-end="url(#amap)"/>
+      <line x1="200" y1="172" x2="398" y2="172" stroke="#6b5b95" stroke-width="1.4" marker-end="url(#amap)"/>
+      <line x1="200" y1="200" x2="398" y2="200" stroke="#6b5b95" stroke-width="1.4" marker-end="url(#amap)"/>
+      <line x1="240" y1="228" x2="398" y2="228" stroke="#b3402f" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#amap)"/>
+    </svg>
+    <figcaption>Frontmatter <code class="inline">name</code> → the dict key; body → <code class="inline">prompt</code>; everything else maps by same name (camelCase in Python). <code class="inline">hooks</code>/<code class="inline">isolation</code>/<code class="inline">color</code> are filesystem-only.</figcaption>
+  </figure>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>CLI / filesystem concept</th><th>SDK equivalent</th></tr></thead>
+    <tbody>
+      <tr><td><code class="inline">/agents</code> UI</td><td>(no SDK equivalent — code defines agents directly)</td></tr>
+      <tr><td><code class="inline">.claude/agents/&lt;name&gt;.md</code> file</td><td>one entry in <code class="inline">agents: { "&lt;name&gt;": {...} }</code></td></tr>
+      <tr><td>frontmatter <code class="inline">name</code> (file identity)</td><td>the <b>key</b> in the <code class="inline">agents</code> record/dict</td></tr>
+      <tr><td>markdown body</td><td><code class="inline">AgentDefinition.prompt</code></td></tr>
+      <tr><td>frontmatter <code class="inline">description</code></td><td><code class="inline">description</code></td></tr>
+      <tr><td>frontmatter <code class="inline">tools</code> (comma list)</td><td><code class="inline">tools</code> (string array)</td></tr>
+      <tr><td>frontmatter <code class="inline">disallowedTools</code></td><td><code class="inline">disallowedTools</code></td></tr>
+      <tr><td>frontmatter <code class="inline">model</code></td><td><code class="inline">model</code></td></tr>
+      <tr><td><code class="inline">skills</code>/<code class="inline">memory</code>/<code class="inline">mcpServers</code>/<code class="inline">maxTurns</code>/<code class="inline">background</code>/<code class="inline">effort</code>/<code class="inline">permissionMode</code>/<code class="inline">initialPrompt</code></td><td>same-named fields (camelCase in Python)</td></tr>
+      <tr><td>frontmatter <code class="inline">hooks</code>/<code class="inline">isolation</code>/<code class="inline">color</code></td><td><b>filesystem-only</b> — not in the SDK type</td></tr>
+      <tr><td><code class="inline">--agents '{...}'</code> JSON</td><td>same shape as the <code class="inline">agents</code> param, session-scoped</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="verifynote"><b><span class="emoji">⚠️</span> <span class="verify">VERIFY</span>:</b> <code class="inline">hooks</code>, <code class="inline">isolation</code>, and <code class="inline">color</code> appear in filesystem/CLI frontmatter but are <b>not</b> in the documented SDK <code class="inline">AgentDefinition</code> type — verify whether the SDK type silently accepts or ignores them.</div>
+
+  <div class="mcq" data-mcq data-correct="2">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">In a <code class="inline">.claude/agents/*.md</code> file, what becomes the SDK <code class="inline">prompt</code>?</div>
+    <button class="opt">The frontmatter <code class="inline">description</code></button>
+    <button class="opt">The frontmatter <code class="inline">name</code></button>
+    <button class="opt">The Markdown body (below the frontmatter)</button>
+    <button class="opt">The frontmatter <code class="inline">tools</code> list</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>The Markdown body is the system prompt = SDK <code class="inline">prompt</code>. Frontmatter <code class="inline">name</code> → the dict key; <code class="inline">description</code> → <code class="inline">description</code>.</div>
+  </div>
+</section>
+
+<!-- LESSON 9 — Workflow graduation -->
+<section class="lesson" id="l9" data-lesson="9">
+  <div class="lmeta"><span class="ltag"><span class="emoji">📈</span> Section 9</span><span class="ltime">⏱ ~10 min · core</span></div>
+  <h3 class="ltitle">The Workflow-tool graduation — who holds the plan</h3>
+
+  <div class="objectives">
+    <div class="lab">What you'll be able to do</div>
+    <ul>
+      <li>State when a few delegations should graduate to a Workflow</li>
+      <li>Apply the "who holds the plan" distinction (Claude's context vs. script variables)</li>
+      <li>Recall the caps and the version gates</li>
+    </ul>
+  </div>
+
+  <p>"A dynamic workflow is a JavaScript script that orchestrates subagents at scale. Claude writes the script for the task you describe, and a runtime executes it in the background while your session stays responsive." The orchestration loop, branching, and intermediate results live in <strong>script variables</strong>, not Claude's context — "so Claude's context holds only the final answer."</p>
+
+  <p><strong>When to graduate.</strong> "Subagents work well for a few delegated tasks per turn. For runs that coordinate <strong>dozens to hundreds of agents</strong>, use the <code class="inline">Workflow</code> tool, which moves the orchestration into a script the runtime executes outside the conversation context." Reach for it for a codebase-wide bug sweep, a 500-file migration, cross-checked research, or multi-angle planning.</p>
+
+  <h4>SVG (g) — subagent delegation vs. Workflow at scale</h4>
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 230" role="img" aria-label="A few per-turn delegations held in Claude's context versus a script coordinating dozens of agents with results in variables">
+      <defs><style>.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 10px sans-serif;fill:#5c544c}.h{font:700 11px sans-serif;fill:#a44a2e}</style>
+      <marker id="aw" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#c96442"/></marker>
+      <marker id="aw2b" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#6b5b95"/></marker></defs>
+      <text class="h" x="170" y="22" text-anchor="middle">SUBAGENTS — a few per turn</text>
+      <rect x="120" y="34" width="110" height="34" rx="9" fill="#f4e6df" stroke="#c96442"/><text class="t" x="175" y="56" text-anchor="middle">Claude (turn)</text>
+      <line x1="150" y1="68" x2="110" y2="96" stroke="#c96442" stroke-width="1.6" marker-end="url(#aw)"/>
+      <line x1="175" y1="68" x2="175" y2="96" stroke="#c96442" stroke-width="1.6" marker-end="url(#aw)"/>
+      <line x1="200" y1="68" x2="240" y2="96" stroke="#c96442" stroke-width="1.6" marker-end="url(#aw)"/>
+      <rect x="80" y="98" width="60" height="26" rx="7" fill="#e0efee" stroke="#3a7d7b"/><text class="s" x="110" y="115" text-anchor="middle">worker</text>
+      <rect x="148" y="98" width="60" height="26" rx="7" fill="#e0efee" stroke="#3a7d7b"/><text class="s" x="178" y="115" text-anchor="middle">worker</text>
+      <rect x="216" y="98" width="60" height="26" rx="7" fill="#e0efee" stroke="#3a7d7b"/><text class="s" x="246" y="115" text-anchor="middle">worker</text>
+      <text class="s" x="178" y="158" text-anchor="middle">Claude decides what runs next,</text><text class="s" x="178" y="174" text-anchor="middle">turn by turn · results in context</text>
+      <line x1="350" y1="20" x2="350" y2="200" stroke="#e7e0d8" stroke-width="1"/>
+      <text class="h" x="528" y="22" text-anchor="middle">WORKFLOW — dozens to hundreds</text>
+      <rect x="470" y="34" width="116" height="34" rx="9" fill="#ece8f3" stroke="#6b5b95"/><text class="t" x="528" y="56" text-anchor="middle">script (runtime)</text>
+      <line x1="490" y1="68" x2="430" y2="96" stroke="#6b5b95" stroke-width="1.4" marker-end="url(#aw2b)"/>
+      <line x1="510" y1="68" x2="480" y2="96" stroke="#6b5b95" stroke-width="1.4" marker-end="url(#aw2b)"/>
+      <line x1="528" y1="68" x2="528" y2="96" stroke="#6b5b95" stroke-width="1.4" marker-end="url(#aw2b)"/>
+      <line x1="546" y1="68" x2="576" y2="96" stroke="#6b5b95" stroke-width="1.4" marker-end="url(#aw2b)"/>
+      <line x1="566" y1="68" x2="626" y2="96" stroke="#6b5b95" stroke-width="1.4" marker-end="url(#aw2b)"/>
+      <rect x="408" y="98" width="40" height="22" rx="6" fill="#e0efee" stroke="#3a7d7b"/><rect x="456" y="98" width="40" height="22" rx="6" fill="#e0efee" stroke="#3a7d7b"/><rect x="504" y="98" width="40" height="22" rx="6" fill="#e0efee" stroke="#3a7d7b"/><rect x="552" y="98" width="40" height="22" rx="6" fill="#e0efee" stroke="#3a7d7b"/><rect x="600" y="98" width="40" height="22" rx="6" fill="#e0efee" stroke="#3a7d7b"/>
+      <text class="s" x="528" y="158" text-anchor="middle">the SCRIPT decides what runs next ·</text><text class="s" x="528" y="174" text-anchor="middle">results in variables · ≤16 concurrent / 1,000 per run</text>
+    </svg>
+    <figcaption>A few delegations: Claude holds the plan, results in its context. Dozens–hundreds: the script holds the plan, results in variables, runtime outside the conversation.</figcaption>
+  </figure>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th></th><th>Subagents</th><th>Workflows</th></tr></thead>
+    <tbody>
+      <tr><td>What it is</td><td>A worker Claude spawns</td><td>A script the runtime executes</td></tr>
+      <tr><td>Who decides what runs next</td><td>Claude, turn by turn</td><td>The script</td></tr>
+      <tr><td>Where intermediate results live</td><td>Claude's context window</td><td>Script variables</td></tr>
+      <tr><td>What's repeatable</td><td>The worker definition</td><td>The orchestration itself</td></tr>
+      <tr><td>Scale</td><td>A few delegated tasks per turn</td><td>Dozens to hundreds of agents per run</td></tr>
+      <tr><td>Interruption</td><td>Restarts the turn</td><td>Resumable in the same session</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p><strong>Patterns it unlocks.</strong> A workflow can have "independent agents adversarially review each other's findings before they're reported, or draft a plan from several angles and weigh them against each other." The bundled <code class="inline">/deep-research</code> workflow "fans out web searches across several angles, fetches and cross-checks the sources it finds, votes on each claim" — fan-out + cross-check barrier + voting. This maps to the <strong>orchestrator-workers</strong> and <strong>parallelization (sectioning/voting)</strong> patterns from S-E1.</p>
+
+  <div class="verifynote"><b><span class="emoji">⚠️</span> <span class="verify">VERIFY</span> — caps &amp; version gates:</b> the Workflow runtime caps at <b>≤16 concurrent agents</b> (fewer on limited cores) and <b>1,000 agents total per run</b>. The <code class="inline">Workflow</code> <em>tool</em> is in the <b>TypeScript Agent SDK v0.3.149+</b>; the <em>dynamic-workflows feature</em> in the CLI is a <b>research preview requiring Claude Code v2.1.154+</b> (all paid plans). Both version numbers are fast-moving — reverify against the live docs. (The 16/1,000 caps are <em>workflow-runtime</em> limits; whether any per-turn cap applies to ordinary subagent parallelism outside workflows is itself <span class="verify">VERIFY</span>.)</div>
+
+  <div class="callout tip collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">📁</span> Where workflows live &amp; how they run<span class="chev">▼</span></div>
+  <div class="cbody"><p>Saved workflows live in <code class="inline">.claude/workflows/</code> (project) or <code class="inline">~/.claude/workflows/</code>; project wins on a name clash; input is passed via the <code class="inline">args</code> global. Runtime constraints: no mid-run user input; no direct filesystem/shell access from the script itself (agents do the I/O, the script coordinates). Subagents a workflow spawns always run in <code class="inline">acceptEdits</code> mode and inherit the tool allowlist regardless of session mode. To auto-approve, include <code class="inline">Workflow</code> in <code class="inline">allowedTools</code>.</p></div></div>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">You need to migrate 500 files with a coordinated, rerunnable orchestration that doesn't blow up the conversation's context. Subagents or a Workflow — and why?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>A Workflow.</strong> Subagents suit "a few delegated tasks per turn." A 500-file migration coordinates far more agents than one conversation can hold, and you want the orchestration "codified as a script you can read and rerun." The script holds the plan and intermediate results in variables — Claude's context holds only the final answer.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="1">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">The decisive distinction between subagents and workflows is…</div>
+    <button class="opt">Workflows are always faster</button>
+    <button class="opt">Who holds the plan: Claude's context (subagents) vs. script variables (workflows)</button>
+    <button class="opt">Subagents can't use tools; workflows can</button>
+    <button class="opt">Workflows run one agent at a time</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>The defining line is where the orchestration lives: Claude decides turn-by-turn with results in its context (subagents), vs. a script decides with results in variables, run outside the conversation (workflows).</div>
+  </div>
+</section>
+
+<!-- LESSON 10 — design heuristics -->
+<section class="lesson" id="l10" data-lesson="10">
+  <div class="lmeta"><span class="ltag"><span class="emoji">🎚️</span> Section 10</span><span class="ltime">⏱ ~7 min · judgment</span></div>
+  <h3 class="ltitle">Design heuristics — subagent vs. a single longer prompt</h3>
+
+  <div class="objectives">
+    <div class="lab">What you'll be able to do</div>
+    <ul>
+      <li>Decide when a subagent beats a single longer prompt — and when to stay in the main conversation</li>
+      <li>Apply "one responsibility per subagent"</li>
+      <li>Write a <code class="inline">description</code> that routes correctly</li>
+    </ul>
+  </div>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Use a subagent when…</th><th>Stay in the main conversation when…</th></tr></thead>
+    <tbody>
+      <tr><td>The task produces verbose output you don't need in your main context</td><td>The task needs frequent back-and-forth</td></tr>
+      <tr><td>You want tool restrictions / permissions enforced</td><td>Multiple phases share significant context (planning → implementation → testing)</td></tr>
+      <tr><td>The work is self-contained and can return a summary</td><td>It's a quick targeted change, or latency matters (subagents start fresh and need time to gather context)</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p>For a quick question about <em>existing</em> context, prefer <code class="inline">/btw</code> over a subagent — spinning up a fresh worker just to answer something already in the conversation is wasted latency.</p>
+
+  <h4>One responsibility per subagent</h4>
+  <p>"Design focused subagents: each subagent should excel at one specific task." Define a custom subagent "when you keep spawning the same kind of worker with the same instructions."</p>
+
+  <h4>Description-writing for correct routing</h4>
+  <p>"Claude uses each subagent's description to decide when to delegate tasks… write a clear description so Claude knows when to use it." Add "use proactively" to encourage delegation; write detailed descriptions so Claude matches tasks correctly. <strong>If Claude won't delegate:</strong> (1) include <code class="inline">Agent</code> in <code class="inline">allowedTools</code>; (2) name the subagent explicitly; (3) sharpen the <code class="inline">description</code>.</p>
+
+  <div class="callout keyc collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> The description is a router classifier<span class="chev">▼</span></div>
+  <div class="cbody"><p>Recall from S-E1: routing = "classify an input and direct it to a specialized followup." A subagent's <code class="inline">description</code> <em>is</em> the classifier the orchestrator uses to route. Vague description → poor routing → Claude does the work itself. A sharp, "use proactively" description is the cheapest reliability lever you have.</p></div></div>
+
+  <div class="mcq" data-mcq data-correct="3">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Which scenario is the WEAKEST fit for a subagent?</div>
+    <button class="opt">Running the test suite and returning only the failing tests</button>
+    <button class="opt">Exploring dozens of files and returning a summary</button>
+    <button class="opt">Enforcing a read-only tool allow-list on an analysis task</button>
+    <button class="opt">A multi-phase task where planning, implementation, and testing share heavy context</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>Stay in the main conversation when multiple phases share significant context — the single-channel isolation would force you to re-pass everything. The other three are textbook subagent fits (verbose output, summary return, enforced tool restriction).</div>
+  </div>
+</section>
+
+<!-- ======================= FINAL CHECK ======================= -->
+<div class="sec-divider" id="final">
+  <span class="badge"><span class="emoji">🧠</span> Final check</span>
+  <h2>Final Knowledge Check</h2>
+  <p>Ten source-grounded questions spanning the whole lesson — weighted toward CCA-F Domain 1 (the delegation model, isolation, no-nesting, single channel) with Domain 2 crossover (CLI ↔ SDK mapping, tool allow-lists, model selection). No hints; answer, then check.</p>
+</div>
+
+<div class="quizblock" data-quiz="final" style="margin-top:20px">
+  <div class="scorebar"><h4 style="margin:0"><span class="emoji">🧠</span> Final Knowledge Check (10 questions)</h4><span class="qscore" data-score>0 / 10</span></div>
+
+  <div class="mcq" data-mcq data-correct="1" data-inquiz>
+    <div class="qlab">Q1</div><div class="qtext">Which two fields are REQUIRED on an <code class="inline">AgentDefinition</code>?</div>
+    <button class="opt"><code class="inline">name</code> and <code class="inline">tools</code></button><button class="opt"><code class="inline">description</code> and <code class="inline">prompt</code></button><button class="opt"><code class="inline">model</code> and <code class="inline">prompt</code></button><button class="opt"><code class="inline">description</code> and <code class="inline">model</code></button>
+    <div class="fb"></div><div class="fbmsg" hidden>Only <code class="inline">description</code> and <code class="inline">prompt</code> are required; everything else is optional. (<code class="inline">name</code> is the dict key in the <code class="inline">agents</code> record, not a field of the object itself.)</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q2</div><div class="qtext">In Python, <code class="inline">AgentDefinition(max_turns=5)</code> will…</div>
+    <button class="opt">Work fine — snake_case is the Python convention</button><button class="opt">Silently ignore the field</button><button class="opt">Raise a <code class="inline">TypeError</code> at construction (fields are camelCase)</button><button class="opt">Convert it to <code class="inline">maxTurns</code> automatically</button>
+    <div class="fb"></div><div class="fbmsg" hidden><code class="inline">AgentDefinition</code> fields are camelCase even in Python (to match the wire format). Because it's a dataclass, a snake_case keyword raises a <code class="inline">TypeError</code>. Use <code class="inline">maxTurns=5</code>.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="0" data-inquiz>
+    <div class="qlab">Q3</div><div class="qtext">If you omit the <code class="inline">tools</code> field on a subagent, it…</div>
+    <button class="opt">Inherits all tools (the "full access" combo)</button><button class="opt">Gets no tools at all</button><button class="opt">Gets only <code class="inline">Read</code></button><button class="opt">Raises an error — <code class="inline">tools</code> is required</button>
+    <div class="fb"></div><div class="fbmsg" hidden>"If omitted, <code class="inline">tools</code> inherits all tools." To enforce least privilege you must list an explicit allow-list (or use <code class="inline">disallowedTools</code>).</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="1" data-inquiz>
+    <div class="qlab">Q4</div><div class="qtext">What is the ONLY channel from a parent into a subagent's fresh context?</div>
+    <button class="opt">The parent's conversation history</button><button class="opt">The Agent tool's prompt string</button><button class="opt">The parent's system prompt</button><button class="opt">A shared memory buffer</button>
+    <div class="fb"></div><div class="fbmsg" hidden>"The only channel from parent to subagent is the Agent tool's prompt string." Include file paths, errors, and decisions directly in it — there's no shared memory.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q5</div><div class="qtext">Which does a subagent DOES NOT receive?</div>
+    <button class="opt">Its own system prompt</button><button class="opt">Project CLAUDE.md via <code class="inline">settingSources</code></button><button class="opt">The parent's conversation history and tool results</button><button class="opt">Tool definitions per its <code class="inline">tools</code></button>
+    <div class="fb"></div><div class="fbmsg" hidden>The parent's history/results and system prompt never cross. The subagent does get its own prompt, the Agent tool's prompt, CLAUDE.md, and tool defs — "fresh but not empty."</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="0" data-inquiz>
+    <div class="qlab">Q6</div><div class="qtext">To AUTO-APPROVE delegation so Claude will actually invoke subagents, you must…</div>
+    <button class="opt">Include <code class="inline">Agent</code> in <code class="inline">allowedTools</code></button><button class="opt">Set <code class="inline">background: true</code></button><button class="opt">Add <code class="inline">Agent</code> to each subagent's <code class="inline">tools</code></button><button class="opt">Raise <code class="inline">maxTurns</code></button>
+    <div class="fb"></div><div class="fbmsg" hidden>Include <code class="inline">Agent</code> in the main <code class="inline">allowedTools</code>. (Putting <code class="inline">Agent</code> in a <em>subagent's</em> tools is forbidden — that would enable nesting.)</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="3" data-inquiz>
+    <div class="qlab">Q7</div><div class="qtext">Which is TRUE about subagent nesting?</div>
+    <button class="opt">A subagent can spawn one level of sub-subagents</button><button class="opt">Nesting is allowed if you add <code class="inline">Agent</code> to the subagent's <code class="inline">tools</code></button><button class="opt">Nesting is unlimited</button><button class="opt">Subagents cannot spawn subagents; use Skills or chain from the main conversation</button>
+    <div class="fb"></div><div class="fbmsg" hidden>"Subagents cannot spawn their own subagents." Never put <code class="inline">Agent</code> in a subagent's <code class="inline">tools</code>. For nested behavior, use Skills or chain subagents from the main conversation.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q8</div><div class="qtext">Programmatic vs. filesystem agents with the same name — which wins?</div>
+    <button class="opt">Filesystem (project) wins</button><button class="opt">Whichever was registered last</button><button class="opt">Programmatic agents take precedence</button><button class="opt">It raises a conflict error</button>
+    <div class="fb"></div><div class="fbmsg" hidden>"Programmatically defined agents take precedence over filesystem-based agents with the same name." The filesystem ladder (managed &gt; <code class="inline">--agents</code> &gt; project &gt; user &gt; plugin) sits below the programmatic layer.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="0" data-inquiz>
+    <div class="qlab">Q9</div><div class="qtext">In a <code class="inline">.claude/agents/*.md</code> file, the Markdown body maps to which SDK field?</div>
+    <button class="opt"><code class="inline">prompt</code></button><button class="opt"><code class="inline">description</code></button><button class="opt">the dict key (<code class="inline">name</code>)</button><button class="opt"><code class="inline">model</code></button>
+    <div class="fb"></div><div class="fbmsg" hidden>The body = the system prompt = SDK <code class="inline">prompt</code>. Frontmatter <code class="inline">name</code> → the dict key; <code class="inline">description</code> → <code class="inline">description</code>. <code class="inline">hooks</code>/<code class="inline">isolation</code>/<code class="inline">color</code> are filesystem-only.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="1" data-inquiz>
+    <div class="qlab">Q10</div><div class="qtext">You must coordinate hundreds of agents in a rerunnable orchestration whose intermediate results stay out of the conversation. You should use…</div>
+    <button class="opt">More subagents in a single turn</button><button class="opt">The Workflow tool (script holds the plan; results in variables; ≤16 concurrent / 1,000 per run)</button><button class="opt">A nested subagent tree</button><button class="opt">A single longer prompt</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Subagents suit "a few delegated tasks per turn." For dozens–hundreds, graduate to the Workflow tool: the script decides what runs next, results live in variables, and it runs outside the conversation (caps: ≤16 concurrent, 1,000 per run).</div>
+  </div>
+
+  <div class="resultbox" data-result></div>
+</div>
+
+<!-- SOURCES -->
+<div class="sources" id="sources">
+  <h4 style="margin:0 0 6px"><span class="emoji">📄</span> Sources</h4>
+  <p style="margin:4px 0 8px;color:var(--ink-soft);font-size:13.5px">Every substantive claim in this extension traces to these Anthropic primary sources. No facts beyond them were introduced; author analogies are labelled inline; version-sensitive facts carry <span class="verify">VERIFY</span> notes.</p>
+  <ol>
+    <li>Claude Agent SDK — <em>Subagents in the SDK</em>: <a href="https://code.claude.com/docs/en/agent-sdk/subagents">code.claude.com/docs/en/agent-sdk/subagents</a></li>
+    <li>Claude Agent SDK — <em>TypeScript reference</em>: <a href="https://code.claude.com/docs/en/agent-sdk/typescript">code.claude.com/docs/en/agent-sdk/typescript</a></li>
+    <li>Claude Agent SDK — <em>Python reference</em>: <a href="https://code.claude.com/docs/en/agent-sdk/python">code.claude.com/docs/en/agent-sdk/python</a></li>
+    <li>Claude Code — <em>Create custom subagents</em>: <a href="https://code.claude.com/docs/en/sub-agents">code.claude.com/docs/en/sub-agents</a></li>
+    <li>Claude Code — <em>Workflows</em>: <a href="https://code.claude.com/docs/en/workflows">code.claude.com/docs/en/workflows</a></li>
+    <li>Anthropic — <em>Building agents with the Claude Agent SDK</em>: <a href="https://claude.com/blog/building-agents-with-the-claude-agent-sdk">claude.com/blog/building-agents-with-the-claude-agent-sdk</a></li>
+    <li>Anthropic — <em>Building effective agents</em>: <a href="https://www.anthropic.com/engineering/building-effective-agents">anthropic.com/engineering/building-effective-agents</a></li>
+  </ol>
+</div>
+
+<!-- WHAT'S NEXT -->
+<div class="nextbox">
+  <div style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;margin-bottom:6px"><span class="emoji">➡️</span> What's next</div>
+  <p style="margin:4px 0"><strong>Extension S-E3 — Orchestrator-Worker at Scale + Failure Modes.</strong> You now have the primitive (this lesson) and the patterns (S-E1). S-E3 puts them under load: a production orchestrator-worker system, what breaks at scale, and how to design around the failure modes.</p>
+  <p style="margin:6px 0 0"><a href="orchestrator-worker-at-scale.html">Continue → Orchestrator-Worker at Scale + Failure Modes (S-E3)</a> <span style="color:var(--ink-soft);font-size:13px">— not built yet; this forward link may 404.</span></p>
+</div>
+
+<footer>
+  <p><span class="sourcebadge"><span class="emoji">📄</span> Extension material · built faithfully from the captured citations file — every claim traces to an Anthropic source. No external facts introduced; <span class="verify">VERIFY</span> flags preserved; author analogies labelled.</span></p>
+  <p style="margin-top:14px">Subagents as a Programmable Primitive · Extension S-E2 for the Claude Certified Architect — Foundations prep · <a href="../introduction-to-subagents.html" style="color:var(--accent)">← Back to base course</a> · <a href="orchestration-patterns.html" style="color:var(--accent)">← S-E1 patterns</a> · <a href="#top" style="color:var(--accent)">Back to top ↑</a></p>
+</footer>
+
+</div><!-- /wrap -->
+</main>
+</div><!-- /layout -->
+
+<script>
+(function(){
+  "use strict";
+  /* ---------- Build TOC ---------- */
+  var sections=[
+    {title:"The primitive",lessons:[[1,"Hook — subagents you program"],[2,"The AgentDefinition object"],[3,"The agents parameter"]]},
+    {title:"The delegation model",lessons:[[4,"Runtime delegation (Agent tool)"],[5,"The prompt as the only channel"],[6,"Context isolation"]]},
+    {title:"Guardrails & scale",lessons:[[7,"Guardrails — no nesting, least privilege"],[8,"CLI ↔ SDK mapping"],[9,"The Workflow graduation"],[10,"Design heuristics"]]}
+  ];
+  var toc=document.getElementById('toc');
+  var lessonEls=Array.prototype.slice.call(document.querySelectorAll('section.lesson'));
+  var TOTAL_LESSONS=lessonEls.length;
+  sections.forEach(function(sec){
+    var h=document.createElement('div');h.className='nav-sec';h.textContent=sec.title;toc.appendChild(h);
+    sec.lessons.forEach(function(l){
+      var a=document.createElement('a');a.href='#l'+l[0];a.dataset.target='l'+l[0];
+      a.innerHTML='<span class="num"><span>'+l[0]+'</span></span><span>'+l[1]+'</span>';
+      a.addEventListener('click',function(){if(window.innerWidth<=980)toggleNav();});
+      toc.appendChild(a);
+    });
+  });
+  // final check link
+  var fh=document.createElement('div');fh.className='nav-sec';fh.textContent='Assessment';toc.appendChild(fh);
+  var fa=document.createElement('a');fa.href='#final';fa.dataset.target='final';
+  fa.innerHTML='<span class="num"><span>★</span></span><span>Final knowledge check</span>';
+  fa.addEventListener('click',function(){if(window.innerWidth<=980)toggleNav();});
+  toc.appendChild(fa);
+
+  /* ---------- Progress bar + active nav + completion ---------- */
+  var navLinks=Array.prototype.slice.call(document.querySelectorAll('nav a'));
+  var seen={};
+  function onScroll(){
+    var doc=document.documentElement;
+    var scrollTop=window.scrollY||doc.scrollTop;
+    var height=doc.scrollHeight-doc.clientHeight;
+    var pct=height>0?(scrollTop/height*100):0;
+    document.getElementById('progressBar').style.width=pct+'%';
+    var mid=scrollTop+window.innerHeight*0.32;
+    var current=null;
+    lessonEls.forEach(function(el){
+      if(el.offsetTop<=mid)current=el;
+      if(el.offsetTop<=scrollTop+window.innerHeight*0.6){seen[el.id]=true;}
+    });
+    navLinks.forEach(function(a){a.classList.remove('active');});
+    if(current){
+      var act=document.querySelector('nav a[data-target="'+current.id+'"]');
+      if(act)act.classList.add('active');
+    }
+    navLinks.forEach(function(a){if(seen[a.dataset.target])a.classList.add('done');});
+    var doneCount=lessonEls.filter(function(el){return seen[el.id];}).length;
+    document.getElementById('progPct').textContent=Math.round(doneCount/TOTAL_LESSONS*100)+'%';
+  }
+  window.addEventListener('scroll',onScroll,{passive:true});
+  window.addEventListener('resize',onScroll);
+  onScroll();
+
+  /* ---------- Mobile nav ---------- */
+  window.toggleNav=function(){
+    var open=document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('scrim').classList.toggle('open');
+    var b=document.querySelector('.menubtn');if(b)b.setAttribute('aria-expanded',open?'true':'false');
+  };
+
+  /* ---------- Collapsible callouts ---------- */
+  window.toggleCall=function(head){
+    var c=head.parentElement;c.classList.toggle('collapsed');
+    head.setAttribute('aria-expanded', c.classList.contains('collapsed')?'false':'true');
+  };
+  document.querySelectorAll('.callout .chead').forEach(function(head){
+    head.setAttribute('role','button');
+    head.setAttribute('tabindex','0');
+    head.setAttribute('aria-expanded', head.parentElement.classList.contains('collapsed')?'false':'true');
+    head.addEventListener('keydown',function(e){
+      if(e.key==='Enter'||e.key===' '||e.key==='Spacebar'){e.preventDefault();window.toggleCall(head);}
+    });
+  });
+
+  /* ---------- Predict / reveal ---------- */
+  window.doReveal=function(btn){
+    var ans=btn.parentElement.querySelector('.ans');
+    ans.classList.add('show');
+    btn.textContent='Answer shown ✓';
+    btn.disabled=true;btn.style.opacity='.6';btn.style.cursor='default';
+  };
+
+  /* ---------- MCQ logic ---------- */
+  document.querySelectorAll('.mcq[data-mcq]').forEach(function(mcq){
+    var correct=parseInt(mcq.getAttribute('data-correct'),10);
+    var opts=Array.prototype.slice.call(mcq.querySelectorAll('.opt'));
+    var fb=mcq.querySelector('.fb');
+    if(fb){fb.setAttribute('aria-live','polite');fb.setAttribute('role','status');}
+    var msgEl=mcq.querySelector('.fbmsg');
+    var msg=msgEl?msgEl.innerHTML:'';
+    var answered=false;
+    opts.forEach(function(opt,i){
+      opt.addEventListener('click',function(){
+        if(answered)return;answered=true;
+        var isCorrect=(i===correct);
+        opts.forEach(function(o,j){
+          o.disabled=true;
+          if(j===correct){o.classList.add('correct');if(!o.querySelector('.mark'))appendMark(o,'✓');}
+        });
+        if(!isCorrect){opt.classList.add('wrong');appendMark(opt,'✗');}
+        fb.classList.add('show');
+        fb.classList.add(isCorrect?'ok':'no');
+        fb.innerHTML='<strong>'+(isCorrect?'Correct! ':'Not quite. ')+'</strong>'+msg;
+        var quiz=mcq.closest('.quizblock');
+        if(quiz&&mcq.hasAttribute('data-inquiz')){
+          mcq.dataset.result=isCorrect?'1':'0';
+          updateQuiz(quiz);
+        }
+      });
+    });
+  });
+  function appendMark(opt,sym){var s=document.createElement('span');s.className='mark';s.textContent=sym;opt.appendChild(s);}
+
+  /* ---------- Quiz scoring ---------- */
+  function updateQuiz(quiz){
+    var mcqs=Array.prototype.slice.call(quiz.querySelectorAll('.mcq[data-inquiz]'));
+    var total=mcqs.length;
+    var answered=mcqs.filter(function(m){return m.dataset.result!==undefined;});
+    var score=mcqs.filter(function(m){return m.dataset.result==='1';}).length;
+    var scoreEl=quiz.querySelector('[data-score]');
+    if(scoreEl)scoreEl.textContent=score+' / '+total;
+    if(answered.length===total){
+      var box=quiz.querySelector('[data-result]');
+      var pct=score/total*100;
+      box.classList.add('show');
+      box.classList.remove('pass','mid');
+      if(pct>=75){box.classList.add('pass');box.innerHTML='🎉 '+score+'/'+total+' — strong work! The subagent primitive is locked in.';}
+      else if(pct>=50){box.classList.add('mid');box.innerHTML='👍 '+score+'/'+total+' — solid. Skim the misses above and you\'re set.';}
+      else{box.classList.add('mid');box.innerHTML='📖 '+score+'/'+total+' — worth a re-read before moving on.';}
+    }
+  }
+})();
+</script>
+</body>
+</html>

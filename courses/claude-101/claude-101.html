@@ -1,0 +1,1670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude 101 — Interactive Learning Experience</title>
+<style>
+  :root{
+    --bg:#faf8f5; --paper:#ffffff; --ink:#2b2622; --ink-soft:#5c544c;
+    --line:#e7e0d8; --accent:#c96442; --accent-soft:#f4e6df; --accent-deep:#a44a2e;
+    --teal:#3a7d7b; --teal-soft:#e0efee; --gold:#b8860b; --gold-soft:#f6edd6;
+    --green:#3f7d4f; --green-soft:#e3f0e6; --red:#b3402f; --red-soft:#f7e3df;
+    --sidebar:#f3eee7; --shadow:0 1px 3px rgba(43,38,34,.08),0 6px 24px rgba(43,38,34,.06);
+    --radius:14px; --maxw:760px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.65; font-size:17px; -webkit-font-smoothing:antialiased;
+  }
+  /* progress bar */
+  #progressBar{position:fixed;top:0;left:0;height:4px;width:0;background:linear-gradient(90deg,var(--accent),var(--gold));z-index:200;transition:width .15s ease}
+  /* layout */
+  .layout{display:flex;max-width:1240px;margin:0 auto}
+  /* sidebar */
+  aside{
+    position:sticky;top:0;align-self:flex-start;height:100vh;overflow-y:auto;
+    width:290px;flex:none;padding:22px 16px 40px;background:var(--sidebar);
+    border-right:1px solid var(--line);
+  }
+  aside h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin:18px 8px 8px}
+  .brandbox{padding:6px 8px 14px;border-bottom:1px solid var(--line);margin-bottom:8px}
+  .brandbox .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px}
+  .brandbox .sub{font-size:12.5px;color:var(--ink-soft);margin-top:6px}
+  .toc-prog{font-size:12px;color:var(--ink-soft);margin:10px 8px 4px;display:flex;justify-content:space-between;align-items:center}
+  .toc-prog b{color:var(--accent)}
+  nav a{display:flex;gap:8px;align-items:flex-start;text-decoration:none;color:var(--ink);
+    padding:7px 10px;border-radius:9px;font-size:14px;line-height:1.35;transition:background .15s}
+  nav a:hover{background:#ece4d9}
+  nav a.active{background:var(--accent-soft);color:var(--accent-deep);font-weight:600}
+  nav a .num{flex:none;width:22px;height:22px;border-radius:50%;background:#e3dacd;color:var(--ink-soft);
+    font-size:11.5px;display:flex;align-items:center;justify-content:center;font-weight:700;margin-top:1px}
+  nav a.active .num{background:var(--accent);color:#fff}
+  nav a.done .num{background:var(--green);color:#fff}
+  nav a.done .num::after{content:"✓"}
+  nav a.done .num span{display:none}
+  .nav-sec{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);
+    font-weight:700;margin:16px 10px 4px;display:flex;align-items:center;gap:6px}
+  /* main */
+  main{flex:1;min-width:0;padding:0 28px 120px}
+  .wrap{max-width:var(--maxw);margin:0 auto}
+  header.hero{max-width:var(--maxw);margin:0 auto;padding:54px 0 22px;text-align:left}
+  .hero .eyebrow{color:var(--accent);font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:13px}
+  .hero h1{font-size:42px;line-height:1.1;margin:10px 0 8px;letter-spacing:-.02em}
+  .hero p.lead{font-size:19px;color:var(--ink-soft);margin:0 0 18px}
+  .pillrow{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}
+  .pill{background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:6px 13px;font-size:13px;color:var(--ink-soft);box-shadow:var(--shadow)}
+  .examnote{background:var(--gold-soft);border:1px solid #e7d9a9;border-radius:var(--radius);padding:16px 18px;margin:22px 0;font-size:14.5px}
+  .examnote b{color:#8a6508}
+  section.lesson{max-width:var(--maxw);margin:0 auto;padding:46px 0 10px;scroll-margin-top:14px;border-top:1px solid var(--line)}
+  section.lesson:first-of-type{border-top:none}
+  .sec-divider{max-width:var(--maxw);margin:38px auto 0;padding-top:30px}
+  .sec-divider .badge{display:inline-block;background:var(--accent);color:#fff;font-weight:700;
+    font-size:12px;letter-spacing:.07em;text-transform:uppercase;padding:5px 12px;border-radius:999px}
+  .sec-divider h2{font-size:30px;margin:12px 0 4px;letter-spacing:-.01em}
+  .sec-divider p{color:var(--ink-soft);margin:0}
+  .lesson .lmeta{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+  .lesson .ltag{font-size:12px;color:var(--accent);font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+  .lesson .ltime{font-size:12.5px;color:var(--ink-soft);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+  .lesson h3.ltitle{font-size:28px;margin:2px 0 4px;letter-spacing:-.01em;line-height:1.15}
+  .lesson h4{font-size:19px;margin:30px 0 8px;letter-spacing:-.005em}
+  .lesson h5{font-size:16px;margin:20px 0 6px;color:var(--accent-deep)}
+  .lesson p{margin:10px 0}
+  .lesson ul,.lesson ol{margin:10px 0;padding-left:22px}
+  .lesson li{margin:6px 0}
+  .emoji{font-style:normal}
+  blockquote.ex{margin:14px 0;padding:14px 18px;background:var(--teal-soft);border-left:4px solid var(--teal);border-radius:0 10px 10px 0;font-style:italic;color:#2c4f4e}
+  /* objectives */
+  .objectives{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:14px 18px;margin:14px 0;box-shadow:var(--shadow)}
+  .objectives .lab{font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;margin-bottom:4px}
+  .objectives ul{margin:6px 0 2px;padding-left:20px}
+  .objectives li{font-size:14.5px}
+  /* tables */
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  table{border-collapse:collapse;width:100%;font-size:14px;background:var(--paper);min-width:520px}
+  th,td{text-align:left;padding:11px 13px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--accent-soft);color:var(--accent-deep);font-weight:700;font-size:13px}
+  tbody tr:last-child td{border-bottom:none}
+  td:first-child,th:first-child{font-weight:600}
+  /* callouts */
+  .callout{border-radius:var(--radius);padding:0;margin:18px 0;box-shadow:var(--shadow);overflow:hidden;border:1px solid var(--line)}
+  .callout .chead{display:flex;align-items:center;gap:9px;padding:12px 16px;cursor:pointer;font-weight:700;font-size:15px;user-select:none}
+  .callout .cbody{padding:2px 18px 16px;font-size:15px}
+  .callout .cbody ul{margin:6px 0;padding-left:20px}
+  .callout.collapsed .cbody{display:none}
+  .callout .chev{margin-left:auto;transition:transform .2s;font-size:13px;opacity:.6}
+  .callout.collapsed .chev{transform:rotate(-90deg)}
+  .key{border-color:#d9c98f}.key .chead{background:var(--gold-soft);color:#8a6508}
+  .tip{border-color:#a7d3d1}.tip .chead{background:var(--teal-soft);color:var(--teal)}
+  .try{border-color:#bfdcc6}.try .chead{background:var(--green-soft);color:var(--green)}
+  /* SVG figure */
+  figure.svgfig{margin:22px 0;text-align:center;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+  figure.svgfig svg{max-width:100%;height:auto}
+  figure.svgfig figcaption{font-size:13px;color:var(--ink-soft);margin-top:10px}
+  /* MCQ */
+  .mcq{background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--accent);
+    border-radius:var(--radius);padding:16px 18px;margin:22px 0;box-shadow:var(--shadow)}
+  .mcq .qlab{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;display:flex;align-items:center;gap:7px}
+  .mcq .qtext{font-weight:600;margin:8px 0 12px;font-size:16px}
+  .mcq .opt{display:block;width:100%;text-align:left;background:var(--bg);border:1.5px solid var(--line);
+    border-radius:10px;padding:11px 14px;margin:7px 0;cursor:pointer;font-size:14.5px;font-family:inherit;color:var(--ink);transition:all .14s}
+  .mcq .opt:hover:not(:disabled){border-color:var(--accent);background:var(--accent-soft)}
+  .mcq .opt:disabled{cursor:default}
+  .mcq .opt.correct{border-color:var(--green);background:var(--green-soft);font-weight:600}
+  .mcq .opt.wrong{border-color:var(--red);background:var(--red-soft)}
+  .mcq .opt .mark{float:right;font-weight:700}
+  .mcq .fb{display:none;margin-top:12px;padding:12px 14px;border-radius:10px;font-size:14px;line-height:1.55}
+  .mcq .fb.show{display:block}
+  .mcq .fb.ok{background:var(--green-soft);border:1px solid #bfdcc6}
+  .mcq .fb.no{background:var(--red-soft);border:1px solid #e6bcb4}
+  /* predict / reveal */
+  .reveal{background:var(--paper);border:1px dashed var(--accent);border-radius:var(--radius);padding:16px 18px;margin:22px 0}
+  .reveal .plab{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;display:flex;align-items:center;gap:7px}
+  .reveal .q{font-weight:600;margin:8px 0 12px;font-size:16px}
+  .reveal button.revealbtn{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:9px 16px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+  .reveal button.revealbtn:hover{background:var(--accent-deep)}
+  .reveal .ans{display:none;margin-top:12px;padding:12px 14px;background:var(--teal-soft);border-radius:10px;font-size:14.5px;border:1px solid #a7d3d1}
+  .reveal .ans.show{display:block}
+  /* section quiz */
+  .quizblock{background:linear-gradient(180deg,#fff,#fbf6f0);border:2px solid var(--accent-soft);border-radius:18px;padding:22px 22px 24px;margin:30px auto;max-width:var(--maxw);box-shadow:var(--shadow)}
+  .quizblock h4{margin-top:0;display:flex;align-items:center;gap:9px}
+  .quizblock .qscore{font-size:14px;color:var(--ink-soft);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-weight:600}
+  .quizblock .scorebar{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .resultbox{display:none;margin-top:16px;padding:16px;border-radius:12px;font-weight:600;text-align:center;font-size:16px}
+  .resultbox.show{display:block}
+  .resultbox.pass{background:var(--green-soft);border:1px solid #bfdcc6;color:var(--green)}
+  .resultbox.mid{background:var(--gold-soft);border:1px solid #e7d9a9;color:#8a6508}
+  /* footer */
+  footer{max-width:var(--maxw);margin:40px auto 0;padding-top:24px;border-top:1px solid var(--line);color:var(--ink-soft);font-size:13.5px}
+  .sourcebadge{display:inline-flex;gap:7px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:5px 13px;font-size:12.5px;color:var(--ink-soft)}
+  /* mobile */
+  .menubtn{display:none;position:fixed;top:12px;left:12px;z-index:210;background:var(--accent);color:#fff;border:none;border-radius:10px;width:44px;height:44px;font-size:20px;cursor:pointer;box-shadow:var(--shadow)}
+  .scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:205}
+  @media(max-width:980px){
+    .menubtn{display:block}
+    aside{position:fixed;left:0;top:0;z-index:206;transform:translateX(-105%);transition:transform .25s;box-shadow:var(--shadow);width:280px}
+    aside.open{transform:translateX(0)}
+    .scrim.open{display:block}
+    main{padding:60px 16px 110px}
+    .hero h1{font-size:32px}
+  }
+  .analogy{font-size:13px;background:var(--accent-soft);color:var(--accent-deep);border-radius:6px;padding:1px 7px;font-weight:600}
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+<button class="menubtn" onclick="toggleNav()" aria-label="Menu" aria-expanded="false">☰</button>
+<div class="scrim" id="scrim" onclick="toggleNav()"></div>
+
+<div class="layout">
+<!-- SIDEBAR -->
+<aside id="sidebar">
+  <div class="brandbox">
+    <div class="logo"><span class="emoji">✳️</span> Claude 101</div>
+    <div class="sub">Anthropic Academy course — interactive edition for CCA exam prep</div>
+  </div>
+  <nav class="cspine" aria-label="Course track">
+    <div class="cspine-h">📚 Claude 101 track · Lesson 1 of 7</div>
+    <ol class="cspine-list">
+      <li class="cspine-cur" aria-current="page">Base · Claude 101</li>
+      <li><a href="extensions/tool-use-agent-loop.html">C-E1 · Tool-Use Agent Loop</a></li>
+      <li><a href="extensions/context-management-reliability.html">C-E2 · Context Management &amp; Reliability</a></li>
+      <li><a href="extensions/mcp-at-a-builder-level.html">C-E3 · MCP at a Builder Level</a></li>
+      <li><a href="extensions/prompt-caching-economics.html">C-E4 · Prompt Caching Economics</a></li>
+      <li><a href="extensions/prompt-engineering-depth.html">C-E5 · Prompt Engineering Depth</a></li>
+      <li><a href="extensions/claude-code-configuration.html">C-E6 · Claude Code Configuration</a></li>
+    </ol>
+  </nav>
+  <style>
+  .cspine{margin:10px 8px 14px;padding:10px 12px;border:1px solid var(--line,#e7e0d8);border-radius:10px;background:rgba(0,0,0,.02)}
+  .cspine-h{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft,#5c544c);margin-bottom:7px}
+  .cspine-list{list-style:none;margin:0;padding:0;counter-reset:cs}
+  .cspine-list li{font-size:12.5px;line-height:1.3;padding:3px 0;color:var(--ink-soft,#5c544c)}
+  .cspine-list a{color:var(--ink,#2b2622);text-decoration:none}
+  .cspine-list a:hover{color:var(--accent,#c96442);text-decoration:underline}
+  .cspine-cur{font-weight:700;color:var(--accent-deep,#a44a2e)!important}
+  .cspine-cur::before{content:"▸ "}
+  </style>
+  <div class="toc-prog">Course progress <span><b id="progPct">0%</b></span></div>
+  <nav id="toc"></nav>
+</aside>
+
+<!-- MAIN -->
+<main>
+<div class="wrap">
+<nav class="cnav" aria-label="Course navigation">
+  <a class="cnav-home" href="../../Launchpad.html">⌂ Launchpad</a>
+  <span class="cnav-side"><a class="cnav-next" href="extensions/tool-use-agent-loop.html">Next: The Tool-Use Agent Loop (C-E1) →</a></span>
+</nav>
+<style>
+.cnav{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:10px 0 18px;padding:10px 14px;border:1px solid var(--line,#e7e0d8);border-radius:12px;background:rgba(0,0,0,.02);font:600 13.5px/1.2 system-ui,-apple-system,'Segoe UI',sans-serif}
+.cnav a{text-decoration:none;color:var(--ink,#2b2622);padding:7px 13px;border-radius:8px;background:rgba(0,0,0,.05);white-space:nowrap;transition:background .15s,color .15s}
+.cnav a:hover{background:var(--accent,#c96442);color:#fff}
+.cnav .cnav-home{background:var(--accent,#c96442);color:#fff}
+.cnav .cnav-home:hover{filter:brightness(.92)}
+.cnav .cnav-side{display:flex;gap:8px;flex-wrap:wrap}
+</style>
+
+<header class="hero" id="top">
+  <div class="eyebrow">Anthropic Academy · Foundations</div>
+  <h1>Claude 101</h1>
+  <p class="lead">Your interactive, predict-before-reveal walkthrough of all 14 lessons — from "what is Claude" to connectors, Research, and the full toolkit.</p>
+  <div class="pillrow">
+    <span class="pill"><span class="emoji">📚</span> 5 sections · 14 lessons</span>
+    <span class="pill"><span class="emoji">🧠</span> Inline MCQs + reveals</span>
+    <span class="pill"><span class="emoji">🏆</span> 5 section quizzes + final check</span>
+    <span class="pill"><span class="emoji">🎨</span> Diagrams & illustrations</span>
+  </div>
+  <div class="examnote">
+    <b>🎯 Why this matters for the CCA exam.</b> The concepts here map loosely to the Claude Certified Architect domains —
+    <b>Agentic Architecture</b> (Cowork, subagents, Research), <b>Claude Code</b> (the desktop Code mode &amp; CLI),
+    <b>Prompt Engineering</b> (the set-the-stage / task / rules framework &amp; the 4D model),
+    <b>MCP / Tools</b> (connectors, Skills, plugins), and <b>Context Management</b> (Projects, RAG, the context window).
+    This course is the foundation; it doesn't teach the exam itself, so treat the mapping as orientation, not a syllabus.
+  </div>
+</header>
+
+<!-- ======================= SECTION 1 ======================= -->
+<div class="sec-divider" id="sec1">
+  <span class="badge"><span class="emoji">①</span> Meet Claude</span>
+  <h2>Meet Claude</h2>
+  <p>What is Claude, how do you talk to it, and how do you get great results? (Lessons 1–4)</p>
+</div>
+
+<!-- LESSON 1 -->
+<section class="lesson" id="l1" data-lesson="1">
+  <div class="lmeta"><span class="ltag"><span class="emoji">👋</span> Lesson 1</span><span class="ltime">⏱ 15 min (core ~10)</span></div>
+  <h3 class="ltitle">What is Claude?</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Explain what Claude is and the principles that guide its design</li>
+      <li>Describe Claude's core capabilities and how it differs from a simple chatbot</li>
+      <li>Identify the different ways to access Claude (web, desktop, and mobile)</li>
+    </ul>
+  </div>
+
+  <p>Claude is more than a chatbot — it's an AI assistant designed to be your <strong>thinking partner</strong>. This lesson covers what makes Claude different from other AI tools and how it can help with a wide variety of work tasks.</p>
+
+  <h4>The whole course at a glance</h4>
+  <figure class="svgfig">
+    <svg viewBox="0 0 720 150" role="img" aria-label="Five-section roadmap">
+      <defs><style>.rb{fill:#fff;stroke:#e7e0d8;stroke-width:1.5}.rt{font:600 12px sans-serif;fill:#2b2622}.rn{font:700 11px sans-serif;fill:#c96442}.arr{stroke:#c96442;stroke-width:2;fill:none;marker-end:url(#ah)}</style>
+      <marker id="ah" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#c96442"/></marker></defs>
+      <g><rect class="rb" x="4" y="40" width="128" height="68" rx="10"/><text class="rn" x="68" y="62" text-anchor="middle">①</text><text class="rt" x="68" y="80" text-anchor="middle">Meet Claude</text><text class="rt" x="68" y="96" text-anchor="middle" style="font-weight:400;fill:#5c544c">L1–L4</text></g>
+      <line class="arr" x1="134" y1="74" x2="148" y2="74"/>
+      <g><rect class="rb" x="150" y="40" width="128" height="68" rx="10"/><text class="rn" x="214" y="62" text-anchor="middle">②</text><text class="rt" x="214" y="80" text-anchor="middle">Organizing work</text><text class="rt" x="214" y="96" text-anchor="middle" style="font-weight:400;fill:#5c544c">L5–L7</text></g>
+      <line class="arr" x1="280" y1="74" x2="294" y2="74"/>
+      <g><rect class="rb" x="296" y="40" width="128" height="68" rx="10"/><text class="rn" x="360" y="62" text-anchor="middle">③</text><text class="rt" x="360" y="80" text-anchor="middle">Expanding reach</text><text class="rt" x="360" y="96" text-anchor="middle" style="font-weight:400;fill:#5c544c">L8–L10</text></g>
+      <line class="arr" x1="426" y1="74" x2="440" y2="74"/>
+      <g><rect class="rb" x="442" y="40" width="128" height="68" rx="10"/><text class="rn" x="506" y="62" text-anchor="middle">④</text><text class="rt" x="506" y="80" text-anchor="middle">All together</text><text class="rt" x="506" y="96" text-anchor="middle" style="font-weight:400;fill:#5c544c">L11–L12</text></g>
+      <line class="arr" x1="572" y1="74" x2="586" y2="74"/>
+      <g><rect class="rb" x="588" y="40" width="128" height="68" rx="10"/><text class="rn" x="652" y="62" text-anchor="middle">⑤</text><text class="rt" x="652" y="80" text-anchor="middle">Conclusion</text><text class="rt" x="652" y="96" text-anchor="middle" style="font-weight:400;fill:#5c544c">L13–L14</text></g>
+    </svg>
+    <figcaption>The five sections of Claude 101 and which lessons live in each.</figcaption>
+  </figure>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">Anthropic has a name for the training approach that keeps Claude helpful, honest, and non-toxic. What do you think it's called?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>Constitutional AI.</strong> Claude is guided by principles that help it avoid toxic or discriminatory outputs, avoid helping humans engage in illegal or unethical activities, and broadly behave as a helpful, honest, and harmless system. Constitutional AI means Claude is trained to align with human values and operate transparently.</div>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody">
+    <ul>
+      <li><strong>Claude is built to be helpful, harmless, and honest.</strong> It's guided by principles that help it avoid toxic or discriminatory outputs and avoid helping with illegal or unethical activities. This approach — <strong>Constitutional AI</strong> — means Claude is trained to align with human values and operate transparently.</li>
+      <li><strong>Claude is more than a chatbot.</strong> It's capable of a wide variety of conversational and text-processing tasks with high reliability and predictability — summarization, search, creative and collaborative writing, Q&amp;A, coding, and more. Think of Claude as a thought partner for complex problems, not just simple questions.</li>
+      <li><strong>Claude is steerable and collaborative.</strong> It takes direction on personality, tone, and behavior. Customers report Claude is much less likely to produce harmful outputs, easier to converse with, and more steerable.</li>
+      <li><strong>You can access Claude wherever you work.</strong> Claude apps are available to all plan types — Free, Pro, Max, Team, and Enterprise. Conversations, projects, memory, and preferences sync across all devices when signed in. Available through web, desktop, and mobile apps.</li>
+    </ul>
+  </div></div>
+
+  <h4>Understanding Claude's capabilities</h4>
+  <ul>
+    <li><strong>Writing and content creation:</strong> collaborate on social posts, professional emails, complex reports. Claude takes direction on personality and tone; you iterate together on structure and clarity.</li>
+    <li><strong>Research and analysis:</strong> explore research angles, compile findings, analyze data. You can upload documents — enabled by Claude's large context window, which can ingest 200K+ tokens (about 500 pages of text or more), with up to <strong>1M tokens</strong> available on Pro, Max, Team, and Enterprise plans when using Opus 4.7.</li>
+    <li><strong>Coding assistance:</strong> Claude Opus 4.7 is described as "our most powerful model yet and the best coding model in the world." It helps write, debug, and explain code across multiple languages.</li>
+    <li><strong>Problem-solving and reasoning:</strong> handles complex cognitive tasks, math, strategic thinking, research. Claude Opus 4.7 and Sonnet 4.7 are hybrid models offering two modes — near-instant responses and extended thinking for deeper reasoning. Extended thinking lets Claude work step-by-step.</li>
+    <li><strong>Learning new things:</strong> Claude adapts to your learning style and pace. <strong>Learning mode</strong> guides your reasoning process rather than providing answers, helping develop critical thinking.</li>
+  </ul>
+  <p style="font-size:14px;color:var(--ink-soft)">Pointers from the lesson: a use-case gallery lives on claude.com, and the AI Capabilities course offers a deeper dive.</p>
+
+  <div class="mcq" data-mcq data-correct="2">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">How large is Claude's maximum context window on Pro, Max, Team, and Enterprise plans when using Opus 4.7?</div>
+    <button class="opt">200K tokens</button>
+    <button class="opt">500K tokens</button>
+    <button class="opt">1M tokens</button>
+    <button class="opt">Unlimited</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>Correct — the base context window ingests 200K+ tokens (~500 pages), and up to 1M tokens is available on Pro, Max, Team, and Enterprise plans with Opus 4.7.</div>
+  </div>
+
+  <h4>Ways to access Claude</h4>
+  <ul>
+    <li><strong>Claude.ai</strong> (plus mobile and desktop apps) — the primary way most people interact with Claude. Ask questions, brainstorm, create/edit documents. Ideal for conversations, writing, research, analysis, and creating files. <em>This is the course's focus.</em></li>
+    <li><strong>Claude Code</strong> — an agentic coding tool designed for developers but usable for all kinds of file manipulation on your desktop. It can directly edit files, run commands, and create commits.</li>
+    <li><strong>Claude and Slack</strong> — brings Claude into your team's communication tool. Chat in the AI assistant header from any channel/conversation, or mention @Claude in threads. When connected, Claude searches your workspace's channels, DMs, and shared files for context.</li>
+    <li><strong>Claude for Excel</strong> — work with Claude in a sidebar in Microsoft Excel; Claude can read, analyze, modify, and create workbooks. Best for model analysis, assumption updates, error debugging, template population, formula explanations, and multi-tab navigation.</li>
+  </ul>
+  <p style="font-size:14px;color:var(--ink-soft)">The course focuses primarily on Claude.ai; see <em>Claude Code in Action</em> for dev workflows.</p>
+
+  <div class="callout try collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🧪</span> Lesson reflection<span class="chev">▼</span></div>
+  <div class="cbody"><p>What tasks in your current work might benefit from having Claude as a thinking partner? Look at your calendar (or ask Claude to) and identify a few tasks to use Claude for.</p></div></div>
+
+  <p style="font-size:14px;color:var(--ink-soft)"><strong>What's next:</strong> navigate the Claude interface, start your first conversation, and understand the basics of how Claude responds.</p>
+</section>
+
+<!-- LESSON 2 -->
+<section class="lesson" id="l2" data-lesson="2">
+  <div class="lmeta"><span class="ltag"><span class="emoji">💬</span> Lesson 2</span><span class="ltime">⏱ 20 min · video</span></div>
+  <h3 class="ltitle">Your first conversation with Claude</h3>
+  <p style="font-size:13.5px;color:var(--ink-soft);margin-top:0">Contains the video "Getting started with Claude.ai" — its key points are captured in the text below.</p>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Start a new conversation with Claude and navigate the interface</li>
+      <li>Write effective prompts using clear, specific language</li>
+      <li>Upload files and images to provide Claude with additional context</li>
+      <li>Use follow-up messages to iterate and refine Claude's responses</li>
+    </ul>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li>Claude is a powerful, intelligent collaborator that amplifies your capabilities. Claude brings AI intelligence; <strong>you bring the context and expertise</strong> that makes the work meaningful.</li>
+    <li>The best approach when speaking to Claude is like you would a coworker — naturally, concisely, and conversationally.</li>
+    <li>Before your next conversation, consider: <strong>setting the stage</strong> (your role, objectives, context), <strong>defining the task</strong> (what action you want Claude to take), and <strong>specifying rules</strong> (style, tone, examples).</li>
+    <li>When you upload relevant documents/background into a chat, Claude considers that content — a shortcut so Claude understands your needs.</li>
+    <li>The real power of Claude comes with <strong>continued and frequent communication</strong>, not just one-off prompts.</li>
+  </ul></div></div>
+
+  <p><strong>Starting your first conversation:</strong> open Claude.ai and you'll see a clean interface with a text input area at the bottom. Prompts can range from simple questions (brainstorm code names) to complex requests to co-create files.</p>
+
+  <h4>Writing effective prompts</h4>
+  <p>All interactions begin with a prompt; the prompt plus other context impacts Claude's response. Speak to Claude like a coworker. A good prompt considers three things:</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 660 170" role="img" aria-label="Three parts of a good prompt">
+      <defs><style>.pc{font:700 14px sans-serif;fill:#fff}.pd{font:400 11.5px sans-serif;fill:#fff;opacity:.92}</style></defs>
+      <g><rect x="10" y="30" width="200" height="110" rx="14" fill="#c96442"/><text class="pc" x="110" y="62" text-anchor="middle">1 · Set the stage</text><text class="pd" x="110" y="86" text-anchor="middle">Your role &amp; objectives.</text><text class="pd" x="110" y="104" text-anchor="middle">Context Claude should</text><text class="pd" x="110" y="120" text-anchor="middle">know about your work.</text></g>
+      <g><rect x="230" y="30" width="200" height="110" rx="14" fill="#3a7d7b"/><text class="pc" x="330" y="62" text-anchor="middle">2 · Define the task</text><text class="pd" x="330" y="86" text-anchor="middle">What action do you want?</text><text class="pd" x="330" y="104" text-anchor="middle">Write, analyze, build,</text><text class="pd" x="330" y="120" text-anchor="middle">or something else?</text></g>
+      <g><rect x="450" y="30" width="200" height="110" rx="14" fill="#b8860b"/><text class="pc" x="550" y="62" text-anchor="middle">3 · Specify rules</text><text class="pd" x="550" y="86" text-anchor="middle">Style and tone.</text><text class="pd" x="550" y="104" text-anchor="middle">Examples that show</text><text class="pd" x="550" y="120" text-anchor="middle">what you're after.</text></g>
+    </svg>
+    <figcaption>A good prompt sets the stage, defines the task, and specifies the rules.</figcaption>
+  </figure>
+
+  <ul>
+    <li><strong>Setting the stage:</strong> What is your role and objectives? Any context about your work Claude should know?</li>
+    <li><strong>Defining the task:</strong> What action do you want Claude to take? Write, analyze, build, something else?</li>
+    <li><strong>Specifying rules:</strong> What style or tone? Any examples to attach showing what you're looking for?</li>
+  </ul>
+
+  <h5>Example prompt (uses all three elements)</h5>
+  <blockquote class="ex">"I'm the marketing lead at an indie streaming startup, and we're preparing an investor pitch deck for Series A investors. Can you research the current state of the independent film streaming market and identify key trends, competitor positioning, and growth opportunities? Use current web research with citations and structure it as a professional report of up to 5 pages, with an executive summary, market analysis, competitive landscape, and growth opportunities."</blockquote>
+  <p>In this prompt: <strong>setting the stage</strong> (investor pitch deck context/objective); <strong>defining the task</strong> (research the market + details); <strong>specifying rules</strong> (current web research with citations, structured professional report).</p>
+
+  <div class="mcq" data-mcq data-correct="1">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">In the example prompt, "structure it as a professional report of up to 5 pages with an executive summary…" is an example of which element?</div>
+    <button class="opt">Setting the stage</button>
+    <button class="opt">Specifying rules</button>
+    <button class="opt">Defining the task</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>Right — format, length, and "use citations" are rules. The role/objective is setting the stage; "research the market" is the task.</div>
+  </div>
+
+  <div class="callout tip collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">💡</span> Want to go deeper?<span class="chev">▼</span></div>
+  <div class="cbody"><p>This prompt framework is adapted from the <strong>4D Framework for AI Fluency</strong>, developed through a research collaboration between Professor Rick Dakan (Ringling College of Art and Design) and Professor Joseph Feller (University College Cork). Four core competencies — <strong>Delegation, Description, Discernment, and Diligence</strong> — enable effective AI collaboration. A free AI Fluency course is available.</p></div></div>
+
+  <h4>Adding context</h4>
+  <p>Uploads, connectors, and custom preferences give Claude more context. Claude can analyze text and visual elements (images, charts, graphics) in PDFs and documents. Supported file types: <strong>PDF, DOCX, CSV, TXT, and common image formats (PNG, JPEG)</strong>.</p>
+  <p>Practical uses: summarize a document; describe/analyze an image; identify trends in a spreadsheet; explain code or find bugs. Once uploaded, Claude parses the file; it appears as an attachment you can prompt about.</p>
+
+  <div class="callout tip collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">💡</span> Pro tip<span class="chev">▼</span></div>
+  <div class="cbody"><p>For preferences in every response, go to <strong>Settings &gt; General &gt; "What personal preferences should Claude consider?"</strong></p></div></div>
+
+  <h4>Iterating on Claude's responses</h4>
+  <p>Conversations are iterative. Chaining bite-sized prompts allows natural dialogue. If the first response isn't right:</p>
+  <ul>
+    <li><strong>Ask follow-up questions:</strong> "Can you expand on the second point?" / "make it more concise?"</li>
+    <li><strong>Provide feedback:</strong> "the tone is too formal. Can you make it more conversational?"</li>
+    <li><strong>Redirect or restart:</strong> steer back ("I was asking about X, not Y"). Worst case, restart in a new chat to refresh context.</li>
+  </ul>
+  <div class="callout tip collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">💡</span> Pro tip<span class="chev">▼</span></div>
+  <div class="cbody"><p>Click the <strong>pencil icon</strong> on any of your messages to edit and resubmit — useful to refine rather than add a new message.</p></div></div>
+
+  <h4>Personalizing Claude</h4>
+  <p>Two features help Claude work better over time:</p>
+  <ul>
+    <li><strong>Memory</strong> automatically saves key context from conversations (role, preferences, past decisions, working style) so you don't repeat yourself. Review/edit/delete anytime in Settings; it syncs across devices.</li>
+    <li><strong>Styles</strong> let you customize how Claude communicates. Choose presets (concise, formal, explanatory) or create a custom style. It applies across all conversations automatically.</li>
+  </ul>
+
+  <div class="callout try collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🧪</span> Put it into practice<span class="chev">▼</span></div>
+  <div class="cbody"><p>Try prompting Claude with a question or task (use the use-case gallery for ideas).</p></div></div>
+
+  <p style="font-size:14px;color:var(--ink-soft)"><strong>What's next:</strong> give Claude direction — adjusting tone, format, and approach.</p>
+</section>
+
+<!-- LESSON 3 -->
+<section class="lesson" id="l3" data-lesson="3">
+  <div class="lmeta"><span class="ltag"><span class="emoji">🎯</span> Lesson 3</span><span class="ltime">⏱ 15 min</span></div>
+  <h3 class="ltitle">Getting better results</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Recognize common challenges when starting out with AI and use troubleshooting techniques</li>
+      <li>Define AI Fluency and know where to learn more</li>
+      <li>Explain how you might set up evals to understand how Claude performs with your unique workflows</li>
+    </ul>
+  </div>
+
+  <h4>Common challenges and how to fix them</h4>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Challenge</th><th>What's happening</th><th>Try this</th></tr></thead>
+    <tbody>
+      <tr><td>Response too generic</td><td>Prompt lacked context</td><td>Add details about audience, role, constraints. Instead of "Write an email about the project delay," try "Write an email to our enterprise client explaining that the software integration will be delayed by two weeks. They've been patient so far but this is the second delay. Keep it professional but apologetic."</td></tr>
+      <tr><td>Response too long (or too short)</td><td>Claude is guessing at length</td><td>Be explicit: "Give me a two-paragraph summary" / "Keep this under 100 words" / "I need a comprehensive analysis — length isn't a concern."</td></tr>
+      <tr><td>Claude didn't follow my format</td><td>It understood <em>what</em>, not <em>how</em></td><td>Show, don't just tell. Provide an example of the format, or describe structure: "Use bullet points with bold headers for each section."</td></tr>
+      <tr><td>Got confident-sounding info that turned out wrong</td><td>Claude occasionally generates plausible but incorrect information, especially with specific facts or niche topics</td><td>For high-stakes work, verify key facts independently. Ask Claude to cite sources or indicate confidence level. Enable web search to ground responses.</td></tr>
+      <tr><td>Tone isn't right</td><td>Claude defaults to helpful and professional</td><td>Describe tone in plain language ("more conversational" / "authoritative and formal"). Provide an example of the style you want.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>The iteration mindset</h4>
+  <p>Your first prompt rarely produces a perfect result — and that's okay. Treat the initial prompt as the start of a conversation. Effective users:</p>
+  <ul>
+    <li>Treat first drafts as starting points. Review, identify what's working, refine.</li>
+    <li>Give specific feedback. "Make it shorter" is fine, but "Cut the first two paragraphs and make the conclusion more action-oriented" is better.</li>
+    <li>Know when to start fresh. Sometimes a new chat with a clearer prompt is faster than redirecting.</li>
+  </ul>
+
+  <h4>What is AI Fluency?</h4>
+  <p>The ability to collaborate effectively with AI tools — not just which buttons to click, but the judgment to use AI well across situations. The <strong>4D Framework</strong> (Profs. Rick Dakan &amp; Joseph Feller) identifies four core competencies.</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 660 200" role="img" aria-label="The 4D framework">
+      <defs><style>.dc{font:700 13px sans-serif;fill:#fff}.dd{font:400 11px sans-serif;fill:#2b2622}</style></defs>
+      <g><circle cx="120" cy="60" r="40" fill="#c96442"/><text class="dc" x="120" y="65" text-anchor="middle">Delegation</text></g>
+      <text class="dd" x="120" y="118" text-anchor="middle">What's done by</text><text class="dd" x="120" y="132" text-anchor="middle">humans vs. AI</text>
+      <g><circle cx="280" cy="60" r="40" fill="#3a7d7b"/><text class="dc" x="280" y="65" text-anchor="middle">Description</text></g>
+      <text class="dd" x="280" y="118" text-anchor="middle">Communicating</text><text class="dd" x="280" y="132" text-anchor="middle">clearly with AI</text>
+      <g><circle cx="440" cy="60" r="40" fill="#b8860b"/><text class="dc" x="440" y="65" text-anchor="middle">Discernment</text></g>
+      <text class="dd" x="440" y="118" text-anchor="middle">Critically</text><text class="dd" x="440" y="132" text-anchor="middle">evaluating output</text>
+      <g><circle cx="580" cy="60" r="40" fill="#3f7d4f"/><text class="dc" x="580" y="65" text-anchor="middle">Diligence</text></g>
+      <text class="dd" x="580" y="118" text-anchor="middle">Using AI responsibly</text><text class="dd" x="580" y="132" text-anchor="middle">&amp; ethically</text>
+    </svg>
+    <figcaption>The 4D Framework for AI Fluency — Delegation, Description, Discernment, Diligence.</figcaption>
+  </figure>
+
+  <ul>
+    <li><strong>Delegation:</strong> deciding what work should be done by humans, what by AI, and how to distribute tasks. Includes understanding your goals, AI capabilities, and making strategic choices.</li>
+    <li><strong>Description:</strong> effectively communicating with AI systems. Clearly defining outputs, guiding AI processes, specifying desired behaviors/interactions.</li>
+    <li><strong>Discernment:</strong> thoughtfully and critically evaluating AI outputs, processes, behaviors, interactions. Assessing quality, accuracy, appropriateness; determining improvements.</li>
+    <li><strong>Diligence:</strong> using AI responsibly and ethically. Thoughtful choices, transparency, accountability for AI-assisted work.</li>
+  </ul>
+  <p style="font-size:14px;color:var(--ink-soft)">The Lesson 2 prompt framework is rooted in <em>Description</em>; the troubleshooting techniques draw on <em>Discernment</em> and <em>Diligence</em>. A free AI Fluency course is available.</p>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">You want to test whether Claude is actually good at a recurring task in your domain. Which of the four competencies does that "is Claude good at this?" judgment belong to?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>Discernment.</strong> Evaluating Claude for your workflows — running <strong>evals</strong> — is exactly where Discernment matters: critically assessing quality, accuracy, and appropriateness of outputs.</div>
+  </div>
+
+  <h4>Evaluating Claude for your workflows</h4>
+  <p>As you integrate Claude, ask: how do I know if Claude is good at this task? This is where Discernment matters. <strong>Evals</strong> (evaluations) are systematic ways to test how well Claude performs on specific tasks that matter to you.</p>
+  <p><strong>Why evals matter:</strong> your work is unique. Claude might excel at marketing copy but need more guidance for technical documentation in your domain. Running simple evals helps you understand where Claude adds the most value, identify tasks needing more context/examples, and build confidence for recurring tasks.</p>
+
+  <h5>A simple eval approach</h5>
+  <ol>
+    <li><strong>Gather examples.</strong> Collect 5–10 examples of a task you do regularly (emails, reports, analyses).</li>
+    <li><strong>Create test prompts.</strong> Write prompts that would generate similar outputs, including natural context.</li>
+    <li><strong>Compare outputs.</strong> Run prompts and compare to your examples. Ask: Does Claude capture key information? Is tone/style appropriate? What's missing or could improve?</li>
+    <li><strong>Refine your approach.</strong> Adjust prompts, add examples to show what good looks like, or identify where human review is essential.</li>
+  </ol>
+  <p><strong>Example — using Claude for data analysis</strong> (from the AI Fluency for nonprofits course, relevant to anyone working with data): find a dataset you've manually analyzed → create prompts requesting Claude to do the analysis → compare Claude's results to your originals → note patterns and refine (maybe Claude gets the right numbers but misses overall patterns).</p>
+
+  <div class="callout try collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🧪</span> Lesson reflection<span class="chev">▼</span></div>
+  <div class="cbody"><p>Which common challenges have you encountered? Where would a simple eval help? How might the 4D Framework help your collaboration?</p></div></div>
+
+  <p style="font-size:14px;color:var(--ink-soft)"><strong>What's next:</strong> the Claude desktop app and its three interaction modes — Chat, Cowork, and Code.</p>
+</section>
+
+<!-- LESSON 4 -->
+<section class="lesson" id="l4" data-lesson="4">
+  <div class="lmeta"><span class="ltag"><span class="emoji">🖥️</span> Lesson 4</span><span class="ltime">⏱ 6 min</span></div>
+  <h3 class="ltitle">Claude desktop app: Chat, Cowork, Code</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Identify the three modes in the Claude desktop app — Chat, Cowork, and Code — and what each is designed for</li>
+      <li>Explain key features unique to each mode, including quick entry, scheduled tasks, and local vs. remote development</li>
+      <li>Choose the right mode based on the type of work you need to accomplish</li>
+    </ul>
+  </div>
+
+  <p><strong>Overview:</strong> the Claude desktop app gives three ways to work — <strong>Chat, Cowork, Code</strong> — from quick questions to complex research to building software.</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 660 230" role="img" aria-label="Chat, Cowork, Code split">
+      <defs><style>.mt{font:700 15px sans-serif;fill:#fff}.ms{font:400 11px sans-serif;fill:#fff;opacity:.93}.eng{font:600 11px sans-serif;fill:#a44a2e}</style></defs>
+      <g><rect x="10" y="20" width="200" height="110" rx="14" fill="#3a7d7b"/><text class="mt" x="110" y="50" text-anchor="middle">💬 Chat</text><text class="ms" x="110" y="74" text-anchor="middle">Quick exchanges,</text><text class="ms" x="110" y="90" text-anchor="middle">brainstorm, draft,</text><text class="ms" x="110" y="106" text-anchor="middle">learn via dialogue</text></g>
+      <g><rect x="230" y="20" width="200" height="110" rx="14" fill="#c96442"/><text class="mt" x="330" y="50" text-anchor="middle">🛠️ Cowork</text><text class="ms" x="330" y="74" text-anchor="middle">Agentic: give a goal,</text><text class="ms" x="330" y="90" text-anchor="middle">connect tools, get a</text><text class="ms" x="330" y="106" text-anchor="middle">finished deliverable</text></g>
+      <g><rect x="450" y="20" width="200" height="110" rx="14" fill="#b8860b"/><text class="mt" x="550" y="50" text-anchor="middle">⌨️ Code</text><text class="ms" x="550" y="74" text-anchor="middle">Build software:</text><text class="ms" x="550" y="90" text-anchor="middle">write, test, run,</text><text class="ms" x="550" y="106" text-anchor="middle">deploy code</text></g>
+      <rect x="230" y="150" width="420" height="56" rx="12" fill="#f4e6df" stroke="#c96442" stroke-dasharray="5 4"/>
+      <text class="eng" x="440" y="175" text-anchor="middle">Cowork &amp; Code run on the SAME engine —</text>
+      <text class="eng" x="440" y="193" text-anchor="middle">both are Claude Code underneath (local, independent, sub-agents, long tasks).</text>
+    </svg>
+    <figcaption>Three desktop modes. Cowork and Code share the Claude Code engine.</figcaption>
+  </figure>
+
+  <ul>
+    <li><strong>Chat</strong> is the same Claude from claude.ai, plus quick entry, screenshots, dictation, and connectors that come from running natively on your computer.</li>
+    <li><strong>Cowork</strong> is an agentic tool — you give it a goal, connect it to your tools/resources, and let it do the work. Broader scope: more thorough research and analysis, more complex documents and deliverables.</li>
+    <li><strong>Code</strong> is for building software — writing, testing, deploying code.</li>
+    <li><strong>Cowork and Code run on the same engine.</strong> Both are Claude Code underneath — local to your machine, capable of independent work, able to spin up sub-agents and sustain long tasks.</li>
+  </ul>
+
+  <h4><span class="emoji">💬</span> Chat</h4>
+  <p>Excels when you need to ask questions, brainstorm, draft, or work through problems back and forth. Same as claude.ai, plus native features:</p>
+  <ul>
+    <li><strong>Quick entry.</strong> Double-tap the Option key on Mac to pull up Claude over whatever you're working on. The compact window stays on top as you switch apps.</li>
+    <li><strong>Screenshots and window sharing.</strong> Capture a screenshot or share a window so Claude sees exactly what you're looking at. (Mac)</li>
+    <li><strong>Dictation.</strong> Talk through a problem instead of typing. (Mac)</li>
+    <li><strong>Desktop connectors.</strong> Connect local tools and services so Claude can work with other tools on your machine.</li>
+  </ul>
+  <p><em>Try it when:</em> staring at an unfamiliar dashboard (screenshot + "what do these metrics mean?"); between meetings structuring a presentation via voice; pulling together notes across Apple Notes via the Notes connector.</p>
+
+  <h4><span class="emoji">🛠️</span> Cowork</h4>
+  <p>Built for work that takes real effort: pulling information from many sources, making sense of it, producing something finished. Can multitask across different parts of a project. Examples: thorough research briefs, cross-source financial analysis, end-to-end contract review, polished slide decks. Before starting, Claude often asks a short set of questions (scope, format, constraints) and builds a plan you can review in the sidebar. Run multiple tasks at once, each in its own conversation.</p>
+  <ul>
+    <li><strong>Folder access.</strong> Point Claude to a folder; it reads what's there, figures out what's relevant, saves finished work back. Can also upload files, paste content, or connect tools.</li>
+    <li><strong>Scheduled tasks.</strong> Recurring work on a schedule (daily briefing from Slack + calendar, weekly roundup, morning inbox triage). You define the task and when it runs; Claude handles it automatically each time the app is open. It catches up if the computer/app was closed when due.</li>
+    <li><strong>Subagents.</strong> Background workers Claude spins up to handle parts of a task in parallel. Claude breaks a complex task into subtasks, assigns each to a subagent with its own context, and coordinates results into one deliverable.</li>
+    <li><strong>Dispatch.</strong> A persistent conversation thread to continue Cowork conversations from your phone (Claude mobile app). Hand Claude tasks that use everything on your computer. Requires both desktop and mobile apps, the computer awake, and the desktop app open.</li>
+    <li><strong>Projects.</strong> Group related tasks into dedicated workspaces with their own files, context, instructions, and memory. Like Claude projects, but they live locally on your desktop, built around tasks you run through Cowork.</li>
+    <li><strong>Browser use.</strong> Connect Claude in Chrome; Claude can navigate websites, interact with pages, and pull findings into the task (e.g., check competitor pricing across ten sites).</li>
+    <li><strong>Computer use.</strong> When no connector/plugin exists, Claude can navigate your computer directly — clicking, typing, opening apps. Priority order: <strong>connectors first, then Chrome, then screen interaction.</strong> A permission prompt appears before accessing each app; you can set a blocklist. In research preview on Pro and Max plans, macOS only (Windows coming soon).</li>
+    <li><strong>Plugins.</strong> Capabilities Claude doesn't have on its own (live financial data, internal knowledge base search, compliance frameworks). Browse and add from the Cowork interface.</li>
+    <li><strong>Protected environment.</strong> Cowork runs in a contained space; Claude can read/create/edit files within shared folders, but can't access anything outside them.</li>
+  </ul>
+  <p style="font-size:14px;color:var(--ink-soft)">Cowork is available to Pro, Max, Team, and Enterprise users.</p>
+
+  <div class="mcq" data-mcq data-correct="0">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">In Cowork's Computer Use, what is the priority order Claude follows to get something done?</div>
+    <button class="opt">Connectors first, then Chrome, then screen interaction</button>
+    <button class="opt">Screen interaction first, then Chrome, then connectors</button>
+    <button class="opt">Chrome first, then connectors, then plugins</button>
+    <button class="opt">Plugins first, then connectors, then Chrome</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>Correct. Claude prefers structured access — connectors first, then Chrome, and only falls back to directly clicking/typing on your screen when no better path exists.</div>
+  </div>
+
+  <h4><span class="emoji">⌨️</span> Code</h4>
+  <p>Access to the power of Claude Code running inside the desktop app — a full development environment. Claude works directly in your codebase: reading, writing, modifying code, running commands. Visual diffs show changes, a built-in terminal shows commands, and git tracks every version for rollback. Where Cowork runs in a contained workspace, Code runs directly in your project with full access to the file system, terminal, and dev tools.</p>
+  <h5>Where work happens</h5>
+  <ul>
+    <li><strong>Local:</strong> select a folder; Claude works directly with those files, accesses local tools, and can run a dev server you preview in your browser.</li>
+    <li><strong>Remote:</strong> connect a GitHub repo; Claude works in a cloud environment. Sessions continue even if you close the app. Good for larger codebases or keeping development off your local machine.</li>
+  </ul>
+  <h5>Three interaction modes (control how much Claude does on its own)</h5>
+  <ul>
+    <li><strong>Ask:</strong> Claude proposes every change and waits for approval (review a visual diff, accept/reject).</li>
+    <li><strong>Code:</strong> Claude applies file changes automatically but checks before running terminal commands.</li>
+    <li><strong>Plan:</strong> Claude outlines its full approach before touching anything; a plan viewer lets you review.</li>
+  </ul>
+  <p>Run multiple sessions across projects; filter by status (Active/Archived) and environment (Local/Cloud). The Code tab is available on Pro, Max, Team, and Enterprise users.</p>
+
+  <h4>Comparing the three modes</h4>
+  <div class="tablewrap"><table>
+    <thead><tr><th></th><th>Chat</th><th>Cowork</th><th>Code</th></tr></thead>
+    <tbody>
+      <tr><td>Optimized for</td><td>Quicker exchanges: exploring ideas, iterative drafting, quick answers, learning through dialogue</td><td>Complex or sustained work: research, analysis, file organization, producing finished documents/deliverables</td><td>Building software: writing, testing, running, deploying code</td></tr>
+      <tr><td>Key features</td><td>Quick entry, dictation</td><td>Work from local folders, plugins, subagents, scheduled tasks</td><td>Ask/Code/Plan modes, visual diffs, git integration, local and remote environments</td></tr>
+      <tr><td>Tools &amp; extensions</td><td>Connectors, Skills, Claude in Chrome</td><td>Connectors (local and remote), Skills, Claude in Chrome, Plugins, Computer Use</td><td>Connectors, Skills, Claude in Chrome, Plugins, Hooks</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="callout try collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🧪</span> Lesson reflection<span class="chev">▼</span></div>
+  <div class="cbody"><p>Which mode fits the tasks you most commonly use Claude for? How might Cowork have changed a recent multi-source project?</p></div></div>
+
+  <p style="font-size:14px;color:var(--ink-soft)"><strong>What's next:</strong> organize your work and knowledge using Projects.</p>
+</section>
+
+<!-- SECTION 1 QUIZ -->
+<div class="quizblock" data-quiz="1">
+  <div class="scorebar"><h4 style="margin:0"><span class="emoji">🏆</span> Section 1 Quiz — Meet Claude</h4><span class="qscore" data-score>0 / 4</span></div>
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q1</div><div class="qtext">What is the name of Anthropic's training approach that keeps Claude helpful, harmless, and honest?</div>
+    <button class="opt">Reinforcement Alignment</button><button class="opt">Steerable Tuning</button><button class="opt">Constitutional AI</button><button class="opt">Hybrid Reasoning</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Constitutional AI trains Claude to align with human values and operate transparently.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="1" data-inquiz>
+    <div class="qlab">Q2</div><div class="qtext">A strong prompt sets the stage, defines the task, and…</div>
+    <button class="opt">picks the model version</button><button class="opt">specifies the rules (style, tone, examples)</button><button class="opt">always uploads a file</button><button class="opt">turns on extended thinking</button>
+    <div class="fb"></div><div class="fbmsg" hidden>The three elements are: set the stage, define the task, specify the rules.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="3" data-inquiz>
+    <div class="qlab">Q3</div><div class="qtext">Which of the 4D competencies is about critically evaluating AI outputs for quality and accuracy?</div>
+    <button class="opt">Delegation</button><button class="opt">Description</button><button class="opt">Diligence</button><button class="opt">Discernment</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Discernment = thoughtfully evaluating outputs. Diligence is about responsible/ethical use.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="0" data-inquiz>
+    <div class="qlab">Q4</div><div class="qtext">Which two desktop modes run on the same engine (Claude Code underneath)?</div>
+    <button class="opt">Cowork and Code</button><button class="opt">Chat and Cowork</button><button class="opt">Chat and Code</button><button class="opt">All three independently</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Cowork and Code both run on Claude Code — local, independent, sub-agent capable.</div>
+  </div>
+  <div class="resultbox" data-result></div>
+</div>
+
+<!-- ======================= SECTION 2 ======================= -->
+<div class="sec-divider" id="sec2">
+  <span class="badge"><span class="emoji">②</span> Organizing your work</span>
+  <h2>Organizing your work and knowledge</h2>
+  <p>How do Projects, Artifacts, and Skills give Claude structure and reusable knowledge? (Lessons 5–7)</p>
+</div>
+
+<!-- LESSON 5 -->
+<section class="lesson" id="l5" data-lesson="5">
+  <div class="lmeta"><span class="ltag"><span class="emoji">📁</span> Lesson 5</span><span class="ltime">⏱ 20 min · video</span></div>
+  <h3 class="ltitle">Introduction to projects</h3>
+  <p style="font-size:13.5px;color:var(--ink-soft);margin-top:0">Contains the video "Introduction to Projects: Getting started with projects in Claude.ai" — key points captured below.</p>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Explain what projects are and when to use them</li>
+      <li>Create a new project with a name, description, and visibility settings</li>
+      <li>Add documents and files to your project's knowledge base</li>
+      <li>Write effective project instructions to guide Claude's behavior</li>
+      <li>Share projects with teammates (for Claude for Work — Team and Enterprise plan — users)</li>
+    </ul>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li><strong>Projects are self-contained workspaces</strong> with their own memory, chat histories, knowledge bases, and customized instructions — dedicated environments for specific work streams.</li>
+    <li><strong>Project knowledge</strong> enhances Claude's understanding by letting you upload relevant documents that Claude references across all chats within that project. No re-uploading the same files.</li>
+    <li><strong>Project instructions</strong> guide Claude's behavior — specify tone, expertise level, response style, and more. They apply to every conversation within the project.</li>
+    <li><strong>Projects scale automatically.</strong> When your knowledge base approaches context limits, Claude seamlessly enables <strong>Retrieval Augmented Generation (RAG)</strong> mode to expand capacity by up to <strong>10x</strong> while maintaining response quality.</li>
+    <li>For Claude for Work users, projects enable collaboration — share with teammates for shared context, instructions, and accumulated knowledge.</li>
+  </ul></div></div>
+
+  <p><strong>What are Projects?</strong> Ideal for storing knowledge Claude should reference, organizing related chats around a topic/work area, and collaborating with team members needing the same shared context.</p>
+
+  <p><strong>When to use Projects</strong> — valuable for ongoing work, not one-off questions. Create a project when you have a workflow with: reference materials you'll reuse (meeting notes, survey results, reports, historical data); consistent requirements for how Claude responds (always formal, always cite sources, always follow our template); or team collaboration needs.</p>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">A project's knowledge base grows past the context window limit. What happens to keep responses working?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans">Claude seamlessly switches on <strong>RAG (Retrieval Augmented Generation)</strong>. Instead of loading all content at once, it searches and retrieves only the most relevant info — expanding capacity by up to <strong>10x</strong> while maintaining quality. You see a visual indicator, but the experience feels the same.</div>
+  </div>
+
+  <h4>Creating your first project</h4>
+  <ul>
+    <li><strong>Step 1 — Set up your project:</strong> hover the left sidebar, click "Projects" (or go to claude.ai/projects) → "+ New Project" (upper right) → give a descriptive name (e.g., "Q4 Marketing Campaign") → add a brief description (Claude doesn't see it directly; it helps you/teammates understand purpose) → choose visibility (private or share with organization for Claude for Work).</li>
+    <li><strong>Step 2 — Add project instructions:</strong> click "Instructions." Good instructions include: context about what you're working on ("This project is for creating marketing content for our B2B software product."); process instructions ("First consider a blog structure that will entice this audience, then write the draft."); tone/style preferences ("Use a professional but conversational tone. Avoid jargon when possible."); specific requirements ("Always include a call-to-action at the end of marketing copy."). Click "Save instructions" — they apply to every chat and work alongside user preferences and styles. You can also automate workflows: "When I upload a meeting transcript, create a structured summary using this template." Think of instructions as <strong>programming Claude's behavior</strong> for this project.</li>
+    <li><strong>Step 3 — Build your knowledge base:</strong> the Files menu is on the right side of the project's main page. Click "+" to add content. Upload PDF, DOCX, CSV, TXT, HTML, and more; you can connect Google Drive. What to upload: reference docs (brand guidelines, style guides, templates), background materials (research reports, meeting notes, requirements docs), examples to emulate, technical docs/specifications.</li>
+  </ul>
+  <div class="callout tip collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">💡</span> Pro tip<span class="chev">▼</span></div>
+  <div class="cbody"><p>Name files descriptively — Claude uses file names to retrieve the right info ("Q4-2024-Brand-Guidelines.pdf" beats "document1.pdf").</p></div></div>
+
+  <h4>How projects handle large knowledge bases</h4>
+  <p>Projects automatically scale via <strong>RAG</strong>. Claude automatically finds and uses the most relevant parts of uploaded documents when answering, without you telling it which file. When project knowledge approaches the context window limit, Claude seamlessly enables RAG mode — instead of loading all content at once, it searches and retrieves only the most relevant info. This expands capacity by up to 10x while maintaining quality. You'll see a visual indicator when RAG-enabled, but the experience feels the same.</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 600 180" role="img" aria-label="RAG retrieval">
+      <defs><style>.kt{font:600 11px sans-serif;fill:#5c544c}.lab2{font:700 12px sans-serif;fill:#2b2622}</style></defs>
+      <rect x="20" y="30" width="150" height="120" rx="12" fill="#f3eee7" stroke="#e7e0d8"/>
+      <text class="lab2" x="95" y="22" text-anchor="middle">Knowledge base</text>
+      <rect x="38" y="48" width="114" height="16" rx="4" fill="#fff" stroke="#e7e0d8"/><rect x="38" y="70" width="114" height="16" rx="4" fill="#f4e6df" stroke="#c96442"/><rect x="38" y="92" width="114" height="16" rx="4" fill="#fff" stroke="#e7e0d8"/><rect x="38" y="114" width="114" height="16" rx="4" fill="#f4e6df" stroke="#c96442"/>
+      <path d="M170,90 L250,90" stroke="#c96442" stroke-width="2" fill="none" marker-end="url(#ah2)"/>
+      <marker id="ah2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#c96442"/></marker>
+      <rect x="252" y="62" width="120" height="56" rx="12" fill="#c96442"/><text x="312" y="86" text-anchor="middle" style="font:700 12px sans-serif;fill:#fff">RAG retrieves</text><text x="312" y="103" text-anchor="middle" style="font:400 10px sans-serif;fill:#fff">only what's relevant</text>
+      <path d="M372,90 L450,90" stroke="#c96442" stroke-width="2" fill="none" marker-end="url(#ah2)"/>
+      <rect x="452" y="62" width="120" height="56" rx="12" fill="#3a7d7b"/><text x="512" y="86" text-anchor="middle" style="font:700 12px sans-serif;fill:#fff">Answer</text><text x="512" y="103" text-anchor="middle" style="font:400 10px sans-serif;fill:#fff">up to 10x capacity</text>
+    </svg>
+    <figcaption>RAG searches the knowledge base and pulls only the relevant chunks into context.</figcaption>
+  </figure>
+
+  <p><strong>Working within your project:</strong> each conversation automatically has access to your knowledge base and follows your project instructions.</p>
+
+  <h4>Collaboration features (Claude for Work — Team and Enterprise)</h4>
+  <ul>
+    <li><strong>Permission levels:</strong> <strong>Can view</strong> (see contents, access knowledge, chat — no changes; read-only with discussion rights); <strong>Can edit</strong> (modify instructions, update knowledge, manage members, contribute); <strong>Owner</strong> (control everything including who sees the project; share with specific people or whole org).</li>
+    <li><strong>Sharing your project:</strong> open the project → click "Share project" (right of the project name) → add members by name/email or paste a list for bulk sharing (shows in their "Shared with you") → or share with "Everyone at [organization]" to make it discoverable in the Team tab. Members get email notifications; find shared projects in "Shared with me."</li>
+  </ul>
+
+  <h4>Example projects to inspire you</h4>
+  <ul>
+    <li><strong>Q4 product launch</strong> (product specs, competitive analysis, messaging notes)</li>
+    <li><strong>Research support</strong> (competitive review, user research, customer feedback — synthesize sources, draft reports)</li>
+    <li><strong>Client account hub</strong> (brand guidelines, past deliverables, comms history — set instructions to match tone)</li>
+    <li><strong>Event planning workspace</strong> (venue contracts, speaker bios, attendee data — run-of-show, communications, post-event reports)</li>
+    <li><strong>Job description generator</strong> (past JDs, team charters, headcount docs)</li>
+  </ul>
+
+  <h4>Best practices for projects</h4>
+  <ul>
+    <li>Start focused, then expand.</li>
+    <li>Keep the knowledge base current (outdated docs → outdated responses).</li>
+    <li>Write clear instructions (vague → inconsistent).</li>
+    <li>Name documents descriptively and group related files (Claude uses filenames and proximity to understand relationships).</li>
+    <li>Reference documents by name when asking ("Based on our Q3 report, what were the top customer concerns?").</li>
+  </ul>
+
+  <div class="callout try collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🧪</span> Lesson reflection<span class="chev">▼</span></div>
+  <div class="cbody"><p>What ongoing work could benefit from a dedicated project with persistent context? What documents will you re-upload/re-explain regularly? Any team projects that would benefit from shared knowledge and instructions?</p></div></div>
+
+  <p style="font-size:14px;color:var(--ink-soft)"><strong>What's next:</strong> create mini-apps with Artifacts.</p>
+</section>
+
+<!-- LESSON 6 -->
+<section class="lesson" id="l6" data-lesson="6">
+  <div class="lmeta"><span class="ltag"><span class="emoji">🧩</span> Lesson 6</span><span class="ltime">⏱ 20 min</span></div>
+  <h3 class="ltitle">Creating with artifacts</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Explain what artifacts are and when Claude creates them</li>
+      <li>Share artifacts with colleagues and publish them publicly</li>
+      <li>Troubleshoot common artifact issues</li>
+    </ul>
+  </div>
+
+  <p><strong>What are artifacts?</strong> Standalone, interactive outputs Claude creates in a dedicated window alongside your conversation. Instead of a long block of code/text buried in chat, you see content rendered and ready to use — a working website, an interactive chart, or a downloadable document.</p>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">Roughly how long does content typically need to be before Claude automatically turns it into an artifact?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans">Claude automatically creates an artifact when content is significant and self-contained — <strong>typically over 15 lines</strong> — and is something you'll likely want to edit, iterate on, reuse, or reference later.</div>
+  </div>
+
+  <p>Claude automatically creates an artifact when content: is significant and self-contained (typically over 15 lines); is something you'll likely want to edit, iterate on, or reuse; represents complex content standing on its own; is content you'll reference or use later.</p>
+
+  <h4>Common artifact types</h4>
+  <ul>
+    <li><strong>Documents</strong> (markdown, plain text, Word, PDF, PowerPoint, Excel): text-heavy content to export/edit — meeting notes, reports, project plans, blog posts.</li>
+    <li><strong>Code snippets:</strong> working code in any language (Python, JavaScript, C++, and more). View, copy, or download.</li>
+    <li><strong>HTML pages:</strong> complete web pages (HTML, CSS, JavaScript in a single file) — landing pages, forms, interactive demos, prototypes.</li>
+    <li><strong>SVG images:</strong> scalable vector graphics for logos, icons, illustrations. Render directly in the artifact window.</li>
+    <li><strong>Mermaid diagrams:</strong> flowcharts, sequence diagrams, Gantt charts, org charts. Describe relationships and Claude creates a diagram to refine.</li>
+    <li><strong>React components:</strong> interactive UI elements with real functionality — calculators, dashboards, games, data visualizations. They include actual logic and respond to user input.</li>
+  </ul>
+
+  <h4>Creating your first artifact</h4>
+  <p>Just describe what you want; Claude decides whether to present it as an artifact. Examples:</p>
+  <ul>
+    <li>"Create a flowchart showing our customer onboarding process" (Note: Claude may now generate visual diagrams like flowcharts as HTML using Imagine, in addition to code-based artifacts.)</li>
+    <li>"Build an interactive dashboard that lets me input monthly expenses and see a breakdown"</li>
+    <li>"Design a landing page for a productivity app with a hero section and feature list"</li>
+    <li>"Write a project brief template I can reuse"</li>
+  </ul>
+  <p>If Claude doesn't auto-create one, ask: "Create this as an artifact." When generated, it appears in a dedicated window to the right where you can view different formats (toggle preview vs. underlying code), copy content, download files, and view code.</p>
+
+  <h4>Sharing and publishing artifacts</h4>
+  <ul>
+    <li><strong>Copy or download:</strong> copy/download buttons are in the lower right of the artifact window.</li>
+    <li><strong>Share within your organization (Claude for Work):</strong> Team/Enterprise users share internally; it stays within your org and requires team authentication.</li>
+    <li><strong>Publish publicly (Free, Pro, Max):</strong> make it accessible to anyone with the link. When you publish: only the selected version becomes public (the chat stays private); anyone can view/interact without a Claude account; others can "remix" — open it in their own Claude conversation to modify and build on. To publish, click "Share"/"Publish" (upper right). Unpublish anytime by removing public access. Note: published artifacts are publicly accessible via link (no Claude account needed to view) but are <strong>not indexed by search engines</strong> (won't appear in Google).</li>
+  </ul>
+
+  <div class="mcq" data-mcq data-correct="1">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">When you publish an artifact publicly, what becomes visible to people with the link?</div>
+    <button class="opt">Your entire chat conversation</button>
+    <button class="opt">Only the selected version of the artifact</button>
+    <button class="opt">Nothing until they create a Claude account</button>
+    <button class="opt">The artifact, and it's indexed on Google</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>Correct. Only the selected version goes public; the chat stays private; viewers need no Claude account; and it is NOT indexed by search engines.</div>
+  </div>
+
+  <h4>Tips for getting the most from artifacts</h4>
+  <ul>
+    <li><strong>Be specific:</strong> "Build a monthly budget tracker where I can input expenses by category, see a pie chart breakdown, and get a warning when I'm over budget" beats "Build a budget tracker."</li>
+    <li><strong>Describe the end user</strong> (helps Claude make design choices).</li>
+    <li><strong>Iterate incrementally</strong> (one feature/change at a time).</li>
+    <li><strong>Request artifacts when needed</strong> ("Please create that as an artifact").</li>
+  </ul>
+
+  <div class="callout try collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🧪</span> Lesson reflection<span class="chev">▼</span></div>
+  <div class="cbody"><p>What recurring work could benefit from a reusable interactive artifact? Which processes would be clearer as a flowchart/diagram? What prototype or tool would help test an idea quickly?</p></div></div>
+
+  <p style="font-size:14px;color:var(--ink-soft)"><strong>What's next:</strong> Skills — reusable instruction sets that teach Claude specialized workflows.</p>
+</section>
+
+<!-- LESSON 7 -->
+<section class="lesson" id="l7" data-lesson="7">
+  <div class="lmeta"><span class="ltag"><span class="emoji">⚙️</span> Lesson 7</span><span class="ltime">⏱ 15 min</span></div>
+  <h3 class="ltitle">Working with skills</h3>
+  <div class="examnote" style="margin:10px 0"><b>Plan availability:</b> Skills are currently a feature preview for Pro, Max, Team, and Enterprise plans. Free plan users can read along to understand the concept and skip the hands-on steps.</div>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Explain what Skills are and how Claude uses them</li>
+      <li>Identify Anthropic's built-in Skills for document creation</li>
+      <li>Enable and manage Skills in your settings</li>
+    </ul>
+  </div>
+
+  <p><strong>What are Skills?</strong> Folders of instructions, scripts, and resources that Claude loads dynamically to improve performance on specialized tasks — expertise packages that teach Claude how to complete specific tasks in a repeatable way. You've already seen Skills if you've used Claude to create Excel, PowerPoint, Word, or PDF files (those capabilities are powered by Skills behind the scenes). Custom Skills can codify entire repeatable workflows — a quarterly variance analysis methodology, a brand voice review process, a compliance checklist — so Claude follows the same rigorous steps every time.</p>
+
+  <h4>Types of Skills</h4>
+  <ul>
+    <li><strong>Anthropic Skills:</strong> created and maintained by Anthropic. Include enhanced document creation for Excel, Word, PowerPoint, PDF. Available to all paid users; Claude invokes them automatically when relevant.</li>
+    <li><strong>Custom Skills:</strong> ones you or your organization create for specialized workflows and domain-specific tasks (e.g., apply company brand guidelines to presentations, structure meeting notes in a specific format, execute your org's data analysis workflows).</li>
+  </ul>
+
+  <h4>Enabling Skills</h4>
+  <p>Feature preview for Pro, Max, Team, Enterprise. Requires Code execution and file creation enabled (Skills need Claude's secure sandboxed computing environment). Steps: <strong>Settings &gt; Capabilities</strong> → ensure Code execution and file creation is on → scroll to Skills → toggle individual skills on/off. For Enterprise, org Owners must first enable Code execution and Skills in Admin settings. For Team plans, the preview is enabled by default at the org level. Once enabled, available Skills appear in settings (Anthropic built-in + any custom uploaded).</p>
+
+  <h4>Using Skills in practice</h4>
+  <p>You typically don't need to think about them — Claude handles skill selection automatically. Example prompts that invoke Skills:</p>
+  <ul>
+    <li>"Create an Excel spreadsheet tracking monthly expenses with formulas for totals"</li>
+    <li>"Turn this meeting notes document into a PowerPoint presentation"</li>
+    <li>"Generate a PDF report summarizing this data"</li>
+    <li>"Build a financial model in Excel with scenario analysis"</li>
+  </ul>
+  <p>When Claude uses a Skill, you'll see it in Claude's chain of thought; the output is a downloadable file (save to computer or Google Drive).</p>
+
+  <p><strong>File execution:</strong> Claude can work with your actual files (within a contained environment) to create updated versions (note: in Chat, Claude creates a new version of the document rather than editing the original in place). Upload slides, spreadsheets, contracts (.xlsx, .pptx, .docx, .pdf) and Claude creates slides, performs analyses, adds suggested edits. Download or open in Drive. Note: to use these capabilities you'll need to give Claude access to external data sources — toggle <strong>Allow limited network access</strong> on when prompted.</p>
+
+  <div class="callout tip collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔒</span> Security considerations<span class="chev">▼</span></div>
+  <div class="cbody"><p>Skills can include executable code, so use them thoughtfully:</p><ul>
+    <li>Only install custom Skills from trusted sources.</li>
+    <li>Anthropic's built-in Skills are tested and maintained by Anthropic.</li>
+    <li>Custom Skills you upload are private to your individual account.</li>
+    <li>If installing a custom Skill from an external source, review its contents before use.</li>
+  </ul></div></div>
+
+  <h4>Creating custom skills</h4>
+  <p>The real power comes from creating your own. The easiest way is through conversation with Claude (no code/manual file creation needed). Steps:</p>
+  <ol>
+    <li>Start a new chat and tell Claude what to create ("I want to create a skill for writing quarterly business reviews").</li>
+    <li>Answer Claude's interview questions (what should this skill do? what makes good output? examples of when you'd use it?).</li>
+    <li>Upload reference materials (templates, style guides, brand assets, examples).</li>
+    <li>Save your skill (Claude generates a properly structured file).</li>
+  </ol>
+  <p>See your skills via the <strong>Customize tab</strong> in the left sidebar — view all available skills and edit them manually or by chatting. Your custom Skill appears alongside Anthropic's built-in Skills; Claude auto-invokes it for relevant tasks. Improve with iteration — ask Claude to edit a skill and it updates the files.</p>
+
+  <h4>Skills vs. Projects</h4>
+  <p>The mental model: <strong>"projects store knowledge, skills perform tasks."</strong> Projects are knowledge hubs (reference materials Claude needs — project specs, meeting notes, research docs; drawn on across every conversation in the project). Skills are procedural machines (encode <em>how</em> Claude executes a task — steps, order of operations, methodology, run consistently every time). They complement each other: a skill can reference knowledge stored in a project (a "customer call prep" skill pulls from customer profiles in a project's knowledge base). Project = the <em>what</em> (information); skill = the <em>how</em> (process).</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 600 150" role="img" aria-label="Knowledge vs process">
+      <defs><style>.bt{font:700 14px sans-serif;fill:#fff}.bs{font:400 11px sans-serif;fill:#fff;opacity:.92}</style></defs>
+      <rect x="30" y="25" width="230" height="100" rx="14" fill="#3a7d7b"/>
+      <text class="bt" x="145" y="55" text-anchor="middle">📁 Projects = the WHAT</text>
+      <text class="bs" x="145" y="80" text-anchor="middle">Store knowledge Claude</text><text class="bs" x="145" y="96" text-anchor="middle">references (information)</text>
+      <rect x="340" y="25" width="230" height="100" rx="14" fill="#c96442"/>
+      <text class="bt" x="455" y="55" text-anchor="middle">⚙️ Skills = the HOW</text>
+      <text class="bs" x="455" y="80" text-anchor="middle">Define processes Claude</text><text class="bs" x="455" y="96" text-anchor="middle">executes (procedure)</text>
+      <path d="M260,75 C295,75 305,75 340,75" stroke="#b8860b" stroke-width="2.5" fill="none" stroke-dasharray="5 4"/>
+      <text x="300" y="68" text-anchor="middle" style="font:600 10px sans-serif;fill:#8a6508">a skill can pull from a project</text>
+    </svg>
+    <figcaption>"Projects store knowledge, skills perform tasks" — and a skill can reference a project's knowledge.</figcaption>
+  </figure>
+
+  <div class="tablewrap"><table>
+    <thead><tr><th></th><th>Projects</th><th>Skills</th></tr></thead>
+    <tbody>
+      <tr><td>Purpose</td><td>Store knowledge Claude references</td><td>Define processes Claude executes</td></tr>
+      <tr><td>Best for</td><td>Long-term context, reference materials, team collaboration</td><td>Repeatable workflows, multi-step tasks, consistent methodology</td></tr>
+      <tr><td>Example</td><td>Customer hub, research buddy, feedback generator</td><td>Process guidelines (brand or legal), blog drafting, PDF creation</td></tr>
+      <tr><td>Persistence</td><td>Knowledge available across all chats in the project</td><td>Instructions applied when the skill is invoked</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="mcq" data-mcq data-correct="2">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Your company has a strict quarterly variance-analysis methodology you want Claude to follow the exact same way every time. Is that a Project or a Skill?</div>
+    <button class="opt">A Project — it's reference material</button>
+    <button class="opt">Neither — that's just a prompt</button>
+    <button class="opt">A Skill — it encodes a repeatable process</button>
+    <button class="opt">A Connector</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>Correct. A repeatable methodology with a fixed order of operations is a Skill ("the how"). A Project would store the data the skill operates on ("the what").</div>
+  </div>
+
+  <div class="callout try collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🧪</span> Lesson reflection<span class="chev">▼</span></div>
+  <div class="cbody"><p>What documents do you create regularly that could benefit from built-in Skills? Any repetitive workflows that are good candidates for custom Skills? How might Skills change how you think about document creation and data analysis?</p></div></div>
+
+  <p style="font-size:14px;color:var(--ink-soft)"><strong>What's next:</strong> expand Claude's reach with connectors.</p>
+</section>
+
+<!-- SECTION 2 QUIZ -->
+<div class="quizblock" data-quiz="2">
+  <div class="scorebar"><h4 style="margin:0"><span class="emoji">🏆</span> Section 2 Quiz — Organizing your work</h4><span class="qscore" data-score>0 / 4</span></div>
+  <div class="mcq" data-mcq data-correct="1" data-inquiz>
+    <div class="qlab">Q1</div><div class="qtext">When a project's knowledge base approaches the context limit, Claude enables RAG mode, which expands capacity by up to…</div>
+    <button class="opt">2x</button><button class="opt">10x</button><button class="opt">100x</button><button class="opt">it doesn't expand — it truncates</button>
+    <div class="fb"></div><div class="fbmsg" hidden>RAG expands capacity by up to 10x while maintaining response quality.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="0" data-inquiz>
+    <div class="qlab">Q2</div><div class="qtext">Claude usually creates an artifact when content is self-contained and typically over how many lines?</div>
+    <button class="opt">15 lines</button><button class="opt">5 lines</button><button class="opt">50 lines</button><button class="opt">100 lines</button>
+    <div class="fb"></div><div class="fbmsg" hidden>The threshold cited is "typically over 15 lines."</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="3" data-inquiz>
+    <div class="qlab">Q3</div><div class="qtext">Which is NOT listed as a common artifact type?</div>
+    <button class="opt">Mermaid diagrams</button><button class="opt">React components</button><button class="opt">SVG images</button><button class="opt">Live database connections</button>
+    <div class="fb"></div><div class="fbmsg" hidden>The types are documents, code snippets, HTML pages, SVG images, Mermaid diagrams, and React components.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q4</div><div class="qtext">The mental model for Projects vs. Skills is best summarized as…</div>
+    <button class="opt">Projects perform tasks, skills store knowledge</button><button class="opt">Both store knowledge</button><button class="opt">Projects store knowledge, skills perform tasks</button><button class="opt">Both perform tasks</button>
+    <div class="fb"></div><div class="fbmsg" hidden>"Projects store knowledge, skills perform tasks" — the what vs. the how.</div>
+  </div>
+  <div class="resultbox" data-result></div>
+</div>
+
+<!-- ======================= SECTION 3 ======================= -->
+<div class="sec-divider" id="sec3">
+  <span class="badge"><span class="emoji">③</span> Expanding reach</span>
+  <h2>Expanding Claude's reach</h2>
+  <p>How do Connectors, Enterprise Search, and Research bring your tools and the web into the conversation? (Lessons 8–10)</p>
+</div>
+
+<!-- LESSON 8 -->
+<section class="lesson" id="l8" data-lesson="8">
+  <div class="lmeta"><span class="ltag"><span class="emoji">🔌</span> Lesson 8</span><span class="ltime">⏱ 20 min</span></div>
+  <h3 class="ltitle">Connecting your tools</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Explain what connectors are and why they matter for your work with Claude</li>
+      <li>Navigate the connectors directory and set up your first connection</li>
+      <li>Use connected tools effectively in your conversations with Claude</li>
+    </ul>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li><strong>Connectors transform Claude from an assistant into an informed collaborator</strong> by giving Claude access to the same tools, data, and context you use every day. Claude works directly with your actual information instead of starting from scratch.</li>
+    <li><strong>Connectors let Claude read information and perform actions on your behalf.</strong> Depending on connector and permissions, Claude can search files, retrieve documents, analyze data, create content, update records, and execute tasks across connected applications.</li>
+    <li><strong>The Model Context Protocol (MCP) powers connectors.</strong> Think of MCP like <strong>USB-C for AI</strong> — a universal standard that lets Claude connect to many applications through a single consistent interface. This open standard means developers can build connectors for any tool, and they work seamlessly with Claude.</li>
+    <li><strong>Two types of connectors:</strong> <strong>web connectors</strong> (link Claude to cloud services like Google Drive, Notion, Slack, Asana) and <strong>desktop extensions</strong> (run locally on your computer through the Claude Desktop app, giving Claude access to local files and native applications).</li>
+  </ul></div></div>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">The course uses a famous everyday analogy for MCP — the protocol that powers connectors. What do you think it is?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>USB-C for AI.</strong> MCP (Model Context Protocol) is a universal standard that lets Claude connect to many applications through a single consistent interface — so developers can build a connector for any tool once, and it works seamlessly with Claude. <span class="analogy">analogy</span></div>
+  </div>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 620 200" role="img" aria-label="MCP as USB-C for AI">
+      <defs><style>.ct{font:600 11px sans-serif;fill:#2b2622}</style></defs>
+      <rect x="250" y="78" width="120" height="46" rx="10" fill="#c96442"/><text x="310" y="100" text-anchor="middle" style="font:700 13px sans-serif;fill:#fff">Claude</text><text x="310" y="116" text-anchor="middle" style="font:400 9px sans-serif;fill:#fff">via MCP (USB-C)</text>
+      <g>
+        <rect x="40" y="20" width="120" height="34" rx="8" fill="#fff" stroke="#3a7d7b"/><text class="ct" x="100" y="42" text-anchor="middle">Google Drive</text>
+        <rect x="40" y="84" width="120" height="34" rx="8" fill="#fff" stroke="#3a7d7b"/><text class="ct" x="100" y="106" text-anchor="middle">Notion</text>
+        <rect x="40" y="148" width="120" height="34" rx="8" fill="#fff" stroke="#3a7d7b"/><text class="ct" x="100" y="170" text-anchor="middle">Slack</text>
+        <rect x="460" y="20" width="120" height="34" rx="8" fill="#fff" stroke="#b8860b"/><text class="ct" x="520" y="42" text-anchor="middle">Asana / Jira</text>
+        <rect x="460" y="84" width="120" height="34" rx="8" fill="#fff" stroke="#b8860b"/><text class="ct" x="520" y="106" text-anchor="middle">Stripe / Salesforce</text>
+        <rect x="460" y="148" width="120" height="34" rx="8" fill="#fff" stroke="#b8860b"/><text class="ct" x="520" y="170" text-anchor="middle">Gmail</text>
+      </g>
+      <g stroke="#c96442" stroke-width="1.8" fill="none">
+        <path d="M160,37 C210,37 220,90 250,95"/><path d="M160,101 L250,101"/><path d="M160,165 C210,165 220,110 250,107"/>
+        <path d="M370,95 C420,90 410,37 460,37"/><path d="M370,101 L460,101"/><path d="M370,107 C420,110 410,165 460,165"/>
+      </g>
+    </svg>
+    <figcaption>One universal interface (MCP) lets Claude plug into many tools — like USB-C.</figcaption>
+  </figure>
+
+  <h4>Finding and connecting tools</h4>
+  <p>Anthropic maintains a directory at <strong>claude.ai/directory</strong>, organized into two tabs: <strong>Web</strong> (cloud services — Gmail, Notion, Slack, Asana, Linear, Stripe, and more) and <strong>Desktop extensions</strong> (local tools via the Claude Desktop app). You can also click the <strong>+</strong> button (lower left of the chat window) → <strong>Connectors</strong>.</p>
+
+  <h4>Setting up a web connector</h4>
+  <p>Find the connector (claude.ai/directory, or + &gt; Connectors in any chat) → click <strong>Connect</strong> → <strong>Authenticate</strong> (redirected to the service's login; sign in with existing credentials) → <strong>Grant permissions</strong> (review the specific permissions Claude requests, then authorize) → <strong>Test the connection</strong> ("Can you access my [tool name]?"). Once connected, Claude can search, read, and in some cases take actions within that service depending on granted permissions.</p>
+
+  <h4>Desktop extensions</h4>
+  <p>Require the Claude Desktop app rather than the web interface. They let Claude interact with local applications, your file system, and native features on macOS/Windows. Examples: local file access for reading/organizing documents; browser control for automated web tasks; native application integration (like Figma for design work). To install: download and install the Claude Desktop app → <strong>Settings &gt; Extensions</strong> → browse and click Install → follow extension-specific setup.</p>
+
+  <h4>Using connectors in your work (examples by category)</h4>
+  <ul>
+    <li><strong>Project management (Asana, Linear, Jira):</strong> "What are my highest priority tasks due this week?"; "Create a new task for reviewing the Q4 budget proposal"; "Summarize the status of our product launch project."</li>
+    <li><strong>Communication (Slack, Gmail):</strong> "Find the email thread where we discussed the vendor contract"; "Draft a reply to the latest message in the #marketing channel"; "What did the team decide about the timeline in yesterday's discussion?"</li>
+    <li><strong>Documentation (Notion, Google Drive, Confluence):</strong> "Search our documentation for our brand voice guidelines"; "Summarize the meeting notes from last week's product review"; "What does our style guide say about using contractions?"</li>
+    <li><strong>Business tools (Stripe, PayPal, Salesforce):</strong> "Show me revenue trends for the past quarter"; "What's the status of the Acme Corp opportunity?"; "List recent transactions over $1,000."</li>
+  </ul>
+
+  <h4>Security and permissions</h4>
+  <ul>
+    <li><strong>Scoped access:</strong> permissions are specific to what the connector needs; toggle individual permissions on/off within each application's menu.</li>
+    <li><strong>Claude sees what you see:</strong> Claude can only access data you have access to. Connecting your work email doesn't give Claude access to your CEO's inbox — only your own.</li>
+    <li><strong>Revocable at any time:</strong> disconnect through Claude's settings or the third-party service's security settings. As with Skills, you can find or build custom connectors — exercise the same caution; only install from trusted sources.</li>
+  </ul>
+
+  <div class="mcq" data-mcq data-correct="0">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">You connect your work Gmail. Can Claude now read your CEO's inbox?</div>
+    <button class="opt">No — Claude only sees data you already have access to</button>
+    <button class="opt">Yes — connectors grant org-wide access</button>
+    <button class="opt">Only if the CEO is in the same Slack channel</button>
+    <button class="opt">Yes, but only emails over 30 days old</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>Correct. "Claude sees what you see." Access is scoped to your own permissions and is revocable at any time.</div>
+  </div>
+
+  <div class="callout try collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🧪</span> Lesson reflection<span class="chev">▼</span></div>
+  <div class="cbody"><p>Which daily work tools would be most valuable to connect? What tasks currently require copy/paste that connectors could automate? Where would combining data from multiple connected sources save time?</p></div></div>
+
+  <p style="font-size:14px;color:var(--ink-soft)"><strong>What's next:</strong> Enterprise Search — connects Claude to your org's knowledge with custom prompts (for Claude for Work users).</p>
+</section>
+
+<!-- LESSON 9 -->
+<section class="lesson" id="l9" data-lesson="9">
+  <div class="lmeta"><span class="ltag"><span class="emoji">🏢</span> Lesson 9</span><span class="ltime">⏱ 15 min</span></div>
+  <h3 class="ltitle">Enterprise search</h3>
+  <div class="examnote" style="margin:10px 0"><b>Plan availability:</b> Enterprise Search is available on Team and Enterprise plans and must be enabled by a workspace admin. Free/Pro/Max users can skip this lesson.</div>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Explain what Enterprise Search is and the types of questions it can answer</li>
+      <li>Understand how the setup process works for both admins and users</li>
+      <li>Recognize how security and permissions protect organizational data</li>
+    </ul>
+  </div>
+
+  <p><strong>What is Enterprise Search?</strong> It adds a dedicated <strong>"Ask {Your Org Name}"</strong> option to your sidebar — designed for finding and synthesizing knowledge buried across your company's tools and data sources. Think of it as a <strong>pre-built Project for your entire organization</strong> — your company's knowledge base is already loaded. Unlike regular chats with connectors, Enterprise Search is specifically designed for information gathering, using custom instructions configured by the Anthropic team.</p>
+
+  <h4>What can you ask?</h4>
+  <p>Valuable for questions spanning multiple sources or requiring synthesis across your org:</p>
+  <ul>
+    <li><strong>Getting up to speed:</strong> "What happened yesterday while I was out?"; "Summarize key updates across the business from the last week"; "What are the current blockers on the Platform project?"</li>
+    <li><strong>Policy and process:</strong> "What is our company's remote work policy?"; "How do I submit an expense report?"; "What's the process for requesting time off?"</li>
+    <li><strong>Research and analysis:</strong> "What are the main reasons customers cite for choosing competitors?"; "Summarize discussions about the Q4 product roadmap"; "Find information about our customer onboarding process."</li>
+    <li><strong>Onboarding new team members:</strong> "How does our authentication system work?"; "Who should I talk to about learning the billing system?"; "What tools does the engineering team use for deployment?"</li>
+    <li><strong>Performance and project tracking:</strong> "Find discussions and documents related to the marketing campaign"; "What were the key decisions from last week's leadership meetings?"; "Summarize team contributions to the Infrastructure initiative."</li>
+  </ul>
+  <p>When you ask, Claude searches across connected tools (SharePoint documents, Slack conversations, Gmail threads, Google Drive files) and synthesizes a unified response — always citing sources for full context.</p>
+
+  <h4>Setting up Enterprise Search</h4>
+  <p>A two-step process: an admin configures it for the org, then individual users authenticate with their personal accounts.</p>
+  <ul>
+    <li><strong>For admins (Owners):</strong> enabled by default for all Team/Enterprise orgs, but an Owner completes initial setup. Click "Ask Your Org" in the left sidebar → "Set up for your org" (or "Disable") → connect your org's tools (required: a connector for <strong>Documents</strong> like Google Drive or SharePoint, and <strong>Chat</strong> like Slack or Microsoft Teams; Email recommended but optional) → "+ Add more" for additional tools → customize the project name (appears as "Ask [Name]" in everyone's sidebar) → add a description → "Finish set up." Once complete, it's available to all members.</li>
+    <li><strong>For users:</strong> after admin setup, you'll see the "Ask {Org Name}" project starred in your sidebar. Click the project → follow guided onboarding to connect recommended services → authenticate with each service (Slack, Google, Microsoft 365, etc.) → start asking questions. The more connectors enabled, the more comprehensive your results. Add more later via "Connect" in the project's Instructions section.</li>
+  </ul>
+
+  <div class="callout tip collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔒</span> Is this safe?<span class="chev">▼</span></div>
+  <div class="cbody"><p>Yes. Enterprise Search only shows what you already have permission to access in the original connected tool. Conversations remain private, and your connected data isn't indexed or stored separately.</p></div></div>
+
+  <div class="mcq" data-mcq data-correct="2">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Enterprise Search is best described as…</div>
+    <button class="opt">A faster web search</button>
+    <button class="opt">A custom Skill for documents</button>
+    <button class="opt">A pre-built Project for your entire organization</button>
+    <button class="opt">A coding environment</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>Correct. It's like a pre-built Project loaded with your company's knowledge, designed for information gathering with custom instructions configured by Anthropic.</div>
+  </div>
+
+  <div class="callout try collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🧪</span> Lesson reflection<span class="chev">▼</span></div>
+  <div class="cbody"><p>What questions do you frequently ask colleagues that could be answered by searching org documents/communications? Any onboarding/training scenarios where it helps new members? Which data sources are most valuable for your role?</p></div></div>
+
+  <p style="font-size:14px;color:var(--ink-soft)"><strong>What's next:</strong> Research mode for deep, multi-step investigations.</p>
+</section>
+
+<!-- LESSON 10 -->
+<section class="lesson" id="l10" data-lesson="10">
+  <div class="lmeta"><span class="ltag"><span class="emoji">🔬</span> Lesson 10</span><span class="ltime">⏱ 15 min</span></div>
+  <h3 class="ltitle">Research mode for deep dives</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Explain what Research does: systematic, multi-source investigation</li>
+      <li>Identify when to use Research for comprehensive information gathering</li>
+      <li>Understand how Research works with extended thinking to deliver thorough reports</li>
+      <li>Write effective Research prompts for complex investigations</li>
+    </ul>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li><strong>Research transforms how Claude finds and analyzes information.</strong> Instead of a single search, Claude operates <strong>agentically</strong> — conducting multiple searches that build on each other while determining what to investigate next. It explores different angles automatically and works through open questions systematically.</li>
+    <li><strong>Research delivers comprehensive answers in minutes.</strong> Most reports complete in <strong>5 to 15 minutes</strong>, though complex investigations may take up to <strong>45 minutes</strong> — work that would typically require hours of manual research.</li>
+    <li><strong>Extended thinking is automatically enabled with Research.</strong> This lets Claude both plan its approach thoughtfully and gather comprehensive information, breaking complex requests into manageable pieces.</li>
+    <li><strong>Citations make verification easy.</strong> Research delivers thorough answers complete with easy-to-check citations.</li>
+  </ul></div></div>
+
+  <p><strong>What is Research?</strong> An advanced feature that transforms Claude from a conversational assistant into a systematic investigator. When enabled, Claude explores your question from multiple angles, synthesizing information from across the web and your connected integrations. Like a skilled research assistant who spends hours gathering, cross-referencing, and compiling a report — in minutes. Valuable when you need more than a quick answer: pulling together multiple sources, comparing perspectives, synthesizing into actionable insights.</p>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">Research is "agentic." What does that mean for how it searches, compared to a single web search?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans">Claude <strong>autonomously decides what to search next based on what it found</strong> — conducting multiple searches that build on each other, pursuing leads and filling gaps without you directing each step. Extended thinking is automatically enabled so it can plan and synthesize.</div>
+  </div>
+
+  <h4>When to use Research</h4>
+  <ul>
+    <li><strong>Use Research when you need:</strong> comprehensive reports synthesizing multiple sources; in-depth analysis across the web and connected integrations (like Google Workspace); thorough investigations that would take hours manually; comparative analysis (competitors, vendor options); reports with verifiable citations. Ideal for: market analysis and competitive research; planning complex projects (team offsites, product launches); synthesizing email/calendar/documents; technical documentation from multiple sources; briefings requiring current, verified info.</li>
+    <li><strong>Consider web search instead when:</strong> you need a quick specific fact (today's stock price, a company's address); the answer needs only one or two sources; speed matters more than comprehensiveness.</li>
+    <li><strong>Consider extended thinking instead when:</strong> you need deep reasoning on a complex problem that doesn't require external info; math problems, code debugging, logical analysis; the answer comes from reasoning rather than gathering information.</li>
+    <li><strong>Consider enterprise search instead when:</strong> answers draw from your org's internal knowledge (documents, Slack threads, emails, meeting notes); onboarding and finding how your company handles something; questions specific to your company, not the public web.</li>
+  </ul>
+
+  <h4>How Research works</h4>
+  <p>An agentic, multi-step process beyond a simple web search. Claude autonomously decides what to search next based on what it found, pursuing leads and filling gaps without directing each step.</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 720 130" role="img" aria-label="Research four-step flow">
+      <defs><style>.sn{font:700 12px sans-serif;fill:#fff}.sd{font:400 10px sans-serif;fill:#2b2622}</style>
+      <marker id="ah3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#c96442"/></marker></defs>
+      <g><circle cx="80" cy="45" r="30" fill="#c96442"/><text class="sn" x="80" y="50" text-anchor="middle">1 · Plan</text></g>
+      <text class="sd" x="80" y="95" text-anchor="middle">extended thinking</text><text class="sd" x="80" y="109" text-anchor="middle">activates</text>
+      <line x1="112" y1="45" x2="172" y2="45" stroke="#c96442" stroke-width="2" marker-end="url(#ah3)"/>
+      <g><circle cx="240" cy="45" r="30" fill="#3a7d7b"/><text class="sn" x="240" y="50" text-anchor="middle">2 · Search</text></g>
+      <text class="sd" x="240" y="95" text-anchor="middle">many searches that</text><text class="sd" x="240" y="109" text-anchor="middle">build on each other</text>
+      <line x1="272" y1="45" x2="332" y2="45" stroke="#c96442" stroke-width="2" marker-end="url(#ah3)"/>
+      <g><circle cx="400" cy="45" r="30" fill="#b8860b"/><text class="sn" x="400" y="50" text-anchor="middle">3 · Synth</text></g>
+      <text class="sd" x="400" y="95" text-anchor="middle">compile a thorough</text><text class="sd" x="400" y="109" text-anchor="middle">organized report</text>
+      <line x1="432" y1="45" x2="492" y2="45" stroke="#c96442" stroke-width="2" marker-end="url(#ah3)"/>
+      <g><circle cx="560" cy="45" r="30" fill="#3f7d4f"/><text class="sn" x="560" y="50" text-anchor="middle">4 · Cite</text></g>
+      <text class="sd" x="560" y="95" text-anchor="middle">every claim links</text><text class="sd" x="560" y="109" text-anchor="middle">to its source</text>
+    </svg>
+    <figcaption>Research is a four-step agentic loop: plan → search → synthesize → cite.</figcaption>
+  </figure>
+
+  <ul>
+    <li><strong>Step 1 — Claude plans its approach.</strong> Extended thinking automatically activates — break down the request, identify needed info, plan how to investigate different angles.</li>
+    <li><strong>Step 2 — Claude conducts multiple searches.</strong> Many searches that build on each other; it determines what to investigate next based on findings.</li>
+    <li><strong>Step 3 — Claude synthesizes findings.</strong> After gathering from multiple sources (web + connected integrations like Gmail, Google Calendar, Google Drive), it compiles a comprehensive, well-organized report.</li>
+    <li><strong>Step 4 — Claude provides citations.</strong> Every claim links back to its source for easy verification.</li>
+  </ul>
+
+  <p><strong>Using Research in practice:</strong> click the <strong>+</strong> button (bottom left of chat) → select <strong>Research</strong> (highlighted once active) → enter your prompt and submit → Claude works in the background with progress indicators. <strong>Important:</strong> Web search must be enabled for Research to function (turn it on from the same + menu).</p>
+
+  <div class="mcq" data-mcq data-correct="1">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">You just need today's stock price for one company. Which tool is the best fit?</div>
+    <button class="opt">Research mode</button>
+    <button class="opt">A quick web search</button>
+    <button class="opt">Extended thinking</button>
+    <button class="opt">Enterprise Search</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>Correct. For a quick specific fact from one or two sources where speed matters, use web search — not the heavier, multi-source Research mode.</div>
+  </div>
+
+  <h4>Tips for effective Research prompts</h4>
+  <p>Research can take 5–45 minutes, so prompt crafting pays off:</p>
+  <ul>
+    <li><strong>Be specific about your goals.</strong> Instead of "Tell me about the EV market," try "Analyze the electric vehicle battery market — identify key players, technology trends, and supply chain challenges that might affect investment decisions."</li>
+    <li><strong>Specify the sections or structure you want.</strong> E.g., "Compare venue options for a team offsite including: location and accessibility, meeting space and amenities, catering options, and pricing considerations."</li>
+    <li><strong>Include relevant constraints.</strong> Budget ranges, timelines, geographic requirements help Claude focus.</li>
+    <li><strong>Ask Claude to help refine your prompt</strong> before enabling the feature.</li>
+  </ul>
+
+  <h4>Working with connected integrations</h4>
+  <p>With Google Workspace or other integrations connected, Claude can pull context from emails, calendar, and documents alongside web research. Examples:</p>
+  <ul>
+    <li>"Summarize what's been discussed about Project X across my emails and Slack, then research industry best practices for similar initiatives"</li>
+    <li>"Review my calendar commitments for next week and research each company I'm meeting with"</li>
+    <li>"Find all internal documents about our pricing strategy and compare to how competitors are positioning themselves"</li>
+  </ul>
+  <p>Steer Claude with "Pull relevant context from my Google Drive" or "Include insights from my recent emails on this topic."</p>
+  <div class="callout tip collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">💡</span> Pro tip<span class="chev">▼</span></div>
+  <div class="cbody"><p>Turn off web search to do internal-only research across connected tools ("What did our team discuss about the Q3 launch across Slack and Docs?").</p></div></div>
+
+  <div class="callout try collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🧪</span> Lesson reflection<span class="chev">▼</span></div>
+  <div class="cbody"><p>What research tasks typically require gathering from multiple sources? How might combining Research with connected integrations change your workflow? What complex question have you been putting off because it would take too much research time?</p></div></div>
+
+  <p style="font-size:14px;color:var(--ink-soft)"><strong>What's next:</strong> putting it all together — real-world use cases by role, and additional ways to interact with Claude.</p>
+</section>
+
+<!-- SECTION 3 QUIZ -->
+<div class="quizblock" data-quiz="3">
+  <div class="scorebar"><h4 style="margin:0"><span class="emoji">🏆</span> Section 3 Quiz — Expanding Claude's reach</h4><span class="qscore" data-score>0 / 4</span></div>
+  <div class="mcq" data-mcq data-correct="3" data-inquiz>
+    <div class="qlab">Q1</div><div class="qtext">What protocol powers connectors, described as "USB-C for AI"?</div>
+    <button class="opt">HTTP</button><button class="opt">OAuth</button><button class="opt">RAG</button><button class="opt">MCP (Model Context Protocol)</button>
+    <div class="fb"></div><div class="fbmsg" hidden>MCP is the universal standard — "USB-C for AI" — that powers connectors.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="0" data-inquiz>
+    <div class="qlab">Q2</div><div class="qtext">"Claude sees what you see" means…</div>
+    <button class="opt">Claude can only access data you already have permission to access</button><button class="opt">Claude indexes the whole org</button><button class="opt">Claude can see your manager's files</button><button class="opt">Claude stores a copy of everything</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Access is scoped to your own permissions and revocable any time.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q3</div><div class="qtext">Most Research reports complete in how long (with complex ones up to 45 min)?</div>
+    <button class="opt">Under 1 minute</button><button class="opt">1–2 hours</button><button class="opt">5 to 15 minutes</button><button class="opt">Exactly 30 minutes</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Most complete in 5–15 minutes; complex investigations can take up to 45.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="1" data-inquiz>
+    <div class="qlab">Q4</div><div class="qtext">What must be enabled for Research mode to function?</div>
+    <button class="opt">Extended thinking only</button><button class="opt">Web search</button><button class="opt">A paid API key</button><button class="opt">Enterprise Search</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Web search must be on for Research to work (extended thinking turns on automatically).</div>
+  </div>
+  <div class="resultbox" data-result></div>
+</div>
+
+<!-- ======================= SECTION 4 ======================= -->
+<div class="sec-divider" id="sec4">
+  <span class="badge"><span class="emoji">④</span> All together</span>
+  <h2>Putting it all together</h2>
+  <p>What does Claude look like in action across roles, and where else can you work with it? (Lessons 11–12)</p>
+</div>
+
+<!-- LESSON 11 -->
+<section class="lesson" id="l11" data-lesson="11">
+  <div class="lmeta"><span class="ltag"><span class="emoji">🧑‍💼</span> Lesson 11</span><span class="ltime">⏱ 10 min</span></div>
+  <h3 class="ltitle">Claude in action: use-cases by role</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Describe 2–3 use-cases for claude.ai that you can try right away</li>
+      <li>Know where to go to find additional use-case inspiration</li>
+    </ul>
+  </div>
+
+  <p>No matter what you do, Claude can help streamline your work. This lesson highlights practical use cases organized by role. Each use case links to a detailed guide in the <strong>Use Case Gallery</strong> with step-by-step instructions.</p>
+
+  <h4><span class="emoji">🌐</span> General professional use (across many roles/industries)</h4>
+  <ul>
+    <li>Generate project status reports — keep stakeholders informed with clear, consistent updates</li>
+    <li>Analyze patterns in user feedback — extract insights from customer comments and survey responses</li>
+    <li>Package your brand guidelines in a skill — create a reusable Claude skill that applies your brand standards</li>
+  </ul>
+
+  <h4><span class="emoji">💼</span> Sales (accelerate deal prep, create materials, competitive intelligence)</h4>
+  <ul>
+    <li>Build a battle card library — competitive intelligence resources to win deals</li>
+    <li>Prepare for sales deals — research prospects and organize talking points</li>
+    <li>Create sales reports — turn pipeline data into clear, actionable reports</li>
+  </ul>
+
+  <h4><span class="emoji">📣</span> Marketing (analyze performance data, repurpose content)</h4>
+  <ul>
+    <li>Analyze campaign performance — extract insights from campaign metrics</li>
+    <li>Adapt content across platforms — repurpose content for different channels/audiences</li>
+  </ul>
+
+  <h4><span class="emoji">💰</span> Finance (build models, draft documents, make sense of spreadsheets)</h4>
+  <ul>
+    <li>Build financial models — create and refine financial projections</li>
+    <li>Draft investment memos — structure and write investment analyses</li>
+    <li>Understand and extend an inherited spreadsheet — decode complex spreadsheets and add functionality</li>
+  </ul>
+
+  <h4><span class="emoji">👥</span> HR (onboarding experiences and documentation)</h4>
+  <ul>
+    <li>Create new hire onboarding guides — comprehensive materials tailored to different roles</li>
+  </ul>
+
+  <h4><span class="emoji">⚖️</span> Legal (track timelines, manage discovery)</h4>
+  <ul>
+    <li>Track discovery timelines and analyze patterns — organize case timelines, identify key patterns</li>
+  </ul>
+
+  <h4><span class="emoji">🔬</span> Research (plan literature reviews, verify data analysis)</h4>
+  <ul>
+    <li>Plan your literature review — organize your approach to reviewing academic sources</li>
+    <li>Verify statistics from raw data — double-check calculations and statistical analyses</li>
+  </ul>
+
+  <p><strong>Explore more:</strong> visit the Use Case Gallery for the full collection.</p>
+
+  <div class="mcq" data-mcq data-correct="2">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">"Build a battle card library" for competitive intelligence is listed under which role?</div>
+    <button class="opt">Marketing</button>
+    <button class="opt">Finance</button>
+    <button class="opt">Sales</button>
+    <button class="opt">Legal</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>Correct — battle cards, sales-deal prep, and sales reports are the Sales use cases.</div>
+  </div>
+
+  <p style="font-size:14px;color:var(--ink-soft)"><strong>What's next:</strong> more versions of Claude — Claude Code, Claude in Chrome, Claude in Excel, Claude in Slack.</p>
+</section>
+
+<!-- LESSON 12 -->
+<section class="lesson" id="l12" data-lesson="12">
+  <div class="lmeta"><span class="ltag"><span class="emoji">🧰</span> Lesson 12</span><span class="ltime">⏱ 10 min</span></div>
+  <h3 class="ltitle">Other ways to work with Claude</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Understand when to use additional Claude products including Claude Code, Claude for Slack, Claude for Excel, Claude for PowerPoint, and Claude for Chrome</li>
+    </ul>
+  </div>
+
+  <p>Claude is an intelligence; claude.ai is just one way of working with it. Claude is also available in specialized tools designed to meet you where you already work. This lesson introduces five additional ways.</p>
+
+  <h4><span class="emoji">⌨️</span> Claude Code</h4>
+  <p>An agentic coding tool that works where you work (terminal, IDE, browser, or Slack). Understands your codebase, executes commands, handles entire development workflows through natural language.</p>
+  <p><em>When to use:</em> build features by describing what you need in plain English (Claude writes code, runs tests, creates commits); debug by pasting error messages; navigate an unfamiliar codebase by asking how parts work together; automate tedious tasks (fixing lint errors, resolving merge conflicts, writing release notes); work in your terminal alongside existing IDE/dev tools.</p>
+
+  <h4><span class="emoji">💬</span> Claude in Slack</h4>
+  <p>Integrates directly with Slack; get help in channels/threads or bring Slack context into Claude conversations.</p>
+  <p><em>When to use:</em> draft responses, summarize lengthy threads, break down complex discussions without leaving Slack; prepare for meetings by pulling together relevant conversations and shared documents; onboard to a new team by reviewing channel history; hand off coding tasks from a bug report/feature discussion (tag @Claude to spin up a Claude Code session using surrounding context); get quick answers about industry trends, technical concepts, or company info during a conversation.</p>
+
+  <h4><span class="emoji">📊</span> Claude for Excel</h4>
+  <p>Brings Claude into Microsoft Excel through a sidebar to analyze, understand, and modify spreadsheets through conversation.</p>
+  <p><em>When to use:</em> understand how formulas/calculation flows work across a complex multi-tab workbook; update assumptions/inputs while preserving formula dependencies; debug errors (#REF!, #VALUE!, circular references) by tracing to source and suggesting fixes; create new spreadsheets or populate templates while maintaining formula structure; quickly build pivot tables or charts.</p>
+
+  <h4><span class="emoji">📑</span> Claude for PowerPoint</h4>
+  <p>Brings Claude into Microsoft PowerPoint as a sidebar to draft, edit, and restructure presentations through conversation while keeping your existing template and brand styling intact.</p>
+  <p><em>When to use:</em> turn an outline/document/notes into a first-draft slide deck without building each slide by hand; rewrite or tighten slide copy (shorten bullets, add speaker notes, adjust tone); restructure an existing deck (reorder sections, split dense slides, merge overlapping ones); apply consistent formatting across the deck; get quick visual suggestions (which layout or chart type fits the point).</p>
+
+  <h4><span class="emoji">🌐</span> Claude for Chrome</h4>
+  <p>A browser extension that adds Claude as a sidebar in Google Chrome; it can observe what you're working on and take actions directly within your browser.</p>
+  <p><em>When to use:</em> summarize articles/research papers/web pages while browsing; draft email responses or manage your inbox; automate repetitive forms; test website features or navigate multi-step workflows without manually clicking; a browsing assistant that maintains context across tabs (great for pulling context from niche internal tools, CRMs, dashboards).</p>
+  <div class="examnote" style="margin:12px 0"><b>⚠️ Important note:</b> Claude for Chrome is currently in <b>research preview</b>. Anthropic recommends using it for low-risk tasks on trusted websites. The extension asks permission before high-risk actions (purchasing, sharing personal data), and certain website categories (financial services, adult content) are blocked by default.</div>
+
+  <h4>Summary table</h4>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Tool</th><th>Best for</th><th>Where it runs</th></tr></thead>
+    <tbody>
+      <tr><td>Claude.ai</td><td>General tasks, research, writing, analysis, file creation</td><td>Web, desktop, and mobile apps</td></tr>
+      <tr><td>Claude Code</td><td>Software development, codebase navigation, git workflows</td><td>Terminal/command line, IDE, or your browser</td></tr>
+      <tr><td>Claude Cowork</td><td>Complex, multi-step tasks: research briefs, document creation, file organization, data analysis</td><td>Desktop (and mobile apps via Dispatch)</td></tr>
+      <tr><td>Claude/Claude Code in Slack</td><td>Team collaboration, meeting prep, quick answers in context</td><td>Slack workspace</td></tr>
+      <tr><td>Claude for Excel</td><td>Spreadsheet analysis, financial modeling, formula debugging</td><td>Microsoft Excel sidebar</td></tr>
+      <tr><td>Claude for PowerPoint</td><td>Slide creation, presentation editing, formatting and design</td><td>Microsoft PowerPoint sidebar</td></tr>
+      <tr><td>Claude for Chrome</td><td>Web research, email management, browser automation</td><td>Chrome browser sidebar</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="mcq" data-mcq data-correct="0">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Which tool is currently in research preview, recommended for low-risk tasks on trusted sites, with finance/adult sites blocked by default?</div>
+    <button class="opt">Claude for Chrome</button>
+    <button class="opt">Claude for Excel</button>
+    <button class="opt">Claude Code</button>
+    <button class="opt">Claude in Slack</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>Correct. Claude for Chrome is in research preview; it asks permission before high-risk actions and blocks certain site categories.</div>
+  </div>
+
+  <p style="font-size:14px;color:var(--ink-soft)"><strong>What's next:</strong> wrap up with a course recap and a quiz to earn your certificate of completion.</p>
+</section>
+
+<!-- SECTION 4 QUIZ -->
+<div class="quizblock" data-quiz="4">
+  <div class="scorebar"><h4 style="margin:0"><span class="emoji">🏆</span> Section 4 Quiz — Putting it all together</h4><span class="qscore" data-score>0 / 4</span></div>
+  <div class="mcq" data-mcq data-correct="1" data-inquiz>
+    <div class="qlab">Q1</div><div class="qtext">"Verify statistics from raw data" is a use case listed under which role?</div>
+    <button class="opt">Finance</button><button class="opt">Research</button><button class="opt">HR</button><button class="opt">Sales</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Research use cases: plan a literature review, and verify statistics from raw data.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q2</div><div class="qtext">Where does Claude Code run, per the summary table?</div>
+    <button class="opt">Only in a web browser</button><button class="opt">Microsoft Excel sidebar</button><button class="opt">Terminal/command line, IDE, or your browser</button><button class="opt">PowerPoint sidebar</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Claude Code runs in the terminal/command line, an IDE, or your browser.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="0" data-inquiz>
+    <div class="qlab">Q3</div><div class="qtext">Which tool keeps your existing template and brand styling intact while drafting/editing slides?</div>
+    <button class="opt">Claude for PowerPoint</button><button class="opt">Claude for Chrome</button><button class="opt">Claude in Slack</button><button class="opt">Claude.ai artifacts only</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Claude for PowerPoint edits in a sidebar while preserving your template and brand styling.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="3" data-inquiz>
+    <div class="qlab">Q4</div><div class="qtext">Per the summary table, how can you reach Claude Cowork from your phone?</div>
+    <button class="opt">It has no mobile access</button><button class="opt">Via Slack only</button><button class="opt">Through a web link</button><button class="opt">Via Dispatch in the mobile app</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Cowork runs on desktop, with mobile access through Dispatch.</div>
+  </div>
+  <div class="resultbox" data-result></div>
+</div>
+
+<!-- ======================= SECTION 5 ======================= -->
+<div class="sec-divider" id="sec5">
+  <span class="badge"><span class="emoji">⑤</span> Conclusion</span>
+  <h2>Conclusion &amp; certificate</h2>
+  <p>Where do you go from here, and how do you earn your certificate? (Lessons 13–14)</p>
+</div>
+
+<!-- LESSON 13 -->
+<section class="lesson" id="l13" data-lesson="13">
+  <div class="lmeta"><span class="ltag"><span class="emoji">🎓</span> Lesson 13</span><span class="ltime">⏱ 5 min</span></div>
+  <h3 class="ltitle">What's next?</h3>
+
+  <p>Congratulations on completing Claude 101! You've built a solid foundation for working with Claude effectively. Here's a recap and resources for continued growth.</p>
+
+  <h4>What you've learned</h4>
+  <h5>Getting started with Claude</h5>
+  <ul>
+    <li>Claude is an AI assistant built to be helpful, harmless, and honest — more than a chatbot, a thinking partner for complex work</li>
+    <li>Access Claude through web, desktop, and mobile apps, with conversations syncing across devices</li>
+    <li>Effective prompts set the stage (context), define the task (action), and specify rules (format and style)</li>
+  </ul>
+  <h5>Getting better results</h5>
+  <ul>
+    <li>Iteration is key — treat first responses as starting points and refine through conversation</li>
+    <li>Common challenges like generic responses or wrong tone can be fixed with more specific context</li>
+    <li>AI Fluency encompasses four competencies: Delegation, Description, Discernment, and Diligence</li>
+  </ul>
+  <h5>Organizing your work</h5>
+  <ul>
+    <li>Projects create dedicated workspaces with persistent knowledge, custom instructions, and team collaboration</li>
+    <li>Artifacts are standalone outputs like documents, code, diagrams, and interactive tools that Claude creates alongside your conversation</li>
+    <li>Skills are instruction packages that teach Claude specialized workflows — including built-in document creation and custom skills you can create</li>
+  </ul>
+  <h5>Expanding Claude's reach</h5>
+  <ul>
+    <li>Connectors link Claude to your tools (Google Workspace, Slack, Notion, and many more) so it can work with your actual data</li>
+    <li>Enterprise Search provides a dedicated project for searching across your organization's knowledge sources</li>
+    <li>Research mode conducts systematic, multi-source investigations that would take hours to do manually</li>
+  </ul>
+  <h5>Putting it all together</h5>
+  <ul>
+    <li>Claude applies across roles — sales, marketing, finance, HR, legal, research, and beyond</li>
+    <li>Beyond claude.ai, you can work with Claude through Claude Code, Slack, Excel, and Chrome</li>
+  </ul>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">📚</span> Additional resources<span class="chev">▼</span></div>
+  <div class="cbody">
+    <p><strong>Learn more about AI and Claude:</strong> AI Fluency courses (free); AI Capabilities and Limitations (free intro course); Use Case Gallery (step-by-step guides and prompts); Anthropic Help Center; Prompting documentation.</p>
+    <p><strong>Product-specific resources:</strong> Claude Code in Action (free course on dev workflows); Introduction to Claude Cowork (free course on the desktop companion for multi-step work); Connector Directory.</p>
+  </div></div>
+
+  <div class="callout tip collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">💪</span> A word of encouragement<span class="chev">▼</span></div>
+  <div class="cbody"><p>The most important thing now is to get started. Skills sharpen with practice. Start simple — pick one recurring task this week (drafting an email, summarizing meeting notes, analyzing a spreadsheet) and try it with Claude. Iterate. Claude is designed to be a collaborator, not a replacement — the best results come when you bring your expertise, context, and judgment. <em>"You now have the foundation. The rest comes from doing the work."</em></p></div></div>
+
+  <p style="font-size:14px;color:var(--ink-soft)"><strong>What's next:</strong> the certificate quiz.</p>
+</section>
+
+<!-- LESSON 14 -->
+<section class="lesson" id="l14" data-lesson="14">
+  <div class="lmeta"><span class="ltag"><span class="emoji">🏅</span> Lesson 14</span><span class="ltime">Quiz · 13 questions (on Academy)</span></div>
+  <h3 class="ltitle">Certificate of completion</h3>
+
+  <p>The official course finishes with the <strong>"Claude 101 Certificate of Completion Quiz"</strong> — <strong>13 questions</strong> behind a graded "Start" gate. Passing earns a certificate that's shareable on LinkedIn and with your team.</p>
+
+  <div class="examnote">
+    <b>📌 A note on the official quiz (intentional source gap).</b> The 13 official certificate-quiz questions sit behind a graded submission gate that consumes the learner's attempt and records a result. They were <b>deliberately not harvested</b> — reproducing a graded certification answer key is out of scope and against the integrity of the assessment. Instead, the interactive practice MCQs and the final knowledge check below are <b>freshly authored from the captured lesson content</b>, fully source-grounded, so you get self-assessment without diluting or republishing the official graded quiz. To earn the shareable certificate, take the real quiz on Anthropic Academy.
+  </div>
+
+  <!-- FINAL KNOWLEDGE CHECK -->
+  <div class="quizblock" data-quiz="final" style="margin-top:26px">
+    <div class="scorebar"><h4 style="margin:0"><span class="emoji">🧠</span> Final Knowledge Check (10 questions)</h4><span class="qscore" data-score>0 / 10</span></div>
+    <p style="font-size:14px;color:var(--ink-soft);margin-top:0">Fresh, source-grounded questions spanning the whole course. No hints — answer, then check.</p>
+
+    <div class="mcq" data-mcq data-correct="2" data-inquiz>
+      <div class="qlab">Q1</div><div class="qtext">Which principle set is Claude trained to follow — helpful, harmless, and honest — under what named approach?</div>
+      <button class="opt">Reinforcement Learning</button><button class="opt">Steerable Alignment</button><button class="opt">Constitutional AI</button><button class="opt">Hybrid Modeling</button>
+      <div class="fb"></div><div class="fbmsg" hidden>Constitutional AI aligns Claude with human values and transparency.</div>
+    </div>
+    <div class="mcq" data-mcq data-correct="1" data-inquiz>
+      <div class="qlab">Q2</div><div class="qtext">Opus 4.7 and Sonnet 4.7 are "hybrid models" offering which two modes?</div>
+      <button class="opt">Free and paid</button><button class="opt">Near-instant responses and extended thinking</button><button class="opt">Local and remote</button><button class="opt">Chat and Cowork</button>
+      <div class="fb"></div><div class="fbmsg" hidden>Hybrid = near-instant responses plus extended (step-by-step) thinking.</div>
+    </div>
+    <div class="mcq" data-mcq data-correct="0" data-inquiz>
+      <div class="qlab">Q3</div><div class="qtext">In the Code mode, which interaction mode applies file changes automatically but checks before running terminal commands?</div>
+      <button class="opt">Code</button><button class="opt">Ask</button><button class="opt">Plan</button><button class="opt">Auto</button>
+      <div class="fb"></div><div class="fbmsg" hidden>Ask waits for approval on every change; Plan outlines first; Code applies file edits but checks before terminal commands.</div>
+    </div>
+    <div class="mcq" data-mcq data-correct="3" data-inquiz>
+      <div class="qlab">Q4</div><div class="qtext">A "customer call prep" skill that pulls from customer profiles stored in a project illustrates which relationship?</div>
+      <button class="opt">Projects replace skills</button><button class="opt">Skills replace projects</button><button class="opt">They're unrelated</button><button class="opt">A skill (the how) can reference a project's knowledge (the what)</button>
+      <div class="fb"></div><div class="fbmsg" hidden>Skills perform tasks and can reference knowledge stored in projects — they complement each other.</div>
+    </div>
+    <div class="mcq" data-mcq data-correct="1" data-inquiz>
+      <div class="qlab">Q5</div><div class="qtext">Which two connector types does Lesson 8 describe?</div>
+      <button class="opt">Free and paid connectors</button><button class="opt">Web connectors and desktop extensions</button><button class="opt">Read and write connectors</button><button class="opt">Local and cloud APIs</button>
+      <div class="fb"></div><div class="fbmsg" hidden>Web connectors (cloud services) and desktop extensions (local, via the desktop app).</div>
+    </div>
+    <div class="mcq" data-mcq data-correct="2" data-inquiz>
+      <div class="qlab">Q6</div><div class="qtext">For an Enterprise Search admin setup, which two connector categories are required?</div>
+      <button class="opt">Email and Calendar</button><button class="opt">Code and CRM</button><button class="opt">Documents (e.g., Drive/SharePoint) and Chat (e.g., Slack/Teams)</button><button class="opt">Browser and Plugins</button>
+      <div class="fb"></div><div class="fbmsg" hidden>Documents and Chat are required; Email is recommended but optional.</div>
+    </div>
+    <div class="mcq" data-mcq data-correct="0" data-inquiz>
+      <div class="qlab">Q7</div><div class="qtext">You need deep reasoning on a logic/math problem that needs NO external information. Which option fits best?</div>
+      <button class="opt">Extended thinking</button><button class="opt">Research mode</button><button class="opt">Enterprise Search</button><button class="opt">A connector</button>
+      <div class="fb"></div><div class="fbmsg" hidden>Extended thinking is for reasoning-based answers that don't require gathering external info.</div>
+    </div>
+    <div class="mcq" data-mcq data-correct="3" data-inquiz>
+      <div class="qlab">Q8</div><div class="qtext">What is Memory designed to do?</div>
+      <button class="opt">Store files in a project</button><button class="opt">Run scheduled tasks</button><button class="opt">Publish artifacts</button><button class="opt">Automatically save key context (role, preferences, past decisions) so you don't repeat yourself</button>
+      <div class="fb"></div><div class="fbmsg" hidden>Memory saves key context across conversations and syncs across devices.</div>
+    </div>
+    <div class="mcq" data-mcq data-correct="1" data-inquiz>
+      <div class="qlab">Q9</div><div class="qtext">Cowork's Subagents are best described as…</div>
+      <button class="opt">Separate user accounts</button><button class="opt">Background workers Claude spins up to handle parts of a task in parallel</button><button class="opt">Third-party plugins</button><button class="opt">A type of connector</button>
+      <div class="fb"></div><div class="fbmsg" hidden>Subagents each get their own context for a subtask; Claude coordinates results into one deliverable.</div>
+    </div>
+    <div class="mcq" data-mcq data-correct="2" data-inquiz>
+      <div class="qlab">Q10</div><div class="qtext">Published artifacts are viewable by anyone with the link, but…</div>
+      <button class="opt">require a Claude account to open</button><button class="opt">expose your full chat</button><button class="opt">are NOT indexed by search engines</button><button class="opt">cannot be remixed</button>
+      <div class="fb"></div><div class="fbmsg" hidden>No account needed to view, the chat stays private, others can remix, and they aren't indexed by Google.</div>
+    </div>
+    <div class="resultbox" data-result></div>
+  </div>
+
+  <div class="callout try collapsed" style="margin-top:26px"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🎉</span> You're done!<span class="chev">▼</span></div>
+  <div class="cbody"><p>Finish strong: take the official 13-question quiz on Anthropic Academy to earn your shareable certificate. Then come back to the Claude Certified Architect prep — these foundations feed directly into the Agentic Architecture, Claude Code, Prompt Engineering, MCP/Tools, and Context Management domains.</p></div></div>
+</section>
+
+<footer>
+  <p><span class="sourcebadge"><span class="emoji">📄</span> Built faithfully from the captured Claude 101 source of truth — every claim traces to a lesson section. No external facts introduced. Analogies (e.g., "USB-C for AI") are taken directly from the source.</span></p>
+  <p style="margin-top:14px">Claude 101 · Interactive edition for the Claude Certified Architect prep · <a href="#top" style="color:var(--accent)">Back to top ↑</a></p>
+</footer>
+
+</div><!-- /wrap -->
+</main>
+</div><!-- /layout -->
+
+<script>
+(function(){
+  "use strict";
+  /* ---------- Build TOC ---------- */
+  var sections=[
+    {title:"Meet Claude",lessons:[[1,"What is Claude?"],[2,"Your first conversation"],[3,"Getting better results"],[4,"Chat, Cowork, Code"]]},
+    {title:"Organizing your work",lessons:[[5,"Introduction to projects"],[6,"Creating with artifacts"],[7,"Working with skills"]]},
+    {title:"Expanding Claude's reach",lessons:[[8,"Connecting your tools"],[9,"Enterprise search"],[10,"Research mode"]]},
+    {title:"Putting it all together",lessons:[[11,"Use-cases by role"],[12,"Other ways to work"]]},
+    {title:"Conclusion & certificate",lessons:[[13,"What's next?"],[14,"Certificate & final check"]]}
+  ];
+  var toc=document.getElementById('toc');
+  sections.forEach(function(sec){
+    var h=document.createElement('div');h.className='nav-sec';h.textContent=sec.title;toc.appendChild(h);
+    sec.lessons.forEach(function(l){
+      var a=document.createElement('a');a.href='#l'+l[0];a.dataset.target='l'+l[0];
+      a.innerHTML='<span class="num"><span>'+l[0]+'</span></span><span>'+l[1]+'</span>';
+      a.addEventListener('click',function(){if(window.innerWidth<=980)toggleNav();});
+      toc.appendChild(a);
+    });
+  });
+
+  /* ---------- Progress bar + active nav + completion ---------- */
+  var navLinks=Array.prototype.slice.call(document.querySelectorAll('nav a'));
+  var lessonEls=Array.prototype.slice.call(document.querySelectorAll('section.lesson'));
+  var seen={};
+  function onScroll(){
+    var doc=document.documentElement;
+    var scrollTop=window.scrollY||doc.scrollTop;
+    var height=doc.scrollHeight-doc.clientHeight;
+    var pct=height>0?(scrollTop/height*100):0;
+    document.getElementById('progressBar').style.width=pct+'%';
+    // active section
+    var mid=scrollTop+window.innerHeight*0.32;
+    var current=null;
+    lessonEls.forEach(function(el){
+      if(el.offsetTop<=mid)current=el;
+      // mark seen when its top passes mid
+      if(el.offsetTop<=scrollTop+window.innerHeight*0.6){seen[el.id]=true;}
+    });
+    navLinks.forEach(function(a){a.classList.remove('active');});
+    if(current){
+      var act=document.querySelector('nav a[data-target="'+current.id+'"]');
+      if(act)act.classList.add('active');
+    }
+    // completion ticks
+    navLinks.forEach(function(a){if(seen[a.dataset.target])a.classList.add('done');});
+    var doneCount=Object.keys(seen).length;
+    document.getElementById('progPct').textContent=Math.round(doneCount/14*100)+'%';
+  }
+  window.addEventListener('scroll',onScroll,{passive:true});
+  window.addEventListener('resize',onScroll);
+  onScroll();
+
+  /* ---------- Mobile nav ---------- */
+  window.toggleNav=function(){
+    var open=document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('scrim').classList.toggle('open');
+    var b=document.querySelector('.menubtn');if(b)b.setAttribute('aria-expanded',open?'true':'false');
+  };
+
+  /* ---------- Collapsible callouts ---------- */
+  window.toggleCall=function(head){
+    var c=head.parentElement;c.classList.toggle('collapsed');
+    head.setAttribute('aria-expanded', c.classList.contains('collapsed')?'false':'true');
+  };
+  // Make every callout header keyboard-operable (Enter/Space) + screen-reader friendly
+  document.querySelectorAll('.callout .chead').forEach(function(head){
+    head.setAttribute('role','button');
+    head.setAttribute('tabindex','0');
+    head.setAttribute('aria-expanded', head.parentElement.classList.contains('collapsed')?'false':'true');
+    head.addEventListener('keydown',function(e){
+      if(e.key==='Enter'||e.key===' '||e.key==='Spacebar'){e.preventDefault();window.toggleCall(head);}
+    });
+  });
+
+  /* ---------- Predict / reveal ---------- */
+  window.doReveal=function(btn){
+    var ans=btn.parentElement.querySelector('.ans');
+    ans.classList.add('show');
+    btn.textContent='Answer shown ✓';
+    btn.disabled=true;btn.style.opacity='.6';btn.style.cursor='default';
+  };
+
+  /* ---------- MCQ logic ---------- */
+  document.querySelectorAll('.mcq[data-mcq]').forEach(function(mcq){
+    var correct=parseInt(mcq.getAttribute('data-correct'),10);
+    var opts=Array.prototype.slice.call(mcq.querySelectorAll('.opt'));
+    var fb=mcq.querySelector('.fb');
+    var msgEl=mcq.querySelector('.fbmsg');
+    var msg=msgEl?msgEl.textContent:'';
+    var answered=false;
+    opts.forEach(function(opt,i){
+      opt.addEventListener('click',function(){
+        if(answered)return;answered=true;
+        var isCorrect=(i===correct);
+        opts.forEach(function(o,j){
+          o.disabled=true;
+          if(j===correct){o.classList.add('correct');o.querySelector('.mark')||appendMark(o,'✓');}
+        });
+        if(!isCorrect){opt.classList.add('wrong');appendMark(opt,'✗');}
+        fb.classList.add('show');
+        fb.classList.add(isCorrect?'ok':'no');
+        fb.innerHTML='<strong>'+(isCorrect?'Correct! ':'Not quite. ')+'</strong>'+msg;
+        // notify quiz scoring
+        var quiz=mcq.closest('.quizblock');
+        if(quiz&&mcq.hasAttribute('data-inquiz')){
+          mcq.dataset.result=isCorrect?'1':'0';
+          updateQuiz(quiz);
+        }
+      });
+    });
+  });
+  function appendMark(opt,sym){var s=document.createElement('span');s.className='mark';s.textContent=sym;opt.appendChild(s);}
+
+  /* ---------- Quiz scoring ---------- */
+  function updateQuiz(quiz){
+    var mcqs=Array.prototype.slice.call(quiz.querySelectorAll('.mcq[data-inquiz]'));
+    var total=mcqs.length;
+    var answered=mcqs.filter(function(m){return m.dataset.result!==undefined;});
+    var score=mcqs.filter(function(m){return m.dataset.result==='1';}).length;
+    var scoreEl=quiz.querySelector('[data-score]');
+    if(scoreEl)scoreEl.textContent=score+' / '+total;
+    if(answered.length===total){
+      var box=quiz.querySelector('[data-result]');
+      var pct=score/total*100;
+      box.classList.add('show');
+      box.classList.remove('pass','mid');
+      if(pct>=75){box.classList.add('pass');box.innerHTML='🎉 '+score+'/'+total+' — strong work! You\'ve got this section down.';}
+      else if(pct>=50){box.classList.add('mid');box.innerHTML='👍 '+score+'/'+total+' — solid. Skim the misses above and you\'re set.';}
+      else{box.classList.add('mid');box.innerHTML='📖 '+score+'/'+total+' — worth a re-read of this section before moving on.';}
+    }
+  }
+})();
+</script>
+</body>
+</html>

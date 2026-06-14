@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Introduction to Subagents — Interactive Learning Experience</title>
+<style>
+  :root{
+    --bg:#faf8f5; --paper:#ffffff; --ink:#2b2622; --ink-soft:#5c544c;
+    --line:#e7e0d8; --accent:#c96442; --accent-soft:#f4e6df; --accent-deep:#a44a2e;
+    --teal:#3a7d7b; --teal-soft:#e0efee; --gold:#b8860b; --gold-soft:#f6edd6;
+    --green:#3f7d4f; --green-soft:#e3f0e6; --red:#b3402f; --red-soft:#f7e3df;
+    --sidebar:#f3eee7; --shadow:0 1px 3px rgba(43,38,34,.08),0 6px 24px rgba(43,38,34,.06);
+    --radius:14px; --maxw:760px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.65; font-size:17px; -webkit-font-smoothing:antialiased;
+  }
+  #progressBar{position:fixed;top:0;left:0;height:4px;width:0;background:linear-gradient(90deg,var(--accent),var(--gold));z-index:200;transition:width .15s ease}
+  .layout{display:flex;max-width:1240px;margin:0 auto}
+  aside{
+    position:sticky;top:0;align-self:flex-start;height:100vh;overflow-y:auto;
+    width:290px;flex:none;padding:22px 16px 40px;background:var(--sidebar);
+    border-right:1px solid var(--line);
+  }
+  aside h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin:18px 8px 8px}
+  .brandbox{padding:6px 8px 14px;border-bottom:1px solid var(--line);margin-bottom:8px}
+  .brandbox .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px}
+  .brandbox .sub{font-size:12.5px;color:var(--ink-soft);margin-top:6px}
+  .toc-prog{font-size:12px;color:var(--ink-soft);margin:10px 8px 4px;display:flex;justify-content:space-between;align-items:center}
+  .toc-prog b{color:var(--accent)}
+  nav a{display:flex;gap:8px;align-items:flex-start;text-decoration:none;color:var(--ink);
+    padding:7px 10px;border-radius:9px;font-size:14px;line-height:1.35;transition:background .15s}
+  nav a:hover{background:#ece4d9}
+  nav a.active{background:var(--accent-soft);color:var(--accent-deep);font-weight:600}
+  nav a .num{flex:none;width:22px;height:22px;border-radius:50%;background:#e3dacd;color:var(--ink-soft);
+    font-size:11.5px;display:flex;align-items:center;justify-content:center;font-weight:700;margin-top:1px}
+  nav a.active .num{background:var(--accent);color:#fff}
+  nav a.done .num{background:var(--green);color:#fff}
+  nav a.done .num::after{content:"✓"}
+  nav a.done .num span{display:none}
+  .nav-sec{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);
+    font-weight:700;margin:16px 10px 4px;display:flex;align-items:center;gap:6px}
+  main{flex:1;min-width:0;padding:0 28px 120px}
+  .wrap{max-width:var(--maxw);margin:0 auto}
+  header.hero{max-width:var(--maxw);margin:0 auto;padding:54px 0 22px;text-align:left}
+  .hero .eyebrow{color:var(--accent);font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:13px}
+  .hero h1{font-size:42px;line-height:1.1;margin:10px 0 8px;letter-spacing:-.02em}
+  .hero p.lead{font-size:19px;color:var(--ink-soft);margin:0 0 18px}
+  .pillrow{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}
+  .pill{background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:6px 13px;font-size:13px;color:var(--ink-soft);box-shadow:var(--shadow)}
+  .examnote{background:var(--gold-soft);border:1px solid #e7d9a9;border-radius:var(--radius);padding:16px 18px;margin:22px 0;font-size:14.5px}
+  .examnote b{color:#8a6508}
+  .aboutbox{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;margin:22px 0;box-shadow:var(--shadow)}
+  .aboutbox .lab{font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;margin-bottom:6px}
+  section.lesson{max-width:var(--maxw);margin:0 auto;padding:46px 0 10px;scroll-margin-top:14px;border-top:1px solid var(--line)}
+  section.lesson:first-of-type{border-top:none}
+  .sec-divider{max-width:var(--maxw);margin:38px auto 0;padding-top:30px}
+  .sec-divider .badge{display:inline-block;background:var(--accent);color:#fff;font-weight:700;
+    font-size:12px;letter-spacing:.07em;text-transform:uppercase;padding:5px 12px;border-radius:999px}
+  .sec-divider h2{font-size:30px;margin:12px 0 4px;letter-spacing:-.01em}
+  .sec-divider p{color:var(--ink-soft);margin:0}
+  .lesson .lmeta{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+  .lesson .ltag{font-size:12px;color:var(--accent);font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+  .lesson .ltime{font-size:12.5px;color:var(--ink-soft);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+  .lesson h3.ltitle{font-size:28px;margin:2px 0 4px;letter-spacing:-.01em;line-height:1.15}
+  .lesson h4{font-size:19px;margin:30px 0 8px;letter-spacing:-.005em}
+  .lesson h5{font-size:16px;margin:20px 0 6px;color:var(--accent-deep)}
+  .lesson p{margin:10px 0}
+  .lesson ul,.lesson ol{margin:10px 0;padding-left:22px}
+  .lesson li{margin:6px 0}
+  .emoji{font-style:normal}
+  blockquote.ex{margin:14px 0;padding:14px 18px;background:var(--teal-soft);border-left:4px solid var(--teal);border-radius:0 10px 10px 0;font-style:italic;color:#2c4f4e}
+  .objectives{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:14px 18px;margin:14px 0;box-shadow:var(--shadow)}
+  .objectives .lab{font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;margin-bottom:4px}
+  .objectives ul{margin:6px 0 2px;padding-left:20px}
+  .objectives li{font-size:14.5px}
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  table{border-collapse:collapse;width:100%;font-size:14px;background:var(--paper);min-width:520px}
+  th,td{text-align:left;padding:11px 13px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--accent-soft);color:var(--accent-deep);font-weight:700;font-size:13px}
+  tbody tr:last-child td{border-bottom:none}
+  td:first-child,th:first-child{font-weight:600}
+  /* code blocks */
+  pre.code{background:#2b2622;color:#f4ece2;border-radius:12px;padding:16px 18px;margin:16px 0;overflow-x:auto;
+    font-family:"SF Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+    font-size:13.5px;line-height:1.55;box-shadow:var(--shadow);border:1px solid #3a332d}
+  pre.code code{font-family:inherit;white-space:pre;display:block}
+  pre.code .cmt{color:#b08a6a}
+  pre.code .key{color:#e0a878}
+  pre.code .frontmatter{color:#9bd0c2}
+  code.inline{background:var(--accent-soft);color:var(--accent-deep);padding:1px 6px;border-radius:5px;
+    font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:14px}
+  .codelabel{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);font-weight:700;margin:18px 0 -8px}
+  /* callouts */
+  .callout{border-radius:var(--radius);padding:0;margin:18px 0;box-shadow:var(--shadow);overflow:hidden;border:1px solid var(--line)}
+  .callout .chead{display:flex;align-items:center;gap:9px;padding:12px 16px;cursor:pointer;font-weight:700;font-size:15px;user-select:none}
+  .callout .cbody{padding:2px 18px 16px;font-size:15px}
+  .callout .cbody ul{margin:6px 0;padding-left:20px}
+  .callout.collapsed .cbody{display:none}
+  .callout .chev{margin-left:auto;transition:transform .2s;font-size:13px;opacity:.6}
+  .callout.collapsed .chev{transform:rotate(-90deg)}
+  .keyc{border-color:#d9c98f}.keyc .chead{background:var(--gold-soft);color:#8a6508}
+  .tip{border-color:#a7d3d1}.tip .chead{background:var(--teal-soft);color:var(--teal)}
+  .try{border-color:#bfdcc6}.try .chead{background:var(--green-soft);color:var(--green)}
+  .anti{border-color:#e6bcb4}.anti .chead{background:var(--red-soft);color:var(--red)}
+  /* SVG figure */
+  figure.svgfig{margin:22px 0;text-align:center;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+  figure.svgfig svg{max-width:100%;height:auto}
+  figure.svgfig figcaption{font-size:13px;color:var(--ink-soft);margin-top:10px}
+  /* MCQ */
+  .mcq{background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--accent);
+    border-radius:var(--radius);padding:16px 18px;margin:22px 0;box-shadow:var(--shadow)}
+  .mcq .qlab{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;display:flex;align-items:center;gap:7px}
+  .mcq .qtext{font-weight:600;margin:8px 0 12px;font-size:16px}
+  .mcq .opt{display:block;width:100%;text-align:left;background:var(--bg);border:1.5px solid var(--line);
+    border-radius:10px;padding:11px 14px;margin:7px 0;cursor:pointer;font-size:14.5px;font-family:inherit;color:var(--ink);transition:all .14s}
+  .mcq .opt:hover:not(:disabled){border-color:var(--accent);background:var(--accent-soft)}
+  .mcq .opt:disabled{cursor:default}
+  .mcq .opt.correct{border-color:var(--green);background:var(--green-soft);font-weight:600}
+  .mcq .opt.wrong{border-color:var(--red);background:var(--red-soft)}
+  .mcq .opt .mark{float:right;font-weight:700}
+  .mcq .fb{display:none;margin-top:12px;padding:12px 14px;border-radius:10px;font-size:14px;line-height:1.55}
+  .mcq .fb.show{display:block}
+  .mcq .fb.ok{background:var(--green-soft);border:1px solid #bfdcc6}
+  .mcq .fb.no{background:var(--red-soft);border:1px solid #e6bcb4}
+  /* predict / reveal */
+  .reveal{background:var(--paper);border:1px dashed var(--accent);border-radius:var(--radius);padding:16px 18px;margin:22px 0}
+  .reveal .plab{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;display:flex;align-items:center;gap:7px}
+  .reveal .q{font-weight:600;margin:8px 0 12px;font-size:16px}
+  .reveal button.revealbtn{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:9px 16px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+  .reveal button.revealbtn:hover{background:var(--accent-deep)}
+  .reveal .ans{display:none;margin-top:12px;padding:12px 14px;background:var(--teal-soft);border-radius:10px;font-size:14.5px;border:1px solid #a7d3d1}
+  .reveal .ans.show{display:block}
+  /* section quiz */
+  .quizblock{background:linear-gradient(180deg,#fff,#fbf6f0);border:2px solid var(--accent-soft);border-radius:18px;padding:22px 22px 24px;margin:30px auto;max-width:var(--maxw);box-shadow:var(--shadow)}
+  .quizblock h4{margin-top:0;display:flex;align-items:center;gap:9px}
+  .quizblock .qscore{font-size:14px;color:var(--ink-soft);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-weight:600}
+  .quizblock .scorebar{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:8px}
+  .resultbox{display:none;margin-top:16px;padding:16px;border-radius:12px;font-weight:600;text-align:center;font-size:16px}
+  .resultbox.show{display:block}
+  .resultbox.pass{background:var(--green-soft);border:1px solid #bfdcc6;color:var(--green)}
+  .resultbox.mid{background:var(--gold-soft);border:1px solid #e7d9a9;color:#8a6508}
+  footer{max-width:var(--maxw);margin:40px auto 0;padding-top:24px;border-top:1px solid var(--line);color:var(--ink-soft);font-size:13.5px}
+  .sourcebadge{display:inline-flex;gap:7px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:5px 13px;font-size:12.5px;color:var(--ink-soft)}
+  .menubtn{display:none;position:fixed;top:12px;left:12px;z-index:210;background:var(--accent);color:#fff;border:none;border-radius:10px;width:44px;height:44px;font-size:20px;cursor:pointer;box-shadow:var(--shadow)}
+  .scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:205}
+  @media(max-width:980px){
+    .menubtn{display:block}
+    aside{position:fixed;left:0;top:0;z-index:206;transform:translateX(-105%);transition:transform .25s;box-shadow:var(--shadow);width:280px}
+    aside.open{transform:translateX(0)}
+    .scrim.open{display:block}
+    main{padding:60px 16px 110px}
+    .hero h1{font-size:32px}
+  }
+  .analogy{font-size:13px;background:var(--accent-soft);color:var(--accent-deep);border-radius:6px;padding:1px 7px;font-weight:600}
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+<button class="menubtn" onclick="toggleNav()" aria-label="Menu" aria-expanded="false">☰</button>
+<div class="scrim" id="scrim" onclick="toggleNav()"></div>
+
+<div class="layout">
+<!-- SIDEBAR -->
+<aside id="sidebar">
+  <div class="brandbox">
+    <div class="logo"><span class="emoji">🤖</span> Introduction to Subagents</div>
+    <div class="sub">Anthropic course — interactive edition for CCA-F exam prep · 200-level</div>
+  </div>
+  <nav class="cspine" aria-label="Course track">
+    <div class="cspine-h">📚 Subagents track · Lesson 1 of 4</div>
+    <ol class="cspine-list">
+      <li class="cspine-cur" aria-current="page">Base · Introduction to Subagents</li>
+      <li><a href="extensions/orchestration-patterns.html">S-E1 · The Five Orchestration Patterns</a></li>
+      <li><a href="extensions/subagents-as-sdk-primitive.html">S-E2 · Subagents as a Programmable Primitive</a></li>
+      <li><a href="extensions/orchestrator-worker-at-scale.html">S-E3 · Orchestrator-Worker at Scale</a></li>
+    </ol>
+  </nav>
+  <style>
+  .cspine{margin:10px 8px 14px;padding:10px 12px;border:1px solid var(--line,#e7e0d8);border-radius:10px;background:rgba(0,0,0,.02)}
+  .cspine-h{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft,#5c544c);margin-bottom:7px}
+  .cspine-list{list-style:none;margin:0;padding:0}
+  .cspine-list li{font-size:12.5px;line-height:1.3;padding:3px 0;color:var(--ink-soft,#5c544c)}
+  .cspine-list a{color:var(--ink,#2b2622);text-decoration:none}
+  .cspine-list a:hover{color:var(--accent,#c96442);text-decoration:underline}
+  .cspine-cur{font-weight:700;color:var(--accent-deep,#a44a2e)!important}
+  .cspine-cur::before{content:"▸ "}
+  </style>
+  <div class="toc-prog">Course progress <span><b id="progPct">0%</b></span></div>
+  <nav id="toc"></nav>
+</aside>
+
+<!-- MAIN -->
+<main>
+<div class="wrap">
+<nav class="cnav" aria-label="Course navigation">
+  <a class="cnav-home" href="../../Launchpad.html">⌂ Launchpad</a>
+  <span class="cnav-side"><a class="cnav-next" href="extensions/orchestration-patterns.html">Next: The Five Orchestration Patterns (S-E1) →</a></span>
+</nav>
+<style>
+.cnav{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:10px 0 18px;padding:10px 14px;border:1px solid var(--line,#e7e0d8);border-radius:12px;background:rgba(0,0,0,.02);font:600 13.5px/1.2 system-ui,-apple-system,'Segoe UI',sans-serif}
+.cnav a{text-decoration:none;color:var(--ink,#2b2622);padding:7px 13px;border-radius:8px;background:rgba(0,0,0,.05);white-space:nowrap;transition:background .15s,color .15s}
+.cnav a:hover{background:var(--accent,#c96442);color:#fff}
+.cnav .cnav-home{background:var(--accent,#c96442);color:#fff}
+.cnav .cnav-home:hover{filter:brightness(.92)}
+.cnav .cnav-side{display:flex;gap:8px;flex-wrap:wrap}
+</style>
+
+<header class="hero" id="top">
+  <div class="eyebrow">Anthropic · Claude Code · 200-level</div>
+  <h1>Introduction to Subagents</h1>
+  <p class="lead">Your interactive, predict-before-reveal walkthrough of all 4 lessons — how subagents work, how to create them, how to design them, and when to use them (and when not to).</p>
+  <div class="pillrow">
+    <span class="pill"><span class="emoji">📚</span> 4 lessons</span>
+    <span class="pill"><span class="emoji">🧠</span> Inline MCQs + reveals</span>
+    <span class="pill"><span class="emoji">🏆</span> 4 lesson quizzes + final check</span>
+    <span class="pill"><span class="emoji">🎨</span> 8 architecture diagrams</span>
+    <span class="pill"><span class="emoji">💻</span> All 3 source code blocks</span>
+  </div>
+
+  <div class="aboutbox">
+    <div class="lab"><span class="emoji">🧭</span> About this course</div>
+    <p style="margin:6px 0">Sub-agents are one of the most practical ways to get more out of longer Claude Code sessions. In this course you'll learn:</p>
+    <ul style="margin:6px 0;padding-left:20px;font-size:15px">
+      <li><strong>How sub-agents work</strong> — what happens when Claude Code spins up a separate context window, how inputs flow in, and how summaries return.</li>
+      <li><strong>Creating custom sub-agents</strong> — using the <code class="inline">/agents</code> command to build sub-agents tailored to your workflow, from code reviewers to documentation generators.</li>
+      <li><strong>Designing effective sub-agents</strong> — patterns that make sub-agents reliable, including structured output formats, obstacle reporting, and limited tool access.</li>
+      <li><strong>When to use them (and when not to)</strong> — practical guidance on where sub-agents help the most and the common anti-patterns to avoid.</li>
+    </ul>
+    <p style="margin:6px 0">By the end, you'll know how to break complex work into focused pieces and build sub-agents that finish reliably.</p>
+  </div>
+
+  <div class="examnote">
+    <b>🎯 Why this matters for the CCA-F exam.</b> This course maps directly to two graded domains.
+    <b>Domain 1 — Agentic Architecture &amp; Orchestration (27%)</b>: subagent delegation, context/session management, multi-agent orchestration, and anti-patterns all live here.
+    <b>Domain 2 — Claude Code Configuration (20%)</b>: the <code class="inline">/agents</code> command, config files, and project- vs. user-level scope. The MCQs below are weighted toward these two domains. Treat the mapping as orientation grounded in the source — not extra syllabus.
+  </div>
+</header>
+
+<!-- ======================= SECTION DIVIDER ======================= -->
+<div class="sec-divider" id="sec1">
+  <span class="badge"><span class="emoji">🤖</span> The subagent model</span>
+  <h2>From "what" to "when"</h2>
+  <p>Four lessons that move you from understanding the mechanism to making the delegate-or-not call. (Lessons 1–4)</p>
+</div>
+
+<!-- ===================================================================== -->
+<!-- LESSON 1 -->
+<!-- ===================================================================== -->
+<section class="lesson" id="l1" data-lesson="1">
+  <div class="lmeta"><span class="ltag"><span class="emoji">🧩</span> Lesson 1</span><span class="ltime">⏱ ~10 min · concept</span></div>
+  <h3 class="ltitle">What are subagents?</h3>
+
+  <div class="objectives">
+    <div class="lab">What you'll be able to do</div>
+    <ul>
+      <li>Explain what a subagent is and how it runs in its own isolated context window</li>
+      <li>Describe the two things a subagent receives and the one thing it returns</li>
+      <li>Name the three built-in subagents and the tradeoff that delegation introduces</li>
+    </ul>
+  </div>
+
+  <p>Subagents are specialized assistants that Claude Code can delegate tasks to. Think of them as focused helpers: each one runs in its own conversation context window, does its work, and returns a summary to the main thread. The intermediate steps — all the file reads, searches, and tool calls — stay isolated and never clutter your main conversation.</p>
+
+  <p><span class="analogy">Analogy</span> Think of a subagent like sending an intern off to the archives. You ask one question; the intern reads 40 boxes of files, takes notes, and comes back with a single index card with the answer. You never see the 40 boxes — just the card. (Author analogy, not a product fact.)</p>
+
+  <h4>Why subagents matter</h4>
+  <p>Every time you chat with Claude Code, you're adding to the main context window. Every tool call, every file read, every search result gets stored there. That space is finite, and once it fills up, Claude starts losing track of earlier parts of the conversation.</p>
+
+  <p>Subagents solve this by spinning up a separate context window. The subagent receives two things:</p>
+  <ul>
+    <li>A <strong>custom system prompt</strong> from your configuration file that defines the subagent's role and behavior</li>
+    <li>A <strong>task description</strong> written by the parent agent based on what you asked for</li>
+  </ul>
+
+  <p>The subagent then works on its own. It reads files, runs searches, edits code — whatever it needs to do. When it's done, only a summary comes back to your main conversation. The entire subagent conversation is then discarded.</p>
+
+  <p>This means your main context stays clean. You get the answer without all the noise of the journey it took to find it. <strong>The tradeoff is that you lose visibility into how the subagent reached its conclusions.</strong></p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 680 280" role="img" aria-label="Main context window versus isolated subagent context">
+      <defs>
+        <style>.t{font:700 13px sans-serif;fill:#2b2622}.s{font:400 11px sans-serif;fill:#5c544c}.w{font:600 11px sans-serif;fill:#fff}</style>
+        <marker id="a1" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#c96442"/></marker>
+        <marker id="a2" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#3f7d4f"/></marker>
+      </defs>
+      <rect x="14" y="40" width="240" height="200" rx="14" fill="#fff" stroke="#c96442" stroke-width="2"/>
+      <text class="t" x="134" y="64" text-anchor="middle">Main context window</text>
+      <rect x="34" y="80" width="200" height="26" rx="7" fill="#f4e6df"/><text class="s" x="44" y="97">Your question</text>
+      <rect x="34" y="180" width="200" height="26" rx="7" fill="#e3f0e6"/><text class="s" x="44" y="197">1-line summary returns ✓</text>
+      <text class="s" x="134" y="228" text-anchor="middle" style="font-style:italic">stays clean</text>
+      <line x1="254" y1="93" x2="420" y2="93" stroke="#c96442" stroke-width="2" marker-end="url(#a1)"/>
+      <text class="s" x="338" y="84" text-anchor="middle">system prompt + task</text>
+      <rect x="424" y="40" width="240" height="160" rx="14" fill="#faf6f1" stroke="#5c544c" stroke-width="1.5" stroke-dasharray="6 4"/>
+      <text class="t" x="544" y="62" text-anchor="middle">Subagent context</text>
+      <rect x="442" y="76" width="204" height="20" rx="6" fill="#e7e0d8"/><text class="s" x="450" y="90">read file · search · tool call</text>
+      <rect x="442" y="100" width="204" height="20" rx="6" fill="#e7e0d8"/><text class="s" x="450" y="114">read file · trace function</text>
+      <rect x="442" y="124" width="204" height="20" rx="6" fill="#e7e0d8"/><text class="s" x="450" y="138">edit · run · explore</text>
+      <text class="s" x="544" y="172" text-anchor="middle" style="font-style:italic">discarded when done 🗑</text>
+      <line x1="420" y1="193" x2="254" y2="193" stroke="#3f7d4f" stroke-width="2" marker-end="url(#a2)"/>
+      <text class="s" x="338" y="210" text-anchor="middle">only the summary</text>
+    </svg>
+    <figcaption>The subagent receives a system prompt + task, does isolated work, returns only a summary — then its whole context is discarded.</figcaption>
+  </figure>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">A subagent receives a system prompt and a task, then works in its own context. When it finishes, how much of that work flows back into your main conversation?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>Only a summary.</strong> The reads, searches, and tool calls all stay isolated in the subagent's context, and the entire subagent conversation is discarded once it's done. Your main context records just the question and the summary — that's the whole point, and it's also the tradeoff (you lose visibility into <em>how</em> the answer was found).</div>
+  </div>
+
+  <h4>A practical example</h4>
+  <p>Say you're exploring an unfamiliar codebase and you want to know which service handles refunds. Without a subagent, Claude might read 15 files, run several searches, and trace through multiple function calls. All of that fills your context window, even though you only needed one fact.</p>
+
+  <p>With a subagent, the experience is much cleaner. You ask the question, the <strong>Explore</strong> subagent spins up, does all that digging in its own context, and hands back a focused answer. Your main context window only records the question and the summary — not the 15 files that were read along the way.</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 680 200" role="img" aria-label="Fifteen files read collapse into one-line summary">
+      <defs><style>.fl{fill:#fff;stroke:#e7e0d8;stroke-width:1}.ft{font:400 9px sans-serif;fill:#5c544c}.bt{font:700 13px sans-serif;fill:#2b2622}.bs{font:600 11px sans-serif;fill:#a44a2e}</style>
+      <marker id="aq" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#c96442"/></marker></defs>
+      <text class="bt" x="90" y="24" text-anchor="middle">15 files read (isolated)</text>
+      <g>
+        <rect class="fl" x="20" y="38" width="60" height="20" rx="4"/><text class="ft" x="26" y="51">auth.js</text>
+        <rect class="fl" x="86" y="38" width="60" height="20" rx="4"/><text class="ft" x="92" y="51">billing.js</text>
+        <rect class="fl" x="20" y="62" width="60" height="20" rx="4"/><text class="ft" x="26" y="75">refund.js</text>
+        <rect class="fl" x="86" y="62" width="60" height="20" rx="4"/><text class="ft" x="92" y="75">router.js</text>
+        <rect class="fl" x="20" y="86" width="60" height="20" rx="4"/><text class="ft" x="26" y="99">order.js</text>
+        <rect class="fl" x="86" y="86" width="60" height="20" rx="4"/><text class="ft" x="92" y="99">payments.js</text>
+        <rect class="fl" x="20" y="110" width="60" height="20" rx="4"/><text class="ft" x="26" y="123">queue.js</text>
+        <rect class="fl" x="86" y="110" width="60" height="20" rx="4"/><text class="ft" x="92" y="123">utils.js</text>
+        <rect class="fl" x="20" y="134" width="126" height="20" rx="4"/><text class="ft" x="26" y="147">…+7 more files, searches, traces</text>
+      </g>
+      <path d="M170 96 C 250 96, 250 96, 320 96" fill="none" stroke="#c96442" stroke-width="2.5" marker-end="url(#aq)"/>
+      <text class="bs" x="245" y="86" text-anchor="middle">Explore subagent</text>
+      <rect x="340" y="66" width="320" height="60" rx="12" fill="#e3f0e6" stroke="#3f7d4f" stroke-width="1.5"/>
+      <text class="bt" x="500" y="90" text-anchor="middle">Refunds are handled by</text>
+      <text class="bt" x="500" y="110" text-anchor="middle">RefundService (refund.js)</text>
+      <text class="bs" x="500" y="146" text-anchor="middle">← the one line your main context keeps</text>
+    </svg>
+    <figcaption>Fifteen files, several searches, multiple traces — all collapse into the single fact your main thread actually needed.</figcaption>
+  </figure>
+
+  <h4>Built-in subagents</h4>
+  <p>Claude Code ships with several built-in subagents you can use right away:</p>
+  <ul>
+    <li><strong>General purpose subagent</strong> — for multi-step tasks that require both exploration and action</li>
+    <li><strong>Explore</strong> — for fast searching and navigation of codebases</li>
+    <li><strong>Plan</strong> — used during plan mode for research and analysis of your codebase before presenting a plan</li>
+  </ul>
+
+  <h4>Custom subagents</h4>
+  <p>Beyond the built-in options, you can create your own subagents with custom system prompts and tool access. This lets you define specialized agents tailored to your workflow — a code reviewer, a test writer, a documentation generator, or anything else you need.</p>
+
+  <div class="mcq" data-mcq data-correct="1">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Which built-in subagent is described as being for fast searching and navigation of codebases?</div>
+    <button class="opt">General purpose</button>
+    <button class="opt">Explore</button>
+    <button class="opt">Plan</button>
+    <button class="opt">Reviewer</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>Explore is the fast search/navigation subagent. General purpose handles multi-step exploration + action; Plan is used in plan mode for research before presenting a plan.</div>
+  </div>
+
+  <div class="callout keyc collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody">
+    <p>Subagents give you three main benefits:</p>
+    <ul>
+      <li>They <strong>break work into focused pieces</strong>, letting each subagent concentrate on a specific task.</li>
+      <li>They <strong>keep your main context window clean</strong> by isolating all the intermediate work.</li>
+      <li>They <strong>bring back just the information you need</strong> as a concise summary.</li>
+    </ul>
+    <p>Whether you're using the built-in subagents or creating your own, they're a practical way to get more out of longer Claude Code sessions. The less noise in your main context, the longer and more effectively you can work.</p>
+  </div></div>
+
+  <p style="font-size:14px;color:var(--ink-soft)"><strong>What's next:</strong> create your own subagent with the <code class="inline">/agents</code> command — scope, tools, model, color, and the config file.</p>
+</section>
+
+<!-- LESSON 1 QUIZ -->
+<div class="quizblock" data-quiz="1">
+  <div class="scorebar"><h4 style="margin:0"><span class="emoji">🏆</span> Lesson 1 Quiz — What are subagents?</h4><span class="qscore" data-score>0 / 4</span></div>
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q1</div><div class="qtext">What does a subagent return to the main thread when it finishes?</div>
+    <button class="opt">Its full conversation transcript</button><button class="opt">Every file it read</button><button class="opt">Only a summary</button><button class="opt">Nothing — it edits files silently</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Only a summary comes back; the entire subagent conversation (reads, searches, tool calls) is then discarded.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="1" data-inquiz>
+    <div class="qlab">Q2</div><div class="qtext">A subagent receives two things to start. What are they?</div>
+    <button class="opt">A model name and a color</button><button class="opt">A custom system prompt (from config) and a task description (from the parent agent)</button><button class="opt">A budget and a deadline</button><button class="opt">The full main-thread history and a tool list</button>
+    <div class="fb"></div><div class="fbmsg" hidden>The subagent gets a system prompt from your configuration file plus a task description the parent agent writes based on your request.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="0" data-inquiz>
+    <div class="qlab">Q3</div><div class="qtext">What is the explicit tradeoff of delegating to a subagent?</div>
+    <button class="opt">You lose visibility into how the subagent reached its conclusions</button><button class="opt">It permanently fills your context window</button><button class="opt">It cannot use tools</button><button class="opt">It runs on a slower model by default</button>
+    <div class="fb"></div><div class="fbmsg" hidden>You get a clean main context and the answer, but you give up visibility into the journey it took to get there.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="3" data-inquiz>
+    <div class="qlab">Q4</div><div class="qtext">In the refunds example, why does using the Explore subagent keep your main context clean?</div>
+    <button class="opt">It compresses the files into a zip</button><button class="opt">It runs on a faster model</button><button class="opt">It refuses to read more than one file</button><button class="opt">The 15 files it reads stay in its own context; only the question and summary land in your main thread</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Without a subagent, all 15 files fill your context. With one, that digging stays isolated and only the focused answer returns.</div>
+  </div>
+  <div class="resultbox" data-result></div>
+</div>
+
+<!-- ===================================================================== -->
+<!-- LESSON 2 -->
+<!-- ===================================================================== -->
+<section class="lesson" id="l2" data-lesson="2">
+  <div class="lmeta"><span class="ltag"><span class="emoji">🛠️</span> Lesson 2</span><span class="ltime">⏱ ~12 min · how-to</span></div>
+  <h3 class="ltitle">Creating a subagent</h3>
+
+  <div class="objectives">
+    <div class="lab">What you'll be able to do</div>
+    <ul>
+      <li>Use the <code class="inline">/agents</code> command to create a custom subagent, choosing project- vs. user-level scope</li>
+      <li>Configure tools, model, and color, and read every field of a subagent config file</li>
+      <li>Make Claude delegate automatically using "proactively" and example conversations in the description</li>
+    </ul>
+  </div>
+
+  <p>Claude Code comes with built-in subagents, but you can also create your own. Custom subagents specialize in specific tasks — like reviewing code, writing tests, or checking documentation. They are defined as markdown files with YAML frontmatter that tell Claude when to use the subagent and how the subagent should behave.</p>
+
+  <h4>Creating a subagent</h4>
+  <p>The easiest way to create a subagent is with the <code class="inline">/agents</code> slash command. This opens the main interface for managing your subagents. From there, select <strong>Create new agent</strong>.</p>
+
+  <p>You will first be asked to choose the <strong>scope</strong> of your subagent:</p>
+  <ul>
+    <li><strong>Project-level</strong> — available only in the current project</li>
+    <li><strong>User-level</strong> — shared across all projects on your machine</li>
+  </ul>
+
+  <p>Next, you can choose how to create it. You can write the configuration manually, but the recommended approach is to let Claude generate it for you. Just describe what you want the subagent to do, and Claude will produce a name, description, and system prompt based on your input.</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 680 130" role="img" aria-label="The /agents creation flow">
+      <defs><style>.fb2{fill:#fff;stroke:#c96442;stroke-width:1.5}.fx{font:700 12px sans-serif;fill:#a44a2e}.fy{font:400 10.5px sans-serif;fill:#5c544c}</style>
+      <marker id="af" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#c96442"/></marker></defs>
+      <rect class="fb2" x="6" y="40" width="118" height="50" rx="10"/><text class="fx" x="65" y="60" text-anchor="middle">/agents</text><text class="fy" x="65" y="78" text-anchor="middle">→ Create new agent</text>
+      <line x1="124" y1="65" x2="138" y2="65" stroke="#c96442" stroke-width="2" marker-end="url(#af)"/>
+      <rect class="fb2" x="140" y="40" width="118" height="50" rx="10"/><text class="fx" x="199" y="60" text-anchor="middle">Scope</text><text class="fy" x="199" y="78" text-anchor="middle">project / user</text>
+      <line x1="258" y1="65" x2="272" y2="65" stroke="#c96442" stroke-width="2" marker-end="url(#af)"/>
+      <rect class="fb2" x="274" y="40" width="118" height="50" rx="10"/><text class="fx" x="333" y="60" text-anchor="middle">Generate</text><text class="fy" x="333" y="78" text-anchor="middle">describe → Claude</text>
+      <line x1="392" y1="65" x2="406" y2="65" stroke="#c96442" stroke-width="2" marker-end="url(#af)"/>
+      <rect class="fb2" x="408" y="40" width="118" height="50" rx="10"/><text class="fx" x="467" y="60" text-anchor="middle">Tools</text><text class="fy" x="467" y="78" text-anchor="middle">read/edit/exec…</text>
+      <line x1="526" y1="65" x2="540" y2="65" stroke="#c96442" stroke-width="2" marker-end="url(#af)"/>
+      <rect class="fb2" x="542" y="40" width="132" height="50" rx="10"/><text class="fx" x="608" y="60" text-anchor="middle">Model + Color</text><text class="fy" x="608" y="78" text-anchor="middle">→ config saved</text>
+    </svg>
+    <figcaption>The creation flow: <code class="inline">/agents</code> → scope → generate → tools → model &amp; color → config file written.</figcaption>
+  </figure>
+
+  <h4>Customizing tools</h4>
+  <p>During creation, you get the chance to customize which tools the subagent can access. The tool categories include:</p>
+  <ul>
+    <li>Read-only tools</li>
+    <li>Edit tools</li>
+    <li>Execution tools</li>
+    <li>MCP tools</li>
+    <li>Other tools</li>
+  </ul>
+  <p>Think about what your subagent actually needs. A code reviewer probably does not need edit tools — it should read and analyze code, not change it. However, you might want to keep execution tools enabled so it can more easily identify pending changes.</p>
+
+  <h4>Choosing a model and color</h4>
+  <p>After configuring tools, you select which Claude model powers the subagent. Your options are:</p>
+  <ul>
+    <li><strong>Haiku</strong> — best for fast, lightweight tasks</li>
+    <li><strong>Sonnet</strong> — a good middle ground between speed and depth</li>
+    <li><strong>Opus</strong> — best for complex analysis</li>
+    <li><strong>Inherit</strong> — uses whatever model your main conversation is running</li>
+  </ul>
+  <p>Finally, you pick a color. This shows up in the UI so you can quickly tell which subagent is active. It is a small touch, but it helps when you have multiple subagents running.</p>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">You're building a subagent for quick, lightweight grep-style lookups where speed matters more than deep reasoning. Which model option fits best?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>Haiku.</strong> It's described as best for fast, lightweight tasks. Sonnet is the speed/depth middle ground, Opus is for complex analysis, and Inherit just reuses whatever model the main conversation is running.</div>
+  </div>
+
+  <h4>The config file</h4>
+  <p>Once creation is complete, the subagent config file is saved into your project (typically at <code class="inline">.claude/agents/your-agent-name.md</code>). Here is what a typical subagent config looks like:</p>
+
+  <div class="codelabel">Source code block 1 of 3 — subagent config (Lesson 2)</div>
+  <pre class="code"><code><span class="frontmatter">---</span>
+<span class="key">name:</span> code-quality-reviewer
+<span class="key">description:</span> Use this agent when you need to review recently written or modified code for quality, security, and best practice compliance.
+<span class="key">tools:</span> Bash, Glob, Grep, Read, WebFetch, WebSearch
+<span class="key">model:</span> sonnet
+<span class="key">color:</span> purple
+<span class="frontmatter">---</span>
+
+You are an expert code reviewer specializing in quality assurance, security best practices, and
+adherence to project standards. Your role is to thoroughly examine recently written or modified code
+and identify issues that could impact reliability, security, maintainability, or performance.</code></pre>
+
+  <p>Let's break down each field:</p>
+  <ul>
+    <li><strong>name</strong> — A unique identifier for the subagent. This is how you reference it, either by asking Claude directly or by typing <code class="inline">@agent code-quality-reviewer</code> in your message.</li>
+    <li><strong>description</strong> — Controls when Claude decides to use the subagent. This must be a single line (use escaped newline characters <code class="inline">\n</code> if you need breaks). You can include example conversations here to help Claude understand when delegation is appropriate.</li>
+    <li><strong>tools</strong> — Lists which tools the subagent can access. This matches whatever you selected during generation, but you can edit the list here at any time.</li>
+    <li><strong>model</strong> — Specifies which Claude model to use: <code class="inline">sonnet</code>, <code class="inline">opus</code>, <code class="inline">haiku</code>, or <code class="inline">inherit</code>.</li>
+    <li><strong>color</strong> — The UI color for identifying the subagent.</li>
+  </ul>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 680 250" role="img" aria-label="Anatomy of a subagent config file">
+      <defs><style>.h{font:700 12px sans-serif;fill:#fff}.lbl{font:700 11px sans-serif;fill:#a44a2e}.dsc{font:400 10px sans-serif;fill:#5c544c}</style></defs>
+      <rect x="20" y="14" width="300" height="170" rx="12" fill="#2b2622"/>
+      <text x="36" y="36" style="font:700 11px monospace;fill:#9bd0c2">--- frontmatter ---</text>
+      <text x="36" y="58" style="font:400 11px monospace;fill:#e0a878">name:</text><text x="86" y="58" style="font:400 11px monospace;fill:#f4ece2">code-quality-reviewer</text>
+      <text x="36" y="80" style="font:400 11px monospace;fill:#e0a878">description:</text><text x="36" y="96" style="font:400 11px monospace;fill:#f4ece2">Use this agent when…</text>
+      <text x="36" y="118" style="font:400 11px monospace;fill:#e0a878">tools:</text><text x="86" y="118" style="font:400 11px monospace;fill:#f4ece2">Bash, Grep, Read…</text>
+      <text x="36" y="140" style="font:400 11px monospace;fill:#e0a878">model:</text><text x="86" y="140" style="font:400 11px monospace;fill:#f4ece2">sonnet</text>
+      <text x="36" y="162" style="font:400 11px monospace;fill:#e0a878">color:</text><text x="86" y="162" style="font:400 11px monospace;fill:#f4ece2">purple</text>
+      <rect x="20" y="192" width="300" height="44" rx="12" fill="#3a332d"/>
+      <text x="36" y="210" style="font:700 11px monospace;fill:#9bd0c2">body = system prompt</text>
+      <text x="36" y="226" style="font:400 10px monospace;fill:#f4ece2">You are an expert code reviewer…</text>
+      <g>
+        <line x1="320" y1="58" x2="372" y2="48" stroke="#c96442" stroke-width="1.5"/><text class="lbl" x="378" y="46">name</text><text class="dsc" x="378" y="60">how you @reference it</text>
+        <line x1="320" y1="88" x2="372" y2="92" stroke="#c96442" stroke-width="1.5"/><text class="lbl" x="378" y="90">description</text><text class="dsc" x="378" y="104">when to launch + shapes input</text>
+        <line x1="320" y1="118" x2="372" y2="136" stroke="#c96442" stroke-width="1.5"/><text class="lbl" x="378" y="134">tools</text><text class="dsc" x="378" y="148">what it can touch</text>
+        <line x1="320" y1="151" x2="372" y2="178" stroke="#c96442" stroke-width="1.5"/><text class="lbl" x="378" y="176">model + color</text><text class="dsc" x="378" y="190">power level + UI tag</text>
+        <line x1="320" y1="214" x2="372" y2="216" stroke="#3f7d4f" stroke-width="1.5"/><text class="lbl" x="378" y="214" style="fill:#3f7d4f">body</text><text class="dsc" x="378" y="228">the system prompt / instructions</text>
+      </g>
+    </svg>
+    <figcaption>Anatomy of the config: five frontmatter fields (name, description, tools, model, color) plus the markdown body that becomes the system prompt.</figcaption>
+  </figure>
+
+  <h4>System prompts</h4>
+  <p>The body of the markdown file (everything below the YAML frontmatter) is the system prompt. This is where you give the subagent its instructions: what it should focus on, how it should analyze things, and how it should report findings back to the main agent. A well-written system prompt is the difference between a useful subagent and one that misses the point. Be specific about what the subagent should look for and how it should structure its output.</p>
+
+  <div class="mcq" data-mcq data-correct="2">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">In a subagent config file, what becomes the system prompt?</div>
+    <button class="opt">The <code class="inline">description</code> field</button>
+    <button class="opt">The <code class="inline">tools</code> list</button>
+    <button class="opt">Everything below the YAML frontmatter (the markdown body)</button>
+    <button class="opt">The <code class="inline">name</code> field</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>The body of the markdown file — everything under the frontmatter — is the system prompt where you give the subagent its instructions.</div>
+  </div>
+
+  <h4>Making Claude use your subagent automatically</h4>
+  <p>If you want Claude to delegate tasks to the subagent without you explicitly asking, include the word <strong>"proactively"</strong> in the description field. For example:</p>
+  <pre class="code"><code><span class="key">description:</span> Proactively suggest running this agent after major code changes...</code></pre>
+  <p>You can also add example conversations to the description to help Claude understand specific scenarios where the subagent should be used. The more concrete your examples, the better Claude gets at knowing when to delegate.</p>
+
+  <h4>Testing your subagent</h4>
+  <p>After creating your subagent, test it by making some code changes and asking Claude to review them. If the subagent is not being used when you expect it to be, go back and check the description. Adding more specific examples and trigger scenarios helps Claude understand when to delegate work to your subagent.</p>
+
+  <div class="callout tip collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">💡</span> Pro tip<span class="chev">▼</span></div>
+  <div class="cbody"><p>The <code class="inline">description</code> must be a <strong>single line</strong> — use escaped newline characters <code class="inline">\n</code> if you need breaks. And it's not just a "when to run" trigger: in Lesson 3 you'll see it also shapes the input prompt the main agent writes. So when a subagent isn't triggering — or is triggering with vague instructions — the description is almost always the field to edit.</p></div></div>
+
+  <div class="callout keyc collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li>Create subagents with <code class="inline">/agents</code> → <strong>Create new agent</strong>; choose <strong>project-level</strong> (this project) or <strong>user-level</strong> (all your projects).</li>
+    <li>Let Claude generate the name, description, and system prompt from your description — it's the recommended path.</li>
+    <li>Configure tools deliberately, pick a model (<strong>Haiku / Sonnet / Opus / Inherit</strong>) and a color.</li>
+    <li>The config is a markdown file with YAML frontmatter (<code class="inline">name, description, tools, model, color</code>) saved at <code class="inline">.claude/agents/your-agent-name.md</code>; the body is the system prompt.</li>
+    <li>Add <strong>"proactively"</strong> and example conversations to the description for automatic delegation.</li>
+  </ul></div></div>
+
+  <p style="font-size:14px;color:var(--ink-soft)"><strong>What's next:</strong> the four patterns that make a subagent actually <em>effective</em> — descriptions, output format, obstacle reporting, and limited tools.</p>
+</section>
+
+<!-- LESSON 2 QUIZ -->
+<div class="quizblock" data-quiz="2">
+  <div class="scorebar"><h4 style="margin:0"><span class="emoji">🏆</span> Lesson 2 Quiz — Creating a subagent</h4><span class="qscore" data-score>0 / 4</span></div>
+  <div class="mcq" data-mcq data-correct="0" data-inquiz>
+    <div class="qlab">Q1</div><div class="qtext">Which command opens the interface for creating and managing subagents?</div>
+    <button class="opt">/agents</button><button class="opt">/subagent new</button><button class="opt">/create-agent</button><button class="opt">/config agents</button>
+    <div class="fb"></div><div class="fbmsg" hidden>The <code class="inline">/agents</code> slash command opens the management interface; from there you select Create new agent.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="3" data-inquiz>
+    <div class="qlab">Q2</div><div class="qtext">What's the difference between project-level and user-level scope?</div>
+    <button class="opt">Project-level is free; user-level is paid</button><button class="opt">User-level can edit files; project-level cannot</button><button class="opt">Project-level uses Opus; user-level uses Haiku</button><button class="opt">Project-level is available only in the current project; user-level is shared across all projects on your machine</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Scope controls availability: project-level lives in the current project; user-level is shared across all your projects.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="1" data-inquiz>
+    <div class="qlab">Q3</div><div class="qtext">Which model option uses whatever model your main conversation is running?</div>
+    <button class="opt">Sonnet</button><button class="opt">Inherit</button><button class="opt">Haiku</button><button class="opt">Opus</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Inherit reuses the main conversation's model. Haiku = fast/light, Sonnet = balanced, Opus = complex analysis.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q4</div><div class="qtext">How do you make Claude delegate to a subagent automatically, without being explicitly asked?</div>
+    <button class="opt">Set <code class="inline">model: opus</code></button><button class="opt">Give it Edit tools</button><button class="opt">Include the word "proactively" in the description (and add example conversations)</button><button class="opt">Pick a bright color</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Adding "proactively" to the description signals automatic delegation; concrete example conversations sharpen when Claude triggers it.</div>
+  </div>
+  <div class="resultbox" data-result></div>
+</div>
+
+<!-- ===================================================================== -->
+<!-- LESSON 3 -->
+<!-- ===================================================================== -->
+<section class="lesson" id="l3" data-lesson="3">
+  <div class="lmeta"><span class="ltag"><span class="emoji">🎛️</span> Lesson 3</span><span class="ltime">⏱ ~14 min · design patterns</span></div>
+  <h3 class="ltitle">Designing effective subagents</h3>
+
+  <div class="objectives">
+    <div class="lab">What you'll be able to do</div>
+    <ul>
+      <li>Explain how name + description feed the main agent's system prompt and shape both <em>when</em> and <em>what</em></li>
+      <li>Define an output format and an "Obstacles Encountered" section so subagents stop on time and report cleanly</li>
+      <li>Apply the tool-access tiers for read-only, reviewer, and edit subagents</li>
+    </ul>
+  </div>
+
+  <p>Now that you know how to create subagents, let's look at the patterns that make them actually effective. A subagent that's poorly configured will wander, run too long, or produce output the main agent can't use. The fixes come down to four things: <strong>writing good descriptions, defining an output format, reporting obstacles, and limiting tool access.</strong></p>
+
+  <h4>How subagent config data gets used</h4>
+  <p>When you send a message to the main context window agent, the <strong>name and description of every available subagent are included in the system prompt</strong>. This is how the main agent decides which subagent to launch and when. If you want better control over when a subagent gets triggered automatically, the name and description are what you should tweak.</p>
+
+  <p>The description also plays a second role. When the main agent launches a subagent, it writes an input prompt to kick off the task. It uses the description as guidance for writing that prompt. <strong>So the description doesn't just control <em>when</em> a subagent runs — it shapes <em>what</em> the subagent is told to do.</strong></p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 680 220" role="img" aria-label="Description drives both when-to-launch and the input prompt">
+      <defs><style>.bt3{font:700 12px sans-serif;fill:#2b2622}.bs3{font:400 10.5px sans-serif;fill:#5c544c}.wt{font:600 11px sans-serif;fill:#fff}</style>
+      <marker id="ad" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#c96442"/></marker></defs>
+      <rect x="250" y="14" width="180" height="44" rx="11" fill="#c96442"/><text class="wt" x="340" y="34" text-anchor="middle">name + description</text><text class="wt" x="340" y="50" text-anchor="middle" style="opacity:.9">(in main agent's system prompt)</text>
+      <path d="M300 58 C 240 90, 200 96, 160 110" fill="none" stroke="#c96442" stroke-width="2" marker-end="url(#ad)"/>
+      <path d="M380 58 C 440 90, 480 96, 520 110" fill="none" stroke="#c96442" stroke-width="2" marker-end="url(#ad)"/>
+      <rect x="30" y="112" width="250" height="80" rx="12" fill="#e0efee" stroke="#3a7d7b" stroke-width="1.5"/>
+      <text class="bt3" x="155" y="136" text-anchor="middle">Role 1 · WHEN to launch</text>
+      <text class="bs3" x="155" y="158" text-anchor="middle">The main agent decides which</text>
+      <text class="bs3" x="155" y="174" text-anchor="middle">subagent to use, and when.</text>
+      <rect x="400" y="112" width="250" height="80" rx="12" fill="#f6edd6" stroke="#b8860b" stroke-width="1.5"/>
+      <text class="bt3" x="525" y="136" text-anchor="middle">Role 2 · WHAT it's told</text>
+      <text class="bs3" x="525" y="158" text-anchor="middle">It guides the input prompt the</text>
+      <text class="bs3" x="525" y="174" text-anchor="middle">main agent writes to start the task.</text>
+    </svg>
+    <figcaption>One field, two jobs: the description decides <em>when</em> a subagent launches AND shapes the input prompt that tells it <em>what</em> to do.</figcaption>
+  </figure>
+
+  <h4>Writing descriptions that shape input prompts</h4>
+  <p>Consider a code review subagent. With a generic description, the main agent might write an input prompt like "use get diff to find the current changes." That's vague. The subagent has to figure out which files matter on its own. If you update the description to include something like <em>"You must tell the agent precisely which files you want it to review,"</em> the main agent will now write a much more specific input prompt that lists the actual files to review.</p>
+  <p>This same technique works across different types of subagents. For example, adding <em>"return sources that can be cited"</em> to a web search subagent's description causes the main agent to include that instruction when delegating the task.</p>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">Your reviewer subagent keeps reviewing the wrong files because the main agent's input prompt is vague ("find the current changes"). Which single field should you edit to fix this?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>The description.</strong> Because the main agent uses the description as guidance when writing the input prompt, adding something like "You must tell the agent precisely which files you want it to review" makes the main agent produce a specific input prompt that lists the actual files. The description shapes <em>what</em> the subagent is told, not just <em>when</em> it runs.</div>
+  </div>
+
+  <h4>Defining an output format</h4>
+  <p>The single most important improvement you can make to a subagent is defining an output format in its system prompt. This does two things:</p>
+  <ul>
+    <li>It creates <strong>natural stopping points</strong> — the subagent knows it's done when it has filled in each section of the format.</li>
+    <li>It <strong>prevents the subagent from running too long</strong>. Without a defined output, subagents struggle to decide when enough research has been done and tend to run much longer than necessary.</li>
+  </ul>
+  <p>Here's an example of a structured output format for a code review subagent:</p>
+
+  <div class="codelabel">Source code block 2 of 3 — structured output format + Obstacles section (Lesson 3)</div>
+  <pre class="code"><code>Provide your review in a structured format:
+
+1. Summary: Brief overview of what you reviewed and overall assessment
+2. Critical Issues: Any security vulnerabilities, data integrity risks,
+   or logic errors that must be fixed immediately
+3. Major Issues: Quality problems, architecture misalignment, or
+   significant performance concerns
+4. Minor Issues: Style inconsistencies, documentation gaps, or
+   minor optimizations
+5. Recommendations: Suggestions for improvement, refactoring
+   opportunities, or best practices to apply
+6. Approval Status: Clear statement of whether the code is ready
+   to merge/deploy or requires changes</code></pre>
+  <p>This format gives the subagent a clear checklist to work through. Once every section is filled in, the subagent knows it can stop.</p>
+
+  <h4>Reporting obstacles</h4>
+  <p>When a subagent discovers a workaround during its work — like solving a dependency issue or finding that a certain command needs particular flags — those details need to appear in the summary it returns. If they don't, the main thread has to rediscover the same solutions on its own, which wastes time and tokens. The kinds of things you want surfaced include:</p>
+  <ul>
+    <li>Setup issues or environment quirks</li>
+    <li>Workarounds discovered during the task</li>
+    <li>Commands that needed special flags or configuration</li>
+    <li>Dependencies or imports that caused problems</li>
+  </ul>
+  <p>The way to get this information is to explicitly ask for it in the output format. Adding an "Obstacles Encountered" section to your output template surfaces this information reliably:</p>
+
+  <pre class="code"><code>7. Obstacles Encountered: Report any obstacles encountered during the
+   review process. This can be: setup issues, workarounds discovered or
+   environment quirks. Report commands that needed a special flag or
+   configuration. Report dependencies or imports that caused problems.</code></pre>
+
+  <div class="mcq" data-mcq data-correct="1">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Why is adding an "Obstacles Encountered" section to the output format worth doing?</div>
+    <button class="opt">It makes the summary longer and more detailed for its own sake</button>
+    <button class="opt">It surfaces workarounds/quirks/flags so the main thread doesn't have to rediscover them (wasting time and tokens)</button>
+    <button class="opt">It forces the subagent to use more tools</button>
+    <button class="opt">It is required for the config file to be valid</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>If discovered workarounds don't appear in the returned summary, the main thread has to solve the same problems again — wasting time and tokens. Explicitly asking for them in the output format surfaces them reliably.</div>
+  </div>
+
+  <h4>Limiting tool access</h4>
+  <p>Not every subagent needs access to every tool. Think about what a subagent actually needs to do, and only give it the tools required for that job. This does two things: it prevents unintended side effects, and it makes each subagent's role clearer when you have several of them. How to think about tool access for common subagent types:</p>
+  <ul>
+    <li><strong>Research / read-only subagent</strong> — Only needs Glob, Grep, and Read. Cannot accidentally modify files.</li>
+    <li><strong>Code reviewer</strong> — Needs Bash access to run <code class="inline">git diff</code> and see what changed, but still doesn't need Edit or Write.</li>
+    <li><strong>Styling / code modification agent</strong> — This is where you give Edit and Write access, because the subagent's job is to actually change your code.</li>
+  </ul>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 680 200" role="img" aria-label="Tool access tiers by subagent type">
+      <defs><style>.tt{font:700 13px sans-serif;fill:#fff}.tl{font:600 11px sans-serif;fill:#2b2622}.td{font:400 10px sans-serif;fill:#5c544c}</style></defs>
+      <rect x="14" y="30" width="206" height="150" rx="14" fill="#3f7d4f"/>
+      <text class="tt" x="117" y="56" text-anchor="middle">Research / read-only</text>
+      <rect x="34" y="70" width="166" height="58" rx="9" fill="#fff"/>
+      <text class="tl" x="117" y="92" text-anchor="middle">Glob · Grep · Read</text>
+      <text class="td" x="117" y="112" text-anchor="middle">Can't modify files</text>
+      <text class="tt" x="117" y="158" text-anchor="middle" style="font-size:11px">✗ Edit  ✗ Write</text>
+      <rect x="237" y="30" width="206" height="150" rx="14" fill="#b8860b"/>
+      <text class="tt" x="340" y="56" text-anchor="middle">Code reviewer</text>
+      <rect x="257" y="70" width="166" height="58" rx="9" fill="#fff"/>
+      <text class="tl" x="340" y="88" text-anchor="middle">+ Bash</text>
+      <text class="td" x="340" y="108" text-anchor="middle">runs git diff to see changes</text>
+      <text class="tt" x="340" y="158" text-anchor="middle" style="font-size:11px">✗ Edit  ✗ Write</text>
+      <rect x="460" y="30" width="206" height="150" rx="14" fill="#c96442"/>
+      <text class="tt" x="563" y="56" text-anchor="middle">Styling / modification</text>
+      <rect x="480" y="70" width="166" height="58" rx="9" fill="#fff"/>
+      <text class="tl" x="563" y="88" text-anchor="middle">+ Edit · Write</text>
+      <text class="td" x="563" y="108" text-anchor="middle">its job is to change code</text>
+      <text class="tt" x="563" y="158" text-anchor="middle" style="font-size:11px">✓ full access</text>
+    </svg>
+    <figcaption>Tool access widens by role: read-only research → reviewer (adds Bash) → modification agent (adds Edit/Write). Only grant what the job needs.</figcaption>
+  </figure>
+
+  <h4>Putting it all together</h4>
+  <p>Effective subagents share four characteristics:</p>
+  <ol>
+    <li><strong>Specific descriptions</strong> — The description controls when the subagent is launched and what instructions it receives. Write it to steer both.</li>
+    <li><strong>Structured output</strong> — Define an output format in the system prompt so the subagent knows when it's done and returns information the main thread can use.</li>
+    <li><strong>Obstacle reporting</strong> — Include a section in the output format for workarounds, quirks, and problems so the main thread doesn't have to rediscover them.</li>
+    <li><strong>Limited tool access</strong> — Only give a subagent the tools it actually needs. Read-only for research, bash for reviewers, edit/write only for agents that should change code.</li>
+  </ol>
+  <p>Each of these patterns is simple on its own, but together they turn a subagent from something that vaguely tries to help into a focused, predictable worker that finishes on time and reports back clearly.</p>
+
+  <div class="callout keyc collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways — the four design patterns<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li><strong>Descriptions steer both</strong> when a subagent launches and what input prompt it receives.</li>
+    <li><strong>Output format</strong> is the single most important improvement — it creates stopping points and stops over-running.</li>
+    <li><strong>Obstacle reporting</strong> (an explicit section) saves the main thread from rediscovering workarounds.</li>
+    <li><strong>Limited tool access</strong> prevents side effects and clarifies each subagent's role.</li>
+  </ul></div></div>
+
+  <p style="font-size:14px;color:var(--ink-soft)"><strong>What's next:</strong> the decision that ties it all together — <em>when</em> subagents help, when they hurt, and the one question to ask.</p>
+</section>
+
+<!-- LESSON 3 QUIZ -->
+<div class="quizblock" data-quiz="3">
+  <div class="scorebar"><h4 style="margin:0"><span class="emoji">🏆</span> Lesson 3 Quiz — Designing effective subagents</h4><span class="qscore" data-score>0 / 4</span></div>
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q1</div><div class="qtext">What gets included in the main agent's system prompt for every available subagent?</div>
+    <button class="opt">Its full system prompt body</button><button class="opt">Its tool list and model</button><button class="opt">Its name and description</button><button class="opt">Its color</button>
+    <div class="fb"></div><div class="fbmsg" hidden>The name and description of every available subagent are placed in the main agent's system prompt — that's how it decides which to launch and when.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="3" data-inquiz>
+    <div class="qlab">Q2</div><div class="qtext">What is called "the single most important improvement you can make to a subagent"?</div>
+    <button class="opt">Choosing Opus as the model</button><button class="opt">Adding more tools</button><button class="opt">Picking a memorable color</button><button class="opt">Defining an output format in its system prompt</button>
+    <div class="fb"></div><div class="fbmsg" hidden>A defined output format creates natural stopping points and prevents the subagent from running too long.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="0" data-inquiz>
+    <div class="qlab">Q3</div><div class="qtext">A code reviewer subagent needs which tool that a pure read-only research subagent does not — while still NOT needing Edit/Write?</div>
+    <button class="opt">Bash (to run git diff and see what changed)</button><button class="opt">Write</button><button class="opt">Edit</button><button class="opt">An MCP tool</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Research = Glob/Grep/Read only. A reviewer adds Bash to run git diff, but still doesn't need Edit or Write. Edit/Write belong to modification agents.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="1" data-inquiz>
+    <div class="qlab">Q4</div><div class="qtext">Which list correctly names the four characteristics of effective subagents?</div>
+    <button class="opt">Opus model, bright color, MCP tools, user scope</button><button class="opt">Specific descriptions, structured output, obstacle reporting, limited tool access</button><button class="opt">Proactive triggering, expert persona, parallel pipelines, test running</button><button class="opt">Long output, full tool access, no stopping rule, inherit model</button>
+    <div class="fb"></div><div class="fbmsg" hidden>The four: specific descriptions, structured output, obstacle reporting, and limited tool access.</div>
+  </div>
+  <div class="resultbox" data-result></div>
+</div>
+
+<!-- ===================================================================== -->
+<!-- LESSON 4 -->
+<!-- ===================================================================== -->
+<section class="lesson" id="l4" data-lesson="4">
+  <div class="lmeta"><span class="ltag"><span class="emoji">⚖️</span> Lesson 4</span><span class="ltime">⏱ ~12 min · judgment</span></div>
+  <h3 class="ltitle">Using subagents effectively</h3>
+
+  <div class="objectives">
+    <div class="lab">What you'll be able to do</div>
+    <ul>
+      <li>Identify where subagents shine: research, code reviews, and custom-system-prompt tasks</li>
+      <li>Recognize the three anti-patterns: expert claims, sequential pipelines, and test runners</li>
+      <li>Apply the decision rule — "does the intermediate work matter?"</li>
+    </ul>
+  </div>
+
+  <p>You know how to create subagents and design them well. Now the question is: when do they actually help, and when do they get in the way? The difference comes down to one thing — <strong>whether the intermediate work matters to your main thread.</strong></p>
+
+  <h4>When subagents shine</h4>
+  <p>Subagents work best when the exploration is separate from the execution. If each step in a task depends on what the previous step discovered, you want that work in your main thread. But if you just need an answer and don't care about the journey, delegate it. Subagents excel at tasks where:</p>
+  <ul>
+    <li>You need a result, not a play-by-play of how it was found</li>
+    <li>The exploratory work would clutter your main thread's context</li>
+    <li>The task benefits from a fresh perspective or a custom system prompt</li>
+  </ul>
+
+  <h4>Research tasks</h4>
+  <p>Research is the classic subagent use case. Consider investigating how authentication works in an unfamiliar codebase. Your main thread needs to know where the JWT is validated, but it doesn't need to see every file that was searched along the way. A research subagent can read dozens of files, trace through function calls, and explore different code paths. All that exploration stays in the subagent's context. Your main thread receives a clean summary like:</p>
+
+  <div class="codelabel">Source code block 3 of 3 — JWT summary example (Lesson 4)</div>
+  <pre class="code"><code>JWT validation happens in middleware/auth.js line 42,
+called from the Express router in route/api.js</code></pre>
+  <p>The subagent did the heavy lifting. Your main thread gets exactly what it needs to move forward.</p>
+
+  <h4>Code reviews</h4>
+  <p>Claude reviews code more effectively when the code is presented as being authored by someone else. If you built a feature over many turns with your main thread, asking that same thread to review it often produces weak feedback. Claude was involved in creating it, so it has trouble seeing it with fresh eyes. A reviewer subagent sees the changes in a separate context. It runs <code class="inline">git diff</code>, reads the modified files, and applies its specialized review criteria without the history of how the code was written. This separation also lets you encode project-specific review standards in the subagent's system prompt, ensuring consistent review criteria across the team.</p>
+
+  <h4>Custom system prompts</h4>
+  <p>Claude Code's default system prompt emphasizes concise, code-focused responses. That works great for coding, but not for everything. Two cases where a custom system prompt makes the subagent genuinely better than the main thread:</p>
+  <ul>
+    <li><strong>Copywriting subagent</strong> — Give it instructions about tone, audience, and style. Claude Code's default prompt tends toward concise technical writing, which really isn't what you want for a landing page or email campaign. A copywriting subagent can have completely different instructions about voice and structure.</li>
+    <li><strong>Styling subagent</strong> — Point it at your design system files. When the subagent runs, those files load into its context automatically, so it knows your color variables, spacing conventions, and component patterns before it even starts writing any CSS.</li>
+  </ul>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">You spent 20 turns building a feature with your main thread, and now you want a sharp, critical review of it. Why is a reviewer subagent likely to beat asking the same main thread?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>Fresh eyes.</strong> Claude reviews code more effectively when it's presented as authored by someone else. The main thread was involved in creating the feature, so it struggles to see it critically. A reviewer subagent sees the changes in a separate context (runs <code class="inline">git diff</code>, reads modified files) and applies specialized criteria — without the baggage of how the code was written. Bonus: you can encode team review standards in its system prompt.</div>
+  </div>
+
+  <h4>When subagents hurt</h4>
+  <p>The overhead of launching a subagent — losing visibility into its work and compressing its findings into a summary — only makes sense when the subagent does something the main thread can't. Three common anti-patterns to watch out for:</p>
+
+  <div class="callout anti collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">⚠️</span> Anti-pattern 1 — Expert Claims<span class="chev">▼</span></div>
+  <div class="cbody"><p>Subagents that claim expertise rarely help. Prompts like "you are a Python expert" or "you are a Kubernetes specialist" add no value because Claude already has that knowledge. There's nothing a so-called expert subagent can do that your main thread can't do directly.</p></div></div>
+
+  <div class="callout anti collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">⚠️</span> Anti-pattern 2 — Sequential Pipelines<span class="chev">▼</span></div>
+  <div class="cbody"><p>Sequential subagent pipelines create problems. Consider a three-agent flow: one to reproduce a bug, one to debug it, and one to fix it. Pipelines work when tasks are truly independent. They fail when each step depends on discoveries from the previous step — and bug fixing almost always does. Information gets lost in the handoff between agents.</p></div></div>
+
+  <div class="callout anti collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">⚠️</span> Anti-pattern 3 — Test Runners<span class="chev">▼</span></div>
+  <div class="cbody"><p>Test runner subagents tend to hide information you need. When tests fail, you want the full output to diagnose issues. A subagent that returns "tests failed" forces you to create additional debug scripts to get details that would have been visible in direct output. <strong>Testing has shown that the test runner pattern performed worse among all configurations.</strong></p></div></div>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 680 210" role="img" aria-label="When subagents hurt — three anti-patterns">
+      <defs><style>.at{font:700 12px sans-serif;fill:#b3402f}.ad2{font:400 10px sans-serif;fill:#5c544c}.x{font:700 20px sans-serif;fill:#b3402f}</style></defs>
+      <rect x="14" y="20" width="206" height="170" rx="14" fill="#f7e3df" stroke="#b3402f" stroke-width="1.5"/>
+      <text class="x" x="117" y="56" text-anchor="middle">✗</text>
+      <text class="at" x="117" y="82" text-anchor="middle">Expert Claims</text>
+      <text class="ad2" x="117" y="108" text-anchor="middle">"you are a Python expert"</text>
+      <text class="ad2" x="117" y="126" text-anchor="middle">Claude already knows this —</text>
+      <text class="ad2" x="117" y="144" text-anchor="middle">no capability the main</text>
+      <text class="ad2" x="117" y="162" text-anchor="middle">thread lacks.</text>
+      <rect x="237" y="20" width="206" height="170" rx="14" fill="#f7e3df" stroke="#b3402f" stroke-width="1.5"/>
+      <text class="x" x="340" y="56" text-anchor="middle">✗</text>
+      <text class="at" x="340" y="82" text-anchor="middle">Sequential Pipelines</text>
+      <text class="ad2" x="340" y="108" text-anchor="middle">reproduce → debug → fix</text>
+      <text class="ad2" x="340" y="126" text-anchor="middle">Each step depends on the</text>
+      <text class="ad2" x="340" y="144" text-anchor="middle">last; info is lost in the</text>
+      <text class="ad2" x="340" y="162" text-anchor="middle">handoff between agents.</text>
+      <rect x="460" y="20" width="206" height="170" rx="14" fill="#f7e3df" stroke="#b3402f" stroke-width="1.5"/>
+      <text class="x" x="563" y="56" text-anchor="middle">✗</text>
+      <text class="at" x="563" y="82" text-anchor="middle">Test Runners</text>
+      <text class="ad2" x="563" y="108" text-anchor="middle">returns "tests failed"</text>
+      <text class="ad2" x="563" y="126" text-anchor="middle">hides the full output you</text>
+      <text class="ad2" x="563" y="144" text-anchor="middle">need to debug. Performed</text>
+      <text class="ad2" x="563" y="162" text-anchor="middle">worst of all configs.</text>
+    </svg>
+    <figcaption>The three anti-patterns: subagent overhead only pays off when it does something the main thread can't.</figcaption>
+  </figure>
+
+  <h4>The decision rule</h4>
+  <p>When you're deciding whether to use a subagent, ask yourself one question: <strong>does the intermediate work matter?</strong> If the answer is no — you just need the final result — delegate it to a subagent. If the answer is yes — you need to see and react to what's happening along the way — keep it in your main thread.</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 660 230" role="img" aria-label="The decision rule flowchart">
+      <defs><style>.qd{font:700 13px sans-serif;fill:#fff}.bd{font:600 12px sans-serif;fill:#fff}.bs5{font:400 10.5px sans-serif;fill:#fff;opacity:.92}.lab5{font:700 11px sans-serif;fill:#2b2622}</style>
+      <marker id="a5" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5c544c"/></marker></defs>
+      <rect x="200" y="14" width="260" height="56" rx="14" fill="#2b2622"/>
+      <text class="qd" x="330" y="40" text-anchor="middle">Does the intermediate</text>
+      <text class="qd" x="330" y="58" text-anchor="middle">work matter?</text>
+      <line x1="270" y1="70" x2="160" y2="120" stroke="#5c544c" stroke-width="2" marker-end="url(#a5)"/>
+      <text class="lab5" x="195" y="98">NO</text>
+      <line x1="390" y1="70" x2="500" y2="120" stroke="#5c544c" stroke-width="2" marker-end="url(#a5)"/>
+      <text class="lab5" x="455" y="98">YES</text>
+      <rect x="30" y="122" width="240" height="90" rx="14" fill="#3f7d4f"/>
+      <text class="bd" x="150" y="148" text-anchor="middle">Delegate to a subagent</text>
+      <text class="bs5" x="150" y="170" text-anchor="middle">Research &amp; exploration ·</text>
+      <text class="bs5" x="150" y="186" text-anchor="middle">code reviews · tasks needing</text>
+      <text class="bs5" x="150" y="202" text-anchor="middle">a custom system prompt</text>
+      <rect x="390" y="122" width="240" height="90" rx="14" fill="#c96442"/>
+      <text class="bd" x="510" y="148" text-anchor="middle">Keep it in your main thread</text>
+      <text class="bs5" x="510" y="170" text-anchor="middle">You need to see and react to</text>
+      <text class="bs5" x="510" y="186" text-anchor="middle">what's happening along the way</text>
+      <text class="bs5" x="510" y="202" text-anchor="middle">(steps depend on each other)</text>
+    </svg>
+    <figcaption>The decision rule: one question, two paths. If you only need the final result, delegate; if you must react to the journey, stay in the main thread.</figcaption>
+  </figure>
+
+  <div class="tablewrap"><table>
+    <thead><tr><th>Use subagents for</th><th>Avoid subagents for</th></tr></thead>
+    <tbody>
+      <tr><td>Research and exploration</td><td>"Expert" personas that don't add real capability</td></tr>
+      <tr><td>Code reviews</td><td>Multi-step pipelines where each step depends on the last</td></tr>
+      <tr><td>Tasks that need a custom system prompt</td><td>Running tests where you need full output for debugging</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="mcq" data-mcq data-correct="0">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">You're debugging a tricky bug where each step depends on what the last step revealed. Per the decision rule, what should you do?</div>
+    <button class="opt">Keep it in your main thread — the intermediate work matters</button>
+    <button class="opt">Build a 3-agent pipeline: reproduce → debug → fix</button>
+    <button class="opt">Use a test-runner subagent to report pass/fail</button>
+    <button class="opt">Spin up a "Python expert" subagent</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>When steps depend on each other (bug fixing almost always does), the intermediate work matters — keep it in the main thread. Sequential pipelines lose information in the handoff; test runners hide output; expert personas add no capability.</div>
+  </div>
+
+  <div class="callout keyc collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways — the decision rule<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li><strong>One question decides it:</strong> does the intermediate work matter? No → delegate. Yes → main thread.</li>
+    <li><strong>Subagents shine</strong> on research/exploration, code reviews (fresh eyes), and custom-system-prompt work (copywriting, styling).</li>
+    <li><strong>Subagents hurt</strong> as expert-persona claims, sequential dependent pipelines, and test runners (which performed worst of all configs).</li>
+    <li>Overhead (lost visibility + compressed summary) only pays off when the subagent does something the main thread can't.</li>
+  </ul></div></div>
+
+  <p style="font-size:14px;color:var(--ink-soft)"><strong>That's the course.</strong> You can now break complex work into focused pieces and build subagents that finish reliably. Run the final knowledge check below.</p>
+</section>
+
+<!-- LESSON 4 QUIZ -->
+<div class="quizblock" data-quiz="4">
+  <div class="scorebar"><h4 style="margin:0"><span class="emoji">🏆</span> Lesson 4 Quiz — Using subagents effectively</h4><span class="qscore" data-score>0 / 4</span></div>
+  <div class="mcq" data-mcq data-correct="1" data-inquiz>
+    <div class="qlab">Q1</div><div class="qtext">What single question is the decision rule for whether to use a subagent?</div>
+    <button class="opt">Which model is cheapest?</button><button class="opt">Does the intermediate work matter?</button><button class="opt">How many files are involved?</button><button class="opt">Is the task code or text?</button>
+    <div class="fb"></div><div class="fbmsg" hidden>If the intermediate work doesn't matter (you just need the result), delegate. If it does (you must react along the way), keep it in the main thread.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="3" data-inquiz>
+    <div class="qlab">Q2</div><div class="qtext">Why does a reviewer subagent often give better feedback than the main thread that wrote the code?</div>
+    <button class="opt">It runs on Opus by default</button><button class="opt">It has more tools</button><button class="opt">It skips git diff</button><button class="opt">Claude reviews more effectively when code is presented as authored by someone else (fresh eyes)</button>
+    <div class="fb"></div><div class="fbmsg" hidden>A thread involved in writing the code struggles to critique it. A separate-context reviewer sees the diff fresh and applies specialized criteria.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q3</div><div class="qtext">Which anti-pattern was found to perform worst among all configurations tested?</div>
+    <button class="opt">Expert claims</button><button class="opt">Sequential pipelines</button><button class="opt">Test runners</button><button class="opt">Research subagents</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Test runner subagents hide the full output you need to debug; testing showed this pattern performed worst of all.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="0" data-inquiz>
+    <div class="qlab">Q4</div><div class="qtext">Why do sequential subagent pipelines (reproduce → debug → fix) tend to fail?</div>
+    <button class="opt">Each step depends on discoveries from the previous step, and information is lost in the handoff</button><button class="opt">They use too many tokens up front</button><button class="opt">They require Opus on every agent</button><button class="opt">Claude can't run three agents at once</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Pipelines work only when tasks are truly independent. Bug fixing almost always has dependent steps, so info gets lost between agents.</div>
+  </div>
+  <div class="resultbox" data-result></div>
+</div>
+
+<!-- ===================================================================== -->
+<!-- FINAL KNOWLEDGE CHECK -->
+<!-- ===================================================================== -->
+<div class="sec-divider" id="final">
+  <span class="badge"><span class="emoji">🧠</span> Final check</span>
+  <h2>Final Knowledge Check</h2>
+  <p>Eight fresh, source-grounded questions spanning all four lessons — weighted toward CCA-F Domain 1 &amp; Domain 2. No hints; answer, then check.</p>
+</div>
+
+<div class="quizblock" data-quiz="final" style="margin-top:20px">
+  <div class="scorebar"><h4 style="margin:0"><span class="emoji">🧠</span> Final Knowledge Check (8 questions)</h4><span class="qscore" data-score>0 / 8</span></div>
+
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q1</div><div class="qtext">A subagent runs in its own context window, does its work, and returns what to the main thread?</div>
+    <button class="opt">A full transcript</button><button class="opt">Every tool call it made</button><button class="opt">Only a concise summary (the rest is discarded)</button><button class="opt">A new config file</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Only a summary returns; the entire subagent conversation is discarded, keeping your main context clean.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="1" data-inquiz>
+    <div class="qlab">Q2</div><div class="qtext">Which two things does a subagent receive when it starts?</div>
+    <button class="opt">A color and a model</button><button class="opt">A custom system prompt (config) + a task description (parent agent)</button><button class="opt">A budget and a tool list only</button><button class="opt">The whole main-thread history</button>
+    <div class="fb"></div><div class="fbmsg" hidden>System prompt from the config file + a task description the parent writes from your request.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="0" data-inquiz>
+    <div class="qlab">Q3</div><div class="qtext">Which command and choice creates a custom subagent?</div>
+    <button class="opt">/agents → Create new agent</button><button class="opt">/new subagent</button><button class="opt">/config → agents → add</button><button class="opt">@agent create</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Run <code class="inline">/agents</code>, then select Create new agent; you then choose scope, tools, model, and color.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="3" data-inquiz>
+    <div class="qlab">Q4</div><div class="qtext">A subagent config is a markdown file with YAML frontmatter saved (typically) where?</div>
+    <button class="opt">~/.config/claude.json</button><button class="opt">In the main system prompt only</button><button class="opt">package.json</button><button class="opt">.claude/agents/your-agent-name.md</button>
+    <div class="fb"></div><div class="fbmsg" hidden>The config is saved into your project at <code class="inline">.claude/agents/your-agent-name.md</code>; the body below the frontmatter is the system prompt.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="1" data-inquiz>
+    <div class="qlab">Q5</div><div class="qtext">The description field does two jobs. Which pair is correct?</div>
+    <button class="opt">Sets the color and the model</button><button class="opt">Controls WHEN a subagent launches AND shapes the input prompt (WHAT it's told)</button><button class="opt">Defines the output format and the tool list</button><button class="opt">Picks the scope and the name</button>
+    <div class="fb"></div><div class="fbmsg" hidden>The name+description go in the main agent's system prompt (when to launch) and the description guides the input prompt the main agent writes (what to do).</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q6</div><div class="qtext">Defining an output format in the system prompt primarily helps because…</div>
+    <button class="opt">It makes the subagent use more tools</button><button class="opt">It changes the model to Opus</button><button class="opt">It creates natural stopping points and prevents the subagent from running too long</button><button class="opt">It is required for the config to save</button>
+    <div class="fb"></div><div class="fbmsg" hidden>It's the single most important improvement: the subagent knows it's done once each section is filled, so it stops on time.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="0" data-inquiz>
+    <div class="qlab">Q7</div><div class="qtext">Match the tool access: a pure research/read-only subagent should have…</div>
+    <button class="opt">Only Glob, Grep, and Read</button><button class="opt">Glob, Grep, Read, Edit, Write</button><button class="opt">Bash, Edit, Write</button><button class="opt">Every available tool</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Read-only research = Glob/Grep/Read (can't modify files). Reviewers add Bash; modification agents add Edit/Write.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="3" data-inquiz>
+    <div class="qlab">Q8</div><div class="qtext">Which of these is a recommended subagent use — NOT an anti-pattern?</div>
+    <button class="opt">A "Kubernetes specialist" expert persona</button><button class="opt">A reproduce→debug→fix sequential pipeline</button><button class="opt">A test-runner that returns "tests failed"</button><button class="opt">A research subagent that explores an unfamiliar codebase and returns a summary</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Research/exploration, code reviews, and custom-system-prompt tasks are the good uses. Expert personas, dependent pipelines, and test runners are the anti-patterns.</div>
+  </div>
+  <div class="resultbox" data-result></div>
+</div>
+
+<div class="callout try collapsed" style="margin-top:24px"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🎉</span> You're done — and exam-ready on subagents<span class="chev">▼</span></div>
+<div class="cbody"><p>You can now explain the subagent model, create one with <code class="inline">/agents</code>, design it with the four patterns, and apply the decision rule. These feed directly into CCA-F <strong>Domain 1 — Agentic Architecture &amp; Orchestration</strong> (delegation, context/session management, multi-agent orchestration, anti-patterns) and <strong>Domain 2 — Claude Code Configuration</strong> (the <code class="inline">/agents</code> command, config files, scope). Revisit any lesson whose quiz tripped you up before moving on.</p></div></div>
+
+<footer>
+  <p><span class="sourcebadge"><span class="emoji">📄</span> Built faithfully from the captured "Introduction to Subagents" source of truth — every claim traces to a lesson. No external facts introduced. Author analogies are clearly labelled.</span></p>
+  <p style="margin-top:14px">Introduction to Subagents · Interactive edition for the Claude Certified Architect — Foundations prep · <a href="#top" style="color:var(--accent)">Back to top ↑</a></p>
+</footer>
+
+</div><!-- /wrap -->
+</main>
+</div><!-- /layout -->
+
+<script>
+(function(){
+  "use strict";
+  /* ---------- Build TOC ---------- */
+  var sections=[
+    {title:"The subagent model",lessons:[[1,"What are subagents?"],[2,"Creating a subagent"],[3,"Designing effective subagents"],[4,"Using subagents effectively"]]}
+  ];
+  var TOTAL_LESSONS=4;
+  var toc=document.getElementById('toc');
+  sections.forEach(function(sec){
+    var h=document.createElement('div');h.className='nav-sec';h.textContent=sec.title;toc.appendChild(h);
+    sec.lessons.forEach(function(l){
+      var a=document.createElement('a');a.href='#l'+l[0];a.dataset.target='l'+l[0];
+      a.innerHTML='<span class="num"><span>'+l[0]+'</span></span><span>'+l[1]+'</span>';
+      a.addEventListener('click',function(){if(window.innerWidth<=980)toggleNav();});
+      toc.appendChild(a);
+    });
+  });
+  // final check link
+  var fh=document.createElement('div');fh.className='nav-sec';fh.textContent='Assessment';toc.appendChild(fh);
+  var fa=document.createElement('a');fa.href='#final';fa.dataset.target='final';
+  fa.innerHTML='<span class="num"><span>★</span></span><span>Final knowledge check</span>';
+  fa.addEventListener('click',function(){if(window.innerWidth<=980)toggleNav();});
+  toc.appendChild(fa);
+
+  /* ---------- Progress bar + active nav + completion ---------- */
+  var navLinks=Array.prototype.slice.call(document.querySelectorAll('nav a'));
+  var lessonEls=Array.prototype.slice.call(document.querySelectorAll('section.lesson'));
+  var seen={};
+  function onScroll(){
+    var doc=document.documentElement;
+    var scrollTop=window.scrollY||doc.scrollTop;
+    var height=doc.scrollHeight-doc.clientHeight;
+    var pct=height>0?(scrollTop/height*100):0;
+    document.getElementById('progressBar').style.width=pct+'%';
+    var mid=scrollTop+window.innerHeight*0.32;
+    var current=null;
+    lessonEls.forEach(function(el){
+      if(el.offsetTop<=mid)current=el;
+      if(el.offsetTop<=scrollTop+window.innerHeight*0.6){seen[el.id]=true;}
+    });
+    navLinks.forEach(function(a){a.classList.remove('active');});
+    if(current){
+      var act=document.querySelector('nav a[data-target="'+current.id+'"]');
+      if(act)act.classList.add('active');
+    }
+    navLinks.forEach(function(a){if(seen[a.dataset.target])a.classList.add('done');});
+    var doneCount=lessonEls.filter(function(el){return seen[el.id];}).length;
+    document.getElementById('progPct').textContent=Math.round(doneCount/TOTAL_LESSONS*100)+'%';
+  }
+  window.addEventListener('scroll',onScroll,{passive:true});
+  window.addEventListener('resize',onScroll);
+  onScroll();
+
+  /* ---------- Mobile nav ---------- */
+  window.toggleNav=function(){
+    var open=document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('scrim').classList.toggle('open');
+    var b=document.querySelector('.menubtn');if(b)b.setAttribute('aria-expanded',open?'true':'false');
+  };
+
+  /* ---------- Collapsible callouts ---------- */
+  window.toggleCall=function(head){
+    var c=head.parentElement;c.classList.toggle('collapsed');
+    head.setAttribute('aria-expanded', c.classList.contains('collapsed')?'false':'true');
+  };
+  document.querySelectorAll('.callout .chead').forEach(function(head){
+    head.setAttribute('role','button');
+    head.setAttribute('tabindex','0');
+    head.setAttribute('aria-expanded', head.parentElement.classList.contains('collapsed')?'false':'true');
+    head.addEventListener('keydown',function(e){
+      if(e.key==='Enter'||e.key===' '||e.key==='Spacebar'){e.preventDefault();window.toggleCall(head);}
+    });
+  });
+
+  /* ---------- Predict / reveal ---------- */
+  window.doReveal=function(btn){
+    var ans=btn.parentElement.querySelector('.ans');
+    ans.classList.add('show');
+    btn.textContent='Answer shown ✓';
+    btn.disabled=true;btn.style.opacity='.6';btn.style.cursor='default';
+  };
+
+  /* ---------- MCQ logic ---------- */
+  document.querySelectorAll('.mcq[data-mcq]').forEach(function(mcq){
+    var correct=parseInt(mcq.getAttribute('data-correct'),10);
+    var opts=Array.prototype.slice.call(mcq.querySelectorAll('.opt'));
+    var fb=mcq.querySelector('.fb');
+    if(fb){fb.setAttribute('aria-live','polite');fb.setAttribute('role','status');}
+    var msgEl=mcq.querySelector('.fbmsg');
+    var msg=msgEl?msgEl.innerHTML:'';
+    var answered=false;
+    opts.forEach(function(opt,i){
+      opt.addEventListener('click',function(){
+        if(answered)return;answered=true;
+        var isCorrect=(i===correct);
+        opts.forEach(function(o,j){
+          o.disabled=true;
+          if(j===correct){o.classList.add('correct');o.querySelector('.mark')||appendMark(o,'✓');}
+        });
+        if(!isCorrect){opt.classList.add('wrong');appendMark(opt,'✗');}
+        fb.classList.add('show');
+        fb.classList.add(isCorrect?'ok':'no');
+        fb.innerHTML='<strong>'+(isCorrect?'Correct! ':'Not quite. ')+'</strong>'+msg;
+        var quiz=mcq.closest('.quizblock');
+        if(quiz&&mcq.hasAttribute('data-inquiz')){
+          mcq.dataset.result=isCorrect?'1':'0';
+          updateQuiz(quiz);
+        }
+      });
+    });
+  });
+  function appendMark(opt,sym){var s=document.createElement('span');s.className='mark';s.textContent=sym;opt.appendChild(s);}
+
+  /* ---------- Quiz scoring ---------- */
+  function updateQuiz(quiz){
+    var mcqs=Array.prototype.slice.call(quiz.querySelectorAll('.mcq[data-inquiz]'));
+    var total=mcqs.length;
+    var answered=mcqs.filter(function(m){return m.dataset.result!==undefined;});
+    var score=mcqs.filter(function(m){return m.dataset.result==='1';}).length;
+    var scoreEl=quiz.querySelector('[data-score]');
+    if(scoreEl)scoreEl.textContent=score+' / '+total;
+    if(answered.length===total){
+      var box=quiz.querySelector('[data-result]');
+      var pct=score/total*100;
+      box.classList.add('show');
+      box.classList.remove('pass','mid');
+      if(pct>=75){box.classList.add('pass');box.innerHTML='🎉 '+score+'/'+total+' — strong work! You\'ve got this down.';}
+      else if(pct>=50){box.classList.add('mid');box.innerHTML='👍 '+score+'/'+total+' — solid. Skim the misses above and you\'re set.';}
+      else{box.classList.add('mid');box.innerHTML='📖 '+score+'/'+total+' — worth a re-read before moving on.';}
+    }
+  }
+})();
+</script>
+</body>
+</html>

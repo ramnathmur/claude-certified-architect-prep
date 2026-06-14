@@ -1,0 +1,1554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Code Configuration &amp; Workflows — CCA-F Extension</title>
+<style>
+  :root{
+    --bg:#faf8f5; --paper:#ffffff; --ink:#2b2622; --ink-soft:#5c544c;
+    --line:#e7e0d8; --accent:#c96442; --accent-soft:#f4e6df; --accent-deep:#a44a2e;
+    --teal:#3a7d7b; --teal-soft:#e0efee; --gold:#b8860b; --gold-soft:#f6edd6;
+    --green:#3f7d4f; --green-soft:#e3f0e6; --red:#b3402f; --red-soft:#f7e3df;
+    --purple:#6b4f9e; --purple-soft:#ece4f6;
+    --sidebar:#f3eee7; --shadow:0 1px 3px rgba(43,38,34,.08),0 6px 24px rgba(43,38,34,.06);
+    --radius:14px; --maxw:780px;
+    --code-bg:#2b2622; --code-ink:#f4ece3;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.65; font-size:17px; -webkit-font-smoothing:antialiased;
+  }
+  #progressBar{position:fixed;top:0;left:0;height:4px;width:0;background:linear-gradient(90deg,var(--accent),var(--gold));z-index:200;transition:width .15s ease}
+  .layout{display:flex;max-width:1260px;margin:0 auto}
+  aside{
+    position:sticky;top:0;align-self:flex-start;height:100vh;overflow-y:auto;
+    width:300px;flex:none;padding:22px 16px 40px;background:var(--sidebar);
+    border-right:1px solid var(--line);
+  }
+  aside h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin:18px 8px 8px}
+  .brandbox{padding:6px 8px 14px;border-bottom:1px solid var(--line);margin-bottom:8px}
+  .brandbox .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;line-height:1.2}
+  .brandbox .sub{font-size:12.5px;color:var(--ink-soft);margin-top:6px}
+  .brandbox .extbadge{display:inline-block;margin-top:10px;background:var(--purple-soft);color:var(--purple);
+    font-weight:700;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:999px;border:1px solid #d3c4ec}
+  .backlink{display:inline-flex;align-items:center;gap:6px;margin-top:12px;font-size:12.5px;color:var(--accent);text-decoration:none;font-weight:600}
+  .backlink:hover{text-decoration:underline}
+  .toc-prog{font-size:12px;color:var(--ink-soft);margin:10px 8px 4px;display:flex;justify-content:space-between;align-items:center}
+  .toc-prog b{color:var(--accent)}
+  nav a{display:flex;gap:8px;align-items:flex-start;text-decoration:none;color:var(--ink);
+    padding:7px 10px;border-radius:9px;font-size:14px;line-height:1.35;transition:background .15s}
+  nav a:hover{background:#ece4d9}
+  nav a.active{background:var(--accent-soft);color:var(--accent-deep);font-weight:600}
+  nav a .num{flex:none;width:22px;height:22px;border-radius:50%;background:#e3dacd;color:var(--ink-soft);
+    font-size:11.5px;display:flex;align-items:center;justify-content:center;font-weight:700;margin-top:1px}
+  nav a.active .num{background:var(--accent);color:#fff}
+  nav a.done .num{background:var(--green);color:#fff}
+  nav a.done .num::after{content:"✓"}
+  nav a.done .num span{display:none}
+  .nav-sec{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);
+    font-weight:700;margin:16px 10px 4px;display:flex;align-items:center;gap:6px}
+  main{flex:1;min-width:0;padding:0 28px 120px}
+  .wrap{max-width:var(--maxw);margin:0 auto}
+  header.hero{max-width:var(--maxw);margin:0 auto;padding:40px 0 22px;text-align:left}
+  .hero .eyebrow{color:var(--purple);font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:13px}
+  .hero h1{font-size:42px;line-height:1.1;margin:10px 0 8px;letter-spacing:-.02em}
+  .hero p.lead{font-size:19px;color:var(--ink-soft);margin:0 0 18px}
+  .pillrow{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}
+  .pill{background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:6px 13px;font-size:13px;color:var(--ink-soft);box-shadow:var(--shadow)}
+  .extbanner{background:linear-gradient(180deg,#f3eefb,#ece4f6);border:1px solid #d3c4ec;border-radius:var(--radius);
+    padding:16px 18px;margin:6px 0 18px;font-size:14.5px;color:#3f2f63;display:flex;gap:12px;align-items:flex-start}
+  .extbanner .bt{flex:none;font-size:22px;line-height:1.1}
+  .extbanner b{color:var(--purple)}
+  .crosslink{background:var(--teal-soft);border:1px solid #a7d3d1;border-radius:var(--radius);padding:14px 18px;margin:14px 0;font-size:14.5px;color:#244e4d}
+  .crosslink a{color:var(--teal);font-weight:700}
+  .examnote{background:var(--gold-soft);border:1px solid #e7d9a9;border-radius:var(--radius);padding:16px 18px;margin:22px 0;font-size:14.5px}
+  .examnote b{color:#8a6508}
+  .currency{background:linear-gradient(180deg,#fff4f0,#f7e3df);border:1px solid #e6bcb4;border-radius:var(--radius);padding:16px 18px;margin:16px 0;font-size:14.5px;color:#7a2f22}
+  .currency b{color:var(--red)}
+  section.lesson{max-width:var(--maxw);margin:0 auto;padding:46px 0 10px;scroll-margin-top:14px;border-top:1px solid var(--line)}
+  section.lesson:first-of-type{border-top:none}
+  .sec-divider{max-width:var(--maxw);margin:38px auto 0;padding-top:30px}
+  .sec-divider .badge{display:inline-block;background:var(--accent);color:#fff;font-weight:700;
+    font-size:12px;letter-spacing:.07em;text-transform:uppercase;padding:5px 12px;border-radius:999px}
+  .sec-divider h2{font-size:30px;margin:12px 0 4px;letter-spacing:-.01em}
+  .sec-divider p{color:var(--ink-soft);margin:0}
+  .lesson .lmeta{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+  .lesson .ltag{font-size:12px;color:var(--accent);font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+  .lesson .ltime{font-size:12.5px;color:var(--ink-soft);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+  .lesson .ldomain{font-size:11.5px;color:var(--purple);background:var(--purple-soft);border:1px solid #d3c4ec;border-radius:999px;padding:3px 10px;font-weight:700}
+  .lesson h3.ltitle{font-size:28px;margin:2px 0 4px;letter-spacing:-.01em;line-height:1.15}
+  .lesson h4{font-size:19px;margin:30px 0 8px;letter-spacing:-.005em}
+  .lesson h5{font-size:16px;margin:20px 0 6px;color:var(--accent-deep)}
+  .lesson p{margin:10px 0}
+  .lesson ul,.lesson ol{margin:10px 0;padding-left:22px}
+  .lesson li{margin:6px 0}
+  .emoji{font-style:normal}
+  code.inl{background:var(--accent-soft);color:var(--accent-deep);border-radius:5px;padding:1px 6px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.86em}
+  blockquote.ex{margin:14px 0;padding:14px 18px;background:var(--teal-soft);border-left:4px solid var(--teal);border-radius:0 10px 10px 0;font-style:italic;color:#2c4f4e}
+  .objectives{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:14px 18px;margin:14px 0;box-shadow:var(--shadow)}
+  .objectives .lab{font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;margin-bottom:4px}
+  .objectives ul{margin:6px 0 2px;padding-left:20px}
+  .objectives li{font-size:14.5px}
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  table{border-collapse:collapse;width:100%;font-size:14px;background:var(--paper);min-width:520px}
+  th,td{text-align:left;padding:11px 13px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--accent-soft);color:var(--accent-deep);font-weight:700;font-size:13px}
+  tbody tr:last-child td{border-bottom:none}
+  td:first-child,th:first-child{font-weight:600}
+  .codewrap{margin:16px 0;border-radius:12px;overflow:hidden;border:1px solid #3a332d;box-shadow:var(--shadow)}
+  .codewrap .clab{background:#403830;color:#d8cabb;font-size:12px;font-weight:600;letter-spacing:.03em;
+    padding:7px 14px;display:flex;align-items:center;gap:8px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace}
+  .codewrap .clab .dot{width:9px;height:9px;border-radius:50%;background:#c96442}
+  pre{margin:0;background:var(--code-bg);color:var(--code-ink);padding:14px 16px;overflow-x:auto;
+    font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:13px;line-height:1.6}
+  pre code{font-family:inherit;white-space:pre}
+  .callout{border-radius:var(--radius);padding:0;margin:18px 0;box-shadow:var(--shadow);overflow:hidden;border:1px solid var(--line)}
+  .callout .chead{display:flex;align-items:center;gap:9px;padding:12px 16px;cursor:pointer;font-weight:700;font-size:15px;user-select:none}
+  .callout .cbody{padding:2px 18px 16px;font-size:15px}
+  .callout .cbody ul{margin:6px 0;padding-left:20px}
+  .callout.collapsed .cbody{display:none}
+  .callout .chev{margin-left:auto;transition:transform .2s;font-size:13px;opacity:.6}
+  .callout.collapsed .chev{transform:rotate(-90deg)}
+  .key{border-color:#d9c98f}.key .chead{background:var(--gold-soft);color:#8a6508}
+  .tip{border-color:#a7d3d1}.tip .chead{background:var(--teal-soft);color:var(--teal)}
+  .try{border-color:#bfdcc6}.try .chead{background:var(--green-soft);color:var(--green)}
+  .warn{border-color:#e6bcb4}.warn .chead{background:var(--red-soft);color:var(--red)}
+  .verify{display:inline-block;background:#fff4d6;border:1px solid #e7d9a9;color:#8a6508;border-radius:6px;
+    padding:1px 7px;font-size:11.5px;font-weight:700;letter-spacing:.03em;vertical-align:middle}
+  .verifynote{font-size:13px;background:#fffaf0;border:1px dashed #e7d9a9;border-radius:8px;padding:8px 12px;margin:8px 0;color:#7a5a08}
+  .analogy{font-size:13px;background:var(--accent-soft);color:var(--accent-deep);border-radius:6px;padding:1px 7px;font-weight:600}
+  .legacy{display:inline-block;background:#efe7f8;border:1px solid #d3c4ec;color:var(--purple);border-radius:6px;padding:1px 7px;font-size:11.5px;font-weight:700;letter-spacing:.03em;vertical-align:middle}
+  .modern{display:inline-block;background:var(--green-soft);border:1px solid #bfdcc6;color:var(--green);border-radius:6px;padding:1px 7px;font-size:11.5px;font-weight:700;letter-spacing:.03em;vertical-align:middle}
+  figure.svgfig{margin:22px 0;text-align:center;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+  figure.svgfig svg{max-width:100%;height:auto}
+  figure.svgfig figcaption{font-size:13px;color:var(--ink-soft);margin-top:10px}
+  .mcq{background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--accent);
+    border-radius:var(--radius);padding:16px 18px;margin:22px 0;box-shadow:var(--shadow)}
+  .mcq .qlab{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;display:flex;align-items:center;gap:7px}
+  .mcq .qtext{font-weight:600;margin:8px 0 12px;font-size:16px}
+  .mcq .opt{display:block;width:100%;text-align:left;background:var(--bg);border:1.5px solid var(--line);
+    border-radius:10px;padding:11px 14px;margin:7px 0;cursor:pointer;font-size:14.5px;font-family:inherit;color:var(--ink);transition:all .14s}
+  .mcq .opt:hover:not(:disabled){border-color:var(--accent);background:var(--accent-soft)}
+  .mcq .opt:disabled{cursor:default}
+  .mcq .opt.correct{border-color:var(--green);background:var(--green-soft);font-weight:600}
+  .mcq .opt.wrong{border-color:var(--red);background:var(--red-soft)}
+  .mcq .opt .mark{float:right;font-weight:700}
+  .mcq .fb{display:none;margin-top:12px;padding:12px 14px;border-radius:10px;font-size:14px;line-height:1.55}
+  .mcq .fb.show{display:block}
+  .mcq .fb.ok{background:var(--green-soft);border:1px solid #bfdcc6}
+  .mcq .fb.no{background:var(--red-soft);border:1px solid #e6bcb4}
+  .reveal{background:var(--paper);border:1px dashed var(--accent);border-radius:var(--radius);padding:16px 18px;margin:22px 0}
+  .reveal .plab{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;display:flex;align-items:center;gap:7px}
+  .reveal .q{font-weight:600;margin:8px 0 12px;font-size:16px}
+  .reveal button.revealbtn{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:9px 16px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+  .reveal button.revealbtn:hover{background:var(--accent-deep)}
+  .reveal .ans{display:none;margin-top:12px;padding:12px 14px;background:var(--teal-soft);border-radius:10px;font-size:14.5px;border:1px solid #a7d3d1}
+  .reveal .ans.show{display:block}
+  .quizblock{background:linear-gradient(180deg,#fff,#fbf6f0);border:2px solid var(--accent-soft);border-radius:18px;padding:22px 22px 24px;margin:30px auto;max-width:var(--maxw);box-shadow:var(--shadow)}
+  .quizblock h4{margin-top:0;display:flex;align-items:center;gap:9px}
+  .quizblock .qscore{font-size:14px;color:var(--ink-soft);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-weight:600}
+  .quizblock .scorebar{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:8px}
+  .resultbox{display:none;margin-top:16px;padding:16px;border-radius:12px;font-weight:600;text-align:center;font-size:16px}
+  .resultbox.show{display:block}
+  .resultbox.pass{background:var(--green-soft);border:1px solid #bfdcc6;color:var(--green)}
+  .resultbox.mid{background:var(--gold-soft);border:1px solid #e7d9a9;color:#8a6508}
+  footer{max-width:var(--maxw);margin:40px auto 0;padding-top:24px;border-top:1px solid var(--line);color:var(--ink-soft);font-size:13.5px}
+  footer a{color:var(--accent)}
+  .sources{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:16px 20px;margin:18px 0;box-shadow:var(--shadow)}
+  .sources ol{margin:8px 0;padding-left:22px}
+  .sources li{font-size:13.5px;margin:6px 0;word-break:break-word}
+  .sources a{color:var(--teal)}
+  .sourcebadge{display:inline-flex;gap:7px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:5px 13px;font-size:12.5px;color:var(--ink-soft)}
+  .nextbox{background:linear-gradient(180deg,#f3eefb,#ece4f6);border:1px solid #d3c4ec;border-radius:var(--radius);padding:18px 20px;margin:24px 0;font-size:14.5px}
+  .nextbox a{color:var(--purple);font-weight:700}
+  .menubtn{display:none;position:fixed;top:12px;left:12px;z-index:210;background:var(--accent);color:#fff;border:none;border-radius:10px;width:44px;height:44px;font-size:20px;cursor:pointer;box-shadow:var(--shadow)}
+  .scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:205}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+  @media(max-width:980px){
+    .menubtn{display:block}
+    aside{position:fixed;left:0;top:0;z-index:206;transform:translateX(-105%);transition:transform .25s;box-shadow:var(--shadow);width:290px}
+    aside.open{transform:translateX(0)}
+    .scrim.open{display:block}
+    main{padding:60px 16px 110px}
+    .hero h1{font-size:32px}
+  }
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+<button class="menubtn" onclick="toggleNav()" aria-label="Menu" aria-expanded="false">☰</button>
+<div class="scrim" id="scrim" onclick="toggleNav()"></div>
+
+<div class="layout">
+<!-- SIDEBAR -->
+<aside id="sidebar">
+  <div class="brandbox">
+    <div class="logo"><span class="emoji">⚙️</span> Claude Code Configuration &amp; Workflows</div>
+    <div class="sub">CCA-F extension lesson — scopes, memory, settings, permissions, hooks, extensions, MCP, and automation</div>
+    <div class="extbadge">Extension · beyond the Academy course</div>
+    <a class="backlink" href="../claude-101.html">← Back to the base course (Claude 101)</a>
+  </div>
+  <nav class="cspine" aria-label="Course track">
+    <div class="cspine-h">📚 Claude 101 track · Lesson 7 of 7</div>
+    <ol class="cspine-list">
+      <li><a href="../claude-101.html">Base · Claude 101</a></li>
+      <li><a href="tool-use-agent-loop.html">C-E1 · Tool-Use Agent Loop</a></li>
+      <li><a href="context-management-reliability.html">C-E2 · Context Management &amp; Reliability</a></li>
+      <li><a href="mcp-at-a-builder-level.html">C-E3 · MCP at a Builder Level</a></li>
+      <li><a href="prompt-caching-economics.html">C-E4 · Prompt Caching Economics</a></li>
+      <li><a href="prompt-engineering-depth.html">C-E5 · Prompt Engineering Depth</a></li>
+      <li class="cspine-cur" aria-current="page">C-E6 · Claude Code Configuration</li>
+    </ol>
+  </nav>
+  <style>
+  .cspine{margin:10px 8px 14px;padding:10px 12px;border:1px solid var(--line,#e7e0d8);border-radius:10px;background:rgba(0,0,0,.02)}
+  .cspine-h{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft,#5c544c);margin-bottom:7px}
+  .cspine-list{list-style:none;margin:0;padding:0;counter-reset:cs}
+  .cspine-list li{font-size:12.5px;line-height:1.3;padding:3px 0;color:var(--ink-soft,#5c544c)}
+  .cspine-list a{color:var(--ink,#2b2622);text-decoration:none}
+  .cspine-list a:hover{color:var(--accent,#c96442);text-decoration:underline}
+  .cspine-cur{font-weight:700;color:var(--accent-deep,#a44a2e)!important}
+  .cspine-cur::before{content:"▸ "}
+  </style>
+  <div class="toc-prog">Lesson progress <span><b id="progPct">0%</b></span></div>
+  <nav id="toc"></nav>
+</aside>
+
+<!-- MAIN -->
+<main>
+<div class="wrap">
+<nav class="cnav" aria-label="Course navigation">
+  <a class="cnav-home" href="../../../Launchpad.html">⌂ Launchpad</a>
+  <span class="cnav-side"><a class="cnav-prev" href="prompt-engineering-depth.html">← Prompt Engineering Depth (C-E5)</a></span>
+</nav>
+<style>
+.cnav{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:10px 0 18px;padding:10px 14px;border:1px solid var(--line,#e7e0d8);border-radius:12px;background:rgba(0,0,0,.02);font:600 13.5px/1.2 system-ui,-apple-system,'Segoe UI',sans-serif}
+.cnav a{text-decoration:none;color:var(--ink,#2b2622);padding:7px 13px;border-radius:8px;background:rgba(0,0,0,.05);white-space:nowrap;transition:background .15s,color .15s}
+.cnav a:hover{background:var(--accent,#c96442);color:#fff}
+.cnav .cnav-home{background:var(--accent,#c96442);color:#fff}
+.cnav .cnav-home:hover{filter:brightness(.92)}
+.cnav .cnav-side{display:flex;gap:8px;flex-wrap:wrap}
+</style>
+
+<header class="hero" id="top">
+  <div class="eyebrow">Extension · Domain 2 · Claude Code Configuration &amp; Workflows</div>
+  <h1>Claude Code Configuration &amp; Workflows</h1>
+  <p class="lead">Claude Code is configured along two axes — <strong>scope</strong> (managed → user → project → local) and <strong>feature</strong> (settings, memory, permissions, hooks, skills, subagents, plugins, MCP). Master the mental model once and every config question becomes "which scope, which feature, and does it <em>override</em> or <em>merge</em>?" This lesson walks the whole surface, ending in the <strong>hooks contract</strong> and the <strong>headless automation</strong> patterns an architect ships in CI.</p>
+  <div class="pillrow">
+    <span class="pill"><span class="emoji">⚙️</span> 8 sections (A–H)</span>
+    <span class="pill"><span class="emoji">❓</span> Inline MCQs + predict-reveals</span>
+    <span class="pill"><span class="emoji">🏆</span> 10-question scored quiz</span>
+    <span class="pill"><span class="emoji">🎨</span> 10 diagrams</span>
+    <span class="pill"><span class="emoji">🪝</span> Deep hooks contract</span>
+  </div>
+
+  <div class="extbanner">
+    <span class="bt">⚙️</span>
+    <div>
+      <b>Extension — beyond the Academy course.</b> This lesson is <b>web-researched material grounded in Anthropic's official Claude Code documentation</b> (Settings, Hooks, Memory, Permissions, Subagents, Skills, Plugins, Plugin Marketplaces, MCP, Headless / Agent SDK, CLI reference, Commands, Output styles, and Authentication — all on <code class="inl">code.claude.com/docs/en/*</code>). It is <b>not</b> part of the original Claude 101 Academy course. Every substantive claim traces to the sources at the end. <b>This surface drifts fast</b> — the hook-event roster, permission-mode names, the docs host, MCP scope names, model IDs, and the June-15-2026 SDK-credit note all carry an inline <span class="verify">⚠ VERIFY</span> marker.
+    </div>
+  </div>
+
+  <div class="currency">
+    <b>⏳ Currency note — recent, exam-relevant changes.</b> Three things moved since older study material: (1) <b>the docs changed host</b> — <code class="inl">docs.claude.com</code> / <code class="inl">docs.anthropic.com</code> Claude Code paths and the famous <code class="inl">anthropic.com/engineering/claude-code-best-practices</code> post now <b>redirect to <code class="inl">code.claude.com/docs/en/*</code></b>; (2) <b>custom slash commands have been merged into skills</b> — <code class="inl">.claude/commands/deploy.md</code> still works, but a skill at <code class="inl">.claude/skills/deploy/SKILL.md</code> is now the recommended way to create <code class="inl">/deploy</code>; (3) <b>the hook-event list grew far beyond the classic 8</b> to roughly 30 events. Where this lesson teaches the <span class="modern">stable</span> subset vs the <span class="legacy">volatile</span> additions, it labels which is which.
+  </div>
+
+  <div class="crosslink">
+    <span class="emoji">🔗</span> <strong>Where this sits in the exam map.</strong> <strong>Domain 2 (Claude Code Configuration &amp; Workflows, 20%)</strong> is the primary target — currently the course's biggest gap. Overlaps: <strong>Domain 4</strong> (security/governance — managed settings, permissions, hook security, MCP allowlists) brushes Sections C–E and G; <strong>Domain 5</strong> (extending/integration/automation — skills, plugins, MCP, the Agent SDK, CI) brushes Sections F–H; <strong>Domain 1</strong> (the agentic loop, context window) brushes Sections E, F, and H.
+  </div>
+
+  <div class="objectives">
+    <div class="lab">What you'll be able to do after this lesson</div>
+    <ul>
+      <li>Name the four scopes and the feature→location map, and reason about "which file wins"</li>
+      <li>Explain why CLAUDE.md <em>concatenates</em> rather than overrides — and why it is context, not enforced config</li>
+      <li>State the settings precedence ladder AND the exam trap that <em>permission rules merge</em> while settings override</li>
+      <li>Walk the <strong>deny → ask → allow</strong> permission evaluation, the absolute-path trap, and bare-vs-scoped patterns</li>
+      <li>Read and write the hooks contract: events, matchers, the stdin input, the exit-code table, and the JSON output schema</li>
+      <li>Choose between Skill / Subagent / Hook / MCP / Plugin for a given need</li>
+      <li>Configure MCP scopes/transports and ship a headless <code class="inl">claude -p</code> automation in CI</li>
+    </ul>
+  </div>
+
+  <div class="examnote">
+    <b>🎯 Why this matters for the CCA-F exam.</b> Domain 2 is <b>20%</b> of the exam and the highest-yield gap to close. The questions cluster on a handful of counter-intuitive facts: <b>settings override but permission rules merge</b>; <b>deny → ask → allow</b> (first match wins, deny is absolute); <b>only exit code 2 blocks</b> a hook (exit 1 is non-blocking); <b>memory is concatenated context, not enforced config</b>; <b>MCP scope renames</b> (<code class="inl">local</code> was <code class="inl">project</code>, <code class="inl">user</code> was <code class="inl">global</code>); and the <b>commands-merged-into-skills</b> consolidation. The quiz is weighted toward exactly those.
+  </div>
+</header>
+
+<!-- ============ SECTION A ============ -->
+<div class="sec-divider" id="secA">
+  <span class="badge"><span class="emoji">①</span> The model</span>
+  <h2>The Configuration Model &amp; the <code style="font-size:.7em">.claude/</code> Directory</h2>
+  <p>Two axes — scope × feature. Four scopes, and a map of which feature lives where.</p>
+</div>
+
+<section class="lesson" id="lA" data-lesson>
+  <div class="lmeta"><span class="ltag"><span class="emoji">🗺️</span> Section A</span><span class="ltime">⏱ ~12 min</span><span class="ldomain">Domain 2 · Domain 4</span></div>
+  <h3 class="ltitle">Two axes: where config lives, and who it affects</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Describe the two axes of Claude Code configuration — scope and feature</li>
+      <li>Name the four scopes and who each affects, top of the org down to one repo</li>
+      <li>Map each feature (settings, subagents, MCP, plugins, CLAUDE.md) to its user/project/local location</li>
+    </ul>
+  </div>
+
+  <h4>Why before how: the two-axis mental model</h4>
+  <p><span class="analogy">lesson framing, not a verbatim Anthropic quote</span> Almost every Claude Code config question is really asking two things at once: <strong>at what scope</strong> does this live, and <strong>which feature</strong> is it. Get those two coordinates and you can place any file, predict whose machine it affects, and reason about which one wins. The <strong>scope axis</strong> runs <em>managed (enterprise) → user → project → local</em>. The <strong>feature axis</strong> is settings, memory, subagents, skills/commands, hooks, MCP, plugins, output styles. The <code class="inl">.claude/</code> directory is the per-scope home; managed config lives in OS-level policy locations instead.</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 720 300" role="img" aria-label="Four configuration scopes drawn as nested layers from managed at the top affecting all users, down to local affecting one repo for one person">
+      <defs><style>.t{font:700 13px sans-serif;fill:#2b2622}.s{font:400 10.5px sans-serif;fill:#5c544c}.lab{font:700 12px sans-serif;fill:#fff}.loc{font:600 10.5px sans-serif;fill:#2b2622}</style></defs>
+      <text class="t" x="360" y="22" text-anchor="middle">The four scopes — broad governance at the top, personal &amp; local at the bottom</text>
+      <rect x="60" y="40" width="600" height="46" rx="8" fill="#6b4f9e"/><text class="lab" x="76" y="60">MANAGED (enterprise)</text><text class="s" x="76" y="78" fill="#ece4f6">All users on the machine · deployed by IT · cannot be overridden</text>
+      <rect x="100" y="94" width="520" height="46" rx="8" fill="#3a7d7b"/><text class="lab" x="116" y="114">USER</text><text class="s" x="116" y="132" fill="#e0efee">You, across all your projects · ~/.claude/ · not shared</text>
+      <rect x="140" y="148" width="440" height="46" rx="8" fill="#c96442"/><text class="lab" x="156" y="168">PROJECT</text><text class="s" x="156" y="186" fill="#f4e6df">All collaborators on this repo · .claude/ · committed to git</text>
+      <rect x="180" y="202" width="360" height="46" rx="8" fill="#3f7d4f"/><text class="lab" x="196" y="222">LOCAL</text><text class="s" x="196" y="240" fill="#e3f0e6">You, in this repo only · .claude/settings.local.json · gitignored</text>
+      <text class="s" x="360" y="272" text-anchor="middle">↑ shared with more people / harder to override · ↓ more personal / easier to change</text>
+    </svg>
+    <figcaption>Diagram (a): the four scopes as nested governance layers. Managed (IT-deployed) sits over everything and can't be overridden; local is the most personal and lives only in one repo, gitignored.</figcaption>
+  </figure>
+
+  <h4>The four scopes (verbatim table)</h4>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Scope</th><th>Location</th><th>Who it affects</th><th>Shared with team?</th></tr></thead>
+    <tbody>
+      <tr><td>Managed</td><td>Server-managed settings, plist / registry, or system-level <code class="inl">managed-settings.json</code></td><td>All users on the machine</td><td>Yes (deployed by IT)</td></tr>
+      <tr><td>User</td><td><code class="inl">~/.claude/</code> directory</td><td>You, across all projects</td><td>No</td></tr>
+      <tr><td>Project</td><td><code class="inl">.claude/</code> in repository</td><td>All collaborators on this repository</td><td>Yes (committed to git)</td></tr>
+      <tr><td>Local</td><td><code class="inl">.claude/settings.local.json</code></td><td>You, in this repository only</td><td>No (gitignored)</td></tr>
+    </tbody>
+  </table></div>
+  <div class="verifynote">⚠ <strong>Windows note (verbatim):</strong> "Paths shown as <code class="inl">~/.claude</code> resolve to <code class="inl">%USERPROFILE%\.claude</code>." (source: Settings)</div>
+
+  <h4>The feature → location map (verbatim)</h4>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Feature</th><th>User location</th><th>Project location</th><th>Local location</th></tr></thead>
+    <tbody>
+      <tr><td>Settings</td><td><code class="inl">~/.claude/settings.json</code></td><td><code class="inl">.claude/settings.json</code></td><td><code class="inl">.claude/settings.local.json</code></td></tr>
+      <tr><td>Subagents</td><td><code class="inl">~/.claude/agents/</code></td><td><code class="inl">.claude/agents/</code></td><td>None</td></tr>
+      <tr><td>MCP servers</td><td><code class="inl">~/.claude.json</code></td><td><code class="inl">.mcp.json</code></td><td><code class="inl">~/.claude.json</code> (per-project)</td></tr>
+      <tr><td>Plugins</td><td><code class="inl">~/.claude/settings.json</code></td><td><code class="inl">.claude/settings.json</code></td><td><code class="inl">.claude/settings.local.json</code></td></tr>
+      <tr><td>CLAUDE.md</td><td><code class="inl">~/.claude/CLAUDE.md</code></td><td><code class="inl">CLAUDE.md</code> or <code class="inl">.claude/CLAUDE.md</code></td><td><code class="inl">CLAUDE.local.md</code></td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>Skills</strong> live at <code class="inl">.claude/skills/&lt;skill-name&gt;/SKILL.md</code> (project) and <code class="inl">~/.claude/skills/&lt;skill-name&gt;/SKILL.md</code> (personal). <strong>Output styles</strong> live at <code class="inl">~/.claude/output-styles</code> and <code class="inl">.claude/output-styles</code>. (sources: Skills; Output styles)</p>
+
+  <div class="callout tip collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">📂</span> <code>--add-dir</code> grants file access, NOT a full config root<span class="chev">▼</span></div>
+  <div class="cbody"><p><span class="analogy">lesson framing</span> Verbatim: "Adding a directory extends where Claude can read and edit files. It does not make that directory a full configuration root." Only <strong>Skills</strong> (with live reload), <code class="inl">enabledPlugins</code>/<code class="inl">extraKnownMarketplaces</code>, and (conditionally) CLAUDE.md load from <code class="inl">--add-dir</code> directories; subagents, commands, output styles, and hooks do <em>not</em>. (source: Permissions)</p></div></div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li><strong>Two axes:</strong> scope (managed → user → project → local) × feature (settings, memory, subagents, skills, hooks, MCP, plugins, output styles).</li>
+    <li><strong>Managed</strong> = IT-deployed, all users, can't be overridden; <strong>local</strong> = you, this repo, gitignored.</li>
+    <li><strong><code class="inl">.claude/</code></strong> is the per-scope home; managed config lives in OS policy locations.</li>
+    <li>MCP servers are the odd one out — local/user both store in <code class="inl">~/.claude.json</code>, project in <code class="inl">.mcp.json</code>.</li>
+  </ul></div></div>
+</section>
+
+<!-- ============ SECTION B ============ -->
+<div class="sec-divider" id="secB">
+  <span class="badge"><span class="emoji">②</span> Memory</span>
+  <h2>Memory — CLAUDE.md</h2>
+  <p>Load order broad → specific. Concatenation, not override. <code style="font-size:.7em">@</code>-imports (4 hops), rules, managed, and auto memory.</p>
+</div>
+
+<section class="lesson" id="lB" data-lesson>
+  <div class="lmeta"><span class="ltag"><span class="emoji">🧠</span> Section B</span><span class="ltime">⏱ ~12 min</span><span class="ldomain">Domain 2 · Domain 1</span></div>
+  <h3 class="ltitle">How Claude remembers your project — and why it's context, not config</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>State the CLAUDE.md load order and explain that files <em>concatenate</em> rather than override</li>
+      <li>Explain <code class="inl">@</code>-imports and the 4-hop depth limit</li>
+      <li>Distinguish CLAUDE.md (context) from a PreToolUse hook (enforcement)</li>
+      <li>Recognise <code class="inl">.claude/rules/</code>, managed <code class="inl">claudeMd</code>, and auto memory as separate mechanisms</li>
+    </ul>
+  </div>
+
+  <h4>Why before how: memory is context, not a rulebook</h4>
+  <p>CLAUDE.md is the project's running briefing that Claude reads at the start of every conversation. The mental model that trips people up: it is <strong>concatenated context</strong>, not enforced configuration. Multiple CLAUDE.md files don't "override" each other — they are all stitched together, broadest scope first. So if you want a rule to be <em>guaranteed</em> (e.g. block a dangerous command), CLAUDE.md is the wrong tool — you need a permission rule or a PreToolUse hook.</p>
+
+  <h4>Load order — broadest to most specific (verbatim table)</h4>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Scope</th><th>Location</th><th>Shared with</th></tr></thead>
+    <tbody>
+      <tr><td>Managed policy</td><td>macOS: <code class="inl">/Library/Application Support/ClaudeCode/CLAUDE.md</code>; Linux &amp; WSL: <code class="inl">/etc/claude-code/CLAUDE.md</code>; Windows: <code class="inl">C:\Program Files\ClaudeCode\CLAUDE.md</code></td><td>All users in organization</td></tr>
+      <tr><td>User instructions</td><td><code class="inl">~/.claude/CLAUDE.md</code></td><td>Just you (all projects)</td></tr>
+      <tr><td>Project instructions</td><td><code class="inl">./CLAUDE.md</code> or <code class="inl">./.claude/CLAUDE.md</code></td><td>Team members via source control</td></tr>
+      <tr><td>Local instructions</td><td><code class="inl">./CLAUDE.local.md</code> (add to <code class="inl">.gitignore</code>)</td><td>Just you (current project)</td></tr>
+    </tbody>
+  </table></div>
+  <blockquote class="ex">"The table below lists them in load order, from broadest scope to most specific, so a project instruction appears in context after a user instruction." (source: Memory)</blockquote>
+
+  <h4>How loading actually works (verbatim)</h4>
+  <blockquote class="ex">"Claude Code reads CLAUDE.md files by walking up the directory tree from your current working directory... All discovered files are concatenated into context rather than overriding each other. Across the directory tree, content is ordered from the filesystem root down to your working directory... Within each directory, <code class="inl">CLAUDE.local.md</code> is appended after <code class="inl">CLAUDE.md</code>, so your personal notes are the last thing Claude reads at that level." (source: Memory)</blockquote>
+  <p>Subdirectory files are discovered lazily: "Instead of loading them at launch, they are included when Claude reads files in those subdirectories." (source: Memory)</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 720 280" role="img" aria-label="Directory tree walk showing managed, user, root, and project CLAUDE.md files concatenated in order from broadest to most specific into one context block">
+      <defs><style>.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 10px sans-serif;fill:#5c544c}.f{fill:#fff;stroke:#c96442}.fm{fill:#ece4f6;stroke:#6b4f9e}.fc{font:600 10.5px sans-serif;fill:#2b2622}.ar{stroke:#5c544c;stroke-width:1.5;marker-end:url(#ah)}</style>
+      <marker id="ah" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5c544c"/></marker></defs>
+      <text class="t" x="200" y="20" text-anchor="middle">Discovered files (broad → specific)</text>
+      <rect class="fm" x="40" y="34" width="320" height="28" rx="5"/><text class="fc" x="52" y="52">1 · Managed policy CLAUDE.md</text>
+      <rect class="f" x="40" y="70" width="320" height="28" rx="5"/><text class="fc" x="52" y="88">2 · ~/.claude/CLAUDE.md (user)</text>
+      <rect class="f" x="40" y="106" width="320" height="28" rx="5"/><text class="fc" x="52" y="124">3 · root → cwd: ./CLAUDE.md (project)</text>
+      <rect class="f" x="40" y="142" width="320" height="28" rx="5"/><text class="fc" x="52" y="160">4 · ./CLAUDE.local.md (appended last)</text>
+      <line class="ar" x1="368" y1="100" x2="430" y2="130"/>
+      <rect x="440" y="60" width="240" height="150" rx="9" fill="#e3f0e6" stroke="#3f7d4f"/>
+      <text class="t" x="560" y="84" text-anchor="middle" fill="#3f7d4f">ONE concatenated</text>
+      <text class="t" x="560" y="102" text-anchor="middle" fill="#3f7d4f">context block</text>
+      <text class="s" x="560" y="128" text-anchor="middle">files are stitched together,</text>
+      <text class="s" x="560" y="144" text-anchor="middle">NOT overridden — later</text>
+      <text class="s" x="560" y="160" text-anchor="middle">files simply appear later</text>
+      <text class="s" x="560" y="176" text-anchor="middle">in context</text>
+      <text class="s" x="360" y="248" text-anchor="middle">Concatenation ≠ override. "Precedence" here means ordering: the most specific note is read last.</text>
+    </svg>
+    <figcaption>Diagram (b): the directory-tree walk. Managed → user → project (root-to-cwd) → local. All discovered files are <em>concatenated</em>; <code class="inl">CLAUDE.local.md</code> is appended after <code class="inl">CLAUDE.md</code> within each directory.</figcaption>
+  </figure>
+
+  <div class="callout warn collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🚧</span> Trap — memory is context, not enforced config<span class="chev">▼</span></div>
+  <div class="cbody"><p>Verbatim: "Both are loaded at the start of every conversation. Claude treats them as context, not enforced configuration. To block an action regardless of what Claude decides, use a [PreToolUse hook] instead." (source: Memory) Managed-policy CLAUDE.md <strong>cannot be excluded</strong> by individual settings. <strong>Exam translation:</strong> "Put it in CLAUDE.md" never <em>guarantees</em> a behavior — for a hard block you need a permission deny rule or a PreToolUse hook that <code class="inl">exit 2</code>s (Section E).</p></div></div>
+
+  <h4><code>@</code>-imports — and the 4-hop limit (verbatim)</h4>
+  <blockquote class="ex">"CLAUDE.md files can import additional files using <code class="inl">@path/to/import</code> syntax. Imported files are expanded and loaded into context at launch... Both relative and absolute paths are allowed. Relative paths resolve relative to the file containing the import... Imported files can recursively import other files, with a maximum depth of four hops." (source: Memory)</blockquote>
+  <div class="codewrap"><div class="clab"><span class="dot"></span> CLAUDE.md import lines (verbatim)</div>
+  <pre><code>See @README for project overview and @package.json for available npm commands for this project.
+
+# Additional Instructions
+- git workflow @docs/git-instructions.md</code></pre></div>
+  <p>Size guidance (verbatim): "target under 200 lines per CLAUDE.md file" and "Bloated CLAUDE.md files cause Claude to ignore your actual instructions!" (sources: Memory; Best practices)</p>
+
+  <h4>Three more memory mechanisms</h4>
+  <ul>
+    <li><strong><code class="inl">.claude/rules/</code> (path-scoped rules):</strong> rules without <code class="inl">paths</code> frontmatter "are loaded at launch with the same priority as <code class="inl">.claude/CLAUDE.md</code>." Path-scoped rules use a YAML <code class="inl">paths</code> glob list and "only apply when Claude is working with files matching the specified patterns." User-level rules in <code class="inl">~/.claude/rules/</code> "are loaded before project rules, giving project rules higher priority." (source: Memory)</li>
+    <li><strong>Managed <code class="inl">claudeMd</code>:</strong> embeds managed CLAUDE.md content directly in <code class="inl">managed-settings.json</code>; "honored: managed and policy settings only." (source: Memory)</li>
+    <li><strong>Auto memory</strong> <span class="verify">⚠ VERIFY</span> — machine-local notes Claude writes itself, stored per-repo at <code class="inl">~/.claude/projects/&lt;project&gt;/memory/</code> with a <code class="inl">MEMORY.md</code> index. "The first 200 lines of <code class="inl">MEMORY.md</code>, or the first 25KB, whichever comes first, are loaded at the start of every conversation." On by default (<code class="inl">autoMemoryEnabled</code>); requires v2.1.59+. (source: Memory)</li>
+  </ul>
+  <div class="codewrap"><div class="clab"><span class="dot"></span> managed claudeMd in managed-settings.json (verbatim)</div>
+  <pre><code>{
+  "claudeMd": "Always run `make lint` before committing.\nNever push directly to main."
+}</code></pre></div>
+  <p><strong>AGENTS.md:</strong> "Claude Code reads <code class="inl">CLAUDE.md</code>, not <code class="inl">AGENTS.md</code>." Bridge with an <code class="inl">@AGENTS.md</code> import or a symlink. (source: Memory)</p>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">A teammate adds "NEVER run <code class="inl">rm -rf</code>" to the project <code class="inl">CLAUDE.md</code> and tells the team they're now protected. Predict: is the team actually protected from a destructive deletion?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>No.</strong> CLAUDE.md is "context, not enforced configuration." Claude usually <em>will</em> follow the instruction, but nothing <em>guarantees</em> it. For a hard block you need a <strong>permission deny rule</strong> (e.g. <code class="inl">Bash(rm *)</code> in <code class="inl">deny</code>) or a <strong>PreToolUse hook that <code class="inl">exit 2</code>s</strong>. The verbatim guidance: "To block an action regardless of what Claude decides, use a PreToolUse hook instead." (source: Memory)</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="2">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">When two CLAUDE.md files (user and project) both apply, how does Claude Code combine them?</div>
+    <button class="opt">The project file silently overrides the user file</button>
+    <button class="opt">Only the most specific file is loaded; the rest are ignored</button>
+    <button class="opt">All discovered files are concatenated into context, broadest scope first, so the most specific is read last</button>
+    <button class="opt">They are merged key-by-key like JSON settings</button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden>Verbatim: "All discovered files are concatenated into context rather than overriding each other... ordered from the filesystem root down to your working directory." Memory "precedence" is ordering, not override — and it's context, not enforced config.</div>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li><strong>Concatenation, not override:</strong> managed → user → project (root→cwd) → local; <code class="inl">CLAUDE.local.md</code> appended last per directory.</li>
+    <li><strong>Context, not config:</strong> for a guaranteed block use a permission deny or a PreToolUse hook.</li>
+    <li><strong><code class="inl">@</code>-imports</strong> expand at launch, max <strong>4 hops</strong>; keep files under ~200 lines.</li>
+    <li>Separate mechanisms: <code class="inl">.claude/rules/</code> (path-scoped), managed <code class="inl">claudeMd</code>, and auto memory (<code class="inl">MEMORY.md</code>).</li>
+  </ul></div></div>
+</section>
+
+<!-- ============ SECTION C ============ -->
+<div class="sec-divider" id="secC">
+  <span class="badge"><span class="emoji">③</span> settings.json</span>
+  <h2>settings.json — Hierarchy &amp; Precedence</h2>
+  <p>The 5-level ladder. The exam trap: settings <em>override</em>, permission rules <em>merge</em>. Key fields, governance, env, reload.</p>
+</div>
+
+<section class="lesson" id="lC" data-lesson>
+  <div class="lmeta"><span class="ltag"><span class="emoji">🪜</span> Section C</span><span class="ltime">⏱ ~13 min</span><span class="ldomain">Domain 2 · Domain 4</span></div>
+  <h3 class="ltitle">Which setting wins — and the one place precedence breaks</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Recite the 5-level settings precedence ladder, highest to lowest</li>
+      <li>State the exam trap: settings override by precedence, but permission rules merge across scopes</li>
+      <li>Recognise key fields, managed/governance fields, and which keys live-reload vs need a restart</li>
+    </ul>
+  </div>
+
+  <h4>The precedence ladder (verbatim)</h4>
+  <ol>
+    <li><strong>Managed</strong> (highest) — can't be overridden by anything</li>
+    <li><strong>Command line arguments</strong> — temporary session overrides</li>
+    <li><strong>Local</strong> — overrides project and user settings</li>
+    <li><strong>Project</strong> — overrides user settings</li>
+    <li><strong>User</strong> (lowest) — applies when nothing else specifies the setting</li>
+  </ol>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 720 290" role="img" aria-label="Settings precedence ladder from managed at the top down to user at the bottom, with a side note that permission rules merge instead of override">
+      <defs><style>.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 10px sans-serif;fill:#5c544c}.lab{font:700 12px sans-serif;fill:#fff}</style></defs>
+      <text class="t" x="240" y="20" text-anchor="middle">Settings: highest precedence wins (override)</text>
+      <rect x="60" y="34" width="360" height="34" rx="6" fill="#6b4f9e"/><text class="lab" x="76" y="56">1 · Managed — cannot be overridden</text>
+      <rect x="60" y="74" width="360" height="34" rx="6" fill="#a44a2e"/><text class="lab" x="76" y="96">2 · Command line arguments</text>
+      <rect x="60" y="114" width="360" height="34" rx="6" fill="#c96442"/><text class="lab" x="76" y="136">3 · Local (settings.local.json)</text>
+      <rect x="60" y="154" width="360" height="34" rx="6" fill="#3a7d7b"/><text class="lab" x="76" y="176">4 · Project (.claude/settings.json)</text>
+      <rect x="60" y="194" width="360" height="34" rx="6" fill="#3f7d4f"/><text class="lab" x="76" y="216">5 · User (~/.claude/settings.json)</text>
+      <text class="s" x="240" y="252" text-anchor="middle">A higher level fully replaces a lower one for the same key.</text>
+      <rect x="450" y="44" width="230" height="184" rx="10" fill="#f7e3df" stroke="#b3402f"/>
+      <text class="t" x="565" y="70" text-anchor="middle" fill="#b3402f">⚠ THE TRAP</text>
+      <text class="s" x="565" y="96" text-anchor="middle">Permission rules</text>
+      <text class="s" x="565" y="112" text-anchor="middle">do NOT override.</text>
+      <text class="t" x="565" y="138" text-anchor="middle" fill="#b3402f">They MERGE</text>
+      <text class="s" x="565" y="160" text-anchor="middle">across all scopes,</text>
+      <text class="s" x="565" y="176" text-anchor="middle">then evaluate</text>
+      <text class="s" x="565" y="192" text-anchor="middle">deny → ask → allow</text>
+      <text class="s" x="565" y="214" text-anchor="middle">(see Section D).</text>
+    </svg>
+    <figcaption>Diagram (c): settings precedence (left) vs the permission-rule exception (right). Most settings <em>override</em> by precedence; permission rules instead <em>merge</em> across every scope.</figcaption>
+  </figure>
+
+  <div class="callout warn collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">⚖️</span> Exam trap — settings override, permission rules merge<span class="chev">▼</span></div>
+  <div class="cbody"><p>Verbatim: "Permission rules behave differently because they merge across scopes rather than override." (source: Settings) This is one of the most frequently tested Domain-2 facts. A plain setting like <code class="inl">model</code> uses the ladder — the higher level wins. But <code class="inl">permissions.allow</code>/<code class="inl">ask</code>/<code class="inl">deny</code> arrays from every scope are <strong>combined</strong>, then evaluated deny → ask → allow (Section D). So a deny in user settings still applies even if project settings say allow.</p></div></div>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 720 300" role="img" aria-label="Side by side comparison: plain settings override so one value wins by precedence, while permission rules merge so every scope's rules combine and then evaluate deny ask allow">
+      <defs><style>.t{font:700 13px sans-serif;fill:#2b2622}.s{font:400 10.5px sans-serif;fill:#5c544c}.bx{font:600 11px sans-serif;fill:#2b2622}.win{font:700 11.5px sans-serif}</style><marker id="arm" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6 z" fill="#5c544c"/></marker></defs>
+      <line x1="360" y1="34" x2="360" y2="284" stroke="#e7e0d8" stroke-width="1.5" stroke-dasharray="4 4"/>
+      <text class="t" x="180" y="24" text-anchor="middle">Plain settings → OVERRIDE</text>
+      <text class="s" x="180" y="42" text-anchor="middle">same key across scopes → one value wins</text>
+      <rect x="62" y="56" width="236" height="36" rx="8" fill="#f3eee7" stroke="#cfc5b8"/><text class="bx" x="78" y="79">USER&#160;&#160;model: sonnet</text>
+      <rect x="62" y="100" width="236" height="36" rx="8" fill="#f4e6df" stroke="#c96442"/><text class="bx" x="78" y="123">PROJECT&#160;&#160;model: opus</text>
+      <path d="M180 138 L180 166" stroke="#5c544c" stroke-width="1.5" marker-end="url(#arm)"/>
+      <rect x="62" y="170" width="236" height="42" rx="8" fill="#c96442"/><text class="win" x="180" y="190" text-anchor="middle" fill="#fff">opus wins</text><text class="s" x="180" y="206" text-anchor="middle" fill="#f4e6df">higher precedence replaces lower</text>
+      <text class="s" x="180" y="240" text-anchor="middle">Managed &gt; CLI &gt; Local &gt; Project &gt; User</text>
+      <text class="t" x="540" y="24" text-anchor="middle">Permission rules → MERGE</text>
+      <text class="s" x="540" y="42" text-anchor="middle">arrays from every scope combine into one set</text>
+      <rect x="402" y="52" width="266" height="32" rx="8" fill="#f7e3df" stroke="#b3402f"/><text class="bx" x="416" y="73">USER&#160;&#160;deny: Bash(rm *)</text>
+      <rect x="402" y="90" width="266" height="32" rx="8" fill="#e3f0e6" stroke="#3f7d4f"/><text class="bx" x="416" y="111">PROJECT&#160;&#160;allow: Bash(*)</text>
+      <path d="M535 124 L535 140" stroke="#5c544c" stroke-width="1.5" marker-end="url(#arm)"/>
+      <rect x="402" y="144" width="266" height="32" rx="8" fill="#eef1f4" stroke="#9aa4ad"/><text class="bx" x="535" y="165" text-anchor="middle">combined set: BOTH rules apply</text>
+      <path d="M535 178 L535 194" stroke="#5c544c" stroke-width="1.5" marker-end="url(#arm)"/>
+      <rect x="402" y="198" width="266" height="34" rx="8" fill="#b3402f"/><text class="win" x="535" y="219" text-anchor="middle" fill="#fff">deny → ask → allow ⇒ deny bites</text>
+      <text class="s" x="540" y="252" text-anchor="middle">a user deny survives a project allow</text>
+    </svg>
+    <figcaption>Diagram (d): the exam trap drawn out — plain settings <em>override</em> (one value wins by precedence), but permission rules <em>merge</em> (every scope's allow/ask/deny arrays combine, then evaluate deny → ask → allow, so a user deny survives a project allow).</figcaption>
+  </figure>
+
+  <h4>Key fields (verbatim selections)</h4>
+  <ul>
+    <li><code class="inl">model</code> — "Override the default model to use for Claude Code"</li>
+    <li><code class="inl">env</code> — "Environment variables applied to every session and to subprocesses Claude Code spawns"</li>
+    <li><code class="inl">permissions</code> — allow/deny/ask arrays; also <code class="inl">defaultMode</code>, <code class="inl">additionalDirectories</code>, <code class="inl">disableBypassPermissionsMode</code></li>
+    <li><code class="inl">hooks</code> — "Configure custom commands to run at lifecycle events"</li>
+    <li><code class="inl">apiKeyHelper</code>, <code class="inl">statusLine</code>, <code class="inl">outputStyle</code></li>
+    <li><code class="inl">autoMemoryEnabled</code> (default <code class="inl">true</code>), <code class="inl">autoMemoryDirectory</code>, <code class="inl">claudeMd</code> (managed only), <code class="inl">claudeMdExcludes</code></li>
+    <li><code class="inl">cleanupPeriodDays</code> (default 30), <code class="inl">includeCoAuthoredBy</code> (<strong>Deprecated</strong> — "Use <code class="inl">attribution</code> instead"), <code class="inl">attribution</code></li>
+    <li><code class="inl">enableAllProjectMcpServers</code>, <code class="inl">enabledMcpjsonServers</code>, <code class="inl">disabledMcpjsonServers</code></li>
+  </ul>
+
+  <h5>Managed-only / governance fields (verbatim selections)</h5>
+  <ul>
+    <li><code class="inl">allowManagedHooksOnly</code> — "only managed hooks, SDK hooks, and force-enabled plugin hooks are loaded"</li>
+    <li><code class="inl">allowManagedPermissionRulesOnly</code> — "prevents user and project settings from defining <code class="inl">allow</code>, <code class="inl">ask</code>, or <code class="inl">deny</code> permission rules"</li>
+    <li><code class="inl">allowManagedMcpServersOnly</code>, <code class="inl">allowedMcpServers</code>, <code class="inl">deniedMcpServers</code></li>
+    <li><code class="inl">strictKnownMarketplaces</code>, <code class="inl">blockedMarketplaces</code>, <code class="inl">strictPluginOnlyCustomization</code> ("<code class="inl">true</code> locks all four surfaces; an array such as <code class="inl">["skills", "hooks"]</code> locks only the named ones")</li>
+    <li><code class="inl">forceLoginMethod</code>, <code class="inl">forceLoginOrgUUID</code>, <code class="inl">requiredMinimumVersion</code>, <code class="inl">requiredMaximumVersion</code>, <code class="inl">forceRemoteSettingsRefresh</code></li>
+  </ul>
+
+  <div class="codewrap"><div class="clab"><span class="dot"></span> settings.json (verbatim example)</div>
+  <pre><code>{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(npm run lint)",
+      "Bash(npm run test *)",
+      "Read(~/.zshrc)"
+    ],
+    "deny": [
+      "Bash(curl *)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)"
+    ]
+  },
+  "env": {
+    "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
+    "OTEL_METRICS_EXPORTER": "otlp"
+  }
+}</code></pre></div>
+
+  <h4>Reload behavior (verbatim)</h4>
+  <p>"Claude Code watches your settings files and reloads them when they change, so edits to most keys apply to the running session without a restart." <strong>Live-reload</strong> keys include <code class="inl">permissions</code>, <code class="inl">hooks</code>, <code class="inl">apiKeyHelper</code>. <strong>Read once at session start</strong> (apply on next restart): <code class="inl">model</code> (use <code class="inl">/model</code> to switch mid-session) and <code class="inl">outputStyle</code> ("rebuilt on <code class="inl">/clear</code> or restart"). (source: Settings) <code class="inl">/status</code> shows active "Setting sources" for the current session.</p>
+
+  <div class="callout tip collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🪟</span> Managed-settings deployment locations <span class="verify">⚠ VERIFY</span><span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li><strong>macOS:</strong> <code class="inl">/Library/Application Support/ClaudeCode/managed-settings.json</code> (+ <code class="inl">managed-settings.d/</code>), or the <code class="inl">com.anthropic.claudecode</code> plist</li>
+    <li><strong>Linux &amp; WSL:</strong> <code class="inl">/etc/claude-code/managed-settings.json</code> (+ <code class="inl">managed-settings.d/</code>)</li>
+    <li><strong>Windows:</strong> registry <code class="inl">HKLM\SOFTWARE\Policies\ClaudeCode</code> (admin) / <code class="inl">HKCU\SOFTWARE\Policies\ClaudeCode</code> (user, lowest); file <code class="inl">C:\Program Files\ClaudeCode\managed-settings.json</code>. "Legacy path (no longer supported as of v2.1.75): <code class="inl">C:\ProgramData\ClaudeCode\managed-settings.json</code>"</li>
+  </ul></div></div>
+  <div class="verifynote">⚠ <strong>VERIFY:</strong> the Windows legacy path retirement (v2.1.75) and other OS policy locations are version-noted — re-verify for the current release. Selected env vars set via <code class="inl">env</code>: <code class="inl">CLAUDE_CODE_ENABLE_TELEMETRY</code>, <code class="inl">OTEL_METRICS_EXPORTER</code>, <code class="inl">CLAUDE_CODE_DISABLE_AUTO_MEMORY</code>, <code class="inl">ANTHROPIC_MODEL</code>, <code class="inl">DISABLE_AUTOUPDATER</code>, <code class="inl">CLAUDE_CODE_USE_POWERSHELL_TOOL</code>.</div>
+
+  <div class="mcq" data-mcq data-correct="3">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Project settings set <code class="inl">model: opus</code> and add an <code class="inl">allow</code> rule; user settings set <code class="inl">model: sonnet</code> and a <code class="inl">deny</code> rule. What happens?</div>
+    <button class="opt">Both model and permission rules come entirely from project settings</button>
+    <button class="opt">User settings win for everything because they're loaded first</button>
+    <button class="opt">Model = opus, and the user deny rule is discarded</button>
+    <button class="opt">Model = opus (project overrides user), but BOTH permission rules apply — they merge, then evaluate deny → ask → allow</button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden>Plain settings like <code class="inl">model</code> use precedence — project overrides user, so opus wins. But "permission rules... merge across scopes rather than override," so the user deny and project allow both apply, evaluated deny → ask → allow. The deny still bites.</div>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li><strong>Ladder:</strong> Managed &gt; CLI args &gt; Local &gt; Project &gt; User.</li>
+    <li><strong>Trap:</strong> settings <em>override</em>; permission rules <em>merge</em> across scopes, then evaluate deny → ask → allow.</li>
+    <li><strong>Live-reload:</strong> <code class="inl">permissions</code>, <code class="inl">hooks</code>, <code class="inl">apiKeyHelper</code>. <strong>Restart/needs <code class="inl">/clear</code>:</strong> <code class="inl">model</code>, <code class="inl">outputStyle</code>.</li>
+    <li>Governance lives in managed-only keys (<code class="inl">allowManaged*Only</code>, <code class="inl">required*Version</code>, marketplace locks).</li>
+  </ul></div></div>
+</section>
+
+<!-- ============ SECTION D ============ -->
+<div class="sec-divider" id="secD">
+  <span class="badge"><span class="emoji">④</span> Permissions</span>
+  <h2>Permissions — allow / ask / deny</h2>
+  <p>deny → ask → allow. Bare vs scoped. Six modes. The <code style="font-size:.7em">//absolute</code> trap and fragile-argument warning.</p>
+</div>
+
+<section class="lesson" id="lD" data-lesson>
+  <div class="lmeta"><span class="ltag"><span class="emoji">🔐</span> Section D</span><span class="ltime">⏱ ~15 min</span><span class="ldomain">Domain 2 · Domain 4</span></div>
+  <h3 class="ltitle">The decision flow that decides whether a tool runs</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Walk the deny → ask → allow evaluation order and explain why deny is absolute</li>
+      <li>Distinguish a bare tool name from a scoped pattern, and apply the absolute-path trap</li>
+      <li>Name the six permission modes and the permission precedence ladder</li>
+    </ul>
+  </div>
+
+  <h4>Why before how: three rule types, evaluated in a fixed order</h4>
+  <blockquote class="ex">"Allow rules let Claude Code use the specified tool without manual approval. Ask rules prompt for confirmation... Deny rules prevent Claude Code from using the specified tool." (source: Permissions)</blockquote>
+  <blockquote class="ex">"Rules are evaluated in order: deny -&gt; ask -&gt; allow. The first matching rule wins, so deny rules always take precedence." ... "If a tool is denied at any level, no other level can allow it." (source: Permissions)</blockquote>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 720 250" role="img" aria-label="Permission decision flow: a tool call is checked against deny rules first, then ask, then allow, otherwise the default mode decides">
+      <defs><style>.t{font:700 11.5px sans-serif;fill:#2b2622}.s{font:400 10px sans-serif;fill:#5c544c}.ar{stroke:#5c544c;stroke-width:1.6;fill:none;marker-end:url(#ah2)}.lbl{font:700 10px sans-serif;fill:#5c544c}</style>
+      <marker id="ah2" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5c544c"/></marker></defs>
+      <rect x="20" y="100" width="110" height="44" rx="8" fill="#f4e6df" stroke="#c96442"/><text class="t" x="75" y="120" text-anchor="middle">Tool call</text><text class="s" x="75" y="136" text-anchor="middle">(merged rules)</text>
+      <line class="ar" x1="130" y1="122" x2="170" y2="122"/>
+      <rect x="170" y="100" width="90" height="44" rx="8" fill="#f7e3df" stroke="#b3402f"/><text class="t" x="215" y="126" text-anchor="middle" fill="#b3402f">DENY?</text>
+      <line class="ar" x1="260" y1="122" x2="300" y2="122"/>
+      <rect x="300" y="100" width="90" height="44" rx="8" fill="#f6edd6" stroke="#b8860b"/><text class="t" x="345" y="126" text-anchor="middle" fill="#8a6508">ASK?</text>
+      <line class="ar" x1="390" y1="122" x2="430" y2="122"/>
+      <rect x="430" y="100" width="90" height="44" rx="8" fill="#e3f0e6" stroke="#3f7d4f"/><text class="t" x="475" y="126" text-anchor="middle" fill="#3f7d4f">ALLOW?</text>
+      <line class="ar" x1="520" y1="122" x2="560" y2="122"/>
+      <rect x="560" y="100" width="130" height="44" rx="8" fill="#fff" stroke="#5c544c"/><text class="t" x="625" y="120" text-anchor="middle">Default mode</text><text class="s" x="625" y="136" text-anchor="middle">decides</text>
+      <line class="ar" x1="215" y1="100" x2="215" y2="52"/><rect x="160" y="22" width="110" height="30" rx="6" fill="#b3402f"/><text class="t" x="215" y="42" text-anchor="middle" fill="#fff">BLOCK (absolute)</text>
+      <line class="ar" x1="345" y1="100" x2="345" y2="52"/><rect x="295" y="22" width="100" height="30" rx="6" fill="#b8860b"/><text class="t" x="345" y="42" text-anchor="middle" fill="#fff">PROMPT user</text>
+      <line class="ar" x1="475" y1="100" x2="475" y2="52"/><rect x="430" y="22" width="90" height="30" rx="6" fill="#3f7d4f"/><text class="t" x="475" y="42" text-anchor="middle" fill="#fff">RUN, no prompt</text>
+      <text class="lbl" x="215" y="170" text-anchor="middle">first match wins →</text>
+      <text class="s" x="360" y="210" text-anchor="middle">Deny is checked first and is absolute — denied at any level, allowed at none.</text>
+      <text class="s" x="360" y="228" text-anchor="middle">(A PreToolUse hook runs before this flow and can exit 2 to stop the call entirely — Section E.)</text>
+    </svg>
+    <figcaption>Diagram (e): the deny → ask → allow decision flow. Rules from all scopes are merged, then deny is checked first (and is absolute), then ask, then allow; if nothing matches, the active permission mode decides.</figcaption>
+  </figure>
+
+  <h4>Bare tool name vs scoped pattern (verbatim)</h4>
+  <blockquote class="ex">"A bare tool name like <code class="inl">Bash</code> removes the tool from Claude's context entirely, so Claude never sees it. A scoped rule like <code class="inl">Bash(rm *)</code> leaves the tool available and blocks matching calls when Claude attempts them." (source: Permissions)</blockquote>
+
+  <h4>Rule syntax — <code>Tool</code> or <code>Tool(specifier)</code></h4>
+  <ul>
+    <li><code class="inl">Bash(npm run build)</code> → exact command; <code class="inl">Bash(npm run test *)</code> → prefix. The space before <code class="inl">*</code> enforces a word boundary: <code class="inl">Bash(ls *)</code> matches <code class="inl">ls -la</code> but not <code class="inl">lsof</code>; <code class="inl">Bash(ls*)</code> matches both. A <code class="inl">:*</code> suffix ≡ a trailing <code class="inl"> *</code> (only at the end of a pattern).</li>
+    <li><code class="inl">Read(./.env)</code>, <code class="inl">Edit(/src/**/*.ts)</code> — gitignore-style patterns with four anchors: <code class="inl">//path</code> (absolute), <code class="inl">~/path</code> (home), <code class="inl">/path</code> (relative to project root), <code class="inl">path</code>/<code class="inl">./path</code> (relative to cwd).</li>
+    <li><code class="inl">WebFetch(domain:example.com)</code>; MCP: <code class="inl">mcp__puppeteer</code> (whole server), <code class="inl">mcp__puppeteer__*</code> (wildcard), <code class="inl">mcp__puppeteer__puppeteer_navigate</code> (single tool); <code class="inl">Agent(Explore)</code>, <code class="inl">Agent(my-custom-agent)</code>.</li>
+  </ul>
+
+  <div class="callout warn collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🪤</span> The <code>//absolute</code> trap (high-yield)<span class="chev">▼</span></div>
+  <div class="cbody"><p>Verbatim: "A pattern like <code class="inl">/Users/alice/file</code> is NOT an absolute path. It's relative to the project root. Use <code class="inl">//Users/alice/file</code> for absolute paths." A single leading slash means project-root-relative; you need a <strong>double</strong> slash for a true absolute path. This is a favorite exam gotcha.</p></div></div>
+
+  <div class="callout warn collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🧨</span> Shell-operator awareness + "argument constraints are fragile"<span class="chev">▼</span></div>
+  <div class="cbody"><p>Verbatim: "Claude Code is aware of shell operators, so a rule like <code class="inl">Bash(safe-cmd *)</code> won't give it permission to run the command <code class="inl">safe-cmd &amp;&amp; other-cmd</code>. The recognized command separators are <code class="inl">&amp;&amp;</code>, <code class="inl">||</code>, <code class="inl">;</code>, <code class="inl">|</code>, <code class="inl">|&amp;</code>, <code class="inl">&amp;</code>, and newlines." But also: "Bash permission patterns that try to constrain command arguments are fragile." For reliable URL filtering, <strong>deny <code class="inl">curl</code>/<code class="inl">wget</code> and use <code class="inl">WebFetch(domain:...)</code></strong>, or use a PreToolUse hook. (source: Permissions)</p></div></div>
+
+  <h4>The six permission modes (verbatim table)</h4>
+  <p>Set via <code class="inl">defaultMode</code> in settings or the <code class="inl">--permission-mode</code> flag.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Mode</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code class="inl">default</code></td><td>"Standard behavior: prompts for permission on first use of each tool"</td></tr>
+      <tr><td><code class="inl">acceptEdits</code></td><td>"Automatically accepts file edits and common filesystem commands (<code class="inl">mkdir</code>, <code class="inl">touch</code>, <code class="inl">mv</code>, <code class="inl">cp</code>, etc.) for paths in the working directory or <code class="inl">additionalDirectories</code>"</td></tr>
+      <tr><td><code class="inl">plan</code></td><td>"Plan Mode: Claude reads files and runs read-only shell commands to explore but does not edit your source files"</td></tr>
+      <tr><td><code class="inl">auto</code> <span class="verify">⚠ VERIFY</span></td><td>"Auto-approves tool calls with background safety checks... Currently a research preview"</td></tr>
+      <tr><td><code class="inl">dontAsk</code> <span class="verify">⚠ VERIFY</span></td><td>"Auto-denies tools unless pre-approved via <code class="inl">/permissions</code> or <code class="inl">permissions.allow</code> rules"</td></tr>
+      <tr><td><code class="inl">bypassPermissions</code></td><td>"Skips all permission prompts. Root and home directory removals such as <code class="inl">rm -rf /</code> still prompt as a circuit breaker"</td></tr>
+    </tbody>
+  </table></div>
+  <div class="verifynote">⚠ <strong>VERIFY:</strong> <code class="inl">default</code>, <code class="inl">acceptEdits</code>, <code class="inl">plan</code>, <code class="inl">bypassPermissions</code> are <span class="modern">stable</span>; <code class="inl">auto</code> (research preview) and <code class="inl">dontAsk</code> are <span class="legacy">newer</span> and could be renamed or removed (<code class="inl">--enable-auto-mode</code> was already removed in v2.1.111). Admins can block bypass via <code class="inl">permissions.disableBypassPermissionsMode: "disable"</code> and auto via <code class="inl">permissions.disableAutoMode</code>.</div>
+
+  <h4>Permission precedence (verbatim)</h4>
+  <ol>
+    <li><strong>Managed settings</strong> — cannot be overridden by any other level, including command line arguments</li>
+    <li><strong>Command line arguments</strong></li>
+    <li><strong>Local project settings</strong> (<code class="inl">.claude/settings.local.json</code>)</li>
+    <li><strong>Shared project settings</strong> (<code class="inl">.claude/settings.json</code>)</li>
+    <li><strong>User settings</strong> (<code class="inl">~/.claude/settings.json</code>)</li>
+  </ol>
+  <p>"a managed settings deny cannot be overridden by <code class="inl">--allowedTools</code>, and <code class="inl">--disallowedTools</code> can add restrictions beyond what managed settings define." <span class="analogy">lesson framing</span> Permissions are <strong>client-enforced, not model-enforced</strong> — "Permission rules are enforced by Claude Code, not by the model." For OS-level enforcement use <strong>sandboxing</strong> (<code class="inl">sandbox.enabled</code>), which complements permissions. (source: Permissions)</p>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">You want to stop Claude from fetching a malicious URL. A teammate proposes <code class="inl">Bash(curl https://safe.example.com *)</code> in <code class="inl">allow</code> to "only allow the safe domain." Predict whether this reliably restricts which URLs get fetched.</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>No — it's fragile.</strong> "Bash permission patterns that try to constrain command arguments are fragile." Argument-level allow rules for <code class="inl">curl</code> don't reliably bound the URL. The robust pattern: <strong>deny <code class="inl">curl</code>/<code class="inl">wget</code> outright</strong> and route web access through <code class="inl">WebFetch(domain:safe.example.com)</code>, or enforce with a PreToolUse hook. (source: Permissions)</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="1">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">User settings <code class="inl">allow</code> a tool; project settings <code class="inl">deny</code> the same tool. With deny → ask → allow evaluation, what happens?</div>
+    <button class="opt">Allow wins because user settings load first</button>
+    <button class="opt">Deny wins — it's evaluated first and is absolute: "denied at any level, allowed at none"</button>
+    <button class="opt">The two cancel out and Claude asks every time</button>
+    <button class="opt">Project always beats user, so the tool is removed from context</button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden>Rules merge across scopes, then evaluate deny → ask → allow with first-match-wins. Deny is checked first: "If a tool is denied at any level, no other level can allow it." The deny wins.</div>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li><strong>deny → ask → allow</strong>, first match wins; deny is absolute across all levels.</li>
+    <li><strong>Bare <code class="inl">Bash</code></strong> removes the tool from context; <strong>scoped <code class="inl">Bash(rm *)</code></strong> leaves it available but blocks matches.</li>
+    <li><strong>Single <code class="inl">/</code> = project-root-relative; <code class="inl">//</code> = true absolute path.</strong></li>
+    <li>Six modes; <code class="inl">auto</code>/<code class="inl">dontAsk</code> are newer/volatile. Argument-constraint Bash rules are fragile — prefer <code class="inl">WebFetch(domain:)</code> or a hook.</li>
+    <li>Permission precedence: Managed &gt; CLI &gt; Local &gt; Project &gt; User. Client-enforced; sandbox adds OS-level enforcement.</li>
+  </ul></div></div>
+</section>
+
+<!-- ============ SECTION E ============ -->
+<div class="sec-divider" id="secE">
+  <span class="badge"><span class="emoji">⑤</span> Hooks</span>
+  <h2>Hooks — Deterministic Lifecycle Control</h2>
+  <p>The richest section. Events, matchers, the stdin contract, the exit-code table (only 2 blocks), the JSON output schema, and security.</p>
+</div>
+
+<section class="lesson" id="lE" data-lesson>
+  <div class="lmeta"><span class="ltag"><span class="emoji">🪝</span> Section E</span><span class="ltime">⏱ ~22 min</span><span class="ldomain">Domain 2 · Domain 4 · Domain 1</span></div>
+  <h3 class="ltitle">The contract that gives you guaranteed, deterministic control</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Define what a hook is and where the classic stable events fire in the lifecycle</li>
+      <li>Read the matcher rules, the stdin input contract, and the exit-code table</li>
+      <li>Explain why only exit 2 blocks — and write a PreToolUse <code class="inl">permissionDecision</code> and a SessionStart <code class="inl">additionalContext</code></li>
+    </ul>
+  </div>
+
+  <h4>Why before how: hooks are the enforcement layer</h4>
+  <blockquote class="ex">"Claude Code hooks are user-defined shell commands that execute at various points in Claude Code's lifecycle and provide deterministic control over Claude Code's behavior." (source: Hooks)</blockquote>
+  <p>CLAUDE.md <em>asks</em> Claude to behave; permissions <em>gate</em> tool calls by pattern; <strong>hooks run your own code</strong> at lifecycle moments and can deterministically allow, block, inject context, or react. They're configured under the <code class="inl">hooks</code> key in <code class="inl">settings.json</code> (or <code class="inl">hooks/hooks.json</code> in a plugin), and you can browse them with <code class="inl">/hooks</code>.</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 720 230" role="img" aria-label="A Claude Code lifecycle timeline showing SessionStart, UserPromptSubmit, PreToolUse, tool execution, PostToolUse, Stop and SessionEnd, with hook events firing at each point">
+      <defs><style>.t{font:700 10.5px sans-serif;fill:#2b2622}.s{font:400 9.5px sans-serif;fill:#5c544c}.ev{fill:#ece4f6;stroke:#6b4f9e}.tool{fill:#f4e6df;stroke:#c96442}.line{stroke:#5c544c;stroke-width:2}</style></defs>
+      <text class="t" x="360" y="18" text-anchor="middle" font-size="12">Lifecycle timeline — classic stable hook events (the exam subset)</text>
+      <line class="line" x1="30" y1="120" x2="690" y2="120"/>
+      <rect class="ev" x="20" y="44" width="86" height="34" rx="6"/><text class="t" x="63" y="65" text-anchor="middle">SessionStart</text>
+      <line class="line" x1="63" y1="78" x2="63" y2="120"/>
+      <rect class="ev" x="120" y="44" width="104" height="34" rx="6"/><text class="t" x="172" y="60" text-anchor="middle">UserPrompt</text><text class="t" x="172" y="73" text-anchor="middle">Submit</text>
+      <line class="line" x1="172" y1="78" x2="172" y2="120"/>
+      <rect class="ev" x="238" y="44" width="84" height="34" rx="6"/><text class="t" x="280" y="65" text-anchor="middle">PreToolUse</text>
+      <line class="line" x1="280" y1="78" x2="280" y2="120"/>
+      <rect class="tool" x="336" y="132" width="92" height="34" rx="6"/><text class="t" x="382" y="153" text-anchor="middle">tool runs</text>
+      <line class="line" x1="382" y1="120" x2="382" y2="132"/>
+      <rect class="ev" x="338" y="44" width="92" height="34" rx="6"/><text class="t" x="384" y="65" text-anchor="middle">PostToolUse</text>
+      <line class="line" x1="384" y1="78" x2="384" y2="120"/>
+      <rect class="ev" x="470" y="44" width="120" height="34" rx="6"/><text class="t" x="530" y="60" text-anchor="middle">Stop /</text><text class="t" x="530" y="73" text-anchor="middle">SubagentStop · PreCompact</text>
+      <line class="line" x1="530" y1="78" x2="530" y2="120"/>
+      <rect class="ev" x="604" y="44" width="80" height="34" rx="6"/><text class="t" x="644" y="65" text-anchor="middle">SessionEnd</text>
+      <line class="line" x1="644" y1="78" x2="644" y2="120"/>
+      <text class="s" x="280" y="196" text-anchor="middle" fill="#b3402f">PreToolUse can exit 2 to block the tool BEFORE it runs</text>
+      <text class="s" x="384" y="212" text-anchor="middle">PostToolUse cannot block — "tool already ran"</text>
+    </svg>
+    <figcaption>Diagram (f): the lifecycle timeline with the classic stable hook events. Note the asymmetry — PreToolUse fires before the tool and can block it; PostToolUse fires after and cannot.</figcaption>
+  </figure>
+
+  <h4>The event roster — stable subset vs the growing set</h4>
+  <p>The full reference lists roughly <strong>30 hook events</strong>. The <span class="modern">classic stable subset</span> — the safest to learn for the exam — is: <code class="inl">PreToolUse</code>, <code class="inl">PostToolUse</code>, <code class="inl">UserPromptSubmit</code>, <code class="inl">Notification</code>, <code class="inl">Stop</code>, <code class="inl">SubagentStop</code>, <code class="inl">PreCompact</code>, <code class="inl">SessionStart</code>, <code class="inl">SessionEnd</code>. <span class="verify">⚠ VERIFY</span></p>
+  <div class="verifynote">⚠ <strong>VERIFY — the full list is volatile and likely to keep growing.</strong> Newer events include <code class="inl">Setup</code>, <code class="inl">UserPromptExpansion</code>, <code class="inl">PermissionRequest</code>, <code class="inl">PermissionDenied</code>, <code class="inl">PostToolUseFailure</code>, <code class="inl">PostToolBatch</code>, <code class="inl">MessageDisplay</code>, <code class="inl">SubagentStart</code>, <code class="inl">TaskCreated</code>, <code class="inl">TaskCompleted</code>, <code class="inl">StopFailure</code>, <code class="inl">TeammateIdle</code>, <code class="inl">InstructionsLoaded</code>, <code class="inl">ConfigChange</code>, <code class="inl">CwdChanged</code>, <code class="inl">FileChanged</code>, <code class="inl">WorktreeCreate</code>, <code class="inl">WorktreeRemove</code>, <code class="inl">PostCompact</code>, <code class="inl">Elicitation</code>, <code class="inl">ElicitationResult</code>. Re-verify against the live Hooks reference. (source: Hooks)</div>
+
+  <h4>Matchers (verbatim rules)</h4>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Matcher value</th><th>Evaluated as</th></tr></thead>
+    <tbody>
+      <tr><td><code class="inl">"*"</code>, <code class="inl">""</code>, or omitted</td><td>Match all</td></tr>
+      <tr><td>Only letters, digits, <code class="inl">_</code>, <code class="inl">|</code></td><td>Exact string or <code class="inl">|</code>-separated list (e.g. <code class="inl">Bash</code>, <code class="inl">Edit|Write</code>)</td></tr>
+      <tr><td>Any other character</td><td>JavaScript regular expression (e.g. <code class="inl">^Notebook</code>, <code class="inl">mcp__memory__.*</code>)</td></tr>
+    </tbody>
+  </table></div>
+  <p>Tool-name matching applies to <code class="inl">PreToolUse</code>, <code class="inl">PostToolUse</code>, <code class="inl">PostToolUseFailure</code>, <code class="inl">PermissionRequest</code>, <code class="inl">PermissionDenied</code>. <code class="inl">SessionStart</code> matches <code class="inl">startup</code>/<code class="inl">resume</code>/<code class="inl">clear</code>/<code class="inl">compact</code>; <code class="inl">PreCompact</code>/<code class="inl">PostCompact</code> match <code class="inl">manual</code>/<code class="inl">auto</code>. Events with <strong>no matcher support</strong> (always fire) include <code class="inl">UserPromptSubmit</code>, <code class="inl">Stop</code>, <code class="inl">PostToolBatch</code>, <code class="inl">TaskCreated</code>, <code class="inl">TaskCompleted</code>.</p>
+
+  <h4>The stdin input contract (verbatim common fields)</h4>
+  <div class="codewrap"><div class="clab"><span class="dot"></span> common fields on stdin (every hook)</div>
+  <pre><code>{
+  "session_id": "abc123",
+  "transcript_path": "/path/to/transcript.jsonl",
+  "cwd": "/current/working/directory",
+  "permission_mode": "default|plan|acceptEdits|auto|dontAsk|bypassPermissions",
+  "hook_event_name": "EventName"
+}</code></pre></div>
+
+  <h4>The exit-code table (verbatim) — the single most-tested hook fact</h4>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Exit code</th><th>Behavior</th><th>JSON processing</th></tr></thead>
+    <tbody>
+      <tr><td><strong>0</strong></td><td>Success</td><td>Parses stdout for JSON output</td></tr>
+      <tr><td><strong>2</strong></td><td>Blocking error</td><td>Ignores stdout/JSON; feeds stderr to Claude as error</td></tr>
+      <tr><td><strong>Other</strong> (1, 3, …)</td><td>Non-blocking error</td><td>stderr shown in transcript; execution continues</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="callout warn collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🛑</span> Security-critical — only exit 2 blocks (exit 1 does NOT)<span class="chev">▼</span></div>
+  <div class="cbody"><p>Verbatim: "For most hook events, only exit code 2 blocks the action. Claude Code treats exit code 1 as a non-blocking error and proceeds with the action, even though 1 is the conventional Unix failure code. If your hook is meant to enforce a policy, use <code class="inl">exit 2</code>." (source: Hooks) This is counter-intuitive — almost every other CLI tool treats exit 1 as failure. A policy hook that <code class="inl">exit 1</code>s will <strong>let the action through</strong>.</p></div></div>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 720 270" role="img" aria-label="Decision diagram of a hook's exit code: exit 0 means success and stdout is parsed for JSON; exit 2 is the only code that blocks the action and feeds stderr to Claude; any other code including 1 is a non-blocking error and the action proceeds">
+      <defs><style>.t{font:700 13px sans-serif;fill:#2b2622}.s{font:400 10.5px sans-serif;fill:#5c544c}.lab{font:700 12px sans-serif;fill:#fff}.cd{font:700 15px sans-serif;fill:#fff}.bx{font:600 11px sans-serif;fill:#2b2622}</style><marker id="arx" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6 z" fill="#5c544c"/></marker></defs>
+      <text class="t" x="360" y="22" text-anchor="middle">A hook exits → its exit code decides what happens</text>
+      <rect x="305" y="36" width="110" height="40" rx="9" fill="#2b2622"/><text class="cd" x="360" y="56" text-anchor="middle">hook</text><text class="s" x="360" y="70" text-anchor="middle" fill="#d8cabb">exits with code…</text>
+      <path d="M360 76 L150 104" stroke="#5c544c" stroke-width="1.5" marker-end="url(#arx)"/>
+      <path d="M360 76 L360 104" stroke="#5c544c" stroke-width="1.5" marker-end="url(#arx)"/>
+      <path d="M360 76 L575 104" stroke="#5c544c" stroke-width="1.5" marker-end="url(#arx)"/>
+      <rect x="40" y="108" width="210" height="44" rx="9" fill="#3f7d4f"/><text class="cd" x="58" y="135">0</text><text class="lab" x="86" y="130">Success</text><text class="s" x="86" y="146" fill="#e3f0e6">stdout parsed for JSON</text>
+      <rect x="255" y="108" width="210" height="44" rx="9" fill="#b3402f"/><text class="cd" x="273" y="135">2</text><text class="lab" x="300" y="130">BLOCKS the action</text><text class="s" x="300" y="146" fill="#f7e3df">stderr fed to Claude</text>
+      <rect x="470" y="108" width="210" height="44" rx="9" fill="#b8860b"/><text class="cd" x="488" y="135">1, 3…</text><text class="lab" x="538" y="130">Non-blocking</text><text class="s" x="538" y="146" fill="#f6edd6">stderr shown; proceeds</text>
+      <path d="M145 152 L145 184" stroke="#5c544c" stroke-width="1.5" marker-end="url(#arx)"/>
+      <path d="M360 152 L360 184" stroke="#5c544c" stroke-width="1.5" marker-end="url(#arx)"/>
+      <path d="M575 152 L575 184" stroke="#5c544c" stroke-width="1.5" marker-end="url(#arx)"/>
+      <rect x="55" y="188" width="180" height="34" rx="8" fill="#e3f0e6" stroke="#3f7d4f"/><text class="bx" x="145" y="209" text-anchor="middle">action proceeds ✓</text>
+      <rect x="270" y="188" width="180" height="34" rx="8" fill="#f7e3df" stroke="#b3402f"/><text class="bx" x="360" y="209" text-anchor="middle">action STOPPED ✗</text>
+      <rect x="485" y="188" width="180" height="34" rx="8" fill="#f6edd6" stroke="#b8860b"/><text class="bx" x="575" y="209" text-anchor="middle">action proceeds ⚠</text>
+      <text class="s" x="360" y="248" text-anchor="middle">The trap: only <tspan font-weight="700" fill="#b3402f">exit 2</tspan> blocks. A policy hook that exit 1s (Unix-conventional failure) lets the action through.</text>
+    </svg>
+    <figcaption>Diagram (g): the hook exit-code branch. Counter-intuitively, <strong>only exit 2 blocks</strong>; exit 0 succeeds (stdout parsed for JSON) and exit 1 (or any other non-zero) is a <em>non-blocking</em> error — the action still proceeds. A policy hook must <code class="inl">exit 2</code>.</figcaption>
+  </figure>
+
+  <p>Which events can block via exit 2 (selections): <code class="inl">PreToolUse</code> (blocks the tool call), <code class="inl">PermissionRequest</code> (denies), <code class="inl">UserPromptSubmit</code> (blocks + erases the prompt), <code class="inl">Stop</code>/<code class="inl">SubagentStop</code> (prevents stopping), <code class="inl">PreCompact</code> (blocks compaction), <code class="inl">ConfigChange</code> (blocks the change except <code class="inl">policy_settings</code>), <code class="inl">WorktreeCreate</code> (any non-zero fails), <code class="inl">PostToolBatch</code> (stops the agentic loop before the next model call). <strong>Cannot block:</strong> <code class="inl">PostToolUse</code>/<code class="inl">PostToolUseFailure</code> ("tool already ran"), <code class="inl">StopFailure</code>, <code class="inl">Notification</code>, <code class="inl">SessionStart</code>, <code class="inl">SessionEnd</code>.</p>
+
+  <h4>The JSON output schema</h4>
+  <div class="codewrap"><div class="clab"><span class="dot"></span> universal output fields (stdout, exit 0)</div>
+  <pre><code>{
+  "continue": true,
+  "stopReason": "Message when continue is false",
+  "suppressOutput": false,
+  "systemMessage": "Warning message shown to user"
+}</code></pre></div>
+  <div class="codewrap"><div class="clab"><span class="dot"></span> PreToolUse decision control</div>
+  <pre><code>{
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "allow|deny|ask|defer",
+    "permissionDecisionReason": "Reason for decision"
+  }
+}</code></pre></div>
+  <p><strong>SessionStart can inject context (verbatim):</strong> <code class="inl">hookSpecificOutput.additionalContext</code> adds context to Claude's window; "Output strings ... are capped at 10,000 characters."</p>
+
+  <div class="callout warn collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">⚠️</span> Hook decisions do NOT bypass permission rules<span class="chev">▼</span></div>
+  <div class="cbody"><p>Verbatim: "Hook decisions do not bypass permission rules. Deny and ask rules are evaluated regardless of what a PreToolUse hook returns... A hook that exits with code 2 stops the tool call before permission rules are evaluated." (source: Permissions) So a PreToolUse hook returning <code class="inl">permissionDecision: "allow"</code> still can't override a deny rule — but an <code class="inl">exit 2</code> stops the call earlier, before the permission flow runs at all.</p></div></div>
+
+  <h4>A complete hook config (verbatim)</h4>
+  <div class="codewrap"><div class="clab"><span class="dot"></span> PreToolUse hook in settings.json</div>
+  <pre><code>{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(rm *)",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/block-rm.sh",
+            "args": []
+          }
+        ]
+      }
+    ]
+  }
+}</code></pre></div>
+
+  <div class="callout warn collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔒</span> Security notes (verbatim)<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li>"On macOS and Linux, command hooks run in their own session without a controlling terminal as of v2.1.139... To surface a message to the user on any platform, return <code class="inl">systemMessage</code> in JSON output."</li>
+    <li>Bash <code class="inl">if</code>-matching "fails open (runs hook regardless) when Bash command cannot be parsed. Use the [permission system] rather than a hook to enforce hard allow/deny."</li>
+    <li>Prompt-injection guidance for <code class="inl">additionalContext</code>: "Write the text as factual statements rather than imperative system instructions."</li>
+    <li>Managed governance: <code class="inl">allowManagedHooksOnly</code>, <code class="inl">allowedHttpHookUrls</code>, <code class="inl">httpHookAllowedEnvVars</code>, <code class="inl">disableAllHooks</code>.</li>
+  </ul></div></div>
+
+  <p>Hooks can also be declared inside a subagent's frontmatter (e.g. a <code class="inl">db-reader</code> agent with a <code class="inl">PreToolUse</code> matcher running <code class="inl">validate-readonly-query.sh</code>). Note: plugin subagents do <em>not</em> support <code class="inl">hooks</code> (Section F.2).</p>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">A security team writes a PreToolUse hook that runs a policy check and <code class="inl">exit 1</code>s when the command is forbidden, logging the violation to stderr. Predict: does the forbidden command get blocked?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>No — the command runs anyway.</strong> "Only exit code 2 blocks the action. Claude Code treats exit code 1 as a non-blocking error and proceeds with the action." The hook needs <code class="inl">exit 2</code> to block. Worse, if the enforcement relies on Bash <code class="inl">if</code>-matching that can't parse the command, it "fails open." For hard allow/deny, the docs say use the permission system, not a hook. (source: Hooks)</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="2">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">You need to guarantee that a dangerous tool call is stopped <em>before</em> it executes. Which event + exit code does the job?</div>
+    <button class="opt">PostToolUse with exit 2</button>
+    <button class="opt">PreToolUse with exit 1</button>
+    <button class="opt">PreToolUse with exit 2 (or <code class="inl">permissionDecision: "deny"</code>)</button>
+    <button class="opt">SessionStart with <code class="inl">additionalContext</code></button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden>PostToolUse can't block ("tool already ran"). Exit 1 is non-blocking. PreToolUse fires before the tool; exit 2 blocks the call before permission rules even run, and <code class="inl">permissionDecision: "deny"</code> denies it. SessionStart only injects context.</div>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li><strong>Hooks = deterministic control</strong> via your own shell commands at lifecycle events.</li>
+    <li><strong>Exit 0</strong> = success (parse stdout JSON); <strong>exit 2</strong> = block (stderr → Claude); <strong>exit 1/other</strong> = non-blocking. Only 2 blocks.</li>
+    <li><strong>PreToolUse</strong> can block; <strong>PostToolUse</strong> cannot. Stable subset is 9 events; the full roster (~30) is volatile.</li>
+    <li>Matchers: bare/<code class="inl">|</code>-list = exact; other chars = regex. PreToolUse uses <code class="inl">permissionDecision</code>; SessionStart uses <code class="inl">additionalContext</code> (cap 10,000 chars).</li>
+    <li>For hard allow/deny use the permission system — Bash <code class="inl">if</code>-matching fails open.</li>
+  </ul></div></div>
+</section>
+
+<!-- ============ SECTION F ============ -->
+<div class="sec-divider" id="secF">
+  <span class="badge"><span class="emoji">⑥</span> Extending</span>
+  <h2>Extending Claude Code</h2>
+  <p>Skills (commands merged in), subagents, plugins &amp; marketplaces, output styles — and when to reach for which.</p>
+</div>
+
+<section class="lesson" id="lF" data-lesson>
+  <div class="lmeta"><span class="ltag"><span class="emoji">🧩</span> Section F</span><span class="ltime">⏱ ~18 min</span><span class="ldomain">Domain 2 · Domain 5</span></div>
+  <h3 class="ltitle">The extension surfaces — and the decision of which to use</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Explain the commands-merged-into-skills consolidation and skill scope precedence</li>
+      <li>Describe subagent locations, priority, frontmatter, and the plugin-subagent restriction</li>
+      <li>Know what a plugin bundles and how a marketplace installs it</li>
+      <li>Choose between Skill / Subagent / Hook / MCP / Plugin for a given need</li>
+    </ul>
+  </div>
+
+  <h4>F.1 · Skills (custom commands merged in)</h4>
+  <blockquote class="ex">"Custom commands have been merged into skills. A file at <code class="inl">.claude/commands/deploy.md</code> and a skill at <code class="inl">.claude/skills/deploy/SKILL.md</code> both create <code class="inl">/deploy</code> and work the same way. Your existing <code class="inl">.claude/commands/</code> files keep working." (source: Skills)</blockquote>
+  <p>Skill <strong>scopes &amp; precedence</strong>: Enterprise (managed) → Personal (<code class="inl">~/.claude/skills/</code>) → Project (<code class="inl">.claude/skills/</code>) → Plugin (<code class="inl">&lt;plugin&gt;/skills/</code>). "When skills share the same name across levels, enterprise overrides personal, and personal overrides project... if a skill and a command share the same name, the skill takes precedence." The command name comes from the <strong>directory</strong> under <code class="inl">.claude/skills/</code> (<code class="inl">deploy-staging/SKILL.md</code> → <code class="inl">/deploy-staging</code>), the <strong>file name</strong> under <code class="inl">.claude/commands/</code>, and is namespaced <code class="inl">plugin-name:skill-name</code> for plugin skills.</p>
+  <p><strong>Frontmatter (selections):</strong> <code class="inl">name</code>, <code class="inl">description</code> (recommended; "truncated at 1,536 characters in the skill listing"), <code class="inl">when_to_use</code>, <code class="inl">argument-hint</code>, <code class="inl">arguments</code>, <code class="inl">disable-model-invocation: true</code> ("prevent Claude from automatically loading this skill... trigger manually with <code class="inl">/name</code>"), <code class="inl">user-invocable: false</code> ("hide from the <code class="inl">/</code> menu... for background knowledge"), <code class="inl">allowed-tools</code>, <code class="inl">model</code>, <code class="inl">context: fork</code>, <code class="inl">hooks</code>, <code class="inl">paths</code>, <code class="inl">shell</code>. <strong>Substitutions:</strong> <code class="inl">$ARGUMENTS</code> (all args; appended as <code class="inl">ARGUMENTS: &lt;value&gt;</code> if not present), <code class="inl">$ARGUMENTS[N]</code>, <code class="inl">$N</code> (0-based: <code class="inl">$0</code> = first arg), <code class="inl">$name</code>, <code class="inl">${CLAUDE_SKILL_DIR}</code>. Dynamic context: <code class="inl">!`git diff HEAD`</code> "replaces the line with its output before Claude sees the skill content."</p>
+  <div class="codewrap"><div class="clab"><span class="dot"></span> skill with manual-only invocation (verbatim)</div>
+  <pre><code>---
+name: fix-issue
+description: Fix a GitHub issue
+disable-model-invocation: true
+---
+Analyze and fix the GitHub issue: $ARGUMENTS.
+
+1. Use `gh issue view` to get the issue details
+2. Understand the problem described in the issue
+3. Search the codebase for relevant files
+...</code></pre></div>
+
+  <h4>F.2 · Subagents (<code>.claude/agents/</code>)</h4>
+  <blockquote class="ex">"Each subagent runs in its own context window with a custom system prompt, specific tool access, and independent permissions. When Claude encounters a task that matches a subagent's description, it delegates to that subagent..." (source: Subagents)</blockquote>
+  <p><strong>Built-in subagents:</strong> <strong>Explore</strong> (Haiku, read-only, codebase search; "skips your CLAUDE.md files"), <strong>Plan</strong> (inherits model, read-only, plan mode), <strong>general-purpose</strong> (inherits model, all tools); plus helpers <code class="inl">statusline-setup</code> and <code class="inl">claude-code-guide</code>. "subagents cannot spawn other subagents."</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Location</th><th>Scope</th><th>Priority</th></tr></thead>
+    <tbody>
+      <tr><td>Managed settings</td><td>Organization-wide</td><td>1 (highest)</td></tr>
+      <tr><td><code class="inl">--agents</code> CLI flag</td><td>Current session</td><td>2</td></tr>
+      <tr><td><code class="inl">.claude/agents/</code></td><td>Current project</td><td>3</td></tr>
+      <tr><td><code class="inl">~/.claude/agents/</code></td><td>All your projects</td><td>4</td></tr>
+      <tr><td>Plugin's <code class="inl">agents/</code></td><td>Where plugin is enabled</td><td>5 (lowest)</td></tr>
+    </tbody>
+  </table></div>
+  <div class="codewrap"><div class="clab"><span class="dot"></span> subagent file format (verbatim)</div>
+  <pre><code>---
+name: code-reviewer
+description: Reviews code for quality and best practices
+tools: Read, Glob, Grep
+model: sonnet
+---
+
+You are a code reviewer. When invoked, analyze the code and provide
+specific, actionable feedback on quality, security, and best practices.</code></pre></div>
+  <p><strong>Frontmatter:</strong> required <code class="inl">name</code>, <code class="inl">description</code>; optional <code class="inl">tools</code> (inherits all if omitted), <code class="inl">disallowedTools</code>, <code class="inl">model</code> (default <code class="inl">inherit</code>), <code class="inl">permissionMode</code>, <code class="inl">maxTurns</code>, <code class="inl">skills</code>, <code class="inl">mcpServers</code>, <code class="inl">hooks</code>, <code class="inl">memory</code>, <code class="inl">background</code>, <code class="inl">isolation</code> (<code class="inl">worktree</code>), <code class="inl">color</code>, <code class="inl">initialPrompt</code>.</p>
+  <div class="callout warn collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔌</span> Plugin subagents lose three frontmatter fields (verbatim)<span class="chev">▼</span></div>
+  <div class="cbody"><p>"For security reasons, plugin subagents do not support the <code class="inl">hooks</code>, <code class="inl">mcpServers</code>, or <code class="inl">permissionMode</code> frontmatter fields. These fields are ignored when loading agents from a plugin." Also: "Subagents are loaded at session start. If you add or edit a subagent file directly on disk, restart your session... Subagents created through the <code class="inl">/agents</code> interface take effect immediately." <span class="analogy">lesson framing</span> The Task tool was renamed to <strong>Agent</strong> in v2.1.63; <code class="inl">Task(...)</code> still works as an alias.</p></div></div>
+
+  <h4>F.3 · Plugins &amp; marketplaces</h4>
+  <p>A plugin bundles <code class="inl">.claude-plugin/</code> (holds <code class="inl">plugin.json</code> only), <code class="inl">skills/</code>, <code class="inl">commands/</code>, <code class="inl">agents/</code>, <code class="inl">hooks/</code>, <code class="inl">.mcp.json</code>, <code class="inl">.lsp.json</code>, <code class="inl">monitors/</code>, <code class="inl">bin/</code>, and a limited <code class="inl">settings.json</code>. "Common mistake: Don't put <code class="inl">commands/</code>, <code class="inl">agents/</code>, <code class="inl">skills/</code>, or <code class="inl">hooks/</code> inside the <code class="inl">.claude-plugin/</code> directory. Only <code class="inl">plugin.json</code> goes inside <code class="inl">.claude-plugin/</code>."</p>
+  <div class="codewrap"><div class="clab"><span class="dot"></span> plugin.json manifest (verbatim)</div>
+  <pre><code>{
+  "name": "my-first-plugin",
+  "description": "A greeting plugin to learn the basics",
+  "version": "1.0.0",
+  "author": { "name": "Your Name" }
+}</code></pre></div>
+  <p>"<code class="inl">name</code> — Unique identifier and skill namespace. Skills are prefixed with this (e.g., <code class="inl">/my-first-plugin:hello</code>)." If <code class="inl">version</code> is omitted and the plugin is distributed via git, "the commit SHA is used and every commit counts as a new version." Dev: <code class="inl">claude --plugin-dir ./my-plugin</code> (also accepts a <code class="inl">.zip</code>), <code class="inl">/reload-plugins</code>.</p>
+  <div class="codewrap"><div class="clab"><span class="dot"></span> .claude-plugin/marketplace.json (verbatim)</div>
+  <pre><code>{
+  "name": "my-plugins",
+  "owner": { "name": "Your Name" },
+  "plugins": [
+    {
+      "name": "quality-review-plugin",
+      "source": "./plugins/quality-review-plugin",
+      "description": "Adds a quality-review skill for quick code reviews"
+    }
+  ]
+}</code></pre></div>
+  <p>Install flow: <code class="inl">/plugin marketplace add ./my-marketplace</code> then <code class="inl">/plugin install quality-review-plugin@my-plugins</code>; refresh with <code class="inl">/plugin marketplace update</code>. Anthropic maintains <code class="inl">claude-plugins-official</code> (auto-available) and a community marketplace you add explicitly.</p>
+
+  <h4>F.4 · Output styles</h4>
+  <p>"Output styles change how Claude responds, not what Claude knows. They modify the system prompt..." Built-in: <strong>Default</strong>, <strong>Proactive</strong>, <strong>Explanatory</strong>, <strong>Learning</strong>. Files at <code class="inl">~/.claude/output-styles</code> or <code class="inl">.claude/output-styles</code>; select via <code class="inl">/config</code> or the <code class="inl">outputStyle</code> field. "Changes take effect after <code class="inl">/clear</code> or a new session."</p>
+
+  <h4>When to reach for which (decision table)</h4>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Surface</th><th>Reach for it when…</th><th>Key property</th></tr></thead>
+    <tbody>
+      <tr><td>Skill</td><td>You want on-demand procedural / reference knowledge or a reusable prompt-driven command</td><td>Loaded into context; <code class="inl">/name</code> or model-invoked</td></tr>
+      <tr><td>Subagent</td><td>You need an isolated context window + restricted tools for a delegated task</td><td>Own context, own permissions; can't spawn subagents</td></tr>
+      <tr><td>Hook</td><td>You need a deterministic, guaranteed action at a lifecycle moment (block, inject, react)</td><td>Runs your code; <code class="inl">exit 2</code> can block</td></tr>
+      <tr><td>MCP</td><td>You need to integrate an external tool or data source</td><td>External server over a transport (Section G)</td></tr>
+      <tr><td>Plugin</td><td>You want to share/version/reuse a bundle across projects</td><td>Namespaced (<code class="inl">/plugin:cmd</code>); marketplace-distributable</td></tr>
+    </tbody>
+  </table></div>
+  <div class="verifynote">⚠ <strong>VERIFY (lesson framing, grounded in docs):</strong> standalone <code class="inl">.claude/</code> suits personal/project/quick work (short names like <code class="inl">/deploy</code>); plugins suit sharing/versioning across projects (namespaced names). Skill = knowledge; Subagent = isolated context + tool restriction; Hook = guaranteed action; MCP = external integration. (source: Best practices)</div>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 720 390" role="img" aria-label="Four extension surfaces mapped on two axes: X axis runs from soft guidance on the left to hard enforcement on the right; Y axis runs from always loaded at the top to on demand at the bottom. CLAUDE.md sits top-left, Rules sits top-left as well but slightly lower and scoped, Skills sits bottom-left, and Hooks sits bottom-right. Decision arrows show: want it guaranteed go to Hook; want it as context or preference go to CLAUDE.md or Rules; want a multi-step procedure on demand go to Skill.">
+      <defs>
+        <style>.t{font:700 13px sans-serif;fill:#2b2622}.s{font:400 10.5px sans-serif;fill:#5c544c}.lab{font:700 12px sans-serif;fill:#fff}.sub{font:400 10px sans-serif;fill:#5c544c}.axlbl{font:700 11px sans-serif;fill:#5c544c;letter-spacing:.04em}</style>
+        <marker id="ahf" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5c544c"/></marker>
+      </defs>
+
+      <!-- Title -->
+      <text class="t" x="360" y="22" text-anchor="middle">Four extension surfaces — which to reach for</text>
+
+      <!-- Axis lines -->
+      <!-- X axis (soft → hard) -->
+      <line x1="60" y1="210" x2="660" y2="210" stroke="#e7e0d8" stroke-width="1.5" stroke-dasharray="5 4"/>
+      <!-- Y axis (always → on-demand) -->
+      <line x1="360" y1="40" x2="360" y2="370" stroke="#e7e0d8" stroke-width="1.5" stroke-dasharray="5 4"/>
+
+      <!-- X axis labels -->
+      <text class="axlbl" x="70" y="205" text-anchor="start" fill="#3a7d7b">← SOFT GUIDANCE</text>
+      <text class="axlbl" x="650" y="205" text-anchor="end" fill="#b3402f">HARD ENFORCEMENT →</text>
+      <!-- X axis arrow tips -->
+      <line x1="62" y1="210" x2="50" y2="210" stroke="#3a7d7b" stroke-width="1.5" marker-end="url(#ahf)"/>
+      <line x1="658" y1="210" x2="670" y2="210" stroke="#b3402f" stroke-width="1.5" marker-end="url(#ahf)"/>
+
+      <!-- Y axis labels -->
+      <text class="axlbl" x="356" y="52" text-anchor="end" fill="#6b4f9e">ALWAYS LOADED ↑</text>
+      <text class="axlbl" x="364" y="362" text-anchor="start" fill="#6b4f9e">↓ ON-DEMAND</text>
+
+      <!-- === CLAUDE.md box === top-left quadrant -->
+      <rect x="72" y="58" width="245" height="118" rx="10" fill="#f4e6df" stroke="#c96442" stroke-width="1.5"/>
+      <text class="t" x="194" y="82" text-anchor="middle" fill="#a44a2e">CLAUDE.md</text>
+      <text class="sub" x="194" y="100" text-anchor="middle">Loaded every session (all scopes)</text>
+      <text class="sub" x="194" y="116" text-anchor="middle">Soft guidance — context, not enforcement</text>
+      <text class="sub" x="194" y="132" text-anchor="middle">Project-wide conventions + persona</text>
+      <text class="sub" x="194" y="148" text-anchor="middle">Concatenated, never overrides</text>
+      <text class="sub" x="194" y="164" text-anchor="middle" fill="#c96442" style="font-style:italic">Want it as context/preference?</text>
+
+      <!-- === Rules box === top-left quadrant, slightly below CLAUDE.md -->
+      <rect x="72" y="188" width="245" height="106" rx="10" fill="#ece4f6" stroke="#6b4f9e" stroke-width="1.5"/>
+      <text class="t" x="194" y="211" text-anchor="middle" fill="#6b4f9e">Rules  (.claude/rules/)</text>
+      <text class="sub" x="194" y="229" text-anchor="middle">Every session OR path-scoped (paths: glob)</text>
+      <text class="sub" x="194" y="245" text-anchor="middle">Soft — topic/area-specific instructions</text>
+      <text class="sub" x="194" y="261" text-anchor="middle">User rules load before project rules</text>
+      <text class="sub" x="194" y="277" text-anchor="middle" fill="#6b4f9e" style="font-style:italic">Scoped preference? → Rules</text>
+
+      <!-- === Skills box === bottom-left quadrant -->
+      <rect x="72" y="306" width="245" height="72" rx="10" fill="#e0efee" stroke="#3a7d7b" stroke-width="1.5"/>
+      <text class="t" x="194" y="328" text-anchor="middle" fill="#3a7d7b">Skills  (/command)</text>
+      <text class="sub" x="194" y="346" text-anchor="middle">On-demand · soft guidance + procedure</text>
+      <text class="sub" x="194" y="362" text-anchor="middle" fill="#3a7d7b" style="font-style:italic">Multi-step workflow? → Skill</text>
+
+      <!-- === Hooks box === right side (spans both quadrants) -->
+      <rect x="400" y="58" width="258" height="320" rx="10" fill="#f7e3df" stroke="#b3402f" stroke-width="2"/>
+      <text class="t" x="529" y="86" text-anchor="middle" fill="#b3402f">Hooks</text>
+      <text class="sub" x="529" y="106" text-anchor="middle">Lifecycle events (PreToolUse, PostToolUse,</text>
+      <text class="sub" x="529" y="122" text-anchor="middle">Stop, Notification, SubagentStop …)</text>
+      <text class="sub" x="529" y="144" text-anchor="middle" fill="#b3402f" style="font-weight:700">HARD enforcement — your code runs,</text>
+      <text class="sub" x="529" y="160" text-anchor="middle" fill="#b3402f" style="font-weight:700">exit 2 BLOCKS the action</text>
+      <text class="sub" x="529" y="180" text-anchor="middle">Formatters · mandatory approval</text>
+      <text class="sub" x="529" y="196" text-anchor="middle">Security policy enforcement</text>
+      <text class="sub" x="529" y="216" text-anchor="middle">Live-reload (no restart needed)</text>
+      <!-- Decision banner inside hooks box -->
+      <rect x="414" y="242" width="230" height="44" rx="8" fill="#b3402f"/>
+      <text class="lab" x="529" y="260" text-anchor="middle">Want it GUARANTEED?</text>
+      <text class="lab" x="529" y="278" text-anchor="middle">→ Hook (exit 2)</text>
+      <text class="sub" x="529" y="318" text-anchor="middle">The ONLY surface that</text>
+      <text class="sub" x="529" y="334" text-anchor="middle">can truly block an action</text>
+      <text class="sub" x="529" y="350" text-anchor="middle">regardless of model output</text>
+      <text class="sub" x="529" y="366" text-anchor="middle" fill="#b3402f" style="font-style:italic">CLAUDE.md cannot. Rules cannot.</text>
+    </svg>
+    <figcaption>Diagram (h): the four extension surfaces on two axes. X-axis = soft guidance → hard enforcement; Y-axis = always-loaded → on-demand. <strong>Decision rule:</strong> Want it GUARANTEED? → Hook (<code class="inl">exit 2</code>). Want it as context/preference? → CLAUDE.md or Rules. A multi-step procedure on demand? → Skill. The exam gap: "automation = hook; preference = CLAUDE.md/Rules."</figcaption>
+  </figure>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">You ship a plugin whose subagent frontmatter sets <code class="inl">permissionMode: bypassPermissions</code> and adds an <code class="inl">mcpServers</code> entry. A teammate installs it. Predict what actually loads.</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>Neither field takes effect.</strong> "For security reasons, plugin subagents do not support the <code class="inl">hooks</code>, <code class="inl">mcpServers</code>, or <code class="inl">permissionMode</code> frontmatter fields. These fields are ignored when loading agents from a plugin." The subagent loads, but those three fields are dropped — so a plugin can't smuggle in elevated permissions, extra MCP servers, or hooks. (source: Subagents)</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="0">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">A skill named <code class="inl">deploy</code> and a command file <code class="inl">deploy.md</code> both exist and both define <code class="inl">/deploy</code>. Which wins, and what does the consolidation say?</div>
+    <button class="opt">The skill takes precedence; commands have been merged into skills and <code class="inl">.claude/commands/</code> still works</button>
+    <button class="opt">The command always wins because it's the legacy mechanism</button>
+    <button class="opt">It throws a duplicate-name error and neither loads</button>
+    <button class="opt">They run concatenated, one after the other</button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden>"Custom commands have been merged into skills... if a skill and a command share the same name, the skill takes precedence." Both <code class="inl">.claude/commands/deploy.md</code> and <code class="inl">.claude/skills/deploy/SKILL.md</code> create <code class="inl">/deploy</code>; commands keep working but skills are primary.</div>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li><strong>Commands merged into skills:</strong> both create the same <code class="inl">/cmd</code>; skill wins on name clash. Scope precedence: enterprise &gt; personal &gt; project &gt; plugin.</li>
+    <li><strong>Subagents</strong> get their own context + permissions; priority Managed &gt; <code class="inl">--agents</code> &gt; project &gt; user &gt; plugin. <strong>Plugin subagents drop <code class="inl">hooks</code>/<code class="inl">mcpServers</code>/<code class="inl">permissionMode</code>.</strong></li>
+    <li><strong>Plugins</strong> bundle skills/agents/hooks/MCP; only <code class="inl">plugin.json</code> goes in <code class="inl">.claude-plugin/</code>; marketplaces distribute them.</li>
+    <li><strong>Pick the surface:</strong> knowledge → Skill; isolation → Subagent; guarantee → Hook; integration → MCP; share/version → Plugin.</li>
+  </ul></div></div>
+</section>
+
+<!-- ============ SECTION G ============ -->
+<div class="sec-divider" id="secG">
+  <span class="badge"><span class="emoji">⑦</span> MCP</span>
+  <h2>MCP in Claude Code</h2>
+  <p>Transports, three install scopes (with the rename trap), <code style="font-size:.7em">.mcp.json</code>, scope precedence, governance.</p>
+</div>
+
+<section class="lesson" id="lG" data-lesson>
+  <div class="lmeta"><span class="ltag"><span class="emoji">🔗</span> Section G</span><span class="ltime">⏱ ~12 min</span><span class="ldomain">Domain 2 · Domain 4 · Domain 5</span></div>
+  <h3 class="ltitle">Connecting Claude Code to external tools and data</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Name the four MCP transports and which is deprecated / recommended</li>
+      <li>State the three install scopes — and the local-was-project / user-was-global rename trap</li>
+      <li>Recall <code class="inl">.mcp.json</code>, scope precedence (no field merging), and governance keys</li>
+    </ul>
+  </div>
+
+  <h4>Transports (verbatim commands)</h4>
+  <ul>
+    <li><strong>HTTP</strong> (recommended for remote): <code class="inl">claude mcp add --transport http &lt;name&gt; &lt;url&gt;</code>. In JSON, <code class="inl">type</code> accepts <code class="inl">streamable-http</code> as an alias for <code class="inl">http</code>.</li>
+    <li><strong>SSE</strong> (<span class="legacy">deprecated</span>): <code class="inl">claude mcp add --transport sse &lt;name&gt; &lt;url&gt;</code></li>
+    <li><strong>stdio</strong> (local): <code class="inl">claude mcp add [options] &lt;name&gt; -- &lt;command&gt; [args...]</code> — "the <code class="inl">--</code> (double dash) separates Claude's own options... from the command and arguments that run the server."</li>
+    <li><strong>WebSocket</strong>: <code class="inl">type: "ws"</code> via <code class="inl">.mcp.json</code> or <code class="inl">claude mcp add-json</code> (not supported by <code class="inl">--transport</code>).</li>
+  </ul>
+
+  <h4>The three install scopes (verbatim)</h4>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Scope</th><th>Loads in</th><th>Shared with team</th><th>Stored in</th></tr></thead>
+    <tbody>
+      <tr><td>Local</td><td>Current project only</td><td>No</td><td><code class="inl">~/.claude.json</code></td></tr>
+      <tr><td>Project</td><td>Current project only</td><td>Yes, via version control</td><td><code class="inl">.mcp.json</code> in project root</td></tr>
+      <tr><td>User</td><td>All your projects</td><td>No</td><td><code class="inl">~/.claude.json</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="callout warn collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🪤</span> The scope-rename trap <span class="verify">⚠ VERIFY</span><span class="chev">▼</span></div>
+  <div class="cbody"><p>Verbatim: "<code class="inl">local</code> (default): Available only to you in the current project (was called <code class="inl">project</code> in older versions)" and "<code class="inl">user</code>: Available to you across all projects (was called <code class="inl">global</code> in older versions)." Older study material — and possibly older exam phrasing — uses the <em>old</em> names. So "project scope" in old material may mean today's <strong>local</strong>, and "global" may mean today's <strong>user</strong>. Don't confuse today's <code class="inl">project</code> scope (the team-shared <code class="inl">.mcp.json</code>) with the legacy meaning.</p></div></div>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 720 240" role="img" aria-label="MCP scope precedence from local at the top through project, user, plugin servers, down to claude.ai connectors, noting that the entire server entry from one source is used without merging">
+      <defs><style>.t{font:700 11.5px sans-serif;fill:#2b2622}.s{font:400 10px sans-serif;fill:#5c544c}.lab{font:700 11.5px sans-serif;fill:#fff}</style></defs>
+      <text class="t" x="360" y="20" text-anchor="middle">MCP scope precedence — first match wins, entry used whole (no merge)</text>
+      <rect x="120" y="36" width="480" height="32" rx="6" fill="#c96442"/><text class="lab" x="136" y="57">1 · Local scope</text>
+      <rect x="120" y="74" width="480" height="32" rx="6" fill="#3a7d7b"/><text class="lab" x="136" y="95">2 · Project scope (.mcp.json — team-shared)</text>
+      <rect x="120" y="112" width="480" height="32" rx="6" fill="#3f7d4f"/><text class="lab" x="136" y="133">3 · User scope</text>
+      <rect x="120" y="150" width="480" height="32" rx="6" fill="#6b4f9e"/><text class="lab" x="136" y="171">4 · Plugin-provided servers</text>
+      <rect x="120" y="188" width="480" height="32" rx="6" fill="#5c544c"/><text class="lab" x="136" y="209">5 · claude.ai connectors</text>
+    </svg>
+    <figcaption>Diagram (i): MCP scope precedence. "The entire server entry from that source is used; fields are not merged across scopes" — so a name collision resolves to one whole entry, top-down.</figcaption>
+  </figure>
+
+  <div class="codewrap"><div class="clab"><span class="dot"></span> project .mcp.json (checked into version control)</div>
+  <pre><code>{
+  "mcpServers": {
+    "shared-server": {
+      "command": "/path/to/server",
+      "args": [],
+      "env": {}
+    }
+  }
+}</code></pre></div>
+  <p>"For security reasons, Claude Code prompts for approval before using project-scoped servers from <code class="inl">.mcp.json</code> files." Reset with <code class="inl">claude mcp reset-project-choices</code>. <strong>Scope precedence (verbatim):</strong> 1. Local → 2. Project → 3. User → 4. Plugin-provided → 5. claude.ai connectors; "the entire server entry from that source is used; fields are not merged across scopes."</p>
+  <p><strong>Management:</strong> <code class="inl">claude mcp list</code>, <code class="inl">claude mcp get &lt;name&gt;</code>, <code class="inl">claude mcp remove &lt;name&gt;</code>, in-session <code class="inl">/mcp</code> (also handles OAuth 2.0 for remote servers). <strong>Governance:</strong> managed-only <code class="inl">allowedMcpServers</code>, <code class="inl">deniedMcpServers</code>, <code class="inl">allowManagedMcpServersOnly</code>, plus <code class="inl">enableAllProjectMcpServers</code>/<code class="inl">enabledMcpjsonServers</code>/<code class="inl">disabledMcpjsonServers</code>; CLI <code class="inl">--mcp-config &lt;file&gt;</code> and <code class="inl">--strict-mcp-config</code>.</p>
+
+  <div class="mcq" data-mcq data-correct="3">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">An older guide says "install the server at <em>project</em> scope so it stays on your machine only." In today's terminology, that maps to…</div>
+    <button class="opt">Today's project scope, shared via <code class="inl">.mcp.json</code></button>
+    <button class="opt">Today's user scope, all projects</button>
+    <button class="opt">A plugin-provided server</button>
+    <button class="opt">Today's <code class="inl">local</code> scope — "was called <code class="inl">project</code> in older versions," stored in <code class="inl">~/.claude.json</code>, you-only</button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden>The old "project" meaning ("only you, current project") is today's <code class="inl">local</code> scope: "was called <code class="inl">project</code> in older versions." Today's <em>project</em> scope is the team-shared <code class="inl">.mcp.json</code>. Old "global" = today's <code class="inl">user</code>.</div>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li><strong>Transports:</strong> http (recommended), sse (deprecated), stdio (local, after <code class="inl">--</code>), ws (JSON only).</li>
+    <li><strong>Scopes:</strong> local (you/project, <code class="inl">~/.claude.json</code>), project (team, <code class="inl">.mcp.json</code>), user (all projects). <strong>Rename trap:</strong> local=old "project", user=old "global".</li>
+    <li><strong>Precedence:</strong> local → project → user → plugin → connectors; the whole entry is used, no field merge.</li>
+    <li>Project servers prompt for approval; governance via managed allow/deny keys and <code class="inl">--strict-mcp-config</code>.</li>
+  </ul></div></div>
+</section>
+
+<!-- ============ SECTION H ============ -->
+<div class="sec-divider" id="secH">
+  <span class="badge"><span class="emoji">⑧</span> Workflows</span>
+  <h2>Workflows &amp; Automation</h2>
+  <p>Headless <code style="font-size:.7em">claude -p</code>, the Agent SDK, <code style="font-size:.7em">--bare</code>, output formats, CI auth, explore→plan→code→commit, verification gates, context hygiene.</p>
+</div>
+
+<section class="lesson" id="lH" data-lesson>
+  <div class="lmeta"><span class="ltag"><span class="emoji">🤖</span> Section H</span><span class="ltime">⏱ ~14 min</span><span class="ldomain">Domain 2 · Domain 5 · Domain 1</span></div>
+  <h3 class="ltitle">From an interactive session to a CI pipeline</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Run a headless <code class="inl">claude -p</code> command and relate it to the Agent SDK</li>
+      <li>Explain <code class="inl">--bare</code>, output formats, and CI authentication (<code class="inl">setup-token</code>)</li>
+      <li>Apply the explore→plan→code→commit loop, verification gates, and context hygiene</li>
+    </ul>
+  </div>
+
+  <h4>Headless mode and the Agent SDK</h4>
+  <blockquote class="ex">"To run Claude Code in non-interactive mode, pass <code class="inl">-p</code> with your prompt..." (source: Headless)</blockquote>
+  <div class="codewrap"><div class="clab"><span class="dot"></span> headless one-shot (verbatim)</div>
+  <pre><code>claude -p "Find and fix the bug in auth.py" --allowedTools "Read,Edit,Bash"</code></pre></div>
+  <p>The <strong>Agent SDK</strong> "gives you the same tools, agent loop, and context management that power Claude Code. It's available as a CLI for scripts and CI/CD, or as Python and TypeScript packages..." — <code class="inl">claude -p</code> <em>is</em> the SDK-via-CLI surface. (formerly "Claude Code SDK") <span class="verify">⚠ VERIFY</span></p>
+
+  <div class="callout tip collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">📦</span> <code>--bare</code>, output formats, and the reproducible-CI story<span class="chev">▼</span></div>
+  <div class="cbody"><p><code class="inl">--bare</code> "skip[s] auto-discovery of hooks, skills, plugins, MCP servers, auto memory, and CLAUDE.md" for reproducible CI; it "will become the default for <code class="inl">-p</code> in a future release" <span class="verify">⚠ VERIFY</span>. Bare mode requires <code class="inl">ANTHROPIC_API_KEY</code> or <code class="inl">apiKeyHelper</code> (skips OAuth/keychain). Output: <code class="inl">--output-format text|json|stream-json</code>; <code class="inl">--json-schema</code> for structured output (result lands in <code class="inl">structured_output</code>); <code class="inl">stream-json</code> needs <code class="inl">--verbose</code>; <code class="inl">--output-format json</code> includes <code class="inl">total_cost_usd</code>. (source: Headless)</p></div></div>
+
+  <div class="callout warn collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> CI authentication &amp; the June-15-2026 credit change <span class="verify">⚠ VERIFY</span><span class="chev">▼</span></div>
+  <div class="cbody"><p><code class="inl">claude setup-token</code> generates a one-year OAuth token → set <code class="inl">CLAUDE_CODE_OAUTH_TOKEN</code>. Auth precedence: (1) cloud-provider creds (<code class="inl">CLAUDE_CODE_USE_BEDROCK/VERTEX/FOUNDRY</code>), (2) <code class="inl">ANTHROPIC_AUTH_TOKEN</code>, (3) <code class="inl">ANTHROPIC_API_KEY</code>, (4) <code class="inl">apiKeyHelper</code>, (5) <code class="inl">CLAUDE_CODE_OAUTH_TOKEN</code>, (6) subscription OAuth from <code class="inl">/login</code>. <strong>Date-sensitive (verbatim):</strong> "Starting June 15, 2026, Agent SDK and <code class="inl">claude -p</code> usage on subscription plans will draw from a new monthly Agent SDK credit." Re-verify after that date. (source: Authentication)</p></div></div>
+
+  <p><strong>Key automation flags:</strong> <code class="inl">--print</code>/<code class="inl">-p</code>, <code class="inl">--permission-mode</code>, <code class="inl">--allowedTools</code>, <code class="inl">--disallowedTools</code>, <code class="inl">--max-turns</code> (print mode), <code class="inl">--max-budget-usd</code> (print mode), <code class="inl">--settings</code>, <code class="inl">--setting-sources</code> (<code class="inl">user,project,local</code>), <code class="inl">--mcp-config</code>, <code class="inl">--strict-mcp-config</code>, <code class="inl">--agents</code>, <code class="inl">--continue</code>/<code class="inl">-c</code>, <code class="inl">--resume</code>/<code class="inl">-r</code>, <code class="inl">--fallback-model</code>, <code class="inl">--dangerously-skip-permissions</code> (≡ <code class="inl">--permission-mode bypassPermissions</code>).</p>
+
+  <div class="codewrap"><div class="clab"><span class="dot"></span> fan-out over files (verbatim)</div>
+  <pre><code>for file in $(cat files.txt); do
+  claude -p "Migrate $file from React to Vue. Return OK or FAIL." \
+    --allowedTools "Edit,Bash(git commit *)"
+done</code></pre></div>
+
+  <h4>The canonical loop — explore → plan → code → commit (verbatim)</h4>
+  <ol>
+    <li><strong>Explore</strong> — "Enter plan mode. Claude reads files and answers questions without making changes."</li>
+    <li><strong>Plan</strong> — "Ask Claude to create a detailed implementation plan." (<code class="inl">Ctrl+G</code> to edit the plan)</li>
+    <li><strong>Implement</strong> — "Switch out of plan mode and let Claude code, verifying against its plan."</li>
+    <li><strong>Commit</strong> — "Ask Claude to commit with a descriptive message and create a PR."</li>
+  </ol>
+  <blockquote class="ex">"Letting Claude jump straight to coding can produce code that solves the wrong problem." (source: Best practices)</blockquote>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 720 180" role="img" aria-label="The explore plan code commit loop drawn as four stages with a verification gate before commit">
+      <defs><style>.t{font:700 12px sans-serif;fill:#fff}.s{font:400 10px sans-serif;fill:#5c544c}.ar{stroke:#5c544c;stroke-width:2;fill:none;marker-end:url(#ah3)}</style>
+      <marker id="ah3" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5c544c"/></marker></defs>
+      <rect x="20" y="60" width="130" height="46" rx="9" fill="#3a7d7b"/><text class="t" x="85" y="80" text-anchor="middle">1 · Explore</text><text class="s" x="85" y="98" text-anchor="middle" fill="#e0efee">plan mode, read-only</text>
+      <line class="ar" x1="150" y1="83" x2="190" y2="83"/>
+      <rect x="190" y="60" width="130" height="46" rx="9" fill="#6b4f9e"/><text class="t" x="255" y="80" text-anchor="middle">2 · Plan</text><text class="s" x="255" y="98" text-anchor="middle" fill="#ece4f6">detailed plan</text>
+      <line class="ar" x1="320" y1="83" x2="360" y2="83"/>
+      <rect x="360" y="60" width="130" height="46" rx="9" fill="#c96442"/><text class="t" x="425" y="80" text-anchor="middle">3 · Implement</text><text class="s" x="425" y="98" text-anchor="middle" fill="#f4e6df">code vs plan</text>
+      <line class="ar" x1="490" y1="83" x2="530" y2="83"/>
+      <rect x="530" y="60" width="160" height="46" rx="9" fill="#3f7d4f"/><text class="t" x="610" y="80" text-anchor="middle">4 · Commit + PR</text><text class="s" x="610" y="98" text-anchor="middle" fill="#e3f0e6">after verify gate</text>
+      <rect x="360" y="124" width="130" height="34" rx="8" fill="#fff" stroke="#b3402f"/><text class="s" x="425" y="145" text-anchor="middle" fill="#b3402f">Stop hook gate ↑</text>
+      <line class="ar" x1="425" y1="124" x2="425" y2="108"/>
+    </svg>
+    <figcaption>Diagram (j): explore → plan → code → commit. A verification gate (e.g. a Stop hook) sits before commit so the turn can't end until the check passes.</figcaption>
+  </figure>
+
+  <p><strong>Verification gates (verbatim guidance):</strong> "Give Claude a check it can run: tests, a build, a screenshot to compare." Options: in-prompt, a <code class="inl">/goal</code> condition, a <strong>Stop hook</strong> ("blocks the turn from ending until it passes. Claude Code overrides the hook and ends the turn after 8 consecutive blocks"), or an adversarial review subagent / <code class="inl">/code-review</code>.</p>
+  <p><strong>Context hygiene (verbatim):</strong> "Use <code class="inl">/clear</code> frequently between tasks"; "<code class="inl">/compact &lt;instructions&gt;</code>"; "After two failed corrections, <code class="inl">/clear</code> and write a better initial prompt." <strong>Built-in commands to know:</strong> <code class="inl">/init</code>, <code class="inl">/memory</code>, <code class="inl">/permissions</code>, <code class="inl">/mcp</code>, <code class="inl">/agents</code>, <code class="inl">/hooks</code>, <code class="inl">/skills</code>, <code class="inl">/plugin</code>, <code class="inl">/config</code>, <code class="inl">/status</code>, <code class="inl">/model</code>, <code class="inl">/context</code>, <code class="inl">/compact</code>, <code class="inl">/clear</code>, <code class="inl">/plan</code>, <code class="inl">/doctor</code>, <code class="inl">/code-review</code>, <code class="inl">/security-review</code>.</p>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">Your CI job runs <code class="inl">claude -p</code> and you want runs to be reproducible — no developer's personal hooks, skills, or CLAUDE.md leaking in — authenticated by an API key. Which flag and which auth do you reach for?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong><code class="inl">--bare</code></strong>, which "skip[s] auto-discovery of hooks, skills, plugins, MCP servers, auto memory, and CLAUDE.md" — exactly the reproducible-CI use case. Bare mode "requires <code class="inl">ANTHROPIC_API_KEY</code> or <code class="inl">apiKeyHelper</code> (skips OAuth/keychain)." For a subscription-plan CI token instead, <code class="inl">claude setup-token</code> → <code class="inl">CLAUDE_CODE_OAUTH_TOKEN</code>. (sources: Headless; Authentication)</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="1">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Why does Anthropic recommend the explore→plan→code→commit loop over jumping straight to code?</div>
+    <button class="opt">It's required by the CLI and code won't run otherwise</button>
+    <button class="opt">"Letting Claude jump straight to coding can produce code that solves the wrong problem" — explore/plan first aligns on the actual problem</button>
+    <button class="opt">It's only for headless mode</button>
+    <button class="opt">It disables permissions during planning</button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden>Verbatim: "Letting Claude jump straight to coding can produce code that solves the wrong problem." Explore (plan mode, read-only) then a detailed plan aligns on the real problem before any edits; verify against the plan, then commit + PR.</div>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li><strong><code class="inl">claude -p</code></strong> = headless = the Agent SDK via CLI. <strong><code class="inl">--bare</code></strong> = reproducible CI (no auto-discovery; needs an API key).</li>
+    <li><strong>Output:</strong> text/json/stream-json; <code class="inl">--json-schema</code> → <code class="inl">structured_output</code>; json includes <code class="inl">total_cost_usd</code>.</li>
+    <li><strong>CI auth:</strong> <code class="inl">setup-token</code> → <code class="inl">CLAUDE_CODE_OAUTH_TOKEN</code>; precedence runs cloud creds → tokens → API key → helper → OAuth.</li>
+    <li><strong>Loop:</strong> explore → plan → code → commit; gate with a Stop hook (overridden after 8 blocks); keep context clean with <code class="inl">/clear</code> &amp; <code class="inl">/compact</code>.</li>
+  </ul></div></div>
+</section>
+
+<!-- FINAL QUIZ -->
+<div class="quizblock" data-quiz="final">
+  <div class="scorebar"><h4 style="margin:0"><span class="emoji">🧠</span> Final Knowledge Check (10 questions)</h4><span class="qscore" data-score>0 / 10</span></div>
+  <p style="font-size:14px;color:var(--ink-soft);margin-top:0">Spans the whole extension, weighted toward the high-yield Domain-2 traps (settings-override-vs-rule-merge, deny→ask→allow, only-exit-2-blocks, memory-is-context, the MCP rename, commands-merged-into-skills). No hints — answer, then check.</p>
+
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q1</div><div class="qtext">Which statement about settings precedence is correct?</div>
+    <button class="opt">User settings always win because they load first</button><button class="opt">Project settings can override managed settings</button><button class="opt">Order is Managed &gt; CLI args &gt; Local &gt; Project &gt; User; managed can't be overridden</button><button class="opt">Local is the lowest-priority scope</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>Precedence: Managed (highest, can't be overridden) &gt; CLI args &gt; Local &gt; Project &gt; User (lowest). Higher levels replace lower ones for the same key.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="3" data-inquiz>
+    <div class="qlab">Q2</div><div class="qtext">Settings override by precedence, but one thing behaves differently — it MERGES across scopes. What?</div>
+    <button class="opt">The <code class="inl">model</code> field</button><button class="opt">The <code class="inl">env</code> field</button><button class="opt">Output styles</button><button class="opt">Permission rules — "they merge across scopes rather than override," then evaluate deny → ask → allow</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>"Permission rules behave differently because they merge across scopes rather than override." The exam trap: settings override, permission rules merge.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="0" data-inquiz>
+    <div class="qlab">Q3</div><div class="qtext">In what order are permission rules evaluated, and which is absolute?</div>
+    <button class="opt">deny → ask → allow; first match wins and deny is absolute ("denied at any level, allowed at none")</button><button class="opt">allow → ask → deny; allow wins</button><button class="opt">ask → allow → deny; whichever is last</button><button class="opt">They're evaluated alphabetically</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>"Rules are evaluated in order: deny -&gt; ask -&gt; allow. The first matching rule wins, so deny rules always take precedence." If denied at any level, no level can allow it.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="1" data-inquiz>
+    <div class="qlab">Q4</div><div class="qtext">A hook is meant to enforce a policy by blocking a forbidden action. Which exit code blocks?</div>
+    <button class="opt">Exit 1 — the conventional Unix failure code</button><button class="opt">Exit 2 — only exit 2 blocks; exit 1 is non-blocking and the action proceeds</button><button class="opt">Any non-zero exit code blocks</button><button class="opt">Exit 0 with <code class="inl">continue:false</code></button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>"For most hook events, only exit code 2 blocks the action... Claude Code treats exit code 1 as a non-blocking error and proceeds." Use <code class="inl">exit 2</code> for policy enforcement.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q5</div><div class="qtext">How do multiple CLAUDE.md files combine, and what's their enforcement status?</div>
+    <button class="opt">The most specific overrides the rest; it's enforced config</button><button class="opt">Only the managed file loads; it's enforced config</button><button class="opt">All are concatenated (broad → specific), and they're context, not enforced config — use a PreToolUse hook to block</button><button class="opt">They merge key-by-key like JSON</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>"All discovered files are concatenated... rather than overriding." And "Claude treats them as context, not enforced configuration. To block an action... use a PreToolUse hook instead."</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="3" data-inquiz>
+    <div class="qlab">Q6</div><div class="qtext">In a permission pattern, which correctly denotes a TRUE absolute path?</div>
+    <button class="opt"><code class="inl">/Users/alice/file</code></button><button class="opt"><code class="inl">~/Users/alice/file</code></button><button class="opt"><code class="inl">./Users/alice/file</code></button><button class="opt"><code class="inl">//Users/alice/file</code> — a single leading slash is project-root-relative</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>"A pattern like <code class="inl">/Users/alice/file</code> is NOT an absolute path. It's relative to the project root. Use <code class="inl">//Users/alice/file</code> for absolute paths."</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="1" data-inquiz>
+    <div class="qlab">Q7</div><div class="qtext">An older guide installs an MCP server at "project" scope meaning "you-only, current project." Today that is…</div>
+    <button class="opt">Today's project scope (team-shared <code class="inl">.mcp.json</code>)</button><button class="opt">Today's <code class="inl">local</code> scope — "was called <code class="inl">project</code> in older versions"</button><button class="opt">A plugin-provided server</button><button class="opt">A claude.ai connector</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden><code class="inl">local</code> "was called <code class="inl">project</code> in older versions"; <code class="inl">user</code> "was called <code class="inl">global</code>." Today's project scope is the team-shared <code class="inl">.mcp.json</code>.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="0" data-inquiz>
+    <div class="qlab">Q8</div><div class="qtext">A skill <code class="inl">deploy</code> and a command <code class="inl">deploy.md</code> both define <code class="inl">/deploy</code>. What's true?</div>
+    <button class="opt">Custom commands were merged into skills; both create <code class="inl">/deploy</code>, and the skill takes precedence on a name clash</button><button class="opt">The command always wins</button><button class="opt"><code class="inl">.claude/commands/</code> no longer works at all</button><button class="opt">It's an error and neither loads</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>"Custom commands have been merged into skills... if a skill and a command share the same name, the skill takes precedence." Existing <code class="inl">.claude/commands/</code> files keep working.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q9</div><div class="qtext">Which three frontmatter fields are ignored when a subagent is loaded from a plugin?</div>
+    <button class="opt"><code class="inl">name</code>, <code class="inl">description</code>, <code class="inl">tools</code></button><button class="opt"><code class="inl">model</code>, <code class="inl">color</code>, <code class="inl">maxTurns</code></button><button class="opt"><code class="inl">hooks</code>, <code class="inl">mcpServers</code>, <code class="inl">permissionMode</code> — "for security reasons... ignored when loading agents from a plugin"</button><button class="opt"><code class="inl">skills</code>, <code class="inl">memory</code>, <code class="inl">background</code></button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>"For security reasons, plugin subagents do not support the <code class="inl">hooks</code>, <code class="inl">mcpServers</code>, or <code class="inl">permissionMode</code> frontmatter fields." A plugin can't smuggle in elevated permissions, hooks, or extra MCP servers.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="1" data-inquiz>
+    <div class="qlab">Q10</div><div class="qtext">For a reproducible CI run that skips auto-discovery of hooks, skills, plugins, MCP, auto memory, and CLAUDE.md, you use…</div>
+    <button class="opt"><code class="inl">--dangerously-skip-permissions</code></button><button class="opt"><code class="inl">--bare</code> (requires <code class="inl">ANTHROPIC_API_KEY</code> or <code class="inl">apiKeyHelper</code>)</button><button class="opt"><code class="inl">--permission-mode plan</code></button><button class="opt"><code class="inl">/clear</code> before the run</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden><code class="inl">--bare</code> "skip[s] auto-discovery of hooks, skills, plugins, MCP servers, auto memory, and CLAUDE.md" and requires an API key (skips OAuth/keychain). It's slated to become the <code class="inl">-p</code> default in a future release.</div>
+  </div>
+  <div class="resultbox" data-result></div>
+</div>
+
+<!-- WHAT'S NEXT -->
+<div class="nextbox">
+  <strong>🎓 You've reached the end of the C-track.</strong> This is extension <strong>C-E6 — Claude Code Configuration &amp; Workflows</strong>, the closing lesson of the C-track and the deepest dive into Domain 2 (20% of the exam). There is no next lesson — head back to the <a href="../../../Launchpad.html">⌂ Launchpad dashboard</a> to re-quiz any weak spots, revisit the previous extension <a href="prompt-engineering-depth.html">Prompt Engineering Depth (C-E5)</a>, or move into the practice / mock-exam material. The highest-value things to over-learn before the exam: <strong>settings override vs permission-rule merge</strong>, <strong>deny→ask→allow</strong>, <strong>only exit 2 blocks</strong>, <strong>memory is context not config</strong>, and the <strong>MCP scope rename</strong>. ⚙️
+</div>
+
+<!-- SOURCES -->
+<section class="lesson" id="sources" data-lesson style="border-top:1px solid var(--line)">
+  <div class="lmeta"><span class="ltag"><span class="emoji">📚</span> Sources</span></div>
+  <h3 class="ltitle">Sources</h3>
+  <p>Every substantive claim in this extension traces to the official Anthropic Claude Code documentation listed below — the primary docs captured in the grounding citations file. No facts beyond these sources were introduced. Version-sensitive facts — the hook-event roster, permission-mode names (<code class="inl">auto</code>/<code class="inl">dontAsk</code>), the docs-host migration, model IDs, the June-15-2026 SDK-credit note, MCP scope renames, and managed-settings paths — carry inline <span class="verify">⚠ VERIFY</span> notes. Where the citations file distinguishes "lesson framing" from a verbatim Anthropic quote, this lesson preserves that distinction.</p>
+  <div class="sources">
+    <ol>
+      <li><strong>PRIMARY</strong> — Anthropic, Claude Code Settings (file locations, settings precedence, <code class="inl">settings.json</code> fields, env vars, managed-settings paths) — <a href="https://code.claude.com/docs/en/settings">code.claude.com/docs/en/settings</a></li>
+      <li><strong>PRIMARY</strong> — Anthropic, Hooks reference (event list, matchers, I/O JSON contract, exit-code semantics, per-event blocking, security) — <a href="https://code.claude.com/docs/en/hooks">code.claude.com/docs/en/hooks</a></li>
+      <li><strong>PRIMARY</strong> — Anthropic, Memory / How Claude remembers your project (CLAUDE.md scopes &amp; load order, <code class="inl">@</code>-imports, <code class="inl">.claude/rules/</code>, auto memory, managed CLAUDE.md) — <a href="https://code.claude.com/docs/en/memory">code.claude.com/docs/en/memory</a></li>
+      <li><strong>PRIMARY</strong> — Anthropic, Configure permissions (allow/ask/deny, deny→ask→allow, rule syntax, modes, precedence, managed-only settings) — <a href="https://code.claude.com/docs/en/permissions">code.claude.com/docs/en/permissions</a></li>
+      <li><strong>PRIMARY</strong> — Anthropic, Create custom subagents (locations &amp; priority, frontmatter, built-ins, plugin restrictions) — <a href="https://code.claude.com/docs/en/sub-agents">code.claude.com/docs/en/sub-agents</a></li>
+      <li><strong>PRIMARY</strong> — Anthropic, Extend Claude with skills (SKILL.md, scopes/precedence, frontmatter, substitutions, commands-merged-into-skills) — <a href="https://code.claude.com/docs/en/skills">code.claude.com/docs/en/skills</a></li>
+      <li><strong>PRIMARY</strong> — Anthropic, Create plugins (directory layout, <code class="inl">plugin.json</code>, <code class="inl">--plugin-dir</code>) — <a href="https://code.claude.com/docs/en/plugins">code.claude.com/docs/en/plugins</a></li>
+      <li><strong>PRIMARY</strong> — Anthropic, Create and distribute a plugin marketplace (<code class="inl">marketplace.json</code>, install flow) — <a href="https://code.claude.com/docs/en/plugin-marketplaces">code.claude.com/docs/en/plugin-marketplaces</a></li>
+      <li><strong>PRIMARY</strong> — Anthropic, Connect Claude Code to tools via MCP (transports, install scopes, <code class="inl">.mcp.json</code>, scope precedence, auth) — <a href="https://code.claude.com/docs/en/mcp">code.claude.com/docs/en/mcp</a></li>
+      <li><strong>PRIMARY</strong> — Anthropic, Run Claude Code programmatically / Headless (<code class="inl">claude -p</code>, <code class="inl">--bare</code>, output formats, CI patterns) — <a href="https://code.claude.com/docs/en/headless">code.claude.com/docs/en/headless</a></li>
+      <li><strong>PRIMARY</strong> — Anthropic, CLI reference (flags: <code class="inl">--permission-mode</code>, <code class="inl">--allowedTools</code>, <code class="inl">--settings</code>, <code class="inl">--mcp-config</code>, <code class="inl">--agents</code>) — <a href="https://code.claude.com/docs/en/cli-reference">code.claude.com/docs/en/cli-reference</a></li>
+      <li><strong>PRIMARY</strong> — Anthropic, Commands (built-in slash command + bundled-skill catalog) — <a href="https://code.claude.com/docs/en/commands">code.claude.com/docs/en/commands</a></li>
+      <li><strong>PRIMARY</strong> — Anthropic, Output styles (style files, locations, <code class="inl">outputStyle</code>, built-in styles) — <a href="https://code.claude.com/docs/en/output-styles">code.claude.com/docs/en/output-styles</a></li>
+      <li><strong>PRIMARY</strong> — Anthropic, Authentication (auth methods, precedence, <code class="inl">setup-token</code> / <code class="inl">CLAUDE_CODE_OAUTH_TOKEN</code> for CI) — <a href="https://code.claude.com/docs/en/authentication">code.claude.com/docs/en/authentication</a></li>
+      <li><strong>PRIMARY-adjacent</strong> — Anthropic, Best practices for Claude Code (explore→plan→code→commit, verification loops, context management) — <a href="https://code.claude.com/docs/en/best-practices">code.claude.com/docs/en/best-practices</a></li>
+    </ol>
+  </div>
+  <div class="examnote">
+    <b>📌 [VERIFY] flags preserved from the source.</b> Drift-prone facts surfaced inline, to re-check against the live docs at build/exam time: (1) the <strong>docs-host migration</strong> — canonical home is now <code class="inl">code.claude.com/docs/en/*</code>; old <code class="inl">docs.claude.com</code>/<code class="inl">docs.anthropic.com</code> paths and the best-practices engineering post redirect there; (2) the <strong>hook-event roster</strong> (~30 events; the 9-event classic subset is stable, the rest grow); (3) <strong>permission-mode names</strong> — <code class="inl">auto</code> (research preview) and <code class="inl">dontAsk</code> are newer/volatile; (4) <strong>commands-merged-into-skills</strong> — old "custom slash commands" framing should still be treated as correct; (5) <strong>MCP scope renames</strong> — <code class="inl">local</code> was <code class="inl">project</code>, <code class="inl">user</code> was <code class="inl">global</code>; (6) <strong>specific model IDs</strong> (e.g. <code class="inl">claude-opus-4-8</code>) are drift-prone; (7) the <strong>Agent SDK naming &amp; the June-15-2026 separate-credit billing change</strong> (date-sensitive); (8) <strong><code class="inl">--bare</code> becoming the <code class="inl">-p</code> default</strong> ("a future release"); (9) <strong>managed-settings file paths</strong> (Windows legacy path retired in v2.1.75; OS policy locations version-noted). The two STABLE-but-counter-intuitive exam facts to over-learn: <strong>settings override vs permission-rule merge</strong>, and <strong>only exit 2 blocks a hook</strong>.</b>
+  </div>
+</section>
+
+<footer>
+  <p><span class="sourcebadge"><span class="emoji">📄</span> Extension lesson · built faithfully from the source-of-truth citations file — every claim traces to Anthropic's official Claude Code docs on <code class="inl">code.claude.com/docs/en</code>. No external facts introduced; [VERIFY] flags preserved; "lesson framing" distinguished from verbatim quotes. Facts verified 2026-06-06 against code.claude.com/docs.</span></p>
+  <p style="margin-top:14px">Claude Code Configuration &amp; Workflows · CCA-F extension (C-E6) · <a href="../claude-101.html">← Base course (Claude 101)</a> · <a href="prompt-engineering-depth.html">← C-E5: Prompt Engineering Depth</a> · <a href="../../../Launchpad.html">⌂ Launchpad</a> · <a href="#top">Back to top ↑</a> · <em>End of the C-track — no next lesson.</em></p>
+</footer>
+
+</div><!-- /wrap -->
+</main>
+</div><!-- /layout -->
+
+<script>
+(function(){
+  "use strict";
+  /* ---------- Build TOC ---------- */
+  var sections=[
+    {title:"The model",lessons:[["lA","Scopes & the .claude/ dir"]]},
+    {title:"Memory",lessons:[["lB","CLAUDE.md & concatenation"]]},
+    {title:"settings.json",lessons:[["lC","Precedence & the merge trap"]]},
+    {title:"Permissions",lessons:[["lD","deny → ask → allow"]]},
+    {title:"Hooks",lessons:[["lE","Events, exit codes, JSON"]]},
+    {title:"Extending",lessons:[["lF","Skills, subagents, plugins"]]},
+    {title:"MCP",lessons:[["lG","Scopes, transports, precedence"]]},
+    {title:"Workflows",lessons:[["lH","Headless, CI, the loop"]]},
+    {title:"Reference",lessons:[["sources","Sources & [VERIFY] flags"]]}
+  ];
+  var toc=document.getElementById('toc');
+  var navOrder=[];
+  sections.forEach(function(sec){
+    var h=document.createElement('div');h.className='nav-sec';h.textContent=sec.title;toc.appendChild(h);
+    sec.lessons.forEach(function(l){
+      var a=document.createElement('a');a.href='#'+l[0];a.dataset.target=l[0];
+      a.innerHTML='<span class="num"><span>'+(navOrder.length+1)+'</span></span><span>'+l[1]+'</span>';
+      a.addEventListener('click',function(){if(window.innerWidth<=980)toggleNav();});
+      toc.appendChild(a);
+      navOrder.push(l[0]);
+    });
+  });
+  var TOTAL=navOrder.length; // dynamic denominator — no off-by-one
+
+  /* ---------- Progress bar + active nav + completion ---------- */
+  var navLinks=Array.prototype.slice.call(document.querySelectorAll('nav a'));
+  var lessonEls=Array.prototype.slice.call(document.querySelectorAll('section.lesson'));
+  var seen={};
+  function onScroll(){
+    var doc=document.documentElement;
+    var scrollTop=window.scrollY||doc.scrollTop;
+    var height=doc.scrollHeight-doc.clientHeight;
+    var pct=height>0?(scrollTop/height*100):0;
+    document.getElementById('progressBar').style.width=pct+'%';
+    var mid=scrollTop+window.innerHeight*0.32;
+    var current=null;
+    lessonEls.forEach(function(el){
+      if(el.offsetTop<=mid)current=el;
+      if(el.offsetTop<=scrollTop+window.innerHeight*0.6){seen[el.id]=true;}
+    });
+    navLinks.forEach(function(a){a.classList.remove('active');});
+    if(current){
+      var act=document.querySelector('nav a[data-target="'+current.id+'"]');
+      if(act)act.classList.add('active');
+    }
+    navLinks.forEach(function(a){if(seen[a.dataset.target])a.classList.add('done');});
+    var doneCount=0;
+    navOrder.forEach(function(id){if(seen[id])doneCount++;});
+    document.getElementById('progPct').textContent=Math.round(doneCount/TOTAL*100)+'%';
+  }
+  window.addEventListener('scroll',onScroll,{passive:true});
+  window.addEventListener('resize',onScroll);
+  onScroll();
+
+  /* ---------- Mobile nav ---------- */
+  window.toggleNav=function(){
+    var open=document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('scrim').classList.toggle('open');
+    var b=document.querySelector('.menubtn');if(b)b.setAttribute('aria-expanded',open?'true':'false');
+  };
+
+  /* ---------- Collapsible callouts ---------- */
+  window.toggleCall=function(head){
+    var c=head.parentElement;c.classList.toggle('collapsed');
+    head.setAttribute('aria-expanded', c.classList.contains('collapsed')?'false':'true');
+  };
+  document.querySelectorAll('.callout .chead').forEach(function(head){
+    head.setAttribute('role','button');
+    head.setAttribute('tabindex','0');
+    head.setAttribute('aria-expanded', head.parentElement.classList.contains('collapsed')?'false':'true');
+    head.addEventListener('keydown',function(e){
+      if(e.key==='Enter'||e.key===' '||e.key==='Spacebar'){e.preventDefault();window.toggleCall(head);}
+    });
+  });
+
+  /* ---------- Predict / reveal ---------- */
+  window.doReveal=function(btn){
+    var ans=btn.parentElement.querySelector('.ans');
+    ans.classList.add('show');
+    btn.textContent='Answer shown ✓';
+    btn.disabled=true;btn.style.opacity='.6';btn.style.cursor='default';
+  };
+
+  /* ---------- MCQ logic ---------- */
+  document.querySelectorAll('.mcq[data-mcq]').forEach(function(mcq){
+    var correct=parseInt(mcq.getAttribute('data-correct'),10);
+    var opts=Array.prototype.slice.call(mcq.querySelectorAll('.opt'));
+    var fb=mcq.querySelector('.fb');
+    var msgEl=mcq.querySelector('.fbmsg');
+    var msg=msgEl?msgEl.innerHTML:'';
+    var answered=false;
+    opts.forEach(function(opt,i){
+      opt.addEventListener('click',function(){
+        if(answered)return;answered=true;
+        var isCorrect=(i===correct);
+        opts.forEach(function(o,j){
+          o.disabled=true;
+          if(j===correct){o.classList.add('correct');if(!o.querySelector('.mark'))appendMark(o,'✓');}
+        });
+        if(!isCorrect){opt.classList.add('wrong');appendMark(opt,'✗');}
+        fb.classList.add('show');
+        fb.classList.add(isCorrect?'ok':'no');
+        fb.innerHTML='<strong>'+(isCorrect?'Correct! ':'Not quite. ')+'</strong>'+msg;
+        var quiz=mcq.closest('.quizblock');
+        if(quiz&&mcq.hasAttribute('data-inquiz')){
+          mcq.dataset.result=isCorrect?'1':'0';
+          updateQuiz(quiz);
+        }
+      });
+    });
+  });
+  function appendMark(opt,sym){var s=document.createElement('span');s.className='mark';s.textContent=sym;opt.appendChild(s);}
+
+  /* ---------- Quiz scoring ---------- */
+  function updateQuiz(quiz){
+    var mcqs=Array.prototype.slice.call(quiz.querySelectorAll('.mcq[data-inquiz]'));
+    var total=mcqs.length;
+    var answered=mcqs.filter(function(m){return m.dataset.result!==undefined;});
+    var score=mcqs.filter(function(m){return m.dataset.result==='1';}).length;
+    var scoreEl=quiz.querySelector('[data-score]');
+    if(scoreEl)scoreEl.textContent=score+' / '+total;
+    if(answered.length===total){
+      var box=quiz.querySelector('[data-result]');
+      var pct=score/total*100;
+      box.classList.add('show');
+      box.classList.remove('pass','mid');
+      if(pct>=75){box.classList.add('pass');box.innerHTML='🎉 '+score+'/'+total+' — strong work! You\'ve got the Claude Code configuration model, permissions, and the hooks contract down.';}
+      else if(pct>=50){box.classList.add('mid');box.innerHTML='👍 '+score+'/'+total+' — solid. Skim the misses above (especially the override-vs-merge and exit-code traps) and you\'re set.';}
+      else{box.classList.add('mid');box.innerHTML='📖 '+score+'/'+total+' — worth a re-read of these sections before moving on.';}
+    }
+  }
+})();
+</script>
+</body>
+</html>

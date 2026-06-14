@@ -1,0 +1,1503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orchestrator-Worker at Scale + Failure Modes — Extension</title>
+<style>
+  :root{
+    --bg:#faf8f5; --paper:#ffffff; --ink:#2b2622; --ink-soft:#5c544c;
+    --line:#e7e0d8; --accent:#c96442; --accent-soft:#f4e6df; --accent-deep:#a44a2e;
+    --teal:#3a7d7b; --teal-soft:#e0efee; --gold:#b8860b; --gold-soft:#f6edd6;
+    --green:#3f7d4f; --green-soft:#e3f0e6; --red:#b3402f; --red-soft:#f7e3df;
+    --purple:#6b5b95; --purple-soft:#ece8f3;
+    --sidebar:#f3eee7; --shadow:0 1px 3px rgba(43,38,34,.08),0 6px 24px rgba(43,38,34,.06);
+    --radius:14px; --maxw:780px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.65; font-size:17px; -webkit-font-smoothing:antialiased;
+  }
+  #progressBar{position:fixed;top:0;left:0;height:4px;width:0;background:linear-gradient(90deg,var(--accent),var(--gold));z-index:200;transition:width .15s ease}
+  .layout{display:flex;max-width:1260px;margin:0 auto}
+  aside{
+    position:sticky;top:0;align-self:flex-start;height:100vh;overflow-y:auto;
+    width:300px;flex:none;padding:22px 16px 40px;background:var(--sidebar);
+    border-right:1px solid var(--line);
+  }
+  aside h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin:18px 8px 8px}
+  .brandbox{padding:6px 8px 14px;border-bottom:1px solid var(--line);margin-bottom:8px}
+  .brandbox .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;line-height:1.25}
+  .brandbox .sub{font-size:12.5px;color:var(--ink-soft);margin-top:6px}
+  .backlink{display:inline-flex;align-items:center;gap:6px;margin:10px 8px 2px;font-size:12.5px;color:var(--accent-deep);text-decoration:none;font-weight:600}
+  .backlink:hover{text-decoration:underline}
+  .toc-prog{font-size:12px;color:var(--ink-soft);margin:14px 8px 4px;display:flex;justify-content:space-between;align-items:center}
+  .toc-prog b{color:var(--accent)}
+  nav a{display:flex;gap:8px;align-items:flex-start;text-decoration:none;color:var(--ink);
+    padding:7px 10px;border-radius:9px;font-size:14px;line-height:1.35;transition:background .15s}
+  nav a:hover{background:#ece4d9}
+  nav a.active{background:var(--accent-soft);color:var(--accent-deep);font-weight:600}
+  nav a .num{flex:none;width:22px;height:22px;border-radius:50%;background:#e3dacd;color:var(--ink-soft);
+    font-size:11.5px;display:flex;align-items:center;justify-content:center;font-weight:700;margin-top:1px}
+  nav a.active .num{background:var(--accent);color:#fff}
+  nav a.done .num{background:var(--green);color:#fff}
+  nav a.done .num::after{content:"✓"}
+  nav a.done .num span{display:none}
+  .nav-sec{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);
+    font-weight:700;margin:16px 10px 4px;display:flex;align-items:center;gap:6px}
+  main{flex:1;min-width:0;padding:0 28px 120px}
+  .wrap{max-width:var(--maxw);margin:0 auto}
+  header.hero{max-width:var(--maxw);margin:0 auto;padding:40px 0 18px;text-align:left}
+  .extbanner{display:flex;gap:12px;align-items:flex-start;background:var(--purple-soft);border:1px solid #cfc6e3;
+    border-radius:var(--radius);padding:14px 18px;margin:0 0 20px;font-size:14px;box-shadow:var(--shadow)}
+  .extbanner .ebadge{flex:none;background:var(--purple);color:#fff;font-weight:700;font-size:11.5px;letter-spacing:.06em;
+    text-transform:uppercase;padding:5px 11px;border-radius:999px;margin-top:1px}
+  .extbanner b{color:#4c3f70}
+  .hero .eyebrow{color:var(--accent);font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:13px}
+  .hero h1{font-size:40px;line-height:1.1;margin:10px 0 8px;letter-spacing:-.02em}
+  .hero p.lead{font-size:19px;color:var(--ink-soft);margin:0 0 18px}
+  .crosslink{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:14px 18px;margin:18px 0;font-size:14.5px;box-shadow:var(--shadow)}
+  .crosslink a{color:var(--accent-deep);font-weight:600;text-decoration:none}
+  .crosslink a:hover{text-decoration:underline}
+  .pillrow{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}
+  .pill{background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:6px 13px;font-size:13px;color:var(--ink-soft);box-shadow:var(--shadow)}
+  .examnote{background:var(--gold-soft);border:1px solid #e7d9a9;border-radius:var(--radius);padding:16px 18px;margin:22px 0;font-size:14.5px}
+  .examnote b{color:#8a6508}
+  .aboutbox{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;margin:22px 0;box-shadow:var(--shadow)}
+  .aboutbox .lab{font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;margin-bottom:6px}
+  section.lesson{max-width:var(--maxw);margin:0 auto;padding:46px 0 10px;scroll-margin-top:14px;border-top:1px solid var(--line)}
+  .sec-divider{max-width:var(--maxw);margin:38px auto 0;padding-top:30px}
+  .sec-divider .badge{display:inline-block;background:var(--accent);color:#fff;font-weight:700;
+    font-size:12px;letter-spacing:.07em;text-transform:uppercase;padding:5px 12px;border-radius:999px}
+  .sec-divider h2{font-size:30px;margin:12px 0 4px;letter-spacing:-.01em}
+  .sec-divider p{color:var(--ink-soft);margin:0}
+  .lesson .lmeta{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+  .lesson .ltag{font-size:12px;color:var(--accent);font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+  .lesson .ltime{font-size:12.5px;color:var(--ink-soft);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+  .lesson h3.ltitle{font-size:28px;margin:2px 0 4px;letter-spacing:-.01em;line-height:1.15}
+  .lesson h4{font-size:19px;margin:30px 0 8px;letter-spacing:-.005em}
+  .lesson h5{font-size:16px;margin:20px 0 6px;color:var(--accent-deep)}
+  .lesson p{margin:10px 0}
+  .lesson ul,.lesson ol{margin:10px 0;padding-left:22px}
+  .lesson li{margin:6px 0}
+  .emoji{font-style:normal}
+  blockquote.ex{margin:14px 0;padding:14px 18px;background:var(--teal-soft);border-left:4px solid var(--teal);border-radius:0 10px 10px 0;font-style:italic;color:#2c4f4e}
+  .objectives{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:14px 18px;margin:14px 0;box-shadow:var(--shadow)}
+  .objectives .lab{font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;margin-bottom:4px}
+  .objectives ul{margin:6px 0 2px;padding-left:20px}
+  .objectives li{font-size:14.5px}
+  .verify{display:inline-block;background:#fdeede;color:#8a5a1a;border:1px solid #ecc98f;border-radius:6px;
+    padding:0 7px;font-size:12px;font-weight:700;letter-spacing:.02em;vertical-align:middle}
+  .verifynote{background:#fdf6ea;border:1px dashed #e0c993;border-radius:10px;padding:10px 14px;margin:12px 0;font-size:13.5px;color:#6f5526}
+  .verifynote b{color:#8a5a1a}
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  table{border-collapse:collapse;width:100%;font-size:14px;background:var(--paper);min-width:540px}
+  th,td{text-align:left;padding:11px 13px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--accent-soft);color:var(--accent-deep);font-weight:700;font-size:13px}
+  tbody tr:last-child td{border-bottom:none}
+  td:first-child,th:first-child{font-weight:600}
+  pre.code{background:#2b2622;color:#f4ece2;border-radius:12px;padding:16px 18px;margin:16px 0;overflow-x:auto;
+    font-family:"SF Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+    font-size:13.5px;line-height:1.55;box-shadow:var(--shadow);border:1px solid #3a332d}
+  pre.code code{font-family:inherit;white-space:pre;display:block}
+  pre.code .cmt{color:#b08a6a}
+  pre.code .key{color:#e0a878}
+  pre.code .str{color:#9bd0c2}
+  pre.code .frontmatter{color:#9bd0c2}
+  code.inline{background:var(--accent-soft);color:var(--accent-deep);padding:1px 6px;border-radius:5px;
+    font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:14px}
+  .codelabel{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);font-weight:700;margin:18px 0 -8px}
+  .callout{border-radius:var(--radius);padding:0;margin:18px 0;box-shadow:var(--shadow);overflow:hidden;border:1px solid var(--line)}
+  .callout .chead{display:flex;align-items:center;gap:9px;padding:12px 16px;cursor:pointer;font-weight:700;font-size:15px;user-select:none}
+  .callout .cbody{padding:2px 18px 16px;font-size:15px}
+  .callout .cbody ul{margin:6px 0;padding-left:20px}
+  .callout.collapsed .cbody{display:none}
+  .callout .chev{margin-left:auto;transition:transform .2s;font-size:13px;opacity:.6}
+  .callout.collapsed .chev{transform:rotate(-90deg)}
+  .keyc{border-color:#d9c98f}.keyc .chead{background:var(--gold-soft);color:#8a6508}
+  .tip{border-color:#a7d3d1}.tip .chead{background:var(--teal-soft);color:var(--teal)}
+  .try{border-color:#bfdcc6}.try .chead{background:var(--green-soft);color:var(--green)}
+  .anti{border-color:#e6bcb4}.anti .chead{background:var(--red-soft);color:var(--red)}
+  figure.svgfig{margin:22px 0;text-align:center;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+  figure.svgfig svg{max-width:100%;height:auto}
+  figure.svgfig figcaption{font-size:13px;color:var(--ink-soft);margin-top:10px}
+  .mcq{background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--accent);
+    border-radius:var(--radius);padding:16px 18px;margin:22px 0;box-shadow:var(--shadow)}
+  .mcq .qlab{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;display:flex;align-items:center;gap:7px}
+  .mcq .qtext{font-weight:600;margin:8px 0 12px;font-size:16px}
+  .mcq .opt{display:block;width:100%;text-align:left;background:var(--bg);border:1.5px solid var(--line);
+    border-radius:10px;padding:11px 14px;margin:7px 0;cursor:pointer;font-size:14.5px;font-family:inherit;color:var(--ink);transition:all .14s}
+  .mcq .opt:hover:not(:disabled){border-color:var(--accent);background:var(--accent-soft)}
+  .mcq .opt:disabled{cursor:default}
+  .mcq .opt.correct{border-color:var(--green);background:var(--green-soft);font-weight:600}
+  .mcq .opt.wrong{border-color:var(--red);background:var(--red-soft)}
+  .mcq .opt .mark{float:right;font-weight:700}
+  .mcq .fb{display:none;margin-top:12px;padding:12px 14px;border-radius:10px;font-size:14px;line-height:1.55}
+  .mcq .fb.show{display:block}
+  .mcq .fb.ok{background:var(--green-soft);border:1px solid #bfdcc6}
+  .mcq .fb.no{background:var(--red-soft);border:1px solid #e6bcb4}
+  .reveal{background:var(--paper);border:1px dashed var(--accent);border-radius:var(--radius);padding:16px 18px;margin:22px 0}
+  .reveal .plab{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;display:flex;align-items:center;gap:7px}
+  .reveal .q{font-weight:600;margin:8px 0 12px;font-size:16px}
+  .reveal button.revealbtn{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:9px 16px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+  .reveal button.revealbtn:hover{background:var(--accent-deep)}
+  .reveal .ans{display:none;margin-top:12px;padding:12px 14px;background:var(--teal-soft);border-radius:10px;font-size:14.5px;border:1px solid #a7d3d1}
+  .reveal .ans.show{display:block}
+  .quizblock{background:linear-gradient(180deg,#fff,#fbf6f0);border:2px solid var(--accent-soft);border-radius:18px;padding:22px 22px 24px;margin:30px auto;max-width:var(--maxw);box-shadow:var(--shadow)}
+  .quizblock h4{margin-top:0;display:flex;align-items:center;gap:9px}
+  .quizblock .qscore{font-size:14px;color:var(--ink-soft);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-weight:600}
+  .quizblock .scorebar{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:8px}
+  .resultbox{display:none;margin-top:16px;padding:16px;border-radius:12px;font-weight:600;text-align:center;font-size:16px}
+  .resultbox.show{display:block}
+  .resultbox.pass{background:var(--green-soft);border:1px solid #bfdcc6;color:var(--green)}
+  .resultbox.mid{background:var(--gold-soft);border:1px solid #e7d9a9;color:#8a6508}
+  .sources{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;margin:26px 0;box-shadow:var(--shadow);font-size:14px}
+  .sources ol{margin:8px 0;padding-left:22px}
+  .sources li{margin:7px 0;word-break:break-word}
+  .sources a{color:var(--accent-deep);text-decoration:none}
+  .sources a:hover{text-decoration:underline}
+  .nextbox{background:linear-gradient(180deg,#fff,#f4efe9);border:2px dashed var(--accent-soft);border-radius:18px;padding:20px 22px;margin:26px auto;max-width:var(--maxw);box-shadow:var(--shadow)}
+  .nextbox a{color:var(--accent-deep);font-weight:700;text-decoration:none}
+  .nextbox a:hover{text-decoration:underline}
+  footer{max-width:var(--maxw);margin:40px auto 0;padding-top:24px;border-top:1px solid var(--line);color:var(--ink-soft);font-size:13.5px}
+  .sourcebadge{display:inline-flex;gap:7px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:5px 13px;font-size:12.5px;color:var(--ink-soft)}
+  .analogy{font-size:13px;background:var(--accent-soft);color:var(--accent-deep);border-radius:6px;padding:1px 7px;font-weight:600}
+  .menubtn{display:none;position:fixed;top:12px;left:12px;z-index:210;background:var(--accent);color:#fff;border:none;border-radius:10px;width:44px;height:44px;font-size:20px;cursor:pointer;box-shadow:var(--shadow)}
+  .scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:205}
+  @media(max-width:980px){
+    .menubtn{display:block}
+    aside{position:fixed;left:0;top:0;z-index:206;transform:translateX(-105%);transition:transform .25s;box-shadow:var(--shadow);width:280px}
+    aside.open{transform:translateX(0)}
+    .scrim.open{display:block}
+    main{padding:60px 16px 110px}
+    .hero h1{font-size:31px}
+  }
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+<button class="menubtn" onclick="toggleNav()" aria-label="Menu" aria-expanded="false">☰</button>
+<div class="scrim" id="scrim" onclick="toggleNav()"></div>
+
+<div class="layout">
+<!-- SIDEBAR -->
+<aside id="sidebar">
+  <div class="brandbox">
+    <div class="logo"><span class="emoji">🏗️</span> Orchestrator-Worker at Scale</div>
+    <div class="sub">Extension · CCA-F Domain 1 (27%) + Domain 5 (15%) · architect-depth</div>
+  </div>
+  <a class="backlink" href="../introduction-to-subagents.html"><span class="emoji">←</span> Back to the base course</a>
+  <nav class="cspine" aria-label="Course track">
+    <div class="cspine-h">📚 Subagents track · Lesson 4 of 4</div>
+    <ol class="cspine-list">
+      <li><a href="../introduction-to-subagents.html">Base · Introduction to Subagents</a></li>
+      <li><a href="orchestration-patterns.html">S-E1 · The Five Orchestration Patterns</a></li>
+      <li><a href="subagents-as-sdk-primitive.html">S-E2 · Subagents as a Programmable Primitive</a></li>
+      <li class="cspine-cur" aria-current="page">S-E3 · Orchestrator-Worker at Scale</li>
+    </ol>
+  </nav>
+  <style>
+  .cspine{margin:10px 8px 14px;padding:10px 12px;border:1px solid var(--line,#e7e0d8);border-radius:10px;background:rgba(0,0,0,.02)}
+  .cspine-h{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft,#5c544c);margin-bottom:7px}
+  .cspine-list{list-style:none;margin:0;padding:0}
+  .cspine-list li{font-size:12.5px;line-height:1.3;padding:3px 0;color:var(--ink-soft,#5c544c)}
+  .cspine-list a{color:var(--ink,#2b2622);text-decoration:none}
+  .cspine-list a:hover{color:var(--accent,#c96442);text-decoration:underline}
+  .cspine-cur{font-weight:700;color:var(--accent-deep,#a44a2e)!important}
+  .cspine-cur::before{content:"▸ "}
+  </style>
+  <div class="toc-prog">Progress <span><b id="progPct">0%</b></span></div>
+  <nav id="toc"></nav>
+</aside>
+
+<!-- MAIN -->
+<main>
+<div class="wrap">
+<nav class="cnav" aria-label="Course navigation">
+  <a class="cnav-home" href="../../../Launchpad.html">⌂ Launchpad</a>
+  <span class="cnav-side"><a class="cnav-prev" href="subagents-as-sdk-primitive.html">← Subagents as a Programmable Primitive (S-E2)</a></span>
+</nav>
+<style>
+.cnav{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:10px 0 18px;padding:10px 14px;border:1px solid var(--line,#e7e0d8);border-radius:12px;background:rgba(0,0,0,.02);font:600 13.5px/1.2 system-ui,-apple-system,'Segoe UI',sans-serif}
+.cnav a{text-decoration:none;color:var(--ink,#2b2622);padding:7px 13px;border-radius:8px;background:rgba(0,0,0,.05);white-space:nowrap;transition:background .15s,color .15s}
+.cnav a:hover{background:var(--accent,#c96442);color:#fff}
+.cnav .cnav-home{background:var(--accent,#c96442);color:#fff}
+.cnav .cnav-home:hover{filter:brightness(.92)}
+.cnav .cnav-side{display:flex;gap:8px;flex-wrap:wrap}
+</style>
+
+<header class="hero" id="top">
+  <div class="extbanner">
+    <span class="ebadge">Extension</span>
+    <div><b>Beyond the Academy course.</b> This is web-researched material grounded in cited primary sources — Anthropic's <em>Building effective agents</em>, <em>How we built our multi-agent research system</em>, and the Claude Agent SDK <em>Subagents</em> docs, plus two secondary references (Galileo's failure-mode blog and the Cemri et al. MAST paper). It is <b>not part of the original Academy "Introduction to Subagents" course</b> — it takes the orchestrator-worker pattern into production, where the interesting question stops being "how do I fan out?" and becomes "what breaks when I do, and how do I design around it?"</div>
+  </div>
+
+  <div class="eyebrow">Mixed sources · Extension S-E3 · 300-level · reliability-heavy</div>
+  <h1>Orchestrator-Worker at Scale + Failure Modes</h1>
+  <p class="lead">A central LLM that <em>dynamically breaks down tasks, delegates them to workers, and synthesizes results</em> — taken to production. The economics of going multi-agent, the orchestrator's real job, the <strong>eight failure modes</strong> that show up at scale, and the reliability patterns Anthropic actually shipped to survive them.</p>
+
+  <div class="crosslink">
+    <p style="margin:0 0 6px"><span class="emoji">🔗</span> <strong>Where this sits in the ladder.</strong> It builds on the <a href="../introduction-to-subagents.html">← Introduction to Subagents (base course)</a> — the "what is a subagent / when to delegate" foundation — and follows <strong>S-E1, the five orchestration patterns</strong> (<a href="orchestration-patterns.html">orchestration-patterns.html</a>) and <strong>S-E2, the subagent primitive</strong> (<a href="subagents-as-sdk-primitive.html">subagents-as-sdk-primitive.html</a>). S-E1 named the patterns, S-E2 gave you the object you declare in code; this lesson runs one of those patterns — orchestrator-worker — under real production load.</p>
+  </div>
+
+  <div class="pillrow">
+    <span class="pill"><span class="emoji">📉</span> The 15× token economics</span>
+    <span class="pill"><span class="emoji">🧠</span> 9 inline MCQs + reveals</span>
+    <span class="pill"><span class="emoji">🏆</span> 10-question scored quiz</span>
+    <span class="pill"><span class="emoji">🎨</span> 11 inline SVG diagrams</span>
+    <span class="pill"><span class="emoji">💥</span> The 8 failure modes</span>
+  </div>
+
+  <div class="aboutbox">
+    <div class="lab"><span class="emoji">🧭</span> What you'll be able to do</div>
+    <ul style="margin:6px 0;padding-left:20px;font-size:15px">
+      <li><strong>Distinguish</strong> dynamic orchestrator-worker decomposition from static parallelization — the defining architectural line.</li>
+      <li><strong>Justify</strong> (or refuse) the move to multi-agent using the real numbers: the ~90.2% lift, the ~15× token cost, the 80%-of-variance token finding.</li>
+      <li><strong>Run the orchestrator's job</strong>: detailed delegation, effort heuristics scaled to query complexity, synthesis, and a separate citation/verification stage.</li>
+      <li><strong>Name and mitigate the 8 failure modes</strong> — from error compounding to deployment coordination — by mechanism, symptom, and fix.</li>
+      <li><strong>Design reliability in</strong>: durable resume, checkpoints, external memory, tracing, end-state evals, rainbow deploys, worker limits, and the Workflow escape hatch.</li>
+      <li><strong>Know when NOT to use it</strong>: the economics gate, shared-state coupling, latency, and the default-to-simplest rule.</li>
+    </ul>
+  </div>
+
+  <div class="examnote">
+    <b>🎯 Why this matters for the CCA-F exam.</b> This lesson is weighted to <b>Domain 1 — Agentic Architecture &amp; Orchestration (27%)</b>, the heaviest graded domain, with heavy <b>Domain 5 — Context Management &amp; Reliability (15%)</b> crossover. Expect questions on <b>dynamic vs. static decomposition</b>, the <b>economics gate</b>, <b>context-window management at scale</b>, and the <b>failure-mode → mitigation</b> mappings. The quizzes target exactly those mechanics.
+  </div>
+
+  <div class="verifynote">
+    <b><span class="emoji">⚠️</span> Point-in-time note (preserved from the source).</b> This lesson states several <em>version-sensitive</em> facts — the <b>90.2%</b> lift, the <b>~4× / ~15×</b> token multipliers, the <b>80% / 95%</b> variance figures, the effort-heuristic counts, the <b>200,000-token</b> truncation threshold, and the model names <b>"Claude Opus 4" / "Claude Sonnet 4"</b>. Each carries a <span class="verify">VERIFY</span> note where it appears. These come from a specific Anthropic writeup and may date; reconfirm against the live sources before relying on exact numbers.
+  </div>
+</header>
+
+<!-- ======================= SECTION A DIVIDER ======================= -->
+<div class="sec-divider" id="secA">
+  <span class="badge"><span class="emoji">🔁</span> Recap &amp; the line</span>
+  <h2>Dynamic decomposition, not a fixed fan-out</h2>
+  <p>What orchestrator-worker actually is, why it is categorically different from static parallelization, and how the SDK subagent primitive realizes it.</p>
+</div>
+
+<!-- LESSON 1 -->
+<section class="lesson" id="l1" data-lesson="1">
+  <div class="lmeta"><span class="ltag"><span class="emoji">🔁</span> Section 1</span><span class="ltime">⏱ ~7 min · concept</span></div>
+  <h3 class="ltitle">Recap — what orchestrator-worker <em>is</em></h3>
+
+  <div class="objectives">
+    <div class="lab">What you'll be able to do</div>
+    <ul>
+      <li>Recite Anthropic's verbatim definition of the orchestrator-workers workflow</li>
+      <li>Draw the line between dynamic decomposition and static parallelization</li>
+      <li>Connect the pattern to the SDK subagent primitive from S-E2</li>
+    </ul>
+  </div>
+
+  <p><strong>Why before how:</strong> before we worry about what breaks at scale, we need the pattern crisp. Anthropic's definition is exact — in the orchestrator-workers workflow, "a central LLM dynamically breaks down tasks, delegates them to worker LLMs, and synthesizes their results." Three verbs do all the work: <strong>break down</strong>, <strong>delegate</strong>, <strong>synthesize</strong>. Hold onto them — Sections C, D, and E are basically "what goes wrong with each verb, and how to fix it."</p>
+
+  <p>It "is well-suited for complex tasks where you can't predict the subtasks needed" — where "subtasks aren't pre-defined, but determined by the orchestrator based on the specific input." That word <em>determined-at-runtime</em> is the whole game.</p>
+
+  <h4>The line that defines the pattern: dynamic vs. static</h4>
+  <p>Plain <strong>parallelization</strong> comes in two flavors Anthropic names verbatim: "<strong>Sectioning</strong>: Breaking a task into independent subtasks run in parallel. <strong>Voting</strong>: Running the same task multiple times to get diverse outputs." In both, the subtasks are <strong>fixed in code</strong> — you wrote the fan-out ahead of time. In orchestrator-workers, the <strong>central LLM decides at runtime</strong> what the subtasks even are. That dynamic, LLM-driven decomposition is the defining feature: the orchestrator adapts the breakdown to each specific input rather than executing a predetermined fan-out.</p>
+
+  <p><span class="analogy">Analogy</span> Static parallelization is a printed assembly line — every station is bolted down before the first part arrives. Orchestrator-worker is a newsroom editor who reads the story that just broke, then decides on the spot how many reporters to assign and to what angles. Same "many workers in parallel" shape; completely different decision-maker. (Author analogy, not a product fact.)</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 280" role="img" aria-label="Static parallelization with fixed code-defined subtasks versus orchestrator-worker where a central LLM decides subtasks at runtime">
+      <defs><style>.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 10.5px sans-serif;fill:#5c544c}.h{font:700 11px sans-serif;fill:#a44a2e}.w{font:700 11px sans-serif;fill:#fff}</style>
+      <marker id="a1" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#3a7d7b"/></marker>
+      <marker id="a2" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#c96442"/></marker></defs>
+      <!-- static -->
+      <text class="h" x="22" y="24">STATIC PARALLELIZATION</text>
+      <rect x="22" y="34" width="120" height="34" rx="8" fill="#e0efee" stroke="#3a7d7b"/><text class="t" x="82" y="55" text-anchor="middle">code (fixed)</text>
+      <rect x="22" y="96" width="86" height="28" rx="7" fill="#fff" stroke="#3a7d7b"/><text class="s" x="65" y="114" text-anchor="middle">subtask 1</text>
+      <rect x="118" y="96" width="86" height="28" rx="7" fill="#fff" stroke="#3a7d7b"/><text class="s" x="161" y="114" text-anchor="middle">subtask 2</text>
+      <rect x="214" y="96" width="86" height="28" rx="7" fill="#fff" stroke="#3a7d7b"/><text class="s" x="257" y="114" text-anchor="middle">subtask 3</text>
+      <line x1="82" y1="68" x2="65" y2="94" stroke="#3a7d7b" stroke-width="1.5" marker-end="url(#a1)"/>
+      <line x1="82" y1="68" x2="161" y2="94" stroke="#3a7d7b" stroke-width="1.5" marker-end="url(#a1)"/>
+      <line x1="82" y1="68" x2="257" y2="94" stroke="#3a7d7b" stroke-width="1.5" marker-end="url(#a1)"/>
+      <text class="s" x="22" y="150">Subtasks decided BEFORE input arrives.</text>
+      <text class="s" x="22" y="166">Same shape every run.</text>
+      <!-- divider -->
+      <line x1="350" y1="20" x2="350" y2="190" stroke="#e7e0d8" stroke-width="1.5" stroke-dasharray="4 4"/>
+      <!-- dynamic -->
+      <text class="h" x="378" y="24">ORCHESTRATOR-WORKER</text>
+      <rect x="438" y="34" width="150" height="34" rx="8" fill="#f4e6df" stroke="#c96442"/><text class="w" x="513" y="55" text-anchor="middle" fill="#a44a2e">central LLM</text>
+      <text class="s" x="378" y="84">reads THIS input,</text><text class="s" x="378" y="98">then decides...</text>
+      <rect x="378" y="112" width="78" height="28" rx="7" fill="#fff" stroke="#c96442"/><text class="s" x="417" y="130" text-anchor="middle">worker A</text>
+      <rect x="462" y="112" width="78" height="28" rx="7" fill="#fff" stroke="#c96442"/><text class="s" x="501" y="130" text-anchor="middle">worker B</text>
+      <rect x="546" y="112" width="120" height="28" rx="7" fill="#fff" stroke="#c96442" stroke-dasharray="3 3"/><text class="s" x="606" y="130" text-anchor="middle">+N more? (runtime)</text>
+      <line x1="513" y1="68" x2="417" y2="110" stroke="#c96442" stroke-width="1.5" marker-end="url(#a2)"/>
+      <line x1="513" y1="68" x2="501" y2="110" stroke="#c96442" stroke-width="1.5" marker-end="url(#a2)"/>
+      <line x1="513" y1="68" x2="606" y2="110" stroke="#c96442" stroke-width="1.5" marker-end="url(#a2)"/>
+      <rect x="438" y="162" width="150" height="30" rx="8" fill="#e3f0e6" stroke="#3f7d4f"/><text class="t" x="513" y="182" text-anchor="middle">synthesize results</text>
+      <line x1="417" y1="140" x2="490" y2="160" stroke="#3f7d4f" stroke-width="1.4"/>
+      <line x1="501" y1="140" x2="513" y2="160" stroke="#3f7d4f" stroke-width="1.4"/>
+      <text class="s" x="378" y="218">Subtasks decided AT RUNTIME, per input.</text>
+      <text class="s" x="378" y="234">Different shape every run.</text>
+    </svg>
+    <figcaption>Same "many workers" silhouette, opposite decision-maker. Static = the fan-out is hard-coded; orchestrator-worker = a central LLM reads the input and decides the fan-out on the fly, then synthesizes.</figcaption>
+  </figure>
+
+  <h4>The SDK realization — subagents are the primitive</h4>
+  <p>From S-E2 you already know the mechanism. In the Claude Agent SDK, "Subagents are separate agent instances that your main agent can spawn to handle focused subtasks." You use them "to isolate context for focused subtasks, run multiple analyses in parallel, and apply specialized instructions without adding to the main agent's prompt." That is exactly the orchestrator-worker pattern expressed as code: the main agent is the orchestrator; each spawned subagent is a worker.</p>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">You hard-code a function that always spawns exactly 3 workers — one per fixed section of a report — regardless of the input. Is that orchestrator-worker?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>No — that's static parallelization (sectioning).</strong> The subtasks are fixed in code, not "determined by the orchestrator based on the specific input." It only becomes orchestrator-worker when a central LLM decides <em>at runtime</em> how to break the task down — which may be 1 worker, or 12.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="1">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">What single feature most distinguishes orchestrator-workers from static parallelization?</div>
+    <button class="opt">It uses more workers</button>
+    <button class="opt">A central LLM decides the subtask breakdown at runtime, per input</button>
+    <button class="opt">It runs workers sequentially instead of in parallel</button>
+    <button class="opt">It always includes a voting step</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>The defining line is <em>dynamic decomposition</em>: "subtasks aren't pre-defined, but determined by the orchestrator based on the specific input." Static parallelization fixes the subtasks in code ahead of time.</div>
+  </div>
+
+  <div class="callout keyc collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaway<span class="chev">▼</span></div>
+  <div class="cbody"><p>Orchestrator-worker = <strong>break down → delegate → synthesize</strong>, where the breakdown is <strong>decided at runtime by a central LLM</strong>. If the fan-out is hard-coded, it's static parallelization, not this pattern. The SDK realizes it with the subagent primitive: main agent = orchestrator, spawned subagents = workers.</p></div></div>
+</section>
+
+<!-- ======================= SECTION B DIVIDER ======================= -->
+<div class="sec-divider" id="secB">
+  <span class="badge"><span class="emoji">📈</span> The economics</span>
+  <h2>Why scale to multi-agent — and what it costs</h2>
+  <p>Context isolation, separation of concerns, and parallelism are the upside. The ~15× token bill is the downside. The numbers that decide whether the trade is worth it.</p>
+</div>
+
+<!-- LESSON 2 -->
+<section class="lesson" id="l2" data-lesson="2">
+  <div class="lmeta"><span class="ltag"><span class="emoji">📈</span> Section 2</span><span class="ltime">⏱ ~11 min · core · economics</span></div>
+  <h3 class="ltitle">Why scale to multi-agent</h3>
+
+  <div class="objectives">
+    <div class="lab">What you'll be able to do</div>
+    <ul>
+      <li>State the three rationales for going multi-agent — and ground each in a source</li>
+      <li>Recall the headline numbers: ~90.2% lift, ~15× tokens, 80% of variance from tokens</li>
+      <li>Explain <em>why</em> multi-agent wins — the token story underneath the architecture</li>
+    </ul>
+  </div>
+
+  <p>Anthropic productionized orchestrator-workers in their Research feature: "a lead agent coordinates the process while delegating to specialized subagents that operate in parallel." Why bother, given the cost? Three reasons — and they map directly onto Domains 1 and 5.</p>
+
+  <h4>The three rationales</h4>
+  <ol>
+    <li><strong>Context isolation / compression (Domain 5).</strong> "Subagents facilitate compression by operating in parallel with their own context windows, exploring different aspects of the question simultaneously before condensing the most important tokens for the lead research agent." The SDK echoes the mechanism: "Each subagent runs in its own fresh conversation. Intermediate tool calls and results stay inside the subagent; only its final message returns to the parent." That last clause is the compression engine — the lead never has to hold the workers' raw exploration in its own window.</li>
+    <li><strong>Separation of concerns (Domain 1).</strong> "Each subagent also provides separation of concerns—distinct tools, prompts, and exploration trajectories—which reduces path dependency and enables thorough, independent investigations."</li>
+    <li><strong>Parallelism / speed.</strong> "Parallel tool calling transforms speed and performance. These changes cut research time by up to 90% for complex queries, allowing Research to do more work in minutes instead of hours."</li>
+  </ol>
+
+  <h4>The headline numbers (each VERIFY-flagged)</h4>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Fact</th><th>Exact claim</th><th>Flag</th></tr></thead>
+    <tbody>
+      <tr><td>~90% performance lift</td><td>A multi-agent system with Claude Opus 4 as lead and Claude Sonnet 4 subagents "outperformed single-agent Claude Opus 4 by 90.2%" on their internal research eval.</td><td><span class="verify">VERIFY</span> 90.2%; model names</td></tr>
+      <tr><td>Token usage explains the result</td><td>"three factors explained 95% of the performance variance," and "token usage by itself explains 80% of the variance." (The other two: number of tool calls and model choice.)</td><td><span class="verify">VERIFY</span> 95% / 80%</td></tr>
+      <tr><td>~15× token cost</td><td>"agents typically use about 4× more tokens than chat interactions, and multi-agent systems use about 15× more tokens than chats."</td><td><span class="verify">VERIFY</span> 4× / 15×</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="verifynote"><b><span class="emoji">⚠️</span> <span class="verify">VERIFY</span> (preserved from source):</b> the <b>90.2%</b> figure, the model names <b>"Claude Opus 4"</b> (lead) / <b>"Claude Sonnet 4"</b> (subagents), the <b>95% / 80%</b> variance figures, and the <b>~4× / ~15×</b> token multipliers all come from a specific point-in-time Anthropic writeup and are usage- and version-dependent. The current model lineup may differ; reconfirm before quoting numbers.</div>
+
+  <h4>The token economics, visualized</h4>
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 220" role="img" aria-label="Token usage bar chart: chat at 1x, single agent at about 4x, multi-agent at about 15x">
+      <defs><style>.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 11px sans-serif;fill:#5c544c}.b{font:700 13px sans-serif;fill:#fff}</style></defs>
+      <line x1="120" y1="20" x2="120" y2="180" stroke="#e7e0d8" stroke-width="1.5"/>
+      <line x1="120" y1="180" x2="670" y2="180" stroke="#e7e0d8" stroke-width="1.5"/>
+      <!-- chat ~1x -->
+      <rect x="130" y="166" width="34" height="14" rx="3" fill="#3a7d7b"/>
+      <text class="s" x="147" y="200" text-anchor="middle">chat</text>
+      <text class="t" x="147" y="158" text-anchor="middle">~1×</text>
+      <!-- agent ~4x -->
+      <rect x="300" y="124" width="120" height="56" rx="3" fill="#c96442"/>
+      <text class="b" x="360" y="158" text-anchor="middle">~4×</text>
+      <text class="s" x="360" y="200" text-anchor="middle">single agent</text>
+      <!-- multi ~15x -->
+      <rect x="500" y="30" width="150" height="150" rx="3" fill="#a44a2e"/>
+      <text class="b" x="575" y="110" text-anchor="middle">~15×</text>
+      <text class="s" x="575" y="200" text-anchor="middle">multi-agent</text>
+      <text class="s" x="20" y="100">tokens</text>
+      <text class="s" x="20" y="116">vs. chat</text>
+    </svg>
+    <figcaption>The headline cost curve: an agent burns ~4× a chat; a multi-agent system ~15×. <span class="verify">VERIFY</span> multipliers. Because token usage explains ~80% of performance variance, this chart is also (roughly) the performance curve — which is precisely why the architecture pays off only when the task can absorb the spend.</figcaption>
+  </figure>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 720 300" role="img" aria-label="Cost-versus-reliability tradeoff curve: reliability rises steeply then flattens while cost keeps climbing; the optimal knee is at roughly 4 to 8 workers">
+      <defs>
+        <style>.t{font:700 13px sans-serif;fill:#2b2622}.s{font:400 10.5px sans-serif;fill:#5c544c}.lab{font:700 12px sans-serif;fill:#fff}.ax{font:400 11px sans-serif;fill:#5c544c}</style>
+        <marker id="cvr1" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5c544c"/></marker>
+      </defs>
+      <!-- axes -->
+      <line x1="72" y1="24" x2="72" y2="240" stroke="#e7e0d8" stroke-width="1.5" marker-end="url(#cvr1)"/>
+      <line x1="72" y1="240" x2="690" y2="240" stroke="#e7e0d8" stroke-width="1.5" marker-end="url(#cvr1)"/>
+      <!-- x-axis labels -->
+      <text class="ax" x="100" y="258" text-anchor="middle">chat</text>
+      <text class="ax" x="220" y="258" text-anchor="middle">single agent</text>
+      <text class="ax" x="370" y="258" text-anchor="middle">2–4 workers</text>
+      <text class="ax" x="510" y="258" text-anchor="middle">~10 workers</text>
+      <text class="ax" x="640" y="258" text-anchor="middle">many more</text>
+      <!-- x-axis title -->
+      <text class="ax" x="390" y="275" text-anchor="middle">← workers / effort →</text>
+      <!-- y-axis labels -->
+      <text class="ax" x="68" y="244" text-anchor="end">low</text>
+      <text class="ax" x="68" y="120" text-anchor="end">mid</text>
+      <text class="ax" x="68" y="40" text-anchor="end">high</text>
+      <text class="ax" x="18" y="160" text-anchor="middle" transform="rotate(-90,18,160)">reliability / cost</text>
+      <!-- RELIABILITY CURVE — rises steeply then flattens (diminishing returns) -->
+      <!-- Points: (100,220) chat-base → (220,180) → (370,110) → (510,80) → (640,72) -->
+      <path d="M 100 220 C 160 200, 280 130, 370 110 S 510 82, 640 72" fill="none" stroke="#3a7d7b" stroke-width="2.5" stroke-linejoin="round"/>
+      <!-- COST LINE — keeps rising roughly linearly then steeper -->
+      <!-- Points: (100,230) → (220,212) → (370,170) → (510,118) → (640,56) -->
+      <path d="M 100 230 L 220 212 L 370 170 L 510 118 L 640 56" fill="none" stroke="#b3402f" stroke-width="2" stroke-dasharray="6 3"/>
+      <!-- Knee / optimal zone shaded band -->
+      <rect x="320" y="40" width="220" height="210" rx="6" fill="#f4e6df" opacity="0.35"/>
+      <text class="s" x="430" y="60" text-anchor="middle" fill="#a44a2e" font-weight="700">optimal zone</text>
+      <text class="s" x="430" y="76" text-anchor="middle" fill="#a44a2e">("pick the knee")</text>
+      <!-- Knee dot on reliability curve -->
+      <circle cx="430" cy="95" r="7" fill="#c96442" stroke="#fff" stroke-width="2"/>
+      <text class="s" x="435" y="84" fill="#a44a2e" font-weight="700">knee</text>
+      <!-- token cost annotation -->
+      <text class="s" x="650" y="50" fill="#b3402f" font-weight="700">cost</text>
+      <text class="s" x="650" y="64" fill="#b3402f">(tokens)</text>
+      <!-- reliability annotation -->
+      <text class="s" x="654" y="76" fill="#3a7d7b" font-weight="700">reliability</text>
+      <!-- Data point callouts -->
+      <circle cx="100" cy="220" r="4" fill="#3a7d7b"/>
+      <circle cx="220" cy="180" r="4" fill="#3a7d7b"/>
+      <circle cx="370" cy="110" r="4" fill="#3a7d7b"/>
+      <circle cx="510" cy="80" r="4" fill="#3a7d7b"/>
+      <circle cx="640" cy="72" r="4" fill="#3a7d7b"/>
+      <!-- ~15× label on cost line at multi-agent point -->
+      <rect x="480" y="104" width="52" height="17" rx="4" fill="#f7e3df"/>
+      <text class="s" x="506" y="116" text-anchor="middle" fill="#b3402f" font-weight="700">~15× tokens</text>
+      <!-- diminishing returns label -->
+      <text class="s" x="560" y="92" fill="#5c544c">diminishing</text>
+      <text class="s" x="560" y="106" fill="#5c544c">returns</text>
+      <!-- 80% variance note -->
+      <rect x="72" y="8" width="300" height="18" rx="4" fill="#e0efee"/>
+      <text class="s" x="222" y="21" text-anchor="middle" fill="#3a7d7b">token usage alone explains ~80% of performance variance <tspan font-style="italic">[VERIFY]</tspan></text>
+    </svg>
+    <figcaption>Cost-vs-reliability tradeoff: reliability rises steeply with more workers then flattens (diminishing returns), while token cost keeps climbing — multi-agent averages ~15× a chat. <span class="verify">VERIFY</span> multiplier. The "knee" — roughly 4–10 workers on a well-scoped complex task — is where you get most of the reliability gain before cost outpaces value. Because token usage explains ~80% of performance variance, the two curves are tightly linked: spending more tokens is both the cost and the explanation for the performance gain.</figcaption>
+  </figure>
+
+  <div class="callout tip collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">💡</span> The why underneath: it's a token story<span class="chev">▼</span></div>
+  <div class="cbody"><p>The deep reason multi-agent wins is almost embarrassingly mechanical. More agents exploring in parallel = more tokens spent. Since token usage explains ~80% of the performance variance, the multi-agent architecture wins largely because it is <strong>a mechanism for spending more tokens productively in parallel</strong>. That reframing is the exam-relevant insight: it tells you exactly when the architecture <em>won't</em> help — when the task can't absorb more parallel token spend.</p></div></div>
+
+  <div class="mcq" data-mcq data-correct="2">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Which single factor, by itself, explained ~80% of the performance variance in Anthropic's analysis?</div>
+    <button class="opt">Number of subagents</button>
+    <button class="opt">Model choice</button>
+    <button class="opt">Token usage</button>
+    <button class="opt">Network latency</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>"Token usage by itself explains 80% of the variance." Three factors together explained 95% (token usage, number of tool calls, model choice), but token usage dominates. <span class="verify">VERIFY</span> figures.</div>
+  </div>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">If a multi-agent system costs ~15× a chat in tokens, what must be true of a task for that spend to be justified?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>It must be valuable AND heavily parallelizable.</strong> "Multi-agent systems excel at valuable tasks that involve heavy parallelization." If the task is low-value, or fundamentally sequential / shared-state, the 15× spend buys little — and you should fall back to a single agent or a fixed workflow (Section F).</div>
+  </div>
+</section>
+
+<!-- ======================= SECTION C DIVIDER ======================= -->
+<div class="sec-divider" id="secC">
+  <span class="badge"><span class="emoji">🎛️</span> The orchestrator</span>
+  <h2>The orchestrator's job at scale</h2>
+  <p>Decomposition with detailed delegation, effort heuristics tied to query complexity, synthesis, and a separate citation/verification stage — plus the named prompt-engineering principles.</p>
+</div>
+
+<!-- LESSON 3 -->
+<section class="lesson" id="l3" data-lesson="3">
+  <div class="lmeta"><span class="ltag"><span class="emoji">🎛️</span> Section 3</span><span class="ltime">⏱ ~12 min · core</span></div>
+  <h3 class="ltitle">What the orchestrator actually does</h3>
+
+  <div class="objectives">
+    <div class="lab">What you'll be able to do</div>
+    <ul>
+      <li>List the four jobs of a scaled orchestrator and what each requires</li>
+      <li>Apply the effort heuristics (agent + tool-call counts) to query complexity</li>
+      <li>Explain why verification is its own architectural stage (the CitationAgent)</li>
+      <li>Name Anthropic's six prompt-engineering principles for the lead agent</li>
+    </ul>
+  </div>
+
+  <p>In the Research architecture, the lead agent "analyzes [the query], develops a strategy, and spawns subagents to explore different aspects simultaneously." Subagents work "iteratively using search tools to gather information" and return findings; the system then "passes all findings to a CitationAgent" before returning results. Four jobs hide in that sentence.</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 300" role="img" aria-label="Research architecture pipeline: user query to lead agent, fan-out to parallel subagents, findings back to lead for synthesis, then to CitationAgent, then final result">
+      <defs><style>.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 10px sans-serif;fill:#5c544c}.w{font:700 11px sans-serif;fill:#fff}</style>
+      <marker id="ac" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#c96442"/></marker>
+      <marker id="acg" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#3f7d4f"/></marker></defs>
+      <rect x="20" y="130" width="92" height="40" rx="9" fill="#f6edd6" stroke="#b8860b"/><text class="t" x="66" y="155" text-anchor="middle">user query</text>
+      <rect x="150" y="125" width="120" height="50" rx="10" fill="#f4e6df" stroke="#c96442" stroke-width="1.6"/><text class="t" x="210" y="146" text-anchor="middle" fill="#a44a2e">lead agent</text><text class="s" x="210" y="162" text-anchor="middle">plan + delegate</text>
+      <line x1="112" y1="150" x2="148" y2="150" stroke="#c96442" stroke-width="1.6" marker-end="url(#ac)"/>
+      <!-- subagents -->
+      <rect x="320" y="40" width="120" height="38" rx="9" fill="#e0efee" stroke="#3a7d7b"/><text class="s" x="380" y="63" text-anchor="middle">subagent 1</text>
+      <rect x="320" y="92" width="120" height="38" rx="9" fill="#e0efee" stroke="#3a7d7b"/><text class="s" x="380" y="115" text-anchor="middle">subagent 2</text>
+      <rect x="320" y="144" width="120" height="38" rx="9" fill="#e0efee" stroke="#3a7d7b"/><text class="s" x="380" y="167" text-anchor="middle">subagent 3</text>
+      <rect x="320" y="196" width="120" height="38" rx="9" fill="#e0efee" stroke="#3a7d7b" stroke-dasharray="3 3"/><text class="s" x="380" y="219" text-anchor="middle">…N (runtime)</text>
+      <line x1="270" y1="150" x2="318" y2="59" stroke="#c96442" stroke-width="1.4" marker-end="url(#ac)"/>
+      <line x1="270" y1="150" x2="318" y2="111" stroke="#c96442" stroke-width="1.4" marker-end="url(#ac)"/>
+      <line x1="270" y1="150" x2="318" y2="163" stroke="#c96442" stroke-width="1.4" marker-end="url(#ac)"/>
+      <line x1="270" y1="150" x2="318" y2="215" stroke="#c96442" stroke-width="1.4" marker-end="url(#ac)"/>
+      <!-- back to lead = synthesis -->
+      <text class="s" x="247" y="250" text-anchor="middle">findings →</text>
+      <rect x="480" y="100" width="110" height="50" rx="10" fill="#f4e6df" stroke="#c96442"/><text class="t" x="535" y="121" text-anchor="middle" fill="#a44a2e">synthesize</text><text class="s" x="535" y="137" text-anchor="middle">(lead condenses)</text>
+      <line x1="440" y1="59" x2="478" y2="115" stroke="#3a7d7b" stroke-width="1.2"/>
+      <line x1="440" y1="111" x2="478" y2="122" stroke="#3a7d7b" stroke-width="1.2"/>
+      <line x1="440" y1="163" x2="478" y2="128" stroke="#3a7d7b" stroke-width="1.2"/>
+      <rect x="480" y="172" width="110" height="44" rx="10" fill="#ece8f3" stroke="#6b5b95"/><text class="t" x="535" y="190" text-anchor="middle" fill="#4c3f70">CitationAgent</text><text class="s" x="535" y="206" text-anchor="middle">verify + attribute</text>
+      <line x1="535" y1="150" x2="535" y2="170" stroke="#6b5b95" stroke-width="1.6" marker-end="url(#ac)"/>
+      <rect x="610" y="180" width="74" height="36" rx="9" fill="#e3f0e6" stroke="#3f7d4f"/><text class="t" x="647" y="202" text-anchor="middle">result</text>
+      <line x1="590" y1="194" x2="608" y2="198" stroke="#3f7d4f" stroke-width="1.6" marker-end="url(#acg)"/>
+    </svg>
+    <figcaption>The Research architecture: lead agent plans and delegates → subagents explore in parallel → findings return for synthesis → a dedicated CitationAgent verifies and attributes → result. Verification is its own stage, architecturally separated from research.</figcaption>
+  </figure>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 720 340" role="img" aria-label="Annotated orchestrator-worker pipeline: lead decomposes query and delegates each worker its own constructed prompt; workers run in parallel; elapsed time equals the maximum worker duration not their sum; only final messages return for synthesis; CitationAgent verifies; result delivered">
+      <defs>
+        <style>.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 10px sans-serif;fill:#5c544c}.lab{font:700 11px sans-serif;fill:#fff}.ann{font:700 10px sans-serif;fill:#3a7d7b}.warn{font:700 10px sans-serif;fill:#a44a2e}</style>
+        <marker id="pp1" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#c96442"/></marker>
+        <marker id="pp2" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#3a7d7b"/></marker>
+      </defs>
+
+      <!-- ── QUERY ── -->
+      <rect x="12" y="132" width="88" height="40" rx="9" fill="#f6edd6" stroke="#b8860b"/>
+      <text class="t" x="56" y="149" text-anchor="middle">user</text>
+      <text class="t" x="56" y="163" text-anchor="middle">query</text>
+      <line x1="100" y1="152" x2="134" y2="152" stroke="#c96442" stroke-width="1.6" marker-end="url(#pp1)"/>
+
+      <!-- ── LEAD AGENT (orchestrator) ── -->
+      <rect x="136" y="122" width="118" height="60" rx="10" fill="#f4e6df" stroke="#c96442" stroke-width="1.8"/>
+      <text class="t" x="195" y="143" text-anchor="middle" fill="#a44a2e">lead agent</text>
+      <text class="s" x="195" y="157" text-anchor="middle">decompose +</text>
+      <text class="s" x="195" y="169" text-anchor="middle">delegate</text>
+      <!-- annotation: constructed prompt -->
+      <text class="ann" x="195" y="200" text-anchor="middle">each worker gets its own</text>
+      <text class="ann" x="195" y="212" text-anchor="middle">constructed prompt — no</text>
+      <text class="ann" x="195" y="224" text-anchor="middle">shared context between peers</text>
+
+      <!-- fan-out arrows from lead to workers -->
+      <line x1="254" y1="140" x2="308" y2="72" stroke="#c96442" stroke-width="1.4" marker-end="url(#pp1)"/>
+      <line x1="254" y1="152" x2="308" y2="132" stroke="#c96442" stroke-width="1.4" marker-end="url(#pp1)"/>
+      <line x1="254" y1="164" x2="308" y2="192" stroke="#c96442" stroke-width="1.4" marker-end="url(#pp1)"/>
+      <line x1="254" y1="172" x2="308" y2="250" stroke="#c96442" stroke-width="1.4" stroke-dasharray="3 2" marker-end="url(#pp1)"/>
+
+      <!-- ── WORKERS (parallel) ── -->
+      <rect x="310" y="52" width="118" height="36" rx="9" fill="#e0efee" stroke="#3a7d7b"/>
+      <text class="s" x="369" y="74" text-anchor="middle">subagent 1</text>
+      <rect x="310" y="114" width="118" height="36" rx="9" fill="#e0efee" stroke="#3a7d7b"/>
+      <text class="s" x="369" y="136" text-anchor="middle">subagent 2</text>
+      <rect x="310" y="174" width="118" height="36" rx="9" fill="#e0efee" stroke="#3a7d7b"/>
+      <text class="s" x="369" y="196" text-anchor="middle">subagent 3</text>
+      <rect x="310" y="234" width="118" height="36" rx="9" fill="#e0efee" stroke="#3a7d7b" stroke-dasharray="4 3"/>
+      <text class="s" x="369" y="256" text-anchor="middle">…N (runtime)</text>
+
+      <!-- PARALLEL annotation + elapsed = max -->
+      <rect x="310" y="284" width="118" height="42" rx="7" fill="#e3f0e6" stroke="#3f7d4f"/>
+      <text class="ann" x="369" y="300" text-anchor="middle" fill="#3f7d4f">elapsed = max(workers)</text>
+      <text class="ann" x="369" y="314" text-anchor="middle" fill="#3f7d4f">not sum — run in parallel</text>
+
+      <!-- return arrows: only final message -->
+      <line x1="428" y1="70" x2="474" y2="116" stroke="#3a7d7b" stroke-width="1.3" marker-end="url(#pp2)"/>
+      <line x1="428" y1="132" x2="474" y2="128" stroke="#3a7d7b" stroke-width="1.3" marker-end="url(#pp2)"/>
+      <line x1="428" y1="192" x2="474" y2="140" stroke="#3a7d7b" stroke-width="1.3" marker-end="url(#pp2)"/>
+
+      <!-- "only final message returns" annotation -->
+      <text class="ann" x="454" y="90" text-anchor="middle">only final</text>
+      <text class="ann" x="454" y="102" text-anchor="middle">message returns</text>
+      <text class="ann" x="454" y="112" text-anchor="middle">(raw transcripts</text>
+      <text class="ann" x="454" y="122" text-anchor="middle">stay inside worker)</text>
+
+      <!-- ── SYNTHESIS ── -->
+      <rect x="476" y="104" width="112" height="44" rx="10" fill="#f4e6df" stroke="#c96442"/>
+      <text class="t" x="532" y="124" text-anchor="middle" fill="#a44a2e">synthesize</text>
+      <text class="s" x="532" y="138" text-anchor="middle">lead condenses</text>
+
+      <!-- ── CITATION AGENT ── -->
+      <rect x="476" y="172" width="112" height="44" rx="10" fill="#ece4f6" stroke="#6b4f9e"/>
+      <text class="t" x="532" y="191" text-anchor="middle" fill="#6b4f9e">CitationAgent</text>
+      <text class="s" x="532" y="207" text-anchor="middle">verify + attribute</text>
+      <line x1="532" y1="148" x2="532" y2="170" stroke="#6b4f9e" stroke-width="1.6" marker-end="url(#pp1)"/>
+
+      <!-- ── RESULT ── -->
+      <rect x="610" y="176" width="92" height="36" rx="9" fill="#e3f0e6" stroke="#3f7d4f"/>
+      <text class="t" x="656" y="199" text-anchor="middle">result</text>
+      <line x1="588" y1="194" x2="608" y2="194" stroke="#3f7d4f" stroke-width="1.6" marker-end="url(#pp2)"/>
+
+      <!-- ── KEY CALLOUT BOX ── -->
+      <rect x="12" y="280" width="290" height="48" rx="8" fill="#f4e6df" stroke="#c96442" stroke-dasharray="3 2"/>
+      <text class="warn" x="22" y="297">KEY FACTS for the exam:</text>
+      <text class="s" x="22" y="312" fill="#5c544c">• elapsed = max(workers), not sum → parallelism cuts wall-clock time</text>
+      <text class="s" x="22" y="324" fill="#5c544c">• each subagent sees only its constructed prompt — no peer context</text>
+    </svg>
+    <figcaption>Annotated pipeline: the lead constructs a separate prompt for each worker (workers never share context with peers); all workers execute in parallel so elapsed time equals the slowest worker, not the sum; only each worker's final message returns to the lead for synthesis; a dedicated CitationAgent then verifies and attributes before the result is delivered.</figcaption>
+  </figure>
+
+  <h4>Job 1 — Decomposition + detailed delegation</h4>
+  <p>"Each subagent needs an objective, an output format, guidance on the tools and sources to use, and clear task boundaries. Without detailed task descriptions, agents duplicate work, leave gaps, or fail to find necessary information." Anthropic learned this the hard way: vague instructions like "research the semiconductor shortage" caused subagents to misinterpret the task or perform "the exact same searches as other agents." Detailed delegation is not politeness — it is the mechanism that prevents failure mode #5 (duplicated work).</p>
+
+  <h4>Job 2 — Effort heuristics scaled to complexity</h4>
+  <p>"Agents struggle to judge appropriate effort for different tasks, so we embedded scaling rules in the prompts." The explicit rules:</p>
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 200" role="img" aria-label="Effort scaling ladder: simple fact-finding uses 1 agent and 3 to 10 calls, comparisons use 2 to 4 subagents and 10 to 15 calls each, complex research uses more than 10 subagents">
+      <defs><style>.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 10.5px sans-serif;fill:#5c544c}.h{font:700 11px sans-serif;fill:#fff}</style></defs>
+      <rect x="30" y="30" width="190" height="120" rx="12" fill="#e3f0e6" stroke="#3f7d4f"/>
+      <rect x="30" y="30" width="190" height="26" rx="12" fill="#3f7d4f"/><text class="h" x="125" y="48" text-anchor="middle">SIMPLE fact-finding</text>
+      <text class="t" x="125" y="86" text-anchor="middle">1 agent</text>
+      <text class="s" x="125" y="108" text-anchor="middle">3–10 tool calls</text>
+      <rect x="255" y="30" width="190" height="120" rx="12" fill="#f6edd6" stroke="#b8860b"/>
+      <rect x="255" y="30" width="190" height="26" rx="12" fill="#b8860b"/><text class="h" x="350" y="48" text-anchor="middle">DIRECT comparison</text>
+      <text class="t" x="350" y="86" text-anchor="middle">2–4 subagents</text>
+      <text class="s" x="350" y="108" text-anchor="middle">10–15 calls each</text>
+      <rect x="480" y="30" width="190" height="120" rx="12" fill="#f7e3df" stroke="#b3402f"/>
+      <rect x="480" y="30" width="190" height="26" rx="12" fill="#b3402f"/><text class="h" x="575" y="48" text-anchor="middle">COMPLEX research</text>
+      <text class="t" x="575" y="86" text-anchor="middle">&gt;10 subagents</text>
+      <text class="s" x="575" y="108" text-anchor="middle">clearly divided roles</text>
+      <text class="s" x="350" y="178" text-anchor="middle">→ more complexity → more agents + more calls (embedded as rules in the orchestrator prompt)</text>
+    </svg>
+    <figcaption>The embedded effort ladder. <span class="verify">VERIFY</span> exact tool-call counts. The SDK exposes effort directly as a field, so the heuristic becomes machine-settable.</figcaption>
+  </figure>
+
+  <p>The SDK exposes effort directly as a field: <code class="inline">effort</code> accepts <code class="inline">'low' | 'medium' | 'high' | 'xhigh' | 'max'</code> or a number, and <code class="inline">maxTurns</code> caps "Maximum number of agentic turns before the agent stops."</p>
+
+  <div class="codelabel">SDK — effort + maxTurns on a worker (escaped) · <span class="verify">VERIFY</span> enum values, SDK-version-sensitive</div>
+  <pre class="code"><code><span class="cmt">// A worker scaled for a "direct comparison" task</span>
+agents: {
+  <span class="str">"comparison-worker"</span>: {
+    description: <span class="str">"Compares two options across given dimensions."</span>,
+    prompt: <span class="str">"You compare exactly the two items named..."</span>,
+    tools: [<span class="str">"Read"</span>, <span class="str">"Grep"</span>, <span class="str">"Glob"</span>],
+    effort: <span class="str">"medium"</span>,        <span class="cmt">// 'low'|'medium'|'high'|'xhigh'|'max' | number</span>
+    maxTurns: 15            <span class="cmt">// cap agentic turns (≈ the 10–15 calls heuristic)</span>
+  }
+}</code></pre>
+
+  <h4>Job 3 — Synthesis</h4>
+  <p>The lead agent gathers subagent findings and condenses them. Crucially, subagents are designed to return only "the most important tokens for the lead research agent" — the compression happens at the boundary, so the lead synthesizes condensed findings, not raw transcripts.</p>
+
+  <h4>Job 4 — Citation / verification stage</h4>
+  <p>A dedicated "CitationAgent" "processes the documents and research report to identify specific locations for citations," ensuring claims are attributed before delivery. This is a distinct worker role: <strong>verification is architecturally separated from research</strong>. The agents that <em>find</em> information are not the agent that <em>checks</em> it — a separation-of-concerns move that doubles as a reliability control.</p>
+
+  <h4>The orchestrator's prompt-engineering principles (verbatim names)</h4>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Principle</th><th>What it means</th></tr></thead>
+    <tbody>
+      <tr><td>"Think like your agents"</td><td>Build an accurate mental model of agent behavior so impactful prompt changes become obvious.</td></tr>
+      <tr><td>"Teach the orchestrator how to delegate"</td><td>Each subagent needs objective, output format, tool/source guidance, and boundaries.</td></tr>
+      <tr><td>"Scale effort to query complexity"</td><td>Embed the scaling rules (the ladder above) in the prompt.</td></tr>
+      <tr><td>"Let agents improve themselves"</td><td>"the Claude 4 models can be excellent prompt engineers… given a prompt and a failure mode, they are able to diagnose why the agent is failing and suggest improvements." <span class="verify">VERIFY</span> "Claude 4 models"</td></tr>
+      <tr><td>"Start wide, then narrow down"</td><td>Search should "mirror expert human research: explore the landscape before drilling into specifics."</td></tr>
+      <tr><td>"Guide the thinking process"</td><td>Extended thinking is "a controllable scratchpad"; "The lead agent uses thinking to plan its approach."</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">A user asks a simple, single-fact question ("what year did X launch?"). How many agents and tool calls should the orchestrator deploy, per Anthropic's embedded rules?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>Just 1 agent with 3–10 tool calls.</strong> "Simple fact-finding" gets a single agent and a small call budget. Spinning up 4 subagents for a one-fact query is exactly the over-spend the effort heuristics exist to prevent. <span class="verify">VERIFY</span> counts.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="3">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Why is the CitationAgent a <em>separate</em> stage rather than folded into each research subagent?</div>
+    <button class="opt">To save tokens — citations are cheap</button>
+    <button class="opt">Because subagents can't use search tools</button>
+    <button class="opt">It's a UI requirement, not architectural</button>
+    <button class="opt">Verification is separated from research — a separation-of-concerns control that checks claims independently of who found them</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>A dedicated CitationAgent "processes the documents and research report to identify specific locations for citations." Separating <em>find</em> from <em>verify</em> is both separation of concerns and a reliability control.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="0">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">What does a subagent need in its task description to avoid duplicating other workers' efforts?</div>
+    <button class="opt">An objective, output format, tool/source guidance, and clear task boundaries</button>
+    <button class="opt">The full conversation history of every other subagent</button>
+    <button class="opt">A higher <code class="inline">maxTurns</code> than its peers</button>
+    <button class="opt">Permission to spawn its own subagents</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>"Each subagent needs an objective, an output format, guidance on the tools and sources to use, and clear task boundaries." Vague delegation is what caused real subagents to run "the exact same searches as other agents."</div>
+  </div>
+</section>
+
+<!-- ======================= SECTION D DIVIDER ======================= -->
+<div class="sec-divider" id="secD">
+  <span class="badge"><span class="emoji">💥</span> The heart</span>
+  <h2>Failure modes at scale</h2>
+  <p>Eight ways orchestrator-worker systems break in production — each as name → mechanism → symptom → mitigation — plus the academic MAST cross-reference (handled carefully).</p>
+</div>
+
+<!-- LESSON 4 -->
+<section class="lesson" id="l4" data-lesson="4">
+  <div class="lmeta"><span class="ltag"><span class="emoji">💥</span> Section 4</span><span class="ltime">⏱ ~16 min · core · the heart</span></div>
+  <h3 class="ltitle">The eight failure modes</h3>
+
+  <div class="objectives">
+    <div class="lab">What you'll be able to do</div>
+    <ul>
+      <li>Name all eight failure modes by mechanism, symptom, and mitigation</li>
+      <li>Compute the coordination-interaction growth n·(n−1)/2</li>
+      <li>Cite the MAST academic taxonomy correctly — without overstating the unconfirmed percentages</li>
+    </ul>
+  </div>
+
+  <p><strong>Big picture first:</strong> single-agent failures are mostly "the model got it wrong." Multi-agent failures are <em>systemic</em> — they emerge from state, coordination, and economics, not just from any one model's mistake. That is why this is the heart of the lesson and the heart of Domain 5. Each mode below is given as <strong>name → mechanism → symptom → mitigation</strong>.</p>
+
+  <div class="callout anti collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">①</span> Error compounding in stateful, multi-step agents<span class="chev">▼</span></div>
+  <div class="cbody">
+    <p><strong>Mechanism:</strong> "Agents are stateful and errors compound. Agents can run for long periods of time, maintaining state across many tool calls." Chaining steps means errors propagate forward instead of canceling out. [SECONDARY] Galileo confirms: "errors often compound rather than cancel when you chain agents sequentially."</p>
+    <p><strong>Symptom:</strong> "Without effective mitigations, minor system failures can be catastrophic for agents."</p>
+    <p><strong>Mitigation:</strong> Durable execution + resume-from-failure; deterministic safeguards (retries, checkpoints) — see Section E.</p>
+  </div></div>
+
+  <div class="callout anti collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">②</span> Context-window exhaustion across workers<span class="chev">▼</span></div>
+  <div class="cbody">
+    <p><strong>Mechanism:</strong> Long-horizon runs blow past the context window. Anthropic: "if the context window exceeds 200,000 tokens it will be truncated and it is important to retain the plan." <span class="verify">VERIFY</span> 200,000-token figure. "As conversations extend, standard context windows become insufficient."</p>
+    <p><strong>Symptom:</strong> Plan/context truncated; the agent loses the thread of its own strategy; degraded or incoherent output.</p>
+    <p><strong>Mitigation:</strong> (a) External memory — "The LeadResearcher begins by thinking through the approach and saving its plan to Memory to persist the context." (b) Summarize-and-store — "agents summarize completed work phases and store essential information in external memory before proceeding to new tasks." (c) Clean-context handoffs — "When context limits approach, agents can spawn fresh subagents with clean contexts while maintaining continuity through careful handoffs." (d) Subagent context isolation by design — intermediate results never enter the parent context.</p>
+  </div></div>
+
+  <div class="callout anti collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">③</span> Token-cost blowup (the 15× economics)<span class="chev">▼</span></div>
+  <div class="cbody">
+    <p><strong>Mechanism:</strong> Multi-agent systems "use about 15× more tokens than chats." <span class="verify">VERIFY</span> Every spawned subagent multiplies token consumption.</p>
+    <p><strong>Symptom:</strong> Cost per query that may not justify the result; the architecture stops paying for itself on low-value or non-parallelizable tasks.</p>
+    <p><strong>Mitigation:</strong> Gate on value + parallelizability — "Multi-agent systems excel at valuable tasks that involve heavy parallelization." Scale effort to complexity (Section C); fall back to single-agent or a fixed workflow when the task doesn't clear the gate (Section F).</p>
+  </div></div>
+
+  <div class="callout anti collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">④</span> Coordination / synchronization overhead<span class="chev">▼</span></div>
+  <div class="cbody">
+    <p><strong>Mechanism:</strong> "Multi-agent systems have key differences from single-agent systems, including a rapid growth in coordination complexity." Anthropic's lead agents "execute subagents synchronously, waiting for each set of subagents to complete before proceeding… the entire system can be blocked while waiting for a single subagent to finish searching." [SECONDARY] Galileo quantifies the interaction explosion: "2 agents = 1 potential interaction; 4 agents = 6 potential interactions; 10 agents = 45 potential interactions" — i.e. n·(n−1)/2 pairwise growth.</p>
+    <p><strong>Symptom:</strong> Latency bottlenecks (slowest worker blocks the batch); the lead "can't steer subagents [and] subagents can't coordinate."</p>
+    <p><strong>Mitigation:</strong> Synchronous execution as a deliberate simplification ("This simplifies coordination"); parallel tool calling to cut wall-clock time. Async would add parallelism but "adds challenges in result coordination, state consistency, and error propagation across the subagents."</p>
+  </div></div>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 200" role="img" aria-label="Coordination interaction growth: 2 agents have 1 interaction, 4 agents have 6, 10 agents have 45, following n times n minus 1 over 2">
+      <defs><style>.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 10.5px sans-serif;fill:#5c544c}.n{font:700 13px sans-serif;fill:#a44a2e}</style></defs>
+      <!-- 2 agents -->
+      <circle cx="70" cy="60" r="9" fill="#3a7d7b"/><circle cx="130" cy="60" r="9" fill="#3a7d7b"/>
+      <line x1="79" y1="60" x2="121" y2="60" stroke="#c96442" stroke-width="1.4"/>
+      <text class="t" x="100" y="105" text-anchor="middle">2 agents</text><text class="n" x="100" y="124" text-anchor="middle">1 interaction</text>
+      <!-- 4 agents -->
+      <circle cx="300" cy="40" r="8" fill="#3a7d7b"/><circle cx="360" cy="40" r="8" fill="#3a7d7b"/>
+      <circle cx="300" cy="80" r="8" fill="#3a7d7b"/><circle cx="360" cy="80" r="8" fill="#3a7d7b"/>
+      <line x1="300" y1="40" x2="360" y2="40" stroke="#c96442" stroke-width="1"/>
+      <line x1="300" y1="80" x2="360" y2="80" stroke="#c96442" stroke-width="1"/>
+      <line x1="300" y1="40" x2="300" y2="80" stroke="#c96442" stroke-width="1"/>
+      <line x1="360" y1="40" x2="360" y2="80" stroke="#c96442" stroke-width="1"/>
+      <line x1="300" y1="40" x2="360" y2="80" stroke="#c96442" stroke-width="1"/>
+      <line x1="360" y1="40" x2="300" y2="80" stroke="#c96442" stroke-width="1"/>
+      <text class="t" x="330" y="105" text-anchor="middle">4 agents</text><text class="n" x="330" y="124" text-anchor="middle">6 interactions</text>
+      <!-- 10 agents ring -->
+      <g transform="translate(575,60)">
+        <g id="ring" stroke="#c96442" stroke-width="0.5" opacity="0.55">
+          <line x1="30" y1="0" x2="24.3" y2="17.6"/><line x1="30" y1="0" x2="9.3" y2="28.5"/><line x1="30" y1="0" x2="-9.3" y2="28.5"/><line x1="30" y1="0" x2="-24.3" y2="17.6"/><line x1="30" y1="0" x2="-30" y2="0"/><line x1="30" y1="0" x2="-24.3" y2="-17.6"/><line x1="30" y1="0" x2="-9.3" y2="-28.5"/><line x1="30" y1="0" x2="9.3" y2="-28.5"/><line x1="30" y1="0" x2="24.3" y2="-17.6"/>
+          <line x1="24.3" y1="17.6" x2="9.3" y2="28.5"/><line x1="24.3" y1="17.6" x2="-9.3" y2="28.5"/><line x1="24.3" y1="17.6" x2="-24.3" y2="17.6"/><line x1="24.3" y1="17.6" x2="-30" y2="0"/><line x1="24.3" y1="17.6" x2="-24.3" y2="-17.6"/><line x1="24.3" y1="17.6" x2="-9.3" y2="-28.5"/><line x1="24.3" y1="17.6" x2="9.3" y2="-28.5"/><line x1="24.3" y1="17.6" x2="24.3" y2="-17.6"/>
+          <line x1="9.3" y1="28.5" x2="-9.3" y2="28.5"/><line x1="9.3" y1="28.5" x2="-24.3" y2="17.6"/><line x1="9.3" y1="28.5" x2="-30" y2="0"/><line x1="9.3" y1="28.5" x2="-24.3" y2="-17.6"/><line x1="9.3" y1="28.5" x2="-9.3" y2="-28.5"/><line x1="9.3" y1="28.5" x2="9.3" y2="-28.5"/><line x1="9.3" y1="28.5" x2="24.3" y2="-17.6"/>
+          <line x1="-9.3" y1="28.5" x2="-24.3" y2="17.6"/><line x1="-9.3" y1="28.5" x2="-30" y2="0"/><line x1="-9.3" y1="28.5" x2="-24.3" y2="-17.6"/><line x1="-9.3" y1="28.5" x2="-9.3" y2="-28.5"/><line x1="-9.3" y1="28.5" x2="9.3" y2="-28.5"/><line x1="-9.3" y1="28.5" x2="24.3" y2="-17.6"/>
+          <line x1="-24.3" y1="17.6" x2="-30" y2="0"/><line x1="-24.3" y1="17.6" x2="-24.3" y2="-17.6"/><line x1="-24.3" y1="17.6" x2="-9.3" y2="-28.5"/><line x1="-24.3" y1="17.6" x2="9.3" y2="-28.5"/><line x1="-24.3" y1="17.6" x2="24.3" y2="-17.6"/>
+          <line x1="-30" y1="0" x2="-24.3" y2="-17.6"/><line x1="-30" y1="0" x2="-9.3" y2="-28.5"/><line x1="-30" y1="0" x2="9.3" y2="-28.5"/><line x1="-30" y1="0" x2="24.3" y2="-17.6"/>
+          <line x1="-24.3" y1="-17.6" x2="-9.3" y2="-28.5"/><line x1="-24.3" y1="-17.6" x2="9.3" y2="-28.5"/><line x1="-24.3" y1="-17.6" x2="24.3" y2="-17.6"/>
+          <line x1="-9.3" y1="-28.5" x2="9.3" y2="-28.5"/><line x1="-9.3" y1="-28.5" x2="24.3" y2="-17.6"/>
+          <line x1="9.3" y1="-28.5" x2="24.3" y2="-17.6"/>
+        </g>
+        <g fill="#3a7d7b" stroke="none">
+          <circle cx="30" cy="0" r="4.5"/><circle cx="24.3" cy="17.6" r="4.5"/><circle cx="9.3" cy="28.5" r="4.5"/><circle cx="-9.3" cy="28.5" r="4.5"/><circle cx="-24.3" cy="17.6" r="4.5"/><circle cx="-30" cy="0" r="4.5"/><circle cx="-24.3" cy="-17.6" r="4.5"/><circle cx="-9.3" cy="-28.5" r="4.5"/><circle cx="9.3" cy="-28.5" r="4.5"/><circle cx="24.3" cy="-17.6" r="4.5"/>
+        </g>
+      </g>
+      <circle cx="575" cy="60" r="36" fill="none" stroke="#e7e0d8" stroke-width="1" stroke-dasharray="3 3"/>
+      <text class="t" x="575" y="125" text-anchor="middle">10 agents</text><text class="n" x="575" y="144" text-anchor="middle">45 interactions</text>
+      <text class="s" x="350" y="180" text-anchor="middle">Pairwise coordination grows as n·(n−1)/2 — the cost of adding workers is super-linear.</text>
+    </svg>
+    <figcaption>Coordination cost is not linear in workers. Going from 4 to 10 agents multiplies potential pairwise interactions from 6 to 45. [SECONDARY] This is the math behind "rapid growth in coordination complexity."</figcaption>
+  </figure>
+
+  <div class="callout anti collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">⑤</span> Duplicated or conflicting work between workers<span class="chev">▼</span></div>
+  <div class="cbody">
+    <p><strong>Mechanism:</strong> Vague delegation → overlapping mandates. Real Anthropic example: "One subagent explored the 2021 automotive chip crisis while 2 others duplicated work investigating current 2025 supply chains, without an effective division of labor." Subagents do not share context with each other, so they cannot self-deconflict at runtime.</p>
+    <p><strong>Symptom:</strong> Wasted tokens, gaps in coverage, redundant or contradictory findings.</p>
+    <p><strong>Mitigation:</strong> Detailed task descriptions with "clear task boundaries" and explicit division of labor in the orchestrator's delegation (Job 1, Section C).</p>
+  </div></div>
+
+  <div class="callout anti collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">⑥</span> Partial failure — one worker fails<span class="chev">▼</span></div>
+  <div class="cbody">
+    <p><strong>Mechanism:</strong> In synchronous fan-out, a single failing subagent can block or corrupt the batch; cascading downstream failures occur when one agent's bad output feeds others. [SECONDARY] Galileo names "Single Agent Failures Cascading Downstream."</p>
+    <p><strong>Symptom:</strong> Whole run stalls or returns incomplete results despite most workers succeeding.</p>
+    <p><strong>Mitigation:</strong> Resume-from-failure rather than full restart; model-driven graceful degradation — "letting the agent know when a tool is failing and letting it adapt works surprisingly well"; deterministic retry logic + checkpoints.</p>
+  </div></div>
+
+  <div class="callout anti collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">⑦</span> Non-determinism making debugging hard<span class="chev">▼</span></div>
+  <div class="cbody">
+    <p><strong>Mechanism:</strong> Agents make different decisions on different runs; failures are hard to reproduce. [SECONDARY] Galileo lists "Inadequate Observability and Debugging" as a core failure mode.</p>
+    <p><strong>Symptom:</strong> Cannot reproduce or root-cause failures from logs alone.</p>
+    <p><strong>Mitigation:</strong> "Adding full production tracing let us diagnose why agents failed and fix issues systematically." Evaluate end-state, not every step (Section E).</p>
+  </div></div>
+
+  <div class="callout anti collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">⑧</span> Deployment coordination of long-running stateful agents<span class="chev">▼</span></div>
+  <div class="cbody">
+    <p><strong>Mechanism:</strong> Deploying a new version mid-run can disrupt agents that are hours into a stateful task.</p>
+    <p><strong>Symptom:</strong> Running agents broken or lost on deploy.</p>
+    <p><strong>Mitigation:</strong> "we use rainbow deployments to avoid disrupting running agents, by gradually shifting traffic from old to new versions" — keep old and new versions running simultaneously and migrate traffic gradually so in-flight agents finish on the version they started on.</p>
+  </div></div>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 280" role="img" aria-label="Failure-mode map: eight failure modes grouped into state, coordination, economics, and operations">
+      <defs><style>.t{font:700 11.5px sans-serif;fill:#2b2622}.s{font:400 10px sans-serif;fill:#5c544c}.h{font:700 11px sans-serif;fill:#fff}</style></defs>
+      <!-- STATE -->
+      <rect x="20" y="20" width="200" height="118" rx="12" fill="#fbeee9" stroke="#b3402f"/>
+      <rect x="20" y="20" width="200" height="24" rx="12" fill="#b3402f"/><text class="h" x="120" y="37" text-anchor="middle">STATE</text>
+      <text class="t" x="34" y="64">① error compounding</text>
+      <text class="t" x="34" y="86">② context exhaustion</text>
+      <text class="s" x="34" y="106">stateful, long-horizon runs</text>
+      <text class="s" x="34" y="122">degrade or truncate</text>
+      <!-- COORDINATION -->
+      <rect x="240" y="20" width="200" height="118" rx="12" fill="#fdf3ea" stroke="#b8860b"/>
+      <rect x="240" y="20" width="200" height="24" rx="12" fill="#b8860b"/><text class="h" x="340" y="37" text-anchor="middle">COORDINATION</text>
+      <text class="t" x="254" y="64">④ sync overhead</text>
+      <text class="t" x="254" y="86">⑤ duplicated work</text>
+      <text class="t" x="254" y="108">⑥ partial failure</text>
+      <text class="s" x="254" y="128">workers don't share context</text>
+      <!-- ECONOMICS -->
+      <rect x="460" y="20" width="218" height="118" rx="12" fill="#eef4ef" stroke="#3f7d4f"/>
+      <rect x="460" y="20" width="218" height="24" rx="12" fill="#3f7d4f"/><text class="h" x="569" y="37" text-anchor="middle">ECONOMICS</text>
+      <text class="t" x="474" y="64">③ token-cost blowup (~15×)</text>
+      <text class="s" x="474" y="86">cost may not justify result</text>
+      <text class="s" x="474" y="106">→ gate on value +</text>
+      <text class="s" x="474" y="122">   parallelizability</text>
+      <!-- OPERATIONS -->
+      <rect x="160" y="160" width="380" height="100" rx="12" fill="#eef0f6" stroke="#6b5b95"/>
+      <rect x="160" y="160" width="380" height="24" rx="12" fill="#6b5b95"/><text class="h" x="350" y="177" text-anchor="middle">OPERATIONS</text>
+      <text class="t" x="180" y="206">⑦ non-determinism → debugging is hard</text>
+      <text class="t" x="180" y="230">⑧ deployment disrupts in-flight stateful agents</text>
+      <text class="s" x="180" y="250">→ tracing, end-state evals, rainbow deploys (Section E)</text>
+    </svg>
+    <figcaption>The eight modes cluster into four families: state, coordination, economics, operations. Every mitigation lives in Section E.</figcaption>
+  </figure>
+
+  <h4>Secondary cross-reference — the MAST academic taxonomy</h4>
+  <div class="verifynote"><b><span class="emoji">🎓</span> Academic, [SECONDARY] — read carefully.</b> Cemri et al., <em>"Why Do Multi-Agent LLM Systems Fail?"</em> (UC Berkeley group) identify <b>14 unique failure modes</b> across <b>3 categories</b> — "(i) system design issues, (ii) inter-agent misalignment, and (iii) task verification" — derived from <b>1600+ annotated traces</b> across <b>7 MAS frameworks</b>, with inter-annotator agreement <b>kappa = 0.88</b> on a 150-trace subset. <span class="verify">VERIFY</span> The commonly-cited <b>41.8% / 36.9% / 21.3%</b> category split was <b>NOT confirmed</b> on the arXiv abstract — do <b>not</b> state those percentages as fact. Only the 14 modes, 3 categories, 1600+ traces, and kappa = 0.88 are confirmed here.</div>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">Going from 4 coordinating agents to 10 — how many potential pairwise interactions does that jump from, and to?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>From 6 to 45.</strong> Using n·(n−1)/2: 4·3/2 = 6; 10·9/2 = 45. [SECONDARY] More than doubling the agents multiplies coordination surface ~7.5×. This super-linear growth is exactly why "rapid growth in coordination complexity" is a named failure driver.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="2">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Subagents explore the same topic and return overlapping, redundant findings. Which failure mode is this, and what fixes it?</div>
+    <button class="opt">Context exhaustion — fix with bigger windows</button>
+    <button class="opt">Deployment coordination — fix with rainbow deploys</button>
+    <button class="opt">Duplicated work — fix with detailed task descriptions and clear boundaries</button>
+    <button class="opt">Non-determinism — fix with retries</button>
+    <button class="opt">Token blowup — fix with a cheaper model</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>This is mode ⑤ (duplicated/conflicting work). Because subagents don't share context, they can't self-deconflict — the fix is upstream, in the orchestrator's delegation: objectives, output formats, and "clear task boundaries."</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="1">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Which is accurately stated about the Cemri et al. MAST taxonomy?</div>
+    <button class="opt">It found 14 modes split 41.8% / 36.9% / 21.3% across 3 categories</button>
+    <button class="opt">It identifies 14 failure modes across 3 categories, from 1600+ traces, with kappa = 0.88</button>
+    <button class="opt">It is an Anthropic primary source</button>
+    <button class="opt">It proves multi-agent systems always outperform single agents</button>
+    <button class="opt">It found exactly 8 failure modes</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>Confirmed: 14 modes, 3 categories, 1600+ traces, kappa = 0.88 — a [SECONDARY] academic source. The 41.8/36.9/21.3 split was NOT confirmed on the abstract, so don't state it as fact.</div>
+  </div>
+</section>
+
+<!-- ======================= SECTION E DIVIDER ======================= -->
+<div class="sec-divider" id="secE">
+  <span class="badge"><span class="emoji">🛡️</span> Reliability</span>
+  <h2>Reliability patterns to design around the failures</h2>
+  <p>Durable resume, checkpoints, graceful degradation, external memory, tracing, end-state evals, rainbow deploys, worker limits, and the Workflow escape hatch.</p>
+</div>
+
+<!-- LESSON 5 -->
+<section class="lesson" id="l5" data-lesson="5">
+  <div class="lmeta"><span class="ltag"><span class="emoji">🛡️</span> Section 5</span><span class="ltime">⏱ ~14 min · core · Domain 5</span></div>
+  <h3 class="ltitle">Designing reliability in</h3>
+
+  <div class="objectives">
+    <div class="lab">What you'll be able to do</div>
+    <ul>
+      <li>Map each reliability pattern to the failure mode(s) it neutralizes</li>
+      <li>Implement durable resume via <code class="inline">session_id</code> + <code class="inline">resume</code> in the SDK</li>
+      <li>Bound a worker's blast radius with <code class="inline">maxTurns</code>, <code class="inline">effort</code>, and a restricted <code class="inline">tools</code> list</li>
+      <li>Know when to graduate a huge fan-out to the Workflow tool</li>
+    </ul>
+  </div>
+
+  <p><strong>Why before how:</strong> Section D was the disease; this is the medicine. The elegant thing about Anthropic's design is that the same handful of patterns covers most modes. Here is the mapping, then the mechanics.</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 250" role="img" aria-label="Reliability patterns mapped to the failure modes they mitigate">
+      <defs><style>.t{font:700 11px sans-serif;fill:#2b2622}.s{font:400 9.5px sans-serif;fill:#5c544c}.h{font:700 10.5px sans-serif;fill:#fff}</style>
+      <marker id="ae" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#3a7d7b"/></marker></defs>
+      <rect x="20" y="24" width="200" height="34" rx="8" fill="#e0efee" stroke="#3a7d7b"/><text class="t" x="120" y="45" text-anchor="middle">durable resume + checkpoints</text>
+      <rect x="20" y="66" width="200" height="34" rx="8" fill="#e0efee" stroke="#3a7d7b"/><text class="t" x="120" y="87" text-anchor="middle">external memory</text>
+      <rect x="20" y="108" width="200" height="34" rx="8" fill="#e0efee" stroke="#3a7d7b"/><text class="t" x="120" y="129" text-anchor="middle">graceful degradation</text>
+      <rect x="20" y="150" width="200" height="34" rx="8" fill="#e0efee" stroke="#3a7d7b"/><text class="t" x="120" y="171" text-anchor="middle">tracing + end-state evals</text>
+      <rect x="20" y="192" width="200" height="34" rx="8" fill="#e0efee" stroke="#3a7d7b"/><text class="t" x="120" y="213" text-anchor="middle">rainbow deploys + worker limits</text>
+      <!-- targets -->
+      <rect x="470" y="24" width="210" height="34" rx="8" fill="#fbeee9" stroke="#b3402f"/><text class="s" x="575" y="45" text-anchor="middle">① error compound · ⑥ partial failure</text>
+      <rect x="470" y="66" width="210" height="34" rx="8" fill="#fbeee9" stroke="#b3402f"/><text class="s" x="575" y="87" text-anchor="middle">② context exhaustion</text>
+      <rect x="470" y="108" width="210" height="34" rx="8" fill="#fbeee9" stroke="#b3402f"/><text class="s" x="575" y="129" text-anchor="middle">⑥ partial failure</text>
+      <rect x="470" y="150" width="210" height="34" rx="8" fill="#fbeee9" stroke="#b3402f"/><text class="s" x="575" y="171" text-anchor="middle">⑦ non-determinism</text>
+      <rect x="470" y="192" width="210" height="34" rx="8" fill="#fbeee9" stroke="#b3402f"/><text class="s" x="575" y="213" text-anchor="middle">⑧ deploy · ③ cost blast radius</text>
+      <line x1="220" y1="41" x2="468" y2="41" stroke="#3a7d7b" stroke-width="1.3" marker-end="url(#ae)"/>
+      <line x1="220" y1="83" x2="468" y2="83" stroke="#3a7d7b" stroke-width="1.3" marker-end="url(#ae)"/>
+      <line x1="220" y1="125" x2="468" y2="125" stroke="#3a7d7b" stroke-width="1.3" marker-end="url(#ae)"/>
+      <line x1="220" y1="167" x2="468" y2="167" stroke="#3a7d7b" stroke-width="1.3" marker-end="url(#ae)"/>
+      <line x1="220" y1="209" x2="468" y2="209" stroke="#3a7d7b" stroke-width="1.3" marker-end="url(#ae)"/>
+    </svg>
+    <figcaption>Patterns (left) → the failure modes they neutralize (right). Grouped into five families, the nine reliability patterns cover all eight modes.</figcaption>
+  </figure>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 720 390" role="img" aria-label="Escalation decision diagram: escalate by category and impact, not by fail counter. Branches on user requests human, authority lacking, policy exception, no progress, or uncertain unsafe state, each leading to a structured handoff. The wrong path escalates after N failed tool calls.">
+      <defs>
+        <style>.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 10px sans-serif;fill:#5c544c}.lab{font:700 11px sans-serif;fill:#fff}.warn{font:700 11px sans-serif;fill:#b3402f}.ok{font:700 11px sans-serif;fill:#3f7d4f}.hdr{font:700 12px sans-serif;fill:#fff}</style>
+        <marker id="esc1" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#3a7d7b"/></marker>
+        <marker id="esc2" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#b3402f"/></marker>
+      </defs>
+
+      <!-- ═══ TITLE STRIP ═══ -->
+      <rect x="12" y="8" width="696" height="26" rx="7" fill="#3a7d7b"/>
+      <text class="hdr" x="360" y="26" text-anchor="middle">Escalate by CATEGORY &amp; IMPACT — not by fail-counter</text>
+
+      <!-- ═══ START NODE ═══ -->
+      <rect x="280" y="46" width="160" height="36" rx="9" fill="#f6edd6" stroke="#b8860b"/>
+      <text class="t" x="360" y="69" text-anchor="middle">agent encounters obstacle</text>
+
+      <!-- ═══ DECISION DIAMOND ═══ -->
+      <polygon points="360,96 480,130 360,164 240,130" fill="#fff" stroke="#3a7d7b" stroke-width="1.8"/>
+      <text class="s" x="360" y="124" text-anchor="middle">is this a</text>
+      <text class="s" x="360" y="138" text-anchor="middle">category trigger?</text>
+      <line x1="360" y1="82" x2="360" y2="94" stroke="#3a7d7b" stroke-width="1.5" marker-end="url(#esc1)"/>
+
+      <!-- "NO → handle and continue" -->
+      <text class="s" x="232" y="126" text-anchor="end" fill="#5c544c">no →</text>
+      <rect x="80" y="114" width="148" height="32" rx="8" fill="#e0efee" stroke="#3a7d7b"/>
+      <text class="s" x="154" y="134" text-anchor="middle" fill="#3f7d4f">handle &amp; continue</text>
+      <line x1="240" y1="130" x2="230" y2="130" stroke="#3a7d7b" stroke-width="1.3" marker-end="url(#esc1)"/>
+
+      <!-- "YES → 5 category branches" -->
+      <text class="s" x="484" y="110" fill="#3a7d7b" font-weight="700">yes ↓ — which category?</text>
+      <line x1="360" y1="164" x2="360" y2="180" stroke="#3a7d7b" stroke-width="1.5" marker-end="url(#esc1)"/>
+
+      <!-- ═══ 5 CATEGORY CHIPS ═══ -->
+      <!-- layout: 5 chips in a row at y=182, centred -->
+      <rect x="14" y="182" width="126" height="38" rx="8" fill="#e0efee" stroke="#3a7d7b"/>
+      <text class="s" x="77" y="197" text-anchor="middle" font-weight="700">user asks for</text>
+      <text class="s" x="77" y="211" text-anchor="middle" font-weight="700">human</text>
+
+      <rect x="148" y="182" width="126" height="38" rx="8" fill="#e0efee" stroke="#3a7d7b"/>
+      <text class="s" x="211" y="197" text-anchor="middle" font-weight="700">authority</text>
+      <text class="s" x="211" y="211" text-anchor="middle" font-weight="700">lacking</text>
+
+      <rect x="282" y="182" width="156" height="38" rx="8" fill="#e0efee" stroke="#3a7d7b"/>
+      <text class="s" x="360" y="197" text-anchor="middle" font-weight="700">policy exception</text>
+      <text class="s" x="360" y="211" text-anchor="middle" font-weight="700">required</text>
+
+      <rect x="446" y="182" width="126" height="38" rx="8" fill="#e0efee" stroke="#3a7d7b"/>
+      <text class="s" x="509" y="197" text-anchor="middle" font-weight="700">no progress</text>
+      <text class="s" x="509" y="211" text-anchor="middle" font-weight="700">after attempts</text>
+
+      <rect x="580" y="182" width="126" height="38" rx="8" fill="#e0efee" stroke="#3a7d7b"/>
+      <text class="s" x="643" y="197" text-anchor="middle" font-weight="700">uncertain /</text>
+      <text class="s" x="643" y="211" text-anchor="middle" font-weight="700">unsafe state</text>
+
+      <!-- convergence arrows to structured handoff -->
+      <line x1="77" y1="220" x2="77" y2="248" stroke="#3a7d7b" stroke-width="1.2"/>
+      <line x1="211" y1="220" x2="211" y2="248" stroke="#3a7d7b" stroke-width="1.2"/>
+      <line x1="360" y1="220" x2="360" y2="248" stroke="#3a7d7b" stroke-width="1.2"/>
+      <line x1="509" y1="220" x2="509" y2="248" stroke="#3a7d7b" stroke-width="1.2"/>
+      <line x1="643" y1="220" x2="643" y2="248" stroke="#3a7d7b" stroke-width="1.2"/>
+      <!-- horizontal gather line -->
+      <line x1="77" y1="248" x2="643" y2="248" stroke="#3a7d7b" stroke-width="1.2"/>
+      <line x1="360" y1="248" x2="360" y2="266" stroke="#3a7d7b" stroke-width="1.5" marker-end="url(#esc1)"/>
+
+      <!-- ═══ STRUCTURED HANDOFF BOX ═══ -->
+      <rect x="176" y="268" width="368" height="80" rx="10" fill="#e3f0e6" stroke="#3f7d4f" stroke-width="1.8"/>
+      <rect x="176" y="268" width="368" height="22" rx="10" fill="#3f7d4f"/>
+      <text class="hdr" x="360" y="284" text-anchor="middle">STRUCTURED HANDOFF</text>
+      <text class="s" x="196" y="306">customer_id · issue_type · root_cause</text>
+      <text class="s" x="196" y="320">actions_taken · recommended_next_action</text>
+      <text class="s" x="196" y="334" fill="#3f7d4f" font-weight="700">→ human agent / supervisor receives complete context</text>
+
+      <!-- ═══ WRONG PATH ═══ -->
+      <!-- A red dashed path from the diamond going down-right labelled WRONG -->
+      <line x1="480" y1="130" x2="614" y2="130" stroke="#b3402f" stroke-width="1.6" stroke-dasharray="5 3" marker-end="url(#esc2)"/>
+      <rect x="616" y="108" width="90" height="42" rx="8" fill="#f7e3df" stroke="#b3402f"/>
+      <text class="warn" x="661" y="128" text-anchor="middle">WRONG:</text>
+      <text class="s" x="661" y="142" text-anchor="middle" fill="#b3402f">escalate after</text>
+      <!-- line to wrong box 2 -->
+      <line x1="661" y1="150" x2="661" y2="172" stroke="#b3402f" stroke-width="1.4" stroke-dasharray="4 2" marker-end="url(#esc2)"/>
+      <rect x="616" y="174" width="90" height="44" rx="8" fill="#f7e3df" stroke="#b3402f"/>
+      <text class="s" x="661" y="190" text-anchor="middle" fill="#b3402f">N failed</text>
+      <text class="s" x="661" y="204" text-anchor="middle" fill="#b3402f">tool calls</text>
+      <text class="s" x="661" y="216" text-anchor="middle" fill="#b3402f">(counter-based)</text>
+      <!-- X mark -->
+      <text x="608" y="225" font-size="22" fill="#b3402f" font-weight="900">✗</text>
+
+      <!-- why wrong note -->
+      <rect x="610" y="234" width="98" height="56" rx="6" fill="#fdf3ea" stroke="#b3402f" stroke-dasharray="3 2"/>
+      <text class="s" x="659" y="250" text-anchor="middle" fill="#b3402f">ignores WHY</text>
+      <text class="s" x="659" y="263" text-anchor="middle" fill="#b3402f">it failed; may</text>
+      <text class="s" x="659" y="276" text-anchor="middle" fill="#b3402f">escalate on a</text>
+      <text class="s" x="659" y="289" text-anchor="middle" fill="#b3402f">retriable error</text>
+
+      <!-- ═══ BOTTOM NOTE ═══ -->
+      <rect x="14" y="358" width="590" height="24" rx="6" fill="#f4e6df"/>
+      <text class="s" x="22" y="374" fill="#a44a2e" font-weight="700">Exam rule: escalation trigger = category + impact. NOT a simple counter of failed tool calls.</text>
+    </svg>
+    <figcaption>Escalation decision diagram: branch on the <em>category and impact</em> of the obstacle — user explicitly requests human assistance, agent lacks authority, a policy exception is needed, no progress despite genuine attempts, or an uncertain/unsafe state — and always produce a structured handoff (customer_id, issue_type, root_cause, actions_taken, recommended_next_action). The red path shows the anti-pattern: "escalate after N failed tool calls" ignores the <em>reason</em> for failure and may escalate on a transient error that a retry would resolve.</figcaption>
+  </figure>
+
+  <h4>1 · Durable / resumable execution</h4>
+  <p>"When errors occur, we can't just restart from the beginning: restarts are expensive and frustrating for users. Instead, we built systems that can resume from where the agent was when the errors occurred." The SDK supports this concretely: "Subagents can be resumed to continue where they left off. Resumed subagents retain their full conversation history… The subagent picks up exactly where it stopped rather than starting fresh," via capturing <code class="inline">session_id</code> + <code class="inline">agentId</code> and passing <code class="inline">resume: sessionId</code>.</p>
+
+  <div class="codelabel">SDK — capture session, then resume (escaped) · <span class="verify">VERIFY</span> field names SDK-version-sensitive</div>
+  <pre class="code"><code><span class="cmt">// 1) capture the subagent's session id from its messages</span>
+<span class="key">let</span> sessionId;
+<span class="key">for await</span> (<span class="key">const</span> msg <span class="key">of</span> query({ prompt, options })) {
+  <span class="key">if</span> (msg.session_id) sessionId = msg.session_id;
+}
+
+<span class="cmt">// 2) later, resume from exactly where it stopped (not from scratch)</span>
+<span class="key">for await</span> (<span class="key">const</span> msg <span class="key">of</span> query({
+  prompt: <span class="str">"continue the analysis"</span>,
+  options: { resume: sessionId }   <span class="cmt">// retains full history</span>
+})) { <span class="cmt">/* ... */</span> }</code></pre>
+
+  <h4>2 · Checkpointing + retries + deterministic safeguards</h4>
+  <p>"We combine the adaptability of AI agents built on Claude with deterministic safeguards like retry logic and regular checkpoints." The pattern name to remember: <strong>adaptive core, deterministic guardrails</strong>. The model is flexible; the scaffolding around it is boringly reliable.</p>
+
+  <h4>3 · Model-driven graceful degradation</h4>
+  <p>"We also use the model's intelligence to handle issues gracefully: for instance, letting the agent know when a tool is failing and letting it adapt works surprisingly well." Instead of hiding failures from the agent, you tell it — and let it route around the damage.</p>
+
+  <h4>4 · External memory / context persistence</h4>
+  <p>Save the plan and completed-phase summaries to memory so context-window truncation doesn't destroy strategy. SDK note: "When the main conversation compacts, subagent transcripts are unaffected. They're stored in separate files," and persist within their session. This is the direct mitigation for mode ② (context exhaustion).</p>
+
+  <h4>5 · Full production tracing / observability</h4>
+  <p>"Adding full production tracing let us diagnose why agents failed and fix issues systematically." In the SDK, subagent invocation is observable via <code class="inline">tool_use</code> blocks named <code class="inline">"Agent"</code> and a <code class="inline">parent_tool_use_id</code> field on messages from within a subagent. <span class="verify">VERIFY</span> the tool name was renamed from <code class="inline">"Task"</code> to <code class="inline">"Agent"</code> in Claude Code v2.1.63; older SDKs emit <code class="inline">"Task"</code>.</p>
+
+  <h4>6 · End-state (not step-by-step) evaluation + LLM-as-judge</h4>
+  <p>"evaluate whether it achieved the correct final state… focus on end-state evaluation rather than turn-by-turn analysis." For complex workflows: "break evaluation into discrete checkpoints where specific state changes should have occurred, rather than attempting to validate every intermediate step." This is the answer to mode ⑦ — you can't reproduce every non-deterministic path, so you grade the destination, not the route.</p>
+
+  <h4>7 · Rainbow deployments</h4>
+  <p>Gradually shift traffic old → new to avoid disrupting in-flight stateful agents (mode ⑧). In-flight agents finish on the version they started on.</p>
+
+  <h4>8 · Worker effort/turn limits + tool restrictions</h4>
+  <p>Set <code class="inline">maxTurns</code>, <code class="inline">effort</code>, and a restricted <code class="inline">tools</code> list per subagent to bound cost and blast radius; e.g., a read-only analysis agent gets only <code class="inline">["Read","Grep","Glob"]</code>.</p>
+
+  <div class="codelabel">SDK — a least-privilege, bounded worker (escaped)</div>
+  <pre class="code"><code>agents: {
+  <span class="str">"read-only-analyst"</span>: {
+    description: <span class="str">"Read-only static analysis. No writes, no shell."</span>,
+    prompt: <span class="str">"Analyze; never modify files."</span>,
+    tools: [<span class="str">"Read"</span>, <span class="str">"Grep"</span>, <span class="str">"Glob"</span>],  <span class="cmt">// allow-list = blast-radius cap</span>
+    effort: <span class="str">"low"</span>,
+    maxTurns: 8                            <span class="cmt">// bound cost (mode ③)</span>
+  }
+}</code></pre>
+
+  <h4>9 · Move large fan-outs out of the conversation — the Workflow tool</h4>
+  <p>"Subagents work well for a few delegated tasks per turn. For runs that coordinate dozens to hundreds of agents, use the <code class="inline">Workflow</code> tool, which moves the orchestration into a script the runtime executes outside the conversation context." <span class="verify">VERIFY</span> the Workflow tool requires the TypeScript Agent SDK v0.3.149+. This is the escape hatch when coordination overhead (mode ④) and context pressure (mode ②) would otherwise overwhelm an in-conversation orchestrator.</p>
+
+  <div class="callout try collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🧪</span> Connect to your own work (Claude Code &amp; agentic workflows)<span class="chev">▼</span></div>
+  <div class="cbody"><p>If you've built agentic workflows in Claude Code, you've already met these patterns in miniature: a long task that <em>compacts</em> mid-run is mode ②; a flaky MCP tool that the agent works around is graceful degradation; a <code class="inline">.claude/agents/*.md</code> worker with a tight <code class="inline">tools</code> allow-list is pattern #8. The leap to "at scale" is mostly about making these <em>deliberate and instrumented</em> rather than incidental — durable resume instead of "just rerun it," end-state evals instead of eyeballing, rainbow deploys instead of "deploy and hope nothing's mid-run."</p></div></div>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">A 40-minute research run crashes at minute 35. Why is "resume from session" dramatically better than "rerun from the start" — beyond just time?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>Because restarts are "expensive and frustrating," and because a fresh run is non-deterministic.</strong> Rerunning doesn't just cost the 35 minutes again — it may take a different path and not reproduce the partial progress at all. Resume "picks up exactly where it stopped," retaining full history, so you keep the work already done.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="0">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Which reliability pattern most directly addresses context-window exhaustion (mode ②)?</div>
+    <button class="opt">External memory — save the plan and phase summaries outside the window</button>
+    <button class="opt">Rainbow deployments</button>
+    <button class="opt">LLM-as-judge end-state evals</button>
+    <button class="opt">Retry logic</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>External memory: "saving its plan to Memory to persist the context" and storing phase summaries before proceeding. Truncation can't destroy strategy that lives outside the window.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="3">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">You need to coordinate ~200 agents in a rerunnable orchestration whose intermediate results should stay out of the conversation. You should…</div>
+    <button class="opt">Spawn 200 subagents in a single turn</button>
+    <button class="opt">Nest subagents five levels deep</button>
+    <button class="opt">Use one very long prompt</button>
+    <button class="opt">Use the Workflow tool — orchestration runs in a script outside the conversation</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>Subagents suit "a few delegated tasks per turn." For dozens–hundreds, graduate to the Workflow tool, which "moves the orchestration into a script the runtime executes outside the conversation context." <span class="verify">VERIFY</span> TS SDK v0.3.149+.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="1">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Why does Anthropic evaluate end-state rather than every intermediate step?</div>
+    <button class="opt">End-state evals are cheaper to write</button>
+    <button class="opt">Non-deterministic agents take different valid paths, so the reliable signal is whether the final state is correct</button>
+    <button class="opt">Intermediate steps are never logged</button>
+    <button class="opt">Step-by-step evaluation is forbidden by the SDK</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>"focus on end-state evaluation rather than turn-by-turn analysis." Because runs are non-deterministic (mode ⑦), grading every step is brittle; grading the destination (with checkpoints for complex flows) is robust.</div>
+  </div>
+</section>
+
+<!-- ======================= SECTION F DIVIDER ======================= -->
+<div class="sec-divider" id="secF">
+  <span class="badge"><span class="emoji">🚫</span> The gate</span>
+  <h2>When NOT to use it</h2>
+  <p>The economics gate, shared-state / tight-coupling, low-latency needs, and the default-to-simplest principle.</p>
+</div>
+
+<!-- LESSON 6 -->
+<section class="lesson" id="l6" data-lesson="6">
+  <div class="lmeta"><span class="ltag"><span class="emoji">🚫</span> Section 6</span><span class="ltime">⏱ ~8 min · judgment</span></div>
+  <h3 class="ltitle">When NOT to scale to orchestrator-worker</h3>
+
+  <div class="objectives">
+    <div class="lab">What you'll be able to do</div>
+    <ul>
+      <li>Apply the economics gate as a go/no-go decision</li>
+      <li>Recognize shared-state and low-latency tasks as poor fits</li>
+      <li>State Anthropic's default-to-simplest principle and the fallbacks</li>
+    </ul>
+  </div>
+
+  <p>The most architect-mature skill in this whole lesson is knowing when <em>not</em> to reach for the pattern. Four gates.</p>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Gate</th><th>The rule</th><th>Fall back to</th></tr></thead>
+    <tbody>
+      <tr><td><b>Economics</b></td><td>Multi-agent costs ~15× the tokens of a chat. Only use it for "valuable tasks that involve heavy parallelization, information that exceeds single context windows, and interfacing with numerous complex tools." Not valuable <em>and</em> parallelizable enough? Don't.</td><td>Single agent</td></tr>
+      <tr><td><b>Shared state / tight coupling</b></td><td>"Some domains that require all agents to share the same context or involve many dependencies between agents are not a good fit… most coding tasks involve fewer truly parallelizable tasks than research." Subagents don't share context with each other, so tightly-coupled work suffers.</td><td>Single agent / fixed workflow</td></tr>
+      <tr><td><b>Low latency</b></td><td>Synchronous fan-out means the system "can be blocked while waiting for a single subagent." Spawning + synthesis adds overhead a single agent avoids.</td><td>Single agent</td></tr>
+      <tr><td><b>Default-to-simplest</b></td><td>"find the simplest solution possible, and only increasing complexity when needed." "Agentic systems often trade latency and cost for better task performance, and you should consider when this tradeoff makes sense."</td><td>Fixed workflow (predefined code paths)</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 250" role="img" aria-label="Decision gate flowchart: valuable and parallelizable, not shared-state, not latency-sensitive leads to orchestrator-worker; otherwise fall back to single agent or fixed workflow">
+      <defs><style>.t{font:700 11px sans-serif;fill:#2b2622}.s{font:400 10px sans-serif;fill:#5c544c}.w{font:700 11px sans-serif;fill:#fff}</style>
+      <marker id="af" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#c96442"/></marker></defs>
+      <rect x="270" y="14" width="170" height="34" rx="9" fill="#f6edd6" stroke="#b8860b"/><text class="t" x="355" y="36" text-anchor="middle">a task arrives</text>
+      <polygon points="355,60 470,92 355,124 240,92" fill="#fff" stroke="#c96442"/><text class="s" x="355" y="89" text-anchor="middle">valuable AND</text><text class="s" x="355" y="103" text-anchor="middle">parallelizable?</text>
+      <line x1="355" y1="48" x2="355" y2="58" stroke="#c96442" stroke-width="1.5" marker-end="url(#af)"/>
+      <text class="s" x="500" y="88">no →</text>
+      <rect x="530" y="74" width="150" height="36" rx="9" fill="#e0efee" stroke="#3a7d7b"/><text class="t" x="605" y="96" text-anchor="middle">single agent</text>
+      <line x1="470" y1="92" x2="528" y2="92" stroke="#c96442" stroke-width="1.3" marker-end="url(#af)"/>
+      <polygon points="355,128 470,160 355,192 240,160" fill="#fff" stroke="#c96442"/><text class="s" x="355" y="157" text-anchor="middle">shared-state OR</text><text class="s" x="355" y="171" text-anchor="middle">latency-critical?</text>
+      <line x1="355" y1="124" x2="355" y2="126" stroke="#c96442" stroke-width="1.5" marker-end="url(#af)"/>
+      <text class="s" x="500" y="156">yes →</text>
+      <rect x="530" y="142" width="150" height="36" rx="9" fill="#e0efee" stroke="#3a7d7b"/><text class="t" x="605" y="164" text-anchor="middle">single / workflow</text>
+      <line x1="470" y1="160" x2="528" y2="160" stroke="#c96442" stroke-width="1.3" marker-end="url(#af)"/>
+      <rect x="265" y="206" width="180" height="38" rx="10" fill="#f4e6df" stroke="#c96442" stroke-width="1.6"/><text class="t" x="355" y="230" text-anchor="middle" fill="#a44a2e">orchestrator-worker</text>
+      <line x1="355" y1="192" x2="355" y2="204" stroke="#c96442" stroke-width="1.5" marker-end="url(#af)"/>
+      <text class="s" x="200" y="230" text-anchor="end">no ↓</text>
+    </svg>
+    <figcaption>The go/no-go gate. Orchestrator-worker is the <em>last</em> resort, not the first reach — it earns its 15× only when the task is valuable, parallelizable, loosely-coupled, and latency-tolerant.</figcaption>
+  </figure>
+
+  <div class="callout keyc collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaway<span class="chev">▼</span></div>
+  <div class="cbody"><p>Default to the simplest thing that works. Climb the complexity ladder — single agent → fixed workflow → orchestrator-worker — only when the task <em>forces</em> you to. Coding, with its tight coupling and few truly parallel subtasks, is Anthropic's own example of a poor fit. The architect's instinct is suspicion of the fan-out, not enthusiasm for it.</p></div></div>
+
+  <div class="mcq" data-mcq data-correct="2">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Anthropic names which kind of task as a notably <em>poor</em> fit for multi-agent, due to coupling and few parallel subtasks?</div>
+    <button class="opt">Open-ended web research</button>
+    <button class="opt">Comparing many independent vendors</button>
+    <button class="opt">Most coding tasks</button>
+    <button class="opt">Surveying a large document corpus</button>
+    <div class="fb"></div>
+    <div class="fbmsg" hidden>"most coding tasks involve fewer truly parallelizable tasks than research." Tight coupling + shared state make coding a weak fit for the dynamic fan-out.</div>
+  </div>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">A latency-sensitive, well-defined task with predictable steps lands on your desk. Which of the three rungs do you pick, and why?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>A fixed workflow (predefined code paths).</strong> Well-defined + predictable = "workflows offer predictability and consistency." Latency-sensitive rules out synchronous fan-out. You don't need runtime LLM decomposition, so you don't pay for it.</div>
+  </div>
+</section>
+
+<!-- ======================= FINAL QUIZ ======================= -->
+<div class="sec-divider" id="final">
+  <span class="badge"><span class="emoji">🧠</span> Assessment</span>
+  <h2>Final Knowledge Check</h2>
+  <p>Ten source-grounded questions spanning the whole lesson — weighted toward CCA-F Domain 1 (dynamic decomposition, the orchestrator's job, the economics gate) and Domain 5 (failure modes, reliability patterns, context management). No hints; answer, then check.</p>
+</div>
+
+<div class="quizblock" data-quiz="final" style="margin-top:20px">
+  <div class="scorebar"><h4 style="margin:0"><span class="emoji">🧠</span> Final Knowledge Check (10 questions)</h4><span class="qscore" data-score>0 / 10</span></div>
+
+  <div class="mcq" data-mcq data-correct="1" data-inquiz>
+    <div class="qlab">Q1</div><div class="qtext">In Anthropic's verbatim definition, the orchestrator-workers workflow has a central LLM that…</div>
+    <button class="opt">Runs a fixed set of code-defined subtasks in parallel</button><button class="opt">Dynamically breaks down tasks, delegates them to worker LLMs, and synthesizes their results</button><button class="opt">Votes across many copies of the same task</button><button class="opt">Routes each input to exactly one specialized model</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Verbatim: "a central LLM dynamically breaks down tasks, delegates them to worker LLMs, and synthesizes their results." The <em>dynamic</em> breakdown is the defining feature — option A is static parallelization; C is voting; D is routing.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q2</div><div class="qtext">In Anthropic's analysis, token usage by itself explained roughly what share of performance variance?</div>
+    <button class="opt">~50%</button><button class="opt">~95%</button><button class="opt">~80%</button><button class="opt">~15%</button>
+    <div class="fb"></div><div class="fbmsg" hidden>"token usage by itself explains 80% of the variance." (Three factors together — token usage, tool calls, model choice — explained 95%.) <span class="verify">VERIFY</span> figures.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="0" data-inquiz>
+    <div class="qlab">Q3</div><div class="qtext">Roughly how many more tokens do multi-agent systems use than chat interactions?</div>
+    <button class="opt">~15×</button><button class="opt">~4×</button><button class="opt">~2×</button><button class="opt">~100×</button>
+    <div class="fb"></div><div class="fbmsg" hidden>"agents typically use about 4× more tokens than chat interactions, and multi-agent systems use about 15× more tokens than chats." <span class="verify">VERIFY</span> multipliers.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="3" data-inquiz>
+    <div class="qlab">Q4</div><div class="qtext">For a "simple fact-finding" query, the embedded effort heuristic recommends…</div>
+    <button class="opt">More than 10 subagents</button><button class="opt">2–4 subagents, 10–15 calls each</button><button class="opt">No agents — answer from memory</button><button class="opt">1 agent with 3–10 tool calls</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Simple fact-finding = "just 1 agent with 3-10 tool calls." Comparisons get 2–4 subagents; complex research gets &gt;10. <span class="verify">VERIFY</span> counts.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q5</div><div class="qtext">Why is the CitationAgent its own stage?</div>
+    <button class="opt">It's faster than research agents</button><button class="opt">Subagents can't read documents</button><button class="opt">Verification is architecturally separated from research — claims are checked independently of who found them</button><button class="opt">It's required by the context window</button>
+    <div class="fb"></div><div class="fbmsg" hidden>The dedicated CitationAgent "identif[ies] specific locations for citations" — separating <em>find</em> from <em>verify</em> as both separation of concerns and a reliability control.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="1" data-inquiz>
+    <div class="qlab">Q6</div><div class="qtext">Going from 4 to 10 coordinating agents changes potential pairwise interactions from…</div>
+    <button class="opt">4 to 10</button><button class="opt">6 to 45</button><button class="opt">8 to 20</button><button class="opt">3 to 9</button>
+    <div class="fb"></div><div class="fbmsg" hidden>n·(n−1)/2: 4·3/2 = 6; 10·9/2 = 45. [SECONDARY] This super-linear growth is the math behind "rapid growth in coordination complexity."</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="0" data-inquiz>
+    <div class="qlab">Q7</div><div class="qtext">Anthropic's mitigation for disrupting long-running stateful agents during a deploy is…</div>
+    <button class="opt">Rainbow deployments — gradually shift traffic old → new so in-flight agents finish on their version</button><button class="opt">Restart all agents on deploy</button><button class="opt">Block deploys until no agents are running</button><button class="opt">Run every agent statelessly</button>
+    <div class="fb"></div><div class="fbmsg" hidden>"we use rainbow deployments to avoid disrupting running agents, by gradually shifting traffic from old to new versions." This targets failure mode ⑧.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q8</div><div class="qtext">The direct mitigation for context-window exhaustion across a long run is…</div>
+    <button class="opt">A bigger model</button><button class="opt">More subagents</button><button class="opt">External memory — save the plan and phase summaries outside the window</button><button class="opt">Lowering <code class="inline">effort</code></button>
+    <div class="fb"></div><div class="fbmsg" hidden>"saving its plan to Memory to persist the context" and storing phase summaries before proceeding. If context truncates, strategy survives in external memory.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="3" data-inquiz>
+    <div class="qlab">Q9</div><div class="qtext">Which is correctly stated about the Cemri et al. MAST taxonomy?</div>
+    <button class="opt">It is an Anthropic primary source</button><button class="opt">It found exactly 8 failure modes</button><button class="opt">Its category split is a confirmed 41.8 / 36.9 / 21.3</button><button class="opt">14 modes, 3 categories, 1600+ traces, kappa = 0.88 — a secondary academic source</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Confirmed: 14 modes, 3 categories, 1600+ traces, kappa = 0.88 — [SECONDARY] academic. The 41.8/36.9/21.3 split was NOT confirmed on the abstract; don't state it as fact.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="0" data-inquiz>
+    <div class="qlab">Q10</div><div class="qtext">A task is well-defined, predictable, latency-sensitive, and tightly coupled. The right choice is…</div>
+    <button class="opt">A fixed workflow (predefined code paths) — or a single agent</button><button class="opt">Orchestrator-worker with &gt;10 subagents</button><button class="opt">The Workflow tool with hundreds of agents</button><button class="opt">Async multi-agent fan-out</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Default to simplest: well-defined + predictable favors a workflow's "predictability and consistency"; tight coupling and latency-sensitivity rule out dynamic multi-agent fan-out. Don't pay 15× for machinery the task doesn't need.</div>
+  </div>
+
+  <div class="resultbox" data-result></div>
+</div>
+
+<!-- SOURCES -->
+<div class="sources" id="sources">
+  <h4 style="margin:0 0 6px"><span class="emoji">📄</span> Sources</h4>
+  <p style="margin:4px 0 8px;color:var(--ink-soft);font-size:13.5px">Every substantive claim in this extension traces to these sources. Anthropic primary sources are unmarked; secondary references are tagged. No facts beyond them were introduced; author analogies are labelled inline; version-sensitive facts carry <span class="verify">VERIFY</span> notes.</p>
+  <ol>
+    <li>Anthropic — <em>Building Effective Agents</em>: <a href="https://www.anthropic.com/engineering/building-effective-agents">anthropic.com/engineering/building-effective-agents</a></li>
+    <li>Anthropic — <em>How we built our multi-agent research system</em>: <a href="https://www.anthropic.com/engineering/multi-agent-research-system">anthropic.com/engineering/multi-agent-research-system</a></li>
+    <li>Claude Agent SDK — <em>Subagents in the SDK</em>: <a href="https://code.claude.com/docs/en/agent-sdk/subagents">code.claude.com/docs/en/agent-sdk/subagents</a></li>
+    <li><em>Why Do Multi-Agent LLM Systems Fail?</em> (Cemri et al., UC Berkeley) — arXiv: <a href="https://arxiv.org/abs/2503.13657">arxiv.org/abs/2503.13657</a> <span style="color:var(--ink-soft)">(secondary / academic)</span></li>
+    <li><em>Why Do Multi-Agent LLM Systems Fail</em> — Galileo: <a href="https://galileo.ai/blog/multi-agent-llm-systems-fail">galileo.ai/blog/multi-agent-llm-systems-fail</a> <span style="color:var(--ink-soft)">(secondary)</span></li>
+  </ol>
+</div>
+
+<!-- WHAT'S NEXT -->
+<div class="nextbox">
+  <div style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;margin-bottom:6px"><span class="emoji">✅</span> What's next — you've completed the subagents track</div>
+  <p style="margin:4px 0"><strong>This is the last subagents extension.</strong> You now have the full ladder: the base course (what a subagent is and when to delegate), <strong>S-E1</strong> the five orchestration patterns, <strong>S-E2</strong> the programmable primitive, and <strong>S-E3</strong> (this lesson) orchestrator-worker under production load and its failure modes. There is no further subagents extension to point to.</p>
+  <p style="margin:6px 0 0">Loop back to consolidate: <a href="../introduction-to-subagents.html">← Introduction to Subagents (base course)</a> · <a href="orchestration-patterns.html">S-E1 — Orchestration Patterns</a> · <a href="subagents-as-sdk-primitive.html">S-E2 — Subagents as a Primitive</a>. Next, carry these reliability patterns into the broader Domain 5 material on context management and durable execution.</p>
+</div>
+
+<footer>
+  <p><span class="sourcebadge"><span class="emoji">📄</span> Extension material · built faithfully from the captured citations file — every claim traces to a cited source (Anthropic primary + two secondary). No external facts introduced; <span class="verify">VERIFY</span> flags preserved; author analogies labelled.</span></p>
+  <p style="margin-top:14px">Orchestrator-Worker at Scale + Failure Modes · Extension S-E3 (final subagents extension) for the Claude Certified Architect — Foundations prep · <a href="../introduction-to-subagents.html" style="color:var(--accent)">← Back to base course</a> · <a href="orchestration-patterns.html" style="color:var(--accent)">S-E1</a> · <a href="subagents-as-sdk-primitive.html" style="color:var(--accent)">S-E2</a> · <a href="#top" style="color:var(--accent)">Back to top ↑</a></p>
+</footer>
+
+</div><!-- /wrap -->
+</main>
+</div><!-- /layout -->
+
+<script>
+(function(){
+  "use strict";
+  /* ---------- Build TOC ---------- */
+  var sections=[
+    {title:"Recap & the line",lessons:[[1,"What orchestrator-worker is"]]},
+    {title:"The economics",lessons:[[2,"Why scale to multi-agent"]]},
+    {title:"The orchestrator",lessons:[[3,"The orchestrator's job at scale"]]},
+    {title:"Failure modes",lessons:[[4,"The eight failure modes"]]},
+    {title:"Reliability",lessons:[[5,"Designing reliability in"]]},
+    {title:"The gate",lessons:[[6,"When NOT to use it"]]}
+  ];
+  var toc=document.getElementById('toc');
+  var lessonEls=Array.prototype.slice.call(document.querySelectorAll('section.lesson'));
+  var TOTAL_LESSONS=lessonEls.length;
+  sections.forEach(function(sec){
+    var h=document.createElement('div');h.className='nav-sec';h.textContent=sec.title;toc.appendChild(h);
+    sec.lessons.forEach(function(l){
+      var a=document.createElement('a');a.href='#l'+l[0];a.dataset.target='l'+l[0];
+      a.innerHTML='<span class="num"><span>'+l[0]+'</span></span><span>'+l[1]+'</span>';
+      a.addEventListener('click',function(){if(window.innerWidth<=980)toggleNav();});
+      toc.appendChild(a);
+    });
+  });
+  // final check link
+  var fh=document.createElement('div');fh.className='nav-sec';fh.textContent='Assessment';toc.appendChild(fh);
+  var fa=document.createElement('a');fa.href='#final';fa.dataset.target='final';
+  fa.innerHTML='<span class="num"><span>★</span></span><span>Final knowledge check</span>';
+  fa.addEventListener('click',function(){if(window.innerWidth<=980)toggleNav();});
+  toc.appendChild(fa);
+
+  /* ---------- Progress bar + active nav + completion ---------- */
+  var navLinks=Array.prototype.slice.call(document.querySelectorAll('nav a'));
+  var seen={};
+  function onScroll(){
+    var doc=document.documentElement;
+    var scrollTop=window.scrollY||doc.scrollTop;
+    var height=doc.scrollHeight-doc.clientHeight;
+    var pct=height>0?(scrollTop/height*100):0;
+    document.getElementById('progressBar').style.width=pct+'%';
+    var mid=scrollTop+window.innerHeight*0.32;
+    var current=null;
+    lessonEls.forEach(function(el){
+      if(el.offsetTop<=mid)current=el;
+      if(el.offsetTop<=scrollTop+window.innerHeight*0.6){seen[el.id]=true;}
+    });
+    navLinks.forEach(function(a){a.classList.remove('active');});
+    if(current){
+      var act=document.querySelector('nav a[data-target="'+current.id+'"]');
+      if(act)act.classList.add('active');
+    }
+    navLinks.forEach(function(a){if(seen[a.dataset.target])a.classList.add('done');});
+    var doneCount=lessonEls.filter(function(el){return seen[el.id];}).length;
+    document.getElementById('progPct').textContent=Math.round(doneCount/TOTAL_LESSONS*100)+'%';
+  }
+  window.addEventListener('scroll',onScroll,{passive:true});
+  window.addEventListener('resize',onScroll);
+  onScroll();
+
+  /* ---------- Mobile nav ---------- */
+  window.toggleNav=function(){
+    var open=document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('scrim').classList.toggle('open');
+    var b=document.querySelector('.menubtn');if(b)b.setAttribute('aria-expanded',open?'true':'false');
+  };
+
+  /* ---------- Collapsible callouts ---------- */
+  window.toggleCall=function(head){
+    var c=head.parentElement;c.classList.toggle('collapsed');
+    head.setAttribute('aria-expanded', c.classList.contains('collapsed')?'false':'true');
+  };
+  document.querySelectorAll('.callout .chead').forEach(function(head){
+    head.setAttribute('role','button');
+    head.setAttribute('tabindex','0');
+    head.setAttribute('aria-expanded', head.parentElement.classList.contains('collapsed')?'false':'true');
+    head.addEventListener('keydown',function(e){
+      if(e.key==='Enter'||e.key===' '||e.key==='Spacebar'){e.preventDefault();window.toggleCall(head);}
+    });
+  });
+
+  /* ---------- Predict / reveal ---------- */
+  window.doReveal=function(btn){
+    var ans=btn.parentElement.querySelector('.ans');
+    ans.classList.add('show');
+    btn.textContent='Answer shown ✓';
+    btn.disabled=true;btn.style.opacity='.6';btn.style.cursor='default';
+  };
+
+  /* ---------- MCQ logic ---------- */
+  document.querySelectorAll('.mcq[data-mcq]').forEach(function(mcq){
+    var correct=parseInt(mcq.getAttribute('data-correct'),10);
+    var opts=Array.prototype.slice.call(mcq.querySelectorAll('.opt'));
+    var fb=mcq.querySelector('.fb');
+    if(fb){fb.setAttribute('aria-live','polite');fb.setAttribute('role','status');}
+    var msgEl=mcq.querySelector('.fbmsg');
+    var msg=msgEl?msgEl.innerHTML:'';
+    var answered=false;
+    opts.forEach(function(opt,i){
+      opt.addEventListener('click',function(){
+        if(answered)return;answered=true;
+        var isCorrect=(i===correct);
+        opts.forEach(function(o,j){
+          o.disabled=true;
+          if(j===correct){o.classList.add('correct');if(!o.querySelector('.mark'))appendMark(o,'✓');}
+        });
+        if(!isCorrect){opt.classList.add('wrong');appendMark(opt,'✗');}
+        fb.classList.add('show');
+        fb.classList.add(isCorrect?'ok':'no');
+        fb.innerHTML='<strong>'+(isCorrect?'Correct! ':'Not quite. ')+'</strong>'+msg;
+        var quiz=mcq.closest('.quizblock');
+        if(quiz&&mcq.hasAttribute('data-inquiz')){
+          mcq.dataset.result=isCorrect?'1':'0';
+          updateQuiz(quiz);
+        }
+      });
+    });
+  });
+  function appendMark(opt,sym){var s=document.createElement('span');s.className='mark';s.textContent=sym;opt.appendChild(s);}
+
+  /* ---------- Quiz scoring ---------- */
+  function updateQuiz(quiz){
+    var mcqs=Array.prototype.slice.call(quiz.querySelectorAll('.mcq[data-inquiz]'));
+    var total=mcqs.length;
+    var answered=mcqs.filter(function(m){return m.dataset.result!==undefined;});
+    var score=mcqs.filter(function(m){return m.dataset.result==='1';}).length;
+    var scoreEl=quiz.querySelector('[data-score]');
+    if(scoreEl)scoreEl.textContent=score+' / '+total;
+    if(answered.length===total){
+      var box=quiz.querySelector('[data-result]');
+      var pct=score/total*100;
+      box.classList.add('show');
+      box.classList.remove('pass','mid');
+      if(pct>=75){box.classList.add('pass');box.innerHTML='🎉 '+score+'/'+total+' — strong work! Orchestrator-worker at scale and its failure modes are locked in.';}
+      else if(pct>=50){box.classList.add('mid');box.innerHTML='👍 '+score+'/'+total+' — solid. Skim the misses above and you\'re set.';}
+      else{box.classList.add('mid');box.innerHTML='📖 '+score+'/'+total+' — worth a re-read before moving on.';}
+    }
+  }
+
+  /* Initialize each quiz score label from its actual question count (no off-by-one) */
+  Array.prototype.forEach.call(document.querySelectorAll('.quizblock[data-quiz]'),function(q){
+    var n=q.querySelectorAll('.mcq[data-inquiz]').length;
+    var s=q.querySelector('[data-score]');
+    if(s)s.textContent='0 / '+n;
+  });
+})();
+</script>
+</body>
+</html>

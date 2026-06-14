@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Context Management &amp; Reliability — CCA-F Extension</title>
+<style>
+  :root{
+    --bg:#faf8f5; --paper:#ffffff; --ink:#2b2622; --ink-soft:#5c544c;
+    --line:#e7e0d8; --accent:#c96442; --accent-soft:#f4e6df; --accent-deep:#a44a2e;
+    --teal:#3a7d7b; --teal-soft:#e0efee; --gold:#b8860b; --gold-soft:#f6edd6;
+    --green:#3f7d4f; --green-soft:#e3f0e6; --red:#b3402f; --red-soft:#f7e3df;
+    --purple:#6b4f9e; --purple-soft:#ece4f6;
+    --sidebar:#f3eee7; --shadow:0 1px 3px rgba(43,38,34,.08),0 6px 24px rgba(43,38,34,.06);
+    --radius:14px; --maxw:780px;
+    --code-bg:#2b2622; --code-ink:#f4ece3;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.65; font-size:17px; -webkit-font-smoothing:antialiased;
+  }
+  #progressBar{position:fixed;top:0;left:0;height:4px;width:0;background:linear-gradient(90deg,var(--accent),var(--gold));z-index:200;transition:width .15s ease}
+  .layout{display:flex;max-width:1260px;margin:0 auto}
+  aside{
+    position:sticky;top:0;align-self:flex-start;height:100vh;overflow-y:auto;
+    width:300px;flex:none;padding:22px 16px 40px;background:var(--sidebar);
+    border-right:1px solid var(--line);
+  }
+  aside h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin:18px 8px 8px}
+  .brandbox{padding:6px 8px 14px;border-bottom:1px solid var(--line);margin-bottom:8px}
+  .brandbox .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;line-height:1.2}
+  .brandbox .sub{font-size:12.5px;color:var(--ink-soft);margin-top:6px}
+  .brandbox .extbadge{display:inline-block;margin-top:10px;background:var(--purple-soft);color:var(--purple);
+    font-weight:700;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:999px;border:1px solid #d3c4ec}
+  .backlink{display:inline-flex;align-items:center;gap:6px;margin-top:12px;font-size:12.5px;color:var(--accent);text-decoration:none;font-weight:600}
+  .backlink:hover{text-decoration:underline}
+  .toc-prog{font-size:12px;color:var(--ink-soft);margin:10px 8px 4px;display:flex;justify-content:space-between;align-items:center}
+  .toc-prog b{color:var(--accent)}
+  nav a{display:flex;gap:8px;align-items:flex-start;text-decoration:none;color:var(--ink);
+    padding:7px 10px;border-radius:9px;font-size:14px;line-height:1.35;transition:background .15s}
+  nav a:hover{background:#ece4d9}
+  nav a.active{background:var(--accent-soft);color:var(--accent-deep);font-weight:600}
+  nav a .num{flex:none;width:22px;height:22px;border-radius:50%;background:#e3dacd;color:var(--ink-soft);
+    font-size:11.5px;display:flex;align-items:center;justify-content:center;font-weight:700;margin-top:1px}
+  nav a.active .num{background:var(--accent);color:#fff}
+  nav a.done .num{background:var(--green);color:#fff}
+  nav a.done .num::after{content:"✓"}
+  nav a.done .num span{display:none}
+  .nav-sec{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);
+    font-weight:700;margin:16px 10px 4px;display:flex;align-items:center;gap:6px}
+  main{flex:1;min-width:0;padding:0 28px 120px}
+  .wrap{max-width:var(--maxw);margin:0 auto}
+  header.hero{max-width:var(--maxw);margin:0 auto;padding:40px 0 22px;text-align:left}
+  .hero .eyebrow{color:var(--purple);font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:13px}
+  .hero h1{font-size:42px;line-height:1.1;margin:10px 0 8px;letter-spacing:-.02em}
+  .hero p.lead{font-size:19px;color:var(--ink-soft);margin:0 0 18px}
+  .pillrow{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}
+  .pill{background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:6px 13px;font-size:13px;color:var(--ink-soft);box-shadow:var(--shadow)}
+  .extbanner{background:linear-gradient(180deg,#f3eefb,#ece4f6);border:1px solid #d3c4ec;border-radius:var(--radius);
+    padding:16px 18px;margin:6px 0 18px;font-size:14.5px;color:#3f2f63;display:flex;gap:12px;align-items:flex-start}
+  .extbanner .bt{flex:none;font-size:22px;line-height:1.1}
+  .extbanner b{color:var(--purple)}
+  .crosslink{background:var(--teal-soft);border:1px solid #a7d3d1;border-radius:var(--radius);padding:14px 18px;margin:14px 0;font-size:14.5px;color:#244e4d}
+  .crosslink a{color:var(--teal);font-weight:700}
+  .examnote{background:var(--gold-soft);border:1px solid #e7d9a9;border-radius:var(--radius);padding:16px 18px;margin:22px 0;font-size:14.5px}
+  .examnote b{color:#8a6508}
+  section.lesson{max-width:var(--maxw);margin:0 auto;padding:46px 0 10px;scroll-margin-top:14px;border-top:1px solid var(--line)}
+  section.lesson:first-of-type{border-top:none}
+  .sec-divider{max-width:var(--maxw);margin:38px auto 0;padding-top:30px}
+  .sec-divider .badge{display:inline-block;background:var(--accent);color:#fff;font-weight:700;
+    font-size:12px;letter-spacing:.07em;text-transform:uppercase;padding:5px 12px;border-radius:999px}
+  .sec-divider h2{font-size:30px;margin:12px 0 4px;letter-spacing:-.01em}
+  .sec-divider p{color:var(--ink-soft);margin:0}
+  .lesson .lmeta{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+  .lesson .ltag{font-size:12px;color:var(--accent);font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+  .lesson .ltime{font-size:12.5px;color:var(--ink-soft);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+  .lesson .ldomain{font-size:11.5px;color:var(--purple);background:var(--purple-soft);border:1px solid #d3c4ec;border-radius:999px;padding:3px 10px;font-weight:700}
+  .lesson h3.ltitle{font-size:28px;margin:2px 0 4px;letter-spacing:-.01em;line-height:1.15}
+  .lesson h4{font-size:19px;margin:30px 0 8px;letter-spacing:-.005em}
+  .lesson h5{font-size:16px;margin:20px 0 6px;color:var(--accent-deep)}
+  .lesson p{margin:10px 0}
+  .lesson ul,.lesson ol{margin:10px 0;padding-left:22px}
+  .lesson li{margin:6px 0}
+  .emoji{font-style:normal}
+  code.inl{background:var(--accent-soft);color:var(--accent-deep);border-radius:5px;padding:1px 6px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.86em}
+  blockquote.ex{margin:14px 0;padding:14px 18px;background:var(--teal-soft);border-left:4px solid var(--teal);border-radius:0 10px 10px 0;font-style:italic;color:#2c4f4e}
+  .objectives{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:14px 18px;margin:14px 0;box-shadow:var(--shadow)}
+  .objectives .lab{font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;margin-bottom:4px}
+  .objectives ul{margin:6px 0 2px;padding-left:20px}
+  .objectives li{font-size:14.5px}
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  table{border-collapse:collapse;width:100%;font-size:14px;background:var(--paper);min-width:520px}
+  th,td{text-align:left;padding:11px 13px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--accent-soft);color:var(--accent-deep);font-weight:700;font-size:13px}
+  tbody tr:last-child td{border-bottom:none}
+  td:first-child,th:first-child{font-weight:600}
+  .codewrap{margin:16px 0;border-radius:12px;overflow:hidden;border:1px solid #3a332d;box-shadow:var(--shadow)}
+  .codewrap .clab{background:#403830;color:#d8cabb;font-size:12px;font-weight:600;letter-spacing:.03em;
+    padding:7px 14px;display:flex;align-items:center;gap:8px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace}
+  .codewrap .clab .dot{width:9px;height:9px;border-radius:50%;background:#c96442}
+  pre{margin:0;background:var(--code-bg);color:var(--code-ink);padding:14px 16px;overflow-x:auto;
+    font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:13px;line-height:1.6}
+  pre code{font-family:inherit;white-space:pre}
+  .callout{border-radius:var(--radius);padding:0;margin:18px 0;box-shadow:var(--shadow);overflow:hidden;border:1px solid var(--line)}
+  .callout .chead{display:flex;align-items:center;gap:9px;padding:12px 16px;cursor:pointer;font-weight:700;font-size:15px;user-select:none}
+  .callout .cbody{padding:2px 18px 16px;font-size:15px}
+  .callout .cbody ul{margin:6px 0;padding-left:20px}
+  .callout.collapsed .cbody{display:none}
+  .callout .chev{margin-left:auto;transition:transform .2s;font-size:13px;opacity:.6}
+  .callout.collapsed .chev{transform:rotate(-90deg)}
+  .key{border-color:#d9c98f}.key .chead{background:var(--gold-soft);color:#8a6508}
+  .tip{border-color:#a7d3d1}.tip .chead{background:var(--teal-soft);color:var(--teal)}
+  .try{border-color:#bfdcc6}.try .chead{background:var(--green-soft);color:var(--green)}
+  .warn{border-color:#e6bcb4}.warn .chead{background:var(--red-soft);color:var(--red)}
+  .verify{display:inline-block;background:#fff4d6;border:1px solid #e7d9a9;color:#8a6508;border-radius:6px;
+    padding:1px 7px;font-size:11.5px;font-weight:700;letter-spacing:.03em;vertical-align:middle}
+  .verifynote{font-size:13px;background:#fffaf0;border:1px dashed #e7d9a9;border-radius:8px;padding:8px 12px;margin:8px 0;color:#7a5a08}
+  .analogy{font-size:13px;background:var(--accent-soft);color:var(--accent-deep);border-radius:6px;padding:1px 7px;font-weight:600}
+  figure.svgfig{margin:22px 0;text-align:center;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+  figure.svgfig svg{max-width:100%;height:auto}
+  figure.svgfig figcaption{font-size:13px;color:var(--ink-soft);margin-top:10px}
+  .mcq{background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--accent);
+    border-radius:var(--radius);padding:16px 18px;margin:22px 0;box-shadow:var(--shadow)}
+  .mcq .qlab{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;display:flex;align-items:center;gap:7px}
+  .mcq .qtext{font-weight:600;margin:8px 0 12px;font-size:16px}
+  .mcq .opt{display:block;width:100%;text-align:left;background:var(--bg);border:1.5px solid var(--line);
+    border-radius:10px;padding:11px 14px;margin:7px 0;cursor:pointer;font-size:14.5px;font-family:inherit;color:var(--ink);transition:all .14s}
+  .mcq .opt:hover:not(:disabled){border-color:var(--accent);background:var(--accent-soft)}
+  .mcq .opt:disabled{cursor:default}
+  .mcq .opt.correct{border-color:var(--green);background:var(--green-soft);font-weight:600}
+  .mcq .opt.wrong{border-color:var(--red);background:var(--red-soft)}
+  .mcq .opt .mark{float:right;font-weight:700}
+  .mcq .fb{display:none;margin-top:12px;padding:12px 14px;border-radius:10px;font-size:14px;line-height:1.55}
+  .mcq .fb.show{display:block}
+  .mcq .fb.ok{background:var(--green-soft);border:1px solid #bfdcc6}
+  .mcq .fb.no{background:var(--red-soft);border:1px solid #e6bcb4}
+  .reveal{background:var(--paper);border:1px dashed var(--accent);border-radius:var(--radius);padding:16px 18px;margin:22px 0}
+  .reveal .plab{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;display:flex;align-items:center;gap:7px}
+  .reveal .q{font-weight:600;margin:8px 0 12px;font-size:16px}
+  .reveal button.revealbtn{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:9px 16px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+  .reveal button.revealbtn:hover{background:var(--accent-deep)}
+  .reveal .ans{display:none;margin-top:12px;padding:12px 14px;background:var(--teal-soft);border-radius:10px;font-size:14.5px;border:1px solid #a7d3d1}
+  .reveal .ans.show{display:block}
+  .quizblock{background:linear-gradient(180deg,#fff,#fbf6f0);border:2px solid var(--accent-soft);border-radius:18px;padding:22px 22px 24px;margin:30px auto;max-width:var(--maxw);box-shadow:var(--shadow)}
+  .quizblock h4{margin-top:0;display:flex;align-items:center;gap:9px}
+  .quizblock .qscore{font-size:14px;color:var(--ink-soft);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-weight:600}
+  .quizblock .scorebar{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:8px}
+  .resultbox{display:none;margin-top:16px;padding:16px;border-radius:12px;font-weight:600;text-align:center;font-size:16px}
+  .resultbox.show{display:block}
+  .resultbox.pass{background:var(--green-soft);border:1px solid #bfdcc6;color:var(--green)}
+  .resultbox.mid{background:var(--gold-soft);border:1px solid #e7d9a9;color:#8a6508}
+  footer{max-width:var(--maxw);margin:40px auto 0;padding-top:24px;border-top:1px solid var(--line);color:var(--ink-soft);font-size:13.5px}
+  footer a{color:var(--accent)}
+  .sources{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:16px 20px;margin:18px 0;box-shadow:var(--shadow)}
+  .sources ol{margin:8px 0;padding-left:22px}
+  .sources li{font-size:13.5px;margin:6px 0;word-break:break-word}
+  .sources a{color:var(--teal)}
+  .sourcebadge{display:inline-flex;gap:7px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:5px 13px;font-size:12.5px;color:var(--ink-soft)}
+  .nextbox{background:linear-gradient(180deg,#f3eefb,#ece4f6);border:1px solid #d3c4ec;border-radius:var(--radius);padding:18px 20px;margin:24px 0;font-size:14.5px}
+  .nextbox a{color:var(--purple);font-weight:700}
+  .menubtn{display:none;position:fixed;top:12px;left:12px;z-index:210;background:var(--accent);color:#fff;border:none;border-radius:10px;width:44px;height:44px;font-size:20px;cursor:pointer;box-shadow:var(--shadow)}
+  .scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:205}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+  @media(max-width:980px){
+    .menubtn{display:block}
+    aside{position:fixed;left:0;top:0;z-index:206;transform:translateX(-105%);transition:transform .25s;box-shadow:var(--shadow);width:290px}
+    aside.open{transform:translateX(0)}
+    .scrim.open{display:block}
+    main{padding:60px 16px 110px}
+    .hero h1{font-size:32px}
+  }
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+<button class="menubtn" onclick="toggleNav()" aria-label="Menu" aria-expanded="false">☰</button>
+<div class="scrim" id="scrim" onclick="toggleNav()"></div>
+
+<div class="layout">
+<!-- SIDEBAR -->
+<aside id="sidebar">
+  <div class="brandbox">
+    <div class="logo"><span class="emoji">🧠</span> Context Management &amp; Reliability</div>
+    <div class="sub">CCA-F extension lesson — the reliability backbone</div>
+    <div class="extbadge">Extension · beyond the Academy course</div>
+    <a class="backlink" href="../claude-101.html">← Back to the base course (Claude 101)</a>
+  </div>
+  <nav class="cspine" aria-label="Course track">
+    <div class="cspine-h">📚 Claude 101 track · Lesson 3 of 7</div>
+    <ol class="cspine-list">
+      <li><a href="../claude-101.html">Base · Claude 101</a></li>
+      <li><a href="tool-use-agent-loop.html">C-E1 · Tool-Use Agent Loop</a></li>
+      <li class="cspine-cur" aria-current="page">C-E2 · Context Management &amp; Reliability</li>
+      <li><a href="mcp-at-a-builder-level.html">C-E3 · MCP at a Builder Level</a></li>
+      <li><a href="prompt-caching-economics.html">C-E4 · Prompt Caching Economics</a></li>
+      <li><a href="prompt-engineering-depth.html">C-E5 · Prompt Engineering Depth</a></li>
+      <li><a href="claude-code-configuration.html">C-E6 · Claude Code Configuration</a></li>
+    </ol>
+  </nav>
+  <style>
+  .cspine{margin:10px 8px 14px;padding:10px 12px;border:1px solid var(--line,#e7e0d8);border-radius:10px;background:rgba(0,0,0,.02)}
+  .cspine-h{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft,#5c544c);margin-bottom:7px}
+  .cspine-list{list-style:none;margin:0;padding:0;counter-reset:cs}
+  .cspine-list li{font-size:12.5px;line-height:1.3;padding:3px 0;color:var(--ink-soft,#5c544c)}
+  .cspine-list a{color:var(--ink,#2b2622);text-decoration:none}
+  .cspine-list a:hover{color:var(--accent,#c96442);text-decoration:underline}
+  .cspine-cur{font-weight:700;color:var(--accent-deep,#a44a2e)!important}
+  .cspine-cur::before{content:"▸ "}
+  </style>
+  <div class="toc-prog">Lesson progress <span><b id="progPct">0%</b></span></div>
+  <nav id="toc"></nav>
+</aside>
+
+<!-- MAIN -->
+<main>
+<div class="wrap">
+<nav class="cnav" aria-label="Course navigation">
+  <a class="cnav-home" href="../../../Launchpad.html">⌂ Launchpad</a>
+  <span class="cnav-side"><a class="cnav-prev" href="tool-use-agent-loop.html">← The Tool-Use Agent Loop (C-E1)</a><a class="cnav-next" href="mcp-at-a-builder-level.html">Next: MCP at a Builder Level (C-E3) →</a></span>
+</nav>
+<style>
+.cnav{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:10px 0 18px;padding:10px 14px;border:1px solid var(--line,#e7e0d8);border-radius:12px;background:rgba(0,0,0,.02);font:600 13.5px/1.2 system-ui,-apple-system,'Segoe UI',sans-serif}
+.cnav a{text-decoration:none;color:var(--ink,#2b2622);padding:7px 13px;border-radius:8px;background:rgba(0,0,0,.05);white-space:nowrap;transition:background .15s,color .15s}
+.cnav a:hover{background:var(--accent,#c96442);color:#fff}
+.cnav .cnav-home{background:var(--accent,#c96442);color:#fff}
+.cnav .cnav-home:hover{filter:brightness(.92)}
+.cnav .cnav-side{display:flex;gap:8px;flex-wrap:wrap}
+</style>
+
+<header class="hero" id="top">
+  <div class="eyebrow">CCA-F Extension · Domain 5 (Context Management &amp; Reliability, 15%) + Domain 1 crossover</div>
+  <h1>Context Management &amp; Reliability</h1>
+  <p class="lead">The context window is your agent's working memory — finite, shared, and the thing that quietly decides whether a long-running agent stays coherent or falls apart. This lesson takes you from "what's a context window" down to the API mechanics of <code class="inl">compaction</code>, <code class="inl">context editing</code>, and token budgeting.</p>
+  <div class="pillrow">
+    <span class="pill"><span class="emoji">🧠</span> 9 sections</span>
+    <span class="pill"><span class="emoji">❓</span> Inline MCQs + predict-reveals</span>
+    <span class="pill"><span class="emoji">🏆</span> 2 quizzes (scored)</span>
+    <span class="pill"><span class="emoji">🎨</span> 7 diagrams</span>
+    <span class="pill"><span class="emoji">🔧</span> Real request/response JSON</span>
+  </div>
+
+  <div class="extbanner">
+    <span class="bt">🧩</span>
+    <div>
+      <b>Extension — beyond the Academy course.</b> This lesson is <b>web-researched material grounded in Anthropic's official sources</b> (the context-windows, compaction, context-editing, token-counting, and prompt-caching docs; the "Effective context engineering" and "Effective harnesses for long-running agents" engineering posts; and the Claude Code costs guide). It is <b>not</b> part of the original Claude 101 Academy course. Every substantive claim traces to the sources listed at the end. Version-sensitive facts carry an inline <span class="verify">⚠ VERIFY</span> note.
+    </div>
+  </div>
+
+  <div class="crosslink">
+    <span class="emoji">🔗</span> <strong>Builds on Claude 101, follows C-E1.</strong> The base course introduced the context window as Claude's "working memory." Extension <strong>C-E1 — <a href="tool-use-agent-loop.html">The Tool-Use Agent Loop</a></strong> showed you the <code class="inl">while stop_reason == "tool_use"</code> cycle. This lesson (C-E2) picks up where the loop leaves off: every turn of that loop <em>accumulates</em> tokens, and managing that accumulation is the reliability backbone of any production agent. If those ideas are fuzzy, <a href="../claude-101.html">revisit the base course first</a>.
+  </div>
+
+  <div class="examnote">
+    <b>🎯 Why this matters for the CCA-F exam.</b> Domain 5 (<b>Context Management &amp; Reliability, 15%</b>) is the primary target: context windows, the shared budget, context rot, compaction, context editing, and token budgeting. Domain 1 (<b>reliability &amp; architecture</b>) is the secondary target: external state, checkpointing, recovery, and handling overflow as a signal. The quizzes are weighted toward Domain 5 mechanics.
+  </div>
+</header>
+
+<!-- ============ SECTION 1 ============ -->
+<div class="sec-divider" id="sec1">
+  <span class="badge"><span class="emoji">①</span> Why it matters</span>
+  <h2>Context Is the Reliability Backbone</h2>
+  <p>Why managing the window — not maximizing it — is what keeps production agents alive.</p>
+</div>
+
+<section class="lesson" id="l1" data-lesson>
+  <div class="lmeta"><span class="ltag"><span class="emoji">🧠</span> Section 1</span><span class="ltime">⏱ ~10 min</span><span class="ldomain">Domain 5 · Domain 1</span></div>
+  <h3 class="ltitle">The hook: a great agent that slowly forgets</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Frame context management as a <em>reliability</em> problem, not a capacity problem</li>
+      <li>State why "more context" is not the same as "better answers"</li>
+      <li>Preview the three levers — compaction, context editing, context engineering — you'll learn to pull</li>
+    </ul>
+  </div>
+
+  <h4>Why before how</h4>
+  <p>Picture an agent that nails the first ten turns of a task, then — twenty turns later — starts repeating itself, forgetting decisions it already made, and getting slower and more expensive with every reply. The model didn't get worse. Its <strong>working memory filled up</strong>. Everything the agent has ever seen this session is competing for one finite resource, and nobody curated it.</p>
+  <p>That is the central insight of Domain 5: a production agent's reliability is mostly a function of <em>what is in its context window and how it's managed over time</em>. The docs put it bluntly — context is "a finite resource with diminishing returns, and irrelevant content degrades model focus." (source: context-editing docs)</p>
+
+  <blockquote class="ex">Analogy (clearly labeled): <span class="analogy">Analogy, not a product fact.</span> Think of the context window like a chef's cutting board, not a pantry. The pantry (the model's training) is enormous. The cutting board is small and shared — every ingredient you pile on leaves less room to actually work, and a cluttered board slows the chef down. Good agents keep the board clean; they don't just buy a bigger board.</blockquote>
+
+  <h4>The three levers you're about to learn</h4>
+  <p>This lesson is organized around the moves an architect makes to keep that board clean:</p>
+  <ul>
+    <li><strong>Compaction</strong> — let the server summarize old history when the window fills (Section 5).</li>
+    <li><strong>Context editing</strong> — surgically clear stale tool results and thinking blocks (Section 6).</li>
+    <li><strong>Context engineering</strong> — put the <em>smallest set of high-signal tokens</em> in front of the model in the first place (Section 7).</li>
+  </ul>
+  <p>Plus the discipline that ties them together: <strong>token budgeting</strong> (Section 8) and <strong>reliability patterns</strong> like external state and checkpointing (Section 9). But first, you have to understand the resource itself.</p>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">Your agent has a 1M-token window and you're only using 400K. Is there any reliability reason to trim the context anyway?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>Yes.</strong> "More context isn't automatically better. As token count grows, accuracy and recall degrade, a phenomenon known as <em>context rot</em>." Having headroom in the window doesn't mean the model uses all 400K equally well — irrelevant tokens still dilute its attention. Curating <em>what's</em> in context is "just as important as how much space is available." (source: context-windows docs)</div>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li>Context management is a <strong>reliability</strong> discipline, not just a way to fit more in.</li>
+    <li>"More context isn't automatically better" — accuracy and recall degrade as the window fills (context rot).</li>
+    <li>Three levers: <strong>compaction</strong>, <strong>context editing</strong>, and <strong>context engineering</strong>, backed by token budgeting and external state.</li>
+  </ul></div></div>
+</section>
+
+<!-- ============ SECTION 2 ============ -->
+<div class="sec-divider" id="sec2">
+  <span class="badge"><span class="emoji">②</span> The shared budget</span>
+  <h2>The Context Window as Shared Working Memory</h2>
+  <p>One window. Input, history, tools, thinking, and output all draw on it.</p>
+</div>
+
+<section class="lesson" id="l2" data-lesson>
+  <div class="lmeta"><span class="ltag"><span class="emoji">🪟</span> Section 2</span><span class="ltime">⏱ ~13 min</span><span class="ldomain">Domain 5</span></div>
+  <h3 class="ltitle">The single budget everything spends from</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Define the context window and explain why it's "working memory," not training data</li>
+      <li>List every consumer of the window: input, history, tool config, thinking, and output</li>
+      <li>Recall current window sizes (200K vs 1M) and the overflow stop reason</li>
+    </ul>
+  </div>
+
+  <h4>What the context window actually is</h4>
+  <blockquote class="ex">"The 'context window' refers to all the text a language model can reference when generating a response, including the response itself. This is different from the large corpus of data the language model was trained on, and instead represents a 'working memory' for the model." (source: context-windows docs)</blockquote>
+  <p>Two things to internalize. First, <strong>the response counts.</strong> The tokens Claude generates come out of the same budget as everything you sent in. Second, this is <em>working memory</em> — distinct from the vast training corpus in the "pantry." The model can only reason over what's currently on the board.</p>
+
+  <h4>Everything spends from one budget</h4>
+  <p>This is the fact that trips up most architects. The window is not "your prompt." It's a single pool that <em>five</em> different things draw on simultaneously:</p>
+  <ul>
+    <li><strong>Input / current message</strong> — the current user turn.</li>
+    <li><strong>Conversation history</strong> — each input phase "contains all previous conversation history plus the current user message." (source: context-windows docs)</li>
+    <li><strong>Tool configuration</strong> — tool definitions count as input tokens; tool-use requests, results, and accompanying thinking blocks all count toward the window. (source: context-windows docs)</li>
+    <li><strong>Extended thinking</strong> — "all input and output tokens, including the tokens used for thinking, count toward the context window limit." Thinking tokens "are a subset of your <code class="inl">max_tokens</code> parameter, are billed as output tokens, and count towards rate limits." (source: context-windows docs)</li>
+    <li><strong>Output</strong> — the generated response "becomes part of a future input." (source: context-windows docs)</li>
+  </ul>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 200" role="img" aria-label="The shared context-window budget bar: input, history, tools, thinking, and output all draw on one window">
+      <defs><style>.seg{stroke:#fff;stroke-width:2}.sl{font:700 11px sans-serif;fill:#fff}.cap{font:600 11px sans-serif;fill:#5c544c}.tt{font:700 13px sans-serif;fill:#2b2622}</style></defs>
+      <text class="tt" x="20" y="28">ONE context window (e.g. 1,000,000 tokens)</text>
+      <rect x="20" y="44" width="660" height="46" rx="8" fill="#faf8f5" stroke="#e7e0d8"/>
+      <rect class="seg" x="20" y="44" width="150" height="46" rx="8" fill="#c96442"/><text class="sl" x="95" y="72" text-anchor="middle">input msg</text>
+      <rect class="seg" x="170" y="44" width="230" height="46" fill="#a44a2e"/><text class="sl" x="285" y="72" text-anchor="middle">conversation history</text>
+      <rect class="seg" x="400" y="44" width="120" height="46" fill="#b8860b"/><text class="sl" x="460" y="72" text-anchor="middle">tool config</text>
+      <rect class="seg" x="520" y="44" width="90" height="46" fill="#6b4f9e"/><text class="sl" x="565" y="72" text-anchor="middle">thinking</text>
+      <rect class="seg" x="610" y="44" width="70" height="46" rx="8" fill="#3f7d4f"/><text class="sl" x="645" y="72" text-anchor="middle">output</text>
+      <line x1="20" y1="100" x2="20" y2="112" stroke="#5c544c"/><line x1="680" y1="100" x2="680" y2="112" stroke="#5c544c"/>
+      <line x1="20" y1="106" x2="680" y2="106" stroke="#5c544c" stroke-dasharray="3 3"/>
+      <text class="cap" x="350" y="130" text-anchor="middle">If the segments together exceed the window, generation stops with stop_reason "model_context_window_exceeded" (4.5+ models)</text>
+      <text class="cap" x="350" y="152" text-anchor="middle" style="fill:#a44a2e">Grow the history and you squeeze the room left for tools, thinking, and output.</text>
+    </svg>
+    <figcaption>Diagram (a): a single shared budget. Every consumer — input, history, tool config, thinking, output — draws from the same window. Fill it with history and you starve the rest.</figcaption>
+  </figure>
+
+  <h4>Current window sizes</h4>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Model</th><th>Context window</th><th>Max output</th><th>API ID</th></tr></thead>
+    <tbody>
+      <tr><td>Claude Opus 4.8</td><td><strong>1M tokens</strong></td><td>128k</td><td><code class="inl">claude-opus-4-8</code></td></tr>
+      <tr><td>Claude Sonnet 4.6</td><td><strong>1M tokens</strong></td><td>64k</td><td><code class="inl">claude-sonnet-4-6</code></td></tr>
+      <tr><td>Claude Haiku 4.5</td><td><strong>200k tokens</strong></td><td>64k</td><td><code class="inl">claude-haiku-4-5-20251001</code></td></tr>
+    </tbody>
+  </table></div>
+  <div class="verifynote"><span class="verify">⚠ VERIFY</span> Model lineup and context sizes (June 2026): Opus 4.8 (1M), Sonnet 4.6 (1M), Haiku 4.5 (200k). Per the docs, the 1M set is "Opus 4.8, Mythos Preview, Opus 4.7, Opus 4.6, and Sonnet 4.6"; Sonnet 4.5 / Sonnet 4 and legacy models stay at 200k; on Microsoft Foundry, Opus 4.8 is 200k. The model lineup changes fast — re-verify against the models/overview and context-windows pages at build/publish time. (source: models/overview, context-windows docs)</div>
+  <div class="verifynote"><span class="verify">⚠ VERIFY</span> 1M-window beta header: in the current (June 2026) docs the 1M window is presented as the <em>native</em> window for Opus 4.6+/4.7/4.8 and Sonnet 4.6, not a separate <code class="inl">context-1m</code> beta tier as in earlier generations. Confirm whether any 1M beta header is still required for the billing tier. (source: context-windows docs)</div>
+
+  <h4>Overflow is a signal, not a crash</h4>
+  <blockquote class="ex">"On Claude 4.5 models and newer, if input tokens plus <code>max_tokens</code> exceeds the context window size, the API accepts the request. If generation then reaches the context window limit, it stops with <code>stop_reason: 'model_context_window_exceeded'</code>." (source: context-windows docs)</blockquote>
+  <p>Earlier models return a validation error unless you opt in via the <code class="inl">model-context-window-exceeded-2025-08-26</code> beta header. We'll return to this stop reason in Section 9 — it's a reliability hook you can build on.</p>
+
+  <div class="mcq" data-mcq data-correct="3">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Which of these does NOT consume the context window?</div>
+    <button class="opt">Tool definitions you send in the request</button>
+    <button class="opt">Extended-thinking tokens</button>
+    <button class="opt">The conversation history from prior turns</button>
+    <button class="opt">The model's training corpus</button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden>The training corpus is the "pantry" — it's <em>not</em> in the window. Input, history, tool config, thinking, and output all consume the window; the response counts too.</div>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li>The window is <strong>working memory</strong>, distinct from training data — and "includes the response itself."</li>
+    <li>One shared budget: input + history + tool config + thinking + output.</li>
+    <li>Opus 4.8 / Sonnet 4.6 = 1M; Haiku 4.5 = 200k. <span class="verify">⚠ VERIFY</span> — lineup drifts.</li>
+    <li>Overflow on 4.5+ returns <code class="inl">model_context_window_exceeded</code> rather than crashing.</li>
+  </ul></div></div>
+</section>
+
+<!-- ============ SECTION 3 ============ -->
+<div class="sec-divider" id="sec3">
+  <span class="badge"><span class="emoji">③</span> Accumulation</span>
+  <h2>Linear Accumulation, Quadratic Bill</h2>
+  <p>Why long sessions get slow and expensive even though the window grows only linearly.</p>
+</div>
+
+<section class="lesson" id="l3" data-lesson>
+  <div class="lmeta"><span class="ltag"><span class="emoji">📈</span> Section 3</span><span class="ltime">⏱ ~11 min</span><span class="ldomain">Domain 5 · Domain 1</span></div>
+  <h3 class="ltitle">The accumulation problem</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Describe progressive token accumulation across multi-turn conversations</li>
+      <li>Explain why per-turn growth is linear but billed-across-the-session cost is roughly quadratic</li>
+      <li>Connect this to the transformer's n² attention cost</li>
+    </ul>
+  </div>
+
+  <h4>Each turn keeps everything</h4>
+  <blockquote class="ex">"Progressive token accumulation: As the conversation advances through turns, each user message and assistant response accumulates within the context window. Previous turns are preserved completely." … "The context usage grows linearly with each turn, with previous turns preserved completely." (source: context-windows docs)</blockquote>
+  <p>So the window <em>per turn</em> grows linearly — turn 2 holds turn 1, turn 3 holds turns 1–2, and so on. That part is intuitive. The non-obvious part is what it does to your bill.</p>
+
+  <h4>Why the bill grows worse than linearly</h4>
+  <p>Here's the mechanism. <strong>Every turn re-sends the entire prior history as input.</strong> Turn N pays to process roughly N turns' worth of history. Add that up across a session and the <em>total tokens billed</em> grow roughly <strong>quadratically</strong> with the number of turns — even though the window itself only grows linearly at any single moment.</p>
+  <p>Anthropic frames the underlying model cost as quadratic at the attention level too: the transformer creates "n² pairwise relationships for n tokens," which "stretches thin as context lengthens." (source: effective-context-engineering)</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 240" role="img" aria-label="Linear token accumulation per turn versus quadratic cumulative billed cost">
+      <defs><style>.ax{stroke:#5c544c;stroke-width:1.5}.gl{font:600 11px sans-serif;fill:#5c544c}.lt{font:700 11px sans-serif}.bar{fill:#c96442}</style></defs>
+      <line class="ax" x1="50" y1="200" x2="660" y2="200"/>
+      <line class="ax" x1="50" y1="30" x2="50" y2="200"/>
+      <text class="gl" x="355" y="228" text-anchor="middle">turns →</text>
+      <!-- linear bars: window per turn -->
+      <rect class="bar" x="80" y="180" width="26" height="20"/>
+      <rect class="bar" x="170" y="160" width="26" height="40"/>
+      <rect class="bar" x="260" y="140" width="26" height="60"/>
+      <rect class="bar" x="350" y="120" width="26" height="80"/>
+      <rect class="bar" x="440" y="100" width="26" height="100"/>
+      <rect class="bar" x="530" y="80" width="26" height="120"/>
+      <text class="lt" x="143" y="58" fill="#a44a2e">▮ window per turn = LINEAR</text>
+      <!-- quadratic curve: cumulative billed -->
+      <path d="M93 199 Q 300 195 350 165 Q 470 110 543 40" fill="none" stroke="#6b4f9e" stroke-width="3"/>
+      <circle cx="93" cy="199" r="4" fill="#6b4f9e"/><circle cx="183" cy="190" r="4" fill="#6b4f9e"/><circle cx="273" cy="172" r="4" fill="#6b4f9e"/><circle cx="363" cy="145" r="4" fill="#6b4f9e"/><circle cx="453" cy="100" r="4" fill="#6b4f9e"/><circle cx="543" cy="40" r="4" fill="#6b4f9e"/>
+      <text class="lt" x="420" y="60" fill="#6b4f9e">● cumulative billed = QUADRATIC</text>
+    </svg>
+    <figcaption>Diagram (b): the window per turn climbs linearly (bars), but because each turn re-pays for all prior history, the <em>cumulative</em> tokens billed across the session climb quadratically (curve).</figcaption>
+  </figure>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">A chat agent runs 50 turns with no context management. Compared to a 5-turn session, roughly how does the <em>total tokens billed</em> scale — 10×, or much more?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>Much more than 10×.</strong> Because every turn re-sends the whole history, cumulative billed tokens scale roughly with turns² — so 10× the turns is closer to ~100× the work, not 10×. This is exactly why "server-side compaction is the primary strategy for context management" in long-running conversations. (source: context-windows docs)</div>
+  </div>
+
+  <h4>What to do about it</h4>
+  <p>The docs are explicit about the remedy ladder: for long-running conversations and agentic workflows, "server-side compaction is the primary strategy for context management." For finer control, context editing clears old tool results and thinking blocks. (source: context-windows docs) And <strong>prompt caching</strong> mitigates the <em>cost</em> of re-sending a stable prefix (Section 9) — but note: caching does not stop the window from filling. The two solve different problems.</p>
+
+  <div class="mcq" data-mcq data-correct="1">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Per-turn the window grows linearly. Why does total session cost grow faster than linearly?</div>
+    <button class="opt">Because the model gets slower and charges a penalty</button>
+    <button class="opt">Because each turn re-sends all prior history, so turn N pays for ~N turns of input</button>
+    <button class="opt">Because output tokens cost more than input tokens</button>
+    <button class="opt">It doesn't — total cost is also linear</button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden>Each turn re-processes the entire accumulated history as input, so summed over a session the billed tokens scale ~quadratically with the number of turns. The transformer's n² attention reinforces this.</div>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li>"Previous turns are preserved completely" — window grows <strong>linearly</strong> per turn.</li>
+    <li>Re-sending history every turn makes <strong>cumulative billed cost ~quadratic</strong> in turn count.</li>
+    <li>Compaction is the primary remedy; context editing is the fine-grained one; caching cuts cost but not occupancy.</li>
+  </ul></div></div>
+</section>
+
+<!-- SECTION QUIZ A -->
+<div class="quizblock" data-quiz="1">
+  <div class="scorebar"><h4 style="margin:0"><span class="emoji">🏆</span> Checkpoint Quiz A — The Window &amp; Accumulation</h4><span class="qscore" data-score>0 / 4</span></div>
+  <p style="font-size:14px;color:var(--ink-soft);margin-top:0">Source-grounded. Answer each, then read the explanation.</p>
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q1</div><div class="qtext">The context window is best described as…</div>
+    <button class="opt">The model's full training corpus</button><button class="opt">Only the system prompt</button><button class="opt">"Working memory" — all text the model can reference, including its own response</button><button class="opt">A cache of past API calls</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>The window is "working memory," distinct from training data, and it "include[s] the response itself."</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="3" data-inquiz>
+    <div class="qlab">Q2</div><div class="qtext">Which does NOT draw from the shared context window?</div>
+    <button class="opt">Tool definitions</button><button class="opt">Extended-thinking tokens</button><button class="opt">Generated output</button><button class="opt">The pre-trained model weights</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>Input, history, tool config, thinking, and output all consume the window. The weights/training corpus do not.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="0" data-inquiz>
+    <div class="qlab">Q3</div><div class="qtext">Per-turn the window grows linearly, but cumulative billed cost across a session grows…</div>
+    <button class="opt">Roughly quadratically (each turn re-sends all prior history)</button><button class="opt">Logarithmically</button><button class="opt">It stays flat</button><button class="opt">Exactly linearly</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>Turn N re-pays for ~N turns of history, so summed across the session, billed tokens scale ~turns². Mirrors the transformer's n² attention.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="1" data-inquiz>
+    <div class="qlab">Q4</div><div class="qtext">On Claude 4.5+ models, hitting the window limit during generation produces…</div>
+    <button class="opt">A hard 400 validation error, always</button><button class="opt"><code>stop_reason: "model_context_window_exceeded"</code></button><button class="opt"><code>pause_turn</code></button><button class="opt">Silent truncation with no signal</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>On 4.5+ the request is accepted and generation stops with <code>model_context_window_exceeded</code> — a handleable signal. Older models need a beta header to avoid a validation error.</div>
+  </div>
+  <div class="resultbox" data-result></div>
+</div>
+
+<!-- ============ SECTION 4 ============ -->
+<div class="sec-divider" id="sec4">
+  <span class="badge"><span class="emoji">④</span> Context rot</span>
+  <h2>Context Rot &amp; the Attention Budget</h2>
+  <p>More tokens ≠ better. The deeper reason curation beats capacity.</p>
+</div>
+
+<section class="lesson" id="l4" data-lesson>
+  <div class="lmeta"><span class="ltag"><span class="emoji">🌫️</span> Section 4</span><span class="ltime">⏱ ~12 min</span><span class="ldomain">Domain 5</span></div>
+  <h3 class="ltitle">Why a fuller window thinks worse</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Define context rot and the "attention budget"</li>
+      <li>Explain the architectural cause (n² relationships, training-length mismatch)</li>
+      <li>Reason about why newer models degrade more gracefully but never escape the effect</li>
+    </ul>
+  </div>
+
+  <h4>Context rot, defined</h4>
+  <blockquote class="ex">"As token count increases, the model's ability to accurately recall information from that context decreases." … "This constraint applies across all models, though some degrade more gradually." (source: effective-context-engineering)</blockquote>
+  <p>And the mechanism the docs use to explain it — the <strong>attention budget</strong>:</p>
+  <blockquote class="ex">LLMs possess "an 'attention budget' that they draw on when parsing large volumes of context. Every new token introduced depletes this budget by some amount." (source: effective-context-engineering)</blockquote>
+  <p>So every token you add isn't free even when it fits — it spends from a budget that's separate from raw token capacity. This is why curation beats capacity.</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 220" role="img" aria-label="Attention-budget depletion curve: recall accuracy falls as context fills">
+      <defs><style>.ax{stroke:#5c544c;stroke-width:1.5}.gl{font:600 11px sans-serif;fill:#5c544c}.note{font:700 11px sans-serif}</style></defs>
+      <line class="ax" x1="55" y1="180" x2="660" y2="180"/>
+      <line class="ax" x1="55" y1="25" x2="55" y2="180"/>
+      <text class="gl" x="355" y="206" text-anchor="middle">tokens in context →</text>
+      <text class="gl" x="18" y="105" text-anchor="middle" transform="rotate(-90 18 105)">recall / focus</text>
+      <!-- gentle curve (newer model) -->
+      <path d="M55 40 C 250 48, 430 70, 660 120" fill="none" stroke="#3f7d4f" stroke-width="3"/>
+      <text class="note" x="470" y="108" fill="#3f7d4f">newer model — degrades gradually</text>
+      <!-- steep curve (older model) -->
+      <path d="M55 40 C 200 60, 320 130, 660 172" fill="none" stroke="#b3402f" stroke-width="3" stroke-dasharray="6 4"/>
+      <text class="note" x="300" y="150" fill="#b3402f">older model — steeper drop</text>
+      <text class="gl" x="120" y="36">high recall when context is lean</text>
+    </svg>
+    <figcaption>Diagram (c): context rot. As tokens accumulate, recall and focus decline. Newer models degrade more gracefully, but the depletion is universal — "this constraint applies across all models."</figcaption>
+  </figure>
+
+  <h4>Why it happens architecturally</h4>
+  <p>Two structural reasons, per the engineering post:</p>
+  <ul>
+    <li>The transformer creates "n² pairwise relationships for n tokens" — attention spreads thinner as n grows. (source: effective-context-engineering)</li>
+    <li>Models have "less experience with, and fewer specialized parameters for, context-wide dependencies" because training sequences are typically shorter than the max context. (source: effective-context-engineering)</li>
+  </ul>
+  <p>The docs corroborate from the product side: context is "a finite resource with diminishing returns, and irrelevant content degrades model focus." (source: context-editing docs)</p>
+
+  <h4>The benchmark anchor</h4>
+  <p>Anthropic measures long-context capability on needle-in-a-haystack benchmarks (MRCR v2, GraphWalks), and notes gains "depend on what's in context, not just how much fits." (source: context-windows docs) A comparative datapoint from launch material: on the 8-needle 1M MRCR v2 variant, Opus 4.6 scored 76% vs Sonnet 4.5 at 18.5% — newer models degrade far more gracefully at depth, but degradation still exists.</p>
+  <div class="verifynote"><span class="verify">⚠ VERIFY</span> The MRCR v2 8-needle stat (Opus 4.6 76% vs Sonnet 4.5 18.5%) came from search-summary launch material, not a fetched primary page. Treat the exact figures as version-sensitive and re-verify before quoting.</div>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">You upgrade from a 200K model to a 1M model. Does context rot stop being a concern?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>No.</strong> A bigger window raises the ceiling but doesn't remove the effect — "this constraint applies across all models, though some degrade more gradually." You still spend an attention budget per token, so curating <em>what</em> goes in matters at 1M just as it did at 200K.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="2">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">"Every new token introduced depletes this budget by some amount." What budget is the docs referring to?</div>
+    <button class="opt">The dollar billing budget</button>
+    <button class="opt">The rate-limit budget</button>
+    <button class="opt">The model's attention budget</button>
+    <button class="opt">The max_tokens output budget</button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden>The <strong>attention budget</strong> — separate from raw capacity. Filling the window depletes the model's ability to attend to and recall what's in it, which is context rot.</div>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li><strong>Context rot:</strong> recall and focus drop as the window fills — universal across models.</li>
+    <li>The <strong>attention budget</strong> is depleted by every token, independent of raw capacity.</li>
+    <li>Architectural cause: n² attention relationships + shorter training sequences than max context.</li>
+    <li>Newer models degrade more gradually but never escape it — curate, don't just expand.</li>
+  </ul></div></div>
+</section>
+
+<!-- ============ SECTION 5 ============ -->
+<div class="sec-divider" id="sec5">
+  <span class="badge"><span class="emoji">⑤</span> Compaction</span>
+  <h2>Compaction — Server-Side Summarization</h2>
+  <p>The primary strategy: let the server summarize old history when the window fills.</p>
+</div>
+
+<section class="lesson" id="l5" data-lesson>
+  <div class="lmeta"><span class="ltag"><span class="emoji">🗜️</span> Section 5</span><span class="ltime">⏱ ~16 min</span><span class="ldomain">Domain 5 · Domain 1</span></div>
+  <h3 class="ltitle">How compaction works</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Walk the four-step compaction lifecycle and what gets dropped</li>
+      <li>Recall the 150K default trigger (min 50K) and the request/response shapes</li>
+      <li>State the key tradeoffs and how Claude Code's auto-compaction relates</li>
+    </ul>
+  </div>
+
+  <h4>The lifecycle</h4>
+  <p>When enabled, Claude automatically summarizes the conversation as it approaches the configured threshold. It:</p>
+  <ol>
+    <li><strong>Detects</strong> when input tokens exceed the trigger threshold;</li>
+    <li><strong>Generates</strong> a summary of the current conversation;</li>
+    <li><strong>Creates</strong> a <code class="inl">compaction</code> block containing the summary;</li>
+    <li><strong>Continues</strong> the response with the compacted context.</li>
+  </ol>
+  <p>On subsequent requests, "The API automatically drops all message blocks prior to the <code class="inl">compaction</code> block, continuing from the summary." (source: compaction docs)</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 720 200" role="img" aria-label="Compaction lifecycle: detect, summarize, create compaction block, drop prior messages, continue">
+      <defs><marker id="ahc" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#c96442"/></marker>
+        <style>.cn{font:700 11px sans-serif;fill:#fff}.cs{font:400 9.5px sans-serif;fill:#5c544c}.car{stroke:#c96442;stroke-width:2.2;fill:none;marker-end:url(#ahc)}</style></defs>
+      <rect x="14" y="60" width="118" height="52" rx="10" fill="#b8860b"/><text class="cn" x="73" y="82" text-anchor="middle">1 · Detect</text><text class="cs" x="73" y="98" text-anchor="middle" fill="#fff">input &gt; 150K</text>
+      <line class="car" x1="132" y1="86" x2="166" y2="86"/>
+      <rect x="166" y="60" width="118" height="52" rx="10" fill="#c96442"/><text class="cn" x="225" y="82" text-anchor="middle">2 · Summarize</text><text class="cs" x="225" y="98" text-anchor="middle" fill="#fff">generate summary</text>
+      <line class="car" x1="284" y1="86" x2="318" y2="86"/>
+      <rect x="318" y="60" width="124" height="52" rx="10" fill="#6b4f9e"/><text class="cn" x="380" y="82" text-anchor="middle">3 · compaction</text><text class="cs" x="380" y="98" text-anchor="middle" fill="#fff">block created</text>
+      <line class="car" x1="442" y1="86" x2="476" y2="86"/>
+      <rect x="476" y="60" width="118" height="52" rx="10" fill="#b3402f"/><text class="cn" x="535" y="82" text-anchor="middle">4 · Drop prior</text><text class="cs" x="535" y="98" text-anchor="middle" fill="#fff">msgs auto-removed</text>
+      <line class="car" x1="594" y1="86" x2="628" y2="86"/>
+      <rect x="628" y="60" width="84" height="52" rx="10" fill="#3f7d4f"/><text class="cn" x="670" y="82" text-anchor="middle">Continue</text><text class="cs" x="670" y="98" text-anchor="middle" fill="#fff">from summary</text>
+      <text class="cs" x="360" y="150" text-anchor="middle">The compaction block must be passed back; messages after it are preserved. Everything before it is summarized away.</text>
+    </svg>
+    <figcaption>Diagram (d): the compaction lifecycle — detect → summarize → create compaction block → drop prior messages → continue from the summary.</figcaption>
+  </figure>
+
+  <h4>The trigger</h4>
+  <p>Default trigger: <strong>150,000</strong> input tokens. Configurable, but must be at least <strong>50,000</strong> tokens. (source: compaction docs)</p>
+  <div class="verifynote"><span class="verify">⚠ VERIFY</span> Compaction is dated/beta. Supported models: "Mythos Preview, Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 4.6 (beta)." Beta header <code class="inl">anthropic-beta: compact-2026-01-12</code> must be in all requests using compaction, and the edit type string is <code class="inl">compact_20260112</code>. Both are dated and may rev. (source: compaction docs)</div>
+
+  <h4>The request shape</h4>
+  <div class="codewrap">
+    <div class="clab"><span class="dot"></span> Request · enabling compaction</div>
+    <pre><code>{
+  "model": "claude-opus-4-8",
+  "max_tokens": 4096,
+  "messages": [{"role": "user", "content": "Help me build a website"}],
+  "context_management": {
+    "edits": [
+      {
+        "type": "compact_20260112",
+        "trigger": {"type": "input_tokens", "value": 150000},
+        "pause_after_compaction": false,
+        "instructions": null
+      }
+    ]
+  }
+}</code></pre>
+  </div>
+  <p>Parameters: <code class="inl">type</code> (required, <code class="inl">"compact_20260112"</code>); <code class="inl">trigger</code> (default 150,000 input tokens); <code class="inl">pause_after_compaction</code> (default <code class="inl">false</code>); <code class="inl">instructions</code> (default <code class="inl">null</code> — a custom prompt replaces the default summarization prompt). (source: compaction docs)</p>
+
+  <h4>The response shape — note the <code class="inl">compaction</code> block and <code class="inl">iterations</code></h4>
+  <div class="codewrap">
+    <div class="clab"><span class="dot"></span> Response · after compaction fires</div>
+    <pre><code>{
+  "content": [
+    {"type": "compaction", "content": "Summary of the conversation: ..."},
+    {"type": "text", "text": "Based on our conversation so far..."}
+  ],
+  "stop_reason": "end_turn",
+  "usage": {
+    "input_tokens": 23000,
+    "output_tokens": 1000,
+    "iterations": [
+      {"type": "compaction", "input_tokens": 180000, "output_tokens": 3500},
+      {"type": "message",    "input_tokens": 23000,  "output_tokens": 1000}
+    ]
+  }
+}</code></pre>
+  </div>
+  <div class="callout warn collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">💸</span> Billing trap (QA-critical)<span class="chev">▼</span></div>
+  <div class="cbody"><p>The top-level <code class="inl">input_tokens</code>/<code class="inl">output_tokens</code> do <strong>not</strong> include the compaction-iteration usage. To get true session cost you must "sum across all <code class="inl">iterations</code> array entries for total tokens consumed." In the example above, the summarization step alone cost 180,000 input + 3,500 output tokens — invisible if you only read the top-level numbers. (source: compaction docs)</p></div></div>
+
+  <h4>Tradeoffs</h4>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Benefits</th><th>Costs</th></tr></thead>
+    <tbody>
+      <tr><td>Extends effective context</td><td>Adds a sampling step for summarization (counts toward rate limits &amp; billing)</td></tr>
+      <tr><td>Automatic, minimal integration</td><td>Can't use a cheaper model to summarize — uses the same model as the request</td></tr>
+      <tr><td>Keeps active context focused</td><td>"May fail when <code class="inl">tools</code> are defined" — the model may call a tool during summarization instead of summarizing</td></tr>
+      <tr><td>Ideal for chat / multi-turn agents</td><td>Aggressive compaction can lose "subtle but critical context"</td></tr>
+    </tbody>
+  </table></div>
+  <p>On the craft: "The art of compaction lies in the selection of what to keep versus what to discard… overly aggressive compaction can result in the loss of subtle but critical context whose importance only becomes apparent later." The recommendation: "Start by maximizing recall… then iterate to improve precision by eliminating superfluous content." (source: effective-context-engineering)</p>
+
+  <h4>Claude Code's auto-compaction</h4>
+  <p>At the product level, Claude Code "automatically optimizes costs through prompt caching… and auto-compaction, which summarizes conversation history when approaching context limits." You can steer it: <code class="inl">/compact Focus on code samples and API usage</code>, or add a <code class="inl"># Compact instructions</code> section to <code class="inl">CLAUDE.md</code>. (source: code.claude.com/costs)</p>
+  <div class="verifynote"><span class="verify">⚠ VERIFY</span> The ~83.5% / ~167K auto-compact trigger figure circulating in third-party blogs is <strong>not</strong> confirmed on the official <code class="inl">code.claude.com/docs/en/costs</code> page. Treat the specific percentage as unverified. (source: code.claude.com/costs)</div>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">You enable compaction <em>and</em> define several tools on the same request. What's the failure mode the docs warn about?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>Compaction "may fail when <code class="inl">tools</code> are defined"</strong> — during the summarization step the model may call a tool instead of producing the summary. It's a documented cost/limitation, so test compaction behavior carefully in tool-heavy agents.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="1">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">After compaction fires, what happens to the messages <em>before</em> the <code class="inl">compaction</code> block on the next request?</div>
+    <button class="opt">They're kept but compressed in place</button>
+    <button class="opt">The API automatically drops them, continuing from the summary</button>
+    <button class="opt">You must manually delete them client-side</button>
+    <button class="opt">They're moved into the system prompt</button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden>"The API automatically drops all message blocks prior to the <code>compaction</code> block, continuing from the summary." You just pass the compaction block back.</div>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li>Lifecycle: <strong>detect → summarize → compaction block → drop prior → continue.</strong></li>
+    <li>Default trigger <strong>150K</strong> input tokens (min 50K). <span class="verify">⚠ VERIFY</span> dated beta headers.</li>
+    <li>True cost = sum the <code class="inl">iterations</code> array; top-level usage excludes the summary step.</li>
+    <li>Can fail with tools defined; summarizes with the same (not a cheaper) model.</li>
+    <li>Claude Code auto-compacts; steer it with <code class="inl">/compact</code> or <code class="inl"># Compact instructions</code>.</li>
+  </ul></div></div>
+</section>
+
+<!-- ============ SECTION 6 ============ -->
+<div class="sec-divider" id="sec6">
+  <span class="badge"><span class="emoji">⑥</span> Context editing</span>
+  <h2>Context Editing — Fine-Grained Clearing</h2>
+  <p>The scalpel: clear stale tool results and thinking blocks while keeping the rest.</p>
+</div>
+
+<section class="lesson" id="l6" data-lesson>
+  <div class="lmeta"><span class="ltag"><span class="emoji">✂️</span> Section 6</span><span class="ltime">⏱ ~15 min</span><span class="ldomain">Domain 5</span></div>
+  <h3 class="ltitle">When the summary is too blunt</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Distinguish context editing from compaction and know when to reach for each</li>
+      <li>Read the tool-result-clearing config: <code class="inl">trigger</code>, <code class="inl">keep</code>, <code class="inl">clear_at_least</code>, <code class="inl">exclude_tools</code></li>
+      <li>Recall the server-side, no-client-sync property and the cache interaction</li>
+    </ul>
+  </div>
+
+  <h4>What it is and when to use it</h4>
+  <blockquote class="ex">"Context editing allows you to selectively clear specific content from conversation history as it grows. Beyond optimizing costs and staying within limits, this is about actively curating what Claude sees." (source: context-editing docs)</blockquote>
+  <p>The relationship to compaction is explicit: "For most use cases, server-side compaction is the primary strategy… The strategies on this page are useful for specific scenarios where you need more fine-grained control over what content is cleared." (source: context-editing docs) Compaction is the blunt instrument (summarize everything old); context editing is the scalpel (drop just the stale tool results, keep recent ones).</p>
+  <div class="verifynote"><span class="verify">⚠ VERIFY</span> Context editing is dated/beta: beta header <code class="inl">context-management-2025-06-27</code> (supported on all supported Claude models). Strategy strings <code class="inl">clear_tool_uses_20250919</code> and <code class="inl">clear_thinking_20251015</code> are dated and may rev. (source: context-editing docs)</div>
+
+  <h4>The strategies</h4>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Strategy</th><th>Type string</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td>Tool result clearing</td><td><code class="inl">clear_tool_uses_20250919</code></td><td>Clear old tool results in heavy tool-use workflows</td></tr>
+      <tr><td>Thinking block clearing</td><td><code class="inl">clear_thinking_20251015</code></td><td>Manage thinking blocks with extended thinking</td></tr>
+      <tr><td>Client-side compaction (SDK)</td><td>—</td><td>Summary-based, via <code class="inl">tool_runner</code> in Python/TS/Ruby SDKs</td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>Tool-result clearing — the mechanism</h4>
+  <blockquote class="ex">"When activated, the API automatically clears the oldest tool results in chronological order. The API replaces each cleared result with placeholder text so Claude knows it was removed. By default, only tool results are cleared. You can optionally clear both tool results and tool calls (the tool use parameters) by setting <code>clear_tool_inputs</code> to true." (source: context-editing docs)</blockquote>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 200" role="img" aria-label="Context editing keeps N recent tool results, clears the oldest, and leaves a placeholder">
+      <defs><style>.tu{font:600 10px sans-serif;fill:#fff}.lg{font:700 11px sans-serif;fill:#5c544c}.ph{font:600 9.5px sans-serif;fill:#8a6508}</style></defs>
+      <text class="lg" x="20" y="26">Before clearing (keep=3, trigger exceeded):</text>
+      <rect x="20" y="36" width="92" height="34" rx="7" fill="#b3402f"/><text class="tu" x="66" y="57" text-anchor="middle">result 1</text>
+      <rect x="120" y="36" width="92" height="34" rx="7" fill="#b3402f"/><text class="tu" x="166" y="57" text-anchor="middle">result 2</text>
+      <rect x="220" y="36" width="92" height="34" rx="7" fill="#c96442"/><text class="tu" x="266" y="57" text-anchor="middle">result 3</text>
+      <rect x="320" y="36" width="92" height="34" rx="7" fill="#c96442"/><text class="tu" x="366" y="57" text-anchor="middle">result 4</text>
+      <rect x="420" y="36" width="92" height="34" rx="7" fill="#c96442"/><text class="tu" x="466" y="57" text-anchor="middle">result 5</text>
+      <text class="lg" x="20" y="112">After clearing (oldest 2 cleared, 3 kept):</text>
+      <rect x="20" y="122" width="192" height="34" rx="7" fill="#f6edd6" stroke="#e7d9a9" stroke-dasharray="4 3"/><text class="ph" x="116" y="143" text-anchor="middle">[placeholder: results cleared]</text>
+      <rect x="220" y="122" width="92" height="34" rx="7" fill="#3f7d4f"/><text class="tu" x="266" y="143" text-anchor="middle">result 3</text>
+      <rect x="320" y="122" width="92" height="34" rx="7" fill="#3f7d4f"/><text class="tu" x="366" y="143" text-anchor="middle">result 4</text>
+      <rect x="420" y="122" width="92" height="34" rx="7" fill="#3f7d4f"/><text class="tu" x="466" y="143" text-anchor="middle">result 5</text>
+      <text class="lg" x="540" y="143" fill="#3f7d4f">← kept (keep=3)</text>
+    </svg>
+    <figcaption>Diagram (e): tool-result clearing. The oldest results are cleared in chronological order and replaced with a placeholder so Claude knows they were removed; the most recent <code>keep</code> results stay.</figcaption>
+  </figure>
+
+  <div class="codewrap">
+    <div class="clab"><span class="dot"></span> Config · tool-result clearing</div>
+    <pre><code>{
+  "type": "clear_tool_uses_20250919",
+  "trigger": {"type": "input_tokens", "value": 30000},
+  "keep": {"type": "tool_uses", "value": 3},
+  "clear_at_least": {"type": "input_tokens", "value": 5000},
+  "exclude_tools": ["web_search"]
+}</code></pre>
+  </div>
+  <ul>
+    <li><code class="inl">trigger</code> — clearing fires when input tokens exceed this value.</li>
+    <li><code class="inl">keep</code> — number of recent tool uses to retain after clearing.</li>
+    <li><code class="inl">clear_at_least</code> — guarantees a minimum number of tokens cleared each time (so prompt-cache invalidation is worthwhile).</li>
+    <li><code class="inl">exclude_tools</code> — tools whose results are never cleared.</li>
+    <li><code class="inl">clear_tool_inputs</code> — when <code class="inl">true</code>, also clears the tool-call parameters (default clears only results).</li>
+  </ul>
+
+  <h4>Thinking-block clearing</h4>
+  <p>The <code class="inl">clear_thinking_20251015</code> strategy "manages <code class="inl">thinking</code> blocks… you can choose to keep more thinking blocks to maintain reasoning continuity, or clear them more aggressively to save context space." Config: <code class="inl">keep</code> = <code class="inl">{type: "thinking_turns", value: N}</code> (N &gt; 0) or <code class="inl">"all"</code>. Per-model defaults differ:</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Model class</th><th>Keep ALL prior thinking</th><th>Keep ONLY last turn's thinking</th></tr></thead>
+    <tbody>
+      <tr><td>Opus</td><td>Opus 4.5 and later</td><td>Opus 4.1 and earlier</td></tr>
+      <tr><td>Sonnet</td><td>Sonnet 4.6 and later</td><td>Sonnet 4.5 and earlier</td></tr>
+      <tr><td>Haiku</td><td>(none)</td><td>all through Haiku 4.5</td></tr>
+    </tbody>
+  </table></div>
+  <p>"If your code runs across multiple model tiers, set <code class="inl">keep</code> explicitly." And when combining strategies: "the <code class="inl">clear_thinking_20251015</code> strategy must be listed first in the <code class="inl">edits</code> array." (source: context-editing docs)</p>
+
+  <h4>Two properties architects must remember</h4>
+  <div class="callout tip collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🖥️</span> Server-side — no client sync needed<span class="chev">▼</span></div>
+  <div class="cbody"><p>"Context editing is applied server-side before the prompt reaches Claude. Your client application maintains the full, unmodified conversation history. You do not need to sync your client state with the edited version." So your durable record stays complete; the server does the trimming on the way in. (source: context-editing docs)</p></div></div>
+  <div class="callout warn collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">💾</span> Cache interaction<span class="chev">▼</span></div>
+  <div class="cbody"><p>Tool-result clearing "invalidates cached prompt prefixes when content is cleared." So you want to "clear enough tokens to make the cache invalidation worthwhile" — that's what <code class="inl">clear_at_least</code> is for. For thinking-block clearing: kept thinking preserves the cache; cleared thinking invalidates the cache at the clearing point. (source: context-editing docs)</p></div></div>
+  <div class="verifynote"><span class="verify">⚠ VERIFY</span> The response <code class="inl">context_management.applied_edits</code> object (number of tool uses cleared, tokens freed) is referenced in product summaries, but the exact JSON field names were not captured in the fetched section of the docs. Confirm against the live page before quoting field names. (source: context-editing docs)</div>
+
+  <div class="mcq" data-mcq data-correct="0">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Why does <code class="inl">clear_at_least</code> exist?</div>
+    <button class="opt">To guarantee enough tokens are cleared to make prompt-cache invalidation worthwhile</button>
+    <button class="opt">To set the maximum number of tool results to keep</button>
+    <button class="opt">To force compaction instead of clearing</button>
+    <button class="opt">To exclude specific tools from clearing</button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden>Clearing invalidates the cached prefix at the clear point, so <code>clear_at_least</code> guarantees a minimum tokens cleared each time — otherwise you'd pay the cache-invalidation cost for trivial savings.</div>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li>Context editing = the scalpel; compaction = the primary blunt strategy.</li>
+    <li>Tool-result clearing drops the <strong>oldest</strong> results, keeps <code class="inl">keep</code> recent ones, leaves a placeholder.</li>
+    <li>Config knobs: <code class="inl">trigger</code>, <code class="inl">keep</code>, <code class="inl">clear_at_least</code>, <code class="inl">exclude_tools</code>, <code class="inl">clear_tool_inputs</code>.</li>
+    <li>Server-side — your client keeps the full history; no sync required.</li>
+    <li>Clearing invalidates the cache at the clear point; <code class="inl">clear_at_least</code> makes it worthwhile.</li>
+  </ul></div></div>
+</section>
+
+<!-- ============ SECTION 7 ============ -->
+<div class="sec-divider" id="sec7">
+  <span class="badge"><span class="emoji">⑦</span> Context engineering</span>
+  <h2>Effective Context Engineering</h2>
+  <p>The smallest set of high-signal tokens — and the Claude Code tactics that embody it.</p>
+</div>
+
+<section class="lesson" id="l7" data-lesson>
+  <div class="lmeta"><span class="ltag"><span class="emoji">🎯</span> Section 7</span><span class="ltime">⏱ ~13 min</span><span class="ldomain">Domain 5 · Domain 1</span></div>
+  <h3 class="ltitle">Curate before you compress</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Distinguish context engineering from prompt engineering</li>
+      <li>State the guiding maxim and apply system-prompt + tool hygiene</li>
+      <li>Explain just-in-time retrieval vs pre-loading, and name concrete Claude Code tactics</li>
+    </ul>
+  </div>
+
+  <h4>Context engineering vs prompt engineering</h4>
+  <blockquote class="ex">Context engineering is "the set of strategies for curating and maintaining the optimal set of tokens (information) during LLM inference, including all the other information that may land there outside of the prompts." (source: effective-context-engineering)</blockquote>
+  <p>Prompt engineering is "writing and organizing LLM instructions." Context engineering is broader: it addresses "the entire context state (system instructions, tools, Model Context Protocol, external data, message history, etc)" across multiple turns. Where Section 5 and 6 were about <em>removing</em> tokens, this section is about not adding the wrong ones in the first place.</p>
+
+  <h4>The guiding maxim</h4>
+  <blockquote class="ex">Find "the smallest possible set of high-signal tokens that maximize the likelihood of some desired outcome." Overall: "be thoughtful and keep your context informative, yet tight." (source: effective-context-engineering)</blockquote>
+
+  <h4>System prompt &amp; tool hygiene</h4>
+  <ul>
+    <li><strong>Altitude.</strong> Prompts should strike the right "altitude" — avoiding both "brittle if-else hardcoded prompts" and "prompts that are overly general or falsely assume shared context." Organize with XML tags or Markdown headers, pursuing "the minimal set of information that fully outlines your expected behavior." (source: effective-context-engineering)</li>
+    <li><strong>Tool curation.</strong> Tools should be "self-contained, robust to error, and extremely clear with respect to their intended use." Avoid "bloated tool sets that cover too much functionality or lead to ambiguous decision points about which tool to use." (source: effective-context-engineering)</li>
+  </ul>
+
+  <h4>Just-in-time retrieval vs pre-loading</h4>
+  <blockquote class="ex">Maintain "lightweight identifiers (file paths, stored queries, web links, etc.)" and "dynamically load data into context at runtime using tools" rather than pre-processing everything upfront. (source: effective-context-engineering)</blockquote>
+  <p>The trade-off is real: "Runtime exploration is slower than retrieving pre-computed data," requiring "opinionated and thoughtful engineering" to keep agents from "wasting context by misusing tools, chasing dead-ends, or failing to identify key information." JIT keeps the window lean; pre-loading keeps latency low. An architect chooses per workload.</p>
+
+  <h4>Claude Code tactics that embody the maxim</h4>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Tactic</th><th>Why it keeps context lean</th></tr></thead>
+    <tbody>
+      <tr><td>Deferred MCP tool definitions</td><td>"Only tool names enter context until Claude uses a specific tool."</td></tr>
+      <tr><td>Prefer CLI tools (<code class="inl">gh</code>, <code class="inl">aws</code>, <code class="inl">gcloud</code>) over MCP servers; disable unused MCP servers</td><td>Less tool-definition bloat in the window.</td></tr>
+      <tr><td>Move specialized instructions out of CLAUDE.md into on-demand skills</td><td>"Aim to keep CLAUDE.md under 200 lines."</td></tr>
+      <tr><td>Use hooks to preprocess verbose data (grep a 10,000-line log to ERROR lines)</td><td>"Reducing context from tens of thousands of tokens to hundreds."</td></tr>
+      <tr><td>Delegate verbose operations to subagents</td><td>"Verbose output stays in the subagent's context while only a summary returns to your main conversation."</td></tr>
+      <tr><td><code class="inl">/clear</code> between unrelated tasks</td><td>"Stale context wastes tokens on every subsequent message."</td></tr>
+    </tbody>
+  </table></div>
+  <p>(source: code.claude.com/costs)</p>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">Your agent must occasionally consult a 10,000-line log. Do you pre-load the whole log into context, or hand the agent a path and a grep tool?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>Hand it a path + retrieval tool (JIT) — or preprocess with a hook.</strong> Pre-loading 10,000 lines burns the attention budget on every turn. The docs' tactic: use hooks to grep down to just the <code class="inl">ERROR</code> lines, "reducing context from tens of thousands of tokens to hundreds." Keep lightweight identifiers; load just-in-time.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="2">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">What is the guiding maxim of context engineering?</div>
+    <button class="opt">Always fill the window — unused capacity is wasted</button>
+    <button class="opt">Pre-load every document the agent might ever need</button>
+    <button class="opt">Find the smallest possible set of high-signal tokens that maximize the desired outcome</button>
+    <button class="opt">Use as many tools as possible for flexibility</button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden>"The smallest possible set of high-signal tokens that maximize the likelihood of some desired outcome." Informative, yet tight.</div>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li>Context engineering curates the <em>whole</em> context state, not just the prompt.</li>
+    <li>Maxim: smallest set of high-signal tokens; informative, yet tight.</li>
+    <li>Right "altitude" prompts + self-contained, non-bloated tools.</li>
+    <li>JIT retrieval keeps the window lean (trade: slower); pre-load for latency.</li>
+    <li>Claude Code: deferred MCP defs, CLI over MCP, sub-agents, hooks, <code class="inl">/clear</code>, CLAUDE.md &lt; 200 lines.</li>
+  </ul></div></div>
+</section>
+
+<!-- ============ SECTION 8 ============ -->
+<div class="sec-divider" id="sec8">
+  <span class="badge"><span class="emoji">⑧</span> Token budgeting</span>
+  <h2>Token Budgeting in Practice</h2>
+  <p>The usage object, the count_tokens API, and allocating the window like a budget.</p>
+</div>
+
+<section class="lesson" id="l8" data-lesson>
+  <div class="lmeta"><span class="ltag"><span class="emoji">🧮</span> Section 8</span><span class="ltime">⏱ ~14 min</span><span class="ldomain">Domain 5 · Domain 1</span></div>
+  <h3 class="ltitle">Treat the window like a budget</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Read the <code class="inl">usage</code> object and compute total input tokens</li>
+      <li>Use the <code class="inl">count_tokens</code> API to pre-flight a budget</li>
+      <li>Allocate the window across system/tools, history, JIT retrieval, and reserved output</li>
+    </ul>
+  </div>
+
+  <h4>The budget allocation</h4>
+  <p>An architect allocates the single window across four buckets, each with its own management strategy:</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 230" role="img" aria-label="Token-budget allocation: system and tools cached, history compacted, JIT retrieval, reserved output">
+      <defs><style>.pl{font:700 11px sans-serif;fill:#2b2622}.pd{font:400 10px sans-serif;fill:#5c544c}</style></defs>
+      <!-- pie -->
+      <circle cx="150" cy="115" r="85" fill="#faf8f5" stroke="#e7e0d8"/>
+      <path d="M150 115 L150 30 A85 85 0 0 1 224 158 Z" fill="#b8860b"/>
+      <path d="M150 115 L224 158 A85 85 0 0 1 96 194 Z" fill="#a44a2e"/>
+      <path d="M150 115 L96 194 A85 85 0 0 1 73 70 Z" fill="#3a7d7b"/>
+      <path d="M150 115 L73 70 A85 85 0 0 1 150 30 Z" fill="#3f7d4f"/>
+      <!-- legend -->
+      <rect x="300" y="40" width="16" height="16" rx="3" fill="#b8860b"/><text class="pl" x="324" y="53">System + tool defs</text><text class="pd" x="324" y="68">stable → cache it</text>
+      <rect x="300" y="86" width="16" height="16" rx="3" fill="#a44a2e"/><text class="pl" x="324" y="99">Message history</text><text class="pd" x="324" y="114">grows linearly → compact / clear it</text>
+      <rect x="300" y="132" width="16" height="16" rx="3" fill="#3a7d7b"/><text class="pl" x="324" y="145">JIT-retrieved data</text><text class="pd" x="324" y="160">load at runtime, then clear</text>
+      <rect x="300" y="178" width="16" height="16" rx="3" fill="#3f7d4f"/><text class="pl" x="324" y="191">Reserved output + thinking</text><text class="pd" x="324" y="206">max_tokens — don't starve it</text>
+    </svg>
+    <figcaption>Diagram (f): the token-budget allocation. Four claims on one window, each with a matching tactic — cache the stable parts, compact/clear the history, load retrieval just-in-time, and reserve room for output + thinking.</figcaption>
+  </figure>
+
+  <h4>The <code class="inl">usage</code> object</h4>
+  <div class="codewrap">
+    <div class="clab"><span class="dot"></span> Response · usage (with caching)</div>
+    <pre><code>{
+  "input_tokens": 2048,
+  "output_tokens": 503,
+  "cache_creation_input_tokens": 5120,
+  "cache_read_input_tokens": 1800
+}</code></pre>
+  </div>
+  <ul>
+    <li><code class="inl">input_tokens</code> — "Tokens after the last cache breakpoint (not eligible for cache)."</li>
+    <li><code class="inl">output_tokens</code> — generated tokens (includes thinking tokens, billed as output).</li>
+    <li><code class="inl">cache_creation_input_tokens</code> — "Number of tokens written to cache (new entries)."</li>
+    <li><code class="inl">cache_read_input_tokens</code> — "Number of tokens retrieved from cache."</li>
+  </ul>
+  <p><strong>Total input</strong> = <code class="inl">cache_read_input_tokens + cache_creation_input_tokens + input_tokens</code>. Reading only <code class="inl">input_tokens</code> understates your true input. (source: prompt-caching docs)</p>
+
+  <h4>Pre-flight with <code class="inl">count_tokens</code></h4>
+  <p>Plan a budget <em>before</em> you send. The endpoint <code class="inl">POST /v1/messages/count_tokens</code> "accepts the same structured inputs as message creation" (system, tools, images, PDFs) and returns just <code class="inl">{ "input_tokens": N }</code>. Examples: a basic message → 14; message + one tool → 403; message + image → 1551; message + PDF → 2188. (source: token-counting docs)</p>
+  <ul>
+    <li>"The token count should be considered an <strong>estimate</strong>… the actual number… may differ by a small amount." System-added optimization tokens aren't billed.</li>
+    <li><strong>Free</strong>, but rate-limited separately (tier 1 = 100 RPM, tier 2 = 2,000, tier 3 = 4,000, tier 4 = 8,000). It does not use caching logic.</li>
+    <li>Thinking nuance: "Thinking blocks from <strong>previous</strong> assistant turns are ignored and <strong>do not</strong> count," but "<strong>current</strong> assistant turn thinking <strong>does</strong> count."</li>
+  </ul>
+
+  <h4>The programmatic budget signal (context awareness)</h4>
+  <p>Some models self-manage their remaining budget. At conversation start they receive a token-budget tag, and after each tool call a usage warning:</p>
+  <div class="codewrap">
+    <div class="clab"><span class="dot"></span> System signals · context awareness</div>
+    <pre><code>&lt;budget:token_budget&gt;1000000&lt;/budget:token_budget&gt;
+&lt;system_warning&gt;Token usage: 35000/1000000; 965000 remaining&lt;/system_warning&gt;</code></pre>
+  </div>
+  <p>These models "track their remaining context window (that is, 'token budget') throughout a conversation." Smaller-window models get <code class="inl">200000</code> instead of <code class="inl">1000000</code>. (source: context-windows docs)</p>
+  <div class="verifynote"><span class="verify">⚠ VERIFY</span> Context awareness is listed for Sonnet 4.6, Sonnet 4.5, and Haiku 4.5 — Opus 4.8 is <strong>not</strong> listed as context-aware. Confirm whether Opus has any context-awareness signal before relying on it. (source: context-windows docs)</div>
+
+  <h4>Claude Code cost telemetry</h4>
+  <p><code class="inl">/usage</code> shows session token stats and a local cost estimate; <code class="inl">/context</code> shows what's consuming the window; the status line can display context-window usage continuously. (source: code.claude.com/costs)</p>
+
+  <div class="mcq" data-mcq data-correct="1">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">A response shows <code class="inl">input_tokens: 2048</code>, <code class="inl">cache_creation_input_tokens: 5120</code>, <code class="inl">cache_read_input_tokens: 1800</code>. What was the total input?</div>
+    <button class="opt">2,048</button>
+    <button class="opt">8,968</button>
+    <button class="opt">5,120</button>
+    <button class="opt">3,848</button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden>Total input = <code>cache_read + cache_creation + input_tokens</code> = 1,800 + 5,120 + 2,048 = <strong>8,968</strong>. Reading only <code>input_tokens</code> (2,048) badly understates it.</div>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li>Total input = <code class="inl">cache_read + cache_creation + input_tokens</code>.</li>
+    <li>Pre-flight with the free <code class="inl">count_tokens</code> endpoint (an estimate; separately rate-limited).</li>
+    <li>Allocate the window: cache stable parts, compact history, JIT retrieval, reserve output.</li>
+    <li>Sonnet 4.6/4.5 + Haiku 4.5 get a <code class="inl">token_budget</code> signal. <span class="verify">⚠ VERIFY</span> — Opus 4.8 not listed.</li>
+  </ul></div></div>
+</section>
+
+<!-- ============ SECTION 9 ============ -->
+<div class="sec-divider" id="sec9">
+  <span class="badge"><span class="emoji">⑨</span> Reliability</span>
+  <h2>Reliability Patterns Tied to Context</h2>
+  <p>External state, checkpointing, recovery, and overflow as a signal — the Domain 1 crossover.</p>
+</div>
+
+<section class="lesson" id="l9" data-lesson>
+  <div class="lmeta"><span class="ltag"><span class="emoji">🛟</span> Section 9</span><span class="ltime">⏱ ~13 min</span><span class="ldomain">Domain 1 · Domain 5</span></div>
+  <h3 class="ltitle">Designing for survival across sessions</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Explain why durable state belongs <em>outside</em> the context window</li>
+      <li>Recall the checkpointing / recovery patterns from Anthropic's long-running-agent harness</li>
+      <li>Treat the overflow stop reason as a reliability hook, not a crash</li>
+    </ul>
+  </div>
+
+  <h4>Put durable state outside the window</h4>
+  <p>The window is volatile working memory — it gets compacted, cleared, and reset. So for agents spanning multiple sessions, "design your state artifacts so that context recovery is fast when a new session starts." (source: context-windows docs) Anthropic's long-running-agent harness uses concrete artifacts:</p>
+  <ul>
+    <li>A <code class="inl">claude-progress.txt</code> log "that keeps a log of what agents have done."</li>
+    <li>A structured feature-requirements JSON file with per-item completion status.</li>
+    <li>An initial git commit "that shows what files were added" as a recovery mechanism.</li>
+  </ul>
+  <p>(source: effective-harnesses-for-long-running-agents)</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 700 210" role="img" aria-label="External durable state survives context resets between sessions">
+      <defs><style>.bn{font:700 11px sans-serif;fill:#fff}.bd{font:400 9.5px sans-serif;fill:#5c544c}.lb{font:700 11px sans-serif;fill:#5c544c}</style></defs>
+      <!-- volatile window -->
+      <rect x="20" y="30" width="200" height="70" rx="12" fill="#f4e6df" stroke="#c96442" stroke-dasharray="5 4"/>
+      <text class="lb" x="120" y="55" text-anchor="middle" fill="#a44a2e">Context window (volatile)</text>
+      <text class="bd" x="120" y="74" text-anchor="middle">compacted · cleared · reset</text>
+      <text class="bd" x="120" y="89" text-anchor="middle">— does NOT survive a new session</text>
+      <!-- reset arrow -->
+      <text x="120" y="130" text-anchor="middle" style="font:700 12px sans-serif;fill:#b3402f">⟲ session ends → window gone</text>
+      <!-- durable state -->
+      <rect x="280" y="20" width="400" height="170" rx="12" fill="#faf8f5" stroke="#e7e0d8"/>
+      <text class="lb" x="480" y="40" text-anchor="middle" fill="#3f7d4f">External durable state (survives resets)</text>
+      <rect x="300" y="55" width="170" height="40" rx="8" fill="#3f7d4f"/><text class="bn" x="385" y="73" text-anchor="middle">claude-progress.txt</text><text class="bd" x="385" y="88" text-anchor="middle" fill="#fff">what agents have done</text>
+      <rect x="490" y="55" width="170" height="40" rx="8" fill="#3a7d7b"/><text class="bn" x="575" y="73" text-anchor="middle">requirements.json</text><text class="bd" x="575" y="88" text-anchor="middle" fill="#fff">per-item completion</text>
+      <rect x="300" y="110" width="170" height="40" rx="8" fill="#6b4f9e"/><text class="bn" x="385" y="128" text-anchor="middle">git commits</text><text class="bd" x="385" y="143" text-anchor="middle" fill="#fff">recovery checkpoints</text>
+      <rect x="490" y="110" width="170" height="40" rx="8" fill="#b8860b"/><text class="bn" x="575" y="128" text-anchor="middle">memory tool</text><text class="bd" x="575" y="143" text-anchor="middle" fill="#fff">multi-session recall</text>
+      <text class="bd" x="480" y="178" text-anchor="middle">New session: read logs + progress files to get up to speed.</text>
+    </svg>
+    <figcaption>Diagram (g): reliability through external state. The window is volatile; durable artifacts (progress log, requirements JSON, git commits, memory tool) survive resets so a new session reconstructs fast.</figcaption>
+  </figure>
+
+  <h4>Checkpointing &amp; recovery</h4>
+  <ul>
+    <li><strong>Session init:</strong> "Read the git logs and progress files to get up to speed on what was recently worked on."</li>
+    <li><strong>State verification:</strong> "run a basic test on the development server to catch any undocumented bugs" before new work.</li>
+    <li><strong>Clean handoffs:</strong> "leave the environment in a clean state at the end of a session" — commit with descriptive messages and write progress summaries.</li>
+    <li><strong>Incremental progress:</strong> "work on only one feature at a time" prevents context exhaustion and incomplete implementations across sessions.</li>
+  </ul>
+  <p>(source: effective-harnesses-for-long-running-agents) In Claude Code, recovery from a mid-session wrong turn uses <code class="inl">/rewind</code> or double-tap Escape "to restore conversation and code to a previous checkpoint"; press Escape to stop early; use plan mode (Shift+Tab) before implementing to prevent expensive re-work. (source: code.claude.com/costs)</p>
+
+  <h4>Overflow as a reliability signal</h4>
+  <p>Recall Section 2's stop reason. On 4.5+ models, hitting the limit yields <code class="inl">stop_reason: "model_context_window_exceeded"</code> "rather than a hard validation failure — handle this stop reason to trigger compaction/checkpoint-and-continue instead of crashing." (source: context-windows docs) That single branch in your loop is the difference between an agent that gracefully checkpoints and one that falls over.</p>
+  <div class="verifynote"><span class="verify">⚠ VERIFY</span> Retries / idempotency: the fetched reliability page emphasizes external-state and checkpointing, not HTTP-level retries or idempotency keys. The architect-level guidance — make tool calls idempotent and persist state externally so a retried/restarted session reconstructs from durable artifacts (git, progress file, memory tool) rather than from in-window history — is inferred from that pattern. Confirm any dedicated Anthropic idempotency-key page before asserting a specific mechanism. (source: effective-harnesses-for-long-running-agents)</div>
+
+  <h4>How prompt caching intersects (brief — full treatment in C-E4)</h4>
+  <p>Caching is "a way to manage cost of large stable context" — it reduces the per-turn cost of re-sending a stable prefix but does <strong>not</strong> reduce window occupancy. On a request the system checks whether a prompt prefix up to a cache breakpoint is already cached; if so it reuses it, otherwise it caches the prefix once the response begins. (source: prompt-caching docs)</p>
+  <div class="codewrap">
+    <div class="clab"><span class="dot"></span> cache_control shape</div>
+    <pre><code>{ "cache_control": { "type": "ephemeral", "ttl": "5m" } }</code></pre>
+  </div>
+  <div class="verifynote"><span class="verify">⚠ VERIFY</span> Cache pricing/min-prefix are model- and price-sensitive: 5-min cache write ≈ 1.25× base input, 1-hour write ≈ 2×, reads ≈ 0.1×; minimum cacheable prefix is 1,024 tokens (Opus 4.8 / Sonnet 4.6 / Sonnet 4.5 / Opus 4.1) vs 4,096 (Opus 4.7 / 4.6 / 4.5 / Haiku 4.5). Re-verify against the pricing page; full caching treatment lives in extension C-E4. (source: prompt-caching docs)</div>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">A long agent run dies mid-task and restarts. Should it reconstruct state from its previous in-window conversation, or from somewhere else?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>From external durable artifacts.</strong> The window doesn't survive the restart. A reliable agent reads the git logs and progress files "to get up to speed," verifies state with a basic test, and continues — reconstructing from <code class="inl">claude-progress.txt</code>, the requirements JSON, git commits, and the memory tool, not from a context window that's already gone.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="2">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">On a 4.5+ model your generation hits <code class="inl">stop_reason: "model_context_window_exceeded"</code>. The reliable response is to…</div>
+    <button class="opt">Crash and surface a 500 to the user</button>
+    <button class="opt">Retry the identical request unchanged</button>
+    <button class="opt">Handle it — trigger compaction or checkpoint-and-continue</button>
+    <button class="opt">Switch to a smaller-window model</button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden>It's a handleable signal, not a crash. Branch on it to compact, clear, or checkpoint-and-continue. Retrying unchanged would just hit the limit again.</div>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li>Durable state lives <strong>outside</strong> the window: progress log, requirements JSON, git commits, memory tool.</li>
+    <li>Session init reads logs + progress; verify state; leave clean handoffs; one feature at a time.</li>
+    <li>Treat <code class="inl">model_context_window_exceeded</code> as a hook → compact / checkpoint-and-continue.</li>
+    <li>Caching cuts the cost of a stable prefix but not window occupancy (full treatment: C-E4).</li>
+  </ul></div></div>
+</section>
+
+<!-- FINAL QUIZ -->
+<div class="quizblock" data-quiz="final">
+  <div class="scorebar"><h4 style="margin:0"><span class="emoji">🧠</span> Final Knowledge Check (10 questions)</h4><span class="qscore" data-score>0 / 10</span></div>
+  <p style="font-size:14px;color:var(--ink-soft);margin-top:0">Spans the whole extension, weighted toward Domain 5 mechanics with Domain 1 reliability crossover. No hints — answer, then check.</p>
+
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q1</div><div class="qtext">The context window is best understood as…</div>
+    <button class="opt">The model's training corpus</button><button class="opt">Just the system prompt and tools</button><button class="opt">"Working memory" — all text the model can reference, including its own response</button><button class="opt">A persistent database</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>Working memory, distinct from training data, "including the response itself."</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="3" data-inquiz>
+    <div class="qlab">Q2</div><div class="qtext">Per-turn the window grows linearly. Total tokens billed across a long session grow…</div>
+    <button class="opt">Linearly</button><button class="opt">Logarithmically</button><button class="opt">Not at all</button><button class="opt">Roughly quadratically — each turn re-sends all prior history</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>Turn N re-pays for ~N turns of history; summed, billed tokens scale ~turns². Mirrors the n² attention cost.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="1" data-inquiz>
+    <div class="qlab">Q3</div><div class="qtext">"Every new token introduced depletes this budget by some amount" refers to the…</div>
+    <button class="opt">Rate-limit budget</button><button class="opt">Attention budget (cause of context rot)</button><button class="opt">max_tokens output budget</button><button class="opt">Cache budget</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>The attention budget — depleted per token, driving context rot. Separate from raw capacity.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="0" data-inquiz>
+    <div class="qlab">Q4</div><div class="qtext">Compaction's default trigger is…</div>
+    <button class="opt">150,000 input tokens (configurable, min 50,000)</button><button class="opt">50,000 output tokens</button><button class="opt">200,000 total tokens</button><button class="opt">Whenever a tool is called</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>Default 150,000 input tokens; configurable but must be at least 50,000.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q5</div><div class="qtext">After compaction, what happens to messages before the <code class="inl">compaction</code> block?</div>
+    <button class="opt">They stay, uncompressed</button><button class="opt">They move to the system prompt</button><button class="opt">The API automatically drops them, continuing from the summary</button><button class="opt">You must re-summarize them yourself</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>"The API automatically drops all message blocks prior to the <code>compaction</code> block, continuing from the summary."</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="3" data-inquiz>
+    <div class="qlab">Q6</div><div class="qtext">To get the TRUE token cost of a compacted request you must…</div>
+    <button class="opt">Read top-level <code class="inl">input_tokens</code> only</button><button class="opt">Read <code class="inl">output_tokens</code> only</button><button class="opt">Call <code class="inl">count_tokens</code> again</button><button class="opt">Sum across all entries in the <code class="inl">iterations</code> array</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>Top-level usage excludes the summarization iteration. Sum the <code>iterations</code> array for the real total.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="1" data-inquiz>
+    <div class="qlab">Q7</div><div class="qtext">In tool-result clearing, the <code class="inl">keep</code> parameter controls…</div>
+    <button class="opt">The token threshold that triggers clearing</button><button class="opt">How many recent tool uses are retained after clearing</button><button class="opt">Which tools are never cleared</button><button class="opt">The minimum tokens to clear each time</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden><code>keep</code> = recent tool uses retained. <code>trigger</code> fires clearing, <code>exclude_tools</code> protects tools, <code>clear_at_least</code> sets the minimum cleared.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="0" data-inquiz>
+    <div class="qlab">Q8</div><div class="qtext">A property that distinguishes context editing operationally is that it's…</div>
+    <button class="opt">Server-side — your client keeps the full history, no sync needed</button><button class="opt">Client-side only — you must mutate your own history</button><button class="opt">Only available in Claude Code</button><button class="opt">A replacement for the entire conversation</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>"Applied server-side before the prompt reaches Claude. Your client application maintains the full, unmodified conversation history."</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q9</div><div class="qtext">The guiding maxim of context engineering is to find…</div>
+    <button class="opt">The largest set of tokens that fills the window</button><button class="opt">As many tools as possible</button><button class="opt">The smallest possible set of high-signal tokens that maximize the desired outcome</button><button class="opt">A fixed 50/50 split of input and output</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>"The smallest possible set of high-signal tokens" — informative, yet tight.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="1" data-inquiz>
+    <div class="qlab">Q10</div><div class="qtext">For a multi-session agent, durable state should live…</div>
+    <button class="opt">In the context window, which persists between sessions</button><button class="opt">Outside the window — progress logs, requirements JSON, git commits, memory tool</button><button class="opt">Only in the system prompt</button><button class="opt">Nowhere — agents are stateless by design</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>The window is volatile. Design external artifacts so "context recovery is fast when a new session starts."</div>
+  </div>
+  <div class="resultbox" data-result></div>
+</div>
+
+<!-- WHAT'S NEXT -->
+<div class="nextbox">
+  <strong>➡️ What's next.</strong> This is extension <strong>C-E2</strong>. The next extension, <strong>C-E3 — "MCP at a Builder Level"</strong>, drops below the "USB-C for AI" product framing into the Model Context Protocol's actual mechanics — servers, transports, and the tool/resource handshake that feeds this window. Continue to <a href="mcp-at-a-builder-level.html">MCP at a Builder Level →</a> <span style="font-size:13px;color:var(--ink-soft)">(that file is <strong>not built yet</strong> — this forward link may 404 until it lands.)</span>
+</div>
+
+<!-- SOURCES -->
+<section class="lesson" id="sources" data-lesson style="border-top:1px solid var(--line)">
+  <div class="lmeta"><span class="ltag"><span class="emoji">📚</span> Sources</span></div>
+  <h3 class="ltitle">Sources</h3>
+  <p>Every substantive claim in this extension traces to the official Anthropic sources below (the source manifest from the grounding citations file). No facts beyond these sources were introduced; the one author analogy (the cutting-board / pantry image) is labeled inline as "Analogy, not a product fact," and version-sensitive facts carry inline <span class="verify">⚠ VERIFY</span> notes.</p>
+  <div class="sources">
+    <ol>
+      <li>Context windows — <a href="https://platform.claude.com/docs/en/build-with-claude/context-windows">platform.claude.com/docs/en/build-with-claude/context-windows</a></li>
+      <li>Models overview — <a href="https://platform.claude.com/docs/en/about-claude/models/overview">platform.claude.com/docs/en/about-claude/models/overview</a></li>
+      <li>Effective context engineering for AI agents — <a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents">anthropic.com/engineering/effective-context-engineering-for-ai-agents</a></li>
+      <li>Compaction — <a href="https://platform.claude.com/docs/en/build-with-claude/compaction">platform.claude.com/docs/en/build-with-claude/compaction</a></li>
+      <li>Context editing — <a href="https://platform.claude.com/docs/en/build-with-claude/context-editing">platform.claude.com/docs/en/build-with-claude/context-editing</a></li>
+      <li>Token counting — <a href="https://platform.claude.com/docs/en/build-with-claude/token-counting">platform.claude.com/docs/en/build-with-claude/token-counting</a></li>
+      <li>Prompt caching — <a href="https://platform.claude.com/docs/en/build-with-claude/prompt-caching">platform.claude.com/docs/en/build-with-claude/prompt-caching</a></li>
+      <li>Effective harnesses for long-running agents — <a href="https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents">anthropic.com/engineering/effective-harnesses-for-long-running-agents</a></li>
+      <li>Claude Code costs — <a href="https://code.claude.com/docs/en/costs">code.claude.com/docs/en/costs</a></li>
+    </ol>
+  </div>
+  <div class="examnote">
+    <b>📌 [VERIFY] flags preserved from the source.</b> Version-sensitive facts surfaced inline in this lesson: (1) model lineup &amp; context sizes; (2) whether a 1M beta header is still required; (3) compaction beta header <code class="inl">compact-2026-01-12</code> / edit type <code class="inl">compact_20260112</code> and supported-model set; (4) context-editing beta header <code class="inl">context-management-2025-06-27</code> / strategy strings; (5) the <code class="inl">applied_edits</code> response field names; (6) Claude Code's auto-compact trigger percentage (~83.5%/~167K — unverified); (7) the MRCR v2 8-needle stat (76% vs 18.5%); (8) Opus 4.8 not listed as context-aware; (9) prompt-caching prices &amp; minimum-prefix sizes. Re-verify each against the live docs at build/publish time.
+  </div>
+</section>
+
+<footer>
+  <p><span class="sourcebadge"><span class="emoji">📄</span> Extension lesson · built faithfully from the source-of-truth citations file — every claim traces to official Anthropic sources. No external facts introduced; [VERIFY] flags preserved.</span></p>
+  <p style="margin-top:14px">Context Management &amp; Reliability · CCA-F extension (C-E2) · <a href="../claude-101.html">← Base course</a> · <a href="tool-use-agent-loop.html">← C-E1: Tool-Use Loop</a> · <a href="mcp-at-a-builder-level.html">Next: MCP at a Builder Level →</a> · <a href="#top">Back to top ↑</a></p>
+</footer>
+
+</div><!-- /wrap -->
+</main>
+</div><!-- /layout -->
+
+<script>
+(function(){
+  "use strict";
+  /* ---------- Build TOC ---------- */
+  var sections=[
+    {title:"Why it matters",lessons:[["l1","Context is the reliability backbone"]]},
+    {title:"The shared budget",lessons:[["l2","Context window as working memory"]]},
+    {title:"Accumulation",lessons:[["l3","Linear accumulation, quadratic bill"]]},
+    {title:"Context rot",lessons:[["l4","Context rot & the attention budget"]]},
+    {title:"Compaction",lessons:[["l5","Server-side summarization"]]},
+    {title:"Context editing",lessons:[["l6","Fine-grained clearing"]]},
+    {title:"Context engineering",lessons:[["l7","Smallest high-signal token set"]]},
+    {title:"Token budgeting",lessons:[["l8","Usage, count_tokens, allocation"]]},
+    {title:"Reliability",lessons:[["l9","External state & recovery"]]},
+    {title:"Reference",lessons:[["sources","Sources & [VERIFY] flags"]]}
+  ];
+  var toc=document.getElementById('toc');
+  var navOrder=[];
+  sections.forEach(function(sec){
+    var h=document.createElement('div');h.className='nav-sec';h.textContent=sec.title;toc.appendChild(h);
+    sec.lessons.forEach(function(l){
+      var a=document.createElement('a');a.href='#'+l[0];a.dataset.target=l[0];
+      a.innerHTML='<span class="num"><span>'+(navOrder.length+1)+'</span></span><span>'+l[1]+'</span>';
+      a.addEventListener('click',function(){if(window.innerWidth<=980)toggleNav();});
+      toc.appendChild(a);
+      navOrder.push(l[0]);
+    });
+  });
+  var TOTAL=navOrder.length; // dynamic denominator — no off-by-one
+
+  /* ---------- Progress bar + active nav + completion ---------- */
+  var navLinks=Array.prototype.slice.call(document.querySelectorAll('nav a'));
+  var lessonEls=Array.prototype.slice.call(document.querySelectorAll('section.lesson'));
+  var seen={};
+  function onScroll(){
+    var doc=document.documentElement;
+    var scrollTop=window.scrollY||doc.scrollTop;
+    var height=doc.scrollHeight-doc.clientHeight;
+    var pct=height>0?(scrollTop/height*100):0;
+    document.getElementById('progressBar').style.width=pct+'%';
+    var mid=scrollTop+window.innerHeight*0.32;
+    var current=null;
+    lessonEls.forEach(function(el){
+      if(el.offsetTop<=mid)current=el;
+      if(el.offsetTop<=scrollTop+window.innerHeight*0.6){seen[el.id]=true;}
+    });
+    navLinks.forEach(function(a){a.classList.remove('active');});
+    if(current){
+      var act=document.querySelector('nav a[data-target="'+current.id+'"]');
+      if(act)act.classList.add('active');
+    }
+    navLinks.forEach(function(a){if(seen[a.dataset.target])a.classList.add('done');});
+    var doneCount=0;
+    navOrder.forEach(function(id){if(seen[id])doneCount++;});
+    document.getElementById('progPct').textContent=Math.round(doneCount/TOTAL*100)+'%';
+  }
+  window.addEventListener('scroll',onScroll,{passive:true});
+  window.addEventListener('resize',onScroll);
+  onScroll();
+
+  /* ---------- Mobile nav ---------- */
+  window.toggleNav=function(){
+    var open=document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('scrim').classList.toggle('open');
+    var b=document.querySelector('.menubtn');if(b)b.setAttribute('aria-expanded',open?'true':'false');
+  };
+
+  /* ---------- Collapsible callouts ---------- */
+  window.toggleCall=function(head){
+    var c=head.parentElement;c.classList.toggle('collapsed');
+    head.setAttribute('aria-expanded', c.classList.contains('collapsed')?'false':'true');
+  };
+  document.querySelectorAll('.callout .chead').forEach(function(head){
+    head.setAttribute('role','button');
+    head.setAttribute('tabindex','0');
+    head.setAttribute('aria-expanded', head.parentElement.classList.contains('collapsed')?'false':'true');
+    head.addEventListener('keydown',function(e){
+      if(e.key==='Enter'||e.key===' '||e.key==='Spacebar'){e.preventDefault();window.toggleCall(head);}
+    });
+  });
+
+  /* ---------- Predict / reveal ---------- */
+  window.doReveal=function(btn){
+    var ans=btn.parentElement.querySelector('.ans');
+    ans.classList.add('show');
+    btn.textContent='Answer shown ✓';
+    btn.disabled=true;btn.style.opacity='.6';btn.style.cursor='default';
+  };
+
+  /* ---------- MCQ logic ---------- */
+  document.querySelectorAll('.mcq[data-mcq]').forEach(function(mcq){
+    var correct=parseInt(mcq.getAttribute('data-correct'),10);
+    var opts=Array.prototype.slice.call(mcq.querySelectorAll('.opt'));
+    var fb=mcq.querySelector('.fb');
+    var msgEl=mcq.querySelector('.fbmsg');
+    var msg=msgEl?msgEl.innerHTML:'';
+    var answered=false;
+    opts.forEach(function(opt,i){
+      opt.addEventListener('click',function(){
+        if(answered)return;answered=true;
+        var isCorrect=(i===correct);
+        opts.forEach(function(o,j){
+          o.disabled=true;
+          if(j===correct){o.classList.add('correct');if(!o.querySelector('.mark'))appendMark(o,'✓');}
+        });
+        if(!isCorrect){opt.classList.add('wrong');appendMark(opt,'✗');}
+        fb.classList.add('show');
+        fb.classList.add(isCorrect?'ok':'no');
+        fb.innerHTML='<strong>'+(isCorrect?'Correct! ':'Not quite. ')+'</strong>'+msg;
+        var quiz=mcq.closest('.quizblock');
+        if(quiz&&mcq.hasAttribute('data-inquiz')){
+          mcq.dataset.result=isCorrect?'1':'0';
+          updateQuiz(quiz);
+        }
+      });
+    });
+  });
+  function appendMark(opt,sym){var s=document.createElement('span');s.className='mark';s.textContent=sym;opt.appendChild(s);}
+
+  /* ---------- Quiz scoring ---------- */
+  function updateQuiz(quiz){
+    var mcqs=Array.prototype.slice.call(quiz.querySelectorAll('.mcq[data-inquiz]'));
+    var total=mcqs.length;
+    var answered=mcqs.filter(function(m){return m.dataset.result!==undefined;});
+    var score=mcqs.filter(function(m){return m.dataset.result==='1';}).length;
+    var scoreEl=quiz.querySelector('[data-score]');
+    if(scoreEl)scoreEl.textContent=score+' / '+total;
+    if(answered.length===total){
+      var box=quiz.querySelector('[data-result]');
+      var pct=score/total*100;
+      box.classList.add('show');
+      box.classList.remove('pass','mid');
+      if(pct>=75){box.classList.add('pass');box.innerHTML='🎉 '+score+'/'+total+' — strong work! You\'ve got context management down.';}
+      else if(pct>=50){box.classList.add('mid');box.innerHTML='👍 '+score+'/'+total+' — solid. Skim the misses above and you\'re set.';}
+      else{box.classList.add('mid');box.innerHTML='📖 '+score+'/'+total+' — worth a re-read of these sections before moving on.';}
+    }
+  }
+})();
+</script>
+</body>
+</html>

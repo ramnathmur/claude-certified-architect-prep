@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompt Caching Economics — CCA-F Extension</title>
+<style>
+  :root{
+    --bg:#faf8f5; --paper:#ffffff; --ink:#2b2622; --ink-soft:#5c544c;
+    --line:#e7e0d8; --accent:#c96442; --accent-soft:#f4e6df; --accent-deep:#a44a2e;
+    --teal:#3a7d7b; --teal-soft:#e0efee; --gold:#b8860b; --gold-soft:#f6edd6;
+    --green:#3f7d4f; --green-soft:#e3f0e6; --red:#b3402f; --red-soft:#f7e3df;
+    --purple:#6b4f9e; --purple-soft:#ece4f6;
+    --sidebar:#f3eee7; --shadow:0 1px 3px rgba(43,38,34,.08),0 6px 24px rgba(43,38,34,.06);
+    --radius:14px; --maxw:780px;
+    --code-bg:#2b2622; --code-ink:#f4ece3;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.65; font-size:17px; -webkit-font-smoothing:antialiased;
+  }
+  #progressBar{position:fixed;top:0;left:0;height:4px;width:0;background:linear-gradient(90deg,var(--accent),var(--gold));z-index:200;transition:width .15s ease}
+  .layout{display:flex;max-width:1260px;margin:0 auto}
+  aside{
+    position:sticky;top:0;align-self:flex-start;height:100vh;overflow-y:auto;
+    width:300px;flex:none;padding:22px 16px 40px;background:var(--sidebar);
+    border-right:1px solid var(--line);
+  }
+  aside h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin:18px 8px 8px}
+  .brandbox{padding:6px 8px 14px;border-bottom:1px solid var(--line);margin-bottom:8px}
+  .brandbox .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;line-height:1.2}
+  .brandbox .sub{font-size:12.5px;color:var(--ink-soft);margin-top:6px}
+  .brandbox .extbadge{display:inline-block;margin-top:10px;background:var(--purple-soft);color:var(--purple);
+    font-weight:700;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:999px;border:1px solid #d3c4ec}
+  .backlink{display:inline-flex;align-items:center;gap:6px;margin-top:12px;font-size:12.5px;color:var(--accent);text-decoration:none;font-weight:600}
+  .backlink:hover{text-decoration:underline}
+  .toc-prog{font-size:12px;color:var(--ink-soft);margin:10px 8px 4px;display:flex;justify-content:space-between;align-items:center}
+  .toc-prog b{color:var(--accent)}
+  nav a{display:flex;gap:8px;align-items:flex-start;text-decoration:none;color:var(--ink);
+    padding:7px 10px;border-radius:9px;font-size:14px;line-height:1.35;transition:background .15s}
+  nav a:hover{background:#ece4d9}
+  nav a.active{background:var(--accent-soft);color:var(--accent-deep);font-weight:600}
+  nav a .num{flex:none;width:22px;height:22px;border-radius:50%;background:#e3dacd;color:var(--ink-soft);
+    font-size:11.5px;display:flex;align-items:center;justify-content:center;font-weight:700;margin-top:1px}
+  nav a.active .num{background:var(--accent);color:#fff}
+  nav a.done .num{background:var(--green);color:#fff}
+  nav a.done .num::after{content:"✓"}
+  nav a.done .num span{display:none}
+  .nav-sec{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);
+    font-weight:700;margin:16px 10px 4px;display:flex;align-items:center;gap:6px}
+  main{flex:1;min-width:0;padding:0 28px 120px}
+  .wrap{max-width:var(--maxw);margin:0 auto}
+  header.hero{max-width:var(--maxw);margin:0 auto;padding:40px 0 22px;text-align:left}
+  .hero .eyebrow{color:var(--purple);font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:13px}
+  .hero h1{font-size:42px;line-height:1.1;margin:10px 0 8px;letter-spacing:-.02em}
+  .hero p.lead{font-size:19px;color:var(--ink-soft);margin:0 0 18px}
+  .pillrow{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}
+  .pill{background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:6px 13px;font-size:13px;color:var(--ink-soft);box-shadow:var(--shadow)}
+  .extbanner{background:linear-gradient(180deg,#f3eefb,#ece4f6);border:1px solid #d3c4ec;border-radius:var(--radius);
+    padding:16px 18px;margin:6px 0 18px;font-size:14.5px;color:#3f2f63;display:flex;gap:12px;align-items:flex-start}
+  .extbanner .bt{flex:none;font-size:22px;line-height:1.1}
+  .extbanner b{color:var(--purple)}
+  .crosslink{background:var(--teal-soft);border:1px solid #a7d3d1;border-radius:var(--radius);padding:14px 18px;margin:14px 0;font-size:14.5px;color:#244e4d}
+  .crosslink a{color:var(--teal);font-weight:700}
+  .examnote{background:var(--gold-soft);border:1px solid #e7d9a9;border-radius:var(--radius);padding:16px 18px;margin:22px 0;font-size:14.5px}
+  .examnote b{color:#8a6508}
+  section.lesson{max-width:var(--maxw);margin:0 auto;padding:46px 0 10px;scroll-margin-top:14px;border-top:1px solid var(--line)}
+  section.lesson:first-of-type{border-top:none}
+  .sec-divider{max-width:var(--maxw);margin:38px auto 0;padding-top:30px}
+  .sec-divider .badge{display:inline-block;background:var(--accent);color:#fff;font-weight:700;
+    font-size:12px;letter-spacing:.07em;text-transform:uppercase;padding:5px 12px;border-radius:999px}
+  .sec-divider h2{font-size:30px;margin:12px 0 4px;letter-spacing:-.01em}
+  .sec-divider p{color:var(--ink-soft);margin:0}
+  .lesson .lmeta{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+  .lesson .ltag{font-size:12px;color:var(--accent);font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+  .lesson .ltime{font-size:12.5px;color:var(--ink-soft);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+  .lesson .ldomain{font-size:11.5px;color:var(--purple);background:var(--purple-soft);border:1px solid #d3c4ec;border-radius:999px;padding:3px 10px;font-weight:700}
+  .lesson h3.ltitle{font-size:28px;margin:2px 0 4px;letter-spacing:-.01em;line-height:1.15}
+  .lesson h4{font-size:19px;margin:30px 0 8px;letter-spacing:-.005em}
+  .lesson h5{font-size:16px;margin:20px 0 6px;color:var(--accent-deep)}
+  .lesson p{margin:10px 0}
+  .lesson ul,.lesson ol{margin:10px 0;padding-left:22px}
+  .lesson li{margin:6px 0}
+  .emoji{font-style:normal}
+  code.inl{background:var(--accent-soft);color:var(--accent-deep);border-radius:5px;padding:1px 6px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.86em}
+  blockquote.ex{margin:14px 0;padding:14px 18px;background:var(--teal-soft);border-left:4px solid var(--teal);border-radius:0 10px 10px 0;font-style:italic;color:#2c4f4e}
+  .objectives{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:14px 18px;margin:14px 0;box-shadow:var(--shadow)}
+  .objectives .lab{font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;margin-bottom:4px}
+  .objectives ul{margin:6px 0 2px;padding-left:20px}
+  .objectives li{font-size:14.5px}
+  .tablewrap{overflow-x:auto;margin:18px 0;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  table{border-collapse:collapse;width:100%;font-size:14px;background:var(--paper);min-width:520px}
+  th,td{text-align:left;padding:11px 13px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--accent-soft);color:var(--accent-deep);font-weight:700;font-size:13px}
+  tbody tr:last-child td{border-bottom:none}
+  td:first-child,th:first-child{font-weight:600}
+  .codewrap{margin:16px 0;border-radius:12px;overflow:hidden;border:1px solid #3a332d;box-shadow:var(--shadow)}
+  .codewrap .clab{background:#403830;color:#d8cabb;font-size:12px;font-weight:600;letter-spacing:.03em;
+    padding:7px 14px;display:flex;align-items:center;gap:8px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace}
+  .codewrap .clab .dot{width:9px;height:9px;border-radius:50%;background:#c96442}
+  pre{margin:0;background:var(--code-bg);color:var(--code-ink);padding:14px 16px;overflow-x:auto;
+    font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:13px;line-height:1.6}
+  pre code{font-family:inherit;white-space:pre}
+  .callout{border-radius:var(--radius);padding:0;margin:18px 0;box-shadow:var(--shadow);overflow:hidden;border:1px solid var(--line)}
+  .callout .chead{display:flex;align-items:center;gap:9px;padding:12px 16px;cursor:pointer;font-weight:700;font-size:15px;user-select:none}
+  .callout .cbody{padding:2px 18px 16px;font-size:15px}
+  .callout .cbody ul{margin:6px 0;padding-left:20px}
+  .callout.collapsed .cbody{display:none}
+  .callout .chev{margin-left:auto;transition:transform .2s;font-size:13px;opacity:.6}
+  .callout.collapsed .chev{transform:rotate(-90deg)}
+  .key{border-color:#d9c98f}.key .chead{background:var(--gold-soft);color:#8a6508}
+  .tip{border-color:#a7d3d1}.tip .chead{background:var(--teal-soft);color:var(--teal)}
+  .try{border-color:#bfdcc6}.try .chead{background:var(--green-soft);color:var(--green)}
+  .warn{border-color:#e6bcb4}.warn .chead{background:var(--red-soft);color:var(--red)}
+  .verify{display:inline-block;background:#fff4d6;border:1px solid #e7d9a9;color:#8a6508;border-radius:6px;
+    padding:1px 7px;font-size:11.5px;font-weight:700;letter-spacing:.03em;vertical-align:middle}
+  .verifynote{font-size:13px;background:#fffaf0;border:1px dashed #e7d9a9;border-radius:8px;padding:8px 12px;margin:8px 0;color:#7a5a08}
+  .analogy{font-size:13px;background:var(--accent-soft);color:var(--accent-deep);border-radius:6px;padding:1px 7px;font-weight:600}
+  figure.svgfig{margin:22px 0;text-align:center;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+  figure.svgfig svg{max-width:100%;height:auto}
+  figure.svgfig figcaption{font-size:13px;color:var(--ink-soft);margin-top:10px}
+  .mcq{background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--accent);
+    border-radius:var(--radius);padding:16px 18px;margin:22px 0;box-shadow:var(--shadow)}
+  .mcq .qlab{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;display:flex;align-items:center;gap:7px}
+  .mcq .qtext{font-weight:600;margin:8px 0 12px;font-size:16px}
+  .mcq .opt{display:block;width:100%;text-align:left;background:var(--bg);border:1.5px solid var(--line);
+    border-radius:10px;padding:11px 14px;margin:7px 0;cursor:pointer;font-size:14.5px;font-family:inherit;color:var(--ink);transition:all .14s}
+  .mcq .opt:hover:not(:disabled){border-color:var(--accent);background:var(--accent-soft)}
+  .mcq .opt:disabled{cursor:default}
+  .mcq .opt.correct{border-color:var(--green);background:var(--green-soft);font-weight:600}
+  .mcq .opt.wrong{border-color:var(--red);background:var(--red-soft)}
+  .mcq .opt .mark{float:right;font-weight:700}
+  .mcq .fb{display:none;margin-top:12px;padding:12px 14px;border-radius:10px;font-size:14px;line-height:1.55}
+  .mcq .fb.show{display:block}
+  .mcq .fb.ok{background:var(--green-soft);border:1px solid #bfdcc6}
+  .mcq .fb.no{background:var(--red-soft);border:1px solid #e6bcb4}
+  .reveal{background:var(--paper);border:1px dashed var(--accent);border-radius:var(--radius);padding:16px 18px;margin:22px 0}
+  .reveal .plab{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;display:flex;align-items:center;gap:7px}
+  .reveal .q{font-weight:600;margin:8px 0 12px;font-size:16px}
+  .reveal button.revealbtn{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:9px 16px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+  .reveal button.revealbtn:hover{background:var(--accent-deep)}
+  .reveal .ans{display:none;margin-top:12px;padding:12px 14px;background:var(--teal-soft);border-radius:10px;font-size:14.5px;border:1px solid #a7d3d1}
+  .reveal .ans.show{display:block}
+  .quizblock{background:linear-gradient(180deg,#fff,#fbf6f0);border:2px solid var(--accent-soft);border-radius:18px;padding:22px 22px 24px;margin:30px auto;max-width:var(--maxw);box-shadow:var(--shadow)}
+  .quizblock h4{margin-top:0;display:flex;align-items:center;gap:9px}
+  .quizblock .qscore{font-size:14px;color:var(--ink-soft);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-weight:600}
+  .quizblock .scorebar{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:8px}
+  .resultbox{display:none;margin-top:16px;padding:16px;border-radius:12px;font-weight:600;text-align:center;font-size:16px}
+  .resultbox.show{display:block}
+  .resultbox.pass{background:var(--green-soft);border:1px solid #bfdcc6;color:var(--green)}
+  .resultbox.mid{background:var(--gold-soft);border:1px solid #e7d9a9;color:#8a6508}
+  footer{max-width:var(--maxw);margin:40px auto 0;padding-top:24px;border-top:1px solid var(--line);color:var(--ink-soft);font-size:13.5px}
+  footer a{color:var(--accent)}
+  .sources{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:16px 20px;margin:18px 0;box-shadow:var(--shadow)}
+  .sources ol{margin:8px 0;padding-left:22px}
+  .sources li{font-size:13.5px;margin:6px 0;word-break:break-word}
+  .sources a{color:var(--teal)}
+  .sourcebadge{display:inline-flex;gap:7px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:5px 13px;font-size:12.5px;color:var(--ink-soft)}
+  .nextbox{background:linear-gradient(180deg,#f3eefb,#ece4f6);border:1px solid #d3c4ec;border-radius:var(--radius);padding:18px 20px;margin:24px 0;font-size:14.5px}
+  .nextbox a{color:var(--purple);font-weight:700}
+  .menubtn{display:none;position:fixed;top:12px;left:12px;z-index:210;background:var(--accent);color:#fff;border:none;border-radius:10px;width:44px;height:44px;font-size:20px;cursor:pointer;box-shadow:var(--shadow)}
+  .scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:205}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+  @media(max-width:980px){
+    .menubtn{display:block}
+    aside{position:fixed;left:0;top:0;z-index:206;transform:translateX(-105%);transition:transform .25s;box-shadow:var(--shadow);width:290px}
+    aside.open{transform:translateX(0)}
+    .scrim.open{display:block}
+    main{padding:60px 16px 110px}
+    .hero h1{font-size:32px}
+  }
+</style>
+</head>
+<body>
+<div id="progressBar"></div>
+<button class="menubtn" onclick="toggleNav()" aria-label="Menu" aria-expanded="false">☰</button>
+<div class="scrim" id="scrim" onclick="toggleNav()"></div>
+
+<div class="layout">
+<!-- SIDEBAR -->
+<aside id="sidebar">
+  <div class="brandbox">
+    <div class="logo"><span class="emoji">💰</span> Prompt Caching Economics</div>
+    <div class="sub">CCA-F extension lesson — the cost &amp; latency math of reusing a stable prefix, from an architect's seat</div>
+    <div class="extbadge">Extension · beyond the Academy course</div>
+    <a class="backlink" href="../claude-101.html">← Back to the base course (Claude 101)</a>
+  </div>
+  <nav class="cspine" aria-label="Course track">
+    <div class="cspine-h">📚 Claude 101 track · Lesson 5 of 7</div>
+    <ol class="cspine-list">
+      <li><a href="../claude-101.html">Base · Claude 101</a></li>
+      <li><a href="tool-use-agent-loop.html">C-E1 · Tool-Use Agent Loop</a></li>
+      <li><a href="context-management-reliability.html">C-E2 · Context Management &amp; Reliability</a></li>
+      <li><a href="mcp-at-a-builder-level.html">C-E3 · MCP at a Builder Level</a></li>
+      <li class="cspine-cur" aria-current="page">C-E4 · Prompt Caching Economics</li>
+      <li><a href="prompt-engineering-depth.html">C-E5 · Prompt Engineering Depth</a></li>
+      <li><a href="claude-code-configuration.html">C-E6 · Claude Code Configuration</a></li>
+    </ol>
+  </nav>
+  <style>
+  .cspine{margin:10px 8px 14px;padding:10px 12px;border:1px solid var(--line,#e7e0d8);border-radius:10px;background:rgba(0,0,0,.02)}
+  .cspine-h{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft,#5c544c);margin-bottom:7px}
+  .cspine-list{list-style:none;margin:0;padding:0;counter-reset:cs}
+  .cspine-list li{font-size:12.5px;line-height:1.3;padding:3px 0;color:var(--ink-soft,#5c544c)}
+  .cspine-list a{color:var(--ink,#2b2622);text-decoration:none}
+  .cspine-list a:hover{color:var(--accent,#c96442);text-decoration:underline}
+  .cspine-cur{font-weight:700;color:var(--accent-deep,#a44a2e)!important}
+  .cspine-cur::before{content:"▸ "}
+  </style>
+  <div class="toc-prog">Lesson progress <span><b id="progPct">0%</b></span></div>
+  <nav id="toc"></nav>
+</aside>
+
+<!-- MAIN -->
+<main>
+<div class="wrap">
+<nav class="cnav" aria-label="Course navigation">
+  <a class="cnav-home" href="../../../Launchpad.html">⌂ Launchpad</a>
+  <span class="cnav-side"><a class="cnav-prev" href="mcp-at-a-builder-level.html">← MCP at a Builder Level (C-E3)</a><a class="cnav-next" href="prompt-engineering-depth.html">Next: Prompt Engineering Depth + Model Selection (C-E5) →</a></span>
+</nav>
+<style>
+.cnav{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:10px 0 18px;padding:10px 14px;border:1px solid var(--line,#e7e0d8);border-radius:12px;background:rgba(0,0,0,.02);font:600 13.5px/1.2 system-ui,-apple-system,'Segoe UI',sans-serif}
+.cnav a{text-decoration:none;color:var(--ink,#2b2622);padding:7px 13px;border-radius:8px;background:rgba(0,0,0,.05);white-space:nowrap;transition:background .15s,color .15s}
+.cnav a:hover{background:var(--accent,#c96442);color:#fff}
+.cnav .cnav-home{background:var(--accent,#c96442);color:#fff}
+.cnav .cnav-home:hover{filter:brightness(.92)}
+.cnav .cnav-side{display:flex;gap:8px;flex-wrap:wrap}
+</style>
+
+<header class="hero" id="top">
+  <div class="eyebrow">CCA-F Extension · Domain 5 (Context Management &amp; Reliability, 15%) + Domain 3/4 crossover</div>
+  <h1>Prompt Caching Economics</h1>
+  <p class="lead">Every multi-turn conversation, agent loop, and document-Q&amp;A app re-sends the <em>same</em> large prefix on every call — and pays full freight each time. Prompt caching lets Claude "resume from" an already-processed prefix at <code class="inl">0.1×</code> the input price. This lesson drops below the headline into the actual math: the <strong>multipliers</strong>, the <strong>break-even algebra</strong>, the <strong>TTL gotcha</strong>, and when caching <em>costs you more</em>.</p>
+  <div class="pillrow">
+    <span class="pill"><span class="emoji">💰</span> 9 sections</span>
+    <span class="pill"><span class="emoji">❓</span> Inline MCQs + predict-reveals</span>
+    <span class="pill"><span class="emoji">🏆</span> 2 quizzes (scored)</span>
+    <span class="pill"><span class="emoji">🎨</span> 8 diagrams</span>
+    <span class="pill"><span class="emoji">🧮</span> Break-even derived from scratch</span>
+  </div>
+
+  <div class="extbanner">
+    <span class="bt">💸</span>
+    <div>
+      <b>Extension — beyond the Academy course.</b> This lesson is <b>web-researched material grounded in Anthropic's official prompt-caching and pricing documentation</b> (the "Prompt caching" Build-with-Claude page and the "Pricing" About-Claude page), with two secondary blogs used only for the launch-era latency/cost percentages. It is <b>not</b> part of the original Claude 101 Academy course. Every substantive claim traces to the sources at the end. <b>Prices and multipliers drift fast</b> — every dollar figure, multiplier (<code class="inl">1.25×</code> / <code class="inl">2×</code> / <code class="inl">0.1×</code>), TTL, and break-even number carries an inline <span class="verify">⚠ VERIFY</span> marker. Treat them as exam-critical <em>and</em> re-checkable.
+    </div>
+  </div>
+
+  <div class="crosslink">
+    <span class="emoji">🔗</span> <strong>Builds on Claude 101, extends C-E2 &amp; C-E3.</strong> Extension <strong>C-E2 — <a href="context-management-reliability.html">Context Management &amp; Reliability</a></strong> taught you <em>why</em> a long, stable context is worth keeping; <strong>C-E3 — <a href="mcp-at-a-builder-level.html">MCP at a Builder Level</a></strong> showed the tool-definition + system-prompt prefix that every agent re-sends. This lesson is the <em>economic layer beneath both</em>: what that re-sent prefix <em>costs</em>, and how to drive it toward <code class="inl">0.1×</code> with caching. If the agent loop or the tools→system→messages request shape is fuzzy, skim C-E3 first.
+  </div>
+
+  <div class="examnote">
+    <b>🎯 Why this matters for the CCA-F exam.</b> Domain 5 (<b>Context Management &amp; Reliability, 15%</b>) is the primary target. The highest-yield facts: the three <b>multipliers</b> (<code class="inl">1.25×</code> 5-min write / <code class="inl">2×</code> 1-hour write / <code class="inl">0.1×</code> read), the <b>break-even rule</b> (1 read for 5-min, 2 reads for 1-hour), the <b>5-minute-default / refresh-on-hit / 1-hour-opt-in</b> TTL behaviour, the <b>tools→system→messages invalidation cascade</b>, and <b>when NOT to cache</b>. There is Domain 3 crossover (stable-prefix-first prompt structuring) and Domain 4 (caching tool definitions in agent loops). The quizzes are weighted toward that economics core.
+  </div>
+</header>
+
+<!-- ============ SECTION A ============ -->
+<div class="sec-divider" id="secA">
+  <span class="badge"><span class="emoji">①</span> The problem</span>
+  <h2>What Caching Is — and the Repeated-Prefix Problem</h2>
+  <p>The same large static content is re-processed on every request. Caching lets the model resume from it.</p>
+</div>
+
+<section class="lesson" id="lA" data-lesson>
+  <div class="lmeta"><span class="ltag"><span class="emoji">💰</span> Section A</span><span class="ltime">⏱ ~10 min</span><span class="ldomain">Domain 5</span></div>
+  <h3 class="ltitle">Why you keep paying for the same tokens</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>State the repeated-prefix problem and why it costs both latency and money</li>
+      <li>Define prompt caching in Anthropic's own words and name the twin benefit</li>
+      <li>Place the "~85% latency / ~90% cost" figures correctly (secondary vs. arithmetic)</li>
+    </ul>
+  </div>
+
+  <h4>Why before how</h4>
+  <p>Picture any of the systems you already build: a multi-turn conversation, an agent loop, a document-Q&amp;A app. Each of them sends the <em>same</em> large static block on <strong>every single request</strong> — the system prompt, the tool definitions, a long reference document or RAG context, the few-shot examples. That block is "sent and <strong>re-processed on every single request</strong> — paid for in full each time, in latency and input-token cost." (source: prompt-caching doc, pricing) Turn 1 pays for it. Turn 2 pays for the identical bytes again. Turn 10 pays a tenth time. The model has to <em>prefill</em> (re-encode) the whole prefix each call before it can generate a single new token.</p>
+  <p>That is the <strong>repeated-prefix problem</strong> — and it's the pattern name to carry forward: a large, byte-identical prefix re-sent many times, billed at full input price every time.</p>
+
+  <h4>What prompt caching actually is</h4>
+  <blockquote class="ex">"Prompt caching optimizes your API usage by allowing resuming from specific prefixes in your prompts. This significantly reduces processing time and costs for repetitive tasks or prompts with consistent elements." (source: prompt-caching doc)</blockquote>
+  <blockquote class="ex">"Prompt caching reduces costs and latency by reusing previously processed portions of your prompt across API calls. Instead of reprocessing the same large system prompt, document, or conversation history on every request, the API reads from cache at a fraction of the standard input price." (source: pricing page)</blockquote>
+  <p>So the fix is mechanical: write the processed prefix to a cache once, then on later calls "resume from" it. The cached prefix is "billed at the <strong>cache-read rate (<code class="inl">0.1×</code> base input)</strong> instead of full input price, and skips the prefill compute." (source: prompt-caching doc, pricing) That's the <strong>twin benefit</strong>: <strong>cost</strong> reduction on the cached prefix <em>and</em> <strong>latency</strong> reduction, because the cached prefix's prefill is skipped entirely.</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 720 290" role="img" aria-label="Without caching the same prefix is reprocessed every call at full price; with caching it is written once then read at one tenth the price">
+      <defs><style>.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 10px sans-serif;fill:#5c544c}.pf{fill:#c96442}.pf2{fill:#3a7d7b}.sx{fill:#e3dacd}.l{font:600 10px sans-serif;fill:#fff}.dl{font:700 11px sans-serif;fill:#a44a2e}.dg{font:700 11px sans-serif;fill:#3f7d4f}</style></defs>
+      <text class="t" x="180" y="18" text-anchor="middle">WITHOUT caching — full price every call</text>
+      <text class="t" x="540" y="18" text-anchor="middle">WITH caching — write once, read cheap</text>
+      <!-- without: 3 calls each full prefix -->
+      <g>
+        <rect class="pf" x="30" y="36" width="150" height="26" rx="5"/><text class="l" x="105" y="54" text-anchor="middle">prefix · 1.0×</text>
+        <rect class="sx" x="182" y="36" width="48" height="26" rx="5"/><text class="s" x="206" y="54" text-anchor="middle">new</text>
+        <text class="dl" x="245" y="55">call 1</text>
+        <rect class="pf" x="30" y="74" width="150" height="26" rx="5"/><text class="l" x="105" y="92" text-anchor="middle">prefix · 1.0×</text>
+        <rect class="sx" x="182" y="74" width="48" height="26" rx="5"/><text class="s" x="206" y="92" text-anchor="middle">new</text>
+        <text class="dl" x="245" y="93">call 2</text>
+        <rect class="pf" x="30" y="112" width="150" height="26" rx="5"/><text class="l" x="105" y="130" text-anchor="middle">prefix · 1.0×</text>
+        <rect class="sx" x="182" y="112" width="48" height="26" rx="5"/><text class="s" x="206" y="130" text-anchor="middle">new</text>
+        <text class="dl" x="245" y="131">call 3</text>
+        <text class="s" x="150" y="166" text-anchor="middle">prefix re-encoded &amp; re-billed at 1.0× every call</text>
+      </g>
+      <!-- with: write then reads -->
+      <g>
+        <rect class="pf2" x="400" y="36" width="150" height="26" rx="5"/><text class="l" x="475" y="54" text-anchor="middle">WRITE · 1.25×</text>
+        <rect class="sx" x="552" y="36" width="48" height="26" rx="5"/><text class="s" x="576" y="54" text-anchor="middle">new</text>
+        <text class="dg" x="615" y="55">call 1</text>
+        <rect class="pf2" x="400" y="74" width="150" height="26" rx="5" opacity=".55"/><text class="l" x="475" y="92" text-anchor="middle">READ · 0.1×</text>
+        <rect class="sx" x="552" y="74" width="48" height="26" rx="5"/><text class="s" x="576" y="92" text-anchor="middle">new</text>
+        <text class="dg" x="615" y="93">call 2</text>
+        <rect class="pf2" x="400" y="112" width="150" height="26" rx="5" opacity=".55"/><text class="l" x="475" y="130" text-anchor="middle">READ · 0.1×</text>
+        <rect class="sx" x="552" y="112" width="48" height="26" rx="5"/><text class="s" x="576" y="130" text-anchor="middle">new</text>
+        <text class="dg" x="615" y="131">call 3</text>
+        <text class="s" x="500" y="166" text-anchor="middle">prefill skipped; reads billed at one-tenth of input</text>
+      </g>
+      <rect x="30" y="196" width="660" height="68" rx="10" fill="#f4e6df" stroke="#c96442"/>
+      <text class="t" x="360" y="222" text-anchor="middle" fill="#a44a2e">The cached prefix is identical bytes — that's the whole trick.</text>
+      <text class="s" x="360" y="244" text-anchor="middle">Cache hits require "100% identical prompt segments." A read costs 0.1×; a write costs 1.25× (5-min) once.</text>
+      <text class="s" x="360" y="258" text-anchor="middle">Caching is a cost/latency optimization — it does NOT enlarge the context window.</text>
+    </svg>
+    <figcaption>Diagram (a): the repeated-prefix problem (left) — the same prefix re-encoded and re-billed at 1.0× on every call — versus caching (right), which pays a one-time write then reads at 0.1× and skips the prefill.</figcaption>
+  </figure>
+
+  <h4>How big is the win? Read the numbers carefully</h4>
+  <div class="verifynote"><span class="verify">⚠ VERIFY</span> <span class="verify">SECONDARY</span> <strong>The "~85% latency / ~90% cost" headline.</strong> Secondary sources cite "up to ~85% latency reduction" and "up to ~90% cost reduction" for long prompts (a ~100K-token doc dropping from ~11.5s to ~2.4s). These trace to Anthropic's <em>original 2024 launch</em> framing, <strong>not</strong> the current doc — treat the 85% latency figure as illustrative/secondary. The <strong>90%-on-the-cached-prefix</strong> figure, by contrast, is defensible as plain arithmetic: a read costs <code class="inl">0.1×</code> input, so you save up to 90% <em>on the cached portion</em>. That's the floor of the read multiplier, not a marketing claim. (source: secondary aggregate for the % framing; pricing page for the 0.1× arithmetic)</div>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">A 100,000-token reference document sits in the prefix of a Q&amp;A app. Users ask 50 questions against it in five minutes. Without caching, how many times is that document re-encoded and billed? With caching?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>Without:</strong> <strong>50 times</strong> at full <code class="inl">1.0×</code> input — the model re-prefills 100K tokens on every question. <strong>With caching:</strong> <strong>1 write</strong> (<code class="inl">1.25×</code>) on the first question, then <strong>49 reads</strong> at <code class="inl">0.1×</code> — and because each hit refreshes the 5-minute clock, the cache stays warm across the whole burst. The prefill is skipped on all 49 reads, which is where the latency win comes from. This is exactly the "Large document processing" / "Knowledge base interaction" use case Anthropic recommends. (source: prompt-caching doc)</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="2">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">What is the "twin benefit" of prompt caching?</div>
+    <button class="opt">A larger context window and cheaper output tokens</button>
+    <button class="opt">Faster fine-tuning and automatic retries</button>
+    <button class="opt">Lower cost on the cached prefix <em>and</em> lower latency (the prefill is skipped)</button>
+    <button class="opt">It removes the need for tool definitions</button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden>Caching "reduces costs and latency by reusing previously processed portions of your prompt." Cost drops because the cached prefix bills at 0.1×; latency drops because the cached prefix's prefill is skipped. It does NOT enlarge the context window or touch output pricing.</div>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li><strong>Repeated-prefix problem:</strong> the same large static block (system + tools + long context + few-shot) is re-processed and re-billed at full price on every request.</li>
+    <li>Caching lets the model <strong>"resume from"</strong> an already-processed prefix — read at <code class="inl">0.1×</code> base input, prefill skipped.</li>
+    <li><strong>Twin benefit:</strong> cost ↓ on the cached prefix <em>and</em> latency ↓. It does <strong>not</strong> grow the context window.</li>
+    <li>The "~85% latency / ~90% cost" headline is <span class="verify">SECONDARY</span>/launch-era; the 90%-on-cached-prefix is arithmetic from the <code class="inl">0.1×</code> read multiplier.</li>
+  </ul></div></div>
+</section>
+
+<!-- ============ SECTION B ============ -->
+<div class="sec-divider" id="secB">
+  <span class="badge"><span class="emoji">②</span> Mechanism</span>
+  <h2>The Mechanism — Breakpoints, Prefix Order &amp; Invalidation</h2>
+  <p>How you mark a cache, what's cacheable, the minimum lengths, and how a change busts everything after it.</p>
+</div>
+
+<section class="lesson" id="lB" data-lesson>
+  <div class="lmeta"><span class="ltag"><span class="emoji">⚙️</span> Section B</span><span class="ltime">⏱ ~16 min</span><span class="ldomain">Domain 5 · Domain 3/4</span></div>
+  <h3 class="ltitle">cache_control, the prefix hierarchy, and the cascade</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Write a <code class="inl">cache_control</code> breakpoint and state the placement rule</li>
+      <li>Recall what is and isn't cacheable, the fixed tools→system→messages order, and the per-model minimums</li>
+      <li>Apply the invalidation cascade — why editing a tool definition is the most expensive change</li>
+    </ul>
+  </div>
+
+  <h4>B1 · The cache_control ephemeral block</h4>
+  <p>You don't cache by flipping a global switch; you mark a <em>breakpoint</em> with a <code class="inl">cache_control</code> block. Default (5-minute) TTL:</p>
+  <div class="codewrap">
+    <div class="clab"><span class="dot"></span> cache_control · 5-minute default</div>
+    <pre><code>{ "cache_control": {"type": "ephemeral"} }</code></pre>
+  </div>
+  <div class="codewrap">
+    <div class="clab"><span class="dot"></span> cache_control · extended 1-hour TTL</div>
+    <pre><code>{ "cache_control": {"type": "ephemeral", "ttl": "1h"} }</code></pre>
+  </div>
+  <p>There are two ways to turn caching on (verbatim, pricing page):</p>
+  <blockquote class="ex">"<strong>Automatic caching:</strong> Add a single <code class="inl">cache_control</code> field at the top level of your request. The system automatically manages cache breakpoints as conversations grow. This is the recommended starting point for most use cases."<br><br>"<strong>Explicit cache breakpoints:</strong> Place <code class="inl">cache_control</code> directly on individual content blocks for fine-grained control over exactly what gets cached." (source: pricing page)</blockquote>
+  <p><strong>Placement rule:</strong> <code class="inl">cache_control</code> goes on the <strong>last content block you want included in the cached prefix</strong> — inside the <code class="inl">tools</code>, <code class="inl">system</code>, or <code class="inl">messages.content</code> arrays. "Everything from the start of the request up to <em>and including</em> that marked block becomes the cached prefix." (source: prompt-caching doc)</p>
+
+  <h4>B2 · Breakpoints, lookback, and exact match</h4>
+  <ul>
+    <li><strong>Max breakpoints:</strong> "You can define up to <strong>4 cache breakpoints</strong>" per request. <span class="verify">⚠ VERIFY</span></li>
+    <li><strong>Lookback window:</strong> "The system checks at most <strong>20 positions per breakpoint</strong>, counting the breakpoint itself as the first." It walks backward one block at a time within that window looking for a previously cached entry — so you get hits at earlier block boundaries, not only the exact breakpoint. <span class="verify">⚠ VERIFY</span></li>
+    <li><strong>Exact-match requirement:</strong> "Cache hits require <strong>100% identical prompt segments</strong>, including all text and images up to and including the block marked with cache control." (source: prompt-caching doc)</li>
+  </ul>
+  <div class="callout warn collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">⚠️</span> "100% identical" is the rule everything else hangs on<span class="chev">▼</span></div>
+  <div class="cbody"><p>A single changed byte <em>before or at</em> the breakpoint means no hit — the prefix is re-written from scratch. This is why a timestamp or username injected into the system prompt is so destructive (Section F). The exact-match rule is also <em>why</em> the invalidation cascade (B6) exists: change something early in the contiguous prefix and the identical-match fails for everything downstream.</p></div></div>
+
+  <h4>B3 · What can — and can't — be cached</h4>
+  <p>Cacheable content (verbatim list):</p>
+  <ul>
+    <li><strong>Tools</strong> — tool definitions in the <code class="inl">tools</code> array</li>
+    <li><strong>System messages</strong> — content blocks in the <code class="inl">system</code> array</li>
+    <li><strong>Text messages</strong> — content blocks in <code class="inl">messages.content</code>, for both user and assistant turns</li>
+    <li><strong>Images &amp; Documents</strong> — content blocks in <code class="inl">messages.content</code>, in user turns</li>
+    <li><strong>Tool use and tool results</strong> — content blocks in <code class="inl">messages.content</code>, in both user and assistant turns</li>
+  </ul>
+  <p><strong>What CANNOT be cached:</strong> "Thinking blocks cannot be cached directly with <code class="inl">cache_control</code>"; "Sub-content blocks (like citations) themselves cannot be cached directly"; "Empty text blocks cannot be cached." (source: prompt-caching doc)</p>
+
+  <h4>B4 · The fixed prefix order — tools → system → messages</h4>
+  <blockquote class="ex">"Cache prefixes are created in the following order: <code class="inl">tools</code>, <code class="inl">system</code>, then <code class="inl">messages</code>. This order forms a hierarchy where each level builds upon the previous ones." (source: prompt-caching doc)</blockquote>
+  <p>The implication is structural and testable: the cache always covers a <strong>contiguous prefix starting at the very top</strong> of the request. You <em>cannot</em> cache a middle slice while leaving the start uncached. (Compare this to C-E3's tools→system→messages request anatomy — same ordering, now with a cost meaning.)</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 720 250" role="img" aria-label="A request laid out as tools then system then messages, with a cache_control breakpoint at the end of the stable prefix and a varying suffix after it">
+      <defs><style>.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 10px sans-serif;fill:#5c544c}.cn{font:600 10px sans-serif;fill:#fff}.bp{font:700 11px sans-serif;fill:#a44a2e}</style></defs>
+      <text class="t" x="360" y="20" text-anchor="middle">Request anatomy: cached prefix (contiguous, from the top) + varying suffix</text>
+      <rect x="40" y="40" width="180" height="120" rx="10" fill="#6b4f9e"/><text class="cn" x="130" y="64" text-anchor="middle">① tools</text><text class="s" x="130" y="84" text-anchor="middle" fill="#fff">tool definitions</text><text class="s" x="130" y="100" text-anchor="middle" fill="#fff">(most stable)</text>
+      <rect x="230" y="40" width="160" height="120" rx="10" fill="#3a7d7b"/><text class="cn" x="310" y="64" text-anchor="middle">② system</text><text class="s" x="310" y="84" text-anchor="middle" fill="#fff">instructions,</text><text class="s" x="310" y="100" text-anchor="middle" fill="#fff">long context</text>
+      <rect x="400" y="40" width="150" height="120" rx="10" fill="#c96442"/><text class="cn" x="475" y="64" text-anchor="middle">③ messages</text><text class="s" x="475" y="84" text-anchor="middle" fill="#fff">history / few-shot</text><text class="s" x="475" y="100" text-anchor="middle" fill="#fff">(identical part)</text>
+      <line x1="550" y1="34" x2="550" y2="170" stroke="#a44a2e" stroke-width="2.5" stroke-dasharray="5 3"/>
+      <text class="bp" x="550" y="184" text-anchor="middle">↑ cache_control breakpoint</text>
+      <rect x="560" y="40" width="120" height="120" rx="10" fill="#e3dacd"/><text class="t" x="620" y="64" text-anchor="middle">suffix</text><text class="s" x="620" y="84" text-anchor="middle">new user msg,</text><text class="s" x="620" y="100" text-anchor="middle">timestamp, vars</text><text class="s" x="620" y="116" text-anchor="middle">(changes each call)</text>
+      <text class="s" x="300" y="210" text-anchor="middle" fill="#3f7d4f">← CACHED PREFIX (read at 0.1× once warm) →</text>
+      <text class="s" x="620" y="210" text-anchor="middle">billed normally</text>
+      <text class="s" x="360" y="234" text-anchor="middle">Mark the breakpoint at the END of the last identical block — not inside the varying suffix.</text>
+    </svg>
+    <figcaption>Diagram (b): the request laid out in the fixed tools→system→messages order. The cache_control breakpoint sits at the end of the stable prefix; everything before it is the contiguous cached prefix, everything after is the varying suffix billed normally.</figcaption>
+  </figure>
+
+  <h4>B5 · Minimum cacheable prefix length (per model)</h4>
+  <blockquote class="ex">"Shorter prompts cannot be cached, even if marked with <code class="inl">cache_control</code>. Any requests to cache fewer than this number of tokens will be processed without caching, <strong>and no error is returned</strong>." (source: prompt-caching doc)</blockquote>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Model</th><th>Minimum cacheable tokens <span class="verify">⚠ VERIFY</span></th></tr></thead>
+    <tbody>
+      <tr><td>Claude Mythos Preview</td><td>4,096</td></tr>
+      <tr><td>Claude Opus 4.7</td><td>4,096</td></tr>
+      <tr><td>Claude Opus 4.6</td><td>4,096</td></tr>
+      <tr><td>Claude Opus 4.5</td><td>4,096</td></tr>
+      <tr><td>Claude Opus 4.8</td><td>1,024</td></tr>
+      <tr><td>Claude Sonnet 4.6</td><td>1,024</td></tr>
+      <tr><td>Claude Sonnet 4.5</td><td>1,024</td></tr>
+      <tr><td>Claude Opus 4.1 (deprecated)</td><td>1,024</td></tr>
+      <tr><td>Claude Opus 4 (deprecated)</td><td>1,024</td></tr>
+      <tr><td>Claude Sonnet 4 (deprecated)</td><td>1,024</td></tr>
+      <tr><td>Claude Haiku 4.5</td><td>4,096</td></tr>
+      <tr><td>Claude Haiku 3.5 (retired exc. Bedrock/Vertex)</td><td>2,048</td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout warn collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🎯</span> Don't teach the stale "small model = higher minimum" rule<span class="chev">▼</span></div>
+  <div class="cbody"><p><span class="verify">⚠ VERIFY</span> The intuition that smaller models need a higher minimum is <strong>not</strong> clean. <strong>Haiku 4.5 requires 4,096</strong> (same as the Opus 4.5–4.7 generation), while <strong>Opus 4.8 requires only 1,024</strong>. The old "1024 large / 2048 Haiku" rule of thumb is <strong>stale</strong> — the 2,048 figure now applies only to the <strong>retired Haiku 3.5</strong>. The minimum tracks the model <em>version</em>, not its size tier. Model names and minimums drift, so re-check the table at build time.</p></div></div>
+
+  <h4>B6 · The invalidation cascade</h4>
+  <blockquote class="ex">"Changes at each level invalidate that level and all subsequent levels." (source: prompt-caching doc)</blockquote>
+  <div class="tablewrap"><table>
+    <thead><tr><th>What changes</th><th>Invalidates</th></tr></thead>
+    <tbody>
+      <tr><td>Tool definitions</td><td>Tools + System + Messages (the <strong>entire</strong> cache)</td></tr>
+      <tr><td>Web search toggle</td><td>System + Messages</td></tr>
+      <tr><td>Citations toggle</td><td>System + Messages</td></tr>
+      <tr><td>Speed setting</td><td>System + Messages</td></tr>
+      <tr><td>Tool choice</td><td>Messages only</td></tr>
+      <tr><td>Images</td><td>Messages only</td></tr>
+      <tr><td>Thinking parameters</td><td>Messages only</td></tr>
+    </tbody>
+  </table></div>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 720 230" role="img" aria-label="Invalidation cascade: changing tools busts system and messages too; changing system busts messages; changing messages busts only messages">
+      <defs><style>.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 9.5px sans-serif;fill:#5c544c}.cn{font:600 10.5px sans-serif;fill:#fff}.bust{fill:#f7e3df;stroke:#b3402f}.safe{fill:#e3f0e6;stroke:#3f7d4f}</style></defs>
+      <text class="t" x="360" y="18" text-anchor="middle">Change anything earlier → everything after it busts (cache is a contiguous prefix)</text>
+      <!-- row 1: change tools -->
+      <text class="s" x="20" y="58" >Change TOOLS:</text>
+      <rect class="bust" x="150" y="42" width="150" height="26" rx="5"/><text class="cn" x="225" y="60" text-anchor="middle" fill="#b3402f">tools ✗</text>
+      <rect class="bust" x="310" y="42" width="150" height="26" rx="5"/><text class="cn" x="385" y="60" text-anchor="middle" fill="#b3402f">system ✗</text>
+      <rect class="bust" x="470" y="42" width="150" height="26" rx="5"/><text class="cn" x="545" y="60" text-anchor="middle" fill="#b3402f">messages ✗</text>
+      <text class="s" x="638" y="60">entire cache</text>
+      <!-- row 2: change system -->
+      <text class="s" x="20" y="106" >Change SYSTEM:</text>
+      <rect class="safe" x="150" y="90" width="150" height="26" rx="5"/><text class="cn" x="225" y="108" text-anchor="middle" fill="#3f7d4f">tools ✓ kept</text>
+      <rect class="bust" x="310" y="90" width="150" height="26" rx="5"/><text class="cn" x="385" y="108" text-anchor="middle" fill="#b3402f">system ✗</text>
+      <rect class="bust" x="470" y="90" width="150" height="26" rx="5"/><text class="cn" x="545" y="108" text-anchor="middle" fill="#b3402f">messages ✗</text>
+      <!-- row 3: change messages -->
+      <text class="s" x="20" y="154" >Change MESSAGES:</text>
+      <rect class="safe" x="150" y="138" width="150" height="26" rx="5"/><text class="cn" x="225" y="156" text-anchor="middle" fill="#3f7d4f">tools ✓ kept</text>
+      <rect class="safe" x="310" y="138" width="150" height="26" rx="5"/><text class="cn" x="385" y="156" text-anchor="middle" fill="#3f7d4f">system ✓ kept</text>
+      <rect class="bust" x="470" y="138" width="150" height="26" rx="5"/><text class="cn" x="545" y="156" text-anchor="middle" fill="#b3402f">messages ✗</text>
+      <text class="t" x="360" y="200" text-anchor="middle" fill="#a44a2e">Editing a tool definition is the most expensive change — it invalidates EVERYTHING.</text>
+      <text class="s" x="360" y="218" text-anchor="middle">Order is fixed tools → system → messages; you can't cache a non-prefix slice.</text>
+    </svg>
+    <figcaption>Diagram (c): the invalidation cascade. Because the cache is a contiguous prefix in tools→system→messages order, changing an earlier level busts that level and everything after it. A tool-definition edit busts the whole cache.</figcaption>
+  </figure>
+
+  <p><strong>Architect takeaway:</strong> because the cache is a contiguous prefix, <em>changing anything earlier busts everything after it</em>. Editing a tool definition is the most expensive change you can make — it invalidates the <strong>entire</strong> cache. This is the cost-side reason to keep tool definitions stable in an agent loop (a Domain 4 connection: every tool-def tweak forces a fresh full-price write of the whole prefix).</p>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">Your agent caches a prefix of tools + a long system prompt + accumulated conversation. Mid-session you add one new tool to the <code class="inl">tools</code> array. What gets invalidated — and what does the next call cost on the prefix?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>The entire cache busts</strong> — "changes at each level invalidate that level and all subsequent levels," and <code class="inl">tools</code> is the first level, so tools + system + messages all go. The next call must <strong>re-write the whole prefix</strong> at the write multiplier (<code class="inl">1.25×</code> for 5-min), not read it at <code class="inl">0.1×</code>. That's why "cache the system + tools first and avoid editing tool defs casually" is a core pattern (Section F). Compare: changing only the <em>thinking parameters</em> or a tool-choice would invalidate <strong>messages only</strong>, leaving the expensive tools+system layers cached.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="3">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Where do you place the <code class="inl">cache_control</code> block to cache a stable prefix?</div>
+    <button class="opt">On the very first content block of the request</button>
+    <button class="opt">On the varying user message at the end</button>
+    <button class="opt">Anywhere — it caches the whole request regardless</button>
+    <button class="opt">On the last content block you want included; everything up to and including it is cached</button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden><code>cache_control</code> marks "the last content block you want included in the cached prefix." Everything from the start of the request up to and including that block becomes the contiguous cached prefix — which is why the order is fixed tools → system → messages.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="1">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">On Claude Haiku 4.5, what is the minimum cacheable prefix length — and what happens if you mark a shorter prefix?</div>
+    <button class="opt">2,048 tokens; the API returns an error</button>
+    <button class="opt">4,096 tokens; it's silently processed without caching, no error</button>
+    <button class="opt">1,024 tokens; it's cached anyway</button>
+    <button class="opt">There is no minimum on Haiku</button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden>Haiku 4.5 requires <strong>4,096</strong> tokens (NOT the stale 2,048 — that's retired Haiku 3.5). Below the minimum, the request "will be processed without caching, and no error is returned" — a silent no-cache.</div>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li><code class="inl">cache_control: {"type":"ephemeral"}</code> marks the <strong>last block</strong> in the cached prefix; add <code class="inl">"ttl":"1h"</code> for the extended window.</li>
+    <li>Up to <strong>4 breakpoints</strong>; <strong>20-position lookback</strong> per breakpoint; hits require <strong>100% identical</strong> segments. <span class="verify">⚠ VERIFY</span></li>
+    <li>Cache is a <strong>contiguous prefix</strong> in fixed <strong>tools → system → messages</strong> order — no middle-slice caching.</li>
+    <li>Minimums are version-tied (<strong>Opus 4.8 = 1,024; Haiku 4.5 = 4,096</strong>); below it = <strong>silent</strong> no-cache. <span class="verify">⚠ VERIFY</span></li>
+    <li>Invalidation cascades downward — a <strong>tool-definition edit busts the entire cache</strong>.</li>
+  </ul></div></div>
+</section>
+
+<!-- ============ SECTION C ============ -->
+<div class="sec-divider" id="secC">
+  <span class="badge"><span class="emoji">③</span> TTL &amp; refresh</span>
+  <h2>TTL &amp; Refresh — 5-Minute Default, 1-Hour Opt-In</h2>
+  <p>The clock resets on every hit. The concurrency caveat trips up fan-out agents.</p>
+</div>
+
+<section class="lesson" id="lC" data-lesson>
+  <div class="lmeta"><span class="ltag"><span class="emoji">⏱️</span> Section C</span><span class="ltime">⏱ ~11 min</span><span class="ldomain">Domain 5</span></div>
+  <h3 class="ltitle">How long a cache lives, and how it stays warm</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>State the default 5-minute TTL and the refresh-on-hit behaviour</li>
+      <li>Recall the 1-hour opt-in and its extra write cost</li>
+      <li>Apply the concurrency caveat to parallel / fan-out agent calls</li>
+    </ul>
+  </div>
+
+  <h4>The 5-minute default — and the refresh that keeps it warm</h4>
+  <p><span class="verify">⚠ VERIFY</span> "By default, the cache has a <strong>5-minute lifetime</strong>." But the lifetime is not a hard countdown from the write — it resets on use:</p>
+  <blockquote class="ex">"The cache is refreshed for no additional cost each time the cached content is used." (source: prompt-caching doc)</blockquote>
+  <p>So the 5-minute (or 1-hour) clock <strong>resets on every cache hit</strong>. A continuously-used prefix stays warm <strong>indefinitely at no extra write cost</strong> — you pay the one write, then every read both costs <code class="inl">0.1×</code> <em>and</em> pushes the expiry out another full window. This is the single most important behaviour to internalize before the economics: a busy prefix never expires.</p>
+
+  <h4>The 1-hour extended TTL</h4>
+  <p><span class="verify">⚠ VERIFY</span> The extended TTL is <strong>1 hour</strong>, opt-in via <code class="inl">"ttl": "1h"</code>, at an additional write cost — <code class="inl">2×</code> base input versus <code class="inl">1.25×</code> for the 5-minute write (the full multiplier table is Section D). Deletion timing: cached entries have a <em>minimum</em> lifetime, and after expiry they are "promptly, though not immediately, deleted." <span class="verify">⚠ VERIFY</span> (source: prompt-caching doc, pricing)</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 720 240" role="img" aria-label="Two timelines: a busy prefix refreshed on every hit stays warm, versus a sporadic prefix that expires before the next call and pays a fresh write">
+      <defs><marker id="tk" markerWidth="7" markerHeight="7" refX="3" refY="3" orient="auto"><circle cx="3" cy="3" r="2.5" fill="#3f7d4f"/></marker>
+        <style>.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 9.5px sans-serif;fill:#5c544c}.ax{stroke:#cdbfae;stroke-width:1.5}.hit{fill:#3f7d4f}.exp{fill:#b3402f}.w{font:700 9px sans-serif;fill:#fff}</style></defs>
+      <text class="t" x="360" y="16" text-anchor="middle">Refresh-on-hit: every read resets the TTL clock</text>
+      <!-- busy timeline -->
+      <text class="s" x="20" y="56">Busy prefix</text>
+      <line class="ax" x1="120" y1="58" x2="690" y2="58"/>
+      <circle class="hit" cx="150" cy="58" r="9"/><text class="w" x="150" y="61" text-anchor="middle">W</text>
+      <circle class="hit" cx="240" cy="58" r="7"/><circle class="hit" cx="330" cy="58" r="7"/><circle class="hit" cx="420" cy="58" r="7"/><circle class="hit" cx="510" cy="58" r="7"/><circle class="hit" cx="600" cy="58" r="7"/><circle class="hit" cx="675" cy="58" r="7"/>
+      <text class="s" x="405" y="82" text-anchor="middle">gaps &lt; 5 min → each hit (●) refreshes free → stays warm forever, 1 write total</text>
+      <!-- sporadic timeline -->
+      <text class="s" x="20" y="136">Sporadic</text>
+      <line class="ax" x1="120" y1="138" x2="690" y2="138"/>
+      <circle class="hit" cx="150" cy="138" r="9"/><text class="w" x="150" y="141" text-anchor="middle">W</text>
+      <rect x="200" y="131" width="14" height="14" rx="2" fill="#b3402f"/><text class="s" x="207" y="160" text-anchor="middle">expires</text>
+      <circle class="exp" cx="380" cy="138" r="9"/><text class="w" x="380" y="141" text-anchor="middle">W</text>
+      <rect x="430" y="131" width="14" height="14" rx="2" fill="#b3402f"/><text class="s" x="437" y="160" text-anchor="middle">expires</text>
+      <circle class="exp" cx="610" cy="138" r="9"/><text class="w" x="610" y="141" text-anchor="middle">W</text>
+      <text class="s" x="405" y="186" text-anchor="middle" fill="#b3402f">gaps &gt; 5 min → cache expires before the next call → every call is a fresh WRITE (1.25×) — worse than not caching</text>
+      <text class="s" x="360" y="216" text-anchor="middle">W = write (1.25×) · ● = read/refresh (0.1×, free TTL reset) · ▮ = expiry</text>
+    </svg>
+    <figcaption>Diagram (d): refresh-on-hit. A busy prefix (top) refreshes free on every read and stays warm with one write. A sporadic prefix (bottom) expires between calls and pays a fresh write each time — the 5-minute TTL gotcha (Section E).</figcaption>
+  </figure>
+
+  <h4>The concurrency caveat — the fan-out trap</h4>
+  <blockquote class="ex">"For concurrent requests, note that a cache entry only becomes available after the first response begins. If you need cache hits for parallel requests, wait for the first response before sending subsequent requests." (source: prompt-caching doc)</blockquote>
+  <p>This bites exactly the agentic / parallel-tool patterns you build. If you fan out N parallel calls that share a prefix <em>before the first response returns</em>, the cache entry isn't available yet — so each of those first calls pays a cache <strong>write</strong>, not a read. The fix: warm the cache with one call, wait for its response to begin, <em>then</em> fan out the rest as reads.</p>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">You launch 8 parallel agent calls at <code class="inl">t=0</code>, all sharing the same 30K-token cached prefix. How many cache <em>writes</em> do you pay?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>Up to 8 writes</strong> — one per call. "A cache entry only becomes available after the first response begins," so at <code class="inl">t=0</code> none of the 8 can hit a cache that doesn't exist yet; each writes its own. To get 1 write + 7 reads, fire one call first, wait for its response to begin, <em>then</em> launch the other 7. The same prefix, fanned out naively, can cost <strong>8× the write</strong> instead of one.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="0">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">A prefix is hit once every 3 minutes for an hour on the default 5-minute TTL. How many cache writes do you pay?</div>
+    <button class="opt">One — each hit refreshes the TTL for free, so it never expires</button>
+    <button class="opt">Twelve — one per 5-minute window</button>
+    <button class="opt">Twenty — one per hit</button>
+    <button class="opt">Zero — reads are always free</button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden>"The cache is refreshed for no additional cost each time the cached content is used." With 3-minute gaps (&lt; 5 min), every hit resets the clock, so the cache stays warm on a single initial write. (If gaps exceeded 5 minutes, it would expire and re-write each time — the TTL gotcha.)</div>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li>Default TTL = <strong>5 minutes</strong>; the clock <strong>resets free on every hit</strong>, so a busy prefix stays warm indefinitely on one write. <span class="verify">⚠ VERIFY</span></li>
+    <li>Extended TTL = <strong>1 hour</strong> via <code class="inl">"ttl":"1h"</code>, at a higher write cost (<code class="inl">2×</code> vs <code class="inl">1.25×</code>). <span class="verify">⚠ VERIFY</span></li>
+    <li><strong>Concurrency caveat:</strong> a cache entry "only becomes available after the first response begins" — fan-out before that pays a write per call.</li>
+  </ul></div></div>
+</section>
+
+<!-- SECTION QUIZ A -->
+<div class="quizblock" data-quiz="1">
+  <div class="scorebar"><h4 style="margin:0"><span class="emoji">🏆</span> Checkpoint Quiz A — Problem, Mechanism &amp; TTL</h4><span class="qscore" data-score>0 / 4</span></div>
+  <p style="font-size:14px;color:var(--ink-soft);margin-top:0">Source-grounded. Answer each, then read the explanation.</p>
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q1</div><div class="qtext">The "repeated-prefix problem" is…</div>
+    <button class="opt">The model forgetting earlier turns</button><button class="opt">Output tokens being billed twice</button><button class="opt">The same large static prefix being re-processed and re-billed at full price on every request</button><button class="opt">A context-window overflow error</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>Across multi-turn chats, agent loops, and doc-Q&amp;A, the same prefix (system + tools + long context) is re-processed every call. Caching lets the model "resume from" it at 0.1×.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="1" data-inquiz>
+    <div class="qlab">Q2</div><div class="qtext">The fixed order in which cache prefixes are created is…</div>
+    <button class="opt">messages → system → tools</button><button class="opt">tools → system → messages</button><button class="opt">system → tools → messages</button><button class="opt">Any order you choose per breakpoint</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>"Cache prefixes are created in the following order: tools, system, then messages." It's a contiguous prefix from the top — no middle-slice caching.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="3" data-inquiz>
+    <div class="qlab">Q3</div><div class="qtext">You edit one tool definition mid-session. What is invalidated?</div>
+    <button class="opt">Nothing — tools aren't cached</button><button class="opt">Messages only</button><button class="opt">System and messages, but tools stay cached</button><button class="opt">The entire cache — tools + system + messages</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>"Changes at each level invalidate that level and all subsequent levels." Tools is the first level, so a tool-def edit busts everything — the most expensive change.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="0" data-inquiz>
+    <div class="qlab">Q4</div><div class="qtext">On the default 5-minute TTL, what happens to the clock each time the cache is hit?</div>
+    <button class="opt">It resets for free, keeping a busy prefix warm indefinitely</button><button class="opt">It counts down from the original write and cannot be extended</button><button class="opt">It shortens to 1 minute</button><button class="opt">It triggers a paid re-write</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>"The cache is refreshed for no additional cost each time the cached content is used." Hits reset the TTL, so a continuously-used prefix never expires on a single write.</div>
+  </div>
+  <div class="resultbox" data-result></div>
+</div>
+
+<!-- ============ SECTION D ============ -->
+<div class="sec-divider" id="secD">
+  <span class="badge"><span class="emoji">④</span> The economics</span>
+  <h2>The Economics — Multipliers &amp; the Break-Even Derivation</h2>
+  <p>The heart of the lesson. We derive the break-even from the multipliers, then work a real dollar example.</p>
+</div>
+
+<section class="lesson" id="lD" data-lesson>
+  <div class="lmeta"><span class="ltag"><span class="emoji">🧮</span> Section D</span><span class="ltime">⏱ ~20 min</span><span class="ldomain">Domain 5</span></div>
+  <h3 class="ltitle">The multipliers, the algebra, and the dollars</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Recall the three caching multipliers and the per-model dollar prices</li>
+      <li><strong>Derive</strong> the break-even from scratch and predict the crossover before revealing it</li>
+      <li>Work the 10-turn dollar example and recall the stacking discounts</li>
+    </ul>
+  </div>
+
+  <h4>D1 · The exact multipliers</h4>
+  <blockquote class="ex">"Prompt caching uses the following pricing multipliers relative to base input token rates: 5-minute cache write = <strong>1.25× base input price</strong>; 1-hour cache write = <strong>2× base input price</strong>; Cache read (hit) = <strong>0.1× base input price</strong>." (source: pricing page) <span class="verify">⚠ VERIFY</span></blockquote>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Operation</th><th>Multiplier (vs base input = 1.0×) <span class="verify">⚠ VERIFY</span></th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td>Base input</td><td>1.0×</td><td>Uncached token, processed normally</td></tr>
+      <tr><td>Cache write — 5-min</td><td><strong>1.25×</strong></td><td>Store the prefix; valid 5 minutes</td></tr>
+      <tr><td>Cache write — 1-hour</td><td><strong>2.0×</strong></td><td>Store the prefix; valid 1 hour</td></tr>
+      <tr><td>Cache read (hit / refresh)</td><td><strong>0.1×</strong></td><td>10% of standard input price</td></tr>
+    </tbody>
+  </table></div>
+  <p>And the doc states the break-even conclusion directly: "A cache hit costs 10% of the standard input price, which means <strong>caching pays off after just one cache read for the 5-minute duration (1.25× write), or after two cache reads for the 1-hour duration (2× write)</strong>." (source: pricing page) We'll <em>derive</em> exactly that in D3 — but predict it first.</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 720 220" role="img" aria-label="Bar chart of caching multipliers: base input 1.0x, 5-minute write 1.25x, 1-hour write 2.0x, cache read 0.1x">
+      <defs><style>.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 10px sans-serif;fill:#5c544c}.v{font:700 13px sans-serif}.lbl{font:600 11px sans-serif;fill:#2b2622}</style></defs>
+      <text class="t" x="360" y="18" text-anchor="middle">Caching multipliers relative to base input price</text>
+      <line x1="60" y1="170" x2="690" y2="170" stroke="#cdbfae" stroke-width="1.5"/>
+      <!-- scale: 2.0x = 120px tall -->
+      <!-- base 1.0x -->
+      <rect x="90" y="110" width="90" height="60" rx="4" fill="#5c544c"/><text class="v" x="135" y="102" text-anchor="middle" fill="#5c544c">1.0×</text><text class="lbl" x="135" y="188" text-anchor="middle">base input</text>
+      <!-- 5min write 1.25x -->
+      <rect x="230" y="95" width="90" height="75" rx="4" fill="#b8860b"/><text class="v" x="275" y="87" text-anchor="middle" fill="#8a6508">1.25×</text><text class="lbl" x="275" y="188" text-anchor="middle">5-min write</text>
+      <!-- 1h write 2.0x -->
+      <rect x="370" y="50" width="90" height="120" rx="4" fill="#b3402f"/><text class="v" x="415" y="42" text-anchor="middle" fill="#b3402f">2.0×</text><text class="lbl" x="415" y="188" text-anchor="middle">1-hour write</text>
+      <!-- read 0.1x -->
+      <rect x="510" y="164" width="90" height="6" rx="2" fill="#3f7d4f"/><text class="v" x="555" y="156" text-anchor="middle" fill="#3f7d4f">0.1×</text><text class="lbl" x="555" y="188" text-anchor="middle">cache read</text>
+      <text class="s" x="360" y="210" text-anchor="middle">A read is one-tenth of base input — that 0.1× is where every saving comes from.</text>
+    </svg>
+    <figcaption>Diagram (e): the four rates as bars. The write premium is small (1.25× / 2.0×); the read is tiny (0.1×). The gap between a 1.0× uncached send and a 0.1× read is the prize — one good hit repays the write many times over.</figcaption>
+  </figure>
+
+  <h4>D2 · Per-model dollar pricing (per MTok)</h4>
+  <div class="verifynote"><span class="verify">⚠ VERIFY</span> These dollar figures <strong>drift</strong> — re-check at build/exam time. They are exam-critical because the math depends on them, but the <em>ratios</em> (the multipliers) are what generalize.</div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Model</th><th>Base Input</th><th>5m Write</th><th>1h Write</th><th>Hit/Refresh</th><th>Output</th></tr></thead>
+    <tbody>
+      <tr><td>Claude Opus 4.8 / 4.7 / 4.6 / 4.5</td><td>$5</td><td>$6.25</td><td>$10</td><td>$0.50</td><td>$25</td></tr>
+      <tr><td>Claude Opus 4.1 / 4 (deprecated)</td><td>$15</td><td>$18.75</td><td>$30</td><td>$1.50</td><td>$75</td></tr>
+      <tr><td>Claude Sonnet 4.6 / 4.5 / 4 (4 dep.)</td><td>$3</td><td>$3.75</td><td>$6</td><td>$0.30</td><td>$15</td></tr>
+      <tr><td>Claude Haiku 4.5</td><td>$1</td><td>$1.25</td><td>$2</td><td>$0.10</td><td>$5</td></tr>
+      <tr><td>Claude Haiku 3.5 (retired exc. Bedrock/Vertex)</td><td>$0.80</td><td>$1</td><td>$1.60</td><td>$0.08</td><td>$4</td></tr>
+    </tbody>
+  </table></div>
+  <div class="verifynote"><span class="verify">⚠ VERIFY</span> <strong>Tokenizer caveat for the math:</strong> "Opus 4.7 and later use a new tokenizer compared to previous models… This new tokenizer may use up to <strong>35% more tokens</strong> for the same fixed text." So token <em>counts</em> (and absolute dollar costs) for the same text differ across model generations even when per-token rates match — keep that in mind when comparing absolute dollars across models. (source: pricing page)</div>
+
+  <h4>D3 · Break-even — derive it, don't memorize it</h4>
+  <p>This is the spine of the lesson. Set it up with three symbols:</p>
+  <ul>
+    <li><strong>N</strong> = input tokens in the stable prefix</li>
+    <li><strong>P</strong> = base input price per token</li>
+    <li><strong>R</strong> = number of cache <em>reads</em> (reuses <em>after</em> the first write)</li>
+  </ul>
+  <p>Sending the prefix <code class="inl">R + 1</code> times total (1 first call + R reuses):</p>
+  <div class="codewrap">
+    <div class="clab"><span class="dot"></span> Cost models (normalized later by N·P)</div>
+    <pre><code>Without caching:   Cost = (R + 1) · N · P
+
+With 5-min cache:  Cost = N·P·1.25 + R·N·P·0.1  =  N·P·(1.25 + 0.1R)
+With 1-hour cache: Cost = N·P·2.0  + R·N·P·0.1  =  N·P·(2.0  + 0.1R)</code></pre>
+  </div>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first — before you see the algebra</div>
+    <div class="q">For the <strong>5-minute</strong> cache, how many reuses R does it take for caching to beat sending uncached every time? Is it 1, 2, 3, or more? (Write your guess down before revealing.)</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal the derivation</button>
+    <div class="ans">
+      <strong>Just R = 1 — the very first reuse.</strong> Here's the algebra, normalized by dividing both sides by <code class="inl">N·P</code> (they're positive, so the inequality direction holds):<br><br>
+      <strong>5-minute:</strong> we want caching cheaper than no-cache →<br>
+      <code class="inl">1.25 + 0.1R &lt; R + 1</code> → <code class="inl">1.25 − 1 &lt; R − 0.1R</code> → <code class="inl">0.25 &lt; 0.9R</code> → <code class="inl">R &gt; 0.278</code>.<br>
+      Since R is a whole number of reads, the smallest R that works is <strong>R = 1</strong>. Check it: cached path = <code class="inl">1.25 + 0.1(1) = 1.35</code> units; uncached = <code class="inl">1 + 1 = 2.0</code> units. Caching wins by 0.65 units on the very first reuse. This is exactly the doc's "<em>pays off after just one cache read for the 5-minute duration</em>." ✓
+    </div>
+  </div>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first — now the 1-hour case</div>
+    <div class="q">The 1-hour write is more expensive (<code class="inl">2.0×</code> vs <code class="inl">1.25×</code>). Predict: does break-even move to R = 2, or further out?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal the derivation</button>
+    <div class="ans">
+      <strong>R = 2 — the second reuse.</strong><br>
+      <strong>1-hour:</strong> <code class="inl">2.0 + 0.1R &lt; R + 1</code> → <code class="inl">2.0 − 1 &lt; 0.9R</code> → <code class="inl">1.0 &lt; 0.9R</code> → <code class="inl">R &gt; 1.11</code>.<br>
+      The smallest whole R is <strong>R = 2</strong>. Check it: cached = <code class="inl">2.0 + 0.1(2) = 2.2</code> units; uncached = <code class="inl">1 + 2 = 3.0</code> units. Caching wins by 0.8 units at two reuses. Matches the doc's "<em>after two cache reads for the 1-hour duration</em>." ✓<br><br>
+      <strong>The pattern name:</strong> a bigger write premium pushes break-even one reuse further out. The 1-hour TTL trades a higher up-front write for surviving longer gaps between reuses (Section E).
+    </div>
+  </div>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 720 300" role="img" aria-label="Break-even curves: uncached cost rises 1.0 per reuse; 5-minute cached crosses below it at R equals 1; 1-hour cached crosses at R equals 2">
+      <defs><style>.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 10px sans-serif;fill:#5c544c}.ax{stroke:#cdbfae;stroke-width:1.5}.unc{stroke:#b3402f;stroke-width:2.5;fill:none}.c5{stroke:#3f7d4f;stroke-width:2.5;fill:none}.c1{stroke:#6b4f9e;stroke-width:2.5;fill:none}.cr{fill:#b8860b}</style></defs>
+      <text class="t" x="360" y="18" text-anchor="middle">Cost (in N·P units) vs. number of reuses R</text>
+      <!-- axes: x R=0..6 mapped 80..660 (step ~96.7); y cost 0..7 mapped 260..40 (step ~31.4) -->
+      <line class="ax" x1="80" y1="260" x2="680" y2="260"/>
+      <line class="ax" x1="80" y1="40" x2="80" y2="260"/>
+      <text class="s" x="80" y="278" text-anchor="middle">0</text><text class="s" x="177" y="278" text-anchor="middle">1</text><text class="s" x="273" y="278" text-anchor="middle">2</text><text class="s" x="370" y="278" text-anchor="middle">3</text><text class="s" x="467" y="278" text-anchor="middle">4</text><text class="s" x="563" y="278" text-anchor="middle">5</text><text class="s" x="660" y="278" text-anchor="middle">6</text>
+      <text class="s" x="380" y="296" text-anchor="middle">reuses R →</text>
+      <!-- uncached: cost=(R+1); points: R0=1,R1=2,...R6=7  y=260-31.4*cost -->
+      <polyline class="unc" points="80,228.6 176.7,197.2 273.3,165.8 370,134.4 466.7,103 563.3,71.6 660,40.2"/>
+      <text class="s" x="600" y="58" fill="#b3402f">uncached (R+1)</text>
+      <!-- 5min cached: 1.25+0.1R; R0=1.25,R1=1.35,R2=1.45...R6=1.85 -->
+      <polyline class="c5" points="80,220.75 176.7,217.6 273.3,214.5 370,211.3 466.7,208.2 563.3,205 660,201.9"/>
+      <text class="s" x="540" y="214" fill="#3f7d4f">5-min (1.25+0.1R)</text>
+      <!-- 1hr cached: 2.0+0.1R; R0=2.0,R1=2.1...R6=2.6 -->
+      <polyline class="c1" points="80,197.2 176.7,194 273.3,190.9 370,187.7 466.7,184.6 563.3,181.4 660,178.3"/>
+      <text class="s" x="540" y="178" fill="#6b4f9e">1-hour (2.0+0.1R)</text>
+      <!-- crossover markers -->
+      <circle class="cr" cx="176.7" cy="207" r="6"/><text class="s" x="176.7" y="160" text-anchor="middle" fill="#8a6508">5-min wins</text><text class="s" x="176.7" y="148" text-anchor="middle" fill="#8a6508">at R=1</text>
+      <circle class="cr" cx="273.3" cy="190" r="6"/><text class="s" x="300" y="130" text-anchor="middle" fill="#8a6508">1-hour wins at R=2</text>
+      <text class="s" x="360" y="40" text-anchor="middle">Cached lines stay nearly flat (slope 0.1); uncached climbs at slope 1.0.</text>
+    </svg>
+    <figcaption>Diagram (f): the break-even curves. Uncached cost climbs at slope 1.0 per reuse; both cached lines climb at slope 0.1. The 5-minute line drops below uncached at R=1; the 1-hour line, starting higher, crosses at R=2. After that, the gap only widens.</figcaption>
+  </figure>
+
+  <h4>Steady state — where it all heads</h4>
+  <p>As R grows large, the per-request cached cost approaches the read rate: <code class="inl">0.1×</code> base input, versus <code class="inl">1.0×</code> uncached. That is up to <strong>90% savings on the cached prefix portion</strong> — and it's the <em>arithmetic floor</em> of the <code class="inl">0.1×</code> read multiplier, not a marketing claim. The one-time write premium amortizes to nothing across heavy reuse.</p>
+  <div class="callout tip collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🧭</span> Framing nuance — what "pays off after one read" really compares<span class="chev">▼</span></div>
+  <div class="cbody"><p>"Pays off after one/two reads" compares <em>cache write + reads</em> against <em>sending uncached every time</em>. A single 5-min write costs only <code class="inl">+0.25×</code> over a normal send; one hit saves <code class="inl">0.9×</code> (you pay 0.1 instead of 1.0), so a single hit more than repays the write. It is <strong>not</strong> comparing against "never sending the prefix" — you always have to send it; the question is whether you send it cached or raw.</p></div></div>
+
+  <h4>D4 · The worked dollar example</h4>
+  <p><strong>Assumptions (explicit):</strong> Claude Opus 4.8 — $5 base input / $0.50 read / $6.25 5-min write per MTok. Stable prefix = <strong>20,000 tokens</strong> (system + tool defs + a long reference doc). A <strong>10-turn</strong> conversation = 1 write + 9 reuses within the refreshing 5-min window. Ignore the varying suffix/output (identical in both scenarios) to isolate the prefix cost.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Scenario</th><th>Prefix cost calculation</th><th>Total</th></tr></thead>
+    <tbody>
+      <tr><td>No caching</td><td>10 turns × 20,000 tok × $5/MTok</td><td><strong>$1.00</strong></td></tr>
+      <tr><td>5-min caching — write (turn 1)</td><td>20,000 × $6.25/MTok</td><td>$0.125</td></tr>
+      <tr><td>5-min caching — reads (turns 2–10, 9 reads)</td><td>9 × 20,000 × $0.50/MTok</td><td>$0.09</td></tr>
+      <tr><td>5-min caching — total</td><td>$0.125 + $0.09</td><td><strong>$0.215</strong></td></tr>
+    </tbody>
+  </table></div>
+  <p>Savings ≈ <strong>$0.785 → about 78.5%</strong> on the cached prefix across the 10-turn session. (Note it's ~78.5%, not the steady-state 90% — the single write premium and the small 10-turn count haven't fully amortized yet.) Each <em>additional</em> reuse costs one-tenth of the uncached rate. Scale it linearly: at <strong>1,000 such sessions/day</strong>, the prefix line item drops from ~$1,000/day to ~$215/day under the same assumptions. <span class="verify">⚠ VERIFY</span> (Derived from the doc's per-MTok pricing; assumptions explicit.)</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 720 220" role="img" aria-label="The worked example: a 10-turn Opus 4.8 session prefix cost drops from one dollar uncached to twenty-one and a half cents with 5-minute caching">
+      <defs><style>.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 10px sans-serif;fill:#5c544c}.v{font:800 18px sans-serif}.seg{stroke:#fff;stroke-width:1}</style></defs>
+      <text class="t" x="360" y="20" text-anchor="middle">10-turn session, 20K-token prefix, Opus 4.8 — prefix cost only</text>
+      <!-- uncached bar full width -->
+      <text class="s" x="60" y="64">No cache</text>
+      <rect x="150" y="48" width="500" height="34" rx="6" fill="#b3402f"/>
+      <text class="v" x="660" y="73" text-anchor="end" fill="#b3402f">$1.00</text>
+      <text class="s" x="400" y="70" text-anchor="middle" fill="#fff">10 × 20K × $5/MTok = $1.00</text>
+      <!-- cached bar scaled 0.215 -> 107.5px -->
+      <text class="s" x="60" y="134">5-min cache</text>
+      <rect x="150" y="118" width="62" height="34" rx="6" fill="#b8860b"/><text class="s" x="181" y="140" text-anchor="middle" fill="#fff">write $0.125</text>
+      <rect class="seg" x="212" y="118" width="45" height="34" rx="0" fill="#3f7d4f"/><text class="s" x="234" y="140" text-anchor="middle" fill="#fff">9 reads $0.09</text>
+      <text class="v" x="270" y="143" fill="#3f7d4f">$0.215</text>
+      <rect x="150" y="170" width="500" height="30" rx="6" fill="#e3f0e6" stroke="#3f7d4f"/>
+      <text class="t" x="400" y="190" text-anchor="middle" fill="#3f7d4f">Saved ≈ $0.785 → ~78.5% on the prefix · scales to ~$1,000/day → ~$215/day at 1,000 sessions</text>
+    </svg>
+    <figcaption>Diagram (g): the worked dollar example. The uncached prefix costs $1.00 across 10 turns; with 5-minute caching it's one $0.125 write plus nine $0.01 reads ($0.09), totalling $0.215 — a ~78.5% cut on the prefix.</figcaption>
+  </figure>
+
+  <div class="callout tip collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">📎</span> Anthropic's own worked example (for cross-checking)<span class="chev">▼</span></div>
+  <div class="cbody"><p>The pricing page's Managed-Agents example shows a 1-hour Opus 4.8 coding session where moving 40,000 of 50,000 input tokens to cache reads drops token+runtime cost from <strong>$0.705 to $0.525</strong> — the cache-read line is "40,000 × $5 × 0.1 / 1,000,000 = $0.02" versus the uncached "$0.20." Same arithmetic, different numbers: 40K read tokens at <code class="inl">0.1×</code> cost a tenth of what they'd cost uncached. (source: pricing page)</p></div></div>
+
+  <h4>D5 · Stacking with other discounts</h4>
+  <ul>
+    <li><strong>Batch API:</strong> 50% off input/output, and "Batch API and prompt caching discounts can be combined." A cached read inside a batch job compounds: <code class="inl">0.1× × 0.5×</code>. <span class="verify">⚠ VERIFY</span></li>
+    <li><strong>Data residency</strong> (<code class="inl">inference_geo: "us"</code>): a <code class="inl">1.1×</code> multiplier applies on <strong>all</strong> categories including cache writes and reads (Opus/Sonnet 4.6+). <span class="verify">⚠ VERIFY</span></li>
+    <li><strong>Fast mode:</strong> caching multipliers apply <em>on top of</em> fast-mode premium pricing. <span class="verify">⚠ VERIFY</span></li>
+  </ul>
+  <p>(all source: pricing page)</p>
+
+  <div class="mcq" data-mcq data-correct="1">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Caching breaks even versus sending uncached after how many reads, for the two TTLs?</div>
+    <button class="opt">2 reads (5-min) and 4 reads (1-hour)</button>
+    <button class="opt">1 read (5-min) and 2 reads (1-hour)</button>
+    <button class="opt">1 read for both</button>
+    <button class="opt">It never breaks even — writes always cost more</button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden>From the algebra: 5-min needs R &gt; 0.278 → first reuse (R=1); 1-hour needs R &gt; 1.11 → second reuse (R=2). The doc states it directly: "pays off after just one cache read for the 5-minute duration, or after two cache reads for the 1-hour duration."</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="2">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">In the 10-turn Opus 4.8 example, why is the saving ~78.5% rather than the full 90%?</div>
+    <button class="opt">Because reads are billed at 0.2×, not 0.1×, for short sessions</button>
+    <button class="opt">Because output tokens are included in the calculation</button>
+    <button class="opt">Because the one-time 1.25× write premium hasn't fully amortized across only 10 turns; 90% is the steady-state floor</button>
+    <button class="opt">Because the 1-hour TTL was used</button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden>90% is the steady-state floor (per-request cost → 0.1× as R → ∞). With only 1 write + 9 reads, the single 1.25× write still weighs on the average, so the realized saving is ~78.5%. More reuses push it toward 90%.</div>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li>Multipliers: <strong>1.25×</strong> (5-min write), <strong>2.0×</strong> (1-hour write), <strong>0.1×</strong> (read). <span class="verify">⚠ VERIFY</span></li>
+    <li>Break-even (derived): 5-min wins at <strong>R &gt; 0.278 → 1 read</strong>; 1-hour at <strong>R &gt; 1.11 → 2 reads</strong>.</li>
+    <li>Steady state → per-request cost approaches <strong>0.1×</strong> = up to <strong>90% off the cached prefix</strong> (arithmetic, not marketing).</li>
+    <li>Worked example: 10-turn / 20K-prefix / Opus 4.8 → <strong>$1.00 → $0.215</strong> (~78.5%).</li>
+    <li>Stacks with <strong>Batch (50%)</strong>, <strong>data residency (1.1×)</strong>, and fast-mode premiums. <span class="verify">⚠ VERIFY</span></li>
+  </ul></div></div>
+</section>
+
+<!-- ============ SECTION E ============ -->
+<div class="sec-divider" id="secE">
+  <span class="badge"><span class="emoji">⑤</span> When NOT to cache</span>
+  <h2>When Caching Pays Off — and When It Costs You More</h2>
+  <p>Caching isn't free. Below the minimum, single-shot, changing prefixes, and the 5-minute TTL gotcha all lose money.</p>
+</div>
+
+<section class="lesson" id="lE" data-lesson>
+  <div class="lmeta"><span class="ltag"><span class="emoji">⚖️</span> Section E</span><span class="ltime">⏱ ~13 min</span><span class="ldomain">Domain 5 · Domain 4</span></div>
+  <h3 class="ltitle">The pay-off conditions and the loss conditions</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>State the common thread of every "pays off" use case</li>
+      <li>Name the five situations where caching costs you <em>more</em>, including the 5-min TTL gotcha</li>
+      <li>Apply the TTL decision rule (5-min vs 1-hour vs don't-cache)</li>
+    </ul>
+  </div>
+
+  <h4>E1 · Where it pays off</h4>
+  <p>Anthropic's recommended use cases (verbatim) all share one shape:</p>
+  <ul>
+    <li><strong>Conversational agents:</strong> "Reduce cost and latency for extended conversations, especially those with long instructions or uploaded documents."</li>
+    <li><strong>Coding assistants:</strong> "Improve autocomplete and codebase Q&amp;A by keeping relevant sections or a summarized version of the codebase in the prompt."</li>
+    <li><strong>Large document processing:</strong> "Incorporate complete long-form material including images in your prompt without increasing response latency."</li>
+    <li><strong>Detailed instruction sets:</strong> "…with prompt caching you can get even better performance by including <strong>20+ diverse examples</strong> of high quality answers." (few-shot caching)</li>
+    <li><strong>Agentic tool use:</strong> "Enhance performance for scenarios involving multiple tool calls and iterative code changes, where each step typically requires a new API call."</li>
+    <li><strong>Knowledge base interaction:</strong> "…embedding the entire document(s) into the prompt, and letting users ask it questions."</li>
+  </ul>
+  <p>(all source: prompt-caching doc) <strong>Common thread:</strong> a <strong>large, byte-identical prefix</strong> (system + tools + long context / few-shot) <strong>reused across many requests within the TTL window</strong>. That's the pattern to recognize on the exam and in your own agentic workflows.</p>
+
+  <h4>E2 · Where it does NOT pay off</h4>
+  <p>(Derived from the mechanism + economics — general reasoning grounded in the doc, not a verbatim Anthropic "don't" list.)</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Anti-pattern</th><th>Why it loses</th></tr></thead>
+    <tbody>
+      <tr><td>Prefix below the minimum length</td><td>&lt;1,024 or &lt;4,096 tokens (per model) → <strong>silently not cached, no error, no savings</strong>.</td></tr>
+      <tr><td>Single-shot / one-and-done prompts</td><td>You pay the <code class="inl">1.25×</code> (or <code class="inl">2×</code>) write and never collect a read → net <em>more</em> expensive than a plain call.</td></tr>
+      <tr><td>Constantly-changing prefixes</td><td>If the <em>start</em> of the prefix changes each call (timestamp, username in the system prompt), exact-match fails → you re-write every time.</td></tr>
+      <tr><td>Sporadic traffic + 5-min TTL</td><td>Reuse gaps exceed the TTL → cache expires before the next hit → every request is a fresh <code class="inl">1.25×</code> write (worse than no caching).</td></tr>
+      <tr><td>Parallel fan-out before first response</td><td>"A cache entry only becomes available after the first response begins" → concurrent first-calls each pay a write.</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="callout warn collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">⚠️</span> The 5-minute TTL gotcha (high-yield)<span class="chev">▼</span></div>
+  <div class="cbody"><p>This is the most counter-intuitive loss case. If your traffic is <strong>bursty</strong> — reuses arrive every 6–20 minutes, say — the 5-minute cache <em>expires between hits</em>. Each call then pays a fresh <code class="inl">1.25×</code> write and never collects a single <code class="inl">0.1×</code> read. You've made the prefix <strong>25% more expensive than not caching at all</strong>. <strong>Mitigations:</strong> (1) switch to the <strong>1-hour TTL</strong> (<code class="inl">2×</code> write, break-even at 2 reads) so the cache survives the gaps; or (2) keep the cache warm with a cheap heartbeat call inside the window. The fix is matching the TTL to the reuse cadence — which is the decision rule below.</p></div></div>
+
+  <h4>E3 · The TTL decision rule (architect heuristic, grounded in the doc math)</h4>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Reuse cadence</th><th>Choose</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Frequent / within 5 min</td><td><strong>Default 5-min</strong> (1.25× write)</td><td>Break-even at 1 read; refresh-on-hit keeps it warm.</td></tr>
+      <tr><td>Bursty / minutes-to-an-hour apart</td><td><strong>1-hour TTL</strong> (2× write)</td><td>Break-even at 2 reads; survives gaps that would expire the 5-min cache.</td></tr>
+      <tr><td>Rare / unpredictable / single</td><td><strong>Don't cache</strong></td><td>You'd pay a write you never recoup.</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">A support bot gets a question against a cached 15K-token policy doc roughly <strong>every 12 minutes</strong>. On the default 5-min TTL, is caching helping or hurting? What should you change?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>Hurting.</strong> With 12-minute gaps, the 5-minute cache <strong>expires before each next question</strong>, so every call pays a fresh <code class="inl">1.25×</code> write and never gets a <code class="inl">0.1×</code> read — making the prefix 25% <em>more</em> expensive than no caching. <strong>Fix:</strong> switch to the <strong>1-hour TTL</strong> (<code class="inl">2×</code> write). Now a write survives the 12-minute gaps, and after the second reuse you're ahead (break-even at R=2), trending toward 90% savings as volume grows. Alternatively, keep it warm with a heartbeat — but matching TTL to cadence is cleaner. This is the TTL decision rule in action.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="2">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Which scenario makes caching <em>more</em> expensive than not caching?</div>
+    <button class="opt">A 50K-token doc queried 40 times in 3 minutes</button>
+    <button class="opt">A coding agent re-sending stable tool defs across 30 tool calls</button>
+    <button class="opt">A one-and-done prompt sent once — you pay the write and never read</button>
+    <button class="opt">A few-shot prefix of 25 examples reused all afternoon</button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden>A single-shot prompt pays the 1.25× (or 2×) write premium and collects zero reads → net more expensive than a plain 1.0× call. The other three are textbook pay-off cases: large identical prefix, many reuses within the TTL.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="0">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Traffic reuses a prefix every ~20 minutes. The best move is to…</div>
+    <button class="opt">Use the 1-hour TTL so the cache survives the gaps (break-even at 2 reads)</button>
+    <button class="opt">Keep the 5-min TTL — refresh-on-hit will cover 20-minute gaps</button>
+    <button class="opt">Stop caching entirely; 20 minutes is always too long</button>
+    <button class="opt">Lower the minimum cacheable length</button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden>20-minute gaps exceed the 5-min TTL, so it would expire and re-write each time (refresh-on-hit only helps if hits arrive within the window). The 1-hour TTL (2× write, break-even at 2 reads) survives the gaps — the TTL decision rule for bursty traffic.</div>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li><strong>Pays off</strong> when a large, byte-identical prefix is reused many times within the TTL (conversations, coding/agent loops, doc Q&amp;A, 20+ few-shot).</li>
+    <li><strong>Loses</strong> on: sub-minimum prefixes (silent), single-shot prompts, changing prefixes, sporadic traffic vs 5-min TTL, and pre-first-response fan-out.</li>
+    <li><strong>5-min TTL gotcha:</strong> bursty reuse expires the cache → fresh write each time → 25% <em>worse</em> than no caching.</li>
+    <li><strong>TTL rule:</strong> frequent → 5-min; bursty → 1-hour; rare → don't cache.</li>
+  </ul></div></div>
+</section>
+
+<!-- ============ SECTION F ============ -->
+<div class="sec-divider" id="secF">
+  <span class="badge"><span class="emoji">⑥</span> Patterns &amp; gotchas</span>
+  <h2>Patterns &amp; Gotchas — Structuring for Cache Hits</h2>
+  <p>Stable-prefix-first, breakpoint placement, multi-breakpoint layering, and measuring with the usage fields.</p>
+</div>
+
+<section class="lesson" id="lF" data-lesson>
+  <div class="lmeta"><span class="ltag"><span class="emoji">🧩</span> Section F</span><span class="ltime">⏱ ~15 min</span><span class="ldomain">Domain 5 · Domain 3/4</span></div>
+  <h3 class="ltitle">Design the prompt so the cache actually hits</h3>
+
+  <div class="objectives">
+    <div class="lab">Learning objectives</div>
+    <ul>
+      <li>Apply stable-prefix-first structuring and correct breakpoint placement</li>
+      <li>Use multiple breakpoints for layered stability and the 20-position lookback</li>
+      <li>Read the <code class="inl">usage</code> fields to confirm caching works and diagnose busting</li>
+    </ul>
+  </div>
+
+  <h4>F1 · Structure stable-prefix-first</h4>
+  <blockquote class="ex">"Place static content (tool definitions, system instructions, context, examples) at the beginning of your prompt. Mark the end of the reusable content for caching using the <code class="inl">cache_control</code> parameter."<br>"Place cached content at the prompt's beginning for best performance." (source: prompt-caching doc)</blockquote>
+  <p>This is a Domain 3 prompt-structuring rule with a cost consequence: arrange the request so the most stable, most expensive-to-recompute material sits at the front, then mark the breakpoint where the stable part ends.</p>
+
+  <h4>F2 · Put the breakpoint on the last <em>identical</em> block</h4>
+  <p>For a prompt with a static prefix and a varying suffix (timestamps, per-request context, the incoming message), put the breakpoint at the <strong>end of the prefix, not the varying block</strong>. (source: prompt-caching doc)</p>
+  <div class="callout warn collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🚫</span> Anti-pattern: dynamic content in the static prefix<span class="chev">▼</span></div>
+  <div class="cbody"><p>Injecting the current date, user name, or session variables <em>into the static system prompt</em> changes the prefix byte-for-byte every call → exact-match fails → you re-write every time and never hit. <strong>Move dynamic content <em>after</em> the breakpoint</strong> (into the user turn or the varying suffix). (source: structuring guidance; corroborated <span class="verify">SECONDARY</span> PromptHub)</p></div></div>
+
+  <div class="codewrap">
+    <div class="clab"><span class="dot"></span> Anti-pattern vs fix (pseudocode — placeholders escaped)</div>
+    <pre><code># ✗ ANTI-PATTERN: dynamic date inside the cached system prompt
+system = [
+  { "type": "text",
+    "text": "You are a support agent. Today is &lt;current_date&gt;. &lt;long stable policy doc&gt;",
+    "cache_control": {"type": "ephemeral"} }
+]   # the date changes every call → prefix busts → re-write every time
+
+# ✓ FIX: stable text cached; dynamic date moved after the breakpoint
+system = [
+  { "type": "text",
+    "text": "You are a support agent. &lt;long stable policy doc&gt;",
+    "cache_control": {"type": "ephemeral"} }   # breakpoint at end of STABLE block
+]
+messages = [
+  { "role": "user",
+    "content": "Today is &lt;current_date&gt;. &lt;the user question&gt;" }  # varies AFTER the cache
+]</code></pre>
+  </div>
+
+  <h4>F3 · Cache the system + tools first</h4>
+  <p>Because invalidation cascades <code class="inl">tools → system → messages</code>, cache the most-stable, most-expensive-to-recompute layers (tool definitions and system prompt) and <strong>avoid editing tool defs casually</strong> — a tool-def change invalidates the <strong>entire</strong> cache (Section B6). In an agent loop, churning tool definitions is a silent money leak.</p>
+
+  <h4>F4 · Use multiple breakpoints for layered stability</h4>
+  <p>Up to <strong>4 breakpoints</strong> let you cache layers with different change cadences: one after tools+system (rarely changes), another after a long doc (changes per-session), another after accumulated conversation. The <strong>20-position lookback</strong> means earlier layers still hit even when a later layer changes. <span class="verify">⚠ VERIFY</span> (source: prompt-caching doc)</p>
+
+  <figure class="svgfig">
+    <svg viewBox="0 0 720 220" role="img" aria-label="Multi-breakpoint layering: a stable tools-and-system layer, a per-session document layer, and a growing conversation layer, each with its own breakpoint and change cadence">
+      <defs><style>.t{font:700 12px sans-serif;fill:#2b2622}.s{font:400 9.5px sans-serif;fill:#5c544c}.cn{font:600 10px sans-serif;fill:#fff}.bp{font:700 10px sans-serif;fill:#a44a2e}</style></defs>
+      <text class="t" x="360" y="18" text-anchor="middle">Layered caching — up to 4 breakpoints by change cadence</text>
+      <rect x="40" y="44" width="200" height="100" rx="10" fill="#6b4f9e"/><text class="cn" x="140" y="74" text-anchor="middle">Layer 1: tools + system</text><text class="s" x="140" y="94" text-anchor="middle" fill="#fff">changes: ~never</text><text class="s" x="140" y="112" text-anchor="middle" fill="#fff">longest TTL value</text>
+      <line x1="240" y1="40" x2="240" y2="150" stroke="#a44a2e" stroke-width="2" stroke-dasharray="4 3"/><text class="bp" x="240" y="164" text-anchor="middle">bp 1</text>
+      <rect x="248" y="44" width="180" height="100" rx="10" fill="#3a7d7b"/><text class="cn" x="338" y="74" text-anchor="middle">Layer 2: long doc</text><text class="s" x="338" y="94" text-anchor="middle" fill="#fff">changes: per session</text>
+      <line x1="428" y1="40" x2="428" y2="150" stroke="#a44a2e" stroke-width="2" stroke-dasharray="4 3"/><text class="bp" x="428" y="164" text-anchor="middle">bp 2</text>
+      <rect x="436" y="44" width="180" height="100" rx="10" fill="#c96442"/><text class="cn" x="526" y="74" text-anchor="middle">Layer 3: conversation</text><text class="s" x="526" y="94" text-anchor="middle" fill="#fff">changes: each turn</text>
+      <line x1="616" y1="40" x2="616" y2="150" stroke="#a44a2e" stroke-width="2" stroke-dasharray="4 3"/><text class="bp" x="616" y="164" text-anchor="middle">bp 3</text>
+      <rect x="624" y="44" width="56" height="100" rx="10" fill="#e3dacd"/><text class="s" x="652" y="98" text-anchor="middle">new msg</text>
+      <text class="s" x="360" y="196" text-anchor="middle">A change in Layer 2/3 still lets Layer 1 hit — the 20-position lookback finds the earlier cached boundary.</text>
+    </svg>
+    <figcaption>Diagram (h): multi-breakpoint layering. Each breakpoint caches a layer with its own change cadence; the 20-position lookback means a change in a later layer still lets the earlier, more-stable layers register cache hits.</figcaption>
+  </figure>
+
+  <h4>F5 · Combine with Batch, and watch residency</h4>
+  <p>Stack caching with the 50% Batch discount for non-time-sensitive bulk jobs; remember the <code class="inl">1.1×</code> <code class="inl">inference_geo:"us"</code> premium applies to cache reads/writes too. <span class="verify">⚠ VERIFY</span> (source: pricing page)</p>
+
+  <h4>F6 · Measure with the usage fields</h4>
+  <p>Confirm caching works by reading the response <code class="inl">usage</code> object. Field names (verbatim) <span class="verify">⚠ VERIFY</span>:</p>
+  <div class="codewrap">
+    <div class="clab"><span class="dot"></span> response.usage</div>
+    <pre><code>"usage": {
+  "cache_creation_input_tokens": 5120,
+  "cache_read_input_tokens": 1800,
+  "input_tokens": 2048,
+  "output_tokens": 503
+}</code></pre>
+  </div>
+  <ul>
+    <li><code class="inl">cache_creation_input_tokens</code> — tokens <strong>written</strong> to the cache when creating a new entry.</li>
+    <li><code class="inl">cache_read_input_tokens</code> — tokens <strong>retrieved</strong> from the cache for this request.</li>
+    <li><code class="inl">input_tokens</code> — "…only the tokens that come <strong>after the last cache breakpoint</strong>" (the uncached suffix).</li>
+    <li><strong>Identity:</strong> <code class="inl">total_input_tokens = cache_read_input_tokens + cache_creation_input_tokens + input_tokens</code>.</li>
+  </ul>
+  <p>(source: prompt-caching doc) <strong>Health signal:</strong> high <code class="inl">cache_read</code> + low <code class="inl">cache_creation</code> after warm-up = caching working; persistent high <code class="inl">cache_creation</code> = the prefix is busting (something earlier is changing) or the TTL keeps expiring. This is your debugging instrument — watch these two numbers.</p>
+
+  <h4>F7 · The gotchas checklist</h4>
+  <ul>
+    <li>Min-length not met → <strong>silent</strong> no-cache, no error.</li>
+    <li>Anything before a breakpoint changes → whole downstream cache busts.</li>
+    <li>Ordering is fixed <code class="inl">tools → system → messages</code>; can't cache a non-prefix slice.</li>
+    <li>Caches are <strong>workspace-isolated</strong> (as of 2026-02-05 on Claude API / Claude Platform on AWS / MS Foundry beta; org-level on Bedrock/Vertex) — never shared across orgs. <span class="verify">⚠ VERIFY</span></li>
+    <li>Caching does <strong>not</strong> enlarge the context window; it's a cost/latency optimization only.</li>
+    <li>Thinking blocks, citation sub-blocks, and empty text blocks cannot be cached.</li>
+  </ul>
+  <p>(all source: prompt-caching doc)</p>
+
+  <div class="reveal" data-reveal>
+    <div class="plab"><span class="emoji">🤔</span> Predict first</div>
+    <div class="q">After warm-up, your agent's <code class="inl">usage</code> still shows high <code class="inl">cache_creation_input_tokens</code> on every call and near-zero <code class="inl">cache_read_input_tokens</code>. What's almost certainly wrong?</div>
+    <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
+    <div class="ans"><strong>The prefix is busting on every call</strong> — either something <em>earlier in the prefix is changing</em> (a timestamp/username in the system prompt, or churning tool definitions that bust the whole cache), or the <strong>TTL keeps expiring</strong> between calls (sporadic traffic vs 5-min). Persistent high <code class="inl">cache_creation</code> means you're re-writing, not reading. Fixes: move dynamic content after the breakpoint (F2), stop editing tool defs mid-session (F3), or switch to the 1-hour TTL (E3). The <code class="inl">usage</code> fields are exactly the instrument that surfaces this.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="1">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Which usage field reports only the tokens <em>after</em> the last cache breakpoint (the uncached suffix)?</div>
+    <button class="opt"><code class="inl">cache_read_input_tokens</code></button>
+    <button class="opt"><code class="inl">input_tokens</code></button>
+    <button class="opt"><code class="inl">cache_creation_input_tokens</code></button>
+    <button class="opt"><code class="inl">output_tokens</code></button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden><code>input_tokens</code> counts "only the tokens that come after the last cache breakpoint." Cached tokens are split into <code>cache_read_input_tokens</code> (hits) and <code>cache_creation_input_tokens</code> (writes); the three sum to total input.</div>
+  </div>
+
+  <div class="mcq" data-mcq data-correct="3">
+    <div class="qlab"><span class="emoji">❓</span> Quick check</div>
+    <div class="qtext">Why move an injected timestamp out of the cached system prompt and into the user turn?</div>
+    <button class="opt">Timestamps can't be tokenized</button>
+    <button class="opt">The system array can't be cached at all</button>
+    <button class="opt">It makes the response faster to generate</button>
+    <button class="opt">A changing timestamp breaks the 100%-identical prefix → exact-match fails → re-write every call; moving it after the breakpoint keeps the prefix stable</button>
+    <div class="fb" aria-live="polite"></div>
+    <div class="fbmsg" hidden>"Cache hits require 100% identical prompt segments." A per-call timestamp in the cached prefix busts the match every time. Put dynamic content after the breakpoint so the stable prefix keeps hitting.</div>
+  </div>
+
+  <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
+  <div class="cbody"><ul>
+    <li><strong>Stable-prefix-first:</strong> static content (tools, system, context, examples) at the front; breakpoint at the end of the <em>last identical</em> block.</li>
+    <li>Keep dynamic content (dates, names, the user message) <strong>after</strong> the breakpoint, or the prefix busts every call.</li>
+    <li><strong>Multi-breakpoint layering</strong> (≤4) caches layers by change cadence; the <strong>20-position lookback</strong> lets earlier layers still hit.</li>
+    <li>Read <code class="inl">cache_read_input_tokens</code> vs <code class="inl">cache_creation_input_tokens</code> to confirm hits and diagnose busting.</li>
+  </ul></div></div>
+</section>
+
+<!-- FINAL QUIZ -->
+<div class="quizblock" data-quiz="final">
+  <div class="scorebar"><h4 style="margin:0"><span class="emoji">🧠</span> Final Knowledge Check (10 questions)</h4><span class="qscore" data-score>0 / 10</span></div>
+  <p style="font-size:14px;color:var(--ink-soft);margin-top:0">Spans the whole extension, weighted toward Domain 5 economics (multipliers, break-even, when-NOT-to-cache, the TTL gotcha, invalidation, prefix-first). No hints — answer, then check.</p>
+
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q1</div><div class="qtext">A cache <em>read</em> (hit) is billed at what multiplier of base input?</div>
+    <button class="opt">1.25×</button><button class="opt">2.0×</button><button class="opt">0.1×</button><button class="opt">0.5×</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>A read is 0.1× — "a cache hit costs 10% of the standard input price." Writes are 1.25× (5-min) and 2× (1-hour). <span class="verify">⚠ VERIFY</span> the multipliers — they drift.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="0" data-inquiz>
+    <div class="qlab">Q2</div><div class="qtext">Caching breaks even versus uncached after…</div>
+    <button class="opt">1 read (5-min TTL) / 2 reads (1-hour TTL)</button><button class="opt">2 reads / 4 reads</button><button class="opt">5 reads for both</button><button class="opt">It never breaks even</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>5-min: 1.25+0.1R &lt; R+1 → R &gt; 0.278 → R=1. 1-hour: 2.0+0.1R &lt; R+1 → R &gt; 1.11 → R=2. Matches the doc.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="1" data-inquiz>
+    <div class="qlab">Q3</div><div class="qtext">The default cache TTL, and what happens on each hit, is…</div>
+    <button class="opt">1 hour; the clock is fixed from the write</button><button class="opt">5 minutes; each hit refreshes the clock for free</button><button class="opt">5 minutes; each hit costs a new write</button><button class="opt">10 minutes; hits don't affect it</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>Default = 5 minutes; "the cache is refreshed for no additional cost each time the cached content is used." A busy prefix stays warm on one write.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="3" data-inquiz>
+    <div class="qlab">Q4</div><div class="qtext">Editing one tool definition mid-session invalidates…</div>
+    <button class="opt">Nothing</button><button class="opt">Messages only</button><button class="opt">System + messages</button><button class="opt">The entire cache (tools + system + messages)</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>"Changes at each level invalidate that level and all subsequent levels." Tools is first, so a tool-def edit busts everything — the most expensive change.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q5</div><div class="qtext">Which case makes caching <em>more</em> expensive than not caching?</div>
+    <button class="opt">A 40-turn chat over a fixed system prompt</button><button class="opt">A codebase Q&amp;A reused all day</button><button class="opt">A single one-and-done prompt (pay the write, never read)</button><button class="opt">25 few-shot examples reused hourly</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>Single-shot pays the 1.25×/2× write and collects zero reads → net more than a plain 1.0× call. The others reuse a stable prefix many times.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="0" data-inquiz>
+    <div class="qlab">Q6</div><div class="qtext">Bursty traffic reuses a prefix every ~15 minutes. The 5-min TTL gotcha means…</div>
+    <button class="opt">The cache expires between hits → every call is a fresh write → switch to the 1-hour TTL</button><button class="opt">Refresh-on-hit covers the 15-minute gaps automatically</button><button class="opt">Reads become free</button><button class="opt">The minimum cacheable length drops</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>15-min gaps &gt; 5-min TTL → expiry before the next hit → fresh 1.25× write each time (worse than no caching). Fix: 1-hour TTL (break-even at 2 reads) or keep warm.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="1" data-inquiz>
+    <div class="qlab">Q7</div><div class="qtext">The minimum cacheable length below which a prefix is silently not cached is…</div>
+    <button class="opt">Always 2,048 tokens</button><button class="opt">Model-dependent (e.g., Opus 4.8 = 1,024; Haiku 4.5 = 4,096); below it, no cache and no error</button><button class="opt">Zero — any prefix is cached</button><button class="opt">Always 4,096 for every current model</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>Minimums are version-tied. Opus 4.8 = 1,024; Haiku 4.5 = 4,096 (NOT the stale 2,048 — that's retired Haiku 3.5). Below the minimum: "processed without caching, and no error is returned."</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="2" data-inquiz>
+    <div class="qlab">Q8</div><div class="qtext">Where should you place the <code class="inl">cache_control</code> breakpoint relative to a varying suffix?</div>
+    <button class="opt">Inside the varying suffix, so it updates each call</button><button class="opt">At the very start of the request</button><button class="opt">At the end of the last identical (stable) block, before the varying suffix</button><button class="opt">It doesn't matter — caching is automatic</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>Mark "the last content block you want included" — the end of the stable prefix. Keep dynamic content after it, or the 100%-identical match breaks and the cache busts.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="3" data-inquiz>
+    <div class="qlab">Q9</div><div class="qtext">Persistent high <code class="inl">cache_creation_input_tokens</code> with near-zero <code class="inl">cache_read_input_tokens</code> after warm-up indicates…</div>
+    <button class="opt">Caching is working perfectly</button><button class="opt">Output tokens are too high</button><button class="opt">The context window is full</button><button class="opt">The prefix is busting (something earlier changing) or the TTL keeps expiring</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>High creation + low read = re-writing, not reading. Cause: dynamic content in the prefix, churning tool defs (busts all), or TTL expiry. The usage fields are your debugging instrument.</div>
+  </div>
+  <div class="mcq" data-mcq data-correct="1" data-inquiz>
+    <div class="qlab">Q10</div><div class="qtext">In the steady state of heavy reuse, the cached prefix cost approaches…</div>
+    <button class="opt">1.25× base input (the write rate)</button><button class="opt">0.1× base input — up to ~90% savings on the cached prefix (arithmetic floor of the read multiplier)</button><button class="opt">2.0× base input</button><button class="opt">Zero — caching is fully free at scale</button>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>As R grows, per-request cost → the 0.1× read rate vs 1.0× uncached → up to 90% off the cached portion. The one-time write premium amortizes away. It's arithmetic, not a marketing headline.</div>
+  </div>
+  <div class="resultbox" data-result></div>
+</div>
+
+<!-- WHAT'S NEXT -->
+<div class="nextbox">
+  <strong>➡️ What's next.</strong> This is extension <strong>C-E4</strong>, and it <strong>completes the currently-shipped Claude-101 track</strong> — you've now got the cost mechanics (multipliers, break-even, the TTL gotcha, invalidation, prefix-first structuring) sitting beneath everything from the tool-use loop (C-E1) through context management (C-E2) and MCP (C-E3). The <em>planned</em> next extension is <strong>C-E5 — "Prompt Engineering Depth + Model Selection,"</strong> which would tie prompt structure and model choice back to these economics. Continue to <a href="prompt-engineering-depth.html">Prompt Engineering Depth + Model Selection →</a>
+</div>
+
+<!-- SOURCES -->
+<section class="lesson" id="sources" data-lesson style="border-top:1px solid var(--line)">
+  <div class="lmeta"><span class="ltag"><span class="emoji">📚</span> Sources</span></div>
+  <h3 class="ltitle">Sources</h3>
+  <p>Every substantive claim in this extension traces to the sources below (the source manifest from the grounding citations file). No facts beyond these sources were introduced. The two secondary sources are used <em>only</em> for the launch-era latency/cost percentages and structuring corroboration, and are tagged <span class="verify">SECONDARY</span>. Version-sensitive facts — all prices, multipliers, TTLs, break-even numbers, minimums, model names, and usage-field names — carry inline <span class="verify">⚠ VERIFY</span> notes.</p>
+  <div class="sources">
+    <ol>
+      <li><strong>PRIMARY</strong> — Anthropic, Prompt caching (Build with Claude): mechanism, <code class="inl">cache_control</code>, breakpoints, minimums, TTL, invalidation, usage fields, use cases — <a href="https://platform.claude.com/docs/en/build-with-claude/prompt-caching">platform.claude.com/docs/en/build-with-claude/prompt-caching</a></li>
+      <li><strong>PRIMARY</strong> — Anthropic, Pricing (About Claude): per-model pricing table, the caching multipliers, the break-even statement, stacking, worked examples, tokenizer caveat — <a href="https://platform.claude.com/docs/en/about-claude/pricing">platform.claude.com/docs/en/about-claude/pricing</a></li>
+      <li><span class="verify">SECONDARY</span> — Introl, Prompt-caching infrastructure guide (the "~85% latency / ~90% cost" launch-era framing only) — <a href="https://introl.com/blog/prompt-caching-infrastructure-llm-cost-latency-reduction-guide-2025">introl.com/blog/prompt-caching-infrastructure-llm-cost-latency-reduction-guide-2025</a></li>
+      <li><span class="verify">SECONDARY</span> — PromptHub, Prompt caching with OpenAI, Anthropic &amp; Google (stable-prefix structuring corroboration only) — <a href="https://www.prompthub.us/blog/prompt-caching-with-openai-anthropic-and-google-models">prompthub.us/blog/prompt-caching-with-openai-anthropic-and-google-models</a></li>
+    </ol>
+  </div>
+  <div class="examnote">
+    <b>📌 [VERIFY] flags preserved from the source.</b> Drift-prone facts surfaced inline in this lesson, all to re-check against the two primary docs at build/exam time: (1) the <strong>multipliers</strong> — 1.25× / 2.0× / 0.1×; (2) <strong>TTLs</strong> — 5-min default (refresh-on-hit) / 1-hour opt-in / "promptly, though not immediately, deleted"; (3) <strong>break-even</strong> — 1 read (5-min), 2 reads (1-hour); (4) <strong>breakpoints/lookback</strong> — max 4, 20 positions; (5) <strong>per-model minimums</strong> — esp. Haiku 4.5 = 4,096 (NOT 2,048), Opus 4.8 = 1,024, Opus 4.5–4.7 = 4,096, retired Haiku 3.5 = 2,048; (6) <strong>per-MTok prices</strong> — Opus 4.x $5/$6.25/$10/$0.50/$25, Sonnet 4.x $3/$3.75/$6/$0.30/$15, Haiku 4.5 $1/$1.25/$2/$0.10/$5; (7) <strong>usage field names</strong> — <code class="inl">cache_creation_input_tokens</code>, <code class="inl">cache_read_input_tokens</code>, <code class="inl">input_tokens</code> (post-breakpoint only); (8) <strong>model names</strong> — Opus 4.5/4.6/4.7/4.8, Mythos Preview, Sonnet 4.5/4.6, Haiku 4.5; (9) <strong>stacking</strong> — Batch 50% (combinable), <code class="inl">inference_geo:"us"</code> 1.1×, fast-mode premium; (10) <strong>tokenizer caveat</strong> — Opus 4.7+ may use up to 35% more tokens for the same text; (11) <strong>isolation</strong> — workspace-isolated (Claude API / AWS / MS Foundry beta, 2026-02-05) vs org-level (Bedrock/Vertex); (12) the <span class="verify">SECONDARY</span> "~85% latency / ~90% cost" headline (90%-on-cached-prefix is arithmetic; the 85% latency figure is launch-era/secondary).
+  </div>
+</section>
+
+<footer>
+  <p><span class="sourcebadge"><span class="emoji">📄</span> Extension lesson · built faithfully from the source-of-truth citations file — every claim traces to Anthropic's prompt-caching &amp; pricing docs. No external facts introduced beyond two tagged secondary sources; [VERIFY] flags preserved.</span></p>
+  <p style="margin-top:14px">Prompt Caching Economics · CCA-F extension (C-E4) · <a href="../claude-101.html">← Base course</a> · <a href="context-management-reliability.html">← C-E2: Context Management</a> · <a href="mcp-at-a-builder-level.html">← C-E3: MCP at a Builder Level</a> · <a href="prompt-engineering-depth.html">Next: Prompt Engineering Depth →</a> ·<a href="#top">Back to top ↑</a></p>
+</footer>
+
+</div><!-- /wrap -->
+</main>
+</div><!-- /layout -->
+
+<script>
+(function(){
+  "use strict";
+  /* ---------- Build TOC ---------- */
+  var sections=[
+    {title:"The problem",lessons:[["lA","Repeated-prefix problem"]]},
+    {title:"Mechanism",lessons:[["lB","Breakpoints, order, invalidation"]]},
+    {title:"TTL & refresh",lessons:[["lC","5-min default, 1-hour opt-in"]]},
+    {title:"The economics",lessons:[["lD","Multipliers & break-even"]]},
+    {title:"When NOT to cache",lessons:[["lE","Pay-off vs loss + TTL gotcha"]]},
+    {title:"Patterns & gotchas",lessons:[["lF","Prefix-first, usage fields"]]},
+    {title:"Reference",lessons:[["sources","Sources & [VERIFY] flags"]]}
+  ];
+  var toc=document.getElementById('toc');
+  var navOrder=[];
+  sections.forEach(function(sec){
+    var h=document.createElement('div');h.className='nav-sec';h.textContent=sec.title;toc.appendChild(h);
+    sec.lessons.forEach(function(l){
+      var a=document.createElement('a');a.href='#'+l[0];a.dataset.target=l[0];
+      a.innerHTML='<span class="num"><span>'+(navOrder.length+1)+'</span></span><span>'+l[1]+'</span>';
+      a.addEventListener('click',function(){if(window.innerWidth<=980)toggleNav();});
+      toc.appendChild(a);
+      navOrder.push(l[0]);
+    });
+  });
+  var TOTAL=navOrder.length; // dynamic denominator — no off-by-one
+
+  /* ---------- Progress bar + active nav + completion ---------- */
+  var navLinks=Array.prototype.slice.call(document.querySelectorAll('nav a'));
+  var lessonEls=Array.prototype.slice.call(document.querySelectorAll('section.lesson'));
+  var seen={};
+  function onScroll(){
+    var doc=document.documentElement;
+    var scrollTop=window.scrollY||doc.scrollTop;
+    var height=doc.scrollHeight-doc.clientHeight;
+    var pct=height>0?(scrollTop/height*100):0;
+    document.getElementById('progressBar').style.width=pct+'%';
+    var mid=scrollTop+window.innerHeight*0.32;
+    var current=null;
+    lessonEls.forEach(function(el){
+      if(el.offsetTop<=mid)current=el;
+      if(el.offsetTop<=scrollTop+window.innerHeight*0.6){seen[el.id]=true;}
+    });
+    navLinks.forEach(function(a){a.classList.remove('active');});
+    if(current){
+      var act=document.querySelector('nav a[data-target="'+current.id+'"]');
+      if(act)act.classList.add('active');
+    }
+    navLinks.forEach(function(a){if(seen[a.dataset.target])a.classList.add('done');});
+    var doneCount=0;
+    navOrder.forEach(function(id){if(seen[id])doneCount++;});
+    document.getElementById('progPct').textContent=Math.round(doneCount/TOTAL*100)+'%';
+  }
+  window.addEventListener('scroll',onScroll,{passive:true});
+  window.addEventListener('resize',onScroll);
+  onScroll();
+
+  /* ---------- Mobile nav ---------- */
+  window.toggleNav=function(){
+    var open=document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('scrim').classList.toggle('open');
+    var b=document.querySelector('.menubtn');if(b)b.setAttribute('aria-expanded',open?'true':'false');
+  };
+
+  /* ---------- Collapsible callouts ---------- */
+  window.toggleCall=function(head){
+    var c=head.parentElement;c.classList.toggle('collapsed');
+    head.setAttribute('aria-expanded', c.classList.contains('collapsed')?'false':'true');
+  };
+  document.querySelectorAll('.callout .chead').forEach(function(head){
+    head.setAttribute('role','button');
+    head.setAttribute('tabindex','0');
+    head.setAttribute('aria-expanded', head.parentElement.classList.contains('collapsed')?'false':'true');
+    head.addEventListener('keydown',function(e){
+      if(e.key==='Enter'||e.key===' '||e.key==='Spacebar'){e.preventDefault();window.toggleCall(head);}
+    });
+  });
+
+  /* ---------- Predict / reveal ---------- */
+  window.doReveal=function(btn){
+    var ans=btn.parentElement.querySelector('.ans');
+    ans.classList.add('show');
+    btn.textContent='Answer shown ✓';
+    btn.disabled=true;btn.style.opacity='.6';btn.style.cursor='default';
+  };
+
+  /* ---------- MCQ logic ---------- */
+  document.querySelectorAll('.mcq[data-mcq]').forEach(function(mcq){
+    var correct=parseInt(mcq.getAttribute('data-correct'),10);
+    var opts=Array.prototype.slice.call(mcq.querySelectorAll('.opt'));
+    var fb=mcq.querySelector('.fb');
+    var msgEl=mcq.querySelector('.fbmsg');
+    var msg=msgEl?msgEl.innerHTML:'';
+    var answered=false;
+    opts.forEach(function(opt,i){
+      opt.addEventListener('click',function(){
+        if(answered)return;answered=true;
+        var isCorrect=(i===correct);
+        opts.forEach(function(o,j){
+          o.disabled=true;
+          if(j===correct){o.classList.add('correct');if(!o.querySelector('.mark'))appendMark(o,'✓');}
+        });
+        if(!isCorrect){opt.classList.add('wrong');appendMark(opt,'✗');}
+        fb.classList.add('show');
+        fb.classList.add(isCorrect?'ok':'no');
+        fb.innerHTML='<strong>'+(isCorrect?'Correct! ':'Not quite. ')+'</strong>'+msg;
+        var quiz=mcq.closest('.quizblock');
+        if(quiz&&mcq.hasAttribute('data-inquiz')){
+          mcq.dataset.result=isCorrect?'1':'0';
+          updateQuiz(quiz);
+        }
+      });
+    });
+  });
+  function appendMark(opt,sym){var s=document.createElement('span');s.className='mark';s.textContent=sym;opt.appendChild(s);}
+
+  /* ---------- Quiz scoring ---------- */
+  function updateQuiz(quiz){
+    var mcqs=Array.prototype.slice.call(quiz.querySelectorAll('.mcq[data-inquiz]'));
+    var total=mcqs.length;
+    var answered=mcqs.filter(function(m){return m.dataset.result!==undefined;});
+    var score=mcqs.filter(function(m){return m.dataset.result==='1';}).length;
+    var scoreEl=quiz.querySelector('[data-score]');
+    if(scoreEl)scoreEl.textContent=score+' / '+total;
+    if(answered.length===total){
+      var box=quiz.querySelector('[data-result]');
+      var pct=score/total*100;
+      box.classList.add('show');
+      box.classList.remove('pass','mid');
+      if(pct>=75){box.classList.add('pass');box.innerHTML='🎉 '+score+'/'+total+' — strong work! You\'ve got the caching economics down.';}
+      else if(pct>=50){box.classList.add('mid');box.innerHTML='👍 '+score+'/'+total+' — solid. Skim the misses above and you\'re set.';}
+      else{box.classList.add('mid');box.innerHTML='📖 '+score+'/'+total+' — worth a re-read of these sections before moving on.';}
+    }
+  }
+})();
+</script>
+</body>
+</html>
