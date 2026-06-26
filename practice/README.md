@@ -9,9 +9,9 @@ These are **original** scenario/anti-pattern questions authored against this pro
 | File | Domain | Exam weight | Questions |
 |---|---|---|---|
 | [`CCA-F_practice_d1-agentic-architecture.md`](CCA-F_practice_d1-agentic-architecture.md) | 1 — Agentic Architecture & Orchestration | 27% | 14 |
-| [`CCA-F_practice_d2-claude-code.md`](CCA-F_practice_d2-claude-code.md) | 2 — Claude Code Configuration & Workflows | 20% | 10 |
-| [`CCA-F_practice_d3-prompt-engineering.md`](CCA-F_practice_d3-prompt-engineering.md) | 3 — Prompt Engineering & Structured Output | 20% | 10 |
-| [`CCA-F_practice_d4-tools-mcp.md`](CCA-F_practice_d4-tools-mcp.md) | 4 — Tool Design & MCP Integration | 18% | 9 |
+| [`CCA-F_practice_d2-tools-mcp.md`](CCA-F_practice_d2-tools-mcp.md) | 2 — Tool Design & MCP Integration | 18% | 9 |
+| [`CCA-F_practice_d3-claude-code.md`](CCA-F_practice_d3-claude-code.md) | 3 — Claude Code Configuration & Workflows | 20% | 10 |
+| [`CCA-F_practice_d4-prompt-engineering.md`](CCA-F_practice_d4-prompt-engineering.md) | 4 — Prompt Engineering & Structured Output | 20% | 10 |
 | [`CCA-F_practice_d5-context-reliability.md`](CCA-F_practice_d5-context-reliability.md) | 5 — Context Management & Reliability | 15% | 8 |
 | **Total** | | **100%** | **51** |
 
@@ -24,8 +24,8 @@ The exam's hardest items combine two domains in one scenario — and the course 
 | File | Scenario | Domains | The collision it drills |
 |---|---|---|---|
 | [`CCA-F_checkpoint_A_support-agent_D1xD5.md`](CCA-F_checkpoint_A_support-agent_D1xD5.md) | 1 — Customer Support Agent | D1 × D5 | escalation + multi-turn compaction/caching (don't compact away the complaint the handoff needs; don't cache per-conversation content; escalate by category not fail-count) |
-| [`CCA-F_checkpoint_B_ci-cd_D2xD3.md`](CCA-F_checkpoint_B_ci-cd_D2xD3.md) | 5 — Claude Code in CI/CD | D2 × D3 | headless flags + Structured-Outputs guarantee + reproducibility (`--bare`/auth coupling; a permission prompt hanging CI; prompt-only JSON in an unattended pipeline) |
-| [`CCA-F_checkpoint_C_multi-agent-research_D1xD4.md`](CCA-F_checkpoint_C_multi-agent-research_D1xD4.md) | 3 — Multi-Agent Research | D1 × D4 | orchestration + tool/error design (raw dumps across the seam; subagent context isolation; tool-vs-resource; retrying uncertain writes; parallel-elapsed=max) |
+| [`CCA-F_checkpoint_B_ci-cd_D3xD4.md`](CCA-F_checkpoint_B_ci-cd_D3xD4.md) | 5 — Claude Code in CI/CD | D3 × D4 | headless flags + Structured-Outputs guarantee + reproducibility (`--bare`/auth coupling; a permission prompt hanging CI; prompt-only JSON in an unattended pipeline) |
+| [`CCA-F_checkpoint_C_multi-agent-research_D1xD2.md`](CCA-F_checkpoint_C_multi-agent-research_D1xD2.md) | 3 — Multi-Agent Research | D1 × D2 | orchestration + tool/error design (raw dumps across the seam; subagent context isolation; tool-vs-resource; retrying uncertain writes; parallel-elapsed=max) |
 
 > **Order:** per-domain banks → integration checkpoints (A/B/C) → timed mock. Integration *before* the mock, so the mock confirms rather than first-teaches.
 

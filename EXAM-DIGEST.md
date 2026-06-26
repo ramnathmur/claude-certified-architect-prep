@@ -4,6 +4,8 @@
 **Source:** Distilled from `daronyondem/claude-architect-exam-guide` v1.0.1 (26 May 2026, **CC BY 4.0 — attribution: Daron Yöndem**), cross-checked against this project's own web-researched citations (`courses/.../source/*_citations.md`) and the Anthropic docs.
 **How to use:** This is the single-source crammer for the days before the exam. The guide's **11 knowledge areas** are mapped here onto the **5 official exam domains**. Study the *anti-patterns* hardest — the exam weights scenario + "what's wrong with this design?" questions above recall. Pair this with `GAPS.md` (your weak spots) and the 8-extension HTML course (mechanism-level depth).
 
+> **Scenario count (verified 2026-06-26 against the official exam guide):** the exam pool is **6 scenarios** (4 drawn per sitting): Customer Support, Code Generation, Multi-Agent Research, Developer Productivity, Claude Code CI/CD, Structured Data Extraction. An earlier community guide wrongly listed 8 (adding "Conversational AI Architecture" and "Agentic AI Tools") — those are NOT official scenarios.
+
 > **KA→Domain map.** The community guide's 11 knowledge areas (KA1–KA11) don't line up 1:1 with Anthropic's 5 domains. The mapping below is the reconciliation.
 
 ---
@@ -33,7 +35,7 @@
 
 ---
 
-## Domain 2 — Claude Code Configuration & Workflows · 20%
+## Domain 3 — Claude Code Configuration & Workflows · 20%
 *Covers guide KA10 (Claude Code & Agent SDK). Deep treatment in the new C-E6 lesson + its citations file.*
 
 ### Must-know
@@ -54,7 +56,7 @@
 
 ---
 
-## Domain 3 — Prompt Engineering & Structured Output · 20%
+## Domain 4 — Prompt Engineering & Structured Output · 20%
 *Covers guide KA1 (API/output control), KA4 (extraction/validation), KA6 (system-prompt engineering), KA11 (eval/batch). Deep treatment in C-E5.*
 
 ### Must-know
@@ -74,7 +76,7 @@
 
 ---
 
-## Domain 4 — Tool Design & MCP Integration · 18%
+## Domain 2 — Tool Design & MCP Integration · 18%
 *Covers guide KA2 (tool interfaces), KA3 (error handling), KA7 (MCP).*
 
 ### Must-know

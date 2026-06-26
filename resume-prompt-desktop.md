@@ -174,12 +174,12 @@ Tie quiz questions to the exam domains they reinforce:
 | # | Domain | Weight |
 |---|---|---|
 | 1 | Agentic Architecture & Orchestration | 27% |
-| 2 | Claude Code Configuration & Workflows | 20% |
-| 3 | Prompt Engineering & Structured Output | 20% |
-| 4 | Tool Design & MCP Integration | 18% |
+| 2 | Tool Design & MCP Integration | 18% |
+| 3 | Claude Code Configuration & Workflows | 20% |
+| 4 | Prompt Engineering & Structured Output | 20% |
 | 5 | Context Management & Reliability | 15% |
 
-The agent courses primarily hit Domain 1 (27%) and Domain 2 (20%). Weight your MCQs accordingly.
+The agent courses primarily hit Domain 1 (27%) and Domain 3 (20%). Weight your MCQs accordingly.
 
 ---
 

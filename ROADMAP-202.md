@@ -32,10 +32,10 @@ One project, **two depth tiers aligned to two goals**, switchable from a single 
 ### ⬜ Pending
 - **6 more 202 lessons** (see Remaining Lessons table).
 - **Full Launchpad tier toggle** — an `All / 101 / 202` filter control. Badges exist; the toggle does not. (Lightweight: filter `[data-card]` articles by a `tier` data-attr.)
-- **D2 202 companion** (deep-mastery tier) — optional, build after the pilot is eyeballed.
+- **D3 202 companion** (deep-mastery tier) — optional, build after the pilot is eyeballed.
 
-### ✅ Done (2026-06-06, later session) — D2 101 EXAM-DEPTH EXTENSION SHIPPED
-- **C-E6 Claude Code Configuration & Workflows** · **D2** · `courses/claude-101/extensions/claude-code-configuration.html` (~146 KB, 8 sections A–H, 7 SVGs, 17 inline MCQs + 10-Q quiz). **Closes the Domain-2 exam gap (20%, previously zero coverage at either tier.)** This was THE priority in the Decision Log below.
+### ✅ Done (2026-06-06, later session) — D3 101 EXAM-DEPTH EXTENSION SHIPPED
+- **C-E6 Claude Code Configuration & Workflows** · **D3** · `courses/claude-101/extensions/claude-code-configuration.html` (~146 KB, 8 sections A–H, 7 SVGs, 17 inline MCQs + 10-Q quiz). **Closes the Domain-2 exam gap (20%, previously zero coverage at either tier.)** This was THE priority in the Decision Log below.
   - Fresh web research done → `source/claude-code-configuration_citations.md` (15 PRIMARY sources, all `code.claude.com/docs`; 13-item [VERIFY] list). This was the "1 lesson needs fresh research" item — now resolved.
   - Both QA gates PASS (G1 fidelity 0/0/4, G2 build/interactivity 0/0/2). High-value minors fixed (diagram count, caption lettering, HKCU qualifier). Reports in `courses/claude-101/extensions/qa/`.
   - Wired into Launchpad as C-track card `id:'c-e6'`, `tier:'101'`, domain `d2`, new `config` illo (settings sliders). C-E5 updated with Next→C-E6 + nextbox rewritten (was "no next lesson"). New lesson is the C-track END (Prev←C-E5, no Next).
@@ -45,17 +45,17 @@ One project, **two depth tiers aligned to two goals**, switchable from a single 
 ---
 
 ## DECISION LOG
-**2026-06-06 — re-evaluation of the original three offered fixes (build D2 / add depth-tier labels / add canonical path):**
+**2026-06-06 — re-evaluation of the original three offered fixes (build D3 / add depth-tier labels / add canonical path):**
 - **Depth-tier labels → DONE / retired.** Shipped as the per-card 101/202 badges (11 + 1, verified). No separate task remains. The only follow-on is the `All/101/202` toggle (still pending below).
-- **Canonical path → folded into the toggle.** Now that there are two tiers, a single linear path must account for both — so it merges into the tier-toggle work rather than being its own task. Lower priority than the D2 content gap.
-- **Domain-2 lesson → ✅ DONE (2026-06-06).** Built as the 101 exam-depth extension **C-E6** (see "✅ Done — D2 101" section above). Because it rides the proven 8/8 101-extension pipeline and is independent of the 202 template, Ram chose to build it ahead of the pilot-eyeball gate — low risk, highest exam ROI. The D2 **202 companion** is still optional/pending. Citations researched fresh; both gates PASS; wired into Launchpad; rendered-verified.
+- **Canonical path → folded into the toggle.** Now that there are two tiers, a single linear path must account for both — so it merges into the tier-toggle work rather than being its own task. Lower priority than the D3 content gap.
+- **Domain-2 lesson → ✅ DONE (2026-06-06).** Built as the 101 exam-depth extension **C-E6** (see "✅ Done — D3 101" section above). Because it rides the proven 8/8 101-extension pipeline and is independent of the 202 template, Ram chose to build it ahead of the pilot-eyeball gate — low risk, highest exam ROI. The D3 **202 companion** is still optional/pending. Citations researched fresh; both gates PASS; wired into Launchpad; rendered-verified.
 
 ---
 
 ## THE PROVEN RECIPE (exactly how the pilot was built — repeat per lesson)
 This pipeline produced the pilot. Follow it verbatim for each remaining 202 lesson.
 
-1. **Grounding (reuse, don't re-research — except D2).** Each 202 lesson is built on the SAME verified `extensions/source/<slug>_citations.md` as its 101 sibling. These were all re-verified against live docs on 2026-06-06 (53/54 facts confirmed; MCP spec date fixed to `2025-11-25`). **Do NOT invent facts.** The C-E2+C-E4 merge draws on BOTH citations files. **Only the new D2 lesson needs a fresh `web-researcher` pass** → write `courses/claude-101/extensions/source/claude-code-configuration_citations.md` first.
+1. **Grounding (reuse, don't re-research — except D3).** Each 202 lesson is built on the SAME verified `extensions/source/<slug>_citations.md` as its 101 sibling. These were all re-verified against live docs on 2026-06-06 (53/54 facts confirmed; MCP spec date fixed to `2025-11-25`). **Do NOT invent facts.** The C-E2+C-E4 merge draws on BOTH citations files. **Only the new D3 lesson needs a fresh `web-researcher` pass** → write `courses/claude-101/extensions/source/claude-code-configuration_citations.md` first.
 2. **Build (one general-purpose agent, persona panel).** Persona panel = **Senior Tech Writer (lead) + Senior Frontend Engineer + Senior Visual Designer + AI Professor**, all confirmed in `C:\Claude Cowork\Projects\AI agents personas\` (index `AI-Agents-Personas_Overview_v1.html`). Give the agent: (a) the citations file as the ONLY fact source, (b) the 101 sibling for design language, (c) the 202 template spec below, (d) the exact `.cnav` block (below). Output to `courses/<base>/deep-mastery/<slug>-202.html`.
 3. **Two QA gates in parallel** (independent agents, never the producer):
    - **Gate 1 — fidelity:** every number matches citations exactly; **any interactive widget's computed numbers must be grounded** in citation multipliers, with author-modeling clearly labeled "illustrative, not an Anthropic fact"; all `[VERIFY]` flags preserved. → `qa/gate1-<slug>-202.md`
@@ -96,20 +96,20 @@ Home + a "📘 101 · Exam-prep view" cross-link to the 101 sibling + base-cours
 ---
 
 ## REMAINING 202 LESSONS (Phase A recommendations, build order)
-Suggested order = highest standalone value + reuses verified citations first; the research-needed D2 lesson last.
+Suggested order = highest standalone value + reuses verified citations first; the research-needed D3 lesson last.
 
 | Order | Subject | Domain | Output slug (`<base>/deep-mastery/…`) | Signature interactive hook | Fact source |
 |---|---|---|---|---|---|
 | ✅ 0 | Orchestrator-Worker at Scale | D1+D5 | `introduction-to-subagents/deep-mastery/orchestrator-worker-at-scale-202.html` | Cost-vs-reliability simulator | **SHIPPED** — `orchestrator-worker-at-scale_citations.md` |
 | 1 | The Five Orchestration Patterns | D1 | `introduction-to-subagents/deep-mastery/orchestration-patterns-202.html` | Pattern-picker (task → which of 5) + animated message-flows per pattern | `orchestration-patterns_citations.md` |
-| 2 | The Tool-Use Agent Loop | D4+D1 | `claude-101/deep-mastery/tool-use-agent-loop-202.html` | Steppable animated loop the learner drives; live `stop_reason` transitions | `tool-use-agent-loop_citations.md` |
-| 3 | MCP at a Builder Level | D4 | `claude-101/deep-mastery/mcp-at-a-builder-level-202.html` | Clickable host↔client↔server protocol theatre + JSON-RPC handshake + build-a-tool-description workshop | `mcp-at-a-builder-level_citations.md` (spec `2025-11-25`) |
-| 4 | Subagents as a Programmable Primitive (SDK) | D1+D2 | `introduction-to-subagents/deep-mastery/subagents-as-sdk-primitive-202.html` | "Compose a subagent" config sandbox → behavior preview | `subagents-as-sdk-primitive_citations.md` |
-| 5 | Prompt Engineering + Model Selection | D3 | `claude-101/deep-mastery/prompt-engineering-depth-202.html` | Prompt-ladder playground (toggle techniques → output shape changes) + model-selection decision tool (capability/latency/cost dials) | `prompt-engineering-depth_citations.md` |
+| 2 | The Tool-Use Agent Loop | D2+D1 | `claude-101/deep-mastery/tool-use-agent-loop-202.html` | Steppable animated loop the learner drives; live `stop_reason` transitions | `tool-use-agent-loop_citations.md` |
+| 3 | MCP at a Builder Level | D2 | `claude-101/deep-mastery/mcp-at-a-builder-level-202.html` | Clickable host↔client↔server protocol theatre + JSON-RPC handshake + build-a-tool-description workshop | `mcp-at-a-builder-level_citations.md` (spec `2025-11-25`) |
+| 4 | Subagents as a Programmable Primitive (SDK) | D1+D3 | `introduction-to-subagents/deep-mastery/subagents-as-sdk-primitive-202.html` | "Compose a subagent" config sandbox → behavior preview | `subagents-as-sdk-primitive_citations.md` |
+| 5 | Prompt Engineering + Model Selection | D4 | `claude-101/deep-mastery/prompt-engineering-depth-202.html` | Prompt-ladder playground (toggle techniques → output shape changes) + model-selection decision tool (capability/latency/cost dials) | `prompt-engineering-depth_citations.md` |
 | 6 (MERGE) | Context & Economics (C-E2 + C-E4) | D5 | `claude-101/deep-mastery/context-and-economics-202.html` | Live context-window/compaction visualizer + drag-the-reuse-count break-even widget | BOTH `context-management-reliability_citations.md` + `prompt-caching-economics_citations.md` |
-| 7 (NEW) | Claude Code Configuration | **D2** | `claude-101/deep-mastery/claude-code-configuration-202.html` | Live config sandbox: `CLAUDE.md` hierarchy resolver, hook-vs-memory demo, permission allow/deny resolver | **NEEDS RESEARCH** → write `claude-code-configuration_citations.md` first (code.claude.com Claude Code docs) |
+| 7 (NEW) | Claude Code Configuration | **D3** | `claude-101/deep-mastery/claude-code-configuration-202.html` | Live config sandbox: `CLAUDE.md` hierarchy resolver, hook-vs-memory demo, permission allow/deny resolver | **NEEDS RESEARCH** → write `claude-code-configuration_citations.md` first (code.claude.com Claude Code docs) |
 
-**Why these and not a literal 8:** caching (C-E4) is too narrow to stand alone → **merged** into #6. The new **D2 lesson (#7)** fills the real gap the course audit found (Domain 2 = 20% of the exam, currently no exam-depth lesson at either tier) — so building it ALSO closes a 101 gap; consider shipping a 101 version of it too.
+**Why these and not a literal 8:** caching (C-E4) is too narrow to stand alone → **merged** into #6. The new **D3 lesson (#7)** fills the real gap the course audit found (Domain 3 = 20% of the exam, currently no exam-depth lesson at either tier) — so building it ALSO closes a 101 gap; consider shipping a 101 version of it too.
 
 ---
 
@@ -133,8 +133,8 @@ Suggested order = highest standalone value + reuses verified citations first; th
 
 ## OPEN DECISIONS (confirm with Ram)
 1. Build all 6 remaining 202 lessons, or a subset? (Order in the table above.)
-2. ~~Ship a 101 version of the Domain-2 lesson?~~ **✅ SHIPPED (2026-06-06)** — C-E6, built ahead of the pilot gate (safe: rides the 101 pipeline, not the 202 template). Open: do we also want a **D2 202 companion**?
+2. ~~Ship a 101 version of the Domain-2 lesson?~~ **✅ SHIPPED (2026-06-06)** — C-E6, built ahead of the pilot gate (safe: rides the 101 pipeline, not the 202 template). Open: do we also want a **D3 202 companion**?
 3. Build the full **All/101/202 toggle** now or after a few more lessons exist? (Canonical-path UX folds into this — see Decision Log.)
-4. Any **template changes** from eyeballing the pilot (the "DO THIS FIRST" step)? — still open; this gates the remaining 202 builds (no longer gates D2, which is done).
+4. Any **template changes** from eyeballing the pilot (the "DO THIS FIRST" step)? — still open; this gates the remaining 202 builds (no longer gates D3, which is done).
 
-**Resolved & retired:** depth-tier labels (shipped as card badges); D2 101 exam-depth extension (shipped as C-E6).
+**Resolved & retired:** depth-tier labels (shipped as card badges); D3 101 exam-depth extension (shipped as C-E6).

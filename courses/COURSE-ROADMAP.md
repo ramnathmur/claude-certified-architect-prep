@@ -21,12 +21,12 @@ Two-stage plan in `EXTENSION-RECOMMENDATION.md`. Decision: both pilots first →
 | # | Extension | Base course | Domain | Status | Gate 1 | Gate 2 |
 |---|---|---|---|---|---|---|
 | S-E1 | The Five Orchestration Patterns | Subagents | D1 (27%) | ✅ Shipped (pilot) | PASS (0/0/2) | PASS (0/0/3) |
-| C-E1 | The Tool-Use Agent Loop | Claude 101 | D4 (18%)+D1 | ✅ Shipped (pilot) | PASS (0/0/0) | PASS (0/0/3) |
+| C-E1 | The Tool-Use Agent Loop | Claude 101 | D2 (18%)+D1 | ✅ Shipped (pilot) | PASS (0/0/0) | PASS (0/0/3) |
 | C-E2 | Context Management & Reliability | Claude 101 | D5 (15%) | ✅ Shipped | PASS (0/0/3) | PASS (0/0/2) |
-| C-E3 | MCP at a Builder Level | Claude 101 | D4 (18%) | ✅ Shipped | PASS (0/0/3) | PASS (0/0/3) |
+| C-E3 | MCP at a Builder Level | Claude 101 | D2 (18%) | ✅ Shipped | PASS (0/0/3) | PASS (0/0/3) |
 | C-E4 | Prompt Caching Economics | Claude 101 | D5 (15%) | ✅ Shipped | PASS (0/0/3) | PASS (0/0/2) |
-| C-E5 | Prompt Engineering Depth + Model Selection | Claude 101 | D3 (20%) | ✅ Shipped | PASS (0/0/3) | PASS (0/0/1) |
-| S-E2 | Subagents as a Programmable Primitive (SDK) | Subagents | D1+D2 | ✅ Shipped | PASS (0/0/3) | PASS (0/0/3) |
+| C-E5 | Prompt Engineering Depth + Model Selection | Claude 101 | D4 (20%) | ✅ Shipped | PASS (0/0/3) | PASS (0/0/1) |
+| S-E2 | Subagents as a Programmable Primitive (SDK) | Subagents | D1+D3 | ✅ Shipped | PASS (0/0/3) | PASS (0/0/3) |
 | S-E3 | Orchestrator-Worker at Scale + Failure Modes | Subagents | D1+D5 | ✅ Shipped | PASS (0/0/2) | PASS (0/0/3) |
 
 **Pilot artifacts:**
@@ -39,7 +39,7 @@ Two-stage plan in `EXTENSION-RECOMMENDATION.md`. Decision: both pilots first →
 - HTML: `courses/introduction-to-subagents/introduction-to-subagents.html` (~94 KB, self-contained, 4 lessons, 8 SVGs)
 - Source of truth: `courses/introduction-to-subagents/source/introduction-to-subagents_source.md` (4/4 lessons, 0 gaps)
 - QA Gate 1: `courses/introduction-to-subagents/qa/gate1.md` · QA Gate 2: `courses/introduction-to-subagents/qa/gate2.md`
-- **CCA-F mapping:** Domain 1 Agentic Architecture & Orchestration (27%) — subagent delegation, context/session management, multi-agent orchestration, anti-patterns; Domain 2 Claude Code Config (20%) — `/agents` command, config files, scope.
+- **CCA-F mapping:** Domain 1 Agentic Architecture & Orchestration (27%) — subagent delegation, context/session management, multi-agent orchestration, anti-patterns; Domain 3 Claude Code Config (20%) — `/agents` command, config files, scope.
 - Post-QA fixes applied: diagram-count label 7→8; `aria-live` on MCQ feedback. Logged minors left: quiz retry-on-reload (feature), final-check nav scroll-spy highlight (cosmetic).
 
 ## Claude 101 — artifacts

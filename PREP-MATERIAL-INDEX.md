@@ -14,7 +14,7 @@
 | Time limit | 120 minutes (third-party cited — verify on Skilljar after login) |
 | Passing score | 720 / 1000 (scaled) |
 | Delivery | Proctored online — no Claude, no docs, no external tools during exam |
-| Scenario structure | 4 scenarios randomly drawn from a pool of 6 |
+| Scenario structure | 4 scenarios randomly drawn from a pool of 6 (per the official exam guide) |
 | Access | Claude Partner Network employees (first 5,000 free; $99/attempt after) |
 | Registration | https://anthropic.skilljar.com/claude-certified-architect-foundations-access-request |
 
@@ -27,9 +27,9 @@
 | # | Domain | Weight | Core Topics |
 |---|---|---|---|
 | 1 | Agentic Architecture & Orchestration | 27% | Agent loops, observe-think-act-respond cycle, multi-agent orchestration, subagent delegation, session management |
-| 2 | Claude Code Configuration & Workflows | 20% | CLAUDE.md hierarchy, path-scoped rules, slash commands, plan mode, CI/CD integration |
-| 3 | Prompt Engineering & Structured Output | 20% | Few-shot prompting, JSON schema design, validation loops, structured extraction |
-| 4 | Tool Design & MCP Integration | 18% | MCP server architecture (tools/resources/prompts primitives), stdio vs SSE transport, tool description writing, auth patterns |
+| 2 | Tool Design & MCP Integration | 18% | MCP server architecture (tools/resources/prompts primitives), stdio vs SSE transport, tool description writing, auth patterns |
+| 3 | Claude Code Configuration & Workflows | 20% | CLAUDE.md hierarchy, path-scoped rules, slash commands, plan mode, CI/CD integration |
+| 4 | Prompt Engineering & Structured Output | 20% | Few-shot prompting, JSON schema design, validation loops, structured extraction |
 | 5 | Context Management & Reliability | 15% | CALM framework, prompt caching with cache_control, conversation compaction, token budgeting, multi-turn design |
 
 ### The Six Exam Scenarios (4 appear per sitting)

@@ -27,9 +27,9 @@ Progress through modules in order. Domain 1 (Agentic Architecture) is the spine 
 |---|---|---|---|---|---|
 | 0 | Foundations & Exam Orientation | Cross-domain | — | 1h | ⬜ |
 | 1 | Agentic Architecture & Orchestration | Domain 1 | 27% | 5h | ⬜ |
-| 2 | Claude Code Configuration & Workflows | Domain 2 | 20% | 4h | ⬜ |
-| 3 | Prompt Engineering & Structured Output | Domain 3 | 20% | 4h | ⬜ |
-| 4 | Tool Design & MCP Integration | Domain 4 | 18% | 4h | ⬜ |
+| 2 | Claude Code Configuration & Workflows | Domain 3 | 20% | 4h | ⬜ |
+| 3 | Prompt Engineering & Structured Output | Domain 4 | 20% | 4h | ⬜ |
+| 4 | Tool Design & MCP Integration | Domain 2 | 18% | 4h | ⬜ |
 | 5 | Context Management & Reliability | Domain 5 | 15% | 3h | ⬜ |
 | 6 | Scenario Simulation Lab | All domains | — | 3h | ⬜ |
 | 7 | Mock Exam + Gap Review | All domains | — | 2h | ⬜ |
@@ -293,11 +293,11 @@ For each scenario: you design the architecture cold (no hints), then we compare 
 | # | Scenario | Primary Domain | Time |
 |---|---|---|---|
 | 1 | Customer Support Resolution Agent | Domain 1 + 5 | 30 min |
-| 2 | Code Generation with Claude Code | Domain 2 | 25 min |
-| 3 | Multi-Agent Research System | Domain 1 + 4 | 30 min |
-| 4 | Developer Productivity Tools | Domain 4 | 25 min |
-| 5 | Claude Code in CI/CD | Domain 2 + 3 | 25 min |
-| 6 | Structured Data Extraction | Domain 3 | 25 min |
+| 2 | Code Generation with Claude Code | Domain 3 | 25 min |
+| 3 | Multi-Agent Research System | Domain 1 + 2 | 30 min |
+| 4 | Developer Productivity with Claude | Domain 2 | 25 min |
+| 5 | Claude Code in CI/CD | Domain 3 + 4 | 25 min |
+| 6 | Structured Data Extraction | Domain 4 | 25 min |
 
 ### Anti-Pattern Recognition Drill
 The exam weights anti-pattern recognition highly. Before each scenario architecture: name the three most common ways a bad architect would approach this scenario. Then design around them.

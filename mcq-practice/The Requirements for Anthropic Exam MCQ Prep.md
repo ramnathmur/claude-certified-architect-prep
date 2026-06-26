@@ -24,9 +24,9 @@ The application lives entirely within this project folder (`mcq-practice/`) and 
 | # | Domain | Exam Weight | MCQ share per 60 Qs | MCQ share per 40 Qs | MCQ share per 20 Qs |
 |---|---|---|---|---|---|
 | 1 | Agentic Architecture & Orchestration | 27% | ~16 questions | ~11 questions | ~5 questions |
-| 2 | Claude Code Configuration & Workflows | 20% | ~12 questions | ~8 questions | ~4 questions |
-| 3 | Prompt Engineering & Structured Output | 20% | ~12 questions | ~8 questions | ~4 questions |
-| 4 | Tool Design & MCP Integration | 18% | ~11 questions | ~7 questions | ~4 questions |
+| 2 | Tool Design & MCP Integration | 18% | ~11 questions | ~7 questions | ~4 questions |
+| 3 | Claude Code Configuration & Workflows | 20% | ~12 questions | ~8 questions | ~4 questions |
+| 4 | Prompt Engineering & Structured Output | 20% | ~12 questions | ~8 questions | ~4 questions |
 | 5 | Context Management & Reliability | 15% | ~9 questions | ~6 questions | ~3 questions |
 
 Rounding rule: always round domain counts to the nearest integer; total must equal the requested N exactly. In case of rounding conflict, assign the remainder to Domain 1 (highest weight).
@@ -57,7 +57,7 @@ The CCA-F exam uses the following MCQ styles — the application must weight gen
 | Passing score | 720 / 1000 (scaled) | Anthropic / Skilljar |
 | Answer format | Single correct answer per question | Official |
 | Exam delivery | Proctored online, no tools | Official |
-| Scenarios per sitting | 4 drawn randomly from a pool of 6 | Official |
+| Scenarios per sitting | 4 drawn randomly from a pool of 6 | Official exam guide |
 
 ---
 
@@ -424,22 +424,22 @@ The application is working correctly when all of the following are true:
 
 9. **Duration mode converts correctly.** Selecting 30 minutes yields exactly 15 questions.
 
-10. **Per-Chapter mode scopes correctly.** Selecting "Domain 3 — Prompt Engineering" yields zero questions from any other domain.
+10. **Per-Chapter mode scopes correctly.** Selecting "Domain 4 — Prompt Engineering" yields zero questions from any other domain.
 
 ---
 
 ## Appendix A — Exam Scenario Reference
 
-The CCA-F exam draws 4 of these 6 scenarios per sitting. MCQ questions reference these scenarios in their stems.
+The CCA-F exam draws 4 of these **6** scenarios per sitting (per the official exam guide). MCQ questions reference these scenarios in their stems.
 
 | # | Scenario | Primary Domains |
 |---|---|---|
 | 1 | Customer Support Resolution Agent | D1 + D5 |
-| 2 | Code Generation with Claude Code | D2 |
-| 3 | Multi-Agent Research System | D1 + D4 |
-| 4 | Developer Productivity Tools | D4 |
-| 5 | Claude Code in CI/CD | D2 + D3 |
-| 6 | Structured Data Extraction | D3 |
+| 2 | Code Generation with Claude Code | D3 |
+| 3 | Multi-Agent Research System | D1 + D2 |
+| 4 | Developer Productivity with Claude | D2 |
+| 5 | Claude Code for Continuous Integration | D3 + D4 |
+| 6 | Structured Data Extraction | D4 |
 
 The generator should reference these scenario names in scenario-based questions where appropriate — this familiarises the learner with the exact scenario vocabulary that will appear on the real exam.
 
@@ -452,7 +452,7 @@ These anti-patterns appear frequently in exam questions. The generator should dr
 | Domain | Key Anti-Patterns |
 |---|---|
 | D1 — Agentic Architecture | Orchestrator calling tools directly for work (not just coordination); infinite loop from missing stop condition; hallucinated tool outputs silently accepted |
-| D2 — Claude Code | CLAUDE.md at wrong scope level; plan mode required but not enforced; Bash used as first resort instead of last |
-| D3 — Prompt Engineering | Malformed JSON silently swallowed (no validation loop); all few-shot examples are edge cases; schema has no `additionalProperties: false` |
-| D4 — Tool Design & MCP | One mega-tool that does everything; credentials in tool descriptions; SSE chosen for local single-process workload |
+| D2 — Tool Design & MCP | One mega-tool that does everything; credentials in tool descriptions; SSE chosen for local single-process workload |
+| D3 — Claude Code | CLAUDE.md at wrong scope level; plan mode required but not enforced; Bash used as first resort instead of last |
+| D4 — Prompt Engineering | Malformed JSON silently swallowed (no validation loop); all few-shot examples are edge cases; schema has no `additionalProperties: false` |
 | D5 — Context Management | Compaction that loses the original user intent; `cache_control` placed mid-conversation instead of at stable prefix; no token budget enforcement in production |

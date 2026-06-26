@@ -1,9 +1,9 @@
-# CCA-F Integration Checkpoint B — Claude Code in CI/CD (D2 × D3)
+# CCA-F Integration Checkpoint B — Claude Code in CI/CD (D3 × D4)
 _Cross-domain · exam Scenario 5 · ~20 min · design cold, then compare_
 
 ## Why this checkpoint exists
 
-Domain 2 teaches headless Claude Code as a configuration topic — flags, permission modes, hooks, `--output-format` — and Domain 3 teaches structured output as a prompting topic — schemas, XML contracts, the Structured Outputs feature. The exam tests them separately, but **Scenario 5 (an automated PR-review bot running in CI) only works if you fuse them**: a headless invocation that is also schema-constrained, non-interactive, and reproducible. The transfer failure this catches: you can recite every D2 flag and every D3 output technique, yet still wire a pipeline that hangs on a permission prompt, emits prose instead of parseable JSON, or produces a different result on every run.
+Domain 3 teaches headless Claude Code as a configuration topic — flags, permission modes, hooks, `--output-format` — and Domain 4 teaches structured output as a prompting topic — schemas, XML contracts, the Structured Outputs feature. The exam tests them separately, but **Scenario 5 (an automated PR-review bot running in CI) only works if you fuse them**: a headless invocation that is also schema-constrained, non-interactive, and reproducible. The transfer failure this catches: you can recite every D3 flag and every D4 output technique, yet still wire a pipeline that hangs on a permission prompt, emits prose instead of parseable JSON, or produces a different result on every run.
 
 ## The scenario
 
@@ -19,7 +19,7 @@ Hard constraints:
 ## Design it cold (do this before scrolling)
 
 1. **Which headless flags are non-negotiable** to make this run unattended? (Think: how do you even enter non-interactive mode, and how do you make the output a machine format rather than chat text?)
-2. **How do you GUARANTEE the review JSON is parseable** — at the source, not by hoping the prompt holds? Which D3 mechanism makes malformed JSON *impossible*, and what is the correct fallback if it isn't available?
+2. **How do you GUARANTEE the review JSON is parseable** — at the source, not by hoping the prompt holds? Which D4 mechanism makes malformed JSON *impossible*, and what is the correct fallback if it isn't available?
 3. **What stops a permission prompt from hanging the runner?** Name the two levers (pre-allow specific tools vs. change the permission posture) and when each is appropriate.
 4. **How do you keep the run reproducible** so a contributor's local `CLAUDE.md` / hooks / MCP servers / auto-memory don't leak into the review? Which single flag turns off auto-discovery?
 5. **How does the runner authenticate** without an interactive login?
@@ -43,9 +43,9 @@ claude -p "Review the PR diff. Emit findings per the schema." \
   --permission-mode dontAsk
 ```
 
-**The parseable-output guarantee (the D3 half).** Do NOT rely on the prompt saying "respond in JSON." In an unattended pipeline that is a probabilistic hope. The source-level fix is **Structured Outputs / constrained decoding** — `--json-schema` for headless, backed by the JSON-outputs feature (`output_config.format`) — which makes invalid output impossible: "Always valid: No more `JSON.parse()` errors," "Reliable: No retries needed for schema violations" (source: platform.claude.com/.../structured-outputs). With `--json-schema`, the constrained result lands in the `structured_output` field of the JSON envelope, which the next CI step reads directly (source: code.claude.com/docs/en/headless). **Retry / dead-letter handling is the fallback, not the primary fix.** Schema rules to honor: `additionalProperties: false` is required; NOT supported are recursive schemas, external `$ref`, and numeric/string-length constraints (`minimum`, `maxLength`, etc.) (source: structured-outputs). First call pays a grammar-compile latency cost; compiled grammars cache for ~24h.
+**The parseable-output guarantee (the D4 half).** Do NOT rely on the prompt saying "respond in JSON." In an unattended pipeline that is a probabilistic hope. The source-level fix is **Structured Outputs / constrained decoding** — `--json-schema` for headless, backed by the JSON-outputs feature (`output_config.format`) — which makes invalid output impossible: "Always valid: No more `JSON.parse()` errors," "Reliable: No retries needed for schema violations" (source: platform.claude.com/.../structured-outputs). With `--json-schema`, the constrained result lands in the `structured_output` field of the JSON envelope, which the next CI step reads directly (source: code.claude.com/docs/en/headless). **Retry / dead-letter handling is the fallback, not the primary fix.** Schema rules to honor: `additionalProperties: false` is required; NOT supported are recursive schemas, external `$ref`, and numeric/string-length constraints (`minimum`, `maxLength`, etc.) (source: structured-outputs). First call pays a grammar-compile latency cost; compiled grammars cache for ~24h.
 
-**The non-interactive permission posture (the D2 half).** Permission prompts are the classic CI hang. Two correct levers:
+**The non-interactive permission posture (the D3 half).** Permission prompts are the classic CI hang. Two correct levers:
 - **Pre-allow exactly what's needed** via `--allowedTools "Read,Bash(git diff *)"`. Combined with `--permission-mode dontAsk`, which "auto-denies tools unless pre-approved via `/permissions` or `permissions.allow` rules" (source: code.claude.com/docs/en/permissions) — so nothing prompts, and anything not on the allowlist is denied rather than blocking.
 - `bypassPermissions` (≡ `--dangerously-skip-permissions`) "skips all permission prompts" — it removes the hang but is the wrong tool for a least-privilege review bot because it grants everything. Prefer `dontAsk` + a tight allowlist; reach for `bypassPermissions` only when the job genuinely needs broad access and the runner is otherwise sandboxed.
 
@@ -57,7 +57,7 @@ Remember permissions are evaluated **deny → ask → allow**, first match wins,
 
 **Least-privilege `allowedTools`.** Grant `Read` and the read-only git commands the review needs (`Bash(git diff *)`, `Bash(git log *)`). Do **not** include `Edit`/`Write`, unscoped `Bash`, or push/commit commands — the bot's job is to *report*, not mutate the repo. (Contrast the docs' fan-out example, which intentionally grants `Edit,Bash(git commit *)` because that job *does* migrate and commit — source: code.claude.com/docs/en/best-practices. Match the allowlist to the job, never copy it.)
 
-The prompt itself should also be a good D3 prompt: a clear role + instructions, the schema referenced, and ideally a few `<example>` findings to steer format — but the *guarantee* of parseability comes from `--json-schema`, not the prose.
+The prompt itself should also be a good D4 prompt: a clear role + instructions, the schema referenced, and ideally a few `<example>` findings to steer format — but the *guarantee* of parseability comes from `--json-schema`, not the prose.
 
 ## The cross-domain traps this checkpoint tests
 

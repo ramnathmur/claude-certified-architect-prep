@@ -1,5 +1,7 @@
 # mcq-practice — Project Instructions
 
+> **⚠️ STATUS: SPEC ONLY — NOT BUILT (as of 2026-06-26).** This folder contains the requirements + this instruction file + `index.html`, but the application (`mcq_launcher.py`, `prompt_builder.py`, `html_renderer.py`, `text_renderer.py`, `templates/`, `sessions/`) does **not** exist yet. Until implemented, this generator is **NOT** part of the exam-readiness path — do not count it toward mocks or Go/No-Go. The academy delivery system (`academy/`) does not depend on it.
+
 **Purpose:** Reusable MCQ practice application for the CCA-F (Claude Certified Architect — Foundations) exam.  
 **Requirements doc:** `The Requirements for Anthropic Exam MCQ Prep.md` — this is the source of truth. Read it before implementing or modifying anything.
 
@@ -53,9 +55,9 @@ Session filenames include a timestamp. Never write to an existing path. Never de
 | # | Domain | Weight |
 |---|---|---|
 | 1 | Agentic Architecture & Orchestration | 27% |
-| 2 | Claude Code Configuration & Workflows | 20% |
-| 3 | Prompt Engineering & Structured Output | 20% |
-| 4 | Tool Design & MCP Integration | 18% |
+| 2 | Tool Design & MCP Integration | 18% |
+| 3 | Claude Code Configuration & Workflows | 20% |
+| 4 | Prompt Engineering & Structured Output | 20% |
 | 5 | Context Management & Reliability | 15% |
 
 Rounding rule: nearest integer; total must equal N exactly; remainder goes to Domain 1.
@@ -148,13 +150,13 @@ Scope codes: `full` / `d1` through `d5`. Difficulty codes: `anthro` / `prep`.
 
 ## Exam scenario vocabulary (use in scenario-based question stems)
 
-The CCA-F exam draws 4 of these 6 scenarios per sitting. Scenario-based questions should reference these by name to familiarise Ram with the exact exam vocabulary:
+The CCA-F exam draws 4 of these **6** scenarios per sitting (per the official exam guide). Scenario-based questions should reference these by name to familiarise Ram with the exact exam vocabulary:
 
 1. Customer Support Resolution Agent
 2. Code Generation with Claude Code
 3. Multi-Agent Research System
-4. Developer Productivity Tools
-5. Claude Code in CI/CD
+4. Developer Productivity with Claude
+5. Claude Code for Continuous Integration
 6. Structured Data Extraction
 
 ---

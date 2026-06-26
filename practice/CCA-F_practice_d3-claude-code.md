@@ -1,5 +1,5 @@
-# CCA-F Practice — Domain 2: Claude Code Configuration & Workflows (20%)
-_10 questions · original, exam-style · grounded in EXAM-DIGEST + D2 citations_
+# CCA-F Practice — Domain 3: Claude Code Configuration & Workflows (20%)
+_10 questions · original, exam-style · grounded in EXAM-DIGEST + D3 citations_
 
 ## Questions
 
@@ -73,7 +73,7 @@ _10 questions · original, exam-style · grounded in EXAM-DIGEST + D2 citations_
 
 **Q3 — C.** Rules evaluate deny → ask → allow, and "if a tool is denied at any level, no other level can allow it"; managed deny cannot be overridden by anything, including CLI. Critically, PreToolUse hook decisions "do not bypass permission rules" — deny is evaluated regardless of the hook. A and D both ignore deny's absolute precedence; D also misapplies the merge rule (merging never resurrects a denied call). _Sub-topic: permissions deny→ask→allow + hooks don't bypass · Difficulty: hard_
 
-**Q4 — B.** This is the headline D2 trap: settings override by precedence, "Permission rules behave differently because they merge across scopes rather than override." So project and user `allow` rules combine rather than the project set replacing the user set. A states the misconception; C inverts the documented precedence; D invents an allow/deny distinction that doesn't exist for the merge behavior. _Sub-topic: settings-override-but-rules-merge · Difficulty: med_
+**Q4 — B.** This is the headline D3 trap: settings override by precedence, "Permission rules behave differently because they merge across scopes rather than override." So project and user `allow` rules combine rather than the project set replacing the user set. A states the misconception; C inverts the documented precedence; D invents an allow/deny distinction that doesn't exist for the merge behavior. _Sub-topic: settings-override-but-rules-merge · Difficulty: med_
 
 **Q5 — C.** Grep searches text *inside* files (find code references); Glob matches filenames/paths only and therefore cannot locate an in-file call site. The logged anti-pattern is exactly "filename search to find in-file references." B violates the "Bash is a last resort when a structured tool exists" rule; D is inefficient and not the intended tool for searching. _Sub-topic: built-in tools Grep vs Glob · Difficulty: easy_
 

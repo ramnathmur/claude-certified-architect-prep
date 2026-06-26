@@ -56,12 +56,12 @@ The current app already has the end-of-session domain breakdown and wrong-answer
 - Questions anchored to 4 of 6 randomly assigned scenario pools per sitting  
 - Exam results include domain-level breakdown, not per-question explanations
 
-### The 6 Scenario Pools (confirmed from community sources)
+### The 6 Scenario Pools (official exam guide)
 1. Customer Support Resolution Agent  
-2. Claude Code Configuration for a development team  
+2. Code Generation with Claude Code  
 3. Multi-Agent Research System (coordinator + subagents)  
-4. Developer Productivity Tools (Claude Code built-ins + MCP)  
-5. CI/CD Pipeline Automation (headless, `--output-format json`, `-p` flag)  
+4. Developer Productivity with Claude (Claude Code built-ins + MCP)  
+5. Claude Code for Continuous Integration (headless, `--output-format json`, `-p` flag)  
 6. Structured Data Extraction (JSON schema, nullable fields, batch processing)
 
 ### How Answer Choices Are Constructed (confirmed from sample question)

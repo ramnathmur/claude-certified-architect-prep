@@ -1,5 +1,5 @@
-# CCA-F Practice — Domain 3: Prompt Engineering & Structured Output (20%)
-_10 questions · original, exam-style · grounded in EXAM-DIGEST + D3 citations_
+# CCA-F Practice — Domain 4: Prompt Engineering & Structured Output (20%)
+_10 questions · original, exam-style · grounded in EXAM-DIGEST + D4 citations_
 
 ## Questions
 

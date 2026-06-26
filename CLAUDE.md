@@ -55,9 +55,9 @@ Ram learns by **doing, not reading**. Apply these principles to every session:
 | # | Domain | Weight | Status |
 |---|---|---|---|
 | 1 | Agentic Architecture & Orchestration | 27% | ⬜ |
-| 2 | Claude Code Configuration & Workflows | 20% | ⬜ |
-| 3 | Prompt Engineering & Structured Output | 20% | ⬜ |
-| 4 | Tool Design & MCP Integration | 18% | ⬜ |
+| 2 | Tool Design & MCP Integration | 18% | ⬜ |
+| 3 | Claude Code Configuration & Workflows | 20% | ⬜ |
+| 4 | Prompt Engineering & Structured Output | 20% | ⬜ |
 | 5 | Context Management & Reliability | 15% | ⬜ |
 
 ---

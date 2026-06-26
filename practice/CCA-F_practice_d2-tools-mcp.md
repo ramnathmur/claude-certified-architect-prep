@@ -1,5 +1,5 @@
-# CCA-F Practice — Domain 4: Tool Design & MCP Integration (18%)
-_9 questions · original, exam-style · grounded in EXAM-DIGEST + D4 citations_
+# CCA-F Practice — Domain 2: Tool Design & MCP Integration (18%)
+_9 questions · original, exam-style · grounded in EXAM-DIGEST + D2 citations_
 
 ## Questions
 

@@ -1,9 +1,9 @@
-# CCA-F Integration Checkpoint C — Multi-Agent Research System (D1 × D4)
+# CCA-F Integration Checkpoint C — Multi-Agent Research System (D1 × D2)
 _Cross-domain · exam Scenario 3 · ~20 min · design cold, then compare_
 
 ## Why this checkpoint exists
 
-Domain 1 (orchestrator-workers, delegation, the constructed-prompt channel, parallel-elapsed = max) and Domain 4 (tool design, the three MCP primitives, error surfaces by category) are taught in separate modules — but Scenario 3 fuses them: a coordinator that delegates to specialist subagents, each of which calls tools or MCP servers. The transfer failure this checkpoint hunts for is a design that gets *one* domain right and the other wrong — a clean orchestration tree wired to a broken tool/error contract (e.g. retrying an uncertain write), or a flawless tool layer hung off an orchestration that passes raw 100K-token dumps between agents. You only pass by making both halves correct *and* coherent at the seam where they meet.
+Domain 1 (orchestrator-workers, delegation, the constructed-prompt channel, parallel-elapsed = max) and Domain 2 (tool design, the three MCP primitives, error surfaces by category) are taught in separate modules — but Scenario 3 fuses them: a coordinator that delegates to specialist subagents, each of which calls tools or MCP servers. The transfer failure this checkpoint hunts for is a design that gets *one* domain right and the other wrong — a clean orchestration tree wired to a broken tool/error contract (e.g. retrying an uncertain write), or a flawless tool layer hung off an orchestration that passes raw 100K-token dumps between agents. You only pass by making both halves correct *and* coherent at the seam where they meet.
 
 ## The scenario
 
@@ -42,24 +42,24 @@ A subagent's context "starts fresh (no parent conversation)... The only channel 
 ### 3. Parallel vs sequential — elapsed = max (D1)
 The independent web-search and document-analysis workers run **concurrently** — "Subagents facilitate compression by operating in parallel with their own context windows, exploring different aspects of the question simultaneously" (source: multi-agent-research-system); parallelism "cut research time by up to 90% for complex queries" (source: orchestrator-worker-at-scale). **Elapsed time of the parallel phase = max(worker durations), not the sum** (EXAM-DIGEST D1) — the batch is gated by the slowest worker: "the entire system can be blocked while waiting for a single subagent to finish searching" (source: orchestrator-worker-at-scale). The **synthesis/citation worker is sequential** — it depends on the others' output, so it cannot be parallelized: "Don't parallelize when task B needs task A's output" (EXAM-DIGEST D1). Scale worker count to complexity rather than fanning out blindly: simple fact-finding ≈ 1 agent / 3–10 tool calls; direct comparisons ≈ 2–4 subagents / 10–15 calls each; complex research ≈ >10 subagents with clearly divided responsibilities (source: orchestrator-worker-at-scale).
 
-### 4. Tool vs resource vs prompt — the MCP primitive split (D4)
+### 4. Tool vs resource vs prompt — the MCP primitive split (D2)
 The MAU control model (source: mcp-at-a-builder-level):
 - **Live web search → Tool (model-controlled).** "Functions that your LLM can actively call... call external APIs." It's an *action* taken at runtime against fresh data. (Note: in the Anthropic stack `web_search` is a *server-executed* tool — you enable it and read the result; you never construct a `tool_result` for it (source: tool-use-agent-loop).)
-- **The document corpus + firm-record schemas → Resources (application-controlled).** "Passive data sources that provide read-only access to information for context, such as file contents, database schemas, or API documentation." The corpus and schemas are *what is true and stable* — read like context, no tool call needed to "use" them. Using a tool where a resource fits is a named anti-pattern (EXAM-DIGEST D4).
+- **The document corpus + firm-record schemas → Resources (application-controlled).** "Passive data sources that provide read-only access to information for context, such as file contents, database schemas, or API documentation." The corpus and schemas are *what is true and stable* — read like context, no tool call needed to "use" them. Using a tool where a resource fits is a named anti-pattern (EXAM-DIGEST D2).
 - **The reusable "produce-a-sourced-brief" workflow → Prompt (user-controlled).** "Pre-built instruction templates," surfaced as slash commands, "requiring explicit invocation rather than automatic triggering" (source: mcp-at-a-builder-level).
 
-Rule of thumb: **resources for "what is true & stable," tools for "what actions can be taken"** (EXAM-DIGEST D4). And remember MCP "does NOT auto-solve" auth, rate-limiting, retries, caching, or authorization — you build those (EXAM-DIGEST D4); tool annotations (`readOnlyHint`, `destructiveHint`) are "untrusted UI hints, NOT security boundaries."
+Rule of thumb: **resources for "what is true & stable," tools for "what actions can be taken"** (EXAM-DIGEST D2). And remember MCP "does NOT auto-solve" auth, rate-limiting, retries, caching, or authorization — you build those (EXAM-DIGEST D2); tool annotations (`readOnlyHint`, `destructiveHint`) are "untrusted UI hints, NOT security boundaries."
 
-### 5. The error surface — by category, architected not hoped (D4)
-Two tiers first: **protocol errors** (JSON-RPC, pre-execution — unknown tool, malformed JSON, missing param) vs **tool execution errors** (`isError:true` — the tool ran but failed: 404/503/business-rule/rate-limit) (EXAM-DIGEST D4). Then handle each *execution* error by category (source category mapping: EXAM-DIGEST D4):
+### 5. The error surface — by category, architected not hoped (D2)
+Two tiers first: **protocol errors** (JSON-RPC, pre-execution — unknown tool, malformed JSON, missing param) vs **tool execution errors** (`isError:true` — the tool ran but failed: 404/503/business-rule/rate-limit) (EXAM-DIGEST D2). Then handle each *execution* error by category (source category mapping: EXAM-DIGEST D2):
 
 - **Filings-API 500 (transient infra, a read):** retry *inside the tool* with backoff; the worker shouldn't see a flaky 500 it has to reason about.
 - **404 firm-not-found (validation/business-rule):** non-retryable — return a **structured error** (`category`, `retryable:false`, `message`) so the model can adapt (drop that firm, note the gap), not throw an exception.
-- **Write/submit timeout where the request may have committed (uncertain write state):** **report the uncertainty, do NOT auto-retry** — retrying risks duplicates (EXAM-DIGEST D4). This is the highest-yield trap in the scenario.
+- **Write/submit timeout where the request may have committed (uncertain write state):** **report the uncertainty, do NOT auto-retry** — retrying risks duplicates (EXAM-DIGEST D2). This is the highest-yield trap in the scenario.
 
-The governing principle: **"Recoverable-vs-escalate is an architectural decision encoded in the error surface — not 'Claude just retries'"** (EXAM-DIGEST D4, logged Module-4 gap). Return structured errors, never raw exceptions for expected business failures; **empty result ≠ error** (an empty filings list is a valid finding, not a failure). At the orchestration layer this pairs with model-driven graceful degradation: "letting the agent know when a tool is failing and letting it adapt works surprisingly well" (source: orchestrator-worker-at-scale).
+The governing principle: **"Recoverable-vs-escalate is an architectural decision encoded in the error surface — not 'Claude just retries'"** (EXAM-DIGEST D2, logged Module-4 gap). Return structured errors, never raw exceptions for expected business failures; **empty result ≠ error** (an empty filings list is a valid finding, not a failure). At the orchestration layer this pairs with model-driven graceful degradation: "letting the agent know when a tool is failing and letting it adapt works surprisingly well" (source: orchestrator-worker-at-scale).
 
-### 6. Provenance — architecturally separated (D1 × D4)
+### 6. Provenance — architecturally separated (D1 × D2)
 Every finding carries its **source attribution** (source URL/quote/`source_location`), and citation is a **distinct worker role**, not an afterthought baked into search. Anthropic runs a dedicated **CitationAgent** that "processes the documents and research report to identify specific locations for citations," so "verification is architecturally separated from research" (source: orchestrator-worker-at-scale). Practically: workers return findings *with* source indexes in their structured summary; the synthesis/citation worker maps each claim back to a source before the brief ships. (Grounding fields like `source_location` / `source_quote` are the D3 mechanism for attribution; making an absent source field *required* creates hallucination pressure — keep it grounded but not coercive.)
 
 ### 7. Partial failure — graceful degradation (D1)
@@ -67,11 +67,11 @@ If the document-analysis worker dies, the coordinator delivers a **partial, hone
 
 ## The cross-domain traps this checkpoint tests
 
-- **Passing raw outputs across the seam.** Designing the orchestration well but dumping a worker's raw 100K-token tool output into the next agent's prompt — instead of structured summaries + source indexes. Context isolation exists *so* you compress; defeating it re-bloats the parent (D1 × D4).
+- **Passing raw outputs across the seam.** Designing the orchestration well but dumping a worker's raw 100K-token tool output into the next agent's prompt — instead of structured summaries + source indexes. Context isolation exists *so* you compress; defeating it re-bloats the parent (D1 × D2).
 - **Expecting a subagent to see the parent's tool results.** A worker only gets the constructed prompt — not the coordinator's prior turns, tool results, or system prompt. Any design assuming shared state at the seam is broken (D1).
-- **Using a tool where a resource fits.** Modeling the document corpus / firm-record schemas as a *tool call* rather than an application-controlled *resource* — the corpus is stable context, not an action (D4).
-- **Retrying an uncertain write.** Treating a timed-out submit/write like a transient read 500 and retrying — producing duplicates. Reads retry-in-tool; uncertain writes report uncertainty and stop (D4).
-- **"Claude just retries" instead of an architected error surface.** Leaving recoverable-vs-escalate to the model's improvisation rather than encoding `category` / `retryable` in the tool's structured return (D4).
+- **Using a tool where a resource fits.** Modeling the document corpus / firm-record schemas as a *tool call* rather than an application-controlled *resource* — the corpus is stable context, not an action (D2).
+- **Retrying an uncertain write.** Treating a timed-out submit/write like a transient read 500 and retrying — producing duplicates. Reads retry-in-tool; uncertain writes report uncertainty and stop (D2).
+- **"Claude just retries" instead of an architected error surface.** Leaving recoverable-vs-escalate to the model's improvisation rather than encoding `category` / `retryable` in the tool's structured return (D2).
 - **Parallelizing dependent steps.** Running the synthesis/citation worker concurrently with the searches it depends on — and/or quoting elapsed time as the *sum* of worker durations instead of **max** (D1).
 
 ## Self-score

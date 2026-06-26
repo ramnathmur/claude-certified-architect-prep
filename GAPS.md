@@ -23,10 +23,10 @@ When a quiz question is missed, log it here:
   - **Modeled answer:** "Scaled means it's curved."
   - **Correct:** Not curved. *Scaled* = questions carry unequal weight and scores normalise across exam forms, so hard scenario/anti-pattern items hold most of the points; you can't pass by volume of easy recall.
   - **Pattern to remember:** Scaled score → study for judgment, not coverage.
-- **Asked:** Name the 6 exam scenarios from memory.
+- **Asked:** Name the exam scenarios from memory.
   - **Modeled answer:** Got 5; blanked on one.
-  - **Correct:** The missed one is **Developer Productivity Tools** (Domain 4). Full set: Customer Support Resolution Agent · Code Generation with Claude Code · Multi-Agent Research System · Developer Productivity Tools · Claude Code in CI/CD · Structured Data Extraction.
-  - **Pattern to remember:** 6 scenarios, 4 appear per sitting — two are pure Claude Code (Code-Gen, CI/CD), two are tool/agent (Multi-Agent Research, Dev Productivity Tools), one support (D1+D5), one extraction (D3).
+  - **Correct:** The missed one is **Developer Productivity** (official Domain 2 — Tool Design & MCP). Full set is **6** (verified against the official exam guide): Customer Support Resolution Agent · Code Generation with Claude Code · Multi-Agent Research System · Developer Productivity with Claude · Claude Code for Continuous Integration · Structured Data Extraction.
+  - **Pattern to remember:** **6** scenarios, 4 appear per sitting. (An earlier community guide wrongly claimed 8 — there is no Conversational-AI or Agentic-AI-Tools scenario.)
 
 ---
 
