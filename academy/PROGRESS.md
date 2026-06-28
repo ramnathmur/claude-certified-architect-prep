@@ -1,18 +1,18 @@
 # CCA-F Academy — Session Progress Tracker
 
 **Learner:** Ram
-**Program start:** (fill in on Session 1)
-**Target exam date:** (fill in when booked)
+**Program start:** 2026-06-27
+**Target exam date:** 2026-08-22 (provisional — reassess after Session 9 drill)
 
 ---
 
 ## Current Status
 
 ```
-Current session:  1 (Orientation)
-Current phase:    0 — Pre-start
-Overall progress: 0 / 37 sessions complete
-Active gaps:      None identified yet (populate after Session 9 comprehension check)
+Current session:  5 (Task Tool + Explicit Context Passing)
+Current phase:    1 — Domain 1: Agentic Architecture
+Overall progress: 4 / 37 sessions complete
+Active gaps:      D3.6 (headless/CI mode), D4.5 (stop_reason cycle), D5.1 (lost-in-middle mechanism), D5 (prompt caching)
 Mock exam score:  Not yet taken
 Go/No-Go:         Not yet decided
 ```
@@ -22,13 +22,13 @@ Go/No-Go:         Not yet decided
 ## Completion Health (update every session — solo-learner dropout is the #1 risk)
 
 ```
-Exam booking target:   (set provisionally at Session 1)
-Last session date:     (none yet)
-Days since last:        —
-Sessions this week:     0
-Current streak:          0
-Next session booked:   (set at each sign-off)
-Cadence target:        ~2 sessions/week → ~5 weeks (or compressed via the adaptive path)
+Exam booking target:   2026-08-22 (provisional)
+Last session date:     2026-06-27
+Days since last:        0
+Sessions this week:     4 (Sessions 1–4 all completed on day 1 — strong start)
+Current streak:          1 day
+Next session booked:   Session 5 — Task Tool + Explicit Context Passing (next visit)
+Cadence target:        ~1 session/weekday → ~8 weeks; compress to ~6 weeks with back-to-back sessions
 ```
 
 ### 5-Week Reference Calendar (target dates; adjust to actual start)
@@ -50,11 +50,14 @@ Cadence target:        ~2 sessions/week → ~5 weeks (or compressed via the adap
 ## Resume Bookmark (read FIRST on resume; written at every sign-off)
 
 ```
-Last sign-off:     (none yet — program not started)
-Resume at:         Session 1 — Orientation + Baseline Diagnostic
+Last sign-off:     2026-06-27
+Resume at:         Session 5 — Task Tool + Explicit Context Passing (D1.4)
 Mid-concept?:      No — clean session boundary
-Reinforcement due: (none yet — see LEARNER-MODEL.md after the first session)
-Note to professor: Fresh start. Run the cold baseline diagnostic.
+Reinforcement due: D1.1 (🟢 — confirm at SR flash), D1.3 (🟡 — explicit context passing + context isolation)
+Note to professor: Strong first day. Sessions 1–4 complete. D1.1 confirmed 🟢 (loop mechanics, 
+                   stop_reason, anti-patterns). D1.3 at 🟡 (context isolation demonstrated, 
+                   confirm at Session 5 flash). Open Session 5 with SR flash on D1.1 + D1.3.
+                   Then teach Task tool: spawn mechanics, explicit context format, parallel spawning.
 ```
 
 > On resume ("Professor, I'm back"), read this block + `LEARNER-MODEL.md`, open with a Spaced-Repetition Flash drawn from the Reinforcement Queue, then continue at **Resume at**. The sign-off ritual that writes this block is Session Type 6 in `ENGAGEMENT-PROTOCOL.md`.
@@ -73,7 +76,7 @@ Status codes: `[✅]` = complete · `[🔄]` = in progress · `[⬜]` = not star
 
 | # | Session | Status | Notes |
 |---|---|---|---|
-| 1 | Orientation + Baseline Diagnostic | ⬜ | Cold diagnostic will establish baseline |
+| 1 | Orientation + Baseline Diagnostic | ✅ | 10-Q cold diagnostic complete (2026-06-27). D1 🟡, D2–D5 🔴. Provisional exam: 2026-08-22. |
 
 ---
 
@@ -81,9 +84,9 @@ Status codes: `[✅]` = complete · `[🔄]` = in progress · `[⬜]` = not star
 
 | # | Session | Status | Notes |
 |---|---|---|---|
-| 2 | Agentic Loop Fundamentals | ⬜ | |
-| 3 | The Agentic Loop as a Pattern | ⬜ | |
-| 4 | AgentDefinition + Hub-and-Spoke | ⬜ | |
+| 2 | Agentic Loop Fundamentals | ✅ | stop_reason, stateless model, tool_use/end_turn cycle — D1.1 confirmed 🟢 |
+| 3 | The Agentic Loop as a Pattern | ✅ | Anti-patterns nailed: text parsing, iteration cap, content check — all 3 classified correctly |
+| 4 | AgentDefinition + Hub-and-Spoke | ✅ | Least privilege instinct correct; explicit context passing demonstrated; D1.3 at 🟡 |
 | 5 | Task Tool + Explicit Context Passing | ⬜ | |
 | 6 | ★ Hooks: PreToolUse/PostToolUse | ⬜ | Gap concept |
 | 7 | ★ Escalation Patterns + Handoffs | ⬜ | Gap concept |
@@ -178,11 +181,11 @@ Status codes: `[✅]` = complete · `[🔄]` = in progress · `[⬜]` = not star
 
 | Domain | Baseline read | Notes |
 |---|---|---|
-| D1 — Agentic Architecture | | |
-| D3 — Claude Code Config | | |
-| D4 — Prompt Engineering | | |
-| D2 — Tool Design & MCP | | |
-| D5 — Context Management | | |
+| D1 — Agentic Architecture | 🟡 Developing | Loop and orchestrator/subagent conceptually solid; stop_reason technical layer missing |
+| D2 — Tool Design & MCP | 🔴 Weak | USB/MCP analogy right; tool description has lazy-loading misconception; primitives unknown |
+| D3 — Claude Code Config | 🔴 Weak | CLAUDE.md surface-level; headless/CI mode unknown |
+| D4 — Prompt Engineering | 🔴 Weak | Few-shot partial; stop_reason / tool_use API cycle unknown |
+| D5 — Context Management | 🔴 Weak | Lost-in-middle symptom right, mechanism wrong; prompt caching unknown |
 
 ---
 
