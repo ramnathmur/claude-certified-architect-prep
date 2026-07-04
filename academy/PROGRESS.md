@@ -9,10 +9,10 @@
 ## Current Status
 
 ```
-Current session:  5 (Task Tool + Explicit Context Passing)
-Current phase:    1 — Domain 1: Agentic Architecture
-Overall progress: 4 / 37 sessions complete
-Active gaps:      D3.6 (headless/CI mode), D4.5 (stop_reason cycle), D5.1 (lost-in-middle mechanism), D5 (prompt caching)
+Current session:  10 (CLAUDE.md Hierarchy + @path Imports)
+Current phase:    2 — Domain 3: Claude Code Configuration
+Overall progress: 9 / 37 sessions complete
+Active gaps:      D1.1 anti-patterns (🔴 — third pattern missed again S9 Q2), D3.6 (headless/CI), D4.5 (stop_reason/tool_use API), D5.1 (lost-in-middle mechanism), D5 (prompt caching)
 Mock exam score:  Not yet taken
 Go/No-Go:         Not yet decided
 ```
@@ -23,12 +23,12 @@ Go/No-Go:         Not yet decided
 
 ```
 Exam booking target:   2026-08-22 (provisional)
-Last session date:     2026-06-27
+Last session date:     2026-06-30
 Days since last:        0
-Sessions this week:     4 (Sessions 1–4 all completed on day 1 — strong start)
-Current streak:          1 day
-Next session booked:   Session 5 — Task Tool + Explicit Context Passing (next visit)
-Cadence target:        ~1 session/weekday → ~8 weeks; compress to ~6 weeks with back-to-back sessions
+Sessions this week:     9 (Sessions 1–6 on day 1, Sessions 7–9 on day 2 — exceptional pace)
+Current streak:          2 days
+Next session booked:   Session 10 — CLAUDE.md Hierarchy + @path Imports (Phase 2 start)
+Cadence target:        ~1 session/weekday → ~8 weeks; at current pace could compress to 3 weeks
 ```
 
 ### 5-Week Reference Calendar (target dates; adjust to actual start)
@@ -50,14 +50,22 @@ Cadence target:        ~1 session/weekday → ~8 weeks; compress to ~6 weeks wit
 ## Resume Bookmark (read FIRST on resume; written at every sign-off)
 
 ```
-Last sign-off:     2026-06-27
-Resume at:         Session 5 — Task Tool + Explicit Context Passing (D1.4)
+Last sign-off:     2026-06-30
+Resume at:         Session 10 — CLAUDE.md Hierarchy + @path Imports (D3.1)
 Mid-concept?:      No — clean session boundary
-Reinforcement due: D1.1 (🟢 — confirm at SR flash), D1.3 (🟡 — explicit context passing + context isolation)
-Note to professor: Strong first day. Sessions 1–4 complete. D1.1 confirmed 🟢 (loop mechanics, 
-                   stop_reason, anti-patterns). D1.3 at 🟡 (context isolation demonstrated, 
-                   confirm at Session 5 flash). Open Session 5 with SR flash on D1.1 + D1.3.
-                   Then teach Task tool: spawn mechanics, explicit context format, parallel spawning.
+Reinforcement due: D1.1 🔴 (third anti-pattern STILL missed — text-content check selected as CORRECT answer in S9 Q2; MUST re-flash S10 open)
+                   D1.6 🟡 (first check S9 — framework solid, escalation summary gaps; re-flash S10)
+                   D1.7 🟡 (first check S8 — re-flash S10)
+                   D1.8 🟡 (first check S8 — re-flash S10)
+Note to professor: Sessions 7–9 complete 2026-06-30 (day 2 of program).
+                   D1.1 CRITICAL: Ram selected anti-pattern 3 (text-content check) as the CORRECT answer in S9 MCQ Q2.
+                   This is a dangerous gap — not "don't know" but "believes wrong thing is right."
+                   Re-flash must surface this specifically. Do not let it slide.
+                   D1.3, D1.4, D1.5 all confirmed 🟢 (2nd clean recalls S7).
+                   D1.6 🟡: escalation pattern logic correct; escalation summary fields incomplete in scenario.
+                   D1.7 🟡: resume/fork/fresh decision rules correct and self-extended.
+                   D1.8 🟡: fixed vs dynamic decomposition and attention dilution solid; "attention dilution" term missed in MCQ.
+                   Phase 2 begins Session 10. Open with SR flash (D1.1 highest priority).
 ```
 
 > On resume ("Professor, I'm back"), read this block + `LEARNER-MODEL.md`, open with a Spaced-Repetition Flash drawn from the Reinforcement Queue, then continue at **Resume at**. The sign-off ritual that writes this block is Session Type 6 in `ENGAGEMENT-PROTOCOL.md`.
@@ -84,14 +92,14 @@ Status codes: `[✅]` = complete · `[🔄]` = in progress · `[⬜]` = not star
 
 | # | Session | Status | Notes |
 |---|---|---|---|
-| 2 | Agentic Loop Fundamentals | ✅ | stop_reason, stateless model, tool_use/end_turn cycle — D1.1 confirmed 🟢 |
-| 3 | The Agentic Loop as a Pattern | ✅ | Anti-patterns nailed: text parsing, iteration cap, content check — all 3 classified correctly |
-| 4 | AgentDefinition + Hub-and-Spoke | ✅ | Least privilege instinct correct; explicit context passing demonstrated; D1.3 at 🟡 |
-| 5 | Task Tool + Explicit Context Passing | ⬜ | |
-| 6 | ★ Hooks: PreToolUse/PostToolUse | ⬜ | Gap concept |
-| 7 | ★ Escalation Patterns + Handoffs | ⬜ | Gap concept |
-| 8 | ★ Session Mgmt + Task Decomposition | ⬜ | Gap concept |
-| 9 | D1 Comprehension Check + Scenario Drill | ⬜ | |
+| 2 | Agentic Loop Fundamentals | ✅ | stop_reason, stateless model, tool_use/end_turn cycle — D1.1 strong in-session |
+| 3 | The Agentic Loop as a Pattern | ✅ | Anti-patterns nailed in-session; missed on SR flash S5 → D1.1 back to 🔴 |
+| 4 | AgentDefinition + Hub-and-Spoke | ✅ | Least privilege instinct correct; context isolation confirmed S5 flash; D1.3 🟡 |
+| 5 | Task Tool + Explicit Context Passing | ✅ | Parallel spawning, context discipline, token cost trade-off — D1.4 🟡 |
+| 6 | ★ Hooks: PreToolUse/PostToolUse | ✅ | Deterministic vs probabilistic distinction confirmed; discount/financial example correct — D1.5 🟡 |
+| 7 | ★ Escalation Patterns + Handoffs | ✅ | 3 patterns taught; structured handoff payload; unreliable triggers. D1.6 🟡 |
+| 8 | ★ Session Mgmt + Task Decomposition | ✅ | resume/fork/fresh; fixed vs dynamic; multi-pass + attention dilution. D1.7/D1.8 🟡 |
+| 9 | D1 Comprehension Check + Scenario Drill | ✅ | 3/3 comprehension; 4/5 MCQs. D1.1 🔴 persists (text-content anti-pattern selected as correct in Q2) |
 
 ---
 

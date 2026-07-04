@@ -36,14 +36,14 @@ It answers, at any moment:
 ### Domain 1 — Agentic Architecture & Orchestration (27%)
 | Sub-domain | Concept | Mastery | Last checked | Next review due | Evidence / note |
 |---|---|---|---|---|---|
-| D1.1 | Agentic loop fundamentals (`stop_reason`, stateless model) | 🟢 | 2026-06-27 | Session 5 | 2 clean recalls: named stop_reason (S2); classified all 3 exit conditions correctly with reasoning (S3) |
-| D1.2 | `AgentDefinition` + least privilege | ⚪ | — | — | |
-| D1.3 | Hub-and-spoke / coordinator responsibilities | 🟡 | 2026-06-27 | Session 5 | Explicit context passing correct (S4); coordinator responsibilities: decompose/delegate/aggregate/error/user ✓; context isolation demonstrated implicitly — confirm vocabulary next session |
-| D1.4 | `Task` tool + explicit context passing + parallel spawn | ⚪ | — | — | |
-| D1.5 | Hooks (Pre/PostToolUse; deterministic vs probabilistic) ★ | ⚪ | — | — | |
-| D1.6 | Escalation patterns + structured handoff ★ | ⚪ | — | — | |
-| D1.7 | Session mgmt (`--resume`, `fork_session`) ★ | ⚪ | — | — | |
-| D1.8 | Task decomposition (fixed vs dynamic; multi-pass) | ⚪ | — | — | |
+| D1.1 | Agentic loop fundamentals (`stop_reason`, stateless model) | 🔴 | 2026-06-30 | Session 10 | CRITICAL: S9 MCQ Q2 — selected anti-pattern 3 (text-content check) as the CORRECT answer. Not just missing it — actively believes it's right. Re-flash must surface and correct this specifically. |
+| D1.2 | `AgentDefinition` + least privilege | ⚪ | — | — | Not yet drilled |
+| D1.3 | Hub-and-spoke / coordinator responsibilities | 🟢 | 2026-06-30 | Session 12-13 | 2nd clean recall S7: context isolation, clean context window vocab. Next review ~S12. |
+| D1.4 | `Task` tool + explicit context passing + parallel spawn | 🟢 | 2026-06-30 | Session 12-13 | 2nd clean recall S7: 5 explicit context elements named correctly + failure consequences. Next review ~S12. |
+| D1.5 | Hooks (Pre/PostToolUse; deterministic vs probabilistic) ★ | 🟢 | 2026-06-30 | Session 12-13 | 2nd clean recall S7: deterministic vs probabilistic unprompted; financial/legal rule correct. Next review ~S12. |
+| D1.6 | Escalation patterns + structured handoff ★ | 🟡 | 2026-06-30 | Session 10 | First check S9: 3 patterns + unreliable triggers correct; escalation summary incomplete (missing customer_id, root_cause, actions_taken, recommended_action, escalation_reason). |
+| D1.7 | Session mgmt (`--resume`, `fork_session`) ★ | 🟡 | 2026-06-30 | Session 10 | First clean check S8: resume/fork/fresh decision rules correct; self-extended concept (each fork independently subject to resume-vs-fresh decision). |
+| D1.8 | Task decomposition (fixed vs dynamic; multi-pass) | 🟡 | 2026-06-30 | Session 10 | First check S8/S9: fixed vs dynamic correct; multi-pass approach correct; named "attention dilution" missed in MCQ (picked imprecise answer C over precise answer B). |
 
 ### Domain 3 — Claude Code Configuration & Workflows (20%)
 | Sub-domain | Concept | Mastery | Last checked | Next review due | Evidence / note |
@@ -97,15 +97,20 @@ It answers, at any moment:
 
 | Priority | Concept | State | Due | Why it's queued |
 |---|---|---|---|---|
-| 1 | D1.3 — Context isolation vocab ("clean context window") | 🟡 | Session 5 | Demonstrated understanding; confirm the explicit term next session SR flash |
-| 2 | D1.1 — `stop_reason` anti-patterns (confirm 🟢) | 🟢 | Session 5 | 2 clean recalls — SR flash to confirm retention after gap |
-| 3 | D2.1 — Tool description as selection mechanism | 🔴 | Session 10 | Lazy-loading misconception — teach when D2 block opens |
-| 4 | D2.2 — MCP fundamentals (3 primitives) | 🔴 | Session 10 | Surface only; teach from scratch in D2 block |
-| 5 | D3.1 — CLAUDE.md hierarchy + traversal | 🔴 | Session 10 | Surface level; teach in D3 block |
-| 6 | D4.1 — Few-shot: pattern demonstration vs description | 🟡 | Session 16 | Right concept; mechanism not articulated — address in D4 block |
-| 7 | D4.5 — `stop_reason` / tool_use API cycle (D4 angle) | 🔴 | Session 17 | Unknown from D4 angle (JSON schema, tool_choice) — address in D4 block |
-| 8 | D5.1 — Lost-in-middle mechanism (positional bias) | 🔴 | Session 27 | Right symptom, wrong mechanism — teach in D5 block |
-| 9 | D3.6 — CI/CD headless / `-p` flag | 🔴 | Session 14 | Fully unknown — teach from scratch in D3 block |
+| 1 | D1.1 — Anti-patterns (CRITICAL: text-content check believed to be correct) | 🔴 | Session 10 | S9 Q2: selected anti-pattern 3 as the right answer — believes text-content check is valid. Must correct the misconception, not just re-surface the list. |
+| 2 | D1.6 — Escalation patterns + full handoff payload fields | 🟡 | Session 10 | First check S9 — missing 5 of 9 handoff fields in scenario |
+| 3 | D1.7 — Session mgmt: resume vs fork vs fresh decision rules | 🟡 | Session 10 | First clean check S8 — re-flash to build toward 🟢 |
+| 4 | D1.8 — Attention dilution (precise term) + multi-pass pattern | 🟡 | Session 10 | First check S8/S9 — missed "attention dilution" as the named concept in MCQ |
+| 5 | D3.1 — CLAUDE.md hierarchy + traversal | 🔴 | Session 10 | Teaching now in Phase 2 |
+| 6 | D1.3 — Context isolation | 🟢 | Session 12-13 | 2nd clean recall — next review in ~3 sessions |
+| 7 | D1.4 — Task tool + explicit context | 🟢 | Session 12-13 | 2nd clean recall — next review in ~3 sessions |
+| 8 | D1.5 — Hooks: deterministic vs probabilistic | 🟢 | Session 12-13 | 2nd clean recall — next review in ~3 sessions |
+| 9 | D2.1 — Tool description as selection mechanism | 🔴 | Session 22 | Lazy-loading misconception — teach when D2 block opens |
+| 10 | D2.2 — MCP fundamentals (3 primitives) | 🔴 | Session 22 | Surface only; teach from scratch in D2 block |
+| 11 | D4.1 — Few-shot: pattern demonstration vs description | 🟡 | Session 16 | Right concept; mechanism not articulated — address in D4 block |
+| 12 | D4.5 — `stop_reason` / tool_use API cycle (D4 angle) | 🔴 | Session 17 | Unknown from D4 angle — address in D4 block |
+| 13 | D5.1 — Lost-in-middle mechanism (positional bias) | 🔴 | Session 27 | Right symptom, wrong mechanism — teach in D5 block |
+| 14 | D3.6 — CI/CD headless / `-p` flag | 🔴 | Session 14 | Fully unknown — teach from scratch in D3 block |
 
 ---
 
@@ -113,8 +118,9 @@ It answers, at any moment:
 
 > Concepts Ram reliably nails (🟢 / ✅). Use them as the *known* side of a new analogy — bridge from a strength to a new concept.
 
-- D1.1 — Agentic loop (🟢 — stop_reason cycle, stateless model, anti-patterns all confirmed)
-- D1.3 — Orchestrator/subagent + explicit context passing (🟡 — confirm context isolation vocab at S5)
+- D1.3 — Context isolation / clean context window (🟡 — 1 clean recall S5; 1 more needed)
+- D1.4 — Task tool + parallel spawn (🟡 — first check solid)
+- D1.5 — Hooks: deterministic vs probabilistic (🟡 — first check solid; key distinction clear)
 
 ---
 
@@ -145,6 +151,8 @@ It answers, at any moment:
 - **2026-06-27 — Gap pattern: conceptual vs. technical.** Consistently strong on the "what it is and why" layer; consistently missing the "how the API actually signals it" layer (stop_reason, tool_use content blocks, cache_control fields). Bridge from his concept to the API shape. **UPDATE (S2–S4):** Technical layer is absorbing quickly once taught — stop_reason retained cleanly across two sessions same day. Gap pattern may narrow faster than expected.
 - **2026-06-27 — Responds well to "what breaks if..."** His best answers came from failure-mode questions (stateless context drop, Analyst with no facts). Use this pattern: teach the mechanism, then ask what breaks if it's missing. He reasons from consequences, not from definitions.
 - **Known context to leverage:** Ram is a Solution Architect at Infosys (Claude Partner) with hands-on agent/Claude Code experience. Prefer enterprise-delivery and systems-architecture analogies over consumer ones; he can reason from real production trade-offs.
+- **2026-06-30 — Precision gap under exam pressure.** In MCQ format with multiple plausible answers, Ram picks directionally correct options that lack the precise exam term (e.g. "too much context" instead of "attention dilution"; text-content check as valid instead of anti-pattern). Teach the exact vocabulary each session. In MCQ format: when two answers look similar, the exam rewards the one with the precise named concept.
+- **2026-06-30 — Dangerous misconception pattern on D1.1.** Anti-pattern 3 (text-content check as completion signal) was not only forgotten but actively selected as the CORRECT answer in a scenario. This is a belief-level error, not a recall error. Re-exposure alone won't fix it — must explicitly contrast: "this sounds reasonable but is exactly the anti-pattern." Use the contrast frame.
 
 ---
 
@@ -154,8 +162,8 @@ It answers, at any moment:
 
 | Domain | Weight | Concepts ✅/🟢 | Concepts 🟡 | Concepts 🔴 | Untested | Read |
 |---|---|---|---|---|---|---|
-| D1 | 27% | 1 | 1 | 0 | 6 | After S2–S4: D1.1 🟢 (loop + stop_reason + anti-patterns); D1.3 🟡 (hub-and-spoke + context passing); D1.2/4/5/6/7/8 untested |
+| D1 | 27% | 3 (D1.3/4/5 🟢) | 3 (D1.6/7/8 🟡) | 1 (D1.1 🔴) | 1 (D1.2) | After S7–S9: D1 fully taught. D1.1 critical gap — text-content anti-pattern believed correct. D1.2 not yet drilled. |
 | D2 | 18% | 0 | 0 | 2 | 4 | Baseline: 🔴 — USB/MCP surface only; lazy-load misconception on D2.1 |
-| D3 | 20% | 0 | 0 | 2 | 4 | Baseline: 🔴 — CLAUDE.md surface; headless mode unknown |
+| D3 | 20% | 0 | 0 | 2 | 4 | Phase 2 starting Session 10 — CLAUDE.md hierarchy unknown beyond surface |
 | D4 | 20% | 0 | 1 | 1 | 8 | Baseline: 🔴 — few-shot partial; stop_reason cycle unknown |
 | D5 | 15% | 0 | 0 | 1 | 4 | Baseline: 🔴 — symptom right, mechanism wrong; caching unknown |
