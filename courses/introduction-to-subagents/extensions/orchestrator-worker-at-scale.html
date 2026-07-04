@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Orchestrator-Worker at Scale + Failure Modes — Extension</title>
+<title>Orchestrator-Worker at Scale + Failure Modes: Extension</title>
 <style>
   :root{
     --bg:#faf8f5; --paper:#ffffff; --ink:#2b2622; --ink-soft:#5c544c;
@@ -232,15 +232,15 @@
 <header class="hero" id="top">
   <div class="extbanner">
     <span class="ebadge">Extension</span>
-    <div><b>Beyond the Academy course.</b> This is web-researched material grounded in cited primary sources — Anthropic's <em>Building effective agents</em>, <em>How we built our multi-agent research system</em>, and the Claude Agent SDK <em>Subagents</em> docs, plus two secondary references (Galileo's failure-mode blog and the Cemri et al. MAST paper). It is <b>not part of the original Academy "Introduction to Subagents" course</b> — it takes the orchestrator-worker pattern into production, where the interesting question stops being "how do I fan out?" and becomes "what breaks when I do, and how do I design around it?"</div>
+    <div><b>Beyond the Academy course.</b> This is web-researched material grounded in cited primary sources: Anthropic's <em>Building effective agents</em>, <em>How we built our multi-agent research system</em>, and the Claude Agent SDK <em>Subagents</em> docs, plus two secondary references (Galileo's failure-mode blog and the Cemri et al. MAST paper). It is <b>not part of the original Academy "Introduction to Subagents" course</b>. It takes the orchestrator-worker pattern into production, where the interesting question stops being "how do I fan out?" and becomes "what breaks when I do, and how do I design around it?"</div>
   </div>
 
   <div class="eyebrow">Mixed sources · Extension S-E3 · 300-level · reliability-heavy</div>
   <h1>Orchestrator-Worker at Scale + Failure Modes</h1>
-  <p class="lead">A central LLM that <em>dynamically breaks down tasks, delegates them to workers, and synthesizes results</em> — taken to production. The economics of going multi-agent, the orchestrator's real job, the <strong>eight failure modes</strong> that show up at scale, and the reliability patterns Anthropic actually shipped to survive them.</p>
+  <p class="lead">A central LLM that <em>dynamically breaks down tasks, delegates them to workers, and synthesizes results</em>, taken to production. The economics of going multi-agent, the orchestrator's real job, the <strong>eight failure modes</strong> that show up at scale, and the reliability patterns Anthropic actually shipped to survive them.</p>
 
   <div class="crosslink">
-    <p style="margin:0 0 6px"><span class="emoji">🔗</span> <strong>Where this sits in the ladder.</strong> It builds on the <a href="../introduction-to-subagents.html">← Introduction to Subagents (base course)</a> — the "what is a subagent / when to delegate" foundation — and follows <strong>S-E1, the five orchestration patterns</strong> (<a href="orchestration-patterns.html">orchestration-patterns.html</a>) and <strong>S-E2, the subagent primitive</strong> (<a href="subagents-as-sdk-primitive.html">subagents-as-sdk-primitive.html</a>). S-E1 named the patterns, S-E2 gave you the object you declare in code; this lesson runs one of those patterns — orchestrator-worker — under real production load.</p>
+    <p style="margin:0 0 6px"><span class="emoji">🔗</span> <strong>Where this sits in the ladder.</strong> It builds on the <a href="../introduction-to-subagents.html">← Introduction to Subagents (base course)</a>, the "what is a subagent / when to delegate" foundation, and follows <strong>S-E1, the five orchestration patterns</strong> (<a href="orchestration-patterns.html">orchestration-patterns.html</a>) and <strong>S-E2, the subagent primitive</strong> (<a href="subagents-as-sdk-primitive.html">subagents-as-sdk-primitive.html</a>). S-E1 named the patterns, S-E2 gave you the object you declare in code; this lesson runs one of those patterns, orchestrator-worker, under real production load.</p>
   </div>
 
   <div class="pillrow">
@@ -254,21 +254,21 @@
   <div class="aboutbox">
     <div class="lab"><span class="emoji">🧭</span> What you'll be able to do</div>
     <ul style="margin:6px 0;padding-left:20px;font-size:15px">
-      <li><strong>Distinguish</strong> dynamic orchestrator-worker decomposition from static parallelization — the defining architectural line.</li>
+      <li><strong>Distinguish</strong> dynamic orchestrator-worker decomposition from static parallelization: the defining architectural line.</li>
       <li><strong>Justify</strong> (or refuse) the move to multi-agent using the real numbers: the ~90.2% lift, the ~15× token cost, the 80%-of-variance token finding.</li>
       <li><strong>Run the orchestrator's job</strong>: detailed delegation, effort heuristics scaled to query complexity, synthesis, and a separate citation/verification stage.</li>
-      <li><strong>Name and mitigate the 8 failure modes</strong> — from error compounding to deployment coordination — by mechanism, symptom, and fix.</li>
+      <li><strong>Name and mitigate the 8 failure modes</strong> (from error compounding to deployment coordination) by mechanism, symptom, and fix.</li>
       <li><strong>Design reliability in</strong>: durable resume, checkpoints, external memory, tracing, end-state evals, rainbow deploys, worker limits, and the Workflow escape hatch.</li>
       <li><strong>Know when NOT to use it</strong>: the economics gate, shared-state coupling, latency, and the default-to-simplest rule.</li>
     </ul>
   </div>
 
   <div class="examnote">
-    <b>🎯 Why this matters for the CCA-F exam.</b> This lesson is weighted to <b>Domain 1 — Agentic Architecture &amp; Orchestration (27%)</b>, the heaviest graded domain, with heavy <b>Domain 5 — Context Management &amp; Reliability (15%)</b> crossover. Expect questions on <b>dynamic vs. static decomposition</b>, the <b>economics gate</b>, <b>context-window management at scale</b>, and the <b>failure-mode → mitigation</b> mappings. The quizzes target exactly those mechanics.
+    <b>🎯 Why this matters for the CCA-F exam.</b> This lesson is weighted to <b>Domain 1: Agentic Architecture &amp; Orchestration (27%)</b>, the heaviest graded domain, with heavy <b>Domain 5: Context Management &amp; Reliability (15%)</b> crossover. Expect questions on <b>dynamic vs. static decomposition</b>, the <b>economics gate</b>, <b>context-window management at scale</b>, and the <b>failure-mode → mitigation</b> mappings. The quizzes target exactly those mechanics.
   </div>
 
   <div class="verifynote">
-    <b><span class="emoji">⚠️</span> Point-in-time note (preserved from the source).</b> This lesson states several <em>version-sensitive</em> facts — the <b>90.2%</b> lift, the <b>~4× / ~15×</b> token multipliers, the <b>80% / 95%</b> variance figures, the effort-heuristic counts, the <b>200,000-token</b> truncation threshold, and the model names <b>"Claude Opus 4" / "Claude Sonnet 4"</b>. Each carries a <span class="verify">VERIFY</span> note where it appears. These come from a specific Anthropic writeup and may date; reconfirm against the live sources before relying on exact numbers.
+    <b><span class="emoji">⚠️</span> Point-in-time note (preserved from the source).</b> This lesson states several <em>version-sensitive</em> facts: the <b>90.2%</b> lift, the <b>~4× / ~15×</b> token multipliers, the <b>80% / 95%</b> variance figures, the effort-heuristic counts, the <b>200,000-token</b> truncation threshold, and the model names <b>"Claude Opus 4" / "Claude Sonnet 4"</b>. Each carries a <span class="verify">VERIFY</span> note where it appears. These come from a specific Anthropic writeup and may date; reconfirm against the live sources before relying on exact numbers.
   </div>
 </header>
 
@@ -282,7 +282,7 @@
 <!-- LESSON 1 -->
 <section class="lesson" id="l1" data-lesson="1">
   <div class="lmeta"><span class="ltag"><span class="emoji">🔁</span> Section 1</span><span class="ltime">⏱ ~7 min · concept</span></div>
-  <h3 class="ltitle">Recap — what orchestrator-worker <em>is</em></h3>
+  <h3 class="ltitle">Recap: what orchestrator-worker <em>is</em></h3>
 
   <div class="objectives">
     <div class="lab">What you'll be able to do</div>
@@ -293,14 +293,14 @@
     </ul>
   </div>
 
-  <p><strong>Why before how:</strong> before we worry about what breaks at scale, we need the pattern crisp. Anthropic's definition is exact — in the orchestrator-workers workflow, "a central LLM dynamically breaks down tasks, delegates them to worker LLMs, and synthesizes their results." Three verbs do all the work: <strong>break down</strong>, <strong>delegate</strong>, <strong>synthesize</strong>. Hold onto them — Sections C, D, and E are basically "what goes wrong with each verb, and how to fix it."</p>
+  <p><strong>Why before how:</strong> before we worry about what breaks at scale, we need the pattern crisp. Anthropic's definition is exact: in the orchestrator-workers workflow, "a central LLM dynamically breaks down tasks, delegates them to worker LLMs, and synthesizes their results." Three verbs do all the work: <strong>break down</strong>, <strong>delegate</strong>, <strong>synthesize</strong>. Hold onto them. Sections C, D, and E are basically "what goes wrong with each verb, and how to fix it."</p>
 
-  <p>It "is well-suited for complex tasks where you can't predict the subtasks needed" — where "subtasks aren't pre-defined, but determined by the orchestrator based on the specific input." That word <em>determined-at-runtime</em> is the whole game.</p>
+  <p>It "is well-suited for complex tasks where you can't predict the subtasks needed," where "subtasks aren't pre-defined, but determined by the orchestrator based on the specific input." That word <em>determined-at-runtime</em> is the whole game.</p>
 
   <h4>The line that defines the pattern: dynamic vs. static</h4>
-  <p>Plain <strong>parallelization</strong> comes in two flavors Anthropic names verbatim: "<strong>Sectioning</strong>: Breaking a task into independent subtasks run in parallel. <strong>Voting</strong>: Running the same task multiple times to get diverse outputs." In both, the subtasks are <strong>fixed in code</strong> — you wrote the fan-out ahead of time. In orchestrator-workers, the <strong>central LLM decides at runtime</strong> what the subtasks even are. That dynamic, LLM-driven decomposition is the defining feature: the orchestrator adapts the breakdown to each specific input rather than executing a predetermined fan-out.</p>
+  <p>Plain <strong>parallelization</strong> comes in two flavors Anthropic names verbatim: "<strong>Sectioning</strong>: Breaking a task into independent subtasks run in parallel. <strong>Voting</strong>: Running the same task multiple times to get diverse outputs." In both, the subtasks are <strong>fixed in code</strong>: you wrote the fan-out ahead of time. In orchestrator-workers, the <strong>central LLM decides at runtime</strong> what the subtasks even are. That dynamic, LLM-driven decomposition is the defining feature: the orchestrator adapts the breakdown to each specific input rather than executing a predetermined fan-out.</p>
 
-  <p><span class="analogy">Analogy</span> Static parallelization is a printed assembly line — every station is bolted down before the first part arrives. Orchestrator-worker is a newsroom editor who reads the story that just broke, then decides on the spot how many reporters to assign and to what angles. Same "many workers in parallel" shape; completely different decision-maker. (Author analogy, not a product fact.)</p>
+  <p><span class="analogy">Analogy</span> Static parallelization is a printed assembly line: every station is bolted down before the first part arrives. Orchestrator-worker is a newsroom editor who reads the story that just broke, then decides on the spot how many reporters to assign and to what angles. Same "many workers in parallel" shape, completely different decision-maker. (Author analogy, not a product fact.)</p>
 
   <figure class="svgfig">
     <svg viewBox="0 0 700 280" role="img" aria-label="Static parallelization with fixed code-defined subtasks versus orchestrator-worker where a central LLM decides subtasks at runtime">
@@ -339,14 +339,14 @@
     <figcaption>Same "many workers" silhouette, opposite decision-maker. Static = the fan-out is hard-coded; orchestrator-worker = a central LLM reads the input and decides the fan-out on the fly, then synthesizes.</figcaption>
   </figure>
 
-  <h4>The SDK realization — subagents are the primitive</h4>
+  <h4>The SDK realization: subagents are the primitive</h4>
   <p>From S-E2 you already know the mechanism. In the Claude Agent SDK, "Subagents are separate agent instances that your main agent can spawn to handle focused subtasks." You use them "to isolate context for focused subtasks, run multiple analyses in parallel, and apply specialized instructions without adding to the main agent's prompt." That is exactly the orchestrator-worker pattern expressed as code: the main agent is the orchestrator; each spawned subagent is a worker.</p>
 
   <div class="reveal" data-reveal>
     <div class="plab"><span class="emoji">🤔</span> Predict first</div>
-    <div class="q">You hard-code a function that always spawns exactly 3 workers — one per fixed section of a report — regardless of the input. Is that orchestrator-worker?</div>
+    <div class="q">You hard-code a function that always spawns exactly 3 workers, one per fixed section of a report, regardless of the input. Is that orchestrator-worker?</div>
     <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
-    <div class="ans"><strong>No — that's static parallelization (sectioning).</strong> The subtasks are fixed in code, not "determined by the orchestrator based on the specific input." It only becomes orchestrator-worker when a central LLM decides <em>at runtime</em> how to break the task down — which may be 1 worker, or 12.</div>
+    <div class="ans"><strong>No, that's static parallelization (sectioning).</strong> The subtasks are fixed in code, not "determined by the orchestrator based on the specific input." It only becomes orchestrator-worker when a central LLM decides <em>at runtime</em> how to break the task down, which may be 1 worker, or 12.</div>
   </div>
 
   <div class="mcq" data-mcq data-correct="1">
@@ -361,13 +361,13 @@
   </div>
 
   <div class="callout keyc collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaway<span class="chev">▼</span></div>
-  <div class="cbody"><p>Orchestrator-worker = <strong>break down → delegate → synthesize</strong>, where the breakdown is <strong>decided at runtime by a central LLM</strong>. If the fan-out is hard-coded, it's static parallelization, not this pattern. The SDK realizes it with the subagent primitive: main agent = orchestrator, spawned subagents = workers.</p></div></div>
+  <div class="cbody"><p>Orchestrator-worker equals <strong>break down → delegate → synthesize</strong>, where the breakdown is <strong>decided at runtime by a central LLM</strong>. If the fan-out is hard-coded, it's static parallelization, not this pattern. The SDK realizes it with the subagent primitive: main agent equals orchestrator, spawned subagents equal workers.</p></div></div>
 </section>
 
 <!-- ======================= SECTION B DIVIDER ======================= -->
 <div class="sec-divider" id="secB">
   <span class="badge"><span class="emoji">📈</span> The economics</span>
-  <h2>Why scale to multi-agent — and what it costs</h2>
+  <h2>Why scale to multi-agent, and what it costs</h2>
   <p>Context isolation, separation of concerns, and parallelism are the upside. The ~15× token bill is the downside. The numbers that decide whether the trade is worth it.</p>
 </div>
 
@@ -379,17 +379,17 @@
   <div class="objectives">
     <div class="lab">What you'll be able to do</div>
     <ul>
-      <li>State the three rationales for going multi-agent — and ground each in a source</li>
+      <li>State the three rationales for going multi-agent, and ground each in a source</li>
       <li>Recall the headline numbers: ~90.2% lift, ~15× tokens, 80% of variance from tokens</li>
-      <li>Explain <em>why</em> multi-agent wins — the token story underneath the architecture</li>
+      <li>Explain <em>why</em> multi-agent wins: the token story underneath the architecture</li>
     </ul>
   </div>
 
-  <p>Anthropic productionized orchestrator-workers in their Research feature: "a lead agent coordinates the process while delegating to specialized subagents that operate in parallel." Why bother, given the cost? Three reasons — and they map directly onto Domains 1 and 5.</p>
+  <p>Anthropic productionized orchestrator-workers in their Research feature: "a lead agent coordinates the process while delegating to specialized subagents that operate in parallel." Given the ~15× cost, the case for going multi-agent rests on context isolation, separation of concerns, and parallelism, and each maps directly onto Domains 1 and 5.</p>
 
   <h4>The three rationales</h4>
   <ol>
-    <li><strong>Context isolation / compression (Domain 5).</strong> "Subagents facilitate compression by operating in parallel with their own context windows, exploring different aspects of the question simultaneously before condensing the most important tokens for the lead research agent." The SDK echoes the mechanism: "Each subagent runs in its own fresh conversation. Intermediate tool calls and results stay inside the subagent; only its final message returns to the parent." That last clause is the compression engine — the lead never has to hold the workers' raw exploration in its own window.</li>
+    <li><strong>Context isolation / compression (Domain 5).</strong> "Subagents facilitate compression by operating in parallel with their own context windows, exploring different aspects of the question simultaneously before condensing the most important tokens for the lead research agent." The SDK echoes the mechanism: "Each subagent runs in its own fresh conversation. Intermediate tool calls and results stay inside the subagent; only its final message returns to the parent." That last clause is the compression engine: the lead never has to hold the workers' raw exploration in its own window.</li>
     <li><strong>Separation of concerns (Domain 1).</strong> "Each subagent also provides separation of concerns—distinct tools, prompts, and exploration trajectories—which reduces path dependency and enables thorough, independent investigations."</li>
     <li><strong>Parallelism / speed.</strong> "Parallel tool calling transforms speed and performance. These changes cut research time by up to 90% for complex queries, allowing Research to do more work in minutes instead of hours."</li>
   </ol>
@@ -429,7 +429,7 @@
       <text class="s" x="20" y="100">tokens</text>
       <text class="s" x="20" y="116">vs. chat</text>
     </svg>
-    <figcaption>The headline cost curve: an agent burns ~4× a chat; a multi-agent system ~15×. <span class="verify">VERIFY</span> multipliers. Because token usage explains ~80% of performance variance, this chart is also (roughly) the performance curve — which is precisely why the architecture pays off only when the task can absorb the spend.</figcaption>
+    <figcaption>The headline cost curve: an agent burns ~4× a chat; a multi-agent system ~15×. <span class="verify">VERIFY</span> multipliers. Because token usage explains ~80% of performance variance, this chart is also (roughly) the performance curve, which is precisely why the architecture pays off only when the task can absorb the spend.</figcaption>
   </figure>
 
   <figure class="svgfig">
@@ -488,11 +488,11 @@
       <rect x="72" y="8" width="300" height="18" rx="4" fill="#e0efee"/>
       <text class="s" x="222" y="21" text-anchor="middle" fill="#3a7d7b">token usage alone explains ~80% of performance variance <tspan font-style="italic">[VERIFY]</tspan></text>
     </svg>
-    <figcaption>Cost-vs-reliability tradeoff: reliability rises steeply with more workers then flattens (diminishing returns), while token cost keeps climbing — multi-agent averages ~15× a chat. <span class="verify">VERIFY</span> multiplier. The "knee" — roughly 4–10 workers on a well-scoped complex task — is where you get most of the reliability gain before cost outpaces value. Because token usage explains ~80% of performance variance, the two curves are tightly linked: spending more tokens is both the cost and the explanation for the performance gain.</figcaption>
+    <figcaption>Cost-vs-reliability tradeoff: reliability rises steeply with more workers then flattens (diminishing returns), while token cost keeps climbing: multi-agent averages ~15× a chat. <span class="verify">VERIFY</span> multiplier. The "knee" (roughly 4–10 workers on a well-scoped complex task) is where you get most of the reliability gain before cost outpaces value. Because token usage explains ~80% of performance variance, the two curves are tightly linked: spending more tokens is both the cost and the explanation for the performance gain.</figcaption>
   </figure>
 
   <div class="callout tip collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">💡</span> The why underneath: it's a token story<span class="chev">▼</span></div>
-  <div class="cbody"><p>The deep reason multi-agent wins is almost embarrassingly mechanical. More agents exploring in parallel = more tokens spent. Since token usage explains ~80% of the performance variance, the multi-agent architecture wins largely because it is <strong>a mechanism for spending more tokens productively in parallel</strong>. That reframing is the exam-relevant insight: it tells you exactly when the architecture <em>won't</em> help — when the task can't absorb more parallel token spend.</p></div></div>
+  <div class="cbody"><p>The deep reason multi-agent wins is almost embarrassingly mechanical. More agents exploring in parallel means more tokens spent. Since token usage explains ~80% of the performance variance, the multi-agent architecture wins largely because it is <strong>a mechanism for spending more tokens productively in parallel</strong>. That reframing is the exam-relevant insight: it tells you exactly when the architecture <em>won't</em> help, namely when the task can't absorb more parallel token spend.</p></div></div>
 
   <div class="mcq" data-mcq data-correct="2">
     <div class="qlab"><span class="emoji">❓</span> Quick check</div>
@@ -509,7 +509,7 @@
     <div class="plab"><span class="emoji">🤔</span> Predict first</div>
     <div class="q">If a multi-agent system costs ~15× a chat in tokens, what must be true of a task for that spend to be justified?</div>
     <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
-    <div class="ans"><strong>It must be valuable AND heavily parallelizable.</strong> "Multi-agent systems excel at valuable tasks that involve heavy parallelization." If the task is low-value, or fundamentally sequential / shared-state, the 15× spend buys little — and you should fall back to a single agent or a fixed workflow (Section F).</div>
+    <div class="ans"><strong>It must be valuable AND heavily parallelizable.</strong> "Multi-agent systems excel at valuable tasks that involve heavy parallelization." If the task is low-value, or fundamentally sequential / shared-state, the 15× spend buys little, so you should fall back to a single agent or a fixed workflow (Section F).</div>
   </div>
 </section>
 
@@ -517,7 +517,7 @@
 <div class="sec-divider" id="secC">
   <span class="badge"><span class="emoji">🎛️</span> The orchestrator</span>
   <h2>The orchestrator's job at scale</h2>
-  <p>Decomposition with detailed delegation, effort heuristics tied to query complexity, synthesis, and a separate citation/verification stage — plus the named prompt-engineering principles.</p>
+  <p>Decomposition with detailed delegation, effort heuristics tied to query complexity, synthesis, and a separate citation/verification stage, plus the named prompt-engineering principles.</p>
 </div>
 
 <!-- LESSON 3 -->
@@ -565,7 +565,7 @@
       <rect x="610" y="180" width="74" height="36" rx="9" fill="#e3f0e6" stroke="#3f7d4f"/><text class="t" x="647" y="202" text-anchor="middle">result</text>
       <line x1="590" y1="194" x2="608" y2="198" stroke="#3f7d4f" stroke-width="1.6" marker-end="url(#acg)"/>
     </svg>
-    <figcaption>The Research architecture: lead agent plans and delegates → subagents explore in parallel → findings return for synthesis → a dedicated CitationAgent verifies and attributes → result. Verification is its own stage, architecturally separated from research.</figcaption>
+    <figcaption>The Research architecture: lead agent plans and delegates, subagents explore in parallel, findings return for synthesis, a dedicated CitationAgent verifies and attributes, then result. Verification is its own stage, architecturally separated from research.</figcaption>
   </figure>
 
   <figure class="svgfig">
@@ -646,13 +646,13 @@
       <text class="s" x="22" y="312" fill="#5c544c">• elapsed = max(workers), not sum → parallelism cuts wall-clock time</text>
       <text class="s" x="22" y="324" fill="#5c544c">• each subagent sees only its constructed prompt — no peer context</text>
     </svg>
-    <figcaption>Annotated pipeline: the lead constructs a separate prompt for each worker (workers never share context with peers); all workers execute in parallel so elapsed time equals the slowest worker, not the sum; only each worker's final message returns to the lead for synthesis; a dedicated CitationAgent then verifies and attributes before the result is delivered.</figcaption>
+    <figcaption>Annotated pipeline: the lead constructs a separate prompt for each worker (workers never share context with peers). All workers execute in parallel, so elapsed time equals the slowest worker, not the sum. Only each worker's final message returns to the lead for synthesis, and a dedicated CitationAgent then verifies and attributes before the result is delivered.</figcaption>
   </figure>
 
-  <h4>Job 1 — Decomposition + detailed delegation</h4>
-  <p>"Each subagent needs an objective, an output format, guidance on the tools and sources to use, and clear task boundaries. Without detailed task descriptions, agents duplicate work, leave gaps, or fail to find necessary information." Anthropic learned this the hard way: vague instructions like "research the semiconductor shortage" caused subagents to misinterpret the task or perform "the exact same searches as other agents." Detailed delegation is not politeness — it is the mechanism that prevents failure mode #5 (duplicated work).</p>
+  <h4>Job 1: Decomposition + detailed delegation</h4>
+  <p>"Each subagent needs an objective, an output format, guidance on the tools and sources to use, and clear task boundaries. Without detailed task descriptions, agents duplicate work, leave gaps, or fail to find necessary information." Anthropic learned this the hard way: vague instructions like "research the semiconductor shortage" caused subagents to misinterpret the task or perform "the exact same searches as other agents." Detailed delegation is not politeness; it is the mechanism that prevents failure mode #5 (duplicated work).</p>
 
-  <h4>Job 2 — Effort heuristics scaled to complexity</h4>
+  <h4>Job 2: Effort heuristics scaled to complexity</h4>
   <p>"Agents struggle to judge appropriate effort for different tasks, so we embedded scaling rules in the prompts." The explicit rules:</p>
   <figure class="svgfig">
     <svg viewBox="0 0 700 200" role="img" aria-label="Effort scaling ladder: simple fact-finding uses 1 agent and 3 to 10 calls, comparisons use 2 to 4 subagents and 10 to 15 calls each, complex research uses more than 10 subagents">
@@ -676,7 +676,7 @@
 
   <p>The SDK exposes effort directly as a field: <code class="inline">effort</code> accepts <code class="inline">'low' | 'medium' | 'high' | 'xhigh' | 'max'</code> or a number, and <code class="inline">maxTurns</code> caps "Maximum number of agentic turns before the agent stops."</p>
 
-  <div class="codelabel">SDK — effort + maxTurns on a worker (escaped) · <span class="verify">VERIFY</span> enum values, SDK-version-sensitive</div>
+  <div class="codelabel">SDK: effort + maxTurns on a worker (escaped) · <span class="verify">VERIFY</span> enum values, SDK-version-sensitive</div>
   <pre class="code"><code><span class="cmt">// A worker scaled for a "direct comparison" task</span>
 agents: {
   <span class="str">"comparison-worker"</span>: {
@@ -688,11 +688,11 @@ agents: {
   }
 }</code></pre>
 
-  <h4>Job 3 — Synthesis</h4>
-  <p>The lead agent gathers subagent findings and condenses them. Crucially, subagents are designed to return only "the most important tokens for the lead research agent" — the compression happens at the boundary, so the lead synthesizes condensed findings, not raw transcripts.</p>
+  <h4>Job 3: Synthesis</h4>
+  <p>The lead agent gathers subagent findings and condenses them. Crucially, subagents are designed to return only "the most important tokens for the lead research agent": the compression happens at the boundary, so the lead synthesizes condensed findings, not raw transcripts.</p>
 
-  <h4>Job 4 — Citation / verification stage</h4>
-  <p>A dedicated "CitationAgent" "processes the documents and research report to identify specific locations for citations," ensuring claims are attributed before delivery. This is a distinct worker role: <strong>verification is architecturally separated from research</strong>. The agents that <em>find</em> information are not the agent that <em>checks</em> it — a separation-of-concerns move that doubles as a reliability control.</p>
+  <h4>Job 4: Citation / verification stage</h4>
+  <p>A dedicated "CitationAgent" "processes the documents and research report to identify specific locations for citations." That design choice keeps verification as a distinct worker role, architecturally separated from the research itself: the agents that find information are never the ones checking it, a separation-of-concerns move that doubles as a reliability control.</p>
 
   <h4>The orchestrator's prompt-engineering principles (verbatim names)</h4>
   <div class="tablewrap">
@@ -719,10 +719,10 @@ agents: {
   <div class="mcq" data-mcq data-correct="3">
     <div class="qlab"><span class="emoji">❓</span> Quick check</div>
     <div class="qtext">Why is the CitationAgent a <em>separate</em> stage rather than folded into each research subagent?</div>
-    <button class="opt">To save tokens — citations are cheap</button>
+    <button class="opt">To save tokens: citations are cheap</button>
     <button class="opt">Because subagents can't use search tools</button>
     <button class="opt">It's a UI requirement, not architectural</button>
-    <button class="opt">Verification is separated from research — a separation-of-concerns control that checks claims independently of who found them</button>
+    <button class="opt">Verification is separated from research: a separation-of-concerns control that checks claims independently of who found them</button>
     <div class="fb"></div>
     <div class="fbmsg" hidden>A dedicated CitationAgent "processes the documents and research report to identify specific locations for citations." Separating <em>find</em> from <em>verify</em> is both separation of concerns and a reliability control.</div>
   </div>
@@ -743,7 +743,7 @@ agents: {
 <div class="sec-divider" id="secD">
   <span class="badge"><span class="emoji">💥</span> The heart</span>
   <h2>Failure modes at scale</h2>
-  <p>Eight ways orchestrator-worker systems break in production — each as name → mechanism → symptom → mitigation — plus the academic MAST cross-reference (handled carefully).</p>
+  <p>Eight ways orchestrator-worker systems break in production, each as name → mechanism → symptom → mitigation, plus the academic MAST cross-reference (handled carefully).</p>
 </div>
 
 <!-- LESSON 4 -->
@@ -756,36 +756,36 @@ agents: {
     <ul>
       <li>Name all eight failure modes by mechanism, symptom, and mitigation</li>
       <li>Compute the coordination-interaction growth n·(n−1)/2</li>
-      <li>Cite the MAST academic taxonomy correctly — without overstating the unconfirmed percentages</li>
+      <li>Cite the MAST academic taxonomy correctly, without overstating the unconfirmed percentages</li>
     </ul>
   </div>
 
-  <p><strong>Big picture first:</strong> single-agent failures are mostly "the model got it wrong." Multi-agent failures are <em>systemic</em> — they emerge from state, coordination, and economics, not just from any one model's mistake. That is why this is the heart of the lesson and the heart of Domain 5. Each mode below is given as <strong>name → mechanism → symptom → mitigation</strong>.</p>
+  <p><strong>Big picture first:</strong> single-agent failures are mostly "the model got it wrong." Multi-agent failures are <em>systemic</em>: they emerge from state, coordination, and economics, not just from any one model's mistake. That is why this is the heart of the lesson and the heart of Domain 5. Each mode below is given as <strong>name → mechanism → symptom → mitigation</strong>.</p>
 
   <div class="callout anti collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">①</span> Error compounding in stateful, multi-step agents<span class="chev">▼</span></div>
   <div class="cbody">
     <p><strong>Mechanism:</strong> "Agents are stateful and errors compound. Agents can run for long periods of time, maintaining state across many tool calls." Chaining steps means errors propagate forward instead of canceling out. [SECONDARY] Galileo confirms: "errors often compound rather than cancel when you chain agents sequentially."</p>
     <p><strong>Symptom:</strong> "Without effective mitigations, minor system failures can be catastrophic for agents."</p>
-    <p><strong>Mitigation:</strong> Durable execution + resume-from-failure; deterministic safeguards (retries, checkpoints) — see Section E.</p>
+    <p><strong>Mitigation:</strong> Durable execution + resume-from-failure; deterministic safeguards (retries, checkpoints); see Section E.</p>
   </div></div>
 
   <div class="callout anti collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">②</span> Context-window exhaustion across workers<span class="chev">▼</span></div>
   <div class="cbody">
     <p><strong>Mechanism:</strong> Long-horizon runs blow past the context window. Anthropic: "if the context window exceeds 200,000 tokens it will be truncated and it is important to retain the plan." <span class="verify">VERIFY</span> 200,000-token figure. "As conversations extend, standard context windows become insufficient."</p>
     <p><strong>Symptom:</strong> Plan/context truncated; the agent loses the thread of its own strategy; degraded or incoherent output.</p>
-    <p><strong>Mitigation:</strong> (a) External memory — "The LeadResearcher begins by thinking through the approach and saving its plan to Memory to persist the context." (b) Summarize-and-store — "agents summarize completed work phases and store essential information in external memory before proceeding to new tasks." (c) Clean-context handoffs — "When context limits approach, agents can spawn fresh subagents with clean contexts while maintaining continuity through careful handoffs." (d) Subagent context isolation by design — intermediate results never enter the parent context.</p>
+    <p><strong>Mitigation:</strong> (a) External memory: "The LeadResearcher begins by thinking through the approach and saving its plan to Memory to persist the context." (b) Summarize-and-store: "agents summarize completed work phases and store essential information in external memory before proceeding to new tasks." (c) Clean-context handoffs: "When context limits approach, agents can spawn fresh subagents with clean contexts while maintaining continuity through careful handoffs." (d) Subagent context isolation by design: intermediate results never enter the parent context.</p>
   </div></div>
 
   <div class="callout anti collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">③</span> Token-cost blowup (the 15× economics)<span class="chev">▼</span></div>
   <div class="cbody">
     <p><strong>Mechanism:</strong> Multi-agent systems "use about 15× more tokens than chats." <span class="verify">VERIFY</span> Every spawned subagent multiplies token consumption.</p>
     <p><strong>Symptom:</strong> Cost per query that may not justify the result; the architecture stops paying for itself on low-value or non-parallelizable tasks.</p>
-    <p><strong>Mitigation:</strong> Gate on value + parallelizability — "Multi-agent systems excel at valuable tasks that involve heavy parallelization." Scale effort to complexity (Section C); fall back to single-agent or a fixed workflow when the task doesn't clear the gate (Section F).</p>
+    <p><strong>Mitigation:</strong> Gate on value + parallelizability: "Multi-agent systems excel at valuable tasks that involve heavy parallelization." Scale effort to complexity (Section C); fall back to single-agent or a fixed workflow when the task doesn't clear the gate (Section F).</p>
   </div></div>
 
   <div class="callout anti collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">④</span> Coordination / synchronization overhead<span class="chev">▼</span></div>
   <div class="cbody">
-    <p><strong>Mechanism:</strong> "Multi-agent systems have key differences from single-agent systems, including a rapid growth in coordination complexity." Anthropic's lead agents "execute subagents synchronously, waiting for each set of subagents to complete before proceeding… the entire system can be blocked while waiting for a single subagent to finish searching." [SECONDARY] Galileo quantifies the interaction explosion: "2 agents = 1 potential interaction; 4 agents = 6 potential interactions; 10 agents = 45 potential interactions" — i.e. n·(n−1)/2 pairwise growth.</p>
+    <p><strong>Mechanism:</strong> "Multi-agent systems have key differences from single-agent systems, including a rapid growth in coordination complexity." Anthropic's lead agents "execute subagents synchronously, waiting for each set of subagents to complete before proceeding… the entire system can be blocked while waiting for a single subagent to finish searching." [SECONDARY] Galileo quantifies the interaction explosion: "2 agents = 1 potential interaction; 4 agents = 6 potential interactions; 10 agents = 45 potential interactions," i.e. n·(n−1)/2 pairwise growth.</p>
     <p><strong>Symptom:</strong> Latency bottlenecks (slowest worker blocks the batch); the lead "can't steer subagents [and] subagents can't coordinate."</p>
     <p><strong>Mitigation:</strong> Synchronous execution as a deliberate simplification ("This simplifies coordination"); parallel tool calling to cut wall-clock time. Async would add parallelism but "adds challenges in result coordination, state consistency, and error propagation across the subagents."</p>
   </div></div>
@@ -838,11 +838,11 @@ agents: {
     <p><strong>Mitigation:</strong> Detailed task descriptions with "clear task boundaries" and explicit division of labor in the orchestrator's delegation (Job 1, Section C).</p>
   </div></div>
 
-  <div class="callout anti collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">⑥</span> Partial failure — one worker fails<span class="chev">▼</span></div>
+  <div class="callout anti collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">⑥</span> Partial failure: one worker fails<span class="chev">▼</span></div>
   <div class="cbody">
     <p><strong>Mechanism:</strong> In synchronous fan-out, a single failing subagent can block or corrupt the batch; cascading downstream failures occur when one agent's bad output feeds others. [SECONDARY] Galileo names "Single Agent Failures Cascading Downstream."</p>
     <p><strong>Symptom:</strong> Whole run stalls or returns incomplete results despite most workers succeeding.</p>
-    <p><strong>Mitigation:</strong> Resume-from-failure rather than full restart; model-driven graceful degradation — "letting the agent know when a tool is failing and letting it adapt works surprisingly well"; deterministic retry logic + checkpoints.</p>
+    <p><strong>Mitigation:</strong> Resume-from-failure rather than full restart; model-driven graceful degradation: "letting the agent know when a tool is failing and letting it adapt works surprisingly well"; deterministic retry logic + checkpoints.</p>
   </div></div>
 
   <div class="callout anti collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">⑦</span> Non-determinism making debugging hard<span class="chev">▼</span></div>
@@ -856,7 +856,7 @@ agents: {
   <div class="cbody">
     <p><strong>Mechanism:</strong> Deploying a new version mid-run can disrupt agents that are hours into a stateful task.</p>
     <p><strong>Symptom:</strong> Running agents broken or lost on deploy.</p>
-    <p><strong>Mitigation:</strong> "we use rainbow deployments to avoid disrupting running agents, by gradually shifting traffic from old to new versions" — keep old and new versions running simultaneously and migrate traffic gradually so in-flight agents finish on the version they started on.</p>
+    <p><strong>Mitigation:</strong> "we use rainbow deployments to avoid disrupting running agents, by gradually shifting traffic from old to new versions." In practice: keep old and new versions running simultaneously and migrate traffic gradually so in-flight agents finish on the version they started on.</p>
   </div></div>
 
   <figure class="svgfig">
@@ -893,12 +893,12 @@ agents: {
     <figcaption>The eight modes cluster into four families: state, coordination, economics, operations. Every mitigation lives in Section E.</figcaption>
   </figure>
 
-  <h4>Secondary cross-reference — the MAST academic taxonomy</h4>
-  <div class="verifynote"><b><span class="emoji">🎓</span> Academic, [SECONDARY] — read carefully.</b> Cemri et al., <em>"Why Do Multi-Agent LLM Systems Fail?"</em> (UC Berkeley group) identify <b>14 unique failure modes</b> across <b>3 categories</b> — "(i) system design issues, (ii) inter-agent misalignment, and (iii) task verification" — derived from <b>1600+ annotated traces</b> across <b>7 MAS frameworks</b>, with inter-annotator agreement <b>kappa = 0.88</b> on a 150-trace subset. <span class="verify">VERIFY</span> The commonly-cited <b>41.8% / 36.9% / 21.3%</b> category split was <b>NOT confirmed</b> on the arXiv abstract — do <b>not</b> state those percentages as fact. Only the 14 modes, 3 categories, 1600+ traces, and kappa = 0.88 are confirmed here.</div>
+  <h4>Secondary cross-reference: the MAST academic taxonomy</h4>
+  <div class="verifynote"><b><span class="emoji">🎓</span> Academic, [SECONDARY]: read carefully.</b> Cemri et al., <em>"Why Do Multi-Agent LLM Systems Fail?"</em> (UC Berkeley group) identify <b>14 unique failure modes</b> across <b>3 categories</b> ("(i) system design issues, (ii) inter-agent misalignment, and (iii) task verification"), derived from <b>1600+ annotated traces</b> across <b>7 MAS frameworks</b>, with inter-annotator agreement <b>kappa = 0.88</b> on a 150-trace subset. <span class="verify">VERIFY</span> The commonly-cited <b>41.8% / 36.9% / 21.3%</b> category split was <b>NOT confirmed</b> on the arXiv abstract; do <b>not</b> state those percentages as fact. Only the 14 modes, 3 categories, 1600+ traces, and kappa = 0.88 are confirmed here.</div>
 
   <div class="reveal" data-reveal>
     <div class="plab"><span class="emoji">🤔</span> Predict first</div>
-    <div class="q">Going from 4 coordinating agents to 10 — how many potential pairwise interactions does that jump from, and to?</div>
+    <div class="q">Going from 4 coordinating agents to 10, how many potential pairwise interactions does that jump from, and to?</div>
     <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
     <div class="ans"><strong>From 6 to 45.</strong> Using n·(n−1)/2: 4·3/2 = 6; 10·9/2 = 45. [SECONDARY] More than doubling the agents multiplies coordination surface ~7.5×. This super-linear growth is exactly why "rapid growth in coordination complexity" is a named failure driver.</div>
   </div>
@@ -906,13 +906,13 @@ agents: {
   <div class="mcq" data-mcq data-correct="2">
     <div class="qlab"><span class="emoji">❓</span> Quick check</div>
     <div class="qtext">Subagents explore the same topic and return overlapping, redundant findings. Which failure mode is this, and what fixes it?</div>
-    <button class="opt">Context exhaustion — fix with bigger windows</button>
-    <button class="opt">Deployment coordination — fix with rainbow deploys</button>
-    <button class="opt">Duplicated work — fix with detailed task descriptions and clear boundaries</button>
-    <button class="opt">Non-determinism — fix with retries</button>
-    <button class="opt">Token blowup — fix with a cheaper model</button>
+    <button class="opt">Context exhaustion: fix with bigger windows</button>
+    <button class="opt">Deployment coordination: fix with rainbow deploys</button>
+    <button class="opt">Duplicated work: fix with detailed task descriptions and clear boundaries</button>
+    <button class="opt">Non-determinism: fix with retries</button>
+    <button class="opt">Token blowup: fix with a cheaper model</button>
     <div class="fb"></div>
-    <div class="fbmsg" hidden>This is mode ⑤ (duplicated/conflicting work). Because subagents don't share context, they can't self-deconflict — the fix is upstream, in the orchestrator's delegation: objectives, output formats, and "clear task boundaries."</div>
+    <div class="fbmsg" hidden>This is mode ⑤ (duplicated/conflicting work). Because subagents don't share context, they can't self-deconflict, so the fix is upstream, in the orchestrator's delegation: objectives, output formats, and "clear task boundaries."</div>
   </div>
 
   <div class="mcq" data-mcq data-correct="1">
@@ -924,7 +924,7 @@ agents: {
     <button class="opt">It proves multi-agent systems always outperform single agents</button>
     <button class="opt">It found exactly 8 failure modes</button>
     <div class="fb"></div>
-    <div class="fbmsg" hidden>Confirmed: 14 modes, 3 categories, 1600+ traces, kappa = 0.88 — a [SECONDARY] academic source. The 41.8/36.9/21.3 split was NOT confirmed on the abstract, so don't state it as fact.</div>
+    <div class="fbmsg" hidden>Confirmed: 14 modes, 3 categories, 1600+ traces, kappa = 0.88, from a [SECONDARY] academic source. The 41.8/36.9/21.3 split was NOT confirmed on the abstract, so don't state it as fact.</div>
   </div>
 </section>
 
@@ -1074,13 +1074,13 @@ agents: {
       <rect x="14" y="358" width="590" height="24" rx="6" fill="#f4e6df"/>
       <text class="s" x="22" y="374" fill="#a44a2e" font-weight="700">Exam rule: escalation trigger = category + impact. NOT a simple counter of failed tool calls.</text>
     </svg>
-    <figcaption>Escalation decision diagram: branch on the <em>category and impact</em> of the obstacle — user explicitly requests human assistance, agent lacks authority, a policy exception is needed, no progress despite genuine attempts, or an uncertain/unsafe state — and always produce a structured handoff (customer_id, issue_type, root_cause, actions_taken, recommended_next_action). The red path shows the anti-pattern: "escalate after N failed tool calls" ignores the <em>reason</em> for failure and may escalate on a transient error that a retry would resolve.</figcaption>
+    <figcaption>Escalation decision diagram: branch on the <em>category and impact</em> of the obstacle (user explicitly requests human assistance, agent lacks authority, a policy exception is needed, no progress despite genuine attempts, or an uncertain/unsafe state), and always produce a structured handoff (customer_id, issue_type, root_cause, actions_taken, recommended_next_action). The red path shows the anti-pattern: "escalate after N failed tool calls" ignores the <em>reason</em> for failure and may escalate on a transient error that a retry would resolve.</figcaption>
   </figure>
 
   <h4>1 · Durable / resumable execution</h4>
   <p>"When errors occur, we can't just restart from the beginning: restarts are expensive and frustrating for users. Instead, we built systems that can resume from where the agent was when the errors occurred." The SDK supports this concretely: "Subagents can be resumed to continue where they left off. Resumed subagents retain their full conversation history… The subagent picks up exactly where it stopped rather than starting fresh," via capturing <code class="inline">session_id</code> + <code class="inline">agentId</code> and passing <code class="inline">resume: sessionId</code>.</p>
 
-  <div class="codelabel">SDK — capture session, then resume (escaped) · <span class="verify">VERIFY</span> field names SDK-version-sensitive</div>
+  <div class="codelabel">SDK: capture session, then resume (escaped) · <span class="verify">VERIFY</span> field names SDK-version-sensitive</div>
   <pre class="code"><code><span class="cmt">// 1) capture the subagent's session id from its messages</span>
 <span class="key">let</span> sessionId;
 <span class="key">for await</span> (<span class="key">const</span> msg <span class="key">of</span> query({ prompt, options })) {
@@ -1097,7 +1097,7 @@ agents: {
   <p>"We combine the adaptability of AI agents built on Claude with deterministic safeguards like retry logic and regular checkpoints." The pattern name to remember: <strong>adaptive core, deterministic guardrails</strong>. The model is flexible; the scaffolding around it is boringly reliable.</p>
 
   <h4>3 · Model-driven graceful degradation</h4>
-  <p>"We also use the model's intelligence to handle issues gracefully: for instance, letting the agent know when a tool is failing and letting it adapt works surprisingly well." Instead of hiding failures from the agent, you tell it — and let it route around the damage.</p>
+  <p>"We also use the model's intelligence to handle issues gracefully: for instance, letting the agent know when a tool is failing and letting it adapt works surprisingly well." Instead of hiding failures from the agent, you tell it and let it route around the damage.</p>
 
   <h4>4 · External memory / context persistence</h4>
   <p>Save the plan and completed-phase summaries to memory so context-window truncation doesn't destroy strategy. SDK note: "When the main conversation compacts, subagent transcripts are unaffected. They're stored in separate files," and persist within their session. This is the direct mitigation for mode ② (context exhaustion).</p>
@@ -1106,7 +1106,7 @@ agents: {
   <p>"Adding full production tracing let us diagnose why agents failed and fix issues systematically." In the SDK, subagent invocation is observable via <code class="inline">tool_use</code> blocks named <code class="inline">"Agent"</code> and a <code class="inline">parent_tool_use_id</code> field on messages from within a subagent. <span class="verify">VERIFY</span> the tool name was renamed from <code class="inline">"Task"</code> to <code class="inline">"Agent"</code> in Claude Code v2.1.63; older SDKs emit <code class="inline">"Task"</code>.</p>
 
   <h4>6 · End-state (not step-by-step) evaluation + LLM-as-judge</h4>
-  <p>"evaluate whether it achieved the correct final state… focus on end-state evaluation rather than turn-by-turn analysis." For complex workflows: "break evaluation into discrete checkpoints where specific state changes should have occurred, rather than attempting to validate every intermediate step." This is the answer to mode ⑦ — you can't reproduce every non-deterministic path, so you grade the destination, not the route.</p>
+  <p>"evaluate whether it achieved the correct final state… focus on end-state evaluation rather than turn-by-turn analysis." For complex workflows: "break evaluation into discrete checkpoints where specific state changes should have occurred, rather than attempting to validate every intermediate step." This is the answer to mode ⑦: you can't reproduce every non-deterministic path, so you grade the destination, not the route.</p>
 
   <h4>7 · Rainbow deployments</h4>
   <p>Gradually shift traffic old → new to avoid disrupting in-flight stateful agents (mode ⑧). In-flight agents finish on the version they started on.</p>
@@ -1114,7 +1114,7 @@ agents: {
   <h4>8 · Worker effort/turn limits + tool restrictions</h4>
   <p>Set <code class="inline">maxTurns</code>, <code class="inline">effort</code>, and a restricted <code class="inline">tools</code> list per subagent to bound cost and blast radius; e.g., a read-only analysis agent gets only <code class="inline">["Read","Grep","Glob"]</code>.</p>
 
-  <div class="codelabel">SDK — a least-privilege, bounded worker (escaped)</div>
+  <div class="codelabel">SDK: a least-privilege, bounded worker (escaped)</div>
   <pre class="code"><code>agents: {
   <span class="str">"read-only-analyst"</span>: {
     description: <span class="str">"Read-only static analysis. No writes, no shell."</span>,
@@ -1125,23 +1125,23 @@ agents: {
   }
 }</code></pre>
 
-  <h4>9 · Move large fan-outs out of the conversation — the Workflow tool</h4>
+  <h4>9 · Move large fan-outs out of the conversation: the Workflow tool</h4>
   <p>"Subagents work well for a few delegated tasks per turn. For runs that coordinate dozens to hundreds of agents, use the <code class="inline">Workflow</code> tool, which moves the orchestration into a script the runtime executes outside the conversation context." <span class="verify">VERIFY</span> the Workflow tool requires the TypeScript Agent SDK v0.3.149+. This is the escape hatch when coordination overhead (mode ④) and context pressure (mode ②) would otherwise overwhelm an in-conversation orchestrator.</p>
 
   <div class="callout try collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🧪</span> Connect to your own work (Claude Code &amp; agentic workflows)<span class="chev">▼</span></div>
-  <div class="cbody"><p>If you've built agentic workflows in Claude Code, you've already met these patterns in miniature: a long task that <em>compacts</em> mid-run is mode ②; a flaky MCP tool that the agent works around is graceful degradation; a <code class="inline">.claude/agents/*.md</code> worker with a tight <code class="inline">tools</code> allow-list is pattern #8. The leap to "at scale" is mostly about making these <em>deliberate and instrumented</em> rather than incidental — durable resume instead of "just rerun it," end-state evals instead of eyeballing, rainbow deploys instead of "deploy and hope nothing's mid-run."</p></div></div>
+  <div class="cbody"><p>If you've built agentic workflows in Claude Code, you've already met these patterns in miniature: a long task that <em>compacts</em> mid-run is mode ②; a flaky MCP tool that the agent works around is graceful degradation; a <code class="inline">.claude/agents/*.md</code> worker with a tight <code class="inline">tools</code> allow-list is pattern #8. The leap to "at scale" is mostly about making these <em>deliberate and instrumented</em> rather than incidental: durable resume instead of "just rerun it," end-state evals instead of eyeballing, rainbow deploys instead of "deploy and hope nothing's mid-run."</p></div></div>
 
   <div class="reveal" data-reveal>
     <div class="plab"><span class="emoji">🤔</span> Predict first</div>
-    <div class="q">A 40-minute research run crashes at minute 35. Why is "resume from session" dramatically better than "rerun from the start" — beyond just time?</div>
+    <div class="q">A 40-minute research run crashes at minute 35. Why is "resume from session" dramatically better than "rerun from the start," beyond just time?</div>
     <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
-    <div class="ans"><strong>Because restarts are "expensive and frustrating," and because a fresh run is non-deterministic.</strong> Rerunning doesn't just cost the 35 minutes again — it may take a different path and not reproduce the partial progress at all. Resume "picks up exactly where it stopped," retaining full history, so you keep the work already done.</div>
+    <div class="ans"><strong>Because restarts are "expensive and frustrating," and because a fresh run is non-deterministic.</strong> Rerunning doesn't just cost the 35 minutes again; it may take a different path and not reproduce the partial progress at all. Resume "picks up exactly where it stopped," retaining full history, so you keep the work already done.</div>
   </div>
 
   <div class="mcq" data-mcq data-correct="0">
     <div class="qlab"><span class="emoji">❓</span> Quick check</div>
     <div class="qtext">Which reliability pattern most directly addresses context-window exhaustion (mode ②)?</div>
-    <button class="opt">External memory — save the plan and phase summaries outside the window</button>
+    <button class="opt">External memory: save the plan and phase summaries outside the window</button>
     <button class="opt">Rainbow deployments</button>
     <button class="opt">LLM-as-judge end-state evals</button>
     <button class="opt">Retry logic</button>
@@ -1155,7 +1155,7 @@ agents: {
     <button class="opt">Spawn 200 subagents in a single turn</button>
     <button class="opt">Nest subagents five levels deep</button>
     <button class="opt">Use one very long prompt</button>
-    <button class="opt">Use the Workflow tool — orchestration runs in a script outside the conversation</button>
+    <button class="opt">Use the Workflow tool: orchestration runs in a script outside the conversation</button>
     <div class="fb"></div>
     <div class="fbmsg" hidden>Subagents suit "a few delegated tasks per turn." For dozens–hundreds, graduate to the Workflow tool, which "moves the orchestration into a script the runtime executes outside the conversation context." <span class="verify">VERIFY</span> TS SDK v0.3.149+.</div>
   </div>
@@ -1226,11 +1226,11 @@ agents: {
       <line x1="355" y1="192" x2="355" y2="204" stroke="#c96442" stroke-width="1.5" marker-end="url(#af)"/>
       <text class="s" x="200" y="230" text-anchor="end">no ↓</text>
     </svg>
-    <figcaption>The go/no-go gate. Orchestrator-worker is the <em>last</em> resort, not the first reach — it earns its 15× only when the task is valuable, parallelizable, loosely-coupled, and latency-tolerant.</figcaption>
+    <figcaption>The go/no-go gate. Orchestrator-worker is the <em>last</em> resort, not the first reach: it earns its 15× only when the task is valuable, parallelizable, loosely-coupled, and latency-tolerant.</figcaption>
   </figure>
 
   <div class="callout keyc collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaway<span class="chev">▼</span></div>
-  <div class="cbody"><p>Default to the simplest thing that works. Climb the complexity ladder — single agent → fixed workflow → orchestrator-worker — only when the task <em>forces</em> you to. Coding, with its tight coupling and few truly parallel subtasks, is Anthropic's own example of a poor fit. The architect's instinct is suspicion of the fan-out, not enthusiasm for it.</p></div></div>
+  <div class="cbody"><p>Default to the simplest thing that works. Climb the complexity ladder (single agent → fixed workflow → orchestrator-worker) only when the task <em>forces</em> you to. Coding, with its tight coupling and few truly parallel subtasks, is Anthropic's own example of a poor fit. The architect's instinct is suspicion of the fan-out, not enthusiasm for it.</p></div></div>
 
   <div class="mcq" data-mcq data-correct="2">
     <div class="qlab"><span class="emoji">❓</span> Quick check</div>
@@ -1255,7 +1255,7 @@ agents: {
 <div class="sec-divider" id="final">
   <span class="badge"><span class="emoji">🧠</span> Assessment</span>
   <h2>Final Knowledge Check</h2>
-  <p>Ten source-grounded questions spanning the whole lesson — weighted toward CCA-F Domain 1 (dynamic decomposition, the orchestrator's job, the economics gate) and Domain 5 (failure modes, reliability patterns, context management). No hints; answer, then check.</p>
+  <p>Ten source-grounded questions spanning the whole lesson, weighted toward CCA-F Domain 1 (dynamic decomposition, the orchestrator's job, the economics gate) and Domain 5 (failure modes, reliability patterns, context management). No hints; answer, then check.</p>
 </div>
 
 <div class="quizblock" data-quiz="final" style="margin-top:20px">
@@ -1264,13 +1264,13 @@ agents: {
   <div class="mcq" data-mcq data-correct="1" data-inquiz>
     <div class="qlab">Q1</div><div class="qtext">In Anthropic's verbatim definition, the orchestrator-workers workflow has a central LLM that…</div>
     <button class="opt">Runs a fixed set of code-defined subtasks in parallel</button><button class="opt">Dynamically breaks down tasks, delegates them to worker LLMs, and synthesizes their results</button><button class="opt">Votes across many copies of the same task</button><button class="opt">Routes each input to exactly one specialized model</button>
-    <div class="fb"></div><div class="fbmsg" hidden>Verbatim: "a central LLM dynamically breaks down tasks, delegates them to worker LLMs, and synthesizes their results." The <em>dynamic</em> breakdown is the defining feature — option A is static parallelization; C is voting; D is routing.</div>
+    <div class="fb"></div><div class="fbmsg" hidden>Verbatim: "a central LLM dynamically breaks down tasks, delegates them to worker LLMs, and synthesizes their results." The <em>dynamic</em> breakdown is the defining feature: option A is static parallelization; C is voting; D is routing.</div>
   </div>
 
   <div class="mcq" data-mcq data-correct="2" data-inquiz>
     <div class="qlab">Q2</div><div class="qtext">In Anthropic's analysis, token usage by itself explained roughly what share of performance variance?</div>
     <button class="opt">~50%</button><button class="opt">~95%</button><button class="opt">~80%</button><button class="opt">~15%</button>
-    <div class="fb"></div><div class="fbmsg" hidden>"token usage by itself explains 80% of the variance." (Three factors together — token usage, tool calls, model choice — explained 95%.) <span class="verify">VERIFY</span> figures.</div>
+    <div class="fb"></div><div class="fbmsg" hidden>"token usage by itself explains 80% of the variance." (Three factors together, token usage, tool calls, model choice, explained 95%.) <span class="verify">VERIFY</span> figures.</div>
   </div>
 
   <div class="mcq" data-mcq data-correct="0" data-inquiz>
@@ -1281,14 +1281,14 @@ agents: {
 
   <div class="mcq" data-mcq data-correct="3" data-inquiz>
     <div class="qlab">Q4</div><div class="qtext">For a "simple fact-finding" query, the embedded effort heuristic recommends…</div>
-    <button class="opt">More than 10 subagents</button><button class="opt">2–4 subagents, 10–15 calls each</button><button class="opt">No agents — answer from memory</button><button class="opt">1 agent with 3–10 tool calls</button>
+    <button class="opt">More than 10 subagents</button><button class="opt">2–4 subagents, 10–15 calls each</button><button class="opt">No agents: answer from memory</button><button class="opt">1 agent with 3–10 tool calls</button>
     <div class="fb"></div><div class="fbmsg" hidden>Simple fact-finding = "just 1 agent with 3-10 tool calls." Comparisons get 2–4 subagents; complex research gets &gt;10. <span class="verify">VERIFY</span> counts.</div>
   </div>
 
   <div class="mcq" data-mcq data-correct="2" data-inquiz>
     <div class="qlab">Q5</div><div class="qtext">Why is the CitationAgent its own stage?</div>
-    <button class="opt">It's faster than research agents</button><button class="opt">Subagents can't read documents</button><button class="opt">Verification is architecturally separated from research — claims are checked independently of who found them</button><button class="opt">It's required by the context window</button>
-    <div class="fb"></div><div class="fbmsg" hidden>The dedicated CitationAgent "identif[ies] specific locations for citations" — separating <em>find</em> from <em>verify</em> as both separation of concerns and a reliability control.</div>
+    <button class="opt">It's faster than research agents</button><button class="opt">Subagents can't read documents</button><button class="opt">Verification is architecturally separated from research: claims are checked independently of who found them</button><button class="opt">It's required by the context window</button>
+    <div class="fb"></div><div class="fbmsg" hidden>The dedicated CitationAgent "identif[ies] specific locations for citations," separating <em>find</em> from <em>verify</em> as both separation of concerns and a reliability control.</div>
   </div>
 
   <div class="mcq" data-mcq data-correct="1" data-inquiz>
@@ -1299,25 +1299,25 @@ agents: {
 
   <div class="mcq" data-mcq data-correct="0" data-inquiz>
     <div class="qlab">Q7</div><div class="qtext">Anthropic's mitigation for disrupting long-running stateful agents during a deploy is…</div>
-    <button class="opt">Rainbow deployments — gradually shift traffic old → new so in-flight agents finish on their version</button><button class="opt">Restart all agents on deploy</button><button class="opt">Block deploys until no agents are running</button><button class="opt">Run every agent statelessly</button>
+    <button class="opt">Rainbow deployments: gradually shift traffic old → new so in-flight agents finish on their version</button><button class="opt">Restart all agents on deploy</button><button class="opt">Block deploys until no agents are running</button><button class="opt">Run every agent statelessly</button>
     <div class="fb"></div><div class="fbmsg" hidden>"we use rainbow deployments to avoid disrupting running agents, by gradually shifting traffic from old to new versions." This targets failure mode ⑧.</div>
   </div>
 
   <div class="mcq" data-mcq data-correct="2" data-inquiz>
     <div class="qlab">Q8</div><div class="qtext">The direct mitigation for context-window exhaustion across a long run is…</div>
-    <button class="opt">A bigger model</button><button class="opt">More subagents</button><button class="opt">External memory — save the plan and phase summaries outside the window</button><button class="opt">Lowering <code class="inline">effort</code></button>
+    <button class="opt">A bigger model</button><button class="opt">More subagents</button><button class="opt">External memory: save the plan and phase summaries outside the window</button><button class="opt">Lowering <code class="inline">effort</code></button>
     <div class="fb"></div><div class="fbmsg" hidden>"saving its plan to Memory to persist the context" and storing phase summaries before proceeding. If context truncates, strategy survives in external memory.</div>
   </div>
 
   <div class="mcq" data-mcq data-correct="3" data-inquiz>
     <div class="qlab">Q9</div><div class="qtext">Which is correctly stated about the Cemri et al. MAST taxonomy?</div>
-    <button class="opt">It is an Anthropic primary source</button><button class="opt">It found exactly 8 failure modes</button><button class="opt">Its category split is a confirmed 41.8 / 36.9 / 21.3</button><button class="opt">14 modes, 3 categories, 1600+ traces, kappa = 0.88 — a secondary academic source</button>
-    <div class="fb"></div><div class="fbmsg" hidden>Confirmed: 14 modes, 3 categories, 1600+ traces, kappa = 0.88 — [SECONDARY] academic. The 41.8/36.9/21.3 split was NOT confirmed on the abstract; don't state it as fact.</div>
+    <button class="opt">It is an Anthropic primary source</button><button class="opt">It found exactly 8 failure modes</button><button class="opt">Its category split is a confirmed 41.8 / 36.9 / 21.3</button><button class="opt">14 modes, 3 categories, 1600+ traces, kappa = 0.88: a secondary academic source</button>
+    <div class="fb"></div><div class="fbmsg" hidden>Confirmed: 14 modes, 3 categories, 1600+ traces, kappa = 0.88, from [SECONDARY] academic source. The 41.8/36.9/21.3 split was NOT confirmed on the abstract; don't state it as fact.</div>
   </div>
 
   <div class="mcq" data-mcq data-correct="0" data-inquiz>
     <div class="qlab">Q10</div><div class="qtext">A task is well-defined, predictable, latency-sensitive, and tightly coupled. The right choice is…</div>
-    <button class="opt">A fixed workflow (predefined code paths) — or a single agent</button><button class="opt">Orchestrator-worker with &gt;10 subagents</button><button class="opt">The Workflow tool with hundreds of agents</button><button class="opt">Async multi-agent fan-out</button>
+    <button class="opt">A fixed workflow (predefined code paths), or a single agent</button><button class="opt">Orchestrator-worker with &gt;10 subagents</button><button class="opt">The Workflow tool with hundreds of agents</button><button class="opt">Async multi-agent fan-out</button>
     <div class="fb"></div><div class="fbmsg" hidden>Default to simplest: well-defined + predictable favors a workflow's "predictability and consistency"; tight coupling and latency-sensitivity rule out dynamic multi-agent fan-out. Don't pay 15× for machinery the task doesn't need.</div>
   </div>
 
@@ -1329,24 +1329,24 @@ agents: {
   <h4 style="margin:0 0 6px"><span class="emoji">📄</span> Sources</h4>
   <p style="margin:4px 0 8px;color:var(--ink-soft);font-size:13.5px">Every substantive claim in this extension traces to these sources. Anthropic primary sources are unmarked; secondary references are tagged. No facts beyond them were introduced; author analogies are labelled inline; version-sensitive facts carry <span class="verify">VERIFY</span> notes.</p>
   <ol>
-    <li>Anthropic — <em>Building Effective Agents</em>: <a href="https://www.anthropic.com/engineering/building-effective-agents">anthropic.com/engineering/building-effective-agents</a></li>
-    <li>Anthropic — <em>How we built our multi-agent research system</em>: <a href="https://www.anthropic.com/engineering/multi-agent-research-system">anthropic.com/engineering/multi-agent-research-system</a></li>
-    <li>Claude Agent SDK — <em>Subagents in the SDK</em>: <a href="https://code.claude.com/docs/en/agent-sdk/subagents">code.claude.com/docs/en/agent-sdk/subagents</a></li>
-    <li><em>Why Do Multi-Agent LLM Systems Fail?</em> (Cemri et al., UC Berkeley) — arXiv: <a href="https://arxiv.org/abs/2503.13657">arxiv.org/abs/2503.13657</a> <span style="color:var(--ink-soft)">(secondary / academic)</span></li>
-    <li><em>Why Do Multi-Agent LLM Systems Fail</em> — Galileo: <a href="https://galileo.ai/blog/multi-agent-llm-systems-fail">galileo.ai/blog/multi-agent-llm-systems-fail</a> <span style="color:var(--ink-soft)">(secondary)</span></li>
+    <li>Anthropic, <em>Building Effective Agents</em>: <a href="https://www.anthropic.com/engineering/building-effective-agents">anthropic.com/engineering/building-effective-agents</a></li>
+    <li>Anthropic, <em>How we built our multi-agent research system</em>: <a href="https://www.anthropic.com/engineering/multi-agent-research-system">anthropic.com/engineering/multi-agent-research-system</a></li>
+    <li>Claude Agent SDK, <em>Subagents in the SDK</em>: <a href="https://code.claude.com/docs/en/agent-sdk/subagents">code.claude.com/docs/en/agent-sdk/subagents</a></li>
+    <li><em>Why Do Multi-Agent LLM Systems Fail?</em> (Cemri et al., UC Berkeley), arXiv: <a href="https://arxiv.org/abs/2503.13657">arxiv.org/abs/2503.13657</a> <span style="color:var(--ink-soft)">(secondary / academic)</span></li>
+    <li><em>Why Do Multi-Agent LLM Systems Fail</em>, Galileo: <a href="https://galileo.ai/blog/multi-agent-llm-systems-fail">galileo.ai/blog/multi-agent-llm-systems-fail</a> <span style="color:var(--ink-soft)">(secondary)</span></li>
   </ol>
 </div>
 
 <!-- WHAT'S NEXT -->
 <div class="nextbox">
-  <div style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;margin-bottom:6px"><span class="emoji">✅</span> What's next — you've completed the subagents track</div>
+  <div style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;margin-bottom:6px"><span class="emoji">✅</span> What's next: you've completed the subagents track</div>
   <p style="margin:4px 0"><strong>This is the last subagents extension.</strong> You now have the full ladder: the base course (what a subagent is and when to delegate), <strong>S-E1</strong> the five orchestration patterns, <strong>S-E2</strong> the programmable primitive, and <strong>S-E3</strong> (this lesson) orchestrator-worker under production load and its failure modes. There is no further subagents extension to point to.</p>
-  <p style="margin:6px 0 0">Loop back to consolidate: <a href="../introduction-to-subagents.html">← Introduction to Subagents (base course)</a> · <a href="orchestration-patterns.html">S-E1 — Orchestration Patterns</a> · <a href="subagents-as-sdk-primitive.html">S-E2 — Subagents as a Primitive</a>. Next, carry these reliability patterns into the broader Domain 5 material on context management and durable execution.</p>
+  <p style="margin:6px 0 0">Loop back to consolidate: <a href="../introduction-to-subagents.html">← Introduction to Subagents (base course)</a> · <a href="orchestration-patterns.html">S-E1: Orchestration Patterns</a> · <a href="subagents-as-sdk-primitive.html">S-E2: Subagents as a Primitive</a>. Next, carry these reliability patterns into the broader Domain 5 material on context management and durable execution.</p>
 </div>
 
 <footer>
-  <p><span class="sourcebadge"><span class="emoji">📄</span> Extension material · built faithfully from the captured citations file — every claim traces to a cited source (Anthropic primary + two secondary). No external facts introduced; <span class="verify">VERIFY</span> flags preserved; author analogies labelled.</span></p>
-  <p style="margin-top:14px">Orchestrator-Worker at Scale + Failure Modes · Extension S-E3 (final subagents extension) for the Claude Certified Architect — Foundations prep · <a href="../introduction-to-subagents.html" style="color:var(--accent)">← Back to base course</a> · <a href="orchestration-patterns.html" style="color:var(--accent)">S-E1</a> · <a href="subagents-as-sdk-primitive.html" style="color:var(--accent)">S-E2</a> · <a href="#top" style="color:var(--accent)">Back to top ↑</a></p>
+  <p><span class="sourcebadge"><span class="emoji">📄</span> Extension material · built faithfully from the captured citations file: every claim traces to a cited source (Anthropic primary + two secondary). No external facts introduced; <span class="verify">VERIFY</span> flags preserved; author analogies labelled.</span></p>
+  <p style="margin-top:14px">Orchestrator-Worker at Scale + Failure Modes · Extension S-E3 (final subagents extension) for the Claude Certified Architect: Foundations prep · <a href="../introduction-to-subagents.html" style="color:var(--accent)">← Back to base course</a> · <a href="orchestration-patterns.html" style="color:var(--accent)">S-E1</a> · <a href="subagents-as-sdk-primitive.html" style="color:var(--accent)">S-E2</a> · <a href="#top" style="color:var(--accent)">Back to top ↑</a></p>
 </footer>
 
 </div><!-- /wrap -->
