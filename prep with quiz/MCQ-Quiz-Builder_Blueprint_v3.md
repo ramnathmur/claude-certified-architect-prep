@@ -1,5 +1,7 @@
 # MCQ Quiz Builder — Blueprint v3
 
+> ⚠️ **SCOPE NOTE (2026-07-06): NOT a CCA-F mock-exam source.** This is a general-purpose corpus-to-quiz builder. Do NOT use it to generate CCA-F certification mocks: its mandated question-type mix (True/False, Spot-the-Mistake) contradicts the exam's 4-option single-answer format, and its separate `[slug]_qbank.json` memory would fork the deduplication ledger away from `EXAM-LOG.md`. CCA-F mocks are generated exclusively via `CCA-Orchestration-Prompt_v5.md` + `CLAUDE.md` (v2 blueprint). Its results round-trip idea has been adopted there (results-JSON export).
+
 > **What changed from v2:** v3 adds the **performance substrate** the triage identified as the missing foundation, plus the first cross-run feature it unlocks — **run-to-run progress comparison** ("am I improving?"). v2 captured a student's performance and then threw it away (`answers[]` is deleted on completion; qbank stored only *which* concepts were asked, never *how the student did*). v3 closes that loop with a **results round-trip**: Claude bakes the prior qbank into the generated HTML, the HTML merges this run's results at completion and offers a "save progress" download, and the next run reads the enriched file. No server, no new dependency, still one self-contained HTML file.
 >
 > **Deliberately NOT in v3** (see §Scope decisions): spaced-repetition (own milestone, v3.1 — it must rewrite the de-dup rule), difficulty-tagging (dropped — fights the grounding constraint), timer / flagged-review / export (deferred — protect generation reliability).
