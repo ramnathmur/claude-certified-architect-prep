@@ -1,83 +1,118 @@
 # Sub-project: CCA-F Mock Exam Generator
 
-**Owner:** Ram  
-**Location:** `C:\Claude Cowork\Projects\Claude Certified Architect Prep\prep with quiz\`  
+**Owner:** Ram
+**Location:** `C:\Claude Cowork\Projects\Claude Certified Architect Prep\prep with quiz\`
 **Status:** Active
+**Blueprint version:** 2.0 | 2026-07-06 (v1 in git history)
+**Changelog v1→v2:** re-grounded on the official Exam Guide PDF; 60-question scenario-block format (matching the real exam) with a 30-question drill option; per-option rationale system (hardened learning feedback — Ram's design decision: this is a learning tool with full per-question feedback, NOT an exam-conditions simulator); passive timing capture; results-JSON export replacing self-reported scores; estimated-flag integrity rules; practice-test dedup ledger.
 
 ---
 
 ## Purpose
 
-Generate HTML-based MCQ mock exams for the Anthropic Claude Certified Architect — Foundations (CCA-F) exam. Each exam is grounded in the corpus files in this folder, tracks results across sessions, and builds an insight layer that improves future exam generation.
+Generate HTML-based MCQ mock exams for the Anthropic Claude Certified Architect — Foundations (CCA-F) exam. Each exam is grounded in the corpus files in this folder, teaches through every single question via per-option rationales, tracks results across sessions, and builds an insight layer that improves future exam generation.
+
+**Design stance (Ram, 2026-07-06):** per-question feedback is deliberate. The tool optimizes learning-per-question, not exam-condition realism. Realism lives in question STYLE, DIFFICULTY, TOPIC COVERAGE, and STRUCTURE — not in withholding feedback.
 
 ---
 
 ## Corpus (Source of Truth)
 
-All quiz questions must be grounded in these files. Every question should trace to at least one section.
+All quiz questions must be grounded in these files. Every question must trace to at least one section.
 
 | File | Covers |
 |---|---|
-| `CCA-Prep_Exam-Mechanics_v1.md` | Format, scoring, scenarios, out-of-scope |
-| `CCA-Prep_Domain-1_v1.md` | D1: Agentic Architecture & Orchestration (27%) |
-| `CCA-Prep_Domain-2_v1.md` | D2: Tool Design & MCP Integration (18%) |
-| `CCA-Prep_Domain-3_v1.md` | D3: Claude Code Config & Workflows (20%) |
-| `CCA-Prep_Domain-4_v1.md` | D4: Prompt Engineering & Structured Output (20%) |
-| `CCA-Prep_Domain-5_v1.md` | D5: Context Management & Reliability (15%) |
+| `CCA-Prep_Exam-Mechanics_v2.md` | Format, scoring, official scenario bank (6), answer heuristics, in-scope/out-of-scope lists, style calibration |
+| `CCA-Prep_Domain-1_v2.md` | D1: Agentic Architecture & Orchestration (27%) |
+| `CCA-Prep_Domain-2_v2.md` | D2: Tool Design & MCP Integration (18%) — incl. built-in tools (§2.9) |
+| `CCA-Prep_Domain-3_v2.md` | D3: Claude Code Config & Workflows (20%) — incl. iterative refinement (§3.7) |
+| `CCA-Prep_Domain-4_v2.md` | D4: Prompt Engineering & Structured Output (20%) — incl. batch strategies (§4.11) |
+| `CCA-Prep_Domain-5_v2.md` | D5: Context Management & Reliability (15%) — incl. confidence calibration (§5.9) |
 | `CCA-Prep_Key-Distinctions_v1.md` | 25 high-yield exam traps — always draw from these |
+| `CURRENT-DOCS-DELTA_v1.md` | Exam-framing vs current-docs divergences; [CONFLICT-RISK] items must not decide a scored answer against the official framing |
+| `PRACTICE-TEST-STEMS_v1.md` | Dedup ledger (never reuse these stems) + style calibration profile |
+| `source/CCA-F-Official-Exam-Guide.pdf` (+ `_text.txt`) | Official authority: task statements, scenarios, sample questions |
+| `source/guide_en.md` | Community study guide — depth source |
+
+Superseded (do not generate from; kept for history): `CCA-Prep_Domain-*_v1.md`, `CCA-Prep_Exam-Mechanics_v1.md`, `CCA-Prep_Corpus-Index_v1.md`.
 
 ---
 
 ## Blueprint: How to Generate a Mock Exam
 
-### Step 1 — Read the deduplication log
-Read `EXAM-LOG.md` before writing a single question. The log lists every question stem used in prior exams. No stem may repeat across exams.
+### Step 1 — Read the deduplication ledgers
+Read `EXAM-LOG.md` (every stem used in prior mocks) AND `PRACTICE-TEST-STEMS_v1.md` §2 (every community practice-test stem — Ram will take that test himself; the official PDF's 12 samples are drawn from it). No stem from either ledger may be reused or closely paraphrased.
 
-### Step 2 — Select question distribution
-Per 30-question exam, the domain-weighted quota is:
+### Step 2 — Choose format and select scenario blocks
 
-| Domain | Weight | Questions |
-|---|---|---|
-| D1 Agentic Architecture | 27% | 8 |
-| D2 Tool Design & MCP | 18% | 5–6 |
-| D3 Claude Code Config | 20% | 6 |
-| D4 Prompt Engineering | 20% | 6 |
-| D5 Context Management | 15% | 4–5 |
+**FULL-60 (default):** 60 questions in 4 scenario blocks of ~15, mirroring the real exam. Select 4 of the 6 official scenarios (`CCA-Prep_Exam-Mechanics_v2.md` Scenario Bank) — rotate so all 6 appear across successive exams; state which 4 were drawn. Each block's questions share ONE evolving scenario narrative (same company, same system, progressing situations — not 15 disconnected vignettes).
 
-### Step 3 — Draw from Key Distinctions first
-`CCA-Prep_Key-Distinctions_v1.md` contains 25 exam traps. Prioritise these — they are the highest-yield question seeds. Cycle through unused traps across successive exams.
+**DRILL-30 (on request):** 30 standalone questions, no shared blocks. Label the output "Half-Length Drill" — its score is a weaker predictor.
+
+Domain quotas apply ACROSS the whole exam (not per block):
+
+| Domain | Weight | FULL-60 | DRILL-30 |
+|---|---|---|---|
+| D1 Agentic Architecture | 27% | 16 | 8 |
+| D2 Tool Design & MCP | 18% | 11 | 5–6 |
+| D3 Claude Code Config | 20% | 12 | 6 |
+| D4 Prompt Engineering | 20% | 12 | 6 |
+| D5 Context Management | 15% | 9 | 4–5 |
+
+Assign each question a domain tag; verify quota totals before building HTML. Let each block skew toward its scenario's primary domains (per the Scenario Bank) while the exam-level quota holds.
+
+### Step 3 — Seed from Key Distinctions and fresh corpus
+Draw from `CCA-Prep_Key-Distinctions_v1.md` first (cycle unused traps across exams, per GENERATION-INTELLIGENCE.md), then fill quota from corpus sections not yet seeded — prioritizing sections marked fresh. Respect `CURRENT-DOCS-DELTA_v1.md`: official exam-guide framing wins wherever a delta is [CONFLICT-RISK].
 
 ### Step 4 — Write questions to this standard
+
 Each question must:
-- Open with a **Situation** (a realistic scenario — log output, user report, architectural decision)
-- Offer **exactly 4 options** — one clearly correct, three plausible distractors grounded in common misconceptions
-- Include a **Why** explanation citing the corpus section it comes from
-- Never contain the answer in the option phrasing (avoid "CORRECT" labels in the options themselves)
+- Open with a **Situation** tied to its scenario block's narrative (concrete: log output, metrics like "12% of cases", config snippets, user reports — match the register in `PRACTICE-TEST-STEMS_v1.md` §3 and the official samples)
+- Offer **exactly 4 options** — one correct, three distractors that are documented misconceptions (❌ patterns in the corpus), never fabricated flags/parameters, grammatically parallel, no "CORRECT" giveaways
+- Carry a **per-option rationale block** (the hardened feedback system):
+  - `whyRight` for the correct option — why it is correct, citing corpus file + section (e.g., "D2 §2.9")
+  - `whyWrong` for EACH distractor — what misconception it encodes and why it fails here (cite the corpus ❌ pattern where one exists)
+  - Writing four rationales is also a quality gate: a distractor whose whyWrong cannot name a real misconception must be replaced before the exam ships
 
 ### Step 5 — Build the HTML file
 Use the **AI Oracle Quiz v2 design system** (reference: `C:\Claude Cowork\Projects\AI Oracle\quizzes\AI-Oracle_Quiz_v2.html`).
 
 Required HTML features:
-- Sticky nav bar with exam title and domain progress indicator
-- One question card per question (`q-card` layout)
-- Per-domain score breakdown in the final results card
-- `localStorage` save/resume (key: `cca-mock-N` where N is the exam number)
-- A JS comment block at the top listing all question stems used (for deduplication in next exam)
+
+1. **Landing card** — exam number, date, format (FULL-60 / DRILL-30), the 4 scenarios drawn, prior performance from EXAM-LOG.md (per orchestration prompt rules)
+2. **Scenario block headers** (FULL-60) — each block opens with its scenario narrative card; questions within the block reference and evolve it
+3. **Sticky nav** — exam title, block progress, question progress
+4. **One `q-card` per question** with the four options
+5. **Selection-aware feedback panel** — after an option is chosen (choice then locks):
+   - Picked RIGHT → green confirm + `whyRight` + a compact "Why the others are wrong" list (all three `whyWrong` entries) — Ram learns the traps even when he dodges them
+   - Picked WRONG → red flag + the picked option's `whyWrong` FIRST, then the other two distractors' `whyWrong`, then the correct option highlighted with its `whyRight`
+   - Every rationale shows its corpus citation
+6. **Passive timing capture** — record per-question elapsed seconds (first render → lock-in) and total elapsed; display an unobtrusive elapsed timer in the nav (no countdown, no pressure); persist in localStorage
+7. **Results card** — total, per-domain breakdown, per-block breakdown, estimated scaled score `round((correct/N) × 900 + 100)` with the "approximation — real exam uses psychometric scaling" caveat, pass-line (720) indicator, total time
+8. **Results-JSON export** — below the results card, a `<pre>` block + "Copy results JSON" button emitting:
+   ```json
+   {"exam_n": N, "format": "FULL60", "attempted_date": "YYYY-MM-DD",
+    "total_correct": N, "total_questions": 60, "total_seconds": N,
+    "domains": {"D1": {"correct": N, "of": 16}, "D2": {"correct": N, "of": 11},
+                "D3": {"correct": N, "of": 12}, "D4": {"correct": N, "of": 12},
+                "D5": {"correct": N, "of": 9}},
+    "blocks": [{"scenario": "...", "correct": N, "of": 15}],
+    "questions": [{"q": 1, "domain": "D1", "block": 1, "selected": "B",
+                   "correct": true, "seconds": N}]}
+   ```
+   This JSON is the PRIMARY score-entry input for the orchestration prompt — paste it back in the next session.
+9. **`localStorage` save/resume** (key: `cca-mock-N`) — answers, lock states, timing
+10. **JS comment block at the top** listing all stems (dedup source for the next exam)
 
 ### Step 6 — Name and log the file
-- File name: `CCA-Prep_MockTest-N_v1.html` (increment N)
-- Immediately update `EXAM-LOG.md` with the new exam entry
+- File name: `CCA-Prep_MockTest-N_v1.html` (increment N; bump `_vX` only when regenerating the same exam number)
+- Immediately update `EXAM-LOG.md` with the skeleton entry
 
 ---
 
 ## EXAM-LOG.md — Persistent Memory Across Exams
 
-`EXAM-LOG.md` is the cross-exam memory. It records:
-
-1. **Questions used** — stem text per exam (deduplication source)
-2. **Score results** — domain scores, total score, pass/fail threshold (720)
-3. **Gap observations** — which domains Ram got wrong most often
-4. **Insights** — patterns surfaced across multiple exam attempts
+Records per exam: stems used (dedup), scores, domain breakdowns, gap observations, insights rounds.
 
 ### Log Entry Format (append after each exam attempt)
 
@@ -85,48 +120,47 @@ Required HTML features:
 ## Exam N — [Date]
 
 **File:** CCA-Prep_MockTest-N_v1.html
+**Format:** FULL60 | DRILL30 | LEGACY30
+**Scenarios drawn:** [4 names, FULL60 only]
 **Attempt date:** YYYY-MM-DD
-**Total score (self-reported):** X / 30 correct (estimated scaled: XXX / 1000)
-**Pass threshold:** 720 / 1000
+**Score source:** results-JSON | self-reported-total (domains estimated)
+**Total score:** X / N correct (estimated scaled: XXX / 1000; pass line 720)
+**Total time:** MM:SS ([avg s]/question)
 
 ### Domain Breakdown
-| Domain | Questions | Correct | % |
-|---|---|---|---|
-| D1 Agentic Architecture | 8 | X | X% |
-| D2 Tool Design & MCP | 5 | X | X% |
-| D3 Claude Code Config | 6 | X | X% |
-| D4 Prompt Engineering | 6 | X | X% |
-| D5 Context Management | 5 | X | X% |
+| Domain | Questions | Correct | % | Estimated? |
+|---|---|---|---|---|
+| D1 Agentic Architecture | 16 | X | X% | no |
+| D2 Tool Design & MCP | 11 | X | X% | no |
+| D3 Claude Code Config | 12 | X | X% | no |
+| D4 Prompt Engineering | 12 | X | X% | no |
+| D5 Context Management | 9 | X | X% | no |
 
 ### Observations
-- Strongest domain: [domain]
-- Weakest domain: [domain]
-- Specific traps missed: [list question stems]
+- Strongest / weakest domain, slowest questions, traps missed (stems)
 
 ### Questions Used (for deduplication)
 1. [stem 1]
-2. [stem 2]
 ...
 ```
+
+**Integrity rule:** when only a self-reported total is available, per-domain numbers are proportional estimates — mark `Estimated? yes` on every estimated row and set `Score source: self-reported-total`. Estimated breakdowns are EXCLUDED from confirmed-weakness checks and insights trends (see orchestration prompt Phase 2).
 
 ---
 
 ## Insight Generation
 
-After every 3 completed exam attempts, generate a `INSIGHTS-vN.md` report:
-
-- Which domains show a consistent gap (< 70% correct across attempts)
-- Which Key Distinctions are repeatedly missed
-- Trend: is the score improving, plateauing, or regressing?
-- Recommended focus for next study session before the next mock
+After every 3 completed exam attempts, generate an insights round (see orchestration prompt Phase 3): domain trends, repeated missed traps, focus recommendation. Only non-estimated domain data feeds trends.
 
 ---
 
 ## Operating Rules
 
-- **Read EXAM-LOG.md first** — no exceptions. Generating without it risks question repetition.
-- **No out-of-scope topics** — see `CCA-Prep_Exam-Mechanics_v1.md` for the excluded list. Never write questions on fine-tuning, infrastructure deployment, streaming API, or model weights.
-- **Every distractor must be a real misconception** — not a clearly wrong option. Real exam distractors are designed to trap people who partially understand the concept.
-- **Cite corpus section in Why** — every explanation names which domain file and section the answer comes from.
-- **Update EXAM-LOG.md immediately** after each exam is generated or a score is reported — do not defer.
-- **Never overwrite prior log entries** — append only.
+- **Read EXAM-LOG.md AND PRACTICE-TEST-STEMS_v1.md first** — no exceptions. Both are dedup ledgers.
+- **Generate from v2 corpus files only** — v1 files are superseded history.
+- **No out-of-scope topics** — the 16-item exclusion list in `CCA-Prep_Exam-Mechanics_v2.md` is a hard constraint.
+- **Every distractor must be a documented misconception** — never fabricate flags, parameters, or behaviors. Real exam distractors trap partial understanding.
+- **Every option gets a rationale** — `whyRight` for the key, `whyWrong` for each distractor, all citing corpus file + section.
+- **Official framing wins** — on any `CURRENT-DOCS-DELTA_v1.md` [CONFLICT-RISK] item, author per the official Exam Guide; never make the delta itself the scored distinction.
+- **Style-match the real exam** — calibrate stems and options against `PRACTICE-TEST-STEMS_v1.md` §3 and the official samples before writing; never copy those stems.
+- **Update EXAM-LOG.md immediately** after generating or scoring — append only, never overwrite prior entries.
