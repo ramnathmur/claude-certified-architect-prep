@@ -146,11 +146,21 @@ Records per exam: stems used (dedup), scores, domain breakdowns, gap observation
 
 **Integrity rule:** when only a self-reported total is available, per-domain numbers are proportional estimates — mark `Estimated? yes` on every estimated row and set `Score source: self-reported-total`. Estimated breakdowns are EXCLUDED from confirmed-weakness checks and insights trends (see orchestration prompt Phase 2).
 
+### Professor's Note — per-exam continuity (written every scored exam)
+
+After each scored exam with real per-domain data (results-JSON or a manual breakdown — NOT a total-only report), append a short **Professor's Note — Intent for Exam N+1** block to EXAM-LOG.md, directly under that exam's entry. It is the setter's brief for the next paper: 2–3 misconceptions the wrong answers revealed (named by Key Distinction / corpus §), the weakest domain and whether it is confirmed or merely suspected, one sentence of deliberate next-paper intent, and one thing to watch. It is the mechanism that makes each exam depend on how the student did on the last one.
+
+- It is **learner-centric and append-only** — distinct from `GENERATION-INTELLIGENCE.md`, which is question-centric and overwritten each run.
+- It fires on **every** scored exam, not gated to the every-3 insights cadence.
+- It states **intent within the fixed domain quota** — it never changes domain weights or breaches the out-of-scope list. The next generation reads it (orchestration prompt Phase 4c.5) and biases WHICH corpus sections it draws from, so a single detailed result nudges the very next paper before the two-exam confirmed-weakness rule is even eligible.
+
+See orchestration prompt v6 Phase 2 f-note (writer) and Phase 4c.5 (reader).
+
 ---
 
 ## Insight Generation
 
-After every 3 completed exam attempts, generate an insights round (see orchestration prompt Phase 3): domain trends, repeated missed traps, focus recommendation. Only non-estimated domain data feeds trends.
+After every 3 completed exam attempts, generate an insights round (see orchestration prompt Phase 3): domain trends, repeated missed traps, focus recommendation. Only non-estimated domain data feeds trends. (This is the deeper 3-exam trend layer; the per-exam Professor's Note above is its lightweight every-exam complement.)
 
 ---
 
@@ -164,3 +174,5 @@ After every 3 completed exam attempts, generate an insights round (see orchestra
 - **Official framing wins** — on any `CURRENT-DOCS-DELTA_v1.md` [CONFLICT-RISK] item, author per the official Exam Guide; never make the delta itself the scored distinction.
 - **Style-match the real exam** — calibrate stems and options against `PRACTICE-TEST-STEMS_v1.md` §3 and the official samples before writing; never copy those stems.
 - **Update EXAM-LOG.md immediately** after generating or scoring — append only, never overwrite prior entries.
+- **Write a Professor's Note every scored exam** (real per-domain data) and **consume the latest note when generating** — the note biases section choice within the fixed quota, never the quota itself.
+- **Invoke via `/cca-exam`** — the folder-scoped slash command loads orchestration prompt v6. Run it from a Claude Code session opened in this `prep with quiz` folder.
