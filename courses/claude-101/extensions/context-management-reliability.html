@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Context Management &amp; Reliability — CCA-F Extension</title>
+<title>Context Management &amp; Reliability: CCA-F Extension</title>
 <style>
   :root{
     --bg:#faf8f5; --paper:#ffffff; --ink:#2b2622; --ink-soft:#5c544c;
@@ -184,7 +184,7 @@
 <aside id="sidebar">
   <div class="brandbox">
     <div class="logo"><span class="emoji">🧠</span> Context Management &amp; Reliability</div>
-    <div class="sub">CCA-F extension lesson — the reliability backbone</div>
+    <div class="sub">CCA-F extension lesson, the reliability backbone</div>
     <div class="extbadge">Extension · beyond the Academy course</div>
     <a class="backlink" href="../claude-101.html">← Back to the base course (Claude 101)</a>
   </div>
@@ -233,7 +233,7 @@
 <header class="hero" id="top">
   <div class="eyebrow">CCA-F Extension · Domain 5 (Context Management &amp; Reliability, 15%) + Domain 1 crossover</div>
   <h1>Context Management &amp; Reliability</h1>
-  <p class="lead">The context window is your agent's working memory — finite, shared, and the thing that quietly decides whether a long-running agent stays coherent or falls apart. This lesson takes you from "what's a context window" down to the API mechanics of <code class="inl">compaction</code>, <code class="inl">context editing</code>, and token budgeting.</p>
+  <p class="lead">The context window is your agent's working memory: finite, shared, and the thing that quietly decides whether a long-running agent stays coherent or falls apart. This lesson takes you from "what's a context window" down to the API mechanics of <code class="inl">compaction</code>, <code class="inl">context editing</code>, and token budgeting.</p>
   <div class="pillrow">
     <span class="pill"><span class="emoji">🧠</span> 9 sections</span>
     <span class="pill"><span class="emoji">❓</span> Inline MCQs + predict-reveals</span>
@@ -245,12 +245,12 @@
   <div class="extbanner">
     <span class="bt">🧩</span>
     <div>
-      <b>Extension — beyond the Academy course.</b> This lesson is <b>web-researched material grounded in Anthropic's official sources</b> (the context-windows, compaction, context-editing, token-counting, and prompt-caching docs; the "Effective context engineering" and "Effective harnesses for long-running agents" engineering posts; and the Claude Code costs guide). It is <b>not</b> part of the original Claude 101 Academy course. Every substantive claim traces to the sources listed at the end. Version-sensitive facts carry an inline <span class="verify">⚠ VERIFY</span> note.
+      <b>Extension, beyond the Academy course.</b> This lesson is <b>web-researched material grounded in Anthropic's official sources</b> (the context-windows, compaction, context-editing, token-counting, and prompt-caching docs; the "Effective context engineering" and "Effective harnesses for long-running agents" engineering posts; and the Claude Code costs guide). It is <b>not</b> part of the original Claude 101 Academy course. Every substantive claim traces to the sources listed at the end. Version-sensitive facts carry an inline <span class="verify">⚠ VERIFY</span> note.
     </div>
   </div>
 
   <div class="crosslink">
-    <span class="emoji">🔗</span> <strong>Builds on Claude 101, follows C-E1.</strong> The base course introduced the context window as Claude's "working memory." Extension <strong>C-E1 — <a href="tool-use-agent-loop.html">The Tool-Use Agent Loop</a></strong> showed you the <code class="inl">while stop_reason == "tool_use"</code> cycle. This lesson (C-E2) picks up where the loop leaves off: every turn of that loop <em>accumulates</em> tokens, and managing that accumulation is the reliability backbone of any production agent. If those ideas are fuzzy, <a href="../claude-101.html">revisit the base course first</a>.
+    <span class="emoji">🔗</span> <strong>Builds on Claude 101, follows C-E1.</strong> The base course introduced the context window as Claude's "working memory." Extension <strong>C-E1: <a href="tool-use-agent-loop.html">The Tool-Use Agent Loop</a></strong> showed you the <code class="inl">while stop_reason == "tool_use"</code> cycle. This lesson (C-E2) picks up where the loop leaves off: every turn of that loop <em>accumulates</em> tokens, and managing that accumulation is the reliability backbone of any production agent. If those ideas are fuzzy, <a href="../claude-101.html">revisit the base course first</a>.
   </div>
 
   <div class="examnote">
@@ -262,7 +262,7 @@
 <div class="sec-divider" id="sec1">
   <span class="badge"><span class="emoji">①</span> Why it matters</span>
   <h2>Context Is the Reliability Backbone</h2>
-  <p>Why managing the window — not maximizing it — is what keeps production agents alive.</p>
+  <p>Why managing the window, not maximizing it, is what keeps production agents alive.</p>
 </div>
 
 <section class="lesson" id="l1" data-lesson>
@@ -274,22 +274,22 @@
     <ul>
       <li>Frame context management as a <em>reliability</em> problem, not a capacity problem</li>
       <li>State why "more context" is not the same as "better answers"</li>
-      <li>Preview the three levers — compaction, context editing, context engineering — you'll learn to pull</li>
+      <li>Preview the three levers (compaction, context editing, context engineering) you'll learn to pull</li>
     </ul>
   </div>
 
   <h4>Why before how</h4>
-  <p>Picture an agent that nails the first ten turns of a task, then — twenty turns later — starts repeating itself, forgetting decisions it already made, and getting slower and more expensive with every reply. The model didn't get worse. Its <strong>working memory filled up</strong>. Everything the agent has ever seen this session is competing for one finite resource, and nobody curated it.</p>
-  <p>That is the central insight of Domain 5: a production agent's reliability is mostly a function of <em>what is in its context window and how it's managed over time</em>. The docs put it bluntly — context is "a finite resource with diminishing returns, and irrelevant content degrades model focus." (source: context-editing docs)</p>
+  <p>Picture an agent that nails the first ten turns of a task, then, twenty turns later, starts repeating itself, forgetting decisions it already made, and getting slower and more expensive with every reply. The model didn't get worse. Its <strong>working memory filled up</strong>. Everything the agent has ever seen this session is competing for one finite resource, and nobody curated it.</p>
+  <p>That is the central insight of Domain 5: a production agent's reliability is mostly a function of <em>what is in its context window and how it's managed over time</em>. The docs put it bluntly: context is "a finite resource with diminishing returns, and irrelevant content degrades model focus." (source: context-editing docs)</p>
 
-  <blockquote class="ex">Analogy (clearly labeled): <span class="analogy">Analogy, not a product fact.</span> Think of the context window like a chef's cutting board, not a pantry. The pantry (the model's training) is enormous. The cutting board is small and shared — every ingredient you pile on leaves less room to actually work, and a cluttered board slows the chef down. Good agents keep the board clean; they don't just buy a bigger board.</blockquote>
+  <blockquote class="ex">Analogy (clearly labeled): <span class="analogy">Analogy, not a product fact.</span> Think of the context window like a chef's cutting board, not a pantry. The pantry (the model's training) is enormous, but the cutting board is small and shared. Every ingredient you pile on leaves less room to actually work, and a cluttered board slows the chef down. Good agents keep the board clean; they don't just buy a bigger board.</blockquote>
 
   <h4>The three levers you're about to learn</h4>
   <p>This lesson is organized around the moves an architect makes to keep that board clean:</p>
   <ul>
-    <li><strong>Compaction</strong> — let the server summarize old history when the window fills (Section 5).</li>
-    <li><strong>Context editing</strong> — surgically clear stale tool results and thinking blocks (Section 6).</li>
-    <li><strong>Context engineering</strong> — put the <em>smallest set of high-signal tokens</em> in front of the model in the first place (Section 7).</li>
+    <li><strong>Compaction:</strong> let the server summarize old history when the window fills (Section 5).</li>
+    <li><strong>Context editing:</strong> surgically clear stale tool results and thinking blocks (Section 6).</li>
+    <li><strong>Context engineering:</strong> put the <em>smallest set of high-signal tokens</em> in front of the model in the first place (Section 7).</li>
   </ul>
   <p>Plus the discipline that ties them together: <strong>token budgeting</strong> (Section 8) and <strong>reliability patterns</strong> like external state and checkpointing (Section 9). But first, you have to understand the resource itself.</p>
 
@@ -297,13 +297,13 @@
     <div class="plab"><span class="emoji">🤔</span> Predict first</div>
     <div class="q">Your agent has a 1M-token window and you're only using 400K. Is there any reliability reason to trim the context anyway?</div>
     <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
-    <div class="ans"><strong>Yes.</strong> "More context isn't automatically better. As token count grows, accuracy and recall degrade, a phenomenon known as <em>context rot</em>." Having headroom in the window doesn't mean the model uses all 400K equally well — irrelevant tokens still dilute its attention. Curating <em>what's</em> in context is "just as important as how much space is available." (source: context-windows docs)</div>
+    <div class="ans"><strong>Yes.</strong> "More context isn't automatically better. As token count grows, accuracy and recall degrade, a phenomenon known as <em>context rot</em>." Having headroom in the window doesn't mean the model uses all 400K equally well: irrelevant tokens still dilute its attention. Curating <em>what's</em> in context is "just as important as how much space is available." (source: context-windows docs)</div>
   </div>
 
   <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
   <div class="cbody"><ul>
     <li>Context management is a <strong>reliability</strong> discipline, not just a way to fit more in.</li>
-    <li>"More context isn't automatically better" — accuracy and recall degrade as the window fills (context rot).</li>
+    <li>"More context isn't automatically better": accuracy and recall degrade as the window fills (context rot).</li>
     <li>Three levers: <strong>compaction</strong>, <strong>context editing</strong>, and <strong>context engineering</strong>, backed by token budgeting and external state.</li>
   </ul></div></div>
 </section>
@@ -330,16 +330,16 @@
 
   <h4>What the context window actually is</h4>
   <blockquote class="ex">"The 'context window' refers to all the text a language model can reference when generating a response, including the response itself. This is different from the large corpus of data the language model was trained on, and instead represents a 'working memory' for the model." (source: context-windows docs)</blockquote>
-  <p>Two things to internalize. First, <strong>the response counts.</strong> The tokens Claude generates come out of the same budget as everything you sent in. Second, this is <em>working memory</em> — distinct from the vast training corpus in the "pantry." The model can only reason over what's currently on the board.</p>
+  <p>Two things to internalize. First, <strong>the response counts.</strong> The tokens Claude generates come out of the same budget as everything you sent in. Second, this is <em>working memory</em>, distinct from the vast training corpus in the "pantry." The model can only reason over what's currently on the board.</p>
 
   <h4>Everything spends from one budget</h4>
   <p>This is the fact that trips up most architects. The window is not "your prompt." It's a single pool that <em>five</em> different things draw on simultaneously:</p>
   <ul>
-    <li><strong>Input / current message</strong> — the current user turn.</li>
-    <li><strong>Conversation history</strong> — each input phase "contains all previous conversation history plus the current user message." (source: context-windows docs)</li>
-    <li><strong>Tool configuration</strong> — tool definitions count as input tokens; tool-use requests, results, and accompanying thinking blocks all count toward the window. (source: context-windows docs)</li>
-    <li><strong>Extended thinking</strong> — "all input and output tokens, including the tokens used for thinking, count toward the context window limit." Thinking tokens "are a subset of your <code class="inl">max_tokens</code> parameter, are billed as output tokens, and count towards rate limits." (source: context-windows docs)</li>
-    <li><strong>Output</strong> — the generated response "becomes part of a future input." (source: context-windows docs)</li>
+    <li><strong>Input / current message:</strong> the current user turn.</li>
+    <li><strong>Conversation history:</strong> each input phase "contains all previous conversation history plus the current user message." (source: context-windows docs)</li>
+    <li><strong>Tool configuration:</strong> tool definitions count as input tokens; tool-use requests, results, and accompanying thinking blocks all count toward the window. (source: context-windows docs)</li>
+    <li><strong>Extended thinking:</strong> "all input and output tokens, including the tokens used for thinking, count toward the context window limit." Thinking tokens "are a subset of your <code class="inl">max_tokens</code> parameter, are billed as output tokens, and count towards rate limits." (source: context-windows docs)</li>
+    <li><strong>Output:</strong> the generated response "becomes part of a future input." (source: context-windows docs)</li>
   </ul>
 
   <figure class="svgfig">
@@ -357,7 +357,7 @@
       <text class="cap" x="350" y="130" text-anchor="middle">If the segments together exceed the window, generation stops with stop_reason "model_context_window_exceeded" (4.5+ models)</text>
       <text class="cap" x="350" y="152" text-anchor="middle" style="fill:#a44a2e">Grow the history and you squeeze the room left for tools, thinking, and output.</text>
     </svg>
-    <figcaption>Diagram (a): a single shared budget. Every consumer — input, history, tool config, thinking, output — draws from the same window. Fill it with history and you starve the rest.</figcaption>
+    <figcaption>Diagram (a): a single shared budget. Every consumer (input, history, tool config, thinking, output) draws from the same window. Fill it with history and you starve the rest.</figcaption>
   </figure>
 
   <h4>Current window sizes</h4>
@@ -369,12 +369,12 @@
       <tr><td>Claude Haiku 4.5</td><td><strong>200k tokens</strong></td><td>64k</td><td><code class="inl">claude-haiku-4-5-20251001</code></td></tr>
     </tbody>
   </table></div>
-  <div class="verifynote"><span class="verify">⚠ VERIFY</span> Model lineup and context sizes (June 2026): Opus 4.8 (1M), Sonnet 4.6 (1M), Haiku 4.5 (200k). Per the docs, the 1M set is "Opus 4.8, Mythos Preview, Opus 4.7, Opus 4.6, and Sonnet 4.6"; Sonnet 4.5 / Sonnet 4 and legacy models stay at 200k; on Microsoft Foundry, Opus 4.8 is 200k. The model lineup changes fast — re-verify against the models/overview and context-windows pages at build/publish time. (source: models/overview, context-windows docs)</div>
+  <div class="verifynote"><span class="verify">⚠ VERIFY</span> Model lineup and context sizes (June 2026): Opus 4.8 (1M), Sonnet 4.6 (1M), Haiku 4.5 (200k). Per the docs, the 1M set is "Opus 4.8, Mythos Preview, Opus 4.7, Opus 4.6, and Sonnet 4.6"; Sonnet 4.5 / Sonnet 4 and legacy models stay at 200k; on Microsoft Foundry, Opus 4.8 is 200k. The model lineup changes fast, so re-verify against the models/overview and context-windows pages at build/publish time. (source: models/overview, context-windows docs)</div>
   <div class="verifynote"><span class="verify">⚠ VERIFY</span> 1M-window beta header: in the current (June 2026) docs the 1M window is presented as the <em>native</em> window for Opus 4.6+/4.7/4.8 and Sonnet 4.6, not a separate <code class="inl">context-1m</code> beta tier as in earlier generations. Confirm whether any 1M beta header is still required for the billing tier. (source: context-windows docs)</div>
 
   <h4>Overflow is a signal, not a crash</h4>
   <blockquote class="ex">"On Claude 4.5 models and newer, if input tokens plus <code>max_tokens</code> exceeds the context window size, the API accepts the request. If generation then reaches the context window limit, it stops with <code>stop_reason: 'model_context_window_exceeded'</code>." (source: context-windows docs)</blockquote>
-  <p>Earlier models return a validation error unless you opt in via the <code class="inl">model-context-window-exceeded-2025-08-26</code> beta header. We'll return to this stop reason in Section 9 — it's a reliability hook you can build on.</p>
+  <p>Earlier models return a validation error unless you opt in via the <code class="inl">model-context-window-exceeded-2025-08-26</code> beta header. We'll return to this stop reason in Section 9: it's a reliability hook you can build on.</p>
 
   <div class="mcq" data-mcq data-correct="3">
     <div class="qlab"><span class="emoji">❓</span> Quick check</div>
@@ -384,14 +384,14 @@
     <button class="opt">The conversation history from prior turns</button>
     <button class="opt">The model's training corpus</button>
     <div class="fb" aria-live="polite"></div>
-    <div class="fbmsg" hidden>The training corpus is the "pantry" — it's <em>not</em> in the window. Input, history, tool config, thinking, and output all consume the window; the response counts too.</div>
+    <div class="fbmsg" hidden>The training corpus is the "pantry": it's <em>not</em> in the window. Input, history, tool config, thinking, and output all consume the window; the response counts too.</div>
   </div>
 
   <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
   <div class="cbody"><ul>
-    <li>The window is <strong>working memory</strong>, distinct from training data — and "includes the response itself."</li>
+    <li>The window is <strong>working memory</strong>, distinct from training data, and "includes the response itself."</li>
     <li>One shared budget: input + history + tool config + thinking + output.</li>
-    <li>Opus 4.8 / Sonnet 4.6 = 1M; Haiku 4.5 = 200k. <span class="verify">⚠ VERIFY</span> — lineup drifts.</li>
+    <li>Opus 4.8 / Sonnet 4.6 = 1M; Haiku 4.5 = 200k. <span class="verify">⚠ VERIFY</span>: lineup drifts.</li>
     <li>Overflow on 4.5+ returns <code class="inl">model_context_window_exceeded</code> rather than crashing.</li>
   </ul></div></div>
 </section>
@@ -418,10 +418,10 @@
 
   <h4>Each turn keeps everything</h4>
   <blockquote class="ex">"Progressive token accumulation: As the conversation advances through turns, each user message and assistant response accumulates within the context window. Previous turns are preserved completely." … "The context usage grows linearly with each turn, with previous turns preserved completely." (source: context-windows docs)</blockquote>
-  <p>So the window <em>per turn</em> grows linearly — turn 2 holds turn 1, turn 3 holds turns 1–2, and so on. That part is intuitive. The non-obvious part is what it does to your bill.</p>
+  <p>So the window <em>per turn</em> grows linearly: turn 2 holds turn 1, turn 3 holds turns 1–2, and so on. That part is intuitive. The non-obvious part is what it does to your bill.</p>
 
   <h4>Why the bill grows worse than linearly</h4>
-  <p>Here's the mechanism. <strong>Every turn re-sends the entire prior history as input.</strong> Turn N pays to process roughly N turns' worth of history. Add that up across a session and the <em>total tokens billed</em> grow roughly <strong>quadratically</strong> with the number of turns — even though the window itself only grows linearly at any single moment.</p>
+  <p>Here's the mechanism. <strong>Every turn re-sends the entire prior history as input.</strong> Turn N pays to process roughly N turns' worth of history. Add that up across a session and the <em>total tokens billed</em> grow roughly <strong>quadratically</strong> with the number of turns, even though the window itself only grows linearly at any single moment.</p>
   <p>Anthropic frames the underlying model cost as quadratic at the attention level too: the transformer creates "n² pairwise relationships for n tokens," which "stretches thin as context lengthens." (source: effective-context-engineering)</p>
 
   <figure class="svgfig">
@@ -448,13 +448,13 @@
 
   <div class="reveal" data-reveal>
     <div class="plab"><span class="emoji">🤔</span> Predict first</div>
-    <div class="q">A chat agent runs 50 turns with no context management. Compared to a 5-turn session, roughly how does the <em>total tokens billed</em> scale — 10×, or much more?</div>
+    <div class="q">A chat agent runs 50 turns with no context management. Compared to a 5-turn session, roughly how does the <em>total tokens billed</em> scale: 10×, or much more?</div>
     <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
-    <div class="ans"><strong>Much more than 10×.</strong> Because every turn re-sends the whole history, cumulative billed tokens scale roughly with turns² — so 10× the turns is closer to ~100× the work, not 10×. This is exactly why "server-side compaction is the primary strategy for context management" in long-running conversations. (source: context-windows docs)</div>
+    <div class="ans"><strong>Much more than 10×.</strong> Because every turn re-sends the whole history, cumulative billed tokens scale roughly with turns², so 10× the turns is closer to ~100× the work, not 10×. This is exactly why "server-side compaction is the primary strategy for context management" in long-running conversations. (source: context-windows docs)</div>
   </div>
 
   <h4>What to do about it</h4>
-  <p>The docs are explicit about the remedy ladder: for long-running conversations and agentic workflows, "server-side compaction is the primary strategy for context management." For finer control, context editing clears old tool results and thinking blocks. (source: context-windows docs) And <strong>prompt caching</strong> mitigates the <em>cost</em> of re-sending a stable prefix (Section 9) — but note: caching does not stop the window from filling. The two solve different problems.</p>
+  <p>The docs are explicit about the remedy ladder: for long-running conversations and agentic workflows, "server-side compaction is the primary strategy for context management." For finer control, context editing clears old tool results and thinking blocks. (source: context-windows docs) And <strong>prompt caching</strong> mitigates the <em>cost</em> of re-sending a stable prefix (Section 9), but note: caching does not stop the window from filling. The two solve different problems.</p>
 
   <div class="mcq" data-mcq data-correct="1">
     <div class="qlab"><span class="emoji">❓</span> Quick check</div>
@@ -462,14 +462,14 @@
     <button class="opt">Because the model gets slower and charges a penalty</button>
     <button class="opt">Because each turn re-sends all prior history, so turn N pays for ~N turns of input</button>
     <button class="opt">Because output tokens cost more than input tokens</button>
-    <button class="opt">It doesn't — total cost is also linear</button>
+    <button class="opt">It doesn't: total cost is also linear</button>
     <div class="fb" aria-live="polite"></div>
     <div class="fbmsg" hidden>Each turn re-processes the entire accumulated history as input, so summed over a session the billed tokens scale ~quadratically with the number of turns. The transformer's n² attention reinforces this.</div>
   </div>
 
   <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
   <div class="cbody"><ul>
-    <li>"Previous turns are preserved completely" — window grows <strong>linearly</strong> per turn.</li>
+    <li>"Previous turns are preserved completely": window grows <strong>linearly</strong> per turn.</li>
     <li>Re-sending history every turn makes <strong>cumulative billed cost ~quadratic</strong> in turn count.</li>
     <li>Compaction is the primary remedy; context editing is the fine-grained one; caching cuts cost but not occupancy.</li>
   </ul></div></div>
@@ -477,11 +477,11 @@
 
 <!-- SECTION QUIZ A -->
 <div class="quizblock" data-quiz="1">
-  <div class="scorebar"><h4 style="margin:0"><span class="emoji">🏆</span> Checkpoint Quiz A — The Window &amp; Accumulation</h4><span class="qscore" data-score>0 / 4</span></div>
+  <div class="scorebar"><h4 style="margin:0"><span class="emoji">🏆</span> Checkpoint Quiz A: The Window &amp; Accumulation</h4><span class="qscore" data-score>0 / 4</span></div>
   <p style="font-size:14px;color:var(--ink-soft);margin-top:0">Source-grounded. Answer each, then read the explanation.</p>
   <div class="mcq" data-mcq data-correct="2" data-inquiz>
     <div class="qlab">Q1</div><div class="qtext">The context window is best described as…</div>
-    <button class="opt">The model's full training corpus</button><button class="opt">Only the system prompt</button><button class="opt">"Working memory" — all text the model can reference, including its own response</button><button class="opt">A cache of past API calls</button>
+    <button class="opt">The model's full training corpus</button><button class="opt">Only the system prompt</button><button class="opt">"Working memory": all text the model can reference, including its own response</button><button class="opt">A cache of past API calls</button>
     <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>The window is "working memory," distinct from training data, and it "include[s] the response itself."</div>
   </div>
   <div class="mcq" data-mcq data-correct="3" data-inquiz>
@@ -497,7 +497,7 @@
   <div class="mcq" data-mcq data-correct="1" data-inquiz>
     <div class="qlab">Q4</div><div class="qtext">On Claude 4.5+ models, hitting the window limit during generation produces…</div>
     <button class="opt">A hard 400 validation error, always</button><button class="opt"><code>stop_reason: "model_context_window_exceeded"</code></button><button class="opt"><code>pause_turn</code></button><button class="opt">Silent truncation with no signal</button>
-    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>On 4.5+ the request is accepted and generation stops with <code>model_context_window_exceeded</code> — a handleable signal. Older models need a beta header to avoid a validation error.</div>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>On 4.5+ the request is accepted and generation stops with <code>model_context_window_exceeded</code>, a handleable signal. Older models need a beta header to avoid a validation error.</div>
   </div>
   <div class="resultbox" data-result></div>
 </div>
@@ -524,9 +524,9 @@
 
   <h4>Context rot, defined</h4>
   <blockquote class="ex">"As token count increases, the model's ability to accurately recall information from that context decreases." … "This constraint applies across all models, though some degrade more gradually." (source: effective-context-engineering)</blockquote>
-  <p>And the mechanism the docs use to explain it — the <strong>attention budget</strong>:</p>
+  <p>And the mechanism the docs use to explain it: the <strong>attention budget</strong>.</p>
   <blockquote class="ex">LLMs possess "an 'attention budget' that they draw on when parsing large volumes of context. Every new token introduced depletes this budget by some amount." (source: effective-context-engineering)</blockquote>
-  <p>So every token you add isn't free even when it fits — it spends from a budget that's separate from raw token capacity. This is why curation beats capacity.</p>
+  <p>So every token you add isn't free even when it fits: it spends from a budget that's separate from raw token capacity. This is why curation beats capacity.</p>
 
   <figure class="svgfig">
     <svg viewBox="0 0 700 220" role="img" aria-label="Attention-budget depletion curve: recall accuracy falls as context fills">
@@ -543,26 +543,26 @@
       <text class="note" x="300" y="150" fill="#b3402f">older model — steeper drop</text>
       <text class="gl" x="120" y="36">high recall when context is lean</text>
     </svg>
-    <figcaption>Diagram (c): context rot. As tokens accumulate, recall and focus decline. Newer models degrade more gracefully, but the depletion is universal — "this constraint applies across all models."</figcaption>
+    <figcaption>Diagram (c): context rot. As tokens accumulate, recall and focus decline. Newer models degrade more gracefully, but the depletion is universal: "this constraint applies across all models."</figcaption>
   </figure>
 
   <h4>Why it happens architecturally</h4>
   <p>Two structural reasons, per the engineering post:</p>
   <ul>
-    <li>The transformer creates "n² pairwise relationships for n tokens" — attention spreads thinner as n grows. (source: effective-context-engineering)</li>
+    <li>The transformer creates "n² pairwise relationships for n tokens," so attention spreads thinner as n grows. (source: effective-context-engineering)</li>
     <li>Models have "less experience with, and fewer specialized parameters for, context-wide dependencies" because training sequences are typically shorter than the max context. (source: effective-context-engineering)</li>
   </ul>
   <p>The docs corroborate from the product side: context is "a finite resource with diminishing returns, and irrelevant content degrades model focus." (source: context-editing docs)</p>
 
   <h4>The benchmark anchor</h4>
-  <p>Anthropic measures long-context capability on needle-in-a-haystack benchmarks (MRCR v2, GraphWalks), and notes gains "depend on what's in context, not just how much fits." (source: context-windows docs) A comparative datapoint from launch material: on the 8-needle 1M MRCR v2 variant, Opus 4.6 scored 76% vs Sonnet 4.5 at 18.5% — newer models degrade far more gracefully at depth, but degradation still exists.</p>
+  <p>Anthropic measures long-context capability on needle-in-a-haystack benchmarks (MRCR v2, GraphWalks), and notes gains "depend on what's in context, not just how much fits." (source: context-windows docs) A comparative datapoint from launch material: on the 8-needle 1M MRCR v2 variant, Opus 4.6 scored 76% vs Sonnet 4.5 at 18.5%. Newer models degrade far more gracefully at depth, but degradation still exists.</p>
   <div class="verifynote"><span class="verify">⚠ VERIFY</span> The MRCR v2 8-needle stat (Opus 4.6 76% vs Sonnet 4.5 18.5%) came from search-summary launch material, not a fetched primary page. Treat the exact figures as version-sensitive and re-verify before quoting.</div>
 
   <div class="reveal" data-reveal>
     <div class="plab"><span class="emoji">🤔</span> Predict first</div>
     <div class="q">You upgrade from a 200K model to a 1M model. Does context rot stop being a concern?</div>
     <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
-    <div class="ans"><strong>No.</strong> A bigger window raises the ceiling but doesn't remove the effect — "this constraint applies across all models, though some degrade more gradually." You still spend an attention budget per token, so curating <em>what</em> goes in matters at 1M just as it did at 200K.</div>
+    <div class="ans"><strong>No.</strong> A bigger window raises the ceiling but doesn't remove the effect: "this constraint applies across all models, though some degrade more gradually." You still spend an attention budget per token, so curating <em>what</em> goes in matters at 1M just as it did at 200K.</div>
   </div>
 
   <div class="mcq" data-mcq data-correct="2">
@@ -573,22 +573,22 @@
     <button class="opt">The model's attention budget</button>
     <button class="opt">The max_tokens output budget</button>
     <div class="fb" aria-live="polite"></div>
-    <div class="fbmsg" hidden>The <strong>attention budget</strong> — separate from raw capacity. Filling the window depletes the model's ability to attend to and recall what's in it, which is context rot.</div>
+    <div class="fbmsg" hidden>The <strong>attention budget</strong>, separate from raw capacity. Filling the window depletes the model's ability to attend to and recall what's in it, which is context rot.</div>
   </div>
 
   <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
   <div class="cbody"><ul>
-    <li><strong>Context rot:</strong> recall and focus drop as the window fills — universal across models.</li>
+    <li><strong>Context rot:</strong> recall and focus drop as the window fills, universal across models.</li>
     <li>The <strong>attention budget</strong> is depleted by every token, independent of raw capacity.</li>
     <li>Architectural cause: n² attention relationships + shorter training sequences than max context.</li>
-    <li>Newer models degrade more gradually but never escape it — curate, don't just expand.</li>
+    <li>Newer models degrade more gradually but never escape it: curate, don't just expand.</li>
   </ul></div></div>
 </section>
 
 <!-- ============ SECTION 5 ============ -->
 <div class="sec-divider" id="sec5">
   <span class="badge"><span class="emoji">⑤</span> Compaction</span>
-  <h2>Compaction — Server-Side Summarization</h2>
+  <h2>Compaction: Server-Side Summarization</h2>
   <p>The primary strategy: let the server summarize old history when the window fills.</p>
 </div>
 
@@ -630,7 +630,7 @@
       <rect x="628" y="60" width="84" height="52" rx="10" fill="#3f7d4f"/><text class="cn" x="670" y="82" text-anchor="middle">Continue</text><text class="cs" x="670" y="98" text-anchor="middle" fill="#fff">from summary</text>
       <text class="cs" x="360" y="150" text-anchor="middle">The compaction block must be passed back; messages after it are preserved. Everything before it is summarized away.</text>
     </svg>
-    <figcaption>Diagram (d): the compaction lifecycle — detect → summarize → create compaction block → drop prior messages → continue from the summary.</figcaption>
+    <figcaption>Diagram (d): the compaction lifecycle: detect, summarize, create compaction block, drop prior messages, continue from the summary.</figcaption>
   </figure>
 
   <h4>The trigger</h4>
@@ -656,9 +656,9 @@
   }
 }</code></pre>
   </div>
-  <p>Parameters: <code class="inl">type</code> (required, <code class="inl">"compact_20260112"</code>); <code class="inl">trigger</code> (default 150,000 input tokens); <code class="inl">pause_after_compaction</code> (default <code class="inl">false</code>); <code class="inl">instructions</code> (default <code class="inl">null</code> — a custom prompt replaces the default summarization prompt). (source: compaction docs)</p>
+  <p>Parameters: <code class="inl">type</code> (required, <code class="inl">"compact_20260112"</code>); <code class="inl">trigger</code> (default 150,000 input tokens); <code class="inl">pause_after_compaction</code> (default <code class="inl">false</code>); <code class="inl">instructions</code> (default <code class="inl">null</code>, meaning a custom prompt replaces the default summarization prompt). (source: compaction docs)</p>
 
-  <h4>The response shape — note the <code class="inl">compaction</code> block and <code class="inl">iterations</code></h4>
+  <h4>The response shape: note the <code class="inl">compaction</code> block and <code class="inl">iterations</code></h4>
   <div class="codewrap">
     <div class="clab"><span class="dot"></span> Response · after compaction fires</div>
     <pre><code>{
@@ -678,15 +678,15 @@
 }</code></pre>
   </div>
   <div class="callout warn collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">💸</span> Billing trap (QA-critical)<span class="chev">▼</span></div>
-  <div class="cbody"><p>The top-level <code class="inl">input_tokens</code>/<code class="inl">output_tokens</code> do <strong>not</strong> include the compaction-iteration usage. To get true session cost you must "sum across all <code class="inl">iterations</code> array entries for total tokens consumed." In the example above, the summarization step alone cost 180,000 input + 3,500 output tokens — invisible if you only read the top-level numbers. (source: compaction docs)</p></div></div>
+  <div class="cbody"><p>The top-level <code class="inl">input_tokens</code>/<code class="inl">output_tokens</code> do <strong>not</strong> include the compaction-iteration usage. To get true session cost you must "sum across all <code class="inl">iterations</code> array entries for total tokens consumed." In the example above, the summarization step alone cost 180,000 input + 3,500 output tokens, invisible if you only read the top-level numbers. (source: compaction docs)</p></div></div>
 
   <h4>Tradeoffs</h4>
   <div class="tablewrap"><table>
     <thead><tr><th>Benefits</th><th>Costs</th></tr></thead>
     <tbody>
       <tr><td>Extends effective context</td><td>Adds a sampling step for summarization (counts toward rate limits &amp; billing)</td></tr>
-      <tr><td>Automatic, minimal integration</td><td>Can't use a cheaper model to summarize — uses the same model as the request</td></tr>
-      <tr><td>Keeps active context focused</td><td>"May fail when <code class="inl">tools</code> are defined" — the model may call a tool during summarization instead of summarizing</td></tr>
+      <tr><td>Automatic, minimal integration</td><td>Can't use a cheaper model to summarize; uses the same model as the request</td></tr>
+      <tr><td>Keeps active context focused</td><td>"May fail when <code class="inl">tools</code> are defined": the model may call a tool during summarization instead of summarizing</td></tr>
       <tr><td>Ideal for chat / multi-turn agents</td><td>Aggressive compaction can lose "subtle but critical context"</td></tr>
     </tbody>
   </table></div>
@@ -700,7 +700,7 @@
     <div class="plab"><span class="emoji">🤔</span> Predict first</div>
     <div class="q">You enable compaction <em>and</em> define several tools on the same request. What's the failure mode the docs warn about?</div>
     <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
-    <div class="ans"><strong>Compaction "may fail when <code class="inl">tools</code> are defined"</strong> — during the summarization step the model may call a tool instead of producing the summary. It's a documented cost/limitation, so test compaction behavior carefully in tool-heavy agents.</div>
+    <div class="ans"><strong>Compaction "may fail when <code class="inl">tools</code> are defined."</strong> During the summarization step, the model may call a tool instead of producing the summary. It's a documented cost/limitation, so test compaction behavior carefully in tool-heavy agents.</div>
   </div>
 
   <div class="mcq" data-mcq data-correct="1">
@@ -727,7 +727,7 @@
 <!-- ============ SECTION 6 ============ -->
 <div class="sec-divider" id="sec6">
   <span class="badge"><span class="emoji">⑥</span> Context editing</span>
-  <h2>Context Editing — Fine-Grained Clearing</h2>
+  <h2>Context Editing: Fine-Grained Clearing</h2>
   <p>The scalpel: clear stale tool results and thinking blocks while keeping the rest.</p>
 </div>
 
@@ -755,11 +755,11 @@
     <tbody>
       <tr><td>Tool result clearing</td><td><code class="inl">clear_tool_uses_20250919</code></td><td>Clear old tool results in heavy tool-use workflows</td></tr>
       <tr><td>Thinking block clearing</td><td><code class="inl">clear_thinking_20251015</code></td><td>Manage thinking blocks with extended thinking</td></tr>
-      <tr><td>Client-side compaction (SDK)</td><td>—</td><td>Summary-based, via <code class="inl">tool_runner</code> in Python/TS/Ruby SDKs</td></tr>
+      <tr><td>Client-side compaction (SDK)</td><td>N/A</td><td>Summary-based, via <code class="inl">tool_runner</code> in Python/TS/Ruby SDKs</td></tr>
     </tbody>
   </table></div>
 
-  <h4>Tool-result clearing — the mechanism</h4>
+  <h4>Tool-result clearing: the mechanism</h4>
   <blockquote class="ex">"When activated, the API automatically clears the oldest tool results in chronological order. The API replaces each cleared result with placeholder text so Claude knows it was removed. By default, only tool results are cleared. You can optionally clear both tool results and tool calls (the tool use parameters) by setting <code>clear_tool_inputs</code> to true." (source: context-editing docs)</blockquote>
 
   <figure class="svgfig">
@@ -792,11 +792,11 @@
 }</code></pre>
   </div>
   <ul>
-    <li><code class="inl">trigger</code> — clearing fires when input tokens exceed this value.</li>
-    <li><code class="inl">keep</code> — number of recent tool uses to retain after clearing.</li>
-    <li><code class="inl">clear_at_least</code> — guarantees a minimum number of tokens cleared each time (so prompt-cache invalidation is worthwhile).</li>
-    <li><code class="inl">exclude_tools</code> — tools whose results are never cleared.</li>
-    <li><code class="inl">clear_tool_inputs</code> — when <code class="inl">true</code>, also clears the tool-call parameters (default clears only results).</li>
+    <li><code class="inl">trigger</code>: clearing fires when input tokens exceed this value.</li>
+    <li><code class="inl">keep</code>: number of recent tool uses to retain after clearing.</li>
+    <li><code class="inl">clear_at_least</code>: guarantees a minimum number of tokens cleared each time (so prompt-cache invalidation is worthwhile).</li>
+    <li><code class="inl">exclude_tools</code>: tools whose results are never cleared.</li>
+    <li><code class="inl">clear_tool_inputs</code>: when <code class="inl">true</code>, also clears the tool-call parameters (default clears only results).</li>
   </ul>
 
   <h4>Thinking-block clearing</h4>
@@ -812,10 +812,10 @@
   <p>"If your code runs across multiple model tiers, set <code class="inl">keep</code> explicitly." And when combining strategies: "the <code class="inl">clear_thinking_20251015</code> strategy must be listed first in the <code class="inl">edits</code> array." (source: context-editing docs)</p>
 
   <h4>Two properties architects must remember</h4>
-  <div class="callout tip collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🖥️</span> Server-side — no client sync needed<span class="chev">▼</span></div>
+  <div class="callout tip collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🖥️</span> Server-side: no client sync needed<span class="chev">▼</span></div>
   <div class="cbody"><p>"Context editing is applied server-side before the prompt reaches Claude. Your client application maintains the full, unmodified conversation history. You do not need to sync your client state with the edited version." So your durable record stays complete; the server does the trimming on the way in. (source: context-editing docs)</p></div></div>
   <div class="callout warn collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">💾</span> Cache interaction<span class="chev">▼</span></div>
-  <div class="cbody"><p>Tool-result clearing "invalidates cached prompt prefixes when content is cleared." So you want to "clear enough tokens to make the cache invalidation worthwhile" — that's what <code class="inl">clear_at_least</code> is for. For thinking-block clearing: kept thinking preserves the cache; cleared thinking invalidates the cache at the clearing point. (source: context-editing docs)</p></div></div>
+  <div class="cbody"><p>Tool-result clearing "invalidates cached prompt prefixes when content is cleared." So you want to "clear enough tokens to make the cache invalidation worthwhile": that's what <code class="inl">clear_at_least</code> is for. For thinking-block clearing: kept thinking preserves the cache; cleared thinking invalidates the cache at the clearing point. (source: context-editing docs)</p></div></div>
   <div class="verifynote"><span class="verify">⚠ VERIFY</span> The response <code class="inl">context_management.applied_edits</code> object (number of tool uses cleared, tokens freed) is referenced in product summaries, but the exact JSON field names were not captured in the fetched section of the docs. Confirm against the live page before quoting field names. (source: context-editing docs)</div>
 
   <div class="mcq" data-mcq data-correct="0">
@@ -826,7 +826,7 @@
     <button class="opt">To force compaction instead of clearing</button>
     <button class="opt">To exclude specific tools from clearing</button>
     <div class="fb" aria-live="polite"></div>
-    <div class="fbmsg" hidden>Clearing invalidates the cached prefix at the clear point, so <code>clear_at_least</code> guarantees a minimum tokens cleared each time — otherwise you'd pay the cache-invalidation cost for trivial savings.</div>
+    <div class="fbmsg" hidden>Clearing invalidates the cached prefix at the clear point, so <code>clear_at_least</code> guarantees a minimum tokens cleared each time. Otherwise you'd pay the cache-invalidation cost for trivial savings.</div>
   </div>
 
   <div class="callout key collapsed"><div class="chead" onclick="toggleCall(this)"><span class="emoji">🔑</span> Key takeaways<span class="chev">▼</span></div>
@@ -834,7 +834,7 @@
     <li>Context editing = the scalpel; compaction = the primary blunt strategy.</li>
     <li>Tool-result clearing drops the <strong>oldest</strong> results, keeps <code class="inl">keep</code> recent ones, leaves a placeholder.</li>
     <li>Config knobs: <code class="inl">trigger</code>, <code class="inl">keep</code>, <code class="inl">clear_at_least</code>, <code class="inl">exclude_tools</code>, <code class="inl">clear_tool_inputs</code>.</li>
-    <li>Server-side — your client keeps the full history; no sync required.</li>
+    <li>Server-side: your client keeps the full history; no sync required.</li>
     <li>Clearing invalidates the cache at the clear point; <code class="inl">clear_at_least</code> makes it worthwhile.</li>
   </ul></div></div>
 </section>
@@ -843,7 +843,7 @@
 <div class="sec-divider" id="sec7">
   <span class="badge"><span class="emoji">⑦</span> Context engineering</span>
   <h2>Effective Context Engineering</h2>
-  <p>The smallest set of high-signal tokens — and the Claude Code tactics that embody it.</p>
+  <p>The smallest set of high-signal tokens, and the Claude Code tactics that embody it.</p>
 </div>
 
 <section class="lesson" id="l7" data-lesson>
@@ -868,7 +868,7 @@
 
   <h4>System prompt &amp; tool hygiene</h4>
   <ul>
-    <li><strong>Altitude.</strong> Prompts should strike the right "altitude" — avoiding both "brittle if-else hardcoded prompts" and "prompts that are overly general or falsely assume shared context." Organize with XML tags or Markdown headers, pursuing "the minimal set of information that fully outlines your expected behavior." (source: effective-context-engineering)</li>
+    <li><strong>Altitude.</strong> Prompts should strike the right "altitude," avoiding both "brittle if-else hardcoded prompts" and "prompts that are overly general or falsely assume shared context." Organize with XML tags or Markdown headers, pursuing "the minimal set of information that fully outlines your expected behavior." (source: effective-context-engineering)</li>
     <li><strong>Tool curation.</strong> Tools should be "self-contained, robust to error, and extremely clear with respect to their intended use." Avoid "bloated tool sets that cover too much functionality or lead to ambiguous decision points about which tool to use." (source: effective-context-engineering)</li>
   </ul>
 
@@ -894,13 +894,13 @@
     <div class="plab"><span class="emoji">🤔</span> Predict first</div>
     <div class="q">Your agent must occasionally consult a 10,000-line log. Do you pre-load the whole log into context, or hand the agent a path and a grep tool?</div>
     <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
-    <div class="ans"><strong>Hand it a path + retrieval tool (JIT) — or preprocess with a hook.</strong> Pre-loading 10,000 lines burns the attention budget on every turn. The docs' tactic: use hooks to grep down to just the <code class="inl">ERROR</code> lines, "reducing context from tens of thousands of tokens to hundreds." Keep lightweight identifiers; load just-in-time.</div>
+    <div class="ans"><strong>Hand it a path + retrieval tool (JIT), or preprocess with a hook.</strong> Pre-loading 10,000 lines burns the attention budget on every turn. The docs' tactic: use hooks to grep down to just the <code class="inl">ERROR</code> lines, "reducing context from tens of thousands of tokens to hundreds." Keep lightweight identifiers; load just-in-time.</div>
   </div>
 
   <div class="mcq" data-mcq data-correct="2">
     <div class="qlab"><span class="emoji">❓</span> Quick check</div>
     <div class="qtext">What is the guiding maxim of context engineering?</div>
-    <button class="opt">Always fill the window — unused capacity is wasted</button>
+    <button class="opt">Always fill the window: unused capacity is wasted</button>
     <button class="opt">Pre-load every document the agent might ever need</button>
     <button class="opt">Find the smallest possible set of high-signal tokens that maximize the desired outcome</button>
     <button class="opt">Use as many tools as possible for flexibility</button>
@@ -939,7 +939,7 @@
   </div>
 
   <h4>The budget allocation</h4>
-  <p>An architect allocates the single window across four buckets, each with its own management strategy:</p>
+  <p>Say your agent has been running for an hour: the system prompt and tool defs haven't changed, the message history keeps growing, a JIT-retrieved file just got pulled in, and <code class="inl">max_tokens</code> still needs room to breathe. Treat those as four distinct claims on the one window, not a single undifferentiated pile, and each claim gets its own management strategy:</p>
 
   <figure class="svgfig">
     <svg viewBox="0 0 700 230" role="img" aria-label="Token-budget allocation: system and tools cached, history compacted, JIT retrieval, reserved output">
@@ -956,7 +956,7 @@
       <rect x="300" y="132" width="16" height="16" rx="3" fill="#3a7d7b"/><text class="pl" x="324" y="145">JIT-retrieved data</text><text class="pd" x="324" y="160">load at runtime, then clear</text>
       <rect x="300" y="178" width="16" height="16" rx="3" fill="#3f7d4f"/><text class="pl" x="324" y="191">Reserved output + thinking</text><text class="pd" x="324" y="206">max_tokens — don't starve it</text>
     </svg>
-    <figcaption>Diagram (f): the token-budget allocation. Four claims on one window, each with a matching tactic — cache the stable parts, compact/clear the history, load retrieval just-in-time, and reserve room for output + thinking.</figcaption>
+    <figcaption>Diagram (f): the token-budget allocation. Four claims on one window, each with a matching tactic: cache the stable parts, compact/clear the history, load retrieval just-in-time, and reserve room for output + thinking.</figcaption>
   </figure>
 
   <h4>The <code class="inl">usage</code> object</h4>
@@ -970,10 +970,10 @@
 }</code></pre>
   </div>
   <ul>
-    <li><code class="inl">input_tokens</code> — "Tokens after the last cache breakpoint (not eligible for cache)."</li>
-    <li><code class="inl">output_tokens</code> — generated tokens (includes thinking tokens, billed as output).</li>
-    <li><code class="inl">cache_creation_input_tokens</code> — "Number of tokens written to cache (new entries)."</li>
-    <li><code class="inl">cache_read_input_tokens</code> — "Number of tokens retrieved from cache."</li>
+    <li><code class="inl">input_tokens</code>: "Tokens after the last cache breakpoint (not eligible for cache)."</li>
+    <li><code class="inl">output_tokens</code>: generated tokens (includes thinking tokens, billed as output).</li>
+    <li><code class="inl">cache_creation_input_tokens</code>: "Number of tokens written to cache (new entries)."</li>
+    <li><code class="inl">cache_read_input_tokens</code>: "Number of tokens retrieved from cache."</li>
   </ul>
   <p><strong>Total input</strong> = <code class="inl">cache_read_input_tokens + cache_creation_input_tokens + input_tokens</code>. Reading only <code class="inl">input_tokens</code> understates your true input. (source: prompt-caching docs)</p>
 
@@ -993,7 +993,7 @@
 &lt;system_warning&gt;Token usage: 35000/1000000; 965000 remaining&lt;/system_warning&gt;</code></pre>
   </div>
   <p>These models "track their remaining context window (that is, 'token budget') throughout a conversation." Smaller-window models get <code class="inl">200000</code> instead of <code class="inl">1000000</code>. (source: context-windows docs)</p>
-  <div class="verifynote"><span class="verify">⚠ VERIFY</span> Context awareness is listed for Sonnet 4.6, Sonnet 4.5, and Haiku 4.5 — Opus 4.8 is <strong>not</strong> listed as context-aware. Confirm whether Opus has any context-awareness signal before relying on it. (source: context-windows docs)</div>
+  <div class="verifynote"><span class="verify">⚠ VERIFY</span> Context awareness is listed for Sonnet 4.6, Sonnet 4.5, and Haiku 4.5. Opus 4.8 is <strong>not</strong> listed as context-aware. Confirm whether Opus has any context-awareness signal before relying on it. (source: context-windows docs)</div>
 
   <h4>Claude Code cost telemetry</h4>
   <p><code class="inl">/usage</code> shows session token stats and a local cost estimate; <code class="inl">/context</code> shows what's consuming the window; the status line can display context-window usage continuously. (source: code.claude.com/costs)</p>
@@ -1014,7 +1014,7 @@
     <li>Total input = <code class="inl">cache_read + cache_creation + input_tokens</code>.</li>
     <li>Pre-flight with the free <code class="inl">count_tokens</code> endpoint (an estimate; separately rate-limited).</li>
     <li>Allocate the window: cache stable parts, compact history, JIT retrieval, reserve output.</li>
-    <li>Sonnet 4.6/4.5 + Haiku 4.5 get a <code class="inl">token_budget</code> signal. <span class="verify">⚠ VERIFY</span> — Opus 4.8 not listed.</li>
+    <li>Sonnet 4.6/4.5 + Haiku 4.5 get a <code class="inl">token_budget</code> signal. <span class="verify">⚠ VERIFY</span>: Opus 4.8 not listed.</li>
   </ul></div></div>
 </section>
 
@@ -1022,7 +1022,7 @@
 <div class="sec-divider" id="sec9">
   <span class="badge"><span class="emoji">⑨</span> Reliability</span>
   <h2>Reliability Patterns Tied to Context</h2>
-  <p>External state, checkpointing, recovery, and overflow as a signal — the Domain 1 crossover.</p>
+  <p>External state, checkpointing, recovery, and overflow as a signal: the Domain 1 crossover.</p>
 </div>
 
 <section class="lesson" id="l9" data-lesson>
@@ -1039,7 +1039,7 @@
   </div>
 
   <h4>Put durable state outside the window</h4>
-  <p>The window is volatile working memory — it gets compacted, cleared, and reset. So for agents spanning multiple sessions, "design your state artifacts so that context recovery is fast when a new session starts." (source: context-windows docs) Anthropic's long-running-agent harness uses concrete artifacts:</p>
+  <p>The window is volatile working memory: it gets compacted, cleared, and reset. So for agents spanning multiple sessions, "design your state artifacts so that context recovery is fast when a new session starts." (source: context-windows docs) Anthropic's long-running-agent harness uses concrete artifacts:</p>
   <ul>
     <li>A <code class="inl">claude-progress.txt</code> log "that keeps a log of what agents have done."</li>
     <li>A structured feature-requirements JSON file with per-item completion status.</li>
@@ -1070,20 +1070,15 @@
   </figure>
 
   <h4>Checkpointing &amp; recovery</h4>
-  <ul>
-    <li><strong>Session init:</strong> "Read the git logs and progress files to get up to speed on what was recently worked on."</li>
-    <li><strong>State verification:</strong> "run a basic test on the development server to catch any undocumented bugs" before new work.</li>
-    <li><strong>Clean handoffs:</strong> "leave the environment in a clean state at the end of a session" — commit with descriptive messages and write progress summaries.</li>
-    <li><strong>Incremental progress:</strong> "work on only one feature at a time" prevents context exhaustion and incomplete implementations across sessions.</li>
-  </ul>
+  <p>The harness pattern plays out as a four-step discipline across every session boundary. It starts with <strong>session init</strong>: the agent is told to "read the git logs and progress files to get up to speed on what was recently worked on," so a fresh session doesn't waste turns reconstructing context by hand. Before it trusts that history, it moves to <strong>state verification</strong>, running "a basic test on the development server to catch any undocumented bugs" so new work doesn't build on a broken foundation. Through the session, <strong>incremental progress</strong> keeps scope narrow: working "on only one feature at a time" prevents context exhaustion and incomplete implementations from piling up across sessions. And when the session ends, <strong>clean handoffs</strong> close the loop: "leave the environment in a clean state at the end of a session" by committing with descriptive messages and writing progress summaries, so the next session's init step has something worth reading.</p>
   <p>(source: effective-harnesses-for-long-running-agents) In Claude Code, recovery from a mid-session wrong turn uses <code class="inl">/rewind</code> or double-tap Escape "to restore conversation and code to a previous checkpoint"; press Escape to stop early; use plan mode (Shift+Tab) before implementing to prevent expensive re-work. (source: code.claude.com/costs)</p>
 
   <h4>Overflow as a reliability signal</h4>
-  <p>Recall Section 2's stop reason. On 4.5+ models, hitting the limit yields <code class="inl">stop_reason: "model_context_window_exceeded"</code> "rather than a hard validation failure — handle this stop reason to trigger compaction/checkpoint-and-continue instead of crashing." (source: context-windows docs) That single branch in your loop is the difference between an agent that gracefully checkpoints and one that falls over.</p>
-  <div class="verifynote"><span class="verify">⚠ VERIFY</span> Retries / idempotency: the fetched reliability page emphasizes external-state and checkpointing, not HTTP-level retries or idempotency keys. The architect-level guidance — make tool calls idempotent and persist state externally so a retried/restarted session reconstructs from durable artifacts (git, progress file, memory tool) rather than from in-window history — is inferred from that pattern. Confirm any dedicated Anthropic idempotency-key page before asserting a specific mechanism. (source: effective-harnesses-for-long-running-agents)</div>
+  <p>Recall Section 2's stop reason. On 4.5+ models, hitting the limit yields <code class="inl">stop_reason: "model_context_window_exceeded"</code> "rather than a hard validation failure: handle this stop reason to trigger compaction/checkpoint-and-continue instead of crashing." (source: context-windows docs) That single branch in your loop is the difference between an agent that gracefully checkpoints and one that falls over.</p>
+  <div class="verifynote"><span class="verify">⚠ VERIFY</span> Retries / idempotency: the fetched reliability page emphasizes external-state and checkpointing, not HTTP-level retries or idempotency keys. The architect-level guidance (make tool calls idempotent and persist state externally so a retried/restarted session reconstructs from durable artifacts such as git, progress file, or memory tool, rather than from in-window history) is inferred from that pattern. Confirm any dedicated Anthropic idempotency-key page before asserting a specific mechanism. (source: effective-harnesses-for-long-running-agents)</div>
 
-  <h4>How prompt caching intersects (brief — full treatment in C-E4)</h4>
-  <p>Caching is "a way to manage cost of large stable context" — it reduces the per-turn cost of re-sending a stable prefix but does <strong>not</strong> reduce window occupancy. On a request the system checks whether a prompt prefix up to a cache breakpoint is already cached; if so it reuses it, otherwise it caches the prefix once the response begins. (source: prompt-caching docs)</p>
+  <h4>How prompt caching intersects (brief; full treatment in C-E4)</h4>
+  <p>Caching is "a way to manage cost of large stable context": it reduces the per-turn cost of re-sending a stable prefix but does <strong>not</strong> reduce window occupancy. On a request the system checks whether a prompt prefix up to a cache breakpoint is already cached; if so it reuses it, otherwise it caches the prefix once the response begins. (source: prompt-caching docs)</p>
   <div class="codewrap">
     <div class="clab"><span class="dot"></span> cache_control shape</div>
     <pre><code>{ "cache_control": { "type": "ephemeral", "ttl": "5m" } }</code></pre>
@@ -1094,7 +1089,7 @@
     <div class="plab"><span class="emoji">🤔</span> Predict first</div>
     <div class="q">A long agent run dies mid-task and restarts. Should it reconstruct state from its previous in-window conversation, or from somewhere else?</div>
     <button class="revealbtn" onclick="doReveal(this)">Reveal answer</button>
-    <div class="ans"><strong>From external durable artifacts.</strong> The window doesn't survive the restart. A reliable agent reads the git logs and progress files "to get up to speed," verifies state with a basic test, and continues — reconstructing from <code class="inl">claude-progress.txt</code>, the requirements JSON, git commits, and the memory tool, not from a context window that's already gone.</div>
+    <div class="ans"><strong>From external durable artifacts.</strong> The window doesn't survive the restart. A reliable agent reads the git logs and progress files "to get up to speed," verifies state with a basic test, and continues, reconstructing from <code class="inl">claude-progress.txt</code>, the requirements JSON, git commits, and the memory tool, not from a context window that's already gone.</div>
   </div>
 
   <div class="mcq" data-mcq data-correct="2">
@@ -1102,7 +1097,7 @@
     <div class="qtext">On a 4.5+ model your generation hits <code class="inl">stop_reason: "model_context_window_exceeded"</code>. The reliable response is to…</div>
     <button class="opt">Crash and surface a 500 to the user</button>
     <button class="opt">Retry the identical request unchanged</button>
-    <button class="opt">Handle it — trigger compaction or checkpoint-and-continue</button>
+    <button class="opt">Handle it: trigger compaction or checkpoint-and-continue</button>
     <button class="opt">Switch to a smaller-window model</button>
     <div class="fb" aria-live="polite"></div>
     <div class="fbmsg" hidden>It's a handleable signal, not a crash. Branch on it to compact, clear, or checkpoint-and-continue. Retrying unchanged would just hit the limit again.</div>
@@ -1120,22 +1115,22 @@
 <!-- FINAL QUIZ -->
 <div class="quizblock" data-quiz="final">
   <div class="scorebar"><h4 style="margin:0"><span class="emoji">🧠</span> Final Knowledge Check (10 questions)</h4><span class="qscore" data-score>0 / 10</span></div>
-  <p style="font-size:14px;color:var(--ink-soft);margin-top:0">Spans the whole extension, weighted toward Domain 5 mechanics with Domain 1 reliability crossover. No hints — answer, then check.</p>
+  <p style="font-size:14px;color:var(--ink-soft);margin-top:0">Spans the whole extension, weighted toward Domain 5 mechanics with Domain 1 reliability crossover. No hints: answer, then check.</p>
 
   <div class="mcq" data-mcq data-correct="2" data-inquiz>
     <div class="qlab">Q1</div><div class="qtext">The context window is best understood as…</div>
-    <button class="opt">The model's training corpus</button><button class="opt">Just the system prompt and tools</button><button class="opt">"Working memory" — all text the model can reference, including its own response</button><button class="opt">A persistent database</button>
+    <button class="opt">The model's training corpus</button><button class="opt">Just the system prompt and tools</button><button class="opt">"Working memory": all text the model can reference, including its own response</button><button class="opt">A persistent database</button>
     <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>Working memory, distinct from training data, "including the response itself."</div>
   </div>
   <div class="mcq" data-mcq data-correct="3" data-inquiz>
     <div class="qlab">Q2</div><div class="qtext">Per-turn the window grows linearly. Total tokens billed across a long session grow…</div>
-    <button class="opt">Linearly</button><button class="opt">Logarithmically</button><button class="opt">Not at all</button><button class="opt">Roughly quadratically — each turn re-sends all prior history</button>
+    <button class="opt">Linearly</button><button class="opt">Logarithmically</button><button class="opt">Not at all</button><button class="opt">Roughly quadratically: each turn re-sends all prior history</button>
     <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>Turn N re-pays for ~N turns of history; summed, billed tokens scale ~turns². Mirrors the n² attention cost.</div>
   </div>
   <div class="mcq" data-mcq data-correct="1" data-inquiz>
     <div class="qlab">Q3</div><div class="qtext">"Every new token introduced depletes this budget by some amount" refers to the…</div>
     <button class="opt">Rate-limit budget</button><button class="opt">Attention budget (cause of context rot)</button><button class="opt">max_tokens output budget</button><button class="opt">Cache budget</button>
-    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>The attention budget — depleted per token, driving context rot. Separate from raw capacity.</div>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>The attention budget, depleted per token, driving context rot. Separate from raw capacity.</div>
   </div>
   <div class="mcq" data-mcq data-correct="0" data-inquiz>
     <div class="qlab">Q4</div><div class="qtext">Compaction's default trigger is…</div>
@@ -1159,17 +1154,17 @@
   </div>
   <div class="mcq" data-mcq data-correct="0" data-inquiz>
     <div class="qlab">Q8</div><div class="qtext">A property that distinguishes context editing operationally is that it's…</div>
-    <button class="opt">Server-side — your client keeps the full history, no sync needed</button><button class="opt">Client-side only — you must mutate your own history</button><button class="opt">Only available in Claude Code</button><button class="opt">A replacement for the entire conversation</button>
+    <button class="opt">Server-side: your client keeps the full history, no sync needed</button><button class="opt">Client-side only: you must mutate your own history</button><button class="opt">Only available in Claude Code</button><button class="opt">A replacement for the entire conversation</button>
     <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>"Applied server-side before the prompt reaches Claude. Your client application maintains the full, unmodified conversation history."</div>
   </div>
   <div class="mcq" data-mcq data-correct="2" data-inquiz>
     <div class="qlab">Q9</div><div class="qtext">The guiding maxim of context engineering is to find…</div>
     <button class="opt">The largest set of tokens that fills the window</button><button class="opt">As many tools as possible</button><button class="opt">The smallest possible set of high-signal tokens that maximize the desired outcome</button><button class="opt">A fixed 50/50 split of input and output</button>
-    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>"The smallest possible set of high-signal tokens" — informative, yet tight.</div>
+    <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>"The smallest possible set of high-signal tokens": informative, yet tight.</div>
   </div>
   <div class="mcq" data-mcq data-correct="1" data-inquiz>
     <div class="qlab">Q10</div><div class="qtext">For a multi-session agent, durable state should live…</div>
-    <button class="opt">In the context window, which persists between sessions</button><button class="opt">Outside the window — progress logs, requirements JSON, git commits, memory tool</button><button class="opt">Only in the system prompt</button><button class="opt">Nowhere — agents are stateless by design</button>
+    <button class="opt">In the context window, which persists between sessions</button><button class="opt">Outside the window: progress logs, requirements JSON, git commits, memory tool</button><button class="opt">Only in the system prompt</button><button class="opt">Nowhere: agents are stateless by design</button>
     <div class="fb" aria-live="polite"></div><div class="fbmsg" hidden>The window is volatile. Design external artifacts so "context recovery is fast when a new session starts."</div>
   </div>
   <div class="resultbox" data-result></div>
@@ -1177,7 +1172,7 @@
 
 <!-- WHAT'S NEXT -->
 <div class="nextbox">
-  <strong>➡️ What's next.</strong> This is extension <strong>C-E2</strong>. The next extension, <strong>C-E3 — "MCP at a Builder Level"</strong>, drops below the "USB-C for AI" product framing into the Model Context Protocol's actual mechanics — servers, transports, and the tool/resource handshake that feeds this window. Continue to <a href="mcp-at-a-builder-level.html">MCP at a Builder Level →</a> <span style="font-size:13px;color:var(--ink-soft)">(that file is <strong>not built yet</strong> — this forward link may 404 until it lands.)</span>
+  <strong>➡️ What's next.</strong> This is extension <strong>C-E2</strong>. The next extension, <strong>C-E3: "MCP at a Builder Level,"</strong> drops below the "USB-C for AI" product framing into the Model Context Protocol's actual mechanics: servers, transports, and the tool/resource handshake that feeds this window. Continue to <a href="mcp-at-a-builder-level.html">MCP at a Builder Level →</a> <span style="font-size:13px;color:var(--ink-soft)">(that file is <strong>not built yet</strong>, so this forward link may 404 until it lands.)</span>
 </div>
 
 <!-- SOURCES -->
@@ -1187,24 +1182,24 @@
   <p>Every substantive claim in this extension traces to the official Anthropic sources below (the source manifest from the grounding citations file). No facts beyond these sources were introduced; the one author analogy (the cutting-board / pantry image) is labeled inline as "Analogy, not a product fact," and version-sensitive facts carry inline <span class="verify">⚠ VERIFY</span> notes.</p>
   <div class="sources">
     <ol>
-      <li>Context windows — <a href="https://platform.claude.com/docs/en/build-with-claude/context-windows">platform.claude.com/docs/en/build-with-claude/context-windows</a></li>
-      <li>Models overview — <a href="https://platform.claude.com/docs/en/about-claude/models/overview">platform.claude.com/docs/en/about-claude/models/overview</a></li>
-      <li>Effective context engineering for AI agents — <a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents">anthropic.com/engineering/effective-context-engineering-for-ai-agents</a></li>
-      <li>Compaction — <a href="https://platform.claude.com/docs/en/build-with-claude/compaction">platform.claude.com/docs/en/build-with-claude/compaction</a></li>
-      <li>Context editing — <a href="https://platform.claude.com/docs/en/build-with-claude/context-editing">platform.claude.com/docs/en/build-with-claude/context-editing</a></li>
-      <li>Token counting — <a href="https://platform.claude.com/docs/en/build-with-claude/token-counting">platform.claude.com/docs/en/build-with-claude/token-counting</a></li>
-      <li>Prompt caching — <a href="https://platform.claude.com/docs/en/build-with-claude/prompt-caching">platform.claude.com/docs/en/build-with-claude/prompt-caching</a></li>
-      <li>Effective harnesses for long-running agents — <a href="https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents">anthropic.com/engineering/effective-harnesses-for-long-running-agents</a></li>
-      <li>Claude Code costs — <a href="https://code.claude.com/docs/en/costs">code.claude.com/docs/en/costs</a></li>
+      <li>Context windows: <a href="https://platform.claude.com/docs/en/build-with-claude/context-windows">platform.claude.com/docs/en/build-with-claude/context-windows</a></li>
+      <li>Models overview: <a href="https://platform.claude.com/docs/en/about-claude/models/overview">platform.claude.com/docs/en/about-claude/models/overview</a></li>
+      <li>Effective context engineering for AI agents: <a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents">anthropic.com/engineering/effective-context-engineering-for-ai-agents</a></li>
+      <li>Compaction: <a href="https://platform.claude.com/docs/en/build-with-claude/compaction">platform.claude.com/docs/en/build-with-claude/compaction</a></li>
+      <li>Context editing: <a href="https://platform.claude.com/docs/en/build-with-claude/context-editing">platform.claude.com/docs/en/build-with-claude/context-editing</a></li>
+      <li>Token counting: <a href="https://platform.claude.com/docs/en/build-with-claude/token-counting">platform.claude.com/docs/en/build-with-claude/token-counting</a></li>
+      <li>Prompt caching: <a href="https://platform.claude.com/docs/en/build-with-claude/prompt-caching">platform.claude.com/docs/en/build-with-claude/prompt-caching</a></li>
+      <li>Effective harnesses for long-running agents: <a href="https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents">anthropic.com/engineering/effective-harnesses-for-long-running-agents</a></li>
+      <li>Claude Code costs: <a href="https://code.claude.com/docs/en/costs">code.claude.com/docs/en/costs</a></li>
     </ol>
   </div>
   <div class="examnote">
-    <b>📌 [VERIFY] flags preserved from the source.</b> Version-sensitive facts surfaced inline in this lesson: (1) model lineup &amp; context sizes; (2) whether a 1M beta header is still required; (3) compaction beta header <code class="inl">compact-2026-01-12</code> / edit type <code class="inl">compact_20260112</code> and supported-model set; (4) context-editing beta header <code class="inl">context-management-2025-06-27</code> / strategy strings; (5) the <code class="inl">applied_edits</code> response field names; (6) Claude Code's auto-compact trigger percentage (~83.5%/~167K — unverified); (7) the MRCR v2 8-needle stat (76% vs 18.5%); (8) Opus 4.8 not listed as context-aware; (9) prompt-caching prices &amp; minimum-prefix sizes. Re-verify each against the live docs at build/publish time.
+    <b>📌 [VERIFY] flags preserved from the source.</b> Version-sensitive facts surfaced inline in this lesson: (1) model lineup &amp; context sizes; (2) whether a 1M beta header is still required; (3) compaction beta header <code class="inl">compact-2026-01-12</code> / edit type <code class="inl">compact_20260112</code> and supported-model set; (4) context-editing beta header <code class="inl">context-management-2025-06-27</code> / strategy strings; (5) the <code class="inl">applied_edits</code> response field names; (6) Claude Code's auto-compact trigger percentage (~83.5%/~167K, unverified); (7) the MRCR v2 8-needle stat (76% vs 18.5%); (8) Opus 4.8 not listed as context-aware; (9) prompt-caching prices &amp; minimum-prefix sizes. Re-verify each against the live docs at build/publish time.
   </div>
 </section>
 
 <footer>
-  <p><span class="sourcebadge"><span class="emoji">📄</span> Extension lesson · built faithfully from the source-of-truth citations file — every claim traces to official Anthropic sources. No external facts introduced; [VERIFY] flags preserved.</span></p>
+  <p><span class="sourcebadge"><span class="emoji">📄</span> Extension lesson · built faithfully from the source-of-truth citations file: every claim traces to official Anthropic sources. No external facts introduced; [VERIFY] flags preserved.</span></p>
   <p style="margin-top:14px">Context Management &amp; Reliability · CCA-F extension (C-E2) · <a href="../claude-101.html">← Base course</a> · <a href="tool-use-agent-loop.html">← C-E1: Tool-Use Loop</a> · <a href="mcp-at-a-builder-level.html">Next: MCP at a Builder Level →</a> · <a href="#top">Back to top ↑</a></p>
 </footer>
 

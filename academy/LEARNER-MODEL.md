@@ -36,33 +36,33 @@ It answers, at any moment:
 ### Domain 1 — Agentic Architecture & Orchestration (27%)
 | Sub-domain | Concept | Mastery | Last checked | Next review due | Evidence / note |
 |---|---|---|---|---|---|
-| D1.1 | Agentic loop fundamentals (`stop_reason`, stateless model) | ⚪ | — | — | |
-| D1.2 | `AgentDefinition` + least privilege | ⚪ | — | — | |
-| D1.3 | Hub-and-spoke / coordinator responsibilities | ⚪ | — | — | |
-| D1.4 | `Task` tool + explicit context passing + parallel spawn | ⚪ | — | — | |
-| D1.5 | Hooks (Pre/PostToolUse; deterministic vs probabilistic) ★ | ⚪ | — | — | |
-| D1.6 | Escalation patterns + structured handoff ★ | ⚪ | — | — | |
-| D1.7 | Session mgmt (`--resume`, `fork_session`) ★ | ⚪ | — | — | |
-| D1.8 | Task decomposition (fixed vs dynamic; multi-pass) | ⚪ | — | — | |
+| D1.1 | Agentic loop fundamentals (`stop_reason`, stateless model) | 🔴 | 2026-06-30 | Session 10 | CRITICAL: S9 MCQ Q2 — selected anti-pattern 3 (text-content check) as the CORRECT answer. Not just missing it — actively believes it's right. Re-flash must surface and correct this specifically. |
+| D1.2 | `AgentDefinition` + least privilege | ⚪ | — | — | Not yet drilled |
+| D1.3 | Hub-and-spoke / coordinator responsibilities | 🟢 | 2026-06-30 | Session 12-13 | 2nd clean recall S7: context isolation, clean context window vocab. Next review ~S12. |
+| D1.4 | `Task` tool + explicit context passing + parallel spawn | 🟢 | 2026-06-30 | Session 12-13 | 2nd clean recall S7: 5 explicit context elements named correctly + failure consequences. Next review ~S12. |
+| D1.5 | Hooks (Pre/PostToolUse; deterministic vs probabilistic) ★ | 🟢 | 2026-06-30 | Session 12-13 | 2nd clean recall S7: deterministic vs probabilistic unprompted; financial/legal rule correct. Next review ~S12. |
+| D1.6 | Escalation patterns + structured handoff ★ | 🟡 | 2026-06-30 | Session 10 | First check S9: 3 patterns + unreliable triggers correct; escalation summary incomplete (missing customer_id, root_cause, actions_taken, recommended_action, escalation_reason). |
+| D1.7 | Session mgmt (`--resume`, `fork_session`) ★ | 🟡 | 2026-06-30 | Session 10 | First clean check S8: resume/fork/fresh decision rules correct; self-extended concept (each fork independently subject to resume-vs-fresh decision). |
+| D1.8 | Task decomposition (fixed vs dynamic; multi-pass) | 🟡 | 2026-06-30 | Session 10 | First check S8/S9: fixed vs dynamic correct; multi-pass approach correct; named "attention dilution" missed in MCQ (picked imprecise answer C over precise answer B). |
 
 ### Domain 3 — Claude Code Configuration & Workflows (20%)
 | Sub-domain | Concept | Mastery | Last checked | Next review due | Evidence / note |
 |---|---|---|---|---|---|
-| D3.1 | CLAUDE.md hierarchy + `@path` imports | ⚪ | — | — | |
+| D3.1 | CLAUDE.md hierarchy + `@path` imports | 🔴 | 2026-06-27 | Session 2 | Knows global+project levels; traversal, @path, rules/ unknown |
 | D3.2 | Path-specific rules (`.claude/rules/`, glob `paths:`) | ⚪ | — | — | |
 | D3.3 | Skills frontmatter (`context:fork`, `allowed-tools`, `argument-hint`) ★ | ⚪ | — | — | Watch the `allowed-tools` = pre-approve (not restrict) trap |
 | D3.4 | Planning mode vs direct + Explore subagent | ⚪ | — | — | |
 | D3.5 | `/compact` and `/memory` | ⚪ | — | — | |
-| D3.6 | CI/CD: `-p` / `--bare` / `--output-format json` ★ | ⚪ | — | — | Watch the `-p` vs `--bare` trap |
+| D3.6 | CI/CD: `-p` / `--bare` / `--output-format json` ★ | 🔴 | 2026-06-27 | Session 14 | "Headless" concept unknown — stated directly |
 
 ### Domain 4 — Prompt Engineering & Structured Output (20%)
 | Sub-domain | Concept | Mastery | Last checked | Next review due | Evidence / note |
 |---|---|---|---|---|---|
-| D4.1 | Few-shot prompting (5 types) | ⚪ | — | — | |
+| D4.1 | Few-shot prompting (5 types) | 🟡 | 2026-06-27 | Session 3 | Correct concept; "demonstrates a pattern" vs "describes in words" distinction not articulated |
 | D4.2 | Explicit criteria vs vague instructions | ⚪ | — | — | |
 | D4.3 | Prompt chaining (attention dilution) | ⚪ | — | — | |
 | D4.4 | The "interview" pattern | ⚪ | — | — | |
-| D4.5 | `tool_use` + JSON Schema (syntactic vs semantic) | ⚪ | — | — | |
+| D4.5 | `tool_use` + JSON Schema (syntactic vs semantic) | 🔴 | 2026-06-27 | Session 2 | stop_reason cycle unknown; answered from user-facing perspective, not API layer |
 | D4.6 | `tool_choice` (auto / any / forced) | ⚪ | — | — | |
 | D4.7 | Syntax vs semantic errors | ⚪ | — | — | |
 | D4.8 | Validation, retry-with-feedback, self-correction ★ | ⚪ | — | — | |
@@ -72,8 +72,8 @@ It answers, at any moment:
 ### Domain 2 — Tool Design & MCP Integration (18%)
 | Sub-domain | Concept | Mastery | Last checked | Next review due | Evidence / note |
 |---|---|---|---|---|---|
-| D2.1 | Tool description as the selection mechanism ★ | ⚪ | — | — | |
-| D2.2 | MCP fundamentals (tools / resources / prompts) | ⚪ | — | — | |
+| D2.1 | Tool description as the selection mechanism ★ | 🔴 | 2026-06-27 | Session 2 | Core selection role understood; misconception: treats description as lazy-load gating, not always-present context |
+| D2.2 | MCP fundamentals (tools / resources / prompts) | 🔴 | 2026-06-27 | Session 2 | USB analogy correct; three primitives, JSON-RPC, server config unknown |
 | D2.3 | MCP server config (`.mcp.json` vs `~/.claude.json`) | ⚪ | — | — | |
 | D2.4 | `isError` structured errors (+ JSON-RPC vs tool-exec channel) ★ | ⚪ | — | — | Watch the two-error-channel trap |
 | D2.5 | Tool allocation + `tool_choice` (too-many-tools problem) ★ | ⚪ | — | — | |
@@ -82,8 +82,8 @@ It answers, at any moment:
 ### Domain 5 — Context Management & Reliability (15%)
 | Sub-domain | Concept | Mastery | Last checked | Next review due | Evidence / note |
 |---|---|---|---|---|---|
-| D5.1 | Context window risks (lost-in-the-middle, accumulation) | ⚪ | — | — | |
-| D5.2 | Fact extraction + tool-result trimming + position-aware input | ⚪ | — | — | |
+| D5.1 | Context window risks (lost-in-the-middle, accumulation) | 🔴 | 2026-06-27 | Session 2 | Symptom (things get buried) right; positional-bias mechanism wrong; described as temporal drift not positional |
+| D5.2 | Fact extraction + tool-result trimming + position-aware input | ⚪ | — | — | Note: prompt caching also unknown (assessed indirectly via Q10) |
 | D5.3 | Scratchpad files + structured state persistence ★ | ⚪ | — | — | |
 | D5.4 | Confidence calibration + stratified sampling ★ | ⚪ | — | — | |
 | D5.5 | Provenance preservation + conflicting data ★ | ⚪ | — | — | |
@@ -97,7 +97,20 @@ It answers, at any moment:
 
 | Priority | Concept | State | Due | Why it's queued |
 |---|---|---|---|---|
-| — | *(empty — program not started)* | — | — | Populate after the first genuine comprehension check |
+| 1 | D1.1 — Anti-patterns (CRITICAL: text-content check believed to be correct) | 🔴 | Session 10 | S9 Q2: selected anti-pattern 3 as the right answer — believes text-content check is valid. Must correct the misconception, not just re-surface the list. |
+| 2 | D1.6 — Escalation patterns + full handoff payload fields | 🟡 | Session 10 | First check S9 — missing 5 of 9 handoff fields in scenario |
+| 3 | D1.7 — Session mgmt: resume vs fork vs fresh decision rules | 🟡 | Session 10 | First clean check S8 — re-flash to build toward 🟢 |
+| 4 | D1.8 — Attention dilution (precise term) + multi-pass pattern | 🟡 | Session 10 | First check S8/S9 — missed "attention dilution" as the named concept in MCQ |
+| 5 | D3.1 — CLAUDE.md hierarchy + traversal | 🔴 | Session 10 | Teaching now in Phase 2 |
+| 6 | D1.3 — Context isolation | 🟢 | Session 12-13 | 2nd clean recall — next review in ~3 sessions |
+| 7 | D1.4 — Task tool + explicit context | 🟢 | Session 12-13 | 2nd clean recall — next review in ~3 sessions |
+| 8 | D1.5 — Hooks: deterministic vs probabilistic | 🟢 | Session 12-13 | 2nd clean recall — next review in ~3 sessions |
+| 9 | D2.1 — Tool description as selection mechanism | 🔴 | Session 22 | Lazy-loading misconception — teach when D2 block opens |
+| 10 | D2.2 — MCP fundamentals (3 primitives) | 🔴 | Session 22 | Surface only; teach from scratch in D2 block |
+| 11 | D4.1 — Few-shot: pattern demonstration vs description | 🟡 | Session 16 | Right concept; mechanism not articulated — address in D4 block |
+| 12 | D4.5 — `stop_reason` / tool_use API cycle (D4 angle) | 🔴 | Session 17 | Unknown from D4 angle — address in D4 block |
+| 13 | D5.1 — Lost-in-middle mechanism (positional bias) | 🔴 | Session 27 | Right symptom, wrong mechanism — teach in D5 block |
+| 14 | D3.6 — CI/CD headless / `-p` flag | 🔴 | Session 14 | Fully unknown — teach from scratch in D3 block |
 
 ---
 
@@ -105,7 +118,9 @@ It answers, at any moment:
 
 > Concepts Ram reliably nails (🟢 / ✅). Use them as the *known* side of a new analogy — bridge from a strength to a new concept.
 
-- *(none recorded yet)*
+- D1.3 — Context isolation / clean context window (🟡 — 1 clean recall S5; 1 more needed)
+- D1.4 — Task tool + parallel spawn (🟡 — first check solid)
+- D1.5 — Hooks: deterministic vs probabilistic (🟡 — first check solid; key distinction clear)
 
 ---
 
@@ -130,8 +145,14 @@ It answers, at any moment:
 
 > Durable observations about HOW Ram learns — which analogy domains land, recurring confusions, pacing, and where his real Infosys/solution-architect experience can be used as an anchor. Each entry: date · observation · how to apply it next time.
 
-- *(none recorded yet — add the first entry after Session 1's baseline diagnostic)*
+- **2026-06-27 — Systems-first thinker.** Ram's D1 answers described architecture (what talks to what, who persists, who is responsible) before mechanics. He'll absorb "why does this design exist" before "what is the syntax." Lead with design intent, not API detail.
+- **2026-06-27 — Self-generated analogies.** He independently reached the USB analogy for MCP — the canonical one. When he reaches for an analogy himself, affirm it and build on it rather than replacing it.
+- **2026-06-27 — Clear metacognition on gaps.** Said "I do not know" directly for headless and prompt caching rather than guessing. Trustworthy signal — his 🟡s are genuine partial knowledge, not bluffing.
+- **2026-06-27 — Gap pattern: conceptual vs. technical.** Consistently strong on the "what it is and why" layer; consistently missing the "how the API actually signals it" layer (stop_reason, tool_use content blocks, cache_control fields). Bridge from his concept to the API shape. **UPDATE (S2–S4):** Technical layer is absorbing quickly once taught — stop_reason retained cleanly across two sessions same day. Gap pattern may narrow faster than expected.
+- **2026-06-27 — Responds well to "what breaks if..."** His best answers came from failure-mode questions (stateless context drop, Analyst with no facts). Use this pattern: teach the mechanism, then ask what breaks if it's missing. He reasons from consequences, not from definitions.
 - **Known context to leverage:** Ram is a Solution Architect at Infosys (Claude Partner) with hands-on agent/Claude Code experience. Prefer enterprise-delivery and systems-architecture analogies over consumer ones; he can reason from real production trade-offs.
+- **2026-06-30 — Precision gap under exam pressure.** In MCQ format with multiple plausible answers, Ram picks directionally correct options that lack the precise exam term (e.g. "too much context" instead of "attention dilution"; text-content check as valid instead of anti-pattern). Teach the exact vocabulary each session. In MCQ format: when two answers look similar, the exam rewards the one with the precise named concept.
+- **2026-06-30 — Dangerous misconception pattern on D1.1.** Anti-pattern 3 (text-content check as completion signal) was not only forgotten but actively selected as the CORRECT answer in a scenario. This is a belief-level error, not a recall error. Re-exposure alone won't fix it — must explicitly contrast: "this sounds reasonable but is exactly the anti-pattern." Use the contrast frame.
 
 ---
 
@@ -141,8 +162,8 @@ It answers, at any moment:
 
 | Domain | Weight | Concepts ✅/🟢 | Concepts 🟡 | Concepts 🔴 | Untested | Read |
 |---|---|---|---|---|---|---|
-| D1 | 27% | 0 | 0 | 0 | 8 | Not started |
-| D2 | 18% | 0 | 0 | 0 | 6 | Not started |
-| D3 | 20% | 0 | 0 | 0 | 6 | Not started |
-| D4 | 20% | 0 | 0 | 0 | 10 | Not started |
-| D5 | 15% | 0 | 0 | 0 | 5 | Not started |
+| D1 | 27% | 3 (D1.3/4/5 🟢) | 3 (D1.6/7/8 🟡) | 1 (D1.1 🔴) | 1 (D1.2) | After S7–S9: D1 fully taught. D1.1 critical gap — text-content anti-pattern believed correct. D1.2 not yet drilled. |
+| D2 | 18% | 0 | 0 | 2 | 4 | Baseline: 🔴 — USB/MCP surface only; lazy-load misconception on D2.1 |
+| D3 | 20% | 0 | 0 | 2 | 4 | Phase 2 starting Session 10 — CLAUDE.md hierarchy unknown beyond surface |
+| D4 | 20% | 0 | 1 | 1 | 8 | Baseline: 🔴 — few-shot partial; stop_reason cycle unknown |
+| D5 | 15% | 0 | 0 | 1 | 4 | Baseline: 🔴 — symptom right, mechanism wrong; caching unknown |

@@ -1,18 +1,18 @@
 # CCA-F Academy — Session Progress Tracker
 
 **Learner:** Ram
-**Program start:** (fill in on Session 1)
-**Target exam date:** (fill in when booked)
+**Program start:** 2026-06-27
+**Target exam date:** 2026-08-22 (provisional — reassess after Session 9 drill)
 
 ---
 
 ## Current Status
 
 ```
-Current session:  1 (Orientation)
-Current phase:    0 — Pre-start
-Overall progress: 0 / 37 sessions complete
-Active gaps:      None identified yet (populate after Session 9 comprehension check)
+Current session:  10 (CLAUDE.md Hierarchy + @path Imports)
+Current phase:    2 — Domain 3: Claude Code Configuration
+Overall progress: 9 / 37 sessions complete
+Active gaps:      D1.1 anti-patterns (🔴 — third pattern missed again S9 Q2), D3.6 (headless/CI), D4.5 (stop_reason/tool_use API), D5.1 (lost-in-middle mechanism), D5 (prompt caching)
 Mock exam score:  Not yet taken
 Go/No-Go:         Not yet decided
 ```
@@ -22,13 +22,13 @@ Go/No-Go:         Not yet decided
 ## Completion Health (update every session — solo-learner dropout is the #1 risk)
 
 ```
-Exam booking target:   (set provisionally at Session 1)
-Last session date:     (none yet)
-Days since last:        —
-Sessions this week:     0
-Current streak:          0
-Next session booked:   (set at each sign-off)
-Cadence target:        ~2 sessions/week → ~5 weeks (or compressed via the adaptive path)
+Exam booking target:   2026-08-22 (provisional)
+Last session date:     2026-06-30
+Days since last:        0
+Sessions this week:     9 (Sessions 1–6 on day 1, Sessions 7–9 on day 2 — exceptional pace)
+Current streak:          2 days
+Next session booked:   Session 10 — CLAUDE.md Hierarchy + @path Imports (Phase 2 start)
+Cadence target:        ~1 session/weekday → ~8 weeks; at current pace could compress to 3 weeks
 ```
 
 ### 5-Week Reference Calendar (target dates; adjust to actual start)
@@ -50,11 +50,22 @@ Cadence target:        ~2 sessions/week → ~5 weeks (or compressed via the adap
 ## Resume Bookmark (read FIRST on resume; written at every sign-off)
 
 ```
-Last sign-off:     (none yet — program not started)
-Resume at:         Session 1 — Orientation + Baseline Diagnostic
+Last sign-off:     2026-06-30
+Resume at:         Session 10 — CLAUDE.md Hierarchy + @path Imports (D3.1)
 Mid-concept?:      No — clean session boundary
-Reinforcement due: (none yet — see LEARNER-MODEL.md after the first session)
-Note to professor: Fresh start. Run the cold baseline diagnostic.
+Reinforcement due: D1.1 🔴 (third anti-pattern STILL missed — text-content check selected as CORRECT answer in S9 Q2; MUST re-flash S10 open)
+                   D1.6 🟡 (first check S9 — framework solid, escalation summary gaps; re-flash S10)
+                   D1.7 🟡 (first check S8 — re-flash S10)
+                   D1.8 🟡 (first check S8 — re-flash S10)
+Note to professor: Sessions 7–9 complete 2026-06-30 (day 2 of program).
+                   D1.1 CRITICAL: Ram selected anti-pattern 3 (text-content check) as the CORRECT answer in S9 MCQ Q2.
+                   This is a dangerous gap — not "don't know" but "believes wrong thing is right."
+                   Re-flash must surface this specifically. Do not let it slide.
+                   D1.3, D1.4, D1.5 all confirmed 🟢 (2nd clean recalls S7).
+                   D1.6 🟡: escalation pattern logic correct; escalation summary fields incomplete in scenario.
+                   D1.7 🟡: resume/fork/fresh decision rules correct and self-extended.
+                   D1.8 🟡: fixed vs dynamic decomposition and attention dilution solid; "attention dilution" term missed in MCQ.
+                   Phase 2 begins Session 10. Open with SR flash (D1.1 highest priority).
 ```
 
 > On resume ("Professor, I'm back"), read this block + `LEARNER-MODEL.md`, open with a Spaced-Repetition Flash drawn from the Reinforcement Queue, then continue at **Resume at**. The sign-off ritual that writes this block is Session Type 6 in `ENGAGEMENT-PROTOCOL.md`.
@@ -73,7 +84,7 @@ Status codes: `[✅]` = complete · `[🔄]` = in progress · `[⬜]` = not star
 
 | # | Session | Status | Notes |
 |---|---|---|---|
-| 1 | Orientation + Baseline Diagnostic | ⬜ | Cold diagnostic will establish baseline |
+| 1 | Orientation + Baseline Diagnostic | ✅ | 10-Q cold diagnostic complete (2026-06-27). D1 🟡, D2–D5 🔴. Provisional exam: 2026-08-22. |
 
 ---
 
@@ -81,14 +92,14 @@ Status codes: `[✅]` = complete · `[🔄]` = in progress · `[⬜]` = not star
 
 | # | Session | Status | Notes |
 |---|---|---|---|
-| 2 | Agentic Loop Fundamentals | ⬜ | |
-| 3 | The Agentic Loop as a Pattern | ⬜ | |
-| 4 | AgentDefinition + Hub-and-Spoke | ⬜ | |
-| 5 | Task Tool + Explicit Context Passing | ⬜ | |
-| 6 | ★ Hooks: PreToolUse/PostToolUse | ⬜ | Gap concept |
-| 7 | ★ Escalation Patterns + Handoffs | ⬜ | Gap concept |
-| 8 | ★ Session Mgmt + Task Decomposition | ⬜ | Gap concept |
-| 9 | D1 Comprehension Check + Scenario Drill | ⬜ | |
+| 2 | Agentic Loop Fundamentals | ✅ | stop_reason, stateless model, tool_use/end_turn cycle — D1.1 strong in-session |
+| 3 | The Agentic Loop as a Pattern | ✅ | Anti-patterns nailed in-session; missed on SR flash S5 → D1.1 back to 🔴 |
+| 4 | AgentDefinition + Hub-and-Spoke | ✅ | Least privilege instinct correct; context isolation confirmed S5 flash; D1.3 🟡 |
+| 5 | Task Tool + Explicit Context Passing | ✅ | Parallel spawning, context discipline, token cost trade-off — D1.4 🟡 |
+| 6 | ★ Hooks: PreToolUse/PostToolUse | ✅ | Deterministic vs probabilistic distinction confirmed; discount/financial example correct — D1.5 🟡 |
+| 7 | ★ Escalation Patterns + Handoffs | ✅ | 3 patterns taught; structured handoff payload; unreliable triggers. D1.6 🟡 |
+| 8 | ★ Session Mgmt + Task Decomposition | ✅ | resume/fork/fresh; fixed vs dynamic; multi-pass + attention dilution. D1.7/D1.8 🟡 |
+| 9 | D1 Comprehension Check + Scenario Drill | ✅ | 3/3 comprehension; 4/5 MCQs. D1.1 🔴 persists (text-content anti-pattern selected as correct in Q2) |
 
 ---
 
@@ -178,11 +189,11 @@ Status codes: `[✅]` = complete · `[🔄]` = in progress · `[⬜]` = not star
 
 | Domain | Baseline read | Notes |
 |---|---|---|
-| D1 — Agentic Architecture | | |
-| D3 — Claude Code Config | | |
-| D4 — Prompt Engineering | | |
-| D2 — Tool Design & MCP | | |
-| D5 — Context Management | | |
+| D1 — Agentic Architecture | 🟡 Developing | Loop and orchestrator/subagent conceptually solid; stop_reason technical layer missing |
+| D2 — Tool Design & MCP | 🔴 Weak | USB/MCP analogy right; tool description has lazy-loading misconception; primitives unknown |
+| D3 — Claude Code Config | 🔴 Weak | CLAUDE.md surface-level; headless/CI mode unknown |
+| D4 — Prompt Engineering | 🔴 Weak | Few-shot partial; stop_reason / tool_use API cycle unknown |
+| D5 — Context Management | 🔴 Weak | Lost-in-middle symptom right, mechanism wrong; prompt caching unknown |
 
 ---
 
