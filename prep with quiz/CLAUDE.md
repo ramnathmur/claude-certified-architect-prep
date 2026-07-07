@@ -3,7 +3,8 @@
 **Owner:** Ram
 **Location:** `C:\Claude Cowork\Projects\Claude Certified Architect Prep\prep with quiz\`
 **Status:** Active
-**Blueprint version:** 2.0 | 2026-07-06 (v1 in git history)
+**Blueprint version:** 2.1 | 2026-07-07 (v2.0, v1.0 in git history)
+**Changelog v2→v2.1:** added a required per-block correct-answer-position self-check to Step 4 — closes Open Findings Ledger item PB-02 (see GENERATION-INTELLIGENCE.md), where a block previously shipped all 15 questions with the correct answer at the same option letter, undetected by its own QA. Part of the session-2 self-improvement mechanism (Open Findings Ledger + Pending Corpus Decisions) that promotes generation-quality findings into binding blueprint/orchestration-prompt rules instead of leaving them as unread prose.
 **Changelog v1→v2:** re-grounded on the official Exam Guide PDF; 60-question scenario-block format (matching the real exam) with a 30-question drill option; per-option rationale system (hardened learning feedback — Ram's design decision: this is a learning tool with full per-question feedback, NOT an exam-conditions simulator); passive timing capture; results-JSON export replacing self-reported scores; estimated-flag integrity rules; practice-test dedup ledger.
 
 ---
@@ -73,6 +74,7 @@ Each question must:
   - `whyRight` for the correct option — why it is correct, citing corpus file + section (e.g., "D2 §2.9")
   - `whyWrong` for EACH distractor — what misconception it encodes and why it fails here (cite the corpus ❌ pattern where one exists)
   - Writing four rationales is also a quality gate: a distractor whose whyWrong cannot name a real misconception must be replaced before the exam ships
+- **Report the correct-answer-index distribution** (count of A/B/C/D) for every scenario block before declaring it done — a required self-check, not an assumed practice. A block whose questions cluster heavily on one letter (e.g., all 15 at option A) must be reshuffled — options only, content and rationales unchanged — before the exam ships. This check is required precisely because it was skipped once and shipped undetected.
 
 ### Step 5 — Build the HTML file
 Use the **AI Oracle Quiz v2 design system** (reference: `C:\Claude Cowork\Projects\AI Oracle\quizzes\AI-Oracle_Quiz_v2.html`).

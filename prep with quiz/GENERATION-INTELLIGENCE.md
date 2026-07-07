@@ -81,6 +81,41 @@ D1 §1.3, §1.10, §1.18 · D2 §2.1, §2.4 · D3 §3.12 · D4 §4.3, §4.4, §4
 ## Rationale Quality Notes
 - All 120 questions across Exam 2 + Exam 3 carry whyRight + 3 whyWrong with corpus citations; no question has failed the "distractor must name a documented misconception" gate.
 
+## Open Findings Ledger
+<!-- Structured, gate-checked. Every PROCESS_BUG and CORPUS_GAP finding from any
+     Session Reflections entry gets a row here on the session it's first noticed,
+     and stays until its Status is FIXED, DEFERRED — [reason], or (CORPUS_GAP only)
+     VERIFIED-STILL-OPEN. This table, not prose in Session Reflections, is what the
+     Phase 5a.5 promotion gate checks every session — see CCA-Orchestration-
+     Prompt_v7.md Phase 5a.5 step vii. Status must be re-verified against the real
+     target file each session, never copied forward from the prior session's row. -->
+
+| ID | Type | First noted | Finding (one line) | Target file(s) | Status | Notes |
+|---|---|---|---|---|---|---|
+| PB-01 | PROCESS_BUG | S2 | Nested background-agent parent stalls (~250K tokens/stall) waiting on children with no auto-wake | Orchestration Phase 4 | FIXED (v7, Phase 4.7) | Documented as a known architecture property with an explicit stall-watch instruction, not left as a surprise to rediscover |
+| PB-02 | PROCESS_BUG | S2 | Block-level correct-answer-position-distribution self-check not enforced in blueprint/verification — one exam block shipped all 15 questions at option A | CLAUDE.md Step 4; Orchestration Phase 4.e + self_verification | FIXED (CLAUDE.md v2.1; Orchestration v7) | |
+| PB-03 | PROCESS_BUG | S2 | Coordinator's own dedup-verification regex silently dropped untagged stems (undercounted, caught only by a count mismatch) | Orchestration Phase 2.d | FIXED (v7) | Standing count-mismatch sanity check added |
+| PB-04 | PROCESS_BUG | S2 | Sibling sub-agents cannot address each other directly for cross-block name-collision checks | Orchestration Phase 4.6 | FIXED (v7) | Documented as a known limitation; coordinator retains cross-block collision-checking responsibility |
+| PB-05 | PROCESS_BUG | S1 | Block authors not given scenario-specific practice stems + explicit "different failure mode, not just wording" instruction | Orchestration Phase 4.6 | FIXED (v7) | Folded into the new delegation task-spec step |
+| PB-06 | PROCESS_BUG | S2 | Corpus-freshness tally method (ground-truth JSON citation extraction) was a norm only in this file's prose, not bound in the orchestration prompt | Orchestration Phase 5a.5 | FIXED (v7) | |
+| CG-01 | CORPUS_GAP | S1 | No Key Distinction covered built-in-tool selection for the Developer Productivity scenario | CCA-Prep_Key-Distinctions_v1.md | FIXED (v1.1, 2026-07-06, §Built-in Tools #26–29) | Independently re-verified against the live file on 2026-07-07 — confirmed on disk. Session 2 mis-reported this as still open one full session after it had already landed; this is the exact "logged-and-forgotten" failure this ledger exists to prevent. |
+| CG-02 | CORPUS_GAP | audit | Every "25 high-yield exam traps" reference (CLAUDE.md, CCA-Prep_Corpus-Index_v2.md, all orchestration-prompt versions) is stale — the file now has 29 entries | CLAUDE.md; CCA-Prep_Corpus-Index_v2.md; CCA-Orchestration-Prompt (current version) | PENDING — see Pending Corpus Decisions | Corpus-content edit, gated to Ram's explicit decision per the autonomous-vs-gated rule below; not auto-applied even though the fix is mechanical |
+
+**Coverage:** 6 of 8 rows FIXED this session; 2 CORPUS_GAP rows resolved (1 FIXED-on-independent-reverification, 1 routed to Pending Corpus Decisions). Zero rows carried forward silently unresolved.
+
+## Pending Corpus Decisions
+<!-- Every CORPUS_GAP row from the Open Findings Ledger with Status = PENDING,
+     OPEN, or VERIFIED-STILL-OPEN lands here as a decision-ready item for Ram.
+     Never auto-resolved by a generating session, regardless of how mechanical
+     the fix looks. Cleared only when Ram confirms a fix landed (re-checked via
+     the ledger's VERIFIED-STILL-OPEN mechanism the next session) or explicitly
+     declines it. Surfaced verbatim in the Session Start block (Phase 1 Step 2.5)
+     and the Session Close Summary every session until resolved. -->
+
+| ID | Gap | Recommended fix | Target file(s) | Ram's decision |
+|---|---|---|---|---|
+| CG-02 | Stale "25 Key Distinctions" count across CLAUDE.md, CCA-Prep_Corpus-Index_v2.md, and the orchestration prompt (file now has 29, added in Key-Distinctions v1.1) | Update the count to 29 in each of the three files' corpus-listing tables | CLAUDE.md; CCA-Prep_Corpus-Index_v2.md; CCA-Orchestration-Prompt (current version) | PENDING |
+
 ## Session Reflections
 
 ### Session 1 — 2026-07-06
