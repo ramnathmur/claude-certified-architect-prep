@@ -105,7 +105,7 @@ and scenario-block structure.
 - CCA-Prep_Domain-3_v2.md  — D3: Claude Code Config & Workflows (20%)
 - CCA-Prep_Domain-4_v2.md  — D4: Prompt Engineering & Structured Output (20%)
 - CCA-Prep_Domain-5_v2.md  — D5: Context Management & Reliability (15%)
-- CCA-Prep_Key-Distinctions_v1.md — 25 high-yield exam traps (primary seed bank)
+- CCA-Prep_Key-Distinctions_v1.md — 29 high-yield exam traps (primary seed bank)
 - CCA-Prep_Exam-Mechanics_v2.md  — format, official scenario bank (6), answer
   heuristics, in-scope/out-of-scope lists, style calibration pointers
 - CURRENT-DOCS-DELTA_v1.md — exam-framing vs current-docs divergences; on any

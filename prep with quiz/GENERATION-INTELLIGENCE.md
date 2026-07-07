@@ -4,7 +4,7 @@ Last updated: 2026-07-07 | Sessions recorded: 2
 > AI-to-AI learning log. Records generation-quality observations so each run starts from accumulated intelligence rather than cold. EXAM-LOG.md is the audit trail; this file is the living intelligence document (overwritten in full each session per orchestration prompt Phase 5a.5).
 
 ## Key Distinctions Coverage Tracker
-<!-- One row per of the 25 Key Distinctions from CCA-Prep_Key-Distinctions_v1.md. Cycle starts at 1 when first used. -->
+<!-- One row per of the 29 Key Distinctions from CCA-Prep_Key-Distinctions_v1.md. Cycle starts at 1 when first used. -->
 | # | Domain | Cycle | Used In Exam(s) | Learner Signal | Notes |
 |---|---|---|---|---|---|
 | 1 | D3 | 1 | Exam 2 (Q15) | unknown | project vs user CLAUDE.md scope, team-shared conventions |
@@ -32,8 +32,12 @@ Last updated: 2026-07-07 | Sessions recorded: 2
 | 23 | — | — | not yet used | — | — |
 | 24 | D5 | 1 | Exam 2 (Q area) | unknown | aggregate-accuracy masking / stratified sampling |
 | 25 | — | — | not yet used | — | — |
+| 26 | D2 | — | not yet used | — | Grep vs Glob (content search vs path pattern) |
+| 27 | D2 | — | not yet used | — | Edit vs Read+Write fallback (non-unique anchor) |
+| 28 | D2 | — | not yet used | — | incremental investigation (Grep→Read) vs bulk read upfront |
+| 29 | D2 | — | not yet used | — | MCP tool vs built-in tool preference (fix description, don't remove) |
 
-**Coverage after 2 exams:** 17 of 25 KDs touched at least once ({1,2,3,4,5,7,8,9,10,11,14,15,16,17,20,22,24}). 8 remain completely untouched: {6,12,13,18,19,21,23,25}. **Sub-optimality noted:** KD#10 and KD#14 were reused in Exam 3 rather than drawing from the 8 still-untouched KDs — both fit their block's scenario well, but future sessions should check the "not yet used" list before reaching for an already-seeded KD a second time, purely to spread first-pass coverage faster. Not a defect, just a missed optimization.
+**Coverage after 2 exams:** 17 of 29 KDs touched at least once ({1,2,3,4,5,7,8,9,10,11,14,15,16,17,20,22,24}). 12 remain completely untouched: {6,12,13,18,19,21,23,25,26,27,28,29}. **Sub-optimality noted:** KD#10 and KD#14 were reused in Exam 3 rather than drawing from the untouched KDs — both fit their block's scenario well, but future sessions should check the "not yet used" list before reaching for an already-seeded KD a second time, purely to spread first-pass coverage faster. Not a defect, just a missed optimization. **Priority for Exam 4:** #26–29 (built-in tools) are the natural seed set for any block drawing the Developer Productivity scenario — they exist specifically to close that scenario's previous KD gap and have not yet seeded a single question.
 
 Learner signals remain "unknown" — no exam has been scored yet (see EXAM-LOG.md; Exam 1 and Exam 2 both still Pending). Exam 3 does not change this.
 
@@ -99,9 +103,9 @@ D1 §1.3, §1.10, §1.18 · D2 §2.1, §2.4 · D3 §3.12 · D4 §4.3, §4.4, §4
 | PB-05 | PROCESS_BUG | S1 | Block authors not given scenario-specific practice stems + explicit "different failure mode, not just wording" instruction | Orchestration Phase 4.6 | FIXED (v7) | Folded into the new delegation task-spec step |
 | PB-06 | PROCESS_BUG | S2 | Corpus-freshness tally method (ground-truth JSON citation extraction) was a norm only in this file's prose, not bound in the orchestration prompt | Orchestration Phase 5a.5 | FIXED (v7) | |
 | CG-01 | CORPUS_GAP | S1 | No Key Distinction covered built-in-tool selection for the Developer Productivity scenario | CCA-Prep_Key-Distinctions_v1.md | FIXED (v1.1, 2026-07-06, §Built-in Tools #26–29) | Independently re-verified against the live file on 2026-07-07 — confirmed on disk. Session 2 mis-reported this as still open one full session after it had already landed; this is the exact "logged-and-forgotten" failure this ledger exists to prevent. |
-| CG-02 | CORPUS_GAP | audit | Every "25 high-yield exam traps" reference (CLAUDE.md, CCA-Prep_Corpus-Index_v2.md, all orchestration-prompt versions) is stale — the file now has 29 entries | CLAUDE.md; CCA-Prep_Corpus-Index_v2.md; CCA-Orchestration-Prompt (current version) | PENDING — see Pending Corpus Decisions | Corpus-content edit, gated to Ram's explicit decision per the autonomous-vs-gated rule below; not auto-applied even though the fix is mechanical |
+| CG-02 | CORPUS_GAP | audit | Every "25 high-yield exam traps" reference (CLAUDE.md, CCA-Prep_Corpus-Index_v2.md, all orchestration-prompt versions) is stale — the file now has 29 entries | CLAUDE.md; CCA-Prep_Corpus-Index_v2.md; CCA-Orchestration-Prompt (current version) | FIXED (Ram approved 2026-07-07; count corrected to 29 in all three files; KD tracker above extended with rows 26–29) | First corpus-content fix processed through the new gate — routed to Pending Corpus Decisions, Ram explicitly approved, then applied. Demonstrates the gate working end to end. |
 
-**Coverage:** 6 of 8 rows FIXED this session; 2 CORPUS_GAP rows resolved (1 FIXED-on-independent-reverification, 1 routed to Pending Corpus Decisions). Zero rows carried forward silently unresolved.
+**Coverage:** 8 of 8 rows FIXED this session; both CORPUS_GAP rows resolved (1 on independent re-verification, 1 via the new Pending Corpus Decisions gate with Ram's explicit sign-off). Zero rows carried forward silently unresolved.
 
 ## Pending Corpus Decisions
 <!-- Every CORPUS_GAP row from the Open Findings Ledger with Status = PENDING,
@@ -112,9 +116,7 @@ D1 §1.3, §1.10, §1.18 · D2 §2.1, §2.4 · D3 §3.12 · D4 §4.3, §4.4, §4
      declines it. Surfaced verbatim in the Session Start block (Phase 1 Step 2.5)
      and the Session Close Summary every session until resolved. -->
 
-| ID | Gap | Recommended fix | Target file(s) | Ram's decision |
-|---|---|---|---|---|
-| CG-02 | Stale "25 Key Distinctions" count across CLAUDE.md, CCA-Prep_Corpus-Index_v2.md, and the orchestration prompt (file now has 29, added in Key-Distinctions v1.1) | Update the count to 29 in each of the three files' corpus-listing tables | CLAUDE.md; CCA-Prep_Corpus-Index_v2.md; CCA-Orchestration-Prompt (current version) | PENDING |
+*(None pending. CG-02 was approved and applied 2026-07-07 — see Open Findings Ledger above. This table is empty by default; it fills only when a new CORPUS_GAP finding surfaces.)*
 
 ## Session Reflections
 

@@ -21,7 +21,7 @@
 | [CCA-Prep_Domain-3_v2.md](CCA-Prep_Domain-3_v2.md) | D3 (20%) | Claude Code Config & Workflows — 12 sections; adds iterative refinement (§3.7, official task 3.5), @import//memory, CI re-run consistency; corrects CLAUDE.md concatenation semantics and carries the dual allowed-tools framing |
 | [CCA-Prep_Domain-4_v2.md](CCA-Prep_Domain-4_v2.md) | D4 (20%) | Prompt Engineering & Structured Output — 20 sections; adds tool_choice output guarantees, syntax-vs-semantic errors, Pydantic, retry limits, self-correction, batch strategy depth (§4.11), independent review |
 | [CCA-Prep_Domain-5_v2.md](CCA-Prep_Domain-5_v2.md) | D5 (15%) | Context Management & Reliability — 14 sections; adds confidence calibration & human oversight (§5.9, official task 5.5), provenance depth, escalation-proxy traps, tool-output trimming, crash-recovery persistence |
-| [CCA-Prep_Key-Distinctions_v1.md](CCA-Prep_Key-Distinctions_v1.md) | All | 25 high-yield exam traps and comparisons |
+| [CCA-Prep_Key-Distinctions_v1.md](CCA-Prep_Key-Distinctions_v1.md) | All | 29 high-yield exam traps and comparisons (v1.1 added #26–29, built-in tools) |
 | [CURRENT-DOCS-DELTA_v1.md](CURRENT-DOCS-DELTA_v1.md) | Meta | Exam-framing vs current-docs divergences with [SAFE]/[CONFLICT-RISK] posture per item |
 | [PRACTICE-TEST-STEMS_v1.md](PRACTICE-TEST-STEMS_v1.md) | Meta | Dedup ledger: all 76 community practice-test stems (includes the official PDF's 12 samples) + quantified style-calibration profile |
 

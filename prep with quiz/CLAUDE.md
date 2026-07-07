@@ -29,7 +29,7 @@ All quiz questions must be grounded in these files. Every question must trace to
 | `CCA-Prep_Domain-3_v2.md` | D3: Claude Code Config & Workflows (20%) — incl. iterative refinement (§3.7) |
 | `CCA-Prep_Domain-4_v2.md` | D4: Prompt Engineering & Structured Output (20%) — incl. batch strategies (§4.11) |
 | `CCA-Prep_Domain-5_v2.md` | D5: Context Management & Reliability (15%) — incl. confidence calibration (§5.9) |
-| `CCA-Prep_Key-Distinctions_v1.md` | 25 high-yield exam traps — always draw from these |
+| `CCA-Prep_Key-Distinctions_v1.md` | 29 high-yield exam traps — always draw from these |
 | `CURRENT-DOCS-DELTA_v1.md` | Exam-framing vs current-docs divergences; [CONFLICT-RISK] items must not decide a scored answer against the official framing |
 | `PRACTICE-TEST-STEMS_v1.md` | Dedup ledger (never reuse these stems) + style calibration profile |
 | `source/CCA-F-Official-Exam-Guide.pdf` (+ `_text.txt`) | Official authority: task statements, scenarios, sample questions |
