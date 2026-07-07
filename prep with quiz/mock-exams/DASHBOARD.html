@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CCA-F Prep Dashboard</title>
+<!--
+  CCA-F Prep Dashboard — reads prep with quiz/DASHBOARD-DATA.jsonl
+  Built 2026-07-07. Self-contained, no server, matches the mock-exam HTML design system.
+
+  This is a static snapshot baked in at build time (BAKED_DATA below), because file://
+  pages cannot reliably fetch local files (same constraint courses/DASHBOARD-RECOMMENDATION.md
+  identified for the sibling Launchpad dashboard). Two ways to bring it current after you
+  score an exam:
+    1. Ask Claude Code to regenerate this file's BAKED_DATA from the latest
+       DASHBOARD-DATA.jsonl + EXAM-LOG.md Professor's Note, or
+    2. Paste the current contents of DASHBOARD-DATA.jsonl into the "Refresh this view"
+       panel at the bottom of the page — it parses client-side and saves to
+       localStorage, no server or rebuild needed. The Professor's Note narrative still
+       requires a regenerate (free-form prose isn't reliably paste-parseable).
+
+  Do not treat estimated_scaled/domain percentages as real psychometric predictions —
+  same caveat the mock exams themselves carry.
+-->
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --ink:#1a1814; --ink2:#3d3a34; --ink3:#7a7670;
+  --cream:#faf7f2; --cream2:#f2ede4; --cream3:#e8e1d4;
+  --amber:#c8832a; --amber-light:#f5e6cc; --amber-dark:#8a5a1a;
+  --teal:#2a7a6e; --teal-light:#d4f0ec;
+  --coral:#c85a3a; --coral-light:#fae8e2;
+  --green:#3a7a4a; --green-light:#e2f0e6;
+  --blue:#2a5a8a; --blue-light:#ddeaf5;
+  --border:#ddd8ce; --shadow:0 2px 16px rgba(26,24,20,0.08);
+  --radius:12px; --radius-sm:8px;
+  --serif:'DM Serif Display',Georgia,serif; --sans:'DM Sans',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:var(--sans);background:var(--cream);color:var(--ink);font-size:16px;line-height:1.7;}
+.hero{background:var(--ink);color:var(--cream);padding:56px 40px 44px;text-align:center;}
+.hero-eyebrow{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:0.18em;text-transform:uppercase;color:var(--amber);margin-bottom:18px;}
+.hero h1{font-family:var(--serif);font-size:clamp(28px,4.5vw,46px);font-weight:400;line-height:1.15;margin-bottom:14px;color:#fff;}
+.hero h1 em{font-style:italic;color:var(--amber);}
+.hero-sub{font-size:15px;font-weight:300;color:rgba(250,247,242,0.72);max-width:620px;margin:0 auto;line-height:1.6;}
+.container{max-width:840px;margin:0 auto;padding:36px 40px 80px;}
+.section-label{font-family:var(--mono);font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink3);margin:38px 0 14px;}
+.section-label:first-child{margin-top:8px;}
+.stat-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;}
+.stat{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);}
+.stat .k{font-family:var(--mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink3);margin-bottom:8px;}
+.stat .v{font-family:var(--serif);font-size:32px;color:var(--ink);}
+.stat .v small{font-family:var(--sans);font-size:14px;color:var(--ink3);font-weight:400;}
+.callout{border-radius:var(--radius);padding:26px 30px;margin-top:6px;}
+.callout.pending{background:var(--amber-light);border:1px solid #e8d0a0;}
+.callout.ready{background:var(--teal-light);border:1px solid #a8d8cc;}
+.callout h3{font-family:var(--serif);font-size:22px;font-weight:400;margin-bottom:10px;color:var(--ink);}
+.callout p{font-size:14px;color:var(--ink2);line-height:1.7;max-width:640px;}
+.callout p+p{margin-top:8px;}
+.exam-list{display:flex;flex-direction:column;gap:10px;}
+.exam-row{display:flex;align-items:center;gap:16px;background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;box-shadow:var(--shadow);flex-wrap:wrap;}
+.exam-row .en{font-family:var(--serif);font-size:22px;color:var(--amber-dark);min-width:34px;}
+.exam-row .meta{flex:1;min-width:180px;}
+.exam-row .meta .title{font-size:14px;font-weight:600;color:var(--ink);}
+.exam-row .meta .sub{font-family:var(--mono);font-size:11px;color:var(--ink3);margin-top:3px;}
+.badge{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;padding:5px 12px;border-radius:99px;white-space:nowrap;}
+.badge.wait{background:var(--cream2);color:var(--ink3);border:1px solid var(--border);}
+.badge.done{background:var(--green-light);color:var(--green);}
+.badge.gone{background:var(--coral-light);color:var(--coral);}
+.btn{font-family:var(--sans);font-size:13px;font-weight:600;padding:8px 20px;border-radius:99px;border:1.5px solid var(--amber);background:var(--amber);color:#fff;cursor:pointer;transition:all .15s;text-decoration:none;display:inline-block;white-space:nowrap;}
+.btn:hover{background:var(--amber-dark);border-color:var(--amber-dark);}
+.btn:disabled{opacity:0.4;cursor:not-allowed;}
+.btn.ghost{background:transparent;color:var(--amber-dark);}
+.domain-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;}
+.dcard{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);}
+.dcard .dname{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:2px;}
+.dcard .dweight{font-family:var(--mono);font-size:10px;color:var(--ink3);letter-spacing:0.05em;margin-bottom:10px;}
+.dcard .dbar-track{height:8px;background:var(--cream2);border-radius:99px;overflow:hidden;margin-bottom:6px;}
+.dcard .dbar-fill{height:8px;border-radius:99px;}
+.dcard .dbar-fill.green{background:var(--green);}
+.dcard .dbar-fill.amber{background:var(--amber);}
+.dcard .dbar-fill.coral{background:var(--coral);}
+.dcard .dstatus{font-family:var(--mono);font-size:11px;color:var(--ink3);}
+.dcard.nodata .dbar-track{background:var(--cream2);}
+.dcard.nodata .dstatus{color:var(--ink3);font-style:italic;}
+.note-card{background:#fff;border:1px solid var(--border);border-left:4px solid var(--amber);border-radius:var(--radius);padding:22px 26px;box-shadow:var(--shadow);}
+.note-card.empty{border-left-color:var(--border);}
+.note-card h4{font-family:var(--serif);font-size:18px;font-weight:400;margin-bottom:8px;color:var(--ink);}
+.note-card p{font-size:14px;color:var(--ink2);line-height:1.7;}
+.trend-row{display:flex;align-items:flex-end;gap:10px;height:70px;padding:10px 4px 0;}
+.trend-bar{flex:1;background:linear-gradient(to top,var(--amber),var(--amber-dark));border-radius:4px 4px 0 0;min-height:4px;position:relative;}
+.trend-bar .tlabel{position:absolute;top:-18px;left:0;right:0;text-align:center;font-family:var(--mono);font-size:10px;color:var(--ink3);}
+.refresh-panel{background:var(--cream2);border:1px dashed var(--border);border-radius:var(--radius);padding:22px 26px;}
+.refresh-panel h4{font-family:var(--serif);font-size:18px;font-weight:400;margin-bottom:8px;color:var(--ink);}
+.refresh-panel p{font-size:13px;color:var(--ink3);margin-bottom:12px;line-height:1.6;}
+.refresh-panel textarea{width:100%;min-height:110px;font-family:var(--mono);font-size:11.5px;padding:12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:#fff;color:var(--ink2);resize:vertical;margin-bottom:10px;}
+.refresh-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.refresh-status{font-family:var(--mono);font-size:11.5px;color:var(--ink3);}
+.refresh-status.err{color:var(--coral);}
+.refresh-status.ok{color:var(--green);}
+.footer-note{font-family:var(--mono);font-size:11px;color:var(--ink3);text-align:center;margin-top:46px;line-height:1.8;}
+.footer-note a{color:var(--amber-dark);}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-eyebrow">CCA-F PREP DASHBOARD</div>
+  <h1>How's the prep <em>coming along?</em></h1>
+  <div class="hero-sub" id="heroSub">Loading…</div>
+</div>
+
+<div class="container">
+
+  <div class="section-label">Overview</div>
+  <div class="stat-strip" id="statStrip"></div>
+
+  <div id="statusCallout"></div>
+
+  <div class="section-label">Available exams</div>
+  <div class="exam-list" id="examList"></div>
+
+  <div class="section-label">Domain readiness (official weights)</div>
+  <div class="domain-grid" id="domainGrid"></div>
+
+  <div class="section-label">Latest insight</div>
+  <div id="noteCard"></div>
+
+  <div id="trendSection" style="display:none">
+    <div class="section-label">Trend across scored exams</div>
+    <div class="dcard"><div class="trend-row" id="trendRow"></div></div>
+  </div>
+
+  <div class="section-label">Refresh this view</div>
+  <div class="refresh-panel">
+    <h4>Paste updated DASHBOARD-DATA.jsonl</h4>
+    <p>This page is a static snapshot (no server, so it can't fetch the file itself). After scoring an exam and updating <code>DASHBOARD-DATA.jsonl</code> via <code>/cca-exam</code>, paste its full current contents below to refresh everything above — saved locally in this browser, nothing is uploaded anywhere. The Professor's Note text still needs a regenerate from Claude Code, since free-form prose isn't reliably parseable from a paste.</p>
+    <textarea id="pasteBox" placeholder='One JSON object per line, e.g. {"exam_n":2,"format":"FULL60",...}'></textarea>
+    <div class="refresh-actions">
+      <button class="btn" onclick="refreshFromPaste()">Refresh view</button>
+      <span class="refresh-status" id="refreshStatus"></span>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    Reads <code>DASHBOARD-DATA.jsonl</code> · scaled score = round((correct/N)×900+100), pass line 720 (linear approximation, not real psychometric scaling) · lives in <code>mock-exams/</code> alongside the exams it summarizes
+  </div>
+
+</div>
+
+<script>
+// Domain metadata — names/weights/FULL-60 quotas per prep with quiz/CLAUDE.md's Corpus table.
+const DOM_ORDER = ["D1","D2","D3","D4","D5"];
+const DOMAINS = {
+  D1:{name:"Agentic Architecture & Orchestration", weight:27, quota:16},
+  D2:{name:"Tool Design & MCP Integration", weight:18, quota:11},
+  D3:{name:"Claude Code Configuration & Workflows", weight:20, quota:12},
+  D4:{name:"Prompt Engineering & Structured Output", weight:20, quota:12},
+  D5:{name:"Context Management & Reliability", weight:15, quota:9}
+};
+
+// Baked-in snapshot of DASHBOARD-DATA.jsonl as of 2026-07-07 — regenerate this array
+// (or use the paste panel below) after logging a newly scored exam.
+const BAKED_DATA = [
+  {exam_n:1,format:"LEGACY30",generated_date:"2026-06-27",attempted_date:null,score_source:null,total_correct:null,total_questions:30,estimated_scaled:null,total_seconds:null,domain_scores:null,weakest_domain:null,confirmed_weakness:null,insight_round_due:false,file_available:false},
+  {exam_n:2,format:"FULL60",generated_date:"2026-07-06",attempted_date:null,score_source:null,total_correct:null,total_questions:60,estimated_scaled:null,total_seconds:null,domain_scores:null,weakest_domain:null,confirmed_weakness:null,insight_round_due:false,file_available:true},
+  {exam_n:3,format:"FULL60",generated_date:"2026-07-07",attempted_date:null,score_source:null,total_correct:null,total_questions:60,estimated_scaled:null,total_seconds:null,domain_scores:null,weakest_domain:null,confirmed_weakness:null,insight_round_due:false,file_available:true}
+];
+
+// No Professor's Note exists yet in EXAM-LOG.md (zero scored exams). Fill this in — or
+// regenerate the whole file — the first time a scored exam writes one.
+const LATEST_NOTE = null; // { examN, misconceptions:[...], weakestDomain, confirmedOrSuspected, intent, watch }
+
+const LS_KEY = "cca-dashboard-data";
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+
+function loadData(){
+  const raw = localStorage.getItem(LS_KEY);
+  if(!raw) return BAKED_DATA;
+  try{
+    const parsed = JSON.parse(raw);
+    if(Array.isArray(parsed) && parsed.length) return parsed;
+  }catch(e){/* fall through to baked snapshot */}
+  return BAKED_DATA;
+}
+
+function domainColorClass(pct){
+  if(pct>=75) return "green";
+  if(pct>=50) return "amber";
+  return "coral";
+}
+
+function render(){
+  const data = loadData().slice().sort((a,b)=>a.exam_n-b.exam_n);
+  const generated = data.length;
+  const attempted = data.filter(d=>d.attempted_date).length;
+  const scored = data.filter(d=>d.total_correct!==null && d.total_correct!==undefined).length;
+  const scoredRows = data.filter(d=>d.total_correct!==null && d.total_correct!==undefined);
+  const latest = scoredRows.length ? scoredRows[scoredRows.length-1] : null;
+
+  document.getElementById("heroSub").textContent = scored===0
+    ? "Not assessable yet — no exam has been scored. Take one of the two ready below and log the result."
+    : `${scored} exam${scored===1?"":"s"} scored so far. Latest: ${latest.total_correct}/${latest.total_questions} (est. scaled ${latest.estimated_scaled}/1000, pass line 720).`;
+
+  // Stat strip
+  document.getElementById("statStrip").innerHTML = `
+    <div class="stat"><div class="k">Exams generated</div><div class="v">${generated}</div></div>
+    <div class="stat"><div class="k">Attempted</div><div class="v">${attempted} <small>of ${generated}</small></div></div>
+    <div class="stat"><div class="k">Scored</div><div class="v">${scored} <small>of ${generated}</small></div></div>
+    <div class="stat"><div class="k">Latest est. scaled</div><div class="v">${latest?latest.estimated_scaled:"—"}<small> /1000</small></div></div>
+  `;
+
+  // Status callout
+  const cal = document.getElementById("statusCallout");
+  if(scored===0){
+    cal.innerHTML = `<div class="callout pending">
+      <h3>Nothing scored yet — this is expected, not broken</h3>
+      <p>Two fully-built exams (Mock Test 2 and Mock Test 3, 60 questions each) are sitting ready in this folder and neither has been attempted. Every stat and chart below is deliberately showing "no data" instead of a fake zero — a real readiness read needs at least one scored attempt.</p>
+      <p>Take one, then paste its results JSON into a <code>/cca-exam</code> session to log the score — that's what populates this page.</p>
+    </div>`;
+  } else {
+    const passing = latest.estimated_scaled >= 720;
+    cal.innerHTML = `<div class="callout ready">
+      <h3>${passing?"Above the pass line, on current form":"Below the pass line, on current form"}</h3>
+      <p>Most recent scored attempt: Exam ${latest.exam_n} — ${latest.total_correct}/${latest.total_questions} correct, estimated scaled ${latest.estimated_scaled}/1000 (pass line 720, linear approximation only).</p>
+      ${latest.weakest_domain ? `<p>Weakest domain: <strong>${esc(DOMAINS[latest.weakest_domain]?.name||latest.weakest_domain)}</strong> — ${latest.confirmed_weakness===true?"confirmed across two consecutive scored exams":latest.confirmed_weakness===false?"suspected, not yet confirmed (needs a second consecutive low result to confirm)":"confirmation status not logged"}.</p>` : ""}
+    </div>`;
+  }
+
+  // Exam list
+  document.getElementById("examList").innerHTML = data.map(d=>{
+    const status = d.total_correct!==null&&d.total_correct!==undefined ? `<span class="badge done">Scored</span>`
+      : d.attempted_date ? `<span class="badge wait">Attempted, unscored</span>`
+      : `<span class="badge wait">Not yet attempted</span>`;
+    const fileGone = d.file_available===false;
+    const launch = fileGone
+      ? `<span class="badge gone">File unavailable</span>`
+      : `<a class="btn ghost" href="CCA-Prep_MockTest-${d.exam_n}_v1.html">Launch →</a>`;
+    return `<div class="exam-row">
+      <div class="en">#${d.exam_n}</div>
+      <div class="meta">
+        <div class="title">Mock Test ${d.exam_n} · ${d.format}</div>
+        <div class="sub">Generated ${d.generated_date}${d.total_questions?` · ${d.total_questions} questions`:""}</div>
+      </div>
+      ${status}
+      ${launch}
+    </div>`;
+  }).join("");
+
+  // Domain readiness
+  document.getElementById("domainGrid").innerHTML = DOM_ORDER.map(dc=>{
+    const meta = DOMAINS[dc];
+    if(!latest || !latest.domain_scores || !latest.domain_scores[dc]){
+      return `<div class="dcard nodata">
+        <div class="dname">${dc} · ${meta.name}</div>
+        <div class="dweight">${meta.weight}% weight · ${meta.quota} Q on FULL-60</div>
+        <div class="dbar-track"><div class="dbar-fill" style="width:0%"></div></div>
+        <div class="dstatus">No data yet</div>
+      </div>`;
+    }
+    const c = latest.domain_scores[dc];
+    const pct = Math.round((c.correct/c.of)*100);
+    const cls = domainColorClass(pct);
+    return `<div class="dcard">
+      <div class="dname">${dc} · ${meta.name}</div>
+      <div class="dweight">${meta.weight}% weight · ${meta.quota} Q on FULL-60</div>
+      <div class="dbar-track"><div class="dbar-fill ${cls}" style="width:${pct}%"></div></div>
+      <div class="dstatus">${c.correct}/${c.of} — ${pct}%${c.estimated?" (estimated)":""}</div>
+    </div>`;
+  }).join("");
+
+  // Latest insight / Professor's Note
+  const nc = document.getElementById("noteCard");
+  if(LATEST_NOTE){
+    nc.innerHTML = `<div class="note-card">
+      <h4>Professor's Note — Intent for Exam ${LATEST_NOTE.examN+1}</h4>
+      <p><strong>Misconceptions:</strong> ${esc(LATEST_NOTE.misconceptions.join("; "))}</p>
+      <p><strong>Weakest domain:</strong> ${esc(LATEST_NOTE.weakestDomain)} (${esc(LATEST_NOTE.confirmedOrSuspected)})</p>
+      <p><strong>Next-paper intent:</strong> ${esc(LATEST_NOTE.intent)}</p>
+      <p><strong>Watch:</strong> ${esc(LATEST_NOTE.watch)}</p>
+    </div>`;
+  } else {
+    nc.innerHTML = `<div class="note-card empty">
+      <h4>No Professor's Note yet</h4>
+      <p>EXAM-LOG.md writes one of these after every scored exam — 2–3 misconceptions the wrong answers revealed, the weakest domain and whether it's confirmed or merely suspected, and one deliberate intent for the next paper. It'll show here (rendered from the actual note, not re-derived) once the first exam is scored and this page is regenerated.</p>
+    </div>`;
+  }
+
+  // Trend (only once 3+ scored, matching the project's own every-3rd-exam insights cadence)
+  const trendSec = document.getElementById("trendSection");
+  if(scoredRows.length>=3){
+    trendSec.style.display="";
+    const maxScaled = Math.max(...scoredRows.map(d=>d.estimated_scaled||0),1000);
+    document.getElementById("trendRow").innerHTML = scoredRows.map(d=>{
+      const h = Math.max(4,Math.round((d.estimated_scaled/maxScaled)*70));
+      return `<div class="trend-bar" style="height:${h}px"><span class="tlabel">#${d.exam_n}</span></div>`;
+    }).join("");
+  } else {
+    trendSec.style.display="none";
+  }
+}
+
+function refreshFromPaste(){
+  const box = document.getElementById("pasteBox");
+  const status = document.getElementById("refreshStatus");
+  const lines = box.value.split("\n").map(l=>l.trim()).filter(Boolean);
+  if(!lines.length){
+    status.className="refresh-status err"; status.textContent="Paste the jsonl contents first.";
+    return;
+  }
+  const rows=[]; let failed=0;
+  lines.forEach(l=>{
+    try{
+      const obj=JSON.parse(l);
+      if(typeof obj.exam_n==="number") rows.push(obj); else failed++;
+    }catch(e){failed++;}
+  });
+  if(!rows.length){
+    status.className="refresh-status err"; status.textContent="No valid JSON lines found — check the paste and try again.";
+    return;
+  }
+  localStorage.setItem(LS_KEY, JSON.stringify(rows));
+  render();
+  status.className="refresh-status ok";
+  status.textContent = failed
+    ? `Updated from ${rows.length} line(s) — ${failed} line(s) skipped (invalid JSON).`
+    : `Updated from ${rows.length} line(s).`;
+}
+
+render();
+</script>
+</body>
+</html>

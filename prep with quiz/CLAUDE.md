@@ -158,7 +158,7 @@ After each scored exam with real per-domain data (results-JSON or a manual break
 - It fires on **every** scored exam, not gated to the every-3 insights cadence.
 - It states **intent within the fixed domain quota** — it never changes domain weights or breaches the out-of-scope list. The next generation reads it (orchestration prompt Phase 4c.5) and biases WHICH corpus sections it draws from, so a single detailed result nudges the very next paper before the two-exam confirmed-weakness rule is even eligible.
 
-See orchestration prompt v6 Phase 2 f-note (writer) and Phase 4c.5 (reader).
+See orchestration prompt v8 Phase 2 f-note (writer) and Phase 4c.5 (reader).
 
 ---
 
@@ -179,4 +179,4 @@ After every 3 completed exam attempts, generate an insights round (see orchestra
 - **Style-match the real exam** — calibrate stems and options against `PRACTICE-TEST-STEMS_v1.md` §3 and the official samples before writing; never copy those stems.
 - **Update EXAM-LOG.md immediately** after generating or scoring — append only, never overwrite prior entries.
 - **Write a Professor's Note every scored exam** (real per-domain data) and **consume the latest note when generating** — the note biases section choice within the fixed quota, never the quota itself.
-- **Invoke via `/cca-exam`** — the folder-scoped slash command loads orchestration prompt v6. Run it from a Claude Code session opened in this `prep with quiz` folder.
+- **Invoke via `/cca-exam`** — the folder-scoped slash command loads orchestration prompt v8. Run it from a Claude Code session opened in this `prep with quiz` folder.
