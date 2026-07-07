@@ -4,7 +4,7 @@ status: COMPLETE
 phase: CLOSED
 started_at: 2026-07-07
 completed_at: 2026-07-07
-exam_file: ../practice/CCA-Prep_MockTest-3_v1.html
+exam_file: mock-exams/CCA-Prep_MockTest-3_v1.html
 format: FULL60
 notes: >
   Exam 3 generated as the first standalone execution of orchestration-prompt v6

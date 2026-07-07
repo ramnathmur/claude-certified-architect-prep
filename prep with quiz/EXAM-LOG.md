@@ -7,9 +7,9 @@ Cross-exam memory. Append a new entry after each exam is generated and after eac
 
 ## Exam 1 — Generated 2026-06-27
 
-**File:** `../practice/CCA-Prep_MockTest-1_v1.html`  
+**File:** `mock-exams/CCA-Prep_MockTest-1_v1.html` — **not present on disk** (checked 2026-07-07; see note)  
 **Format:** LEGACY30 (30 standalone questions, pre-v2 blueprint)  
-*(Note: Mock Test 1 was generated before this sub-project was set up. Stems are logged here retroactively for deduplication. Its 30 stems remain off-limits.)*
+*(Note: Mock Test 1 was generated before this sub-project was set up. Stems are logged here retroactively for deduplication. Its 30 stems remain off-limits regardless of file presence. The file itself was added in a prior commit that is no longer an ancestor of `master` — a pre-existing repository-history gap, unrelated to the mock-exams/ folder reorganization done on 2026-07-07. Regenerating it is not required for deduplication purposes, since its stems are preserved below, but it is not currently openable.)*
 
 **Attempt date:** Not yet attempted  
 **Score:** Pending
@@ -51,7 +51,7 @@ Cross-exam memory. Append a new entry after each exam is generated and after eac
 
 ## Exam 2 — Generated 2026-07-06
 
-**File:** `../practice/CCA-Prep_MockTest-2_v1.html`  
+**File:** `mock-exams/CCA-Prep_MockTest-2_v1.html`  
 **Format:** FULL60 (4 scenario blocks x 15 = 60 questions)  
 **Scenarios drawn:** Customer Support Resolution Agent; Developer Productivity with Claude; Claude Code for Continuous Integration; Structured Data Extraction  
 **Attempt date:** Not yet attempted  
@@ -127,7 +127,7 @@ Generated from the v2 corpus via orchestration-prompt v5 logic. Every question c
 
 ## Exam 3 — Generated 2026-07-07
 
-**File:** `../practice/CCA-Prep_MockTest-3_v1.html`  
+**File:** `mock-exams/CCA-Prep_MockTest-3_v1.html`  
 **Format:** FULL60 (4 scenario blocks x 15 = 60 questions)  
 **Scenarios drawn:** Multi-Agent Research System; Code Generation with Claude Code; Claude Code for Continuous Integration; Structured Data Extraction  
 **Attempt date:** Not yet attempted  

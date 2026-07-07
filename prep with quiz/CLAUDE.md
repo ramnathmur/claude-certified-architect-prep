@@ -3,7 +3,8 @@
 **Owner:** Ram
 **Location:** `C:\Claude Cowork\Projects\Claude Certified Architect Prep\prep with quiz\`
 **Status:** Active
-**Blueprint version:** 2.1 | 2026-07-07 (v2.0, v1.0 in git history)
+**Blueprint version:** 2.2 | 2026-07-07 (v2.1, v2.0, v1.0 in git history)
+**Changelog v2.1→v2.2:** Step 6 now states the output directory explicitly (`mock-exams/`) — closes Open Findings Ledger item PB-07: the directory was never written down anywhere, only followed as an unstated convention (`practice/`, a project-root folder holding unrelated static practice materials), which meant generated exams landed somewhere disconnected from the system that made them and were hard to locate. Exams 2 and 3 were moved from `practice/` to `mock-exams/` accordingly.
 **Changelog v2→v2.1:** added a required per-block correct-answer-position self-check to Step 4 — closes Open Findings Ledger item PB-02 (see GENERATION-INTELLIGENCE.md), where a block previously shipped all 15 questions with the correct answer at the same option letter, undetected by its own QA. Part of the session-2 self-improvement mechanism (Open Findings Ledger + Pending Corpus Decisions) that promotes generation-quality findings into binding blueprint/orchestration-prompt rules instead of leaving them as unread prose.
 **Changelog v1→v2:** re-grounded on the official Exam Guide PDF; 60-question scenario-block format (matching the real exam) with a 30-question drill option; per-option rationale system (hardened learning feedback — Ram's design decision: this is a learning tool with full per-question feedback, NOT an exam-conditions simulator); passive timing capture; results-JSON export replacing self-reported scores; estimated-flag integrity rules; practice-test dedup ledger.
 
@@ -106,7 +107,8 @@ Required HTML features:
 9. **`localStorage` save/resume** (key: `cca-mock-N`) — answers, lock states, timing
 10. **JS comment block at the top** listing all stems (dedup source for the next exam)
 
-### Step 6 — Name and log the file
+### Step 6 — Name, place, and log the file
+- **Directory:** `mock-exams/` (i.e. `prep with quiz/mock-exams/CCA-Prep_MockTest-N_v1.html`) — every generated exam lives here, alongside the system that generates it. Never write to `practice/` (a project-root folder holding unrelated static practice materials — domain question banks, checkpoints — with no connection to this generator).
 - File name: `CCA-Prep_MockTest-N_v1.html` (increment N; bump `_vX` only when regenerating the same exam number)
 - Immediately update `EXAM-LOG.md` with the skeleton entry
 
