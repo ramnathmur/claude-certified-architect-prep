@@ -570,8 +570,16 @@ b.6 IF DELEGATING BLOCK-AUTHORING TO PARALLEL SUB-AGENTS (sanctioned pattern):
    Known limitation: sibling sub-agents cannot address each other directly by
    name for a cross-block check. Do not rely on sub-agents to self-coordinate
    this. Cross-block consistency checking — confirming no block reintroduces a
-   named fictional company/product/persona (prohibited per 4.e) — is the
-   coordinating session's responsibility, run once after all blocks return.
+   named fictional company/product/persona (prohibited per 4.e), AND
+   confirming no two blocks independently seed the same Key Distinction as
+   their PRIMARY (whyRight) answer — is the coordinating session's
+   responsibility, run once after all blocks return. A sub-agent choosing a
+   Key Distinction not explicitly assigned to it (a legitimate, encouraged
+   choice — see d.5's freshness priority) can still collide with another
+   block's independent choice of the same KD; neither sub-agent can see this.
+   This is the specific way Exam 4 shipped two such collisions (KD#12 and
+   KD#23, each independently seeded as the primary answer in two different
+   blocks) undetected by any single block's own QA.
 
 b.7 DELEGATION STALL-WATCH (if b.6 applies):
    A dispatched coordinating agent that spawns its own background sub-agents
