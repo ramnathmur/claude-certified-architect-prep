@@ -125,6 +125,19 @@ Generated from the v2 corpus via orchestration-prompt v5 logic. Every question c
 
 ---
 
+### Retrofit Note — Mock Test 2, Fidelity Retrofit (2026-07-09)
+
+**File:** `mock-exams/CCA-Prep_MockTest-2-Retrofit_v1.html`  
+**Not a new exam number** — deliberately NOT a `## Exam N` heading, so it does not affect the exams_generated count or the highest-N calculation Phase 1 uses to determine the next exam number. This is a standalone study copy of Exam 2's same 60 questions, retrofitted to the fidelity philosophy that also produced Orchestration Prompt v9 (see `CLAUDE.md` v2.3 changelog and `GENERATION-INTELLIGENCE.md` PB-08–PB-11). The original `CCA-Prep_MockTest-2_v1.html` is untouched and remains the historical record; the "Questions Used" list under Exam 2 above still governs deduplication.  
+**Attempt date:** Not yet attempted  
+**Score:** Pending
+
+Applied fixes, verified against the live embedded JSON (not asserted): removed all invented company/agent names (Meridian/Aria/Pathfinder/Northwind/Ledgerline → generic framing, e.g. "your agent", "the team", "Claude Code"); rebalanced the correct-answer letter distribution from A=20/B=17/C=11/D=12 to an exact 15/15/15/15 exam-wide (options reordered only — content, rationales, and correctness unchanged); raised the backtick-styled inline code/config token rate from 9.6% to 20.8% by wrapping identifiers already present in the option text, no invented content; added the scenario-rotation disclosure line to the landing card. Domain-tally-vs-primary-domains and the word-count budget were already passing in the original and needed no fix. One known, accepted residual gap: stem word-count median rose from 55.5 to 57.0 words as a side effect of the name substitutions (target band 50–55; still well under the 95-word hard cap) — not chased further to avoid re-editing risk. Three grammar/logic breaks introduced by the mechanical substitution pass (a "named your agent" phrase, a false claim that the team "builds Claude Code," and a garbled "named Claude Code session" reference) were caught by a full-file scan and hand-fixed before shipping.
+
+No separate "Questions Used" dedup list — these are the same 60 underlying questions already logged under Exam 2 above, reworded only; that entry's stem list already covers them for dedup purposes. Not written to `DASHBOARD-DATA.jsonl` for the same reason this isn't a `## Exam N` entry — that file's schema is keyed by exam_n and isn't meant to carry a second "2".
+
+---
+
 ## Exam 3 — Generated 2026-07-07
 
 **File:** `mock-exams/CCA-Prep_MockTest-3_v1.html`  

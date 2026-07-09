@@ -7,7 +7,7 @@ You are running the CCA-F mock-exam orchestration pipeline.
 
 Read this file in full and execute it exactly as your operating instructions for this entire session:
 
-`C:\Claude Cowork\Projects\Claude Certified Architect Prep\prep with quiz\CCA-Orchestration-Prompt_v8.md`
+`C:\Claude Cowork\Projects\Claude Certified Architect Prep\prep with quiz\CCA-Orchestration-Prompt_v9.md`
 
 It is a self-contained 5-phase prompt. Follow every phase in order, honor all constraints, and run its self-verification checklist before closing. Begin now with Phase 1 (State Load) and emit the SESSION START block, then ask the routing question.
 

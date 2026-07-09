@@ -1,6 +1,29 @@
 <!--
-  CCA-F Mock Exam Orchestration Prompt — v8
+  CCA-F Mock Exam Orchestration Prompt — v9
   Author persona: Learning Systems Architect
+  Changes from v8 (closes six fidelity gaps found by independent audit against
+  the real exam, 2026-07-09 — see GENERATION-INTELLIGENCE.md Open Findings
+  Ledger PB-08 through PB-11):
+    - Phase 4.b / 4.b.6 / 4.e: scenario narratives now use generic framing
+      ("your agent", "the pipeline") — never an invented company, product, or
+      persona name (closes PB-08).
+    - NEW Phase 4.d.5: each block's correct-answer-letter sequence is
+      pre-planned as a balanced multiset BEFORE any option text is written,
+      not just checked after the fact (closes PB-09). Phase 4.e.5 is retained
+      as a verification backstop against the pre-plan, not the sole mechanism.
+    - Phase 4.a.5 / 4.e: stem/option length is now a binding word-count
+      budget (stem median 50-55 words, hard caps 95/35) instead of
+      descriptive-only prose.
+    - Phase 4.b.6: sub-agent task spec now includes a domain-tally-vs-
+      scenario-primary-domains requirement (closes PB-10).
+    - Phase 4.a.5 / 4.e: inline code/config token rate now has an explicit
+      target band, 20-25% of options exam-wide (closes PB-11).
+    - NEW Phase 4.e.6: consolidated Fidelity Verification Gate — one
+      required, computed, exam-wide pre-ship check covering all six findings
+      above, run before Phase 4.f (HTML build) may begin.
+    - constraints, output_format, and self_verification updated to match.
+    Applies to Exam 4 onward — Exams 2 and 3 are historical record and are
+    not touched by this change.
   Changes from v7 (closes Open Findings Ledger item PB-07 in
   GENERATION-INTELLIGENCE.md):
     - The output directory for generated exam HTML files is now stated
@@ -147,14 +170,15 @@ EXAM-LOG.md entry format
 Reference: C:\Claude Cowork\Projects\AI Oracle\quizzes\AI-Oracle_Quiz_v2.html
 (including its native one-question-per-page pagination model).
 Required HTML features (full spec in CLAUDE.md Step 5): landing card with a
-Begin action, scenario block headers (full card on a block's first question,
-persistent tag thereafter), sticky nav with elapsed timer and a collapsible
-jump-map, one-question-per-page q-card layout with Back/Next (Next disabled
-until answered), selection-aware per-option rationale panel, passive timing
-capture, per-domain + per-block results card with scaled estimate,
-results-JSON export with copy button, localStorage save/resume (key:
-cca-mock-N) with three-way resume routing (landing / first-unanswered-question
-/ results), JS comment block listing all stems.
+Begin action and a scenario-rotation disclosure line, scenario block headers
+(full card on a block's first question, persistent tag thereafter), sticky nav
+with elapsed timer and a collapsible jump-map, one-question-per-page q-card
+layout with Back/Next (Next disabled until answered), selection-aware
+per-option rationale panel, passive timing capture, per-domain + per-block
+results card with scaled estimate, results-JSON export with copy button,
+localStorage save/resume (key: cca-mock-N) with three-way resume routing
+(landing / first-unanswered-question / results), JS comment block listing all
+stems.
 </context>
 
 <state_injection>
@@ -189,7 +213,7 @@ Extract and hold in working memory:
 - locked_stems : all 76 stems in §2. These are permanently off-limits (Ram takes
   that practice test himself; the official PDF's 12 samples are among them).
 - style_profile: hold §3 (stem lengths, option forms, question-form distribution,
-  distractor patterns) for Phase 4a.5.
+  distractor patterns, inline-code-token rate) for Phase 4a.5.
 
 ### Step 2 — Read SESSION-STATE.md and resolve conflicts
 Apply exactly ONE of these five branches. They are mutually exclusive and
@@ -466,13 +490,34 @@ a.5 STYLE CALIBRATION (mandatory, before writing any question):
    questions must be stylistically indistinguishable from these — without
    reusing any locked stem.
 
+   WORD-COUNT BUDGET (binding, not descriptive): stem (Situation opening +
+   question line) target median 50-55 words across the exam; hard cap 95
+   words per individual stem. Option hard cap 35 words. These numbers come
+   directly from PRACTICE-TEST-STEMS_v1.md §3's derived profile (stems: min
+   18/median 51.5/max 93/mean 53.5; options: median 16/max 36/mean 15.4) and
+   from the official PDF's own 12 sample questions (min 33/max 91/mean ~54
+   words). Tighten — never cutting tested signal or citation — any item over
+   its hard cap; this budget is enforced exam-wide in Phase 4.e.6 check 3.
+
+   INLINE CODE/CONFIG TOKEN RATE: target 20-25% of options exam-wide should
+   contain an inline code/config token (a tool name, flag, file path, or
+   config key rendered as code), concentrated naturally in D2/D3 content —
+   never forced into a D1/D4/D5 option just to hit the number, and never at
+   the expense of the no-fabrication rule. This rate comes from
+   PRACTICE-TEST-STEMS_v1.md §3 ("63 of 304 options (~21%) contain inline
+   code or config tokens"); enforced exam-wide in Phase 4.e.6 check 5.
+
 b. SELECT SCENARIOS AND SET DISTRIBUTION:
 
    FULL-60: select 4 of the official 6 scenarios (Exam-Mechanics v2 bank).
    Rotation rule: prefer the least-used scenarios in scenario_rotation; over
    successive exams all 6 must appear. State which 4 were drawn and why.
-   Each block gets ONE evolving narrative (same company/system, progressing
-   situations). Base distribution ACROSS the exam:
+   Each block gets ONE evolving narrative — the same tools, config, and system
+   under test recurring with progressing situations and metrics across the
+   block's ~15 questions — but framed GENERICALLY ("your agent", "the
+   pipeline", "the system"), never as a named fictional company, product, or
+   persona (e.g., no "Meridian Retail", no "Aria"). See 4.e for the full
+   framing rule and its audit basis. Base distribution ACROSS the exam:
      D1: 16 | D2: 11 | D3: 12 | D4: 12 | D5: 9 = 60
    Let blocks skew toward their scenario's primary domains while exam-level
    quotas hold. Build a block×domain allocation table before writing.
@@ -502,20 +547,31 @@ b.6 IF DELEGATING BLOCK-AUTHORING TO PARALLEL SUB-AGENTS (sanctioned pattern):
    good results when each sub-agent's task spec includes the following:
    - The domain quota and KD range assigned to that specific block (disjoint
      from the other three blocks' ranges).
+   - That block's pre-planned correct-answer-letter sequence from step d.5
+     (the exact per-question A/B/C/D target to write each question's correct
+     option against) — computed centrally by the coordinating session before
+     dispatch; a sub-agent must never invent its own pre-plan, since it cannot
+     see its siblings' assignments.
    - The specific PRACTICE-TEST-STEMS_v1.md §2 stems relevant to that block's
      drawn scenario, plus the explicit instruction: "produce a genuinely
      different failure mode, not just different wording, from any similar
      practice-test stem, prior-exam question, or the corpus's own canonical
      worked example for the same concept."
-   - The requirement to compute and report its own correct-answer-index
-     distribution (A/B/C/D counts) before returning — see Phase 4.e. A sub-agent
-     that skips this check is the specific way one exam block once shipped all
-     15 questions at the same option letter, undetected.
+   - The requirement to tally its own block's questions by domain against
+     that scenario's Primary domains (Exam-Mechanics v2 Scenario Bank) before
+     returning — see Phase 4.e.6 check 4. Exam 3's Structured Data Extraction
+     block shipping a non-primary domain (D2) outnumbering a primary domain
+     (D5) is the specific way this went unchecked once.
+   - The requirement to compute and report the resulting correct-answer-index
+     distribution against its d.5 pre-plan before returning — see Phase 4.d.5
+     and 4.e.5. A sub-agent that only self-checks after writing, with no
+     pre-assigned letter to write against, is the specific way one exam block
+     once shipped all 15 questions at the same option letter, undetected.
    Known limitation: sibling sub-agents cannot address each other directly by
-   name for a cross-block check (e.g., verifying invented company/system names
-   don't collide across blocks). Do not rely on sub-agents to self-coordinate
-   this. Cross-block name-collision checking is the coordinating session's
-   responsibility, run once after all blocks return.
+   name for a cross-block check. Do not rely on sub-agents to self-coordinate
+   this. Cross-block consistency checking — confirming no block reintroduces a
+   named fictional company/product/persona (prohibited per 4.e) — is the
+   coordinating session's responsibility, run once after all blocks return.
 
 b.7 DELEGATION STALL-WATCH (if b.6 applies):
    A dispatched coordinating agent that spawns its own background sub-agents
@@ -559,11 +615,50 @@ d. Seed questions: KDs first (priority: unused → partially-cycled → new cycl
    seeded by a KD, prioritizing fresh v2 sections and the note-named sections
    from c.5.
 
+d.5 PRE-PLAN THE CORRECT-ANSWER-LETTER SEQUENCE per block, before writing any
+   question text (mandatory — this is the PRIMARY balance mechanism; e.5 below
+   is a verification backstop, not a substitute for this step):
+   FULL-60: for each of the 4 scenario blocks (15 questions each), build a
+   balanced multiset of correct-answer letters — {A×4, B×4, C×4, D×3} — and
+   rotate which letter carries the short count across the 4 blocks (block 1
+   short D, block 2 short C, block 3 short B, block 4 short A) so the exam-wide
+   tally lands at 15/15/15/15 even though no single 15-question block divides
+   evenly by 4. Shuffle each block's multiset into a randomized per-question
+   order (never sorted, never letter-grouped) to fix that block's answer key.
+   If a block's actual question count differs from 15 (Step 2 only promises
+   "~15"), scale the multiset proportionally, capping any shortfall at 1 per
+   letter.
+   DRILL-30 (no blocks): pre-plan one balanced sequence for the whole
+   30-question set (~{A×8, B×8, C×7, D×7}), the same way.
+   If delegating block-authoring to sub-agents (b.6): the COORDINATING session
+   computes all 4 blocks' pre-plans centrally, BEFORE dispatch, and hands each
+   sub-agent only its own block's sequence — a sub-agent must never invent its
+   own pre-plan, since it cannot see its siblings' assignments (the same
+   cross-block coordination limit already documented for consistency checking
+   in b.6).
+   Hold each block's (or the set's) pre-planned sequence as the target every
+   question in step e. is written against — the correct-answer letter for
+   question k of a block is decided here, before its options exist.
+
 e. For every question write:
    - A Situation opening tied to its block narrative (FULL-60) — concrete: log
-     output, metrics, config snippets, named tools; style per a.5
-   - Exactly 4 options — 1 correct, 3 distractors from documented ❌
-     misconceptions in the v2 corpus; grammatically parallel; no giveaways
+     output, metrics, config snippets, named tools; style per a.5. Use
+     GENERIC framing for the actor and system under test — "your agent",
+     "the pipeline", "the support bot", "production logs show" — never an
+     invented company, product, or persona name (e.g., no "Meridian Retail",
+     "Aria", "Northwind Freight"). A cold audit of all 76 known real-exam
+     question texts (PRACTICE-TEST-STEMS_v1.md §2, which already includes
+     the official PDF's 12 samples) found ZERO instances of a named
+     fictional company or agent — the real exam's register is uniformly
+     generic. Continuity within a block comes from the SAME recurring
+     tools/config/metrics progressing question to question, not from a
+     named entity. Keep every stem within the a.5 word-count budget.
+   - Exactly 4 options — 1 correct placed at the letter position the block's
+     d.5 pre-plan assigned to this question (not chosen ad hoc while drafting
+     the distractors), 3 distractors from documented ❌ misconceptions in the
+     v2 corpus; grammatically parallel; no giveaways; each option within the
+     a.5 word-count budget; concentrate inline code/config tokens per a.5's
+     target band naturally in D2/D3 options.
    - A PER-OPTION RATIONALE BLOCK:
        whyRight (correct option): why it is correct + corpus citation
        (file §section)
@@ -577,17 +672,122 @@ e. For every question write:
 
 e.5 REQUIRED SELF-CHECK before any block (or the whole exam, if not delegated)
    is considered done: compute and report the correct-answer-index distribution
-   (count of A/B/C/D) for that block. A block whose questions cluster heavily
-   on one letter (in particular, all questions at the same letter) must be
-   reshuffled — options only, reassigning `correct` and remapping the whyWrong
-   `option` indices to match; content and rationale text never change — before
-   moving on. State the distribution achieved in the Session Close Summary.
+   (count of A/B/C/D) for that block and compare it against the d.5 pre-plan
+   for that block. This is a VERIFICATION BACKSTOP confirming the pre-plan was
+   actually followed while writing — it is not the mechanism that produces
+   balance (d.5 is). A mismatch means either a question's option order drifted
+   from its assigned letter while drafting, or the pre-plan itself was
+   skipped — either way, re-derive the correct letter positions from the d.5
+   pre-plan and reshuffle the affected questions' options only, reassigning
+   `correct` and remapping the whyWrong `option` indices to match; content and
+   rationale text never change — before moving on. State the pre-planned
+   distribution, the achieved distribution, and (if they differed) what was
+   corrected, in the Session Close Summary.
+
+e.6 FIDELITY VERIFICATION GATE (REQUIRED — before Phase 4.f may begin).
+   Consolidates six independently-identified fidelity gaps (2026-07-09 cold
+   audit against the real exam) into ONE required pre-ship computation block,
+   run once, exam-wide, by the coordinating session after all blocks return
+   (same rule as the b.6 cross-block check — several of these checks are
+   unreliable if only run per-block or per-sub-agent). As with Phase 4.e.5,
+   this is COMPUTED and REPORTED directly by you — no code execution is
+   available; count and tally by hand across the full drafted exam. An exam
+   that has not produced this report has not finished Phase 4 and may not
+   proceed to Phase 4.f.
+
+   1. NO INVENTED NAMES. Scan every question's Situation opening (all stems,
+      block-narrative or standalone) for an invented proper-noun company,
+      product, or persona name (e.g., "Aria", "Meridian Retail", "Northwind
+      Freight", "Compendium", "Fernbank"). Only generic framing is allowed —
+      "your agent", "the pipeline", "the support bot", "production logs
+      show". Continuity within a block comes from the SAME recurring
+      tools/config/metrics progressing question to question, never from a
+      named entity.
+      THRESHOLD: 0 instances, exam-wide.
+      FAIL → rewrite every flagged opening to generic framing, preserving
+      the block's tool/config/metric continuity; re-run this sub-check.
+
+   2. CORRECT-ANSWER LETTER TALLY — PER BLOCK AND EXAM-WIDE. Count the
+      correct-answer letter (A/B/C/D) for every question, per block (FULL-60
+      only) AND exam-wide. This re-confirms the per-block Phase 4.e.5 counts
+      and adds the aggregate view 4.e.5 alone does not produce — a mild,
+      direction-consistent lean across several blocks can pass every
+      individual block's e.5 check and still land far off-balance in
+      aggregate.
+      THRESHOLD:
+        - FULL-60: each block's tally sits within 1 of the balanced 4/4/4/3
+          split (no letter <3 or >5 in a 15-question block); exam-wide
+          aggregate is within 1 of 15/15/15/15 (no letter <14 or >16).
+        - DRILL-30 (no blocks): exam-wide aggregate is within 1 of 8/8/7/7
+          (no letter <6 or >9).
+      FAIL → reshuffle options only (reassign `correct`, remap `whyWrong`
+      option indices) per 4.e.5's method — content and rationale text never
+      change; re-tally after every reshuffle.
+
+   3. STEM / OPTION WORD COUNT. Count words in every stem (Situation opening
+      + question line) and every option, exam-wide; report min/median/max
+      for each of the two populations.
+      THRESHOLD: stem median 50-55 words across the exam; stem hard cap 95
+      words per individual stem; option hard cap 35 words per individual
+      option.
+      FAIL → tighten (never cutting tested signal or citation) any item over
+      its hard cap, or rebalance if the exam-wide stem median falls outside
+      50-55; re-count after edits.
+
+   4. BLOCK DOMAIN TALLY VS. SCENARIO PRIMARY DOMAINS. Tally each block's
+      questions by domain (D1-D5); compare against that block's scenario's
+      Primary domains listed in the Exam-Mechanics v2 Scenario Bank entry.
+      Does not apply to DRILL-30 (no scenario blocks — mark n/a).
+      THRESHOLD: every domain listed as Primary for that scenario has MORE
+      questions in the block than every domain NOT listed as Primary for
+      that scenario.
+      FAIL → swap over-represented non-primary-domain questions for newly
+      seeded primary-domain questions (Phase 4.d seeding rules — KD cap,
+      freshness, dedup ledger still apply) until the threshold holds; offset
+      any resulting domain-count shift elsewhere so the exam-level quotas
+      fixed in b/c are unaffected; re-run check 2 after any swap — a
+      swapped-in question carries its own correct-answer letter and can
+      reintroduce the clustering check 2 exists to catch.
+
+   5. INLINE CODE/CONFIG TOKEN RATE. Count every option, exam-wide (not per
+      block — a single block's domain skew makes its own rate an unreliable
+      target), that contains an inline code/config token (flag, parameter,
+      command, filename, or config key rendered as code); report the rate
+      as N options / total options (%).
+      THRESHOLD: target band 20-25%; acceptable without required rewrite at
+      15-20% or 25-30%; FAIL below 15% or above 30%. Tokens should
+      concentrate naturally in D2/D3 options — never force one into a
+      D1/D4/D5 option just to hit the number.
+      FAIL → add or remove inline-token options (adjusting distractor
+      wording, not meaning) until the rate clears 15% (if too low) or falls
+      back under 30% (if too high); re-count after edits.
+
+   6. SCENARIO-ROTATION DISCLOSURE PRESENT (FULL-60 only; DRILL-30 has no
+      scenarios drawn — mark n/a). Confirm the planned landing-card content
+      that Phase 4.f will build includes the disclosure line next to the 4
+      scenarios drawn: "These 4 were curated to guarantee coverage across
+      your exams — the real exam draws 4 of 6 at random each sitting, with
+      no such guarantee" (verbatim, or an equivalent statement carrying the
+      same meaning).
+      THRESHOLD: present in the landing-card spec you are about to hand to
+      Phase 4.f.
+      FAIL → add it to the landing-card build spec before Phase 4.f
+      proceeds. (This checks the PLANNED content, since the HTML doesn't
+      exist yet at this point in the pipeline — the self_verification
+      checklist re-confirms the line's presence in the shipped HTML after
+      Phase 4.f builds it.)
+
+   Report all six as a table in the Session Close Summary:
+   | # | Check | Computed value | Threshold | Pass/Fail | Fix applied (if any) |
+   Do not proceed to Phase 4.f until every row reads Pass (post-fix, where
+   needed).
 
 f. Build the HTML file at `mock-exams/CCA-Prep_MockTest-N_v1.html` (relative to
    this folder — i.e. `prep with quiz/mock-exams/`, never the project-root
    `practice/` folder, which holds unrelated static materials) per CLAUDE.md
    v2 Step 6 for naming/placement and v2 Step 5 for the HTML spec below:
-   landing card (exam N, date, format, scenarios drawn, prior performance per
+   landing card (exam N, date, format, scenarios drawn plus the scenario-
+   rotation disclosure line confirmed in e.6 check 6, prior performance per
    v4's "immediately prior" definition, Begin action), one-question-per-page
    q-cards (paginated, not continuous scroll) with Back/Next navigation (Next
    disabled until the current question is answered; becomes "Show my results"
@@ -698,6 +898,18 @@ Never write questions on topics in the out-of-scope list (Exam-Mechanics v2).
 Never make a CURRENT-DOCS-DELTA [CONFLICT-RISK] item the scored distinction of
   a question; author those areas per the official Exam Guide framing.
 Never generate a new exam without the user's explicit confirmation (Phase 4 gate).
+Never write a question's option content before that block's correct-answer-
+  letter sequence has been pre-planned (Phase 4.d.5); the post-hoc distribution
+  check (Phase 4.e.5) is a verification backstop, not a substitute for the
+  pre-plan.
+Never frame a scenario narrative or Situation opening with an invented
+  company, product, or persona name — use generic framing ("your agent", "the
+  pipeline") per Phase 4.b and 4.e.
+Never let a non-primary domain outnumber a primary domain within a scenario
+  block (Phase 4.e.6 check 4) — swap in newly-seeded primary-domain questions
+  instead of shipping the imbalance.
+Never proceed to Phase 4.f without a completed, all-Pass Phase 4.e.6 Fidelity
+  Verification Gate report.
 Never ship a question without all four rationales (1 whyRight + 3 whyWrong).
 Never let estimated domain data feed confirmed-weakness checks or insights trends.
 Never let a Professor's Note change the domain quota, drop a domain, override
@@ -767,7 +979,11 @@ spec.
 - Generation intelligence summary: KD coverage (used this exam / total),
   fresh/heavy section counts, scenario rotation state, distractor flags,
   rationale-quality flags, new patterns
-- Correct-answer-index distribution per block and in aggregate (Phase 4.e.5)
+- Correct-answer-letter pre-plan vs. actual distribution per block and in
+  aggregate (Phase 4.d.5 / 4.e.5), including any mismatch found and how it
+  was corrected
+- Fidelity Verification Gate (Phase 4.e.6) results table — all six checks,
+  computed values, thresholds, Pass/Fail, and any fixes applied
 - Open Findings Ledger reconciliation: which PROCESS_BUG rows were FIXED (with
   citation) or DEFERRED (with reason) this session; which CORPUS_GAP rows were
   re-verified and their resulting status
@@ -808,26 +1024,34 @@ Run after Phase 5a.5 and before marking COMPLETE. Fix every ❌ before closing.
 ☐ No [CONFLICT-RISK] delta item used as the scored distinction
 ☐ Style calibration applied: stems scenario-anchored, ~median-50-word register,
    parallel options, question forms per the style profile
-☐ HTML contains: landing card with actual data and a Begin action,
-   one-question-per-page q-cards with Back/Next (Next disabled until
-   answered), block headers (full card on first question of a block,
-   persistent tag thereafter), sticky nav with elapsed timer and a
-   collapsible jump-map (answered/unanswered/current states, "Show results
-   now" link), selection-aware rationale panel (both right-pick and
-   wrong-pick paths), timing capture, per-domain + per-block results, scaled
-   estimate + pass line, results-JSON export with copy button, a "Print full
-   exam" fallback action, localStorage save/resume with three-way resume
-   routing (landing / first-unanswered / results), JS stem comment block with
-   scenarios drawn
+☐ HTML contains: landing card with actual data, a Begin action, and the
+   scenario-rotation disclosure line, one-question-per-page q-cards with
+   Back/Next (Next disabled until answered), block headers (full card on
+   first question of a block, persistent tag thereafter), sticky nav with
+   elapsed timer and a collapsible jump-map (answered/unanswered/current
+   states, "Show results now" link), selection-aware rationale panel (both
+   right-pick and wrong-pick paths), timing capture, per-domain + per-block
+   results, scaled estimate + pass line, results-JSON export with copy
+   button, a "Print full exam" fallback action, localStorage save/resume
+   with three-way resume routing (landing / first-unanswered / results), JS
+   stem comment block with scenarios drawn
 ☐ If confirmed-weakness adjustment applied: distribution stated; collision rule
    respected
 ☐ If a Professor's Note existed (professor_note ≠ none): each note-named section
    is covered by ≥1 question within its domain quota (Phase 4c.5); domain quota,
    scenario rotation, and out-of-scope list were NOT altered by the note; the
    covered sections are stated in the Session Close Summary
-☐ Every scenario block's correct-answer-index distribution was computed and
-   reported (Phase 4.e.5); no block has all questions (or a severe majority) at
-   the same option letter — reshuffled if so, content unchanged
+☐ Every scenario block had a correct-answer-letter sequence pre-planned
+   (Phase 4.d.5) BEFORE its questions were written, and its actual
+   correct-answer-index distribution was computed, reported, and checked
+   against that pre-plan (Phase 4.e.5); no block has all questions (or a
+   severe majority) at the same option letter — reshuffled if so, content
+   unchanged
+☐ Phase 4.e.6 Fidelity Verification Gate report produced — all six checks
+   (invented names, correct-answer tally, word counts, domain tally vs.
+   primary domains, inline-token rate, rotation disclosure) computed and
+   reported, every row reading Pass (post-fix, where needed), before Phase
+   4.f began
 
 <!-- Generation intelligence checks -->
 ☐ GENERATION-INTELLIGENCE.md overwritten in full; sessions_recorded correct
@@ -850,3 +1074,4 @@ Report this checklist as a two-column table (Item | ✅/❌) in the Session Clos
 Summary. If any item remains ❌ after fixing, escalate to the user with a
 description of what could not be resolved.
 </self_verification>
+</output>
