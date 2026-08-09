@@ -1,12 +1,13 @@
 # CCA-F Exam Grounding Corpus — Master Index
 
-**Version:** 2.0 | 2026-07-06 (v1: 2026-06-27)
+**Version:** 2.1 | 2026-08-09 (v2.0: 2026-07-06; v1: 2026-06-27)
 **Source authority (in precedence order):**
-1. `source/CCA-F-Official-Exam-Guide.pdf` — the OFFICIAL Anthropic Exam Guide v0.2 (downloaded 2026-07-06 from the Skilljar certification page; text mirror `source/CCA-F-Official-Exam-Guide_text.txt`)
+1. `source/CCA-F-Official-Exam-Guide_v1.0.pdf` — the OFFICIAL Anthropic Exam Guide **v1.0** (Effective July 2026; official exam code **CCAR-F** — this corpus uses "CCA-F" throughout; retrieved 2026-08-09 from the Anthropic Partner Academy certification page; text mirror `source/CCA-F-Official-Exam-Guide_v1.0_text.txt`). Superseded v0.2 is retained at `source/CCA-F-Official-Exam-Guide.pdf` as the historical snapshot every exam through Exam 11 was authored against; a measured diff found the domain weights, all 6 scenarios, all 30 task statements, and both scope lists identical.
 2. Live Anthropic documentation (divergences tracked in `CURRENT-DOCS-DELTA_v1.md`)
 3. `source/guide_en.md` — community study guide (github.com/paullarionov/claude-certified-architect); depth source, not authoritative
 
 **Purpose:** Grounding knowledge base for all MCQ mock test generation. Every question written from this corpus traces to a source entry here.
+**Changelog v2.0→v2.1:** re-pointed the source-authority chain at the republished official Exam Guide **v1.0** (Ram approved 2026-08-09). A measured v0.2→v1.0 diff confirmed **zero change** to domain weights, the 6 scenarios, the 30 task statements, the in-scope list, and the 16-item out-of-scope list — so no domain corpus file required an edit. Only exam-mechanics meta-facts changed; those landed in `CCA-Prep_Exam-Mechanics_v2.md` v2.1. Filename stays `_v2` (subject-matter content untouched, and the path is referenced across the project).
 **Changelog v1→v2:** v1 wrongly cited the community guide as "Official"; corrected the scenario pool (official = 6, not 5+reserved); corpus remediated after an independent coverage audit (2026-07-06) found 3 missing task statements, 8 partial, and 2 missing official scenarios — all closed in the v2 domain files.
 
 ---
@@ -69,4 +70,8 @@ The community guide's "Conversational AI Architecture Patterns" (its #7) and "Ag
 | Key distinctions cover observed trap patterns | ✅ 25 documented |
 | Practice-test dedup ledger complete | ✅ 76 stems (verified count; the community guide's own "60" header is wrong) |
 
-**Next re-verification due:** before any exam generated after 2026-08-05 (30-day docs-currency rule in `CURRENT-DOCS-DELTA_v1.md`).
+| Primary source is the currently-published guide | ✅ re-verified 2026-08-09 — official guide republished as **v1.0** (Effective July 2026, code CCAR-F); measured diff vs cached v0.2 found weights, all 6 scenarios (100.0% identical), all 30 task statements (0 title diffs), and both scope lists **unchanged**. Only exam-mechanics meta-facts moved — see `CURRENT-DOCS-DELTA_v1.md` Part 1 (E1–E7). |
+
+**Next re-verification due:** before any exam generated after **2026-09-08** (30-day docs-currency rule in `CURRENT-DOCS-DELTA_v1.md`).
+
+**Re-verification must now cover the guide PDF itself, not just live docs.** The v0.2 → v1.0 republication happened two days after the cached download and stayed invisible for a month because prior checks only re-verified product documentation. Re-download the Exam Guide asset from the Partner Academy certification page and compare its printed version marker and §18 Document Control table.

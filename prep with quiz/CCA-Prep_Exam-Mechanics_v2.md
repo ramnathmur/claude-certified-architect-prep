@@ -1,29 +1,32 @@
 # CCA-F Exam Mechanics
 
-**Primary source:** `source/CCA-F-Official-Exam-Guide.pdf` — official Anthropic Exam Guide v0.2 (downloaded 2026-07-06 from the Skilljar certification page; plain-text mirror at `source/CCA-F-Official-Exam-Guide_text.txt`)
+**Primary source:** `source/CCA-F-Official-Exam-Guide_v1.0.pdf` — official Anthropic Exam Guide **v1.0** (Effective July 2026; official exam code **CCAR-F** — this corpus uses "CCA-F" throughout; retrieved 2026-08-09 from the Anthropic Partner Academy certification page; plain-text mirror at `source/CCA-F-Official-Exam-Guide_v1.0_text.txt`)
+**Historical snapshot:** `source/CCA-F-Official-Exam-Guide.pdf` — v0.2 (Last Updated June 30 2026, downloaded 2026-07-06). Retained because every exam through Exam 11 was authored against it. A measured diff of v0.2 → v1.0 found the domain weights, all 6 scenarios, all 30 task statements, the in-scope list, and the 16-item out-of-scope list **identical**; only the exam-mechanics meta-facts below changed. See `CURRENT-DOCS-DELTA_v1.md` Part 1.
 **Secondary source:** `source/guide_en.md` — community study guide (github.com/paullarionov/claude-certified-architect); depth and practice-test source, NOT authoritative for exam facts
-**Version:** 2.0 | 2026-07-06
+**Version:** 2.1 | 2026-08-09 (v2.0: 2026-07-06)
+**Changelog v2.0→v2.1:** re-grounded on the republished official Exam Guide **v1.0** (Ram approved 2026-08-09, ledger items CG-03/04/05/06). Three Format-table facts corrected: item format now includes multiple-response items; result reporting now returns per-domain percent-correct; the "platform requires an answer to every question" claim was removed from the official guide and is no longer asserted here. Retake policy upgraded from a Pearson VUE policy-page citation to the guide itself. **No domain weight, scenario, task statement, or out-of-scope item changed** — filename stays `_v2` because the subject-matter content is untouched and six files reference this path.
 **Changelog v1→v2:** re-grounded on the official PDF (v1 cited the community guide as "official"); added 60 Q / 120 min / validity / delivery / fee / retake facts; corrected scenario pool to the official 4-of-6 (v1 said "8 exist" and Corpus-Index said 5+1 — both wrong); added the two previously missing official scenarios; corrected practice-test arithmetic; added official In-Scope and Technologies appendices; added style-calibration pointer.
 
 ---
 
-## Format (official, Exam Guide v0.2 p.2)
+## Format (official, Exam Guide v1.0 §3)
 
 | Attribute | Value |
 |---|---|
 | Credential | Claude Certified Architect – Foundations |
 | Number of questions | **60** |
 | Time limit | **120 minutes** (~2 min/question) |
-| Response format | Multiple choice — 1 correct + 3 incorrect options, single answer |
+| Item format | **Multiple-choice AND multiple-response items; each item states how many responses to select.** Caveat worth holding: "multiple-response" appears exactly once in the whole guide with no elaboration, and all 12 official sample questions are still single-answer with 4 options. v0.2 said "one correct answer and three incorrect options" and carried a Response Types section asserting every question was single-answer; both were removed in v1.0. |
 | Exam structure | **4 scenarios drawn at random from a bank of 6** |
 | Content domains | 5 (weights below) |
 | Delivery | Online proctored or at a test center (Pearson VUE administers, effective 2026-06-30) |
 | Exam fee | $125 USD |
 | Scoring | Scaled 100–1,000; **minimum passing score 720** |
 | Validity | **12 months** from award date |
-| Result reporting | Pass / fail |
-| Answering | The platform **requires an answer to every question before advancing** — no skip, no penalty for wrong answers, so an unsure answer is always submitted |
-| Retakes | Max 4 attempts per rolling 12 months; waiting periods apply between attempts (per Pearson VUE policy pages, retrieved 2026-07-06) |
+| Result reporting | **Pass/fail with scaled score (100–1,000), plus percent-correct by domain on the score report.** Section-level percentages are informational — pass/fail is decided by the total scaled score alone (v1.0 §10). v0.2 said "Pass or fail" only. |
+| Answering | **v1.0 no longer states whether questions can be skipped.** v0.2 said the platform requires an answer before advancing; that sentence was removed. What still holds: there is no penalty for a wrong answer, so guessing costs nothing and an unsure answer should always be submitted. |
+| Retakes | Max **4 attempts per rolling 12 months**; waiting periods of **14 days** after the first failure, **30** after the second, **90** after the third. Limits are per exam. (Now guide-official — v1.0 §12; previously cited from Pearson VUE policy pages.) |
+| Recertification | Valid 12 months. Renew **on time** via a **free, non-proctored assessment** on the Anthropic Partner Academy. If the credential lapses, the **full exam at full fee** is required. Anthropic may also mandate a full retake instead of the renewal assessment if exam content changes significantly. (v1.0 §15 — absent from v0.2.) |
 
 ## Domain weights (official)
 
@@ -136,9 +139,10 @@ Claude Agent SDK (AgentDefinition, agentic loops, stop_reason, PostToolUse + int
 
 ## Scoring Context
 
-- Scale 100–1,000; pass 720; pass/fail reporting only
+- Scale 100–1,000; pass 720; score report returns pass/fail + the scaled score + percent-correct per domain (the per-domain figures are informational, not part of the pass decision)
+- Criterion-referenced: measured against a fixed standard set by a formal standard-setting study of minimally-qualified-candidate performance — not graded on a curve against other candidates (v1.0 §10)
 - Scaled scoring equates across exam forms of slightly different difficulty — a raw-percentage → scaled conversion is therefore an approximation; the generator's estimate formula must carry that caveat
-- No partial credit; platform forces an answer on every question (guessing costs nothing)
+- No partial credit; no penalty for a wrong answer (guessing costs nothing)
 - Domain-weighted: getting D1 wrong hurts most (27%), D5 least (15%)
 
 ## Docs Currency
