@@ -1,0 +1,1660 @@
+[
+ {
+  "id": "d1-001",
+  "domain": "D1",
+  "type": "fact",
+  "front": "Name the four `stop_reason` values the corpus defines for an agentic loop.",
+  "back": "`end_turn`, `tool_use`, `max_tokens`, `stop_sequence` - the four the exam guide works from; the loop decision only ever turns on `tool_use` vs `end_turn`.",
+  "cites": [
+   "Domain-1_v2 §1.1"
+  ],
+  "tags": [
+   "known-gap",
+   "d1.1",
+   "stop-reason"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-002",
+  "domain": "D1",
+  "type": "concept",
+  "front": "An orchestrator receives a response carrying `stop_reason: \"tool_use\"`. What are the next three things it does before the loop repeats?",
+  "back": "Extract the `tool_use` content blocks, execute each tool, and append `tool_result` blocks to `messages` before calling the API again.",
+  "cites": [
+   "Domain-1_v2 §1.1"
+  ],
+  "tags": [
+   "known-gap",
+   "d1.1",
+   "agentic-loop"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-003",
+  "domain": "D1",
+  "type": "trap",
+  "front": "A loop decides whether to run another turn by searching the assistant's text for phrases like 'task complete'. What is the defect?",
+  "back": "Completion is signaled by the structured `stop_reason` field, so text matching guesses at a value the API already returns on every response.",
+  "trap": "Exam trap: natural-language parsing for completion reads as reasonable and is the documented wrong answer.",
+  "cites": [
+   "Domain-1_v2 §1.1",
+   "Key-Distinctions_v1 #5"
+  ],
+  "tags": [
+   "known-gap",
+   "d1.1",
+   "agentic-loop"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-004",
+  "domain": "D1",
+  "type": "concept",
+  "front": "Two responses arrive with identical visible text. One carries `stop_reason: \"end_turn\"`, the other `stop_reason: \"tool_use\"`. What does the orchestrator do differently?",
+  "back": "On `end_turn` it stops and returns the output to the user; on `tool_use` it runs the requested tool and issues another API call.",
+  "cites": [
+   "Domain-1_v2 §1.1",
+   "Key-Distinctions_v1 #5"
+  ],
+  "tags": [
+   "known-gap",
+   "d1.1",
+   "stop-reason"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-005",
+  "domain": "D1",
+  "type": "concept",
+  "front": "Where do tool results go in the next API request of an agentic loop?",
+  "back": "Appended to `messages` as `tool_result` blocks, so the prior exchange is re-sent together with the new results.",
+  "cites": [
+   "Domain-1_v2 §1.1"
+  ],
+  "tags": [
+   "known-gap",
+   "d1.1",
+   "agentic-loop"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-006",
+  "domain": "D1",
+  "type": "trap",
+  "front": "An engineer caps the agent loop at a fixed number of iterations and treats hitting the cap as normal completion. Which signal has been ignored?",
+  "back": "The `stop_reason` field — an iteration count carries no information about whether Claude finished or still wants a tool.",
+  "trap": "Exam trap: an iteration cap is a safety valve, and the continue-or-stop decision still comes from `stop_reason`.",
+  "cites": [
+   "Domain-1_v2 §1.1"
+  ],
+  "tags": [
+   "known-gap",
+   "d1.1",
+   "agentic-loop"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-007",
+  "domain": "D1",
+  "type": "fact",
+  "front": "The response came back with `stop_reason: \"max_tokens\"`. What does that report?",
+  "back": "The response hit the token limit before finishing; handle it gracefully, which may mean continuing the generation.",
+  "cites": [
+   "Domain-1_v2 §1.1"
+  ],
+  "tags": [
+   "known-gap",
+   "d1.1",
+   "stop-reason"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-008",
+  "domain": "D1",
+  "type": "fact",
+  "front": "A custom stop sequence fired during generation. Which `stop_reason` value comes back, and who defines what happens next?",
+  "back": "`stop_sequence`, and the behavior from there is defined by the application.",
+  "cites": [
+   "Domain-1_v2 §1.1"
+  ],
+  "tags": [
+   "known-gap",
+   "d1.1",
+   "stop-reason"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-009",
+  "domain": "D1",
+  "type": "scenario",
+  "front": "Production logs show an agent that calls a tool, receives the result, then answers the user without using it. The code sends a fresh request containing only the original user message after each tool call. What is the bug?",
+  "back": "The `tool_result` blocks are never appended to `messages`, so the following request holds no record that the tool ever ran.",
+  "cites": [
+   "Domain-1_v2 §1.1"
+  ],
+  "tags": [
+   "known-gap",
+   "d1.1",
+   "agentic-loop"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-010",
+  "domain": "D1",
+  "type": "trap",
+  "front": "A developer moves loop termination into the prompt: 'when you are finished, reply with DONE.' Why is that weaker than the alternative?",
+  "back": "It depends on the model emitting an exact string, while `stop_reason` is set by the API on every response regardless of wording.",
+  "trap": "Exam trap: a sentinel word specified in the prompt feels deterministic and is still generated text.",
+  "cites": [
+   "Domain-1_v2 §1.1",
+   "Key-Distinctions_v1 #5"
+  ],
+  "tags": [
+   "known-gap",
+   "d1.1",
+   "agentic-loop"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-011",
+  "domain": "D1",
+  "type": "trap",
+  "front": "In an agentic loop, which side chooses that a tool should run — the orchestrator's code or the model?",
+  "back": "The model: it emits `tool_use` blocks and the response comes back with `stop_reason: \"tool_use\"`. The orchestrator's code carries out what was requested.",
+  "trap": "Exam trap: the orchestrator selects nothing about which tool runs; it reads the signal and performs the call.",
+  "cites": [
+   "Domain-1_v2 §1.1"
+  ],
+  "tags": [
+   "known-gap",
+   "d1.1",
+   "agentic-loop"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-012",
+  "domain": "D1",
+  "type": "scenario",
+  "front": "A reviewer is handed this loop: send `messages`; if the reply text contains `FINAL ANSWER`, return it; otherwise run any tool named in the prose and send again. Name the two structural corrections.",
+  "back": "Branch on `stop_reason` rather than reply text, and execute the tools carried in the response's `tool_use` blocks rather than ones parsed from prose.",
+  "cites": [
+   "Domain-1_v2 §1.1",
+   "Key-Distinctions_v1 #5"
+  ],
+  "tags": [
+   "known-gap",
+   "d1.1",
+   "agentic-loop"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-013",
+  "domain": "D1",
+  "type": "concept",
+  "front": "A single response can contain more than one `tool_use` block. What must the orchestrator do before the next request?",
+  "back": "Execute every one of them and append a `tool_result` block for each, then send the updated history back.",
+  "cites": [
+   "Domain-1_v2 §1.1"
+  ],
+  "tags": [
+   "agentic-loop",
+   "tool-results"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-014",
+  "domain": "D1",
+  "type": "concept",
+  "front": "In a hub-and-spoke agent system, how do two subagents exchange information?",
+  "back": "They do not exchange directly; every message passes through the coordinator, which decides what each subagent receives.",
+  "cites": [
+   "Domain-1_v2 §1.2",
+   "Key-Distinctions_v1 #6"
+  ],
+  "tags": [
+   "hub-and-spoke",
+   "coordinator"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-015",
+  "domain": "D1",
+  "type": "concept",
+  "front": "Name the four reasons the corpus gives for routing all inter-agent traffic through a coordinator.",
+  "back": "Visibility of all interactions, uniform error handling, control over what context each subagent receives, and separation of responsibilities.",
+  "cites": [
+   "Domain-1_v2 §1.2"
+  ],
+  "tags": [
+   "hub-and-spoke"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-016",
+  "domain": "D1",
+  "type": "concept",
+  "front": "Subagent context is isolated. What does that require of the coordinator on every delegation?",
+  "back": "It must write everything the subagent needs into that subagent's prompt; nothing from the coordinator's own history carries over.",
+  "cites": [
+   "Domain-1_v2 §1.2"
+  ],
+  "tags": [
+   "context-isolation",
+   "hub-and-spoke"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-017",
+  "domain": "D1",
+  "type": "trap",
+  "front": "A synthesis subagent produces a report missing everything the web-search subagent found. Both ran without error. What is the fix?",
+  "back": "Put the search agent's findings into the synthesis subagent's prompt; isolated context means nothing is inherited automatically.",
+  "trap": "Exam trap: the failure reads as a synthesis-agent weakness and is a context-passing omission by the coordinator.",
+  "cites": [
+   "Domain-1_v2 §1.2",
+   "Domain-1_v2 §1.5"
+  ],
+  "tags": [
+   "context-isolation",
+   "coordinator"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-018",
+  "domain": "D1",
+  "type": "concept",
+  "front": "Under hub-and-spoke, who decides whether a failed subagent call is retried, skipped, or escalated?",
+  "back": "The coordinator. Uniform error handling is one of the reasons traffic is centralized there.",
+  "cites": [
+   "Domain-1_v2 §1.2"
+  ],
+  "tags": [
+   "hub-and-spoke",
+   "error-handling"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-019",
+  "domain": "D1",
+  "type": "scenario",
+  "front": "Two specialist agents are wired to call each other directly so the coordinator does less work. Reviewers now find failures hard to trace, and each agent retries on its own terms. Which two properties of the intended architecture were given up?",
+  "back": "Central visibility and uniform error handling: the coordinator can no longer observe the exchanges or standardize recovery.",
+  "cites": [
+   "Domain-1_v2 §1.2",
+   "Key-Distinctions_v1 #6"
+  ],
+  "tags": [
+   "hub-and-spoke"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-020",
+  "domain": "D1",
+  "type": "fact",
+  "front": "Which three levers does an `AgentDefinition` use to shape a subagent type?",
+  "back": "Its description, its system prompt, and its tool restrictions (`allowed_tools`).",
+  "cites": [
+   "Domain-1_v2 §1.3"
+  ],
+  "tags": [
+   "agent-definition"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-021",
+  "domain": "D1",
+  "type": "fact",
+  "front": "What must be present in a coordinator's `allowedTools` before it can spawn any subagent?",
+  "back": "`Task`.",
+  "cites": [
+   "Domain-1_v2 §1.3",
+   "Domain-1_v2 §1.2"
+  ],
+  "tags": [
+   "agent-definition",
+   "coordinator"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-022",
+  "domain": "D1",
+  "type": "trap",
+  "front": "A coordinator never delegates and attempts every task itself, even though its system prompt tells it to delegate. What should be checked first?",
+  "back": "Whether `\"Task\"` is present in its `allowedTools` — a prompt cannot grant a tool that the configuration withholds.",
+  "trap": "Exam trap: rewriting the prompt and adding subagent descriptions both appear as fixes, and neither enables spawning.",
+  "cites": [
+   "Domain-1_v2 §1.3"
+  ],
+  "tags": [
+   "agent-definition",
+   "coordinator"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-023",
+  "domain": "D1",
+  "type": "concept",
+  "front": "In an `AgentDefinition`, what job does the `description` field do that the `system_prompt` does not?",
+  "back": "The description tells the orchestration layer what this agent type is for; the system prompt governs how the agent behaves once it is running.",
+  "cites": [
+   "Domain-1_v2 §1.3"
+  ],
+  "tags": [
+   "agent-definition"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-024",
+  "domain": "D1",
+  "type": "trap",
+  "front": "A team gives every subagent type the full tool set 'for flexibility'. Which two design properties does that destroy?",
+  "back": "Separation of responsibilities and least privilege — per-type tool restrictions are the mechanism that enforces both.",
+  "trap": "Exam trap: flexibility reads as a benefit, and the corpus marks the full-tool-set choice as wrong.",
+  "cites": [
+   "Domain-1_v2 §1.3",
+   "Domain-1_v2 §1.11"
+  ],
+  "tags": [
+   "agent-definition",
+   "least-privilege"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-025",
+  "domain": "D1",
+  "type": "concept",
+  "front": "Which `AgentDefinition` parameter is where least privilege actually lands?",
+  "back": "`allowed_tools`, the whitelist naming every tool that agent type may call.",
+  "cites": [
+   "Domain-1_v2 §1.3"
+  ],
+  "tags": [
+   "agent-definition",
+   "least-privilege"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-026",
+  "domain": "D1",
+  "type": "concept",
+  "front": "What should a coordinator prompt specify instead of a step-by-step procedure?",
+  "back": "Research goals and quality criteria, leaving subagents free to adapt their approach to what they find.",
+  "cites": [
+   "Domain-1_v2 §1.4"
+  ],
+  "tags": [
+   "coordinator-prompt",
+   "goal-oriented"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-027",
+  "domain": "D1",
+  "type": "trap",
+  "front": "A research coordinator returns shallow, checklist-like results. Someone proposes writing more detailed step-by-step instructions. Why does that fail?",
+  "back": "Rigidity produced the shallowness, and more procedure deepens it. Restate the prompt as goals plus quality criteria.",
+  "trap": "Exam trap: two wrong fixes appear together — more procedural detail, and more subagents running the same bad script.",
+  "cites": [
+   "Domain-1_v2 §1.4"
+  ],
+  "tags": [
+   "coordinator-prompt"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-028",
+  "domain": "D1",
+  "type": "concept",
+  "front": "Why does a procedural coordinator prompt break in production?",
+  "back": "It is a fixed script, so when a step's results differ from what the script assumed there is no path to adapt.",
+  "cites": [
+   "Domain-1_v2 §1.4"
+  ],
+  "tags": [
+   "coordinator-prompt"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-029",
+  "domain": "D1",
+  "type": "concept",
+  "front": "Goal-oriented delegation applies which loop-level principle at the orchestration level?",
+  "back": "Model-driven decision-making: Claude reasons about the next action from context instead of running a pre-configured decision tree.",
+  "cites": [
+   "Domain-1_v2 §1.4",
+   "Domain-1_v2 §1.1"
+  ],
+  "tags": [
+   "coordinator-prompt",
+   "goal-oriented"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-030",
+  "domain": "D1",
+  "type": "scenario",
+  "front": "A coordinator prompt reads: 'Step 1, search the term. Step 2, open the first five results. Step 3, summarize each in 100 words.' Coverage is thin, and the run derails whenever a search returns fewer than five results. At what level should the prompt be rewritten?",
+  "back": "At the level of goals and quality criteria, such as which areas must be covered and how many independent sources each claim needs.",
+  "cites": [
+   "Domain-1_v2 §1.4"
+  ],
+  "tags": [
+   "coordinator-prompt",
+   "goal-oriented"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-031",
+  "domain": "D1",
+  "type": "concept",
+  "front": "What structural property must an inter-agent data format have for attribution to survive?",
+  "back": "It separates content from metadata — source URL, document name, page number, retrieval date — so claim-to-source mapping outlives aggregation.",
+  "cites": [
+   "Domain-1_v2 §1.5"
+  ],
+  "tags": [
+   "context-passing",
+   "attribution"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-032",
+  "domain": "D1",
+  "type": "scenario",
+  "front": "The finished research report reads well and every subagent completed without error, but a spot check finds several citations attached to the wrong source and others missing entirely. What is the root cause?",
+  "back": "Content and source metadata travelled between agents as merged free text, so the claim-to-source mapping was lost during aggregation.",
+  "trap": "Exam trap: telling the synthesis agent to 'remember to cite sources' cannot work — it never received metadata in structured form.",
+  "cites": [
+   "Domain-1_v2 §1.5"
+  ],
+  "tags": [
+   "context-passing",
+   "attribution"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-033",
+  "domain": "D1",
+  "type": "trap",
+  "front": "Two sources report different figures for the same statistic. What goes into the subagent's output?",
+  "back": "Both values with their attribution, plus an annotation that they disagree, leaving the resolution to the coordinator.",
+  "trap": "Exam trap: quietly picking one of the two figures throws away information the coordinator needs to decide.",
+  "cites": [
+   "Domain-1_v2 §1.5"
+  ],
+  "tags": [
+   "context-passing",
+   "attribution"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-034",
+  "domain": "D1",
+  "type": "concept",
+  "front": "What must the coordinator include in a synthesis subagent's prompt about earlier stages?",
+  "back": "The complete findings from those stages: web-search results and document-analysis outputs both go in directly.",
+  "cites": [
+   "Domain-1_v2 §1.5"
+  ],
+  "tags": [
+   "context-passing"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-035",
+  "domain": "D1",
+  "type": "trap",
+  "front": "Someone proposes closing a citation gap by having the report agent re-search the web for a source behind each claim. What is wrong with that?",
+  "back": "It repeats work already done and can bind a claim to a source that was never its origin.",
+  "trap": "Exam trap: re-searching looks thorough and manufactures plausible but incorrect attributions.",
+  "cites": [
+   "Domain-1_v2 §1.5"
+  ],
+  "tags": [
+   "attribution"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-036",
+  "domain": "D1",
+  "type": "concept",
+  "front": "Every subagent returns correct output and the final deliverable still misses whole topic areas. Where does the fault sit?",
+  "back": "In the coordinator's task decomposition — the subtasks it assigned never covered those areas.",
+  "cites": [
+   "Domain-1_v2 §1.6",
+   "Key-Distinctions_v1 #7"
+  ],
+  "tags": [
+   "decomposition",
+   "coordinator"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-037",
+  "domain": "D1",
+  "type": "trap",
+  "front": "A research system asked about AI's impact on creative industries returns visual-art material only. Which three components are NOT the root cause?",
+  "back": "The web-search agent's query quality, the synthesis agent's gap detection, and the document-analysis filters.",
+  "trap": "Exam trap: three of the four options blame a subagent, and the decomposition that produced those subtasks sits upstream of all of them.",
+  "cites": [
+   "Domain-1_v2 §1.6",
+   "Key-Distinctions_v1 #7"
+  ],
+  "tags": [
+   "decomposition"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-038",
+  "domain": "D1",
+  "type": "fact",
+  "front": "What does the corpus call the coordinator's most critical responsibility?",
+  "back": "Task decomposition.",
+  "cites": [
+   "Domain-1_v2 §1.6"
+  ],
+  "tags": [
+   "decomposition"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-039",
+  "domain": "D1",
+  "type": "trap",
+  "front": "Two subagents investigate the same subtopics, burning tokens for no extra depth. What is the fix?",
+  "back": "Partition the research space in the coordinator before delegating, rather than deduplicating results afterwards.",
+  "trap": "Exam trap: post-hoc deduplication strips the repeated text after the tokens have already been spent.",
+  "cites": [
+   "Domain-1_v2 §1.6"
+  ],
+  "tags": [
+   "decomposition"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-040",
+  "domain": "D1",
+  "type": "scenario",
+  "front": "A coordinator is asked for a market overview spanning three regions. It spawns three agents, and all three return solid analysis of the largest region only. No individual output contains an error. Which artifact has to change?",
+  "back": "The coordinator's decomposition — its subtasks were scoped to one region, so correct subagent work could never reach the other two.",
+  "cites": [
+   "Domain-1_v2 §1.6"
+  ],
+  "tags": [
+   "decomposition"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-041",
+  "domain": "D1",
+  "type": "concept",
+  "front": "When is a fixed sequential pipeline (prompt chaining) the right decomposition?",
+  "back": "When the task structure is predictable, all steps are known up front, and stability plus reproducibility matter.",
+  "cites": [
+   "Domain-1_v2 §1.7"
+  ],
+  "tags": [
+   "decomposition",
+   "prompt-chaining"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-042",
+  "domain": "D1",
+  "type": "concept",
+  "front": "When is dynamic adaptive decomposition the right choice?",
+  "back": "For open-ended investigation where the full scope is unknown up front and each step depends on the previous step's results.",
+  "cites": [
+   "Domain-1_v2 §1.7"
+  ],
+  "tags": [
+   "decomposition",
+   "adaptive"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-043",
+  "domain": "D1",
+  "type": "trap",
+  "front": "'Add tests across a legacy codebase.' Which decomposition strategy fits?",
+  "back": "Dynamic adaptive: map the structure first, prioritize high-risk modules, then revise the plan as dependencies surface.",
+  "trap": "Exam trap: a fixed pipeline and one giant single-pass prompt both appear — scope is unknown up front, and one pass dilutes attention.",
+  "cites": [
+   "Domain-1_v2 §1.7"
+  ],
+  "tags": [
+   "decomposition",
+   "adaptive"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-044",
+  "domain": "D1",
+  "type": "scenario",
+  "front": "A pull request touches 14 files and one reviewing agent reads all of them in a single pass. Its comments run deep on the first few files and thin on the rest, and it flags a pattern in one file that it approved in another. Name the mechanism at work.",
+  "back": "Attention dilution across a single long pass: depth varies by position, and the same pattern gets judged inconsistently.",
+  "trap": "Exam trap: a model with a bigger context window is the appealing fix, and more tokens available does not buy consistent attention per token.",
+  "cites": [
+   "Domain-1_v2 §1.7",
+   "Key-Distinctions_v1 #17"
+  ],
+  "tags": [
+   "decomposition",
+   "code-review"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-045",
+  "domain": "D1",
+  "type": "concept",
+  "front": "How is a large-PR review split into passes?",
+  "back": "A per-file pass for local issues, then a separate integration pass for cross-file problems such as inconsistent types and circular dependencies.",
+  "cites": [
+   "Domain-1_v2 §1.7",
+   "Key-Distinctions_v1 #17"
+  ],
+  "tags": [
+   "decomposition",
+   "code-review"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-046",
+  "domain": "D1",
+  "type": "trap",
+  "front": "A code review always follows the same fixed template. Which decomposition applies?",
+  "back": "A fixed sequential pipeline. The structure is predictable, so dynamic decomposition would add complexity for nothing.",
+  "trap": "Exam trap: dynamic decomposition sounds more capable and is the wrong pick when the steps never vary.",
+  "cites": [
+   "Domain-1_v2 §1.7"
+  ],
+  "tags": [
+   "decomposition",
+   "prompt-chaining"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-047",
+  "domain": "D1",
+  "type": "fact",
+  "front": "Give the step sequence of the fixed pipeline the corpus uses for document extraction.",
+  "back": "Document, metadata extraction, data extraction, validation, enrichment, output.",
+  "cites": [
+   "Domain-1_v2 §1.7"
+  ],
+  "tags": [
+   "prompt-chaining"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-048",
+  "domain": "D1",
+  "type": "scenario",
+  "front": "The synthesis subagent returns a well-formed report, and the coordinator's own check finds two required topic areas with no supporting findings behind them. Search agents are still available. What does the coordinator do next?",
+  "back": "Re-delegate targeted queries aimed at those two gaps, then re-invoke synthesis with the enriched findings, repeating until coverage is sufficient.",
+  "cites": [
+   "Domain-1_v2 §1.8"
+  ],
+  "tags": [
+   "refinement-loop",
+   "coordinator"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-049",
+  "domain": "D1",
+  "type": "trap",
+  "front": "Someone proposes letting the synthesis agent search the web itself to close its own coverage gaps. What does that break?",
+  "back": "Separation of responsibilities and least-privilege tooling — gap-filling research belongs to the search agents the coordinator re-delegates to.",
+  "trap": "Exam trap: handing the synthesis agent a search tool is the fastest-looking fix and widens its privilege.",
+  "cites": [
+   "Domain-1_v2 §1.8",
+   "Domain-1_v2 §1.11"
+  ],
+  "tags": [
+   "refinement-loop",
+   "least-privilege"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-050",
+  "domain": "D1",
+  "type": "trap",
+  "front": "A team ships a gap-ridden report with the note 'further research needed' while re-delegation was still available. Why is that the wrong call here?",
+  "back": "Coverage annotation is reserved for gaps that cannot be recovered; when targeted re-delegation can close them, the refinement loop runs first.",
+  "trap": "Exam trap: annotating a gap is correct behavior in a different situation, which is what makes it attractive here.",
+  "cites": [
+   "Domain-1_v2 §1.8",
+   "Domain-1_v2 §1.10"
+  ],
+  "tags": [
+   "refinement-loop",
+   "coverage-annotation"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-051",
+  "domain": "D1",
+  "type": "concept",
+  "front": "What keeps a coordinator's refinement loop from running forever?",
+  "back": "A defined sufficiency criterion: the quality criteria stated in the coordinator prompt give it a point at which coverage counts as enough.",
+  "cites": [
+   "Domain-1_v2 §1.8",
+   "Domain-1_v2 §1.4"
+  ],
+  "tags": [
+   "refinement-loop"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-052",
+  "domain": "D1",
+  "type": "fact",
+  "front": "Name the four parts of the error payload a failing subagent returns.",
+  "back": "Failure type, what was attempted, any partial results, and potential alternatives.",
+  "cites": [
+   "Domain-1_v2 §1.9",
+   "Key-Distinctions_v1 #8"
+  ],
+  "tags": [
+   "error-propagation"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-053",
+  "domain": "D1",
+  "type": "trap",
+  "front": "A subagent reports '0 results' from an industry-report search. How should the coordinator classify that?",
+  "back": "As a valid, informative finding. The case that calls for a retry-or-reroute decision is a timeout.",
+  "trap": "Exam trap: '0 results' and a timeout look alike in a log line and call for opposite responses.",
+  "cites": [
+   "Domain-1_v2 §1.9",
+   "Key-Distinctions_v1 #9"
+  ],
+  "tags": [
+   "error-propagation"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-054",
+  "domain": "D1",
+  "type": "concept",
+  "front": "Which failures does a subagent resolve itself, and which go up to the coordinator?",
+  "back": "It handles transient failures locally with retry and backoff; anything it cannot resolve goes up with full context and whatever partial progress exists.",
+  "cites": [
+   "Domain-1_v2 §1.9"
+  ],
+  "tags": [
+   "error-propagation"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-055",
+  "domain": "D1",
+  "type": "concept",
+  "front": "State the two 'never' rules for subagent error handling.",
+  "back": "Never catch a failure and silently return success, and never terminate the whole workflow because one subagent failed.",
+  "cites": [
+   "Domain-1_v2 §1.9"
+  ],
+  "tags": [
+   "error-propagation"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-056",
+  "domain": "D1",
+  "type": "scenario",
+  "front": "A subagent's patent-database search fails and returns the single field `\"status\": \"search unavailable\"`. The coordinator retries once, gets the same string, and aborts. Which coordinator options did that payload make impossible?",
+  "back": "Retrying with a modified query, continuing on partial results, and rerouting to an alternative source — a generic string supports none of them.",
+  "trap": "Exam trap: a generic failure status reduces the coordinator to retry-or-abort.",
+  "cites": [
+   "Domain-1_v2 §1.9",
+   "Key-Distinctions_v1 #8"
+  ],
+  "tags": [
+   "error-propagation"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-057",
+  "domain": "D1",
+  "type": "concept",
+  "front": "A patent-database query times out; a malformed query string is rejected. Which one gets retried?",
+  "back": "The timeout, because it is transient. A malformed query is permanent: log it and continue instead of retrying.",
+  "cites": [
+   "Domain-1_v2 §1.9",
+   "Key-Distinctions_v1 #9"
+  ],
+  "tags": [
+   "error-propagation"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-058",
+  "domain": "D1",
+  "type": "concept",
+  "front": "Web search returned 3 of 5 source categories. What does the synthesis agent produce?",
+  "back": "A synthesis built from the available data, annotated to show which conclusions are well-supported and where data is missing.",
+  "cites": [
+   "Domain-1_v2 §1.10"
+  ],
+  "tags": [
+   "coverage-annotation"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-059",
+  "domain": "D1",
+  "type": "trap",
+  "front": "Two tempting responses to incomplete upstream input are both wrong. Name them.",
+  "back": "Returning an error because the input was incomplete, and proceeding without noting the gaps.",
+  "trap": "Exam trap: refusing on incomplete input reads as rigor and discards usable analysis.",
+  "cites": [
+   "Domain-1_v2 §1.10"
+  ],
+  "tags": [
+   "coverage-annotation"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-060",
+  "domain": "D1",
+  "type": "concept",
+  "front": "What does the synthesis agent do with uncertainty inherited from partial inputs?",
+  "back": "Propagate it upward, marking which conclusions rest on complete data and which do not.",
+  "cites": [
+   "Domain-1_v2 §1.10"
+  ],
+  "tags": [
+   "coverage-annotation"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-061",
+  "domain": "D1",
+  "type": "concept",
+  "front": "A synthesis agent needs 85% simple fact checks and 15% complex research. How is its tooling scoped?",
+  "back": "Give it a limited `verify_fact` tool for the simple checks and route complex verification back through the coordinator.",
+  "cites": [
+   "Domain-1_v2 §1.11"
+  ],
+  "tags": [
+   "least-privilege"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-062",
+  "domain": "D1",
+  "type": "trap",
+  "front": "A synthesis agent needs some facts verified. What does granting it full web-search access cost?",
+  "back": "Separation of responsibilities: its scope widens past synthesis into the search agents' territory.",
+  "trap": "Exam trap: batching every verification to the end is the other wrong option — it blocks later synthesis steps that need earlier verified facts.",
+  "cites": [
+   "Domain-1_v2 §1.11"
+  ],
+  "tags": [
+   "least-privilege"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-063",
+  "domain": "D1",
+  "type": "scenario",
+  "front": "A document-analysis agent was given `fetch_url` so it could load PDFs by link. Logs show it now issues ad-hoc web searches and pulls in HTML pages well outside its scope. What is the interface-level fix?",
+  "back": "Replace `fetch_url` with a `load_document` tool that validates the URL points at a document format.",
+  "trap": "Exam trap: a prompt instruction forbidding search is probabilistic, and changing the tool interface removes the capability outright.",
+  "cites": [
+   "Domain-1_v2 §1.11"
+  ],
+  "tags": [
+   "least-privilege",
+   "tool-scope"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-064",
+  "domain": "D1",
+  "type": "concept",
+  "front": "Why does removing a capability from the tool interface beat forbidding its use in the prompt?",
+  "back": "The interface change is deterministic; a prompt instruction is probabilistic and can be ignored on any given turn.",
+  "cites": [
+   "Domain-1_v2 §1.11",
+   "Key-Distinctions_v1 #11"
+  ],
+  "tags": [
+   "least-privilege"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-065",
+  "domain": "D1",
+  "type": "concept",
+  "front": "State the least-privilege rule for subagent tooling in one line.",
+  "back": "Each subagent gets only the tools its defined scope requires.",
+  "cites": [
+   "Domain-1_v2 §1.11"
+  ],
+  "tags": [
+   "least-privilege"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-066",
+  "domain": "D1",
+  "type": "fact",
+  "front": "Name the four conditions that warrant escalating to a human.",
+  "back": "A policy gap, an explicit user request for a human, an inability to make progress after repeated retries, and high-stakes ambiguity.",
+  "cites": [
+   "Domain-1_v2 §1.12"
+  ],
+  "tags": [
+   "escalation"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-067",
+  "domain": "D1",
+  "type": "scenario",
+  "front": "A customer asks the support agent to match a competitor's advertised price. Company policy covers price drops on its own site and says nothing at all about competitors. What does the agent do?",
+  "back": "Escalate. The situation needs policy interpretation, and the agent must not invent policy.",
+  "cites": [
+   "Domain-1_v2 §1.12"
+  ],
+  "tags": [
+   "escalation"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-068",
+  "domain": "D1",
+  "type": "trap",
+  "front": "In the competitor-price-match case, why is answering 'we do not match competitor prices' the wrong move?",
+  "back": "Policy does not state that refusal either, so both applying own-site rules and refusing invent a position the policy never took.",
+  "trap": "Exam trap: a confident refusal feels safer than escalating and is still the agent writing policy for itself.",
+  "cites": [
+   "Domain-1_v2 §1.12"
+  ],
+  "tags": [
+   "escalation"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-069",
+  "domain": "D1",
+  "type": "concept",
+  "front": "What separates 'unable to make progress' from a single tool failure as an escalation trigger?",
+  "back": "Escalation follows repeated retries that leave the task unresolved; one failure is absorbed inside the workflow.",
+  "cites": [
+   "Domain-1_v2 §1.12",
+   "Domain-1_v2 §1.9"
+  ],
+  "tags": [
+   "escalation"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-070",
+  "domain": "D1",
+  "type": "fact",
+  "front": "Which four fields does the exam name as the core of an escalation handoff summary?",
+  "back": "Customer ID, root-cause analysis, the refund amount, and the recommended action.",
+  "cites": [
+   "Domain-1_v2 §1.13"
+  ],
+  "tags": [
+   "handoff",
+   "escalation"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-071",
+  "domain": "D1",
+  "type": "concept",
+  "front": "What does the human agent receiving an escalation have access to?",
+  "back": "Only the handoff summary. They have no access to the conversation transcript, so the summary must stand on its own.",
+  "cites": [
+   "Domain-1_v2 §1.13"
+  ],
+  "tags": [
+   "handoff"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-072",
+  "domain": "D1",
+  "type": "scenario",
+  "front": "Support escalations are resolving slowly. Recordings show human agents asking customers for the order number and the problem description a second time, minutes after the AI agent already collected both. What is the root cause?",
+  "back": "The escalation carried only a generic flag or a free-text note, so the structured case facts and the actions already taken never reached the human.",
+  "trap": "Exam trap: handing humans the raw transcript is the plausible fix — they have no transcript access by design, and re-reading a whole conversation is slower.",
+  "cites": [
+   "Domain-1_v2 §1.13"
+  ],
+  "tags": [
+   "handoff",
+   "escalation"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-073",
+  "domain": "D1",
+  "type": "concept",
+  "front": "A team proposes escalating earlier so less context piles up before handoff. What does that cost?",
+  "back": "The information loss stays exactly where it was, and the share of cases the agent resolves on its own drops.",
+  "cites": [
+   "Domain-1_v2 §1.13"
+  ],
+  "tags": [
+   "handoff"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-074",
+  "domain": "D1",
+  "type": "concept",
+  "front": "Beyond the case facts, which two entries belong in a handoff payload?",
+  "back": "The actions already taken, and the reason for escalating.",
+  "cites": [
+   "Domain-1_v2 §1.13"
+  ],
+  "tags": [
+   "handoff"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-075",
+  "domain": "D1",
+  "type": "trap",
+  "front": "A support agent skips `get_customer` and calls `lookup_order` with a customer-supplied order number, hitting the wrong account 15% of the time. What is the fix?",
+  "back": "A programmatic precondition that blocks `lookup_order` until `get_customer` has returned a verified identifier.",
+  "trap": "Exam trap: strengthening the system prompt and adding few-shot examples of the right order are both probabilistic.",
+  "cites": [
+   "Domain-1_v2 §1.14",
+   "Key-Distinctions_v1 #11"
+  ],
+  "tags": [
+   "preconditions",
+   "sequencing"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-076",
+  "domain": "D1",
+  "type": "concept",
+  "front": "Where is security-critical sequencing enforced?",
+  "back": "At the code level, as a precondition, rather than in the prompt.",
+  "cites": [
+   "Domain-1_v2 §1.14"
+  ],
+  "tags": [
+   "preconditions",
+   "sequencing"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-077",
+  "domain": "D1",
+  "type": "concept",
+  "front": "What makes a prompt instruction the weaker mechanism for mandatory ordering?",
+  "back": "It is probabilistic — the model may not follow it on a given turn, while a code precondition holds every time.",
+  "cites": [
+   "Domain-1_v2 §1.14",
+   "Key-Distinctions_v1 #11"
+  ],
+  "tags": [
+   "preconditions"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-078",
+  "domain": "D1",
+  "type": "scenario",
+  "front": "Identity verification must always run before any account action. A reviewer suggests adding 'ALWAYS verify first' in capitals to the system prompt plus three worked examples showing the right order. What is still missing?",
+  "back": "A code-level gate that refuses the account action until verification has returned a verified identifier.",
+  "cites": [
+   "Domain-1_v2 §1.14"
+  ],
+  "tags": [
+   "preconditions",
+   "sequencing"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-079",
+  "domain": "D1",
+  "type": "concept",
+  "front": "What makes several subagent tasks run at the same time rather than one after another?",
+  "back": "Emitting all the `Task` calls in a single coordinator response; issuing them across separate turns runs them sequentially.",
+  "cites": [
+   "Domain-1_v2 §1.15"
+  ],
+  "tags": [
+   "parallel-execution"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-080",
+  "domain": "D1",
+  "type": "concept",
+  "front": "A billing dispute has three parts: a double charge, a missing discount, and a cancellation request. How is it handled?",
+  "back": "Split it into three issues, investigate them in parallel with shared customer context, then synthesize one resolution.",
+  "cites": [
+   "Domain-1_v2 §1.15"
+  ],
+  "tags": [
+   "parallel-execution"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-081",
+  "domain": "D1",
+  "type": "concept",
+  "front": "Why is investigating a three-part customer issue one part at a time the weaker design?",
+  "back": "It drives up the tool-call count and refetches the same customer data once per part.",
+  "cites": [
+   "Domain-1_v2 §1.15"
+  ],
+  "tags": [
+   "parallel-execution"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-082",
+  "domain": "D1",
+  "type": "fact",
+  "front": "Which three kinds of work does the corpus name as fits for parallel `Task` calls?",
+  "back": "Independent research tasks, multi-issue customer requests, and multi-dimensional analysis.",
+  "cites": [
+   "Domain-1_v2 §1.15"
+  ],
+  "tags": [
+   "parallel-execution"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-083",
+  "domain": "D1",
+  "type": "fact",
+  "front": "Which command continues a specific named prior conversation with its saved context?",
+  "back": "`claude --resume <session-name>`.",
+  "cites": [
+   "Domain-1_v2 §1.16"
+  ],
+  "tags": [
+   "sessions"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-084",
+  "domain": "D1",
+  "type": "concept",
+  "front": "What does `fork_session` give you that two brand-new sessions do not?",
+  "back": "Both branches inherit the shared analysis up to the branch point, so the expensive baseline runs once and neither branch contaminates the other.",
+  "cites": [
+   "Domain-1_v2 §1.16"
+  ],
+  "tags": [
+   "sessions",
+   "fork"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-085",
+  "domain": "D1",
+  "type": "trap",
+  "front": "A team wants to evaluate two refactoring strategies from one completed codebase analysis. Why not run both in a single session, one after the other?",
+  "back": "The second evaluation inherits the first one's reasoning and conclusions, so it is no longer independent.",
+  "trap": "Exam trap: sequential evaluation in one session looks economical and quietly biases the second strategy.",
+  "cites": [
+   "Domain-1_v2 §1.16"
+  ],
+  "tags": [
+   "sessions",
+   "fork"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-086",
+  "domain": "D1",
+  "type": "concept",
+  "front": "Prior tool results are stale after significant file changes. Resume, or start fresh?",
+  "back": "Start a new session and inject a structured summary, carrying the conclusions forward without the stale evidence.",
+  "cites": [
+   "Domain-1_v2 §1.16"
+  ],
+  "tags": [
+   "sessions"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-087",
+  "domain": "D1",
+  "type": "scenario",
+  "front": "Yesterday's session analyzed the codebase. Overnight, three files were refactored and everything else was left untouched. The same investigation continues today. What is the correct move?",
+  "back": "Resume the named session and tell it exactly which three files changed, so it re-analyzes only those.",
+  "trap": "Exam trap: resuming as-is reasons over stale results, and re-analyzing the whole codebase discards context that is still valid.",
+  "cites": [
+   "Domain-1_v2 §1.16"
+  ],
+  "tags": [
+   "sessions"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-088",
+  "domain": "D1",
+  "type": "concept",
+  "front": "What is the standing risk of `--resume` on a long-running investigation?",
+  "back": "If files changed since the prior session, its saved tool results are stale and the agent treats them as current.",
+  "cites": [
+   "Domain-1_v2 §1.16"
+  ],
+  "tags": [
+   "sessions"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-089",
+  "domain": "D1",
+  "type": "concept",
+  "front": "Claude Code writes code, reasons through edge cases, concludes its approach is sound, and non-obvious bugs surface only in PR review. What is the architectural fix?",
+  "back": "A second independent instance reviews the changes without seeing the first instance's reasoning.",
+  "cites": [
+   "Domain-1_v2 §1.17"
+  ],
+  "tags": [
+   "independent-review"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-090",
+  "domain": "D1",
+  "type": "trap",
+  "front": "Why do self-review instructions added to the generation prompt fail to catch what the generator missed?",
+  "back": "The same instance re-reads its own work with the same reasoning, so the confirmation bias that hid the bug is still in place.",
+  "trap": "Exam trap: extended thinking on the generation stage is the other appealing option and runs into the same limit.",
+  "cites": [
+   "Domain-1_v2 §1.17"
+  ],
+  "tags": [
+   "independent-review"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-091",
+  "domain": "D1",
+  "type": "fact",
+  "front": "Which named pattern describes a two-stage design where a generator's output goes to an independent critic?",
+  "back": "Evaluator-optimizer.",
+  "cites": [
+   "Domain-1_v2 §1.18"
+  ],
+  "tags": [
+   "patterns"
+  ],
+  "core": true,
+  "rev": true
+ },
+ {
+  "id": "d1-092",
+  "domain": "D1",
+  "type": "fact",
+  "front": "Which named pattern covers starting a new session with an injected structured summary instead of resuming?",
+  "back": "Fresh-plus-summary.",
+  "cites": [
+   "Domain-1_v2 §1.18",
+   "Domain-1_v2 §1.16"
+  ],
+  "tags": [
+   "patterns",
+   "sessions"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d1-094",
+  "domain": "D1",
+  "type": "trap",
+  "front": "A loop keeps re-invoking Claude until the reply text contains a fixed completion phrase, and hangs on sessions where Claude answered without using that wording. What should it test instead?",
+  "back": "The response's `stop_reason` field -- continue while it reads `tool_use`, stop and return the reply once it reads `end_turn`.",
+  "trap": "Exam trap: parsing the reply for completion language is the named anti-pattern. It reads as reasonable engineering and is wrong every time.",
+  "cites": [
+   "Key-Distinctions_v1 #5",
+   "Domain-1_v2 §1.1"
+  ],
+  "tags": [
+   "known-gap",
+   "d1.1",
+   "agentic-loop"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-095",
+  "domain": "D1",
+  "type": "trap",
+  "front": "What role does a maximum-iteration cap play in an agent loop?",
+  "back": "A safety backstop against a runaway loop. Termination is decided by `stop_reason`, which reports whether Claude has actually finished.",
+  "trap": "Exam trap: a cap truncates legitimate multi-tool work and lets an already-finished turn keep looping, so it can never stand in for the stop signal.",
+  "cites": [
+   "Domain-1_v2 §1.1",
+   "Key-Distinctions_v1 #5"
+  ],
+  "tags": [
+   "known-gap",
+   "d1.1",
+   "agentic-loop"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-096",
+  "domain": "D1",
+  "type": "trap",
+  "front": "Claude returns a `stop_reason` of `tool_use` and your code runs the tool. What goes back into the conversation before the next API call?",
+  "back": "A `tool_result` content block appended to `messages`, matched to the `tool_use` block by its `id`.",
+  "trap": "Exam trap: handing the tool's output straight to the user ends the turn early -- Claude has not yet seen the result it asked for.",
+  "cites": [
+   "Domain-1_v2 §1.1",
+   "Domain-2_v2 §2.1"
+  ],
+  "tags": [
+   "known-gap",
+   "d1.1",
+   "d4.5"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-097",
+  "domain": "D1",
+  "type": "trap",
+  "front": "A loop decides it is finished once the agent has called `process_refund`. Why does that rule fail?",
+  "back": "Many valid resolutions never call that tool, so the loop hangs waiting for a call that is never coming. `end_turn` is the signal that Claude has finished.",
+  "trap": "Exam trap: tying termination to a particular tool invents a rule the API does not have, and it presents as domain knowledge rather than a guess.",
+  "cites": [
+   "Domain-1_v2 §1.1",
+   "Key-Distinctions_v1 #5"
+  ],
+  "tags": [
+   "known-gap",
+   "d1.1",
+   "agentic-loop"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-098",
+  "domain": "D1",
+  "type": "trap",
+  "front": "In hub-and-spoke orchestration, what does the coordinator lose the moment two subagents exchange results directly?",
+  "back": "Visibility of that exchange, uniform error handling over it, and control of what each subagent is allowed to see.",
+  "trap": "Exam trap: a direct hand-off reads as an efficiency gain and is the documented break of the pattern -- subagents never talk to each other.",
+  "cites": [
+   "Key-Distinctions_v1 #6",
+   "Domain-1_v2 §1.2"
+  ],
+  "tags": [
+   "multi-agent",
+   "hub-and-spoke"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-100",
+  "domain": "D1",
+  "type": "trap",
+  "front": "Once a coverage gap has been traced to narrow decomposition, which component do you change?",
+  "back": "The coordinator's prompt, so it explicitly partitions the research space before delegating.",
+  "trap": "Exam trap: rewriting subagent prompts or widening their tools modifies the components that were already doing their job correctly.",
+  "cites": [
+   "Domain-1_v2 §1.6",
+   "Key-Distinctions_v1 #7"
+  ],
+  "tags": [
+   "decomposition",
+   "coordinator"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-101",
+  "domain": "D1",
+  "type": "trap",
+  "front": "A subagent's search fails. What can a coordinator do with a structured error payload that it cannot do with a bare failure status?",
+  "back": "Choose a recovery path: retry with a modified query, reroute to another source, continue with partial results, or escalate.",
+  "trap": "Exam trap: a generic status leaves only retry-or-abort, and an `isError` flag on its own looks like it carries enough for a decision.",
+  "cites": [
+   "Key-Distinctions_v1 #8",
+   "Domain-1_v2 §1.9"
+  ],
+  "tags": [
+   "error-handling",
+   "multi-agent"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-103",
+  "domain": "D1",
+  "type": "trap",
+  "front": "When is a prompt instruction an unacceptable way to enforce a required call order?",
+  "back": "When the sequence is safety- or security-critical. Prompt compliance is probabilistic, so the precondition belongs in code that blocks the second call until the first succeeds.",
+  "trap": "Exam trap: few-shot examples of the correct sequence read as stronger than a plain instruction. Both are the same probabilistic channel.",
+  "cites": [
+   "Key-Distinctions_v1 #11",
+   "Domain-1_v2 §1.14"
+  ],
+  "tags": [
+   "sequencing",
+   "deterministic-enforcement"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d1-107",
+  "domain": "D1",
+  "type": "trap",
+  "front": "A team wants to compare two refactoring strategies starting from one expensive codebase analysis. Which session mechanism?",
+  "back": "`fork_session` -- both branches inherit context up to the branch point and then diverge independently.",
+  "trap": "Exam trap: resuming the same named session twice continues one accumulating history, so the second evaluation sees the first's conclusions.",
+  "cites": [
+   "Domain-1_v2 §1.16"
+  ],
+  "tags": [
+   "session-management",
+   "fork"
+  ],
+  "core": true,
+  "rev": false
+ }
+]
