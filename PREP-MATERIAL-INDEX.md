@@ -68,7 +68,17 @@
 - Claude Code docs: https://docs.anthropic.com/en/docs/claude-code
 - Agent SDK: https://docs.anthropic.com/en/docs/agents
 
-> No official exam guide PDF has been published by Anthropic. The Skilljar portal is the canonical source for exam content.
+### Official Exam Guide (in this repo)
+
+> **Corrected 2026-08-10.** This line previously read "No official exam guide PDF has been published by Anthropic." That was true when written and is now wrong — the guide was downloaded on 2026-07-06 from the logged-in Skilljar certification page and has been the corpus's primary authority ever since.
+
+| File | Version | Notes |
+|---|---|---|
+| `prep with quiz/source/CCA-F-Official-Exam-Guide.pdf` | **v0.2 (authoritative)** | Task statements, the official 6-scenario bank, 12 sample questions with rationales, in-scope/out-of-scope appendices |
+| `prep with quiz/source/CCA-F-Official-Exam-Guide_text.txt` | v0.2 | Plain-text mirror — the file to grep and cite |
+| `academy/CCA-F_Official-Exam-Guide_v0.1.pdf` | v0.1 (superseded) | Earlier download, kept as history |
+
+Provenance is recorded in `prep with quiz/CCA-Prep_Corpus-Index_v2.md`. The Skilljar portal remains the source of record for the guide itself; these are local copies of it.
 
 ---
 

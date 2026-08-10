@@ -1,0 +1,839 @@
+[
+ {
+  "id": "d5-001",
+  "domain": "D5",
+  "type": "scenario",
+  "front": "A user says in turn 1 that he loves jazz. Two turns later the assistant asks him what genres he enjoys. The conversation is only three turns long. What is the root cause?",
+  "back": "The application is not putting the earlier turns into the `messages` array on each call, so nothing from turn 1 reaches the model.",
+  "trap": "Exam trap: a three-turn conversation cannot have exceeded the context window, so that option is there to catch a guess.",
+  "cites": [
+   "Domain-5_v2 §5.1"
+  ],
+  "tags": [
+   "stateless-api",
+   "conversation-memory"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d5-002",
+  "domain": "D5",
+  "type": "trap",
+  "front": "A design adds a `session_id` parameter so Claude can hold the thread on the server. What is wrong with it?",
+  "back": "There is no such parameter — the API keeps no state, so the application resends the whole history in `messages` on every call.",
+  "trap": "Exam trap: `session_id` is invented; it reads like a real API field because nearly every chat product has one.",
+  "cites": [
+   "Domain-5_v2 §5.1"
+  ],
+  "tags": [
+   "stateless-api",
+   "api-mechanics"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d5-003",
+  "domain": "D5",
+  "type": "trap",
+  "front": "A team proposes a vector database so the agent can recall what the customer said earlier in the same chat. What does that misread?",
+  "back": "Within one conversation, recall comes from resending the `messages` array; retrieval infrastructure addresses long-horizon history across sessions, not the core API's turn-to-turn behavior.",
+  "trap": "Exam trap: adding retrieval is the over-engineered answer to a plain resend-the-history defect.",
+  "cites": [
+   "Domain-5_v2 §5.1",
+   "Domain-5_v2 §5.7"
+  ],
+  "tags": [
+   "stateless-api",
+   "over-engineering"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d5-004",
+  "domain": "D5",
+  "type": "concept",
+  "front": "Latency and cost rise steadily as a support conversation passes 50 turns. What explains the curve?",
+  "back": "Every call carries the entire history, so the input token count grows with each added turn.",
+  "trap": "Exam trap: 'the model writes longer replies' and 'the database is slowing down' are the plausible wrong causes.",
+  "cites": [
+   "Domain-5_v2 §5.1"
+  ],
+  "tags": [
+   "stateless-api",
+   "cost"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d5-005",
+  "domain": "D5",
+  "type": "fact",
+  "front": "Which request field carries the conversation history Claude can see?",
+  "back": "The `messages` array — the full history is resent on every call.",
+  "cites": [
+   "Domain-5_v2 §5.1"
+  ],
+  "tags": [
+   "stateless-api"
+  ],
+  "core": true,
+  "rev": true
+ },
+ {
+  "id": "d5-006",
+  "domain": "D5",
+  "type": "concept",
+  "front": "Across a long input, where does Claude's attention hold up and where does it thin out?",
+  "back": "It holds at the beginning and the end of the input and degrades through the middle.",
+  "cites": [
+   "Domain-5_v2 §5.2"
+  ],
+  "tags": [
+   "known-gap",
+   "d5.1",
+   "lost-in-the-middle"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d5-007",
+  "domain": "D5",
+  "type": "trap",
+  "front": "Findings buried mid-input keep getting missed. Why does moving to a model with a larger context window fail to solve it?",
+  "back": "Capacity and attention are separate properties: a wider window admits more tokens without making mid-input content any more salient.",
+  "trap": "Exam trap: window size is a storage answer to a positioning problem, and it raises cost while the miss rate stays.",
+  "cites": [
+   "Key-Distinctions_v1 #17",
+   "Domain-5_v2 §5.2"
+  ],
+  "tags": [
+   "known-gap",
+   "d5.1",
+   "lost-in-the-middle"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d5-009",
+  "domain": "D5",
+  "type": "trap",
+  "front": "To be fair to every subagent, a coordinator rotates which one's output appears first in each synthesis run. What does rotation fail to change?",
+  "back": "The underlying attention pattern — whatever lands in the middle is still read less reliably, so the loss moves rather than disappears.",
+  "trap": "Exam trap: rotation spreads the damage evenly instead of removing it.",
+  "cites": [
+   "Domain-5_v2 §5.2"
+  ],
+  "tags": [
+   "known-gap",
+   "d5.1",
+   "lost-in-the-middle"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d5-011",
+  "domain": "D5",
+  "type": "concept",
+  "front": "Upstream agents hand the synthesis step 155K tokens of page content and reasoning traces, and it works well only under 50K. What is the root-cause fix?",
+  "back": "Change what the upstream agents return: key facts, quotes, and relevance scores as structured data instead of verbose content.",
+  "trap": "Exam trap: bolting on an intermediate summarization agent adds latency and one more failure point without fixing the source.",
+  "cites": [
+   "Domain-5_v2 §5.2"
+  ],
+  "tags": [
+   "known-gap",
+   "d5.1",
+   "upstream-design"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d5-012",
+  "domain": "D5",
+  "type": "scenario",
+  "front": "A 40-minute cooking session has reached 78K tokens. It contains stated allergies, scaled quantities, terms clarified along the way, and a lot of general chatter. How should the history be reduced?",
+  "back": "Pull the exact values into a structured block, summarize the general discussion, and keep the recent exchanges verbatim.",
+  "cites": [
+   "Domain-5_v2 §5.3"
+  ],
+  "tags": [
+   "context-window",
+   "hybrid-compression"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d5-013",
+  "domain": "D5",
+  "type": "trap",
+  "front": "Why is 'keep only the most recent 20K tokens' unsafe for a long cooking assistant session?",
+  "back": "Constraints stated early, such as allergies, fall outside the retained window and vanish from the prompt.",
+  "trap": "Exam trap: recency trimming is cheap and silently drops the earliest and often most binding facts.",
+  "cites": [
+   "Domain-5_v2 §5.3"
+  ],
+  "tags": [
+   "context-window",
+   "sliding-window"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d5-015",
+  "domain": "D5",
+  "type": "trap",
+  "front": "A team stops losing discount amounts by rewriting the summarizer prompt to always keep numbers. Why is that weaker than a facts block?",
+  "back": "It depends on the summarizer behaving correctly every single time, while a facts block is never summarized at all.",
+  "trap": "Exam trap: a better summarizer prompt is the tempting fix because it targets the right symptom and needs no new structure.",
+  "cites": [
+   "Domain-5_v2 §5.4"
+  ],
+  "tags": [
+   "case-facts",
+   "summarization"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d5-016",
+  "domain": "D5",
+  "type": "concept",
+  "front": "What does '15% discount agreed earlier' typically become after progressive summarization?",
+  "back": "A vague reference such as 'promotional pricing was discussed' — the exact figure does not survive compression.",
+  "cites": [
+   "Domain-5_v2 §5.4",
+   "Domain-5_v2 §5.3"
+  ],
+  "tags": [
+   "summarization",
+   "precision-loss"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d5-017",
+  "domain": "D5",
+  "type": "fact",
+  "front": "Which hook event trims a tool result to the fields that matter before it lands in context?",
+  "back": "`PostToolUse` — it filters the result after the tool runs and before the output accumulates in the conversation.",
+  "cites": [
+   "Domain-5_v2 §5.5"
+  ],
+  "tags": [
+   "tool-output",
+   "hooks"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d5-018",
+  "domain": "D5",
+  "type": "trap",
+  "front": "A system prompt tells the model to ignore the irrelevant fields in a 40-field tool result. What does that fail to save?",
+  "back": "The tokens — the whole result still enters context and keeps competing for attention on every later turn.",
+  "trap": "Exam trap: instructing the model changes what it attends to, not what the window holds.",
+  "cites": [
+   "Domain-5_v2 §5.5"
+  ],
+  "tags": [
+   "tool-output",
+   "context-window"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d5-019",
+  "domain": "D5",
+  "type": "concept",
+  "front": "Why does one verbose tool result cost more than a single turn's worth of tokens?",
+  "back": "It stays in the history and is resent on every following turn, so its cost repeats for the rest of the session.",
+  "cites": [
+   "Domain-5_v2 §5.5",
+   "Domain-5_v2 §5.1"
+  ],
+  "tags": [
+   "tool-output",
+   "cost"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d5-020",
+  "domain": "D5",
+  "type": "scenario",
+  "front": "You are adding error-handling wrappers across a 120-file codebase in three phases. Phase 1 discovery floods the main context window before it finishes, leaving nothing for design and implementation. What structure fixes it?",
+  "back": "Run discovery in an Explore subagent so the verbose output stays in its context; it returns a summary and phases 2 and 3 continue in the main conversation.",
+  "trap": "Exam trap: splitting the work across several sessions with `--continue` adds coordination overhead and consistency risk.",
+  "cites": [
+   "Domain-5_v2 §5.6"
+  ],
+  "tags": [
+   "subagents",
+   "context-isolation"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d5-023",
+  "domain": "D5",
+  "type": "concept",
+  "front": "Why does progressive summarization fail a question that needs a conclusion quoted from months earlier?",
+  "back": "Summarization turns specific conclusions into abstractions, so the exact exchange can no longer be recovered.",
+  "trap": "Exam trap: XML tags marking conclusions do not solve retrieval at this scale either.",
+  "cites": [
+   "Domain-5_v2 §5.7"
+  ],
+  "tags": [
+   "long-term-memory",
+   "summarization"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d5-024",
+  "domain": "D5",
+  "type": "concept",
+  "front": "Which class of signal should decide when a support agent escalates to a human?",
+  "back": "Structural signals: an explicit request for a person, a policy gap, missing or unresolvable data, repeated tool failures, or a financial operation above a threshold.",
+  "cites": [
+   "Domain-5_v2 §5.8"
+  ],
+  "tags": [
+   "escalation"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d5-025",
+  "domain": "D5",
+  "type": "trap",
+  "front": "Why does sentiment analysis make a poor escalation trigger?",
+  "back": "Mood does not track case complexity — a calm message can describe a hard case and an angry one can be trivial to close.",
+  "trap": "Exam trap: sentiment-driven escalation floods the human queue with cases the agent could have resolved.",
+  "cites": [
+   "Domain-5_v2 §5.8"
+  ],
+  "tags": [
+   "escalation",
+   "anti-pattern"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d5-026",
+  "domain": "D5",
+  "type": "trap",
+  "front": "A design escalates whenever the model rates its own confidence below 7 out of 10. What is the flaw?",
+  "back": "Self-reported confidence is uncalibrated, so it does not track real difficulty — the model can be confidently wrong.",
+  "trap": "Exam trap: a rule of 'never escalate before three attempts' fails the opposite way, delaying an explicit request for a person.",
+  "cites": [
+   "Domain-5_v2 §5.8",
+   "Domain-5_v2 §5.9"
+  ],
+  "tags": [
+   "escalation",
+   "confidence"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d5-027",
+  "domain": "D5",
+  "type": "concept",
+  "front": "An agent escalates inconsistently across similar cases. What change to the system prompt makes it consistent?",
+  "back": "Add explicit escalation criteria with few-shot examples showing when to escalate and when to resolve autonomously.",
+  "cites": [
+   "Domain-5_v2 §5.8"
+  ],
+  "tags": [
+   "escalation",
+   "system-prompt"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d5-028",
+  "domain": "D5",
+  "type": "concept",
+  "front": "A customer lookup returns several matching accounts. What does the agent do next?",
+  "back": "Ask for another identifier — email, order number, or phone — instead of choosing a match by heuristic.",
+  "trap": "Exam trap: 'take the most recently active account' misidentifies customers, and escalating here is unnecessary since asking resolves it.",
+  "cites": [
+   "Domain-5_v2 §5.8"
+  ],
+  "tags": [
+   "escalation",
+   "disambiguation"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d5-029",
+  "domain": "D5",
+  "type": "scenario",
+  "front": "A customer writes 'this is outrageous, I am very unhappy!' and has not asked for anyone else. The agent has a workable resolution available. Escalate now or not?",
+  "back": "Not on that message alone — acknowledge the frustration, offer the concrete resolution, and escalate the moment the customer reiterates a request for a person.",
+  "cites": [
+   "Domain-5_v2 §5.8"
+  ],
+  "tags": [
+   "escalation",
+   "customer-support"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d5-030",
+  "domain": "D5",
+  "type": "concept",
+  "front": "At what granularity should an extraction system score confidence, and against what is the threshold set?",
+  "back": "Per field rather than per document, with the review threshold calibrated against a labeled validation set.",
+  "cites": [
+   "Domain-5_v2 §5.9"
+  ],
+  "tags": [
+   "confidence-calibration",
+   "human-review"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d5-031",
+  "domain": "D5",
+  "type": "trap",
+  "front": "An extraction system reports 97% overall accuracy and the team wants to auto-process everything above the confidence threshold. What has to be checked first?",
+  "back": "Accuracy broken out by document type and by field — an aggregate figure can hide a rare document type failing 40% of the time.",
+  "trap": "Exam trap: the aggregate number is real and still hides the segment that will produce the incidents.",
+  "cites": [
+   "Domain-5_v2 §5.9"
+  ],
+  "tags": [
+   "confidence-calibration",
+   "aggregate-masking"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d5-032",
+  "domain": "D5",
+  "type": "concept",
+  "front": "Why audit a random sample of high-confidence extractions that nobody flagged?",
+  "back": "To measure the true error rate of the automated path and catch new error patterns early; the sample must be stratified across document types and fields.",
+  "cites": [
+   "Domain-5_v2 §5.9"
+  ],
+  "tags": [
+   "stratified-sampling",
+   "human-review"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d5-033",
+  "domain": "D5",
+  "type": "concept",
+  "front": "A document-analysis agent finds a government report saying 40% growth and an industry analysis saying 12%, both credible. What goes in its output?",
+  "back": "Both values, with source attribution and an explicit conflict annotation, leaving reconciliation to the coordinator or a human.",
+  "trap": "Exam trap: picking the more likely figure by heuristic takes a decision that sits above the agent's scope.",
+  "cites": [
+   "Domain-5_v2 §5.10"
+  ],
+  "tags": [
+   "conflict-detection",
+   "provenance"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d5-034",
+  "domain": "D5",
+  "type": "concept",
+  "front": "Why should a subagent finish its analysis before reporting a source conflict rather than pausing to ask?",
+  "back": "Stopping mid-run blocks the pipeline for a decision that can be made after the work is complete and annotated.",
+  "cites": [
+   "Domain-5_v2 §5.10"
+  ],
+  "tags": [
+   "conflict-detection",
+   "pipeline"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d5-035",
+  "domain": "D5",
+  "type": "concept",
+  "front": "What must each subagent emit so the final report can still attribute every claim after synthesis?",
+  "back": "Structured claim-to-source mappings: the claim, the source name or URL, the excerpt or location, and a date — which downstream synthesis has to preserve and merge.",
+  "trap": "Exam trap: a bibliography appended at the end leaves individual claims untraceable.",
+  "cites": [
+   "Domain-5_v2 §5.11"
+  ],
+  "tags": [
+   "provenance",
+   "attribution"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d5-036",
+  "domain": "D5",
+  "type": "fact",
+  "front": "Which field in a structured source mapping stops a temporal difference being logged as a contradiction?",
+  "back": "The publication or data-collection date — 10% in 2023 next to 15% in 2024 reads as growth rather than disagreement.",
+  "cites": [
+   "Domain-5_v2 §5.11"
+  ],
+  "tags": [
+   "provenance",
+   "temporal-data"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d5-037",
+  "domain": "D5",
+  "type": "fact",
+  "front": "In a synthesis report, which form does each content type get: financial data, news and analysis, technical findings, time series?",
+  "back": "Tables, prose, structured lists, and chronological ordering.",
+  "cites": [
+   "Domain-5_v2 §5.11"
+  ],
+  "tags": [
+   "provenance",
+   "report-structure"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d5-038",
+  "domain": "D5",
+  "type": "concept",
+  "front": "Deep into a long investigation the model starts citing typical patterns instead of the specific classes it found earlier. What mechanism holds the specifics?",
+  "back": "Context degradation — write intermediate findings to a scratchpad file and read it back at the start of each continuation.",
+  "cites": [
+   "Domain-5_v2 §5.12"
+  ],
+  "tags": [
+   "scratchpad",
+   "context-degradation"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d5-039",
+  "domain": "D5",
+  "type": "scenario",
+  "front": "A multi-agent research run crashes after two of four agents have finished. The coordinator restarts. What design lets it resume instead of re-running everything?",
+  "back": "Each agent exports its state to a known location and the coordinator loads a manifest on resume, injecting the persisted findings into the remaining agents' prompts.",
+  "trap": "Exam trap: conversation history cannot carry work across a crash, because the API holds no state of its own.",
+  "cites": [
+   "Domain-5_v2 §5.12",
+   "Domain-5_v2 §5.1"
+  ],
+  "tags": [
+   "crash-recovery",
+   "state-persistence"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d5-040",
+  "domain": "D5",
+  "type": "fact",
+  "front": "An agent's state export for crash recovery records which four things?",
+  "back": "Its status, its key findings, the coverage it achieved, and the gaps it left.",
+  "cites": [
+   "Domain-5_v2 §5.12"
+  ],
+  "tags": [
+   "crash-recovery",
+   "state-persistence"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d5-041",
+  "domain": "D5",
+  "type": "concept",
+  "front": "After many turns an agent drifts away from its system prompt rules. Which two changes hold the behavior longer?",
+  "back": "Inject reminder messages at conversation breakpoints, and replace verbose rule lists with few-shot examples, which keep their pattern better than abstract rules.",
+  "cites": [
+   "Domain-5_v2 §5.13"
+  ],
+  "tags": [
+   "system-prompt",
+   "instruction-drift"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d5-042",
+  "domain": "D5",
+  "type": "concept",
+  "front": "Three tools in one agent return the same entity in three different shapes. Where does normalization belong?",
+  "back": "In a `PostToolUse` hook, so every result is normalized centrally before the model sees it.",
+  "cites": [
+   "Domain-5_v2 §5.14"
+  ],
+  "tags": [
+   "tool-output",
+   "hooks"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": "d5-043",
+  "domain": "D5",
+  "type": "fact",
+  "front": "How far into prompt caching does CCA-F scope reach?",
+  "back": "Knowing that it exists is in scope; its implementation details are on the official out-of-scope list.",
+  "cites": [
+   "Exam-Mechanics_v2 Out-of-Scope Topics"
+  ],
+  "tags": [
+   "known-gap",
+   "d5.2",
+   "exam-scope"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d5-044",
+  "domain": "D5",
+  "type": "trap",
+  "front": "An option proposes prompt caching to cut cost, while the stem's stated problem is accuracy. How should that option be read?",
+  "back": "As over-engineering — the proportionate answer fixes the stated problem first, and a cost optimization that leaves the requirement unmet is wrong here.",
+  "trap": "Exam trap: caching is a real feature, which is what makes the option tempting; it answers a question the stem did not ask.",
+  "cites": [
+   "Exam-Mechanics_v2 Answer Pattern Heuristics",
+   "Exam-Mechanics_v2 Out-of-Scope Topics"
+  ],
+  "tags": [
+   "known-gap",
+   "d5.2",
+   "distractor-shape"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d5-045",
+  "domain": "D5",
+  "type": "trap",
+  "front": "A synthesis step reliably uses the first and last stretches of a 75K-token input and misses findings in the middle. What two changes address the position problem?",
+  "back": "Put a key-findings summary at the start, and add explicit section headings throughout the input.",
+  "trap": "Exam trap: rotating which agent's output appears first moves content around without touching the attention pattern that causes the miss.",
+  "cites": [
+   "Key-Distinctions_v1 #20",
+   "Domain-5_v2 §5.2"
+  ],
+  "tags": [
+   "known-gap",
+   "d5.1",
+   "context-window"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d5-046",
+  "domain": "D5",
+  "type": "trap",
+  "front": "Why is compressing a long input under a 20K-token ceiling the wrong answer to a middle-of-context miss?",
+  "back": "Compression can discard the critical information itself. The failure is about where content sits, so shrinking it does not change position.",
+  "trap": "Exam trap: lost-in-the-middle is a positional attention pattern rather than a capacity limit, so shrinking the input does not move the finding out of the middle.",
+  "cites": [
+   "Key-Distinctions_v1 #20",
+   "Domain-5_v2 §5.2"
+  ],
+  "tags": [
+   "known-gap",
+   "d5.1",
+   "context-window"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d5-047",
+  "domain": "D5",
+  "type": "trap",
+  "front": "Precise amounts and dates keep turning into vague references as a support conversation is summarized. What structure preserves them?",
+  "back": "A case-facts block held outside the summarized history and included in every prompt, updated whenever a new fact appears.",
+  "trap": "Exam trap: revising the summarization prompt to protect numbers still depends on the summarizer executing perfectly every single time.",
+  "cites": [
+   "Key-Distinctions_v1 #21",
+   "Domain-5_v2 §5.4"
+  ],
+  "tags": [
+   "context-window",
+   "facts-persistence"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d5-048",
+  "domain": "D5",
+  "type": "trap",
+  "front": "Why does raising the summarization threshold fail to solve precision loss in a long conversation?",
+  "back": "It postpones compression. The same transactional facts are eventually summarized into vague language anyway.",
+  "trap": "Exam trap: the delay produces real improvement for a while, which makes it look like a fix rather than a deferral.",
+  "cites": [
+   "Key-Distinctions_v1 #21",
+   "Domain-5_v2 §5.4"
+  ],
+  "tags": [
+   "context-window",
+   "summarization"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d5-050",
+  "domain": "D5",
+  "type": "trap",
+  "front": "What does a subagent give a verbose exploration that `/compact` and a split across sessions do not?",
+  "back": "The verbose output never enters the main context at all, so nothing has to be compressed or reconciled afterwards.",
+  "trap": "Exam trap: asking the same session to summarize itself periodically has already spent the tokens by the time the summary is written.",
+  "cites": [
+   "Domain-5_v2 §5.6",
+   "Key-Distinctions_v1 #22"
+  ],
+  "tags": [
+   "context-isolation",
+   "subagents"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d5-051",
+  "domain": "D5",
+  "type": "trap",
+  "front": "Which fix targets drift caused by a long system prompt full of abstract rules?",
+  "back": "Replace the verbose rule list with few-shot examples of the behavior. Examples hold a behavioral pattern longer than abstract instructions.",
+  "trap": "Exam trap: adding more explicit rules to a prompt that is already failing does not help — the corpus fix is examples, not more instruction text.",
+  "cites": [
+   "Domain-5_v2 §5.13",
+   "Key-Distinctions_v1 #23"
+  ],
+  "tags": [
+   "behavioral-drift",
+   "few-shot"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d5-052",
+  "domain": "D5",
+  "type": "trap",
+  "front": "Someone asks what a group concluded about one theme eleven weeks and 85K tokens ago. Which memory strategy answers it?",
+  "back": "Semantic embeddings over the full history, retrieving the specific past exchanges that are relevant to the question.",
+  "trap": "Exam trap: progressive summarization compresses the exact conclusion into an abstraction that can no longer be quoted back.",
+  "cites": [
+   "Key-Distinctions_v1 #24",
+   "Domain-5_v2 §5.7"
+  ],
+  "tags": [
+   "long-term-memory",
+   "retrieval"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d5-053",
+  "domain": "D5",
+  "type": "trap",
+  "front": "Why does a rolling window fail the same long-history recall question that progressive summarization fails?",
+  "back": "It discards the early sessions outright, so the exchange being asked about is no longer in context in any form.",
+  "trap": "Exam trap: both options keep the day-to-day conversation working, and both lose the one early exchange the question depends on.",
+  "cites": [
+   "Domain-5_v2 §5.7",
+   "Key-Distinctions_v1 #24"
+  ],
+  "tags": [
+   "long-term-memory",
+   "context-window"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d5-054",
+  "domain": "D5",
+  "type": "trap",
+  "front": "What makes Claude appear to remember turn 1 while answering turn 5?",
+  "back": "The application resends the prior messages in the `messages` array on every request. The API holds no server-side state.",
+  "trap": "Exam trap: a `session_id` parameter is offered as the mechanism and does not exist.",
+  "cites": [
+   "Key-Distinctions_v1 #25",
+   "Domain-5_v2 §5.1"
+  ],
+  "tags": [
+   "stateless-api",
+   "memory"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": "d5-060",
+  "domain": "D5",
+  "type": "trap",
+  "front": "At 2,500 tokens and seven turns, which two explanations for behavioral drift are ruled out?",
+  "back": "Context-window overflow, impossible at that size, and the claim that a system prompt applies only to the first turn.",
+  "trap": "Exam trap: both read as mechanism-level diagnoses. The documented cause is accumulated assistant responses diluting the system prompt's influence.",
+  "cites": [
+   "Key-Distinctions_v1 #23",
+   "Domain-5_v2 §5.13"
+  ],
+  "tags": [
+   "behavioral-drift",
+   "system-prompt"
+  ],
+  "core": true,
+  "rev": false
+ }
+]

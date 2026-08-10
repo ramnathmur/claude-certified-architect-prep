@@ -1,11 +1,34 @@
 # ROADMAP — Claude Certified Architect Prep
 
-**Target:** Pass CCA-F exam
-**Last updated:** 2026-06-06
+**Target:** Pass CCA-F exam — **seat booked for 2026-08-18**
+**Last updated:** 2026-08-10
 
 > Detailed per-course/extension tracker (KB sizes, gate scores, artifacts): `courses/COURSE-ROADMAP.md`.
 > Extension topic briefs + sources: `courses/EXTENSION-RECOMMENDATION.md`.
 > Resume state for next session: `resume-prompt.md`.
+
+---
+
+## 🔴 Phase 3.5 — Exam week: drill & reinforce (2026-08-10 → 2026-08-18)
+
+The exam seat is booked for **2026-08-18**. This phase supersedes the open items below for the duration — the build tracks are done, and the only things that move the score now are retrieval practice and scored mocks.
+
+**Built 2026-08-10:** `prep with quiz/drill/CCA-Prep_Drill_v1.html` — a flashcard drill app over the whole graded corpus, with a compressed Leitner scheduler sized for the days remaining, three-way grading (Missed / Guessed it / Knew it), cram filters, and a results-JSON importer that pushes cards matching a missed mock question to the front of the queue. Registered on the Launchpad. Deck source and build script live beside it (`CARD-SPEC.md`, `build_deck.py`, `deck/`).
+
+**The week:**
+- [x] Aug 10 — build the deck, first drill session
+- [ ] Aug 11 — drill · **sit Mock 2** · import the results JSON · targeted card wave from the misses
+- [ ] Aug 12 — drill (catch-up)
+- [ ] Aug 13 — drill · sit Mock 3 · import
+- [ ] Aug 14 — drill
+- [ ] Aug 15 — drill · sit Mock 4 · import
+- [ ] Aug 16 — held-out mock (`practice/held-out-mocks/`) as the dress rehearsal · import
+- [ ] Aug 17 — final sweep only, no new cards
+- [ ] Aug 18 — **sit the exam**
+
+**The standing risk:** four full mock exams exist and **none has ever been scored** (`EXAM-LOG.md`, `DASHBOARD-DATA.jsonl` — all null). Every readiness signal to date is either synthetic or from June. Sitting Mock 2 is the highest-value single action available this week; the drill deck is deliberately built to consume its output.
+
+**Deliberately not doing:** generating a fifth mock exam. Four sit unattempted.
 
 ---
 
@@ -24,7 +47,7 @@
 | **Phase 1 prep tasks** | ✅ pipeline + Claude 101 + index | ⬜ scope decision, 200-level courses, community PDF, 25 practice Qs, exam access via Infosys |
 | **Phase 2 curriculum** (separate track) | ✅ CURRICULUM.md + GAPS.md scaffolded | ⬜ Modules 0–7 not yet run |
 
-**▶ Next action:** The interactive course + extension build track is **COMPLETE (9 extensions, both gates PASS, full cross-navigation)** and **all 5 exam domains now have an exam-depth lesson** (D3 gap closed by C-E6, 2026-06-06). Shift to either (a) **Phase-2 curriculum** Modules 0–7 (active-recall study track) or (b) **Phase-1 exam-prep tasks** (200-level courses, community PDF, 25 practice Qs, exam access via Infosys). Full brief in `resume-prompt.md`.
+**▶ Next action (superseded 2026-08-10 — see Phase 3.5 above; the exam is 8 days out and drill + scored mocks take priority over any build track):** The interactive course + extension build track is **COMPLETE (9 extensions, both gates PASS, full cross-navigation)** and **all 5 exam domains now have an exam-depth lesson** (D3 gap closed by C-E6, 2026-06-06). Shift to either (a) **Phase-2 curriculum** Modules 0–7 (active-recall study track) or (b) **Phase-1 exam-prep tasks** (200-level courses, community PDF, 25 practice Qs, exam access via Infosys). Full brief in `resume-prompt.md`.
 
 ---
 
@@ -110,5 +133,5 @@ The applied cost lever + prompt-engineering judgment. Lower weight but high scen
 - [ ] Run Module 7 — Mock Exam + Gap Review
 - [ ] Second mock exam if any domain < 70%
 - [ ] Final gap review
-- [ ] Book exam seat
+- [x] Book exam seat — **2026-08-18**
 - [ ] Sit exam

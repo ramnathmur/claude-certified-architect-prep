@@ -1,0 +1,1477 @@
+[
+ {
+  "id": null,
+  "domain": "D1",
+  "type": "trap",
+  "front": "After an API call returns, what does a `stop_reason` of `tool_use` tell the orchestrator to do, and what does `end_turn` tell it to do?",
+  "back": "`tool_use`: execute the requested tool, append the result, call the API again. `end_turn`: stop the loop and return the response to the user.",
+  "trap": "Exam trap: the whole control-flow decision rides on one field, so an option that swaps the two meanings still reads plausibly under a two-minute clock.",
+  "cites": [
+   "Key-Distinctions_v1 #5",
+   "Domain-1_v2 §1.1"
+  ],
+  "tags": [
+   "known-gap",
+   "d1.1",
+   "d4.5"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D1",
+  "type": "trap",
+  "front": "A loop keeps re-invoking Claude until the reply text contains a fixed completion phrase, and hangs on sessions where Claude answered without using that wording. What should it test instead?",
+  "back": "The response's `stop_reason` field -- continue while it reads `tool_use`, stop and return the reply once it reads `end_turn`.",
+  "trap": "Exam trap: parsing the reply for completion language is the named anti-pattern. It reads as reasonable engineering and is wrong every time.",
+  "cites": [
+   "Key-Distinctions_v1 #5",
+   "Domain-1_v2 §1.1"
+  ],
+  "tags": [
+   "known-gap",
+   "d1.1",
+   "agentic-loop"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D1",
+  "type": "trap",
+  "front": "What role does a maximum-iteration cap play in an agent loop?",
+  "back": "A safety backstop against a runaway loop. Termination is decided by `stop_reason`, which reports whether Claude has actually finished.",
+  "trap": "Exam trap: a cap truncates legitimate multi-tool work and lets an already-finished turn keep looping, so it can never stand in for the stop signal.",
+  "cites": [
+   "Domain-1_v2 §1.1",
+   "Key-Distinctions_v1 #5"
+  ],
+  "tags": [
+   "known-gap",
+   "d1.1",
+   "agentic-loop"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D1",
+  "type": "trap",
+  "front": "Claude returns a `stop_reason` of `tool_use` and your code runs the tool. What goes back into the conversation before the next API call?",
+  "back": "A `tool_result` content block appended to `messages`, matched to the `tool_use` block by its `id`.",
+  "trap": "Exam trap: handing the tool's output straight to the user ends the turn early -- Claude has not yet seen the result it asked for.",
+  "cites": [
+   "Domain-1_v2 §1.1",
+   "Domain-2_v2 §2.1"
+  ],
+  "tags": [
+   "known-gap",
+   "d1.1",
+   "d4.5"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D1",
+  "type": "trap",
+  "front": "A loop decides it is finished once the agent has called `process_refund`. Why does that rule fail?",
+  "back": "Many valid resolutions never call that tool, so the loop hangs waiting for a call that is never coming. `end_turn` is the signal that Claude has finished.",
+  "trap": "Exam trap: tying termination to a particular tool invents a rule the API does not have, and it presents as domain knowledge rather than a guess.",
+  "cites": [
+   "Domain-1_v2 §1.1",
+   "Key-Distinctions_v1 #5"
+  ],
+  "tags": [
+   "known-gap",
+   "d1.1",
+   "agentic-loop"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D1",
+  "type": "trap",
+  "front": "In hub-and-spoke orchestration, what does the coordinator lose the moment two subagents exchange results directly?",
+  "back": "Visibility of that exchange, uniform error handling over it, and control of what each subagent is allowed to see.",
+  "trap": "Exam trap: a direct hand-off reads as an efficiency gain and is the documented break of the pattern -- subagents never talk to each other.",
+  "cites": [
+   "Key-Distinctions_v1 #6",
+   "Domain-1_v2 §1.2"
+  ],
+  "tags": [
+   "multi-agent",
+   "hub-and-spoke"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D1",
+  "type": "trap",
+  "front": "A synthesis subagent has no idea what the web-search subagent found. How does it get that context?",
+  "back": "The coordinator includes the search subagent's completed findings in the synthesis subagent's prompt. Subagent contexts are isolated by default.",
+  "trap": "Exam trap: a shared session identifier or a common memory store is offered as the channel; subagents receive only what the coordinator passes them.",
+  "cites": [
+   "Domain-1_v2 §1.2",
+   "Key-Distinctions_v1 #6"
+  ],
+  "tags": [
+   "multi-agent",
+   "context-passing"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D1",
+  "type": "trap",
+  "front": "Once a coverage gap has been traced to narrow decomposition, which component do you change?",
+  "back": "The coordinator's prompt, so it explicitly partitions the research space before delegating.",
+  "trap": "Exam trap: rewriting subagent prompts or widening their tools modifies the components that were already doing their job correctly.",
+  "cites": [
+   "Domain-1_v2 §1.6",
+   "Key-Distinctions_v1 #7"
+  ],
+  "tags": [
+   "decomposition",
+   "coordinator"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D1",
+  "type": "trap",
+  "front": "A subagent's search fails. What can a coordinator do with a structured error payload that it cannot do with a bare failure status?",
+  "back": "Choose a recovery path: retry with a modified query, reroute to another source, continue with partial results, or escalate.",
+  "trap": "Exam trap: a generic status leaves only retry-or-abort, and an `isError` flag on its own looks like it carries enough for a decision.",
+  "cites": [
+   "Key-Distinctions_v1 #8",
+   "Domain-1_v2 §1.9"
+  ],
+  "tags": [
+   "error-handling",
+   "multi-agent"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D1",
+  "type": "trap",
+  "front": "What four things does a failing subagent put in the error it returns to its coordinator?",
+  "back": "Failure type, what was attempted, any partial results, and the alternatives worth trying.",
+  "trap": "Exam trap: catching the error and returning an empty success hides the gap, and halting the whole workflow over one subagent failure overreacts.",
+  "cites": [
+   "Domain-1_v2 §1.9",
+   "Key-Distinctions_v1 #8"
+  ],
+  "tags": [
+   "error-handling",
+   "structured-errors"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D1",
+  "type": "trap",
+  "front": "When is a prompt instruction an unacceptable way to enforce a required call order?",
+  "back": "When the sequence is safety- or security-critical. Prompt compliance is probabilistic, so the precondition belongs in code that blocks the second call until the first succeeds.",
+  "trap": "Exam trap: few-shot examples of the correct sequence read as stronger than a plain instruction. Both are the same probabilistic channel.",
+  "cites": [
+   "Key-Distinctions_v1 #11",
+   "Domain-1_v2 §1.14"
+  ],
+  "tags": [
+   "sequencing",
+   "deterministic-enforcement"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D1",
+  "type": "trap",
+  "front": "A coordinator never delegates and tries to do everything itself. What do you check in its `AgentDefinition`?",
+  "back": "Whether `Task` is present in its `allowed_tools`. Without that tool the coordinator cannot spawn subagents at all.",
+  "trap": "Exam trap: rewriting the system prompt to insist on delegation cannot grant a tool the configuration withholds.",
+  "cites": [
+   "Domain-1_v2 §1.3"
+  ],
+  "tags": [
+   "agent-sdk",
+   "delegation"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D1",
+  "type": "trap",
+  "front": "What has to be true of a coordinator's response for its subagent calls to run in parallel?",
+  "back": "The multiple `Task` calls are emitted in a single response. Issued across separate turns they run one after another.",
+  "trap": "Exam trap: a faster model or a trimmed prompt shortens each step and leaves the serial structure exactly as it was.",
+  "cites": [
+   "Domain-1_v2 §1.15"
+  ],
+  "tags": [
+   "parallel-execution",
+   "agent-sdk"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D1",
+  "type": "trap",
+  "front": "Human agents keep re-asking customers for details the AI agent already collected. What is missing from the escalation?",
+  "back": "A structured handoff summary: customer ID, root cause, amount, actions already taken, and the recommended action.",
+  "trap": "Exam trap: giving humans the raw transcript is offered as the fix. They have no transcript access by design, and it forces a full re-read.",
+  "cites": [
+   "Domain-1_v2 §1.13"
+  ],
+  "tags": [
+   "escalation",
+   "handoff"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D1",
+  "type": "trap",
+  "front": "A team wants to compare two refactoring strategies starting from one expensive codebase analysis. Which session mechanism?",
+  "back": "`fork_session` -- both branches inherit context up to the branch point and then diverge independently.",
+  "trap": "Exam trap: resuming the same named session twice continues one accumulating history, so the second evaluation sees the first's conclusions.",
+  "cites": [
+   "Domain-1_v2 §1.16"
+  ],
+  "tags": [
+   "session-management",
+   "fork"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D1",
+  "type": "trap",
+  "front": "Generated code passes its own careful self-review, yet bugs keep reaching production. What change catches them?",
+  "back": "Route the artifact to a second instance that never sees the generator's reasoning -- a fresh request carrying only the code and the review criteria.",
+  "trap": "Exam trap: extended thinking and a sharper self-review instruction keep the same anchored instance, so the blind spot that caused the bug survives.",
+  "cites": [
+   "Domain-1_v2 §1.17"
+  ],
+  "tags": [
+   "review",
+   "independence"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D1",
+  "type": "trap",
+  "front": "Which decomposition suits adding test coverage to a legacy codebase nobody has mapped yet?",
+  "back": "Dynamic adaptive decomposition: map the structure first, prioritize the high-risk modules, and generate further subtasks as dependencies surface.",
+  "trap": "Exam trap: a fixed pipeline is correct when the steps are known in advance, which is the one thing an unmapped codebase cannot offer.",
+  "cites": [
+   "Domain-1_v2 §1.7"
+  ],
+  "tags": [
+   "decomposition",
+   "planning"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D2",
+  "type": "trap",
+  "front": "Which MCP configuration file travels with the repository, and which one stays on a single machine?",
+  "back": "`.mcp.json` at the project root is version-controlled and shared. `~/.claude.json` in the user's home directory is personal and stays out of the repo.",
+  "trap": "Exam trap: both files configure MCP servers identically, so the deciding line is sharing scope rather than capability.",
+  "cites": [
+   "Key-Distinctions_v1 #2",
+   "Domain-2_v2 §2.6"
+  ],
+  "tags": [
+   "mcp-config",
+   "scope"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D2",
+  "type": "trap",
+  "front": "What does writing `${GITHUB_TOKEN}` into `.mcp.json` accomplish?",
+  "back": "Claude Code substitutes the value from the environment at runtime, so the config can be committed while the credential stays out of the repo.",
+  "trap": "Exam trap: committing a placeholder token and having each developer add the server in user scope are the offered alternatives. One leaks, one splits team tooling.",
+  "cites": [
+   "Key-Distinctions_v1 #2",
+   "Domain-2_v2 §2.6"
+  ],
+  "tags": [
+   "mcp-config",
+   "env-vars"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D2",
+  "type": "trap",
+  "front": "Which tool errors are worth retrying, and which are guaranteed to fail the same way again?",
+  "back": "Transient errors such as timeouts and network faults retry with backoff. Validation, permission, and business-rule errors return immediately with detail.",
+  "trap": "Exam trap: uniform backoff across every failure burns attempts on a policy denial that no number of retries can change.",
+  "cites": [
+   "Key-Distinctions_v1 #9",
+   "Domain-2_v2 §2.3"
+  ],
+  "tags": [
+   "error-handling",
+   "retry"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D2",
+  "type": "trap",
+  "front": "A search tool returns zero matches. A second call times out. Which of the two is an error?",
+  "back": "Only the timeout. Zero matches is a successful query with an empty result set, so `isError` stays absent or false.",
+  "trap": "Exam trap: flagging zero matches as an error makes the agent retry a query that worked; returning an empty list for a failed query makes it report no data.",
+  "cites": [
+   "Key-Distinctions_v1 #9",
+   "Domain-2_v2 §2.3"
+  ],
+  "tags": [
+   "error-handling",
+   "empty-results"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D2",
+  "type": "trap",
+  "front": "Two similarly named tools are misrouted 45% of the time. What do you repair before adding anything new?",
+  "back": "The tool descriptions -- state what each one does, the input it accepts, when to use it, and when not to.",
+  "trap": "Exam trap: a pre-routing classifier adds a layer that compensates for the bad signal instead of repairing the signal itself.",
+  "cites": [
+   "Key-Distinctions_v1 #10",
+   "Domain-2_v2 §2.2"
+  ],
+  "tags": [
+   "known-gap",
+   "d2.1",
+   "tool-descriptions"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D2",
+  "type": "trap",
+  "front": "Why is merging two confusable tools into a single tool with a mode parameter the wrong repair?",
+  "back": "It discards the semantic precision that lets the model tell the two cases apart, while the ambiguity itself lives in the descriptions.",
+  "trap": "Exam trap: consolidation presents as simplification and removes the very distinction the agent was failing to make.",
+  "cites": [
+   "Domain-2_v2 §2.2",
+   "Key-Distinctions_v1 #10"
+  ],
+  "tags": [
+   "known-gap",
+   "d2.1",
+   "tool-descriptions"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D2",
+  "type": "trap",
+  "front": "Why can a `dry_run` boolean parameter never guarantee that a preview happened?",
+  "back": "The agent can call the tool with `dry_run` set to false on the first attempt. Nothing in the interface requires a preview to have run.",
+  "trap": "Exam trap: adding a second boolean, or a prompt rule about always previewing first, is the same single-tool design under a new name.",
+  "cites": [
+   "Key-Distinctions_v1 #12",
+   "Domain-2_v2 §2.4"
+  ],
+  "tags": [
+   "tool-design",
+   "preconditions"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D2",
+  "type": "trap",
+  "front": "What tool shape makes a mandatory preview architecturally impossible to skip?",
+  "back": "Two tools: the preview call returns impact details plus a single-use confirmation token, and the execute call requires that token as a parameter.",
+  "trap": "Exam trap: an orchestration-layer confirmation prompt and a server-side timing heuristic are offered as equivalents. Neither is a code-level guarantee.",
+  "cites": [
+   "Key-Distinctions_v1 #12",
+   "Domain-2_v2 §2.4"
+  ],
+  "tags": [
+   "tool-design",
+   "token-binding"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D2",
+  "type": "trap",
+  "front": "A bulk deletion touching more than 50 records must always route to human approval. What enforces that?",
+  "back": "A `PreToolUse` hook that blocks the call above the threshold. Hooks run deterministically, whatever the model decides.",
+  "trap": "Exam trap: `PostToolUse` fires after execution, so it logs the breach it was supposed to prevent.",
+  "cites": [
+   "Domain-2_v2 §2.7",
+   "Key-Distinctions_v1 #11"
+  ],
+  "tags": [
+   "hooks",
+   "deterministic-enforcement"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D2",
+  "type": "trap",
+  "front": "In MCP, what is the dividing line between a tool and a resource?",
+  "back": "Tools are actions Claude calls. Resources are read-only data Claude reads. Prompts are the third primitive: reusable templates.",
+  "trap": "Exam trap: exposing a read-only catalog as a tool costs an LLM call and depends on the agent remembering to invoke it first.",
+  "cites": [
+   "Domain-2_v2 §2.6"
+  ],
+  "tags": [
+   "known-gap",
+   "d2.2",
+   "mcp"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D2",
+  "type": "trap",
+  "front": "An agent burns turns guessing search queries just to discover what records exist in a project tracker. What do you expose to it?",
+  "back": "A summary catalog as an MCP resource, so the agent reads the map as context and then makes targeted tool calls.",
+  "trap": "Exam trap: pasting the catalog into the system prompt bloats every request and goes stale. Resources are requested on demand.",
+  "cites": [
+   "Domain-2_v2 §2.6"
+  ],
+  "tags": [
+   "known-gap",
+   "d2.2",
+   "mcp"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D2",
+  "type": "trap",
+  "front": "An index-backed code-search MCP tool sits unused while the agent keeps reaching for built-in Grep. What is the fix?",
+  "back": "Rewrite the MCP tool's description to spell out the capability and output Grep cannot provide, since tool selection runs on descriptions.",
+  "trap": "Exam trap: disabling Grep breaks legitimate literal-search cases, and a blanket rule to always prefer MCP tools misroutes the cases where Grep is right.",
+  "cites": [
+   "Domain-2_v2 §2.6"
+  ],
+  "tags": [
+   "known-gap",
+   "d2.1",
+   "mcp"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D2",
+  "type": "trap",
+  "front": "A metadata extraction must always run first, but `{\"type\": \"any\"}` keeps letting other tools go first. What do you set, and for how long?",
+  "back": "`{\"type\": \"tool\", \"name\": \"extract_metadata\"}` on the first request only, then relax `tool_choice` back to `\"auto\"` for the rest of the workflow.",
+  "trap": "Exam trap: leaving the forced value on every turn means the enrichment tools can never be called at all.",
+  "cites": [
+   "Domain-2_v2 §2.5"
+  ],
+  "tags": [
+   "known-gap",
+   "d4.5",
+   "tool-choice"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D2",
+  "type": "trap",
+  "front": "You need every file that calls a deprecated `formatDate` function. Grep or Glob?",
+  "back": "Grep, which searches inside file contents. Glob matches file paths, so it would only surface files named after the function.",
+  "trap": "Exam trap: a pattern like `**/formatDate*` presents as a thorough sweep and never opens a single file.",
+  "cites": [
+   "Domain-2_v2 §2.9"
+  ],
+  "tags": [
+   "built-in-tools",
+   "search"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D3",
+  "type": "trap",
+  "front": "Which CLAUDE.md location travels with the repository to every teammate, and which one stays on one machine?",
+  "back": "The project file, at the root or under `.claude/`, is version-controlled. `~/.claude/CLAUDE.md` is user scope and is never shared through the repo.",
+  "trap": "Exam trap: both files load in a session, so the setup behaves identically on the machine where the personal file happens to exist.",
+  "cites": [
+   "Key-Distinctions_v1 #1",
+   "Domain-3_v2 §3.1"
+  ],
+  "tags": [
+   "known-gap",
+   "d3.1",
+   "claude-md"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D3",
+  "type": "trap",
+  "front": "What triggers loading for CLAUDE.md, for a file under `.claude/rules/`, and for a skill?",
+  "back": "CLAUDE.md loads every session. A rules file loads when the file being worked on matches its glob. A skill loads when the user invokes it by name.",
+  "trap": "Exam trap: all three hold project guidance, so the deciding line is when each one enters context rather than what it can contain.",
+  "cites": [
+   "Key-Distinctions_v1 #3",
+   "Domain-3_v2 §3.2"
+  ],
+  "tags": [
+   "claude-md",
+   "rules",
+   "skills"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D3",
+  "type": "trap",
+  "front": "A long deploy-and-rollback procedure needed a few days a quarter sits in CLAUDE.md and loads on every session. Where does it belong?",
+  "back": "In a skill under `.claude/skills/`, invoked on demand, while CLAUDE.md keeps the standards that apply to every task.",
+  "trap": "Exam trap: `.claude/rules/` is path-scoped, which fits file-type conventions and not an occasion-based workflow tied to no glob.",
+  "cites": [
+   "Domain-3_v2 §3.11",
+   "Key-Distinctions_v1 #3"
+  ],
+  "tags": [
+   "claude-md",
+   "skills",
+   "organization"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D3",
+  "type": "trap",
+  "front": "A personal skill and a project skill share the name `commit`. Which one runs?",
+  "back": "The personal skill at `~/.claude/skills/commit/SKILL.md` overrides the project skill of the same name.",
+  "trap": "Exam trap: the precedence is easy to state backwards, and a corrupted or missing repo file is offered as the alternative explanation.",
+  "cites": [
+   "Key-Distinctions_v1 #4",
+   "Domain-3_v2 §3.5"
+  ],
+  "tags": [
+   "skills",
+   "precedence"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D3",
+  "type": "trap",
+  "front": "A developer wants their own version of the team's `/commit` without changing it for anyone else. What do they create?",
+  "back": "A personal skill at `~/.claude/skills/commit/SKILL.md`, deliberately keeping the same command name.",
+  "trap": "Exam trap: naming it `/my-commit` sidesteps the collision and gives up the familiar command the whole team already types.",
+  "cites": [
+   "Key-Distinctions_v1 #4",
+   "Domain-3_v2 §3.5"
+  ],
+  "tags": [
+   "skills",
+   "precedence"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D3",
+  "type": "trap",
+  "front": "What does `context: fork` in SKILL.md frontmatter change about where a skill's output lands?",
+  "back": "The skill runs in an isolated subagent context, so its output stays out of the main conversation.",
+  "trap": "Exam trap: a faster model and a compressed summary are offered as fixes for context pollution. One changes speed, the other discards the analysis.",
+  "cites": [
+   "Key-Distinctions_v1 #13",
+   "Domain-3_v2 §3.3"
+  ],
+  "tags": [
+   "skills",
+   "context-isolation"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D3",
+  "type": "trap",
+  "front": "A CI job invoking `claude` hangs waiting for input. Which documented flag fixes it?",
+  "back": "`-p` (or `--print`) -- it processes the prompt, prints the result to stdout, and exits.",
+  "trap": "Exam trap: `CLAUDE_HEADLESS=true` and `--batch` both appear as options and neither exists in Claude Code.",
+  "cites": [
+   "Key-Distinctions_v1 #15",
+   "Domain-3_v2 §3.8"
+  ],
+  "tags": [
+   "known-gap",
+   "d3.6",
+   "ci"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D3",
+  "type": "trap",
+  "front": "Of `CLAUDE_HEADLESS=true`, `--batch`, and redirecting stdin from `/dev/null`, which one does anything at all?",
+  "back": "Only the stdin redirect, and it is an undocumented Unix workaround. `-p` is the documented non-interactive mode and it prints to stdout as well.",
+  "trap": "Exam trap: two fabricated options plus one real-but-unsanctioned workaround sit beside the documented flag in the same question.",
+  "cites": [
+   "Key-Distinctions_v1 #15",
+   "Domain-3_v2 §3.8"
+  ],
+  "tags": [
+   "known-gap",
+   "d3.6",
+   "ci"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D3",
+  "type": "trap",
+  "front": "A CI script keeps breaking on prose preambles wrapped around Claude's JSON. Which CLI flags remove the problem at the source?",
+  "back": "`--output-format json` together with `--json-schema`, which validates the output against the schema for downstream parsing.",
+  "trap": "Exam trap: an Output Format section in CLAUDE.md and a prompt instruction are both guidance, so compliance stays variable run to run.",
+  "cites": [
+   "Domain-3_v2 §3.9"
+  ],
+  "tags": [
+   "known-gap",
+   "d3.6",
+   "cli"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D3",
+  "type": "trap",
+  "front": "An automated reviewer re-posts near-duplicate comments every time the author pushes a follow-up commit. What goes into the re-run prompt?",
+  "back": "The previous run's findings, with an instruction to report only new or still-unaddressed issues.",
+  "trap": "Exam trap: starting each run from a blank slate sounds like it protects objectivity and is what guarantees the duplicates.",
+  "cites": [
+   "Domain-3_v2 §3.8"
+  ],
+  "tags": [
+   "known-gap",
+   "d3.6",
+   "ci"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D3",
+  "type": "trap",
+  "front": "Tests generated in the pipeline keep ignoring the team's fixture and mocking conventions. What supplies that knowledge?",
+  "back": "CLAUDE.md -- testing standards, fixture conventions, and review criteria travel with the repo into the CI invocation.",
+  "trap": "Exam trap: a one-line prompt reminder cannot carry conventions the model has never seen, and `max_tokens` governs length rather than adherence.",
+  "cites": [
+   "Domain-3_v2 §3.8"
+  ],
+  "tags": [
+   "known-gap",
+   "d3.6",
+   "ci"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D3",
+  "type": "trap",
+  "front": "A CLAUDE.md contains `@./standards/testing.md`. What is that relative path resolved against?",
+  "back": "The file that contains the import. Relative and absolute paths are both supported, and imports may nest up to 5 deep.",
+  "trap": "Exam trap: invented restrictions -- absolute paths only, or same-directory only -- read like precise documentation.",
+  "cites": [
+   "Domain-3_v2 §3.1"
+  ],
+  "tags": [
+   "known-gap",
+   "d3.1",
+   "claude-md"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D3",
+  "type": "trap",
+  "front": "When does a task call for planning mode rather than direct execution?",
+  "back": "Large scope, architectural decisions, several viable approaches, or changes spanning many files.",
+  "trap": "Exam trap: beginning in direct execution and switching to planning once it gets hard is the named trap; reactive switching pays for the rework twice.",
+  "cites": [
+   "Domain-3_v2 §3.6"
+  ],
+  "tags": [
+   "planning-mode",
+   "workflow"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D3",
+  "type": "trap",
+  "front": "A migration script keeps mishandling null values across three rounds of prose bug reports. What converges fastest?",
+  "back": "A concrete failing test case -- a sample input row containing nulls plus the exact expected output -- iterated until it passes.",
+  "trap": "Exam trap: describing the edge case more emphatically repeats the signal that already failed; prose edge cases are read inconsistently each run.",
+  "cites": [
+   "Domain-3_v2 §3.7"
+  ],
+  "tags": [
+   "iterative-refinement",
+   "testing"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D4",
+  "type": "trap",
+  "front": "What does the Message Batches API buy, and what does it cost?",
+  "back": "50% off standard pricing, against a processing window of up to 24 hours with no latency SLA.",
+  "trap": "Exam trap: planning around a typical one-hour completion ignores that no SLA exists; every deadline has to absorb the full 24-hour worst case.",
+  "cites": [
+   "Key-Distinctions_v1 #14",
+   "Domain-4_v2 §4.11"
+  ],
+  "tags": [
+   "batch-api",
+   "cost"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D4",
+  "type": "trap",
+  "front": "Prose instructions have twice failed to produce a consistent output format. What replaces another round of instruction editing?",
+  "back": "Few-shot examples showing the exact required format, which give the model a concrete pattern to match.",
+  "trap": "Exam trap: more explicit requirements read as the natural next step, and the instruction channel is the one already failing.",
+  "cites": [
+   "Key-Distinctions_v1 #16",
+   "Domain-4_v2 §4.1"
+  ],
+  "tags": [
+   "few-shot",
+   "format-consistency"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D4",
+  "type": "trap",
+  "front": "What tells you that adding more instruction text will not fix an output problem?",
+  "back": "The rule is already stated and already being followed inconsistently. The missing piece is a concrete pattern, which examples supply.",
+  "trap": "Exam trap: lowering temperature is offered alongside; it moves randomness rather than which structure the model settles on.",
+  "cites": [
+   "Domain-4_v2 §4.1",
+   "Key-Distinctions_v1 #16"
+  ],
+  "tags": [
+   "few-shot",
+   "prompt-engineering"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D4",
+  "type": "trap",
+  "front": "A single-pass review of a 14-file PR goes deep on some files and shallow on others. What is the architectural fix?",
+  "back": "Per-file passes for local issues, plus a separate integration pass for cross-file relationships.",
+  "trap": "Exam trap: a larger context window is offered and changes nothing about attention quality -- more tokens available is not more attention per token.",
+  "cites": [
+   "Key-Distinctions_v1 #17",
+   "Domain-4_v2 §4.12"
+  ],
+  "tags": [
+   "multi-pass",
+   "attention-dilution"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D4",
+  "type": "trap",
+  "front": "What is the named cause of contradictory comments across files reviewed in one pass?",
+  "back": "Attention dilution -- processing many items at once flags a pattern in one file and approves the same pattern in another.",
+  "trap": "Exam trap: asking the author to split the PR moves the work onto a human and leaves genuine cross-file issues unreviewed.",
+  "cites": [
+   "Domain-4_v2 §4.12",
+   "Key-Distinctions_v1 #17"
+  ],
+  "tags": [
+   "multi-pass",
+   "attention-dilution"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D4",
+  "type": "trap",
+  "front": "Misrouting happens on a narrow band of ambiguous requests. How many examples do you add, and of what?",
+  "back": "Four to six examples aimed at exactly those ambiguous cases, each carrying the rationale for the tool chosen.",
+  "trap": "Exam trap: ten to fifteen clear-cut examples per tool cover the requests the agent already handles correctly.",
+  "cites": [
+   "Key-Distinctions_v1 #18",
+   "Domain-4_v2 §4.1"
+  ],
+  "tags": [
+   "few-shot",
+   "tool-selection"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D4",
+  "type": "trap",
+  "front": "A dozen unambiguous samples per tool are already in the prompt and the borderline requests still misroute. What was wrong with them?",
+  "back": "They demonstrate the region the model already gets right. Examples have to sit on the boundary where the failures actually occur.",
+  "trap": "Exam trap: raising the example count is the offered remedy, and volume in the wrong region buys nothing.",
+  "cites": [
+   "Domain-4_v2 §4.1",
+   "Key-Distinctions_v1 #18"
+  ],
+  "tags": [
+   "few-shot",
+   "tool-selection"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D4",
+  "type": "trap",
+  "front": "A user request is vague. What does the assistant do instead of asking four clarifying questions?",
+  "back": "State the reasonable assumptions explicitly, proceed on them, and invite corrections.",
+  "trap": "Exam trap: four or more clarifying questions drive a 35-40% abandonment rate, and bundling them into one message makes the same demand.",
+  "cites": [
+   "Key-Distinctions_v1 #19",
+   "Domain-4_v2 §4.19"
+  ],
+  "tags": [
+   "clarification",
+   "ux"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D4",
+  "type": "trap",
+  "front": "Why is quietly picking a sensible default worse than naming the default you picked?",
+  "back": "The user has no way to tell what was assumed, so a mismatch only surfaces after the work has been delivered.",
+  "trap": "Exam trap: a hidden default produces a fast, confident-looking answer and is rejected alongside over-questioning.",
+  "cites": [
+   "Domain-4_v2 §4.19",
+   "Key-Distinctions_v1 #19"
+  ],
+  "tags": [
+   "clarification",
+   "assumptions"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D4",
+  "type": "trap",
+  "front": "Extraction moved to `tool_use` with a strict schema and parse failures went to zero, yet reported totals still disagree with line items. What does the schema actually guarantee?",
+  "back": "Syntactic validity and schema shape. Values can still be semantically wrong, which is caught by business-rule validation in code.",
+  "trap": "Exam trap: tightening the schema further is the offered fix, and no schema constraint can verify that numbers sum correctly.",
+  "cites": [
+   "Domain-4_v2 §4.7"
+  ],
+  "tags": [
+   "known-gap",
+   "d4.5",
+   "structured-output"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D4",
+  "type": "trap",
+  "front": "A required, non-nullable field pushes the model to invent values when the document does not contain them. What is the schema fix?",
+  "back": "Make the field optional or nullable so the model can return `null`, and treat an absent value as a legitimate extraction.",
+  "trap": "Exam trap: a prompt instruction against fabrication and a lower temperature both leave the schema still demanding a value.",
+  "cites": [
+   "Domain-4_v2 §4.5"
+  ],
+  "tags": [
+   "json-schema",
+   "fabrication"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D4",
+  "type": "trap",
+  "front": "When does retry-with-feedback stop being worth another attempt?",
+  "back": "When the information is genuinely absent from the source, or lives in a document that was never supplied. Retries then burn tokens and invite fabrication.",
+  "trap": "Exam trap: retry genuinely fixes format, structural, and arithmetic errors, which makes raising the retry limit feel general when it is bounded.",
+  "cites": [
+   "Domain-4_v2 §4.9"
+  ],
+  "tags": [
+   "retry",
+   "validation"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D4",
+  "type": "trap",
+  "front": "A batch of 400 comes back with 12 failures. What lets you identify and re-submit exactly those 12?",
+  "back": "The `custom_id` assigned to each request. Results can arrive in any order, so it is the only reliable join key back to the input.",
+  "trap": "Exam trap: matching by submission order silently mis-joins data, and re-submitting the whole batch pays a second time for the successes.",
+  "cites": [
+   "Domain-4_v2 §4.11"
+  ],
+  "tags": [
+   "batch-api",
+   "custom-id"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D5",
+  "type": "trap",
+  "front": "A synthesis step reliably uses the first and last stretches of a 75K-token input and misses findings in the middle. What two changes address the position problem?",
+  "back": "Put a key-findings summary at the start, and add explicit section headings throughout the input.",
+  "trap": "Exam trap: rotating which agent's output appears first moves content around without touching the attention pattern that causes the miss.",
+  "cites": [
+   "Key-Distinctions_v1 #20",
+   "Domain-5_v2 §5.2"
+  ],
+  "tags": [
+   "known-gap",
+   "d5.1",
+   "context-window"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D5",
+  "type": "trap",
+  "front": "Why is compressing a long input under a 20K-token ceiling the wrong answer to a middle-of-context miss?",
+  "back": "Compression can discard the critical information itself. The failure is about where content sits, so shrinking it does not change position.",
+  "trap": "Exam trap: a larger context window is offered too. Lost-in-the-middle is a positional attention pattern rather than a capacity limit.",
+  "cites": [
+   "Key-Distinctions_v1 #20",
+   "Domain-5_v2 §5.2"
+  ],
+  "tags": [
+   "known-gap",
+   "d5.1",
+   "context-window"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D5",
+  "type": "trap",
+  "front": "Precise amounts and dates keep turning into vague references as a support conversation is summarized. What structure preserves them?",
+  "back": "A case-facts block held outside the summarized history and included in every prompt, updated whenever a new fact appears.",
+  "trap": "Exam trap: revising the summarization prompt to protect numbers still depends on the summarizer executing perfectly every single time.",
+  "cites": [
+   "Key-Distinctions_v1 #21",
+   "Domain-5_v2 §5.4"
+  ],
+  "tags": [
+   "context-window",
+   "facts-persistence"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D5",
+  "type": "trap",
+  "front": "Why does raising the summarization threshold fail to solve precision loss in a long conversation?",
+  "back": "It postpones compression. The same transactional facts are eventually summarized into vague language anyway.",
+  "trap": "Exam trap: the delay produces real improvement for a while, which makes it look like a fix rather than a deferral.",
+  "cites": [
+   "Key-Distinctions_v1 #21",
+   "Domain-5_v2 §5.4"
+  ],
+  "tags": [
+   "context-window",
+   "summarization"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D5",
+  "type": "trap",
+  "front": "A discovery phase across a 120-file codebase fills the window before implementation even begins. What isolates it?",
+  "back": "An Explore subagent runs the verbose discovery and returns a concise summary to the main session.",
+  "trap": "Exam trap: `/compact` mid-task is the tempting alternative and loses the precision the implementation phase still needs.",
+  "cites": [
+   "Key-Distinctions_v1 #22",
+   "Domain-5_v2 §5.6"
+  ],
+  "tags": [
+   "context-isolation",
+   "subagents"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D5",
+  "type": "trap",
+  "front": "What does a subagent give a verbose exploration that `/compact` and a split across sessions do not?",
+  "back": "The verbose output never enters the main context at all, so nothing has to be compressed or reconciled afterwards.",
+  "trap": "Exam trap: asking the same session to summarize itself periodically has already spent the tokens by the time the summary is written.",
+  "cites": [
+   "Domain-5_v2 §5.6",
+   "Key-Distinctions_v1 #22"
+  ],
+  "tags": [
+   "context-isolation",
+   "subagents"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D5",
+  "type": "trap",
+  "front": "Which fix targets drift caused by a long system prompt full of abstract rules?",
+  "back": "Replace the verbose rule list with few-shot examples of the behavior. Examples hold a behavioral pattern longer than abstract instructions.",
+  "trap": "Exam trap: injecting a reminder every four or five turns addresses the symptom while leaving the abstractness that drifts fastest in place.",
+  "cites": [
+   "Domain-5_v2 §5.13",
+   "Key-Distinctions_v1 #23"
+  ],
+  "tags": [
+   "behavioral-drift",
+   "few-shot"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D5",
+  "type": "trap",
+  "front": "Someone asks what a group concluded about one theme eleven weeks and 85K tokens ago. Which memory strategy answers it?",
+  "back": "Semantic embeddings over the full history, retrieving the specific past exchanges that are relevant to the question.",
+  "trap": "Exam trap: progressive summarization compresses the exact conclusion into an abstraction that can no longer be quoted back.",
+  "cites": [
+   "Key-Distinctions_v1 #24",
+   "Domain-5_v2 §5.7"
+  ],
+  "tags": [
+   "long-term-memory",
+   "retrieval"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D5",
+  "type": "trap",
+  "front": "Why does a rolling window fail the same long-history recall question that progressive summarization fails?",
+  "back": "It discards the early sessions outright, so the exchange being asked about is no longer in context in any form.",
+  "trap": "Exam trap: both options keep the day-to-day conversation working, and both lose the one early exchange the question depends on.",
+  "cites": [
+   "Domain-5_v2 §5.7",
+   "Key-Distinctions_v1 #24"
+  ],
+  "tags": [
+   "long-term-memory",
+   "context-window"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D5",
+  "type": "trap",
+  "front": "What makes Claude appear to remember turn 1 while answering turn 5?",
+  "back": "The application resends the prior messages in the `messages` array on every request. The API holds no server-side state.",
+  "trap": "Exam trap: a `session_id` parameter is offered as the mechanism and does not exist.",
+  "cites": [
+   "Key-Distinctions_v1 #25",
+   "Domain-5_v2 §5.1"
+  ],
+  "tags": [
+   "stateless-api",
+   "memory"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D5",
+  "type": "trap",
+  "front": "A three-turn conversation loses what the user said in turn 1. Does the application need a vector database?",
+  "back": "It needs to include the prior messages in the `messages` array. Vector retrieval is for recall across months of history.",
+  "trap": "Exam trap: a vector store and a context-window-exceeded diagnosis both sound technical, and neither can apply to three turns.",
+  "cites": [
+   "Key-Distinctions_v1 #25",
+   "Domain-5_v2 §5.1"
+  ],
+  "tags": [
+   "stateless-api",
+   "memory"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D5",
+  "type": "trap",
+  "front": "A `lookup_order` call returns 40-plus fields when five matter, and all of them stay in context for the rest of the session. What removes them?",
+  "back": "A `PostToolUse` hook that trims the result to the relevant fields before it enters context.",
+  "trap": "Exam trap: instructing the model to ignore the irrelevant fields still pays for every one of those tokens, turn after turn.",
+  "cites": [
+   "Domain-5_v2 §5.5"
+  ],
+  "tags": [
+   "context-window",
+   "hooks"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D5",
+  "type": "trap",
+  "front": "Which escalation triggers are reliable, and which two proxies does the exam reject outright?",
+  "back": "Escalate on structural signals: explicit human requests, policy gaps, repeated failures, threshold breaches. Sentiment and model self-rated confidence are rejected.",
+  "trap": "Exam trap: an anger threshold floods the queue with resolvable cases, and a model can be confidently wrong about its own confidence.",
+  "cites": [
+   "Domain-5_v2 §5.8"
+  ],
+  "tags": [
+   "escalation",
+   "confidence"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D5",
+  "type": "trap",
+  "front": "How much prompt caching does the CCA-F expect you to know?",
+  "back": "That it exists, and when it pays. Implementation details sit on the official out-of-scope list.",
+  "trap": "Exam trap: caching mechanics feel like fair game because the feature is real and useful; the exam excludes them by name.",
+  "cites": [
+   "Exam-Mechanics_v2 Out-of-Scope Topics"
+  ],
+  "tags": [
+   "known-gap",
+   "d5.2",
+   "scope"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D5",
+  "type": "trap",
+  "front": "An option proposes prompt caching to cut the cost of a long-context problem. How does that option behave in the official samples?",
+  "back": "As a wrong answer: an over-engineered cost fix that leaves the stated requirement unmet.",
+  "trap": "Exam trap: the proportionate-response heuristic decides it -- repair the signal or the design before reaching for a cost lever.",
+  "cites": [
+   "Exam-Mechanics_v2 Answer Pattern Heuristics",
+   "Exam-Mechanics_v2 Out-of-Scope Topics"
+  ],
+  "tags": [
+   "known-gap",
+   "d5.2",
+   "distractors"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D1",
+  "type": "trap",
+  "front": "Complete-looking subagent output plus missing coverage: which two explanations does the exam rule out?",
+  "back": "Subagent query quality and document filters. Both explain gaps inside an assigned subtopic, never a subtopic that was never assigned.",
+  "trap": "Exam trap: the guilty component looks like whichever subagent should have found the missing material, and every subagent did exactly its job.",
+  "cites": [
+   "Key-Distinctions_v1 #7",
+   "Domain-1_v2 §1.6"
+  ],
+  "tags": [
+   "decomposition",
+   "root-cause"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D2",
+  "type": "trap",
+  "front": "Why does retrying a failed Edit with a shorter anchor string make the problem worse?",
+  "back": "A shorter string is more likely to appear more than once, so the match becomes less unique. Read plus Write is the sanctioned fallback.",
+  "trap": "Exam trap: shortening the anchor presents as loosening a match that was too strict, and `sed` through Bash bypasses the tool built for the job.",
+  "cites": [
+   "Domain-2_v2 §2.9"
+  ],
+  "tags": [
+   "built-in-tools",
+   "edit"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D3",
+  "type": "trap",
+  "front": "A convention sits in `~/.claude/CLAUDE.md` on three developers' machines. What is the fix so the whole team gets it?",
+  "back": "Move the instruction into the project-level CLAUDE.md, which is version-controlled and reaches every clone.",
+  "trap": "Exam trap: a stale checkout or a per-user config cache is offered as the cause, and the repository is identical for everyone involved.",
+  "cites": [
+   "Key-Distinctions_v1 #1",
+   "Domain-3_v2 §3.1"
+  ],
+  "tags": [
+   "known-gap",
+   "d3.1",
+   "claude-md"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D3",
+  "type": "trap",
+  "front": "An instruction takes effect on one machine and not another. What does `/memory` show you?",
+  "back": "Which memory files are actually loaded in that session, so a file sitting at the wrong level shows up as absent.",
+  "trap": "Exam trap: restating the rule more forcefully each session treats the symptom of a file that was never discovered.",
+  "cites": [
+   "Domain-3_v2 §3.1"
+  ],
+  "tags": [
+   "known-gap",
+   "d3.1",
+   "memory"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D3",
+  "type": "trap",
+  "front": "Rejected approaches from an exploration skill keep steering the implementation that follows. Which frontmatter key stops that?",
+  "back": "`context: fork` -- the skill runs in an isolated subagent context and only its summary comes back to the main conversation.",
+  "trap": "Exam trap: splitting the skill in two, or switching to a faster model, leaves each half still writing into the main session.",
+  "cites": [
+   "Key-Distinctions_v1 #13",
+   "Domain-3_v2 §3.3"
+  ],
+  "tags": [
+   "skills",
+   "context-isolation"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D3",
+  "type": "trap",
+  "front": "Which review findings get bundled into one feedback message, and which go one at a time?",
+  "back": "Interacting issues go together, so a single coherent change can address them. Independent issues go separately, one per message.",
+  "trap": "Exam trap: the one-issue-per-message rule is genuinely right for independent fixes and produces contradictory patches for interdependent ones.",
+  "cites": [
+   "Domain-3_v2 §3.7"
+  ],
+  "tags": [
+   "iterative-refinement",
+   "feedback"
+  ],
+  "core": false,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D4",
+  "type": "trap",
+  "front": "What exactly can a Batches API request not do with tools?",
+  "back": "Pause partway through so the client can execute a tool and return a `tool_result`. Each request is a single submit-and-respond cycle.",
+  "trap": "Exam trap: the blanket claim that batches cannot use tools at all is false -- a batch request may define `tools` and carry a multi-turn history.",
+  "cites": [
+   "Key-Distinctions_v1 #14",
+   "Domain-4_v2 §4.11"
+  ],
+  "tags": [
+   "batch-api",
+   "tool-use"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D5",
+  "type": "trap",
+  "front": "At 2,500 tokens and seven turns, which two explanations for behavioral drift are ruled out?",
+  "back": "Context-window overflow, impossible at that size, and the claim that a system prompt applies only to the first turn.",
+  "trap": "Exam trap: both read as mechanism-level diagnoses. The documented cause is accumulated assistant responses diluting the system prompt's influence.",
+  "cites": [
+   "Key-Distinctions_v1 #23",
+   "Domain-5_v2 §5.13"
+  ],
+  "tags": [
+   "behavioral-drift",
+   "system-prompt"
+  ],
+  "core": true,
+  "rev": false
+ },
+ {
+  "id": null,
+  "domain": "D5",
+  "type": "trap",
+  "front": "What can an aggregate 97% extraction accuracy conceal?",
+  "back": "A far higher failure rate inside one rare segment -- the documented example is 40% on a single document type.",
+  "trap": "Exam trap: auditing only the lowest-confidence queue, or sampling only the most common document type, leaves the failing segment unmeasured.",
+  "cites": [
+   "Domain-5_v2 §5.9"
+  ],
+  "tags": [
+   "human-review",
+   "confidence-calibration"
+  ],
+  "core": true,
+  "rev": false
+ }
+]
