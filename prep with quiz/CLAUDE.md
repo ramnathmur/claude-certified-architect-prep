@@ -3,7 +3,8 @@
 **Owner:** Ram
 **Location:** `C:\Claude Cowork\Projects\Claude Certified Architect Prep\prep with quiz\`
 **Status:** Active
-**Blueprint version:** 2.3 | 2026-07-09 (v2.2, v2.1, v2.0, v1.0 in git history)
+**Blueprint version:** 2.4 | 2026-07-13 (v2.3, v2.2, v2.1, v2.0, v1.0 in git history)
+**Changelog v2.3→v2.4:** Step 5 item 3 (sticky nav) now requires a live running-accuracy percentage next to the score pill — `round(correct/answered*100)` among questions answered so far, `—` when answered=0 (no divide-by-zero). Color-coded against the pass-equivalent raw-percentage threshold: `round((correct/60)*900+100) >= 720` solves to `correct/60 >= 620/900 = 68.89%` (620/900 reduces to 31/45), so the pill is red below 68.89% and green at or above. Orchestration prompt bumped to v10 to match. Applies to Exam 7 onward — Exams 1–6 are historical record and are not retrofitted.
 **Changelog v2.2→v2.3:** Closes Open Findings Ledger items PB-08 through PB-11 (2026-07-09 independent audit against the real exam): (1) scenario narratives use generic framing, no invented company/agent names; (2) correct-answer letter sequence is pre-planned per block, not just checked after; (3) each block's domain tally is checked against its scenario's official primary domains; (4) inline code/config token rate has a 20–25% target band; (5) the landing card discloses that the 4-of-6 scenario draw is curated, not random. Orchestration prompt bumped to v9 to match. Applies to Exam 4 onward — Exams 2 and 3 are historical record and are not touched.
 **Changelog v2.1→v2.2:** Step 6 now states the output directory explicitly (`mock-exams/`) — closes Open Findings Ledger item PB-07: the directory was never written down anywhere, only followed as an unstated convention (`practice/`, a project-root folder holding unrelated static practice materials), which meant generated exams landed somewhere disconnected from the system that made them and were hard to locate. Exams 2 and 3 were moved from `practice/` to `mock-exams/` accordingly.
 **Changelog v2→v2.1:** added a required per-block correct-answer-position self-check to Step 4 — closes Open Findings Ledger item PB-02 (see GENERATION-INTELLIGENCE.md), where a block previously shipped all 15 questions with the correct answer at the same option letter, undetected by its own QA. Part of the session-2 self-improvement mechanism (Open Findings Ledger + Pending Corpus Decisions) that promotes generation-quality findings into binding blueprint/orchestration-prompt rules instead of leaving them as unread prose.
@@ -34,7 +35,7 @@ All quiz questions must be grounded in these files. Every question must trace to
 | `CCA-Prep_Key-Distinctions_v1.md` | 29 high-yield exam traps — always draw from these |
 | `CURRENT-DOCS-DELTA_v1.md` | Exam-framing vs current-docs divergences; [CONFLICT-RISK] items must not decide a scored answer against the official framing |
 | `PRACTICE-TEST-STEMS_v1.md` | Dedup ledger (never reuse these stems) + style calibration profile |
-| `source/CCA-F-Official-Exam-Guide.pdf` (+ `_text.txt`) | Official authority: task statements, scenarios, sample questions |
+| `source/CCA-F-Official-Exam-Guide_v1.0.pdf` (+ `_v1.0_text.txt`) | Official authority: task statements, scenarios, sample questions. **v1.0** (Effective July 2026, exam code CCAR-F) replaced v0.2 on 2026-08-09; the diff changed only exam-mechanics meta-facts — weights, scenarios, task statements and both scope lists are identical, so generation is unaffected. Superseded v0.2 retained at `source/CCA-F-Official-Exam-Guide.pdf` as the snapshot Exams 1–11 were authored against. |
 | `source/guide_en.md` | Community study guide — depth source |
 
 Superseded (do not generate from; kept for history): `CCA-Prep_Domain-*_v1.md`, `CCA-Prep_Exam-Mechanics_v1.md`, `CCA-Prep_Corpus-Index_v1.md`.
@@ -89,7 +90,9 @@ Required HTML features:
 
 1. **Landing card** — exam number, date, format (FULL-60 / DRILL-30), the 4 scenarios drawn plus a disclosure line — "These 4 were curated to guarantee coverage across your exams — the real exam draws 4 of 6 at random each sitting, with no such guarantee" — prior performance from EXAM-LOG.md (per orchestration prompt rules), and an explicit "Begin exam" action that navigates to question 1
 2. **Scenario block headers** (FULL-60 only — DRILL-30 has no blocks, skip this item) — a block's FIRST question shows the full scenario narrative card; every other question in that block shows a compact persistent "Block X of 4" tag instead
-3. **Sticky nav** — overall progress bar + N/of-total answered count, elapsed timer, running score pill, and a collapsible jump-map toggle (see item 4)
+3. **Sticky nav** — overall progress bar + N/of-total answered count, elapsed timer, running score pill, a live running-accuracy percentage, and a collapsible jump-map toggle (see item 4)
+   - **Running-accuracy percentage:** next to the score pill, display `round(correct / answered × 100)` among questions answered so far (e.g. 30 right / 10 wrong out of 40 answered → 75%). Update on every answer, same trigger as the score pill. When `answered=0` (landing page / before question 1), show a neutral placeholder (`—%`) — never divide by zero.
+   - **Color-coding:** the real pass line is 720/1000 on the scaled score `round((correct/60)×900+100)`. Solving for the raw percentage that clears 720 gives `correct/60 ≥ 620/900 = 31/45 ≈ 68.89%` — NOT a round number like 75%, so do not substitute one. Color the percentage red when below 68.89%, green at or above. Compare the unrounded running ratio (`correct/answered×100`) against 68.89%, not the rounded display value, to avoid double-rounding edge cases. Two states only (red/green) — do not add a third "close" state (e.g. amber) without flagging the idea to Ram first and getting a decision.
 4. **One `q-card` rendered per page** (paginated — exactly one question in the DOM at a time, never continuous scroll), with:
    - Back / Next buttons — Back always enabled except on question 1; Next disabled until the current question is answered; on the final question the Next slot becomes "Show my results"
    - A collapsible jump-map in the sticky nav: one row of numbered chips per scenario block (FULL-60) or one flat row (DRILL-30), each chip navigable directly to that question and visually marked answered / unanswered / current-position; includes a persistent "Show results now" link for viewing partial results before finishing
@@ -169,7 +172,7 @@ After each scored exam with real per-domain data (results-JSON or a manual break
 - It fires on **every** scored exam, not gated to the every-3 insights cadence.
 - It states **intent within the fixed domain quota** — it never changes domain weights or breaches the out-of-scope list. The next generation reads it (orchestration prompt Phase 4c.5) and biases WHICH corpus sections it draws from, so a single detailed result nudges the very next paper before the two-exam confirmed-weakness rule is even eligible.
 
-See orchestration prompt v9 Phase 2 f-note (writer) and Phase 4c.5 (reader).
+See orchestration prompt v10 Phase 2 f-note (writer) and Phase 4c.5 (reader).
 
 ---
 
@@ -190,4 +193,4 @@ After every 3 completed exam attempts, generate an insights round (see orchestra
 - **Style-match the real exam** — calibrate stems and options against `PRACTICE-TEST-STEMS_v1.md` §3 and the official samples before writing; never copy those stems.
 - **Update EXAM-LOG.md immediately** after generating or scoring — append only, never overwrite prior entries.
 - **Write a Professor's Note every scored exam** (real per-domain data) and **consume the latest note when generating** — the note biases section choice within the fixed quota, never the quota itself.
-- **Invoke via `/cca-exam`** — the folder-scoped slash command loads orchestration prompt v9. Run it from a Claude Code session opened in this `prep with quiz` folder.
+- **Invoke via `/cca-exam`** — the folder-scoped slash command loads orchestration prompt v10. Run it from a Claude Code session opened in this `prep with quiz` folder.
