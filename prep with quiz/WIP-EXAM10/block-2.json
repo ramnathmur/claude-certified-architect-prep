@@ -1,0 +1,580 @@
+{
+  "label": "Code Generation with Claude Code",
+  "narrative": "One engineering team adopts Claude Code across a growing internal service, layering in CLAUDE.md and path-scoped rules, custom skills and slash commands, and a deliberate choice between planning mode and direct execution as task scope varies. The block follows that adoption in sequence: standing up shared configuration and workflow scoping, applying iterative-refinement techniques to converge on correct generated code, and keeping long-running sessions and their context reliable as the service's modules — demand-forecasting, supplier-sync, ingestion, and reporting — evolve.",
+  "letterPlan": ["B", "A", "D", "C", "A", "B", "D", "C", "A", "B", "D", "A", "C", "D", "B"],
+  "questions": [
+    {
+      "g": 16,
+      "block": 1,
+      "blockLabel": "Code Generation with Claude Code",
+      "domain": "D3",
+      "section": "§3.1",
+      "kd": null,
+      "cluster": "proportionate-response",
+      "letterPlanned": "B",
+      "stem": "An engineer's Claude Code sessions in the demand-forecasting module reliably flagged missing changelog entries on every commit for weeks. After setting up a new laptop and restoring their project checkout, the same convention never fires again, even on files it used to catch. Rather than investigate, the engineer starts appending 'remember the changelog rule' to every prompt. What is the most effective first step instead?",
+      "options": [
+        "Append the changelog rule to every prompt going forward, since the new machine evidently needs the reminder repeated to compensate.",
+        "Run `/memory` to check whether the file holding the changelog rule is among this session's loaded memory files, rather than guessing at the cause.",
+        "Reinstall Claude Code on the new laptop, since a convention that worked before and stopped now points to a corrupted local installation.",
+        "Wait a few more sessions before investigating — the convention may simply need time to re-establish itself on unfamiliar hardware."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "`/memory` shows exactly which memory files are loaded in the current session — the documented first diagnostic step whenever a previously reliable rule stops firing, turning a guess into a fact before anything is changed.",
+        "cite": "D3 §3.1"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Repeating the rule louder in the prompt treats the symptom, not the root cause — the corpus explicitly rejects this in favor of checking what's actually loaded.",
+          "cite": "D3 §3.1"
+        },
+        {
+          "option": 2,
+          "text": "Nothing in the documented CLAUDE.md/memory mechanism involves installation corruption; the far more likely cause is a configuration file the new machine simply never picked up.",
+          "cite": "D3 §3.1"
+        },
+        {
+          "option": 3,
+          "text": "Memory-file discovery is static configuration, not a behavior that re-establishes itself with use — waiting doesn't change which files are loaded.",
+          "cite": "D3 §3.1"
+        }
+      ]
+    },
+    {
+      "g": 17,
+      "block": 1,
+      "blockLabel": "Code Generation with Claude Code",
+      "domain": "D3",
+      "section": "§3.2",
+      "kd": null,
+      "letterPlanned": "A",
+      "stem": "The inventory-forecasting service is growing: demand-forecasting's Python files need a strict type-hints convention, supplier-sync's Go files need a specific retry-wrapping pattern, and test files scattered across both modules need one shared testing convention. The team wants each convention applied automatically based on which files Claude Code is actually touching, with no engineer needing to remember to mention it. What configuration best achieves this?",
+      "options": [
+        "Create `.claude/rules/` files with glob-pattern frontmatter for each convention — `**/*.py`, `**/*.go`, and `**/*.test.*` — so each loads only when matching files are in play.",
+        "Add three headed sections to the project's root CLAUDE.md, one per convention, and rely on Claude to apply the right section by context.",
+        "Create a separate CLAUDE.md file inside each module's own directory, each listing that module's convention in full.",
+        "Write one custom skill per convention and require engineers to invoke the matching skill before editing each file type."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "`.claude/rules/` with glob-pattern frontmatter loads automatically only when Claude works on matching file paths — deterministic, path-based application across both modules and the scattered test files.",
+        "cite": "D3 §3.2"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "Headed sections in one CLAUDE.md rely on model inference to pick the right section, not deterministic file-path matching.",
+          "cite": "D3 §3.2"
+        },
+        {
+          "option": 2,
+          "text": "Per-directory CLAUDE.md files don't work well when relevant files — like the scattered test files — are spread across many directories, not confined to one.",
+          "cite": "D3 §3.2"
+        },
+        {
+          "option": 3,
+          "text": "Skills are invoked on demand for workflow-specific guidance; conventions that should apply automatically based on file type belong in path-scoped rules, not a manually-triggered skill.",
+          "cite": "D3 §3.2"
+        }
+      ]
+    },
+    {
+      "g": 18,
+      "block": 1,
+      "blockLabel": "Code Generation with Claude Code",
+      "domain": "D2",
+      "section": "§2.9",
+      "kd": 29,
+      "letterPlanned": "D",
+      "stem": "The team wires a semantic, embedding-backed code-search tool into Claude Code, expecting it to replace ad-hoc text search for finding conceptually related code across the reporting module. Sessions keep calling `Grep` instead, missing renamed or refactored call sites the semantic tool would have caught. The new tool's description reads only 'Searches code.' What is the most effective fix?",
+      "options": [
+        "Remove `Grep` from the session's available tools so semantic search is the only option left for locating code.",
+        "Add a system-prompt rule instructing sessions to always prefer the new tool over built-in tools whenever one is available.",
+        "Switch every session to a larger context-window model so it can search more code manually before concluding a call site is missing.",
+        "Rewrite the tool's description to spell out its semantic-matching capability and what it finds that `Grep`'s literal text search cannot."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "Tool selection runs on descriptions; spelling out the unique capability a tool provides over the familiar built-in is the documented fix when an agent defaults to `Grep` over a more capable alternative.",
+        "cite": "KD#29"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Removing `Grep` breaks legitimate literal-search cases; the root cause is an under-specified description, not the built-in's continued existence.",
+          "cite": "KD#29"
+        },
+        {
+          "option": 1,
+          "text": "A blunt \"always prefer\" rule is keyword-sensitive and misroutes cases where `Grep` genuinely is the right tool.",
+          "cite": "KD#29"
+        },
+        {
+          "option": 2,
+          "text": "A larger context window doesn't fix tool selection driven by a vague description — it just makes the wrong tool's manual search less costly.",
+          "cite": "D2 §2.9"
+        }
+      ]
+    },
+    {
+      "g": 19,
+      "block": 1,
+      "blockLabel": "Code Generation with Claude Code",
+      "domain": "D3",
+      "section": "§3.3",
+      "kd": null,
+      "letterPlanned": "C",
+      "stem": "The team's `/backfill-supplier` skill needs a supplier-region code as its argument to scope which records it touches. Nothing in the slash-command menu signals that an argument is required, so engineers regularly invoke it bare, and the skill silently backfills every region at once. Which SKILL.md frontmatter key most directly fixes this?",
+      "options": [
+        "`context: fork`, so the backfill runs in an isolated subagent context instead of the main session.",
+        "`allowed-tools`, restricted to Write only, so the skill cannot silently touch more records than intended.",
+        "`argument-hint`, so the command menu displays that a region code is expected before the skill runs.",
+        "The skill's description text, rewritten to state in prose that a region code argument is required."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "`argument-hint` is displayed when the command is invoked, prompting for required arguments — the frontmatter key that directly closes the gap between engineers not knowing an argument is expected and the menu.",
+        "cite": "D3 §3.3"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "`context: fork` isolates output into a subagent context; it does nothing to signal that an argument is required.",
+          "cite": "D3 §3.3"
+        },
+        {
+          "option": 1,
+          "text": "`allowed-tools` scopes which tools the skill may use, not whether it knows which region to scope its writes to — a legitimate Write call still touches every region.",
+          "cite": "D3 §3.3"
+        },
+        {
+          "option": 3,
+          "text": "A skill's description appears in the slash-command menu's summary line, not as an argument prompt shown at invocation the way `argument-hint` is.",
+          "cite": "D3 §3.3"
+        }
+      ]
+    },
+    {
+      "g": 20,
+      "block": 1,
+      "blockLabel": "Code Generation with Claude Code",
+      "domain": "D1",
+      "section": "§1.17",
+      "kd": null,
+      "letterPlanned": "A",
+      "stem": "Claude Code implements a rate limiter for the reporting module's export endpoint, reasons through concurrent-request edge cases in its own response, and concludes the sliding-window logic is correct. Asked in the same conversation to review its own change before merge, it reports no issues. Days later, a burst of concurrent requests reveals the window can double-count under specific timing. What most directly addresses why the same-session check missed this?",
+      "options": [
+        "Run a second, independent Claude Code instance to review the change without access to the generating session's reasoning.",
+        "Ask the same session to review the change again, this time with extended thinking enabled for deeper analysis.",
+        "Add an explicit self-review instruction to the original generation prompt so the session checks its own work before finishing.",
+        "Have the same session write additional unit tests for the edge cases it already considered during generation."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "A second independent instance, without the generator's reasoning context, mirrors human peer review and catches what the author rationalized away — the documented fix for same-session confirmation bias.",
+        "cite": "D1 §1.17"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "Extended thinking on the generation stage doesn't fix the self-check limitation — it's still the same session reasoning from the same starting conclusion.",
+          "cite": "D1 §1.17"
+        },
+        {
+          "option": 2,
+          "text": "A self-review instruction on the same instance carries the same confirmation bias as the unprompted self-check that already missed the bug.",
+          "cite": "D1 §1.17"
+        },
+        {
+          "option": 3,
+          "text": "Tests for edge cases the session already considered won't surface a timing interaction it never reasoned about in the first place.",
+          "cite": "D1 §1.17"
+        }
+      ]
+    },
+    {
+      "g": 21,
+      "block": 1,
+      "blockLabel": "Code Generation with Claude Code",
+      "domain": "D3",
+      "section": "§3.4",
+      "kd": null,
+      "letterPlanned": "B",
+      "stem": "A legacy `/rollback-migration` command was written before the team adopted Skills, as a plain file at `.claude/commands/rollback-migration.md` that reads the typed target version as `$ARGUMENTS`. A new hire argues it will stop working soon and must be converted into a `.claude/skills/` folder with a SKILL.md. Is the new hire correct?",
+      "options": [
+        "Yes — `.claude/commands/` is deprecated and no longer processes `$ARGUMENTS`, so the file must move to a skills-based folder to keep working.",
+        "No — `.claude/commands/` is still supported and unified with `.claude/skills/`; both create `/name` commands, and `$ARGUMENTS` still holds the typed text.",
+        "Yes — but only the argument-passing needs to change; the command's logic can stay in its current file once renamed appropriately.",
+        "No — but the command will keep working only if it's also duplicated into `.claude/skills/` so both paths stay in sync."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "`.claude/commands/` is legacy but still supported and unified with `.claude/skills/` — both create `/name` commands, and `$ARGUMENTS` continues to hold the typed text with no conversion required.",
+        "cite": "D3 §3.4"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Legacy commands are explicitly documented as still supported, not deprecated or non-functional — this claim is false.",
+          "cite": "D3 §3.4"
+        },
+        {
+          "option": 2,
+          "text": "No such partial-migration requirement exists for `$ARGUMENTS` — the mechanism works unchanged in the legacy file location.",
+          "cite": "D3 §3.4"
+        },
+        {
+          "option": 3,
+          "text": "Duplicating the command into both locations isn't a documented requirement and would just create two copies to keep in sync for no benefit.",
+          "cite": "D3 §3.4"
+        }
+      ]
+    },
+    {
+      "g": 22,
+      "block": 1,
+      "blockLabel": "Code Generation with Claude Code",
+      "domain": "D3",
+      "section": "§3.5",
+      "kd": null,
+      "letterPlanned": "D",
+      "stem": "A developer wants to skip the slow style pass inside the shared `/lint-check` skill during their own iterative work, without changing what the other six teammates run after pulling the same repo. They are deciding where to put a modified version. Where should they create it, and why does it take effect automatically?",
+      "options": [
+        "`.claude/skills/lint-check-fast/SKILL.md` — a distinct name keeps it clearly separate from the team's shared skill.",
+        "By editing `.claude/skills/lint-check/SKILL.md` directly, then reverting the change before committing anything.",
+        "At a personal skill folder under a different name, with a note elsewhere telling Claude to prefer it.",
+        "`~/.claude/skills/lint-check/SKILL.md` — same name, user scope; personal skills override project skills sharing a name."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "A personal skill at the same name, in user scope, automatically overrides the project skill of that name — no edit to the shared file, and nothing teammates see after pulling.",
+        "cite": "D3 §3.5"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "A different name creates a new, separate `/lint-check-fast` command instead of overriding `/lint-check` — the documented trap for exactly this intention.",
+          "cite": "D3 §3.5"
+        },
+        {
+          "option": 1,
+          "text": "Editing the shared file directly, even temporarily, risks affecting teammates mid-change and depends on manual discipline to revert — not the documented mechanism.",
+          "cite": "D3 §3.5"
+        },
+        {
+          "option": 2,
+          "text": "Override resolution is by matching name and scope, not by a prompted preference note — a differently-named skill is simply a different command.",
+          "cite": "D3 §3.5"
+        }
+      ]
+    },
+    {
+      "g": 23,
+      "block": 1,
+      "blockLabel": "Code Generation with Claude Code",
+      "domain": "D3",
+      "section": "§3.6",
+      "kd": null,
+      "cluster": "proportionate-response",
+      "letterPlanned": "C",
+      "stem": "The reporting module needs a new `region_code` field added to the export-request struct, three call sites already identified, and the exact type and default value already agreed in the design doc. Before starting, an engineer opens planning mode so Claude Code can explore the module's structure first. What is the most effective approach?",
+      "options": [
+        "Stay in planning mode until Claude Code proposes a plan, then approve it before making any edits — this scope still benefits from review.",
+        "Use planning mode only for the three call sites, then switch to direct execution for the struct and default-value change.",
+        "Skip planning mode and go straight to direct execution — the scope, approach, and target files are already fully defined.",
+        "Open planning mode and have Claude Code re-derive `region_code`'s type and default from the module's existing patterns before touching any file."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "Direct execution is for a task with clear scope, a defined approach, and routine changes — exactly this case; planning mode's exploration adds overhead with no ambiguity left to resolve.",
+        "cite": "D3 §3.6"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Planning mode's value is investigating undefined scope or design decisions; approving a plan for an already fully-specified change is process for its own sake.",
+          "cite": "D3 §3.6"
+        },
+        {
+          "option": 1,
+          "text": "Splitting one small, already-scoped change across both modes doesn't match either mode's intended use — the whole task is routine.",
+          "cite": "D3 §3.6"
+        },
+        {
+          "option": 3,
+          "text": "Re-deriving a type and default value already settled in the design doc is redundant exploration of a question that isn't actually open.",
+          "cite": "D3 §3.6"
+        }
+      ]
+    },
+    {
+      "g": 24,
+      "block": 1,
+      "blockLabel": "Code Generation with Claude Code",
+      "domain": "D5",
+      "section": "§5.3",
+      "kd": null,
+      "letterPlanned": "A",
+      "stem": "A debugging session tracing an intermittent supplier-sync failure reaches 55,000 tokens. It holds the exact error code that reproduces the bug, the specific config flag that was ruled out, several dead-end theories chased and abandoned, and the last few exchanges narrowing down the actual cause. The team needs to cut tokens while keeping the session useful going forward. Which strategy is most effective?",
+      "options": [
+        "Extract the error code and ruled-out config flag into a compact structured block, summarize the abandoned theories, and keep the recent narrowing-down exchanges verbatim.",
+        "Summarize the entire session into a few paragraphs covering the investigation's overall arc.",
+        "Keep only the most recent 15,000 tokens of the conversation and discard everything before that.",
+        "Increase the context window by switching to a session configuration with a larger token budget."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "The hybrid approach — extract critical structured data verbatim, summarize lower-density discussion, keep recent exchanges verbatim — preserves exactly the precision this session needs while compressing the rest.",
+        "cite": "D5 §5.3"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "Pure summarization risks turning the precise error code and config flag into vague paraphrase, losing exactly the detail needed to avoid re-diagnosing them.",
+          "cite": "D5 §5.3"
+        },
+        {
+          "option": 2,
+          "text": "Keeping only the most recent tokens drops the error code and ruled-out flag if either was established earlier in the session.",
+          "cite": "D5 §5.3"
+        },
+        {
+          "option": 3,
+          "text": "A bigger token budget doesn't decide which content matters; it delays the same problem at higher cost.",
+          "cite": "D5 §5.3"
+        }
+      ]
+    },
+    {
+      "g": 25,
+      "block": 1,
+      "blockLabel": "Code Generation with Claude Code",
+      "domain": "D3",
+      "section": "§3.7",
+      "kd": null,
+      "letterPlanned": "B",
+      "stem": "A prompt asks Claude Code to convert raw supplier invoices into a normalized export format, described only in prose. Successive runs disagree on how to represent invoice status — one emits `pending`, another `PENDING` — and unit prices sometimes appear as decimals, sometimes as integer minor units. Rewriting the prose with more detail each time hasn't converged the output. What is the most effective next step?",
+      "options": [
+        "Switch to a model with a larger context window so the full prose description fits without truncation.",
+        "Provide 2–3 concrete input/output example pairs showing the exact target status casing (`pending` vs `PENDING`) and price representation.",
+        "Break the prose description into a longer numbered checklist covering every field's expected shape.",
+        "Ask Claude Code to infer the correct shape by reading how the export format is consumed downstream."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "Concrete input/output example pairs unambiguously show the target format and decision logic; the model generalizes the pattern to new invoices instead of guessing from prose.",
+        "cite": "D3 §3.7"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "A larger context window doesn't resolve ambiguity in what the instructions actually specify.",
+          "cite": "D3 §3.7"
+        },
+        {
+          "option": 2,
+          "text": "A longer checklist is still prose description — the corpus rejects lengthening prose as a fix for output that's already inconsistent.",
+          "cite": "D3 §3.7"
+        },
+        {
+          "option": 3,
+          "text": "Inferring format from downstream consumption is indirect and unreliable compared to showing the exact expected shape directly.",
+          "cite": "D3 §3.7"
+        }
+      ]
+    },
+    {
+      "g": 26,
+      "block": 1,
+      "blockLabel": "Code Generation with Claude Code",
+      "domain": "D4",
+      "section": "§4.14",
+      "kd": null,
+      "letterPlanned": "D",
+      "stem": "The team wants Claude Code to both flag issues in a changed module and generate fixes for each one it finds, currently handled in a single combined prompt. Output quality is inconsistent — some genuine issues go unflagged, and some generated fixes address problems the pass never explicitly called out. What restructuring would most likely improve both stages?",
+      "options": [
+        "Keep the single combined prompt but lengthen it with more detailed instructions for both flagging and fixing.",
+        "Ask Claude Code to flag issues and generate fixes in the same response, but request the flagging list first.",
+        "Move fix generation into a separate model configuration with a higher token budget, keeping flagging in the original prompt.",
+        "Split the work into two focused prompts: one to identify issues, a second that generates fixes for exactly the issues identified."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "Prompt chaining breaks a complex task into sequential focused prompts where each step's output feeds the next — identify, then fix — producing more focused, consistent results at each stage.",
+        "cite": "D4 §4.14"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Lengthening a single combined prompt still asks one pass to do two competing jobs at once.",
+          "cite": "D4 §4.14"
+        },
+        {
+          "option": 1,
+          "text": "Requesting the list first within the same response doesn't separate the two into distinct steps — the fix stage still doesn't consume the flagging stage's actual output as its input.",
+          "cite": "D4 §4.14"
+        },
+        {
+          "option": 2,
+          "text": "A bigger token budget for one stage doesn't address the two tasks competing for attention within one pass.",
+          "cite": "D4 §4.14"
+        }
+      ]
+    },
+    {
+      "g": 27,
+      "block": 1,
+      "blockLabel": "Code Generation with Claude Code",
+      "domain": "D3",
+      "section": "§3.11",
+      "kd": null,
+      "cluster": "proportionate-response",
+      "letterPlanned": "A",
+      "stem": "The reporting module's CLAUDE.md covers formatting conventions every session must follow, plus a lengthy quarterly data-reconciliation procedure and an equally long incident-postmortem template, each invoked only a few times a year. An engineer proposes moving just the reconciliation procedure into a Skill and leaving the postmortem template inline to limit the change's scope. How should the team evaluate this proposal?",
+      "options": [
+        "Reject the partial move — both occasional-use procedures belong in Skills; leaving one inline still clutters every session with content only a few sessions need.",
+        "Accept it — moving the longer of the two procedures first captures most of the token savings, and the postmortem template can wait.",
+        "Reject it — move all three, formatting conventions included, into Skills so nothing loads unless explicitly invoked.",
+        "Accept it — a partial move is safer to review, and the two procedures can be split further into separate CLAUDE.md files later."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "CLAUDE.md content loads in every session while Skills are invoked on demand; universal standards stay in CLAUDE.md, but both occasional-use procedures belong in Skills — a half-move still clutters every session for no benefit.",
+        "cite": "D3 §3.11"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "\"Most of the token savings\" rationalizes leaving one clutter-causing procedure in place — it still loads every session for content only a few sessions need, the exact defect the proposal was meant to fix.",
+          "cite": "D3 §3.11"
+        },
+        {
+          "option": 2,
+          "text": "Moving universal formatting conventions into Skills too means they'd need explicit invocation every session — the corpus explicitly rejects moving everything to Skills.",
+          "cite": "D3 §3.11"
+        },
+        {
+          "option": 3,
+          "text": "Splitting into more CLAUDE.md files keeps both procedures loading in every session regardless of file count — it doesn't move them on-demand.",
+          "cite": "D3 §3.11"
+        }
+      ]
+    },
+    {
+      "g": 28,
+      "block": 1,
+      "blockLabel": "Code Generation with Claude Code",
+      "domain": "D5",
+      "section": "§5.6",
+      "kd": null,
+      "letterPlanned": "C",
+      "stem": "The team is retiring a deprecated pagination helper referenced somewhere across the reporting module's roughly 120 files. Mapping every call site and how each one uses the helper produces a long, detailed inventory — and running that mapping in the main session leaves little room for the follow-up conversation about the replacement interface. What is the most effective way to proceed?",
+      "options": [
+        "Run the mapping directly in the main session, since the full inventory is essential context the interface discussion will need anyway.",
+        "Use `/compact` partway through the mapping to keep the session under budget before starting the interface discussion.",
+        "Use an Explore subagent to run the mapping in isolation, returning a concise summary of call sites to the main session.",
+        "Split the mapping across several sessions joined with `--continue`, one for each third of the module."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "An Explore subagent isolates verbose discovery output and returns a concise summary, preserving the main session's context for the design and implementation phases that follow.",
+        "cite": "D5 §5.6"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Running the mapping directly in the main session is exactly the failure mode described — it consumes the room the interface discussion needs.",
+          "cite": "D5 §5.6"
+        },
+        {
+          "option": 1,
+          "text": "`/compact` mid-task loses precision the interface discussion may still need — not the documented fix for this discovery-then-design sequence.",
+          "cite": "D5 §5.6"
+        },
+        {
+          "option": 3,
+          "text": "Splitting across sessions joined with `--continue` adds coordination overhead and consistency risk instead of isolating the verbose output.",
+          "cite": "D5 §5.6"
+        }
+      ]
+    },
+    {
+      "g": 29,
+      "block": 1,
+      "blockLabel": "Code Generation with Claude Code",
+      "domain": "D3",
+      "section": "§3.12",
+      "kd": null,
+      "letterPlanned": "D",
+      "stem": "A named Claude Code session spent two days investigating recurring timeout errors in the supplier-sync module, mapping its retry-and-connection-pooling logic in detail. Before the team resumes this morning, that entire layer is swapped for a different retry library as part of an unrelated migration — nothing the session mapped still describes how retries actually work. What is the most effective way to continue?",
+      "options": [
+        "Resume the named session and tell it exactly which layer changed, so it re-analyzes just that part.",
+        "Use `fork_session` to branch the investigation, keeping one branch reasoning over the old layer and one over the new.",
+        "Resume the named session as-is and let it discover the changes naturally as it continues investigating.",
+        "Start a fresh session, giving it a short summary of the two days' findings, rather than resuming with now-stale tool results."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "When tool results are stale because the code has fundamentally changed, it's better to restart with a short summary of prior findings than resume and reason over now-incorrect tool data.",
+        "cite": "D3 §3.12"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Targeted re-analysis of \"just the changed part\" fits when most context is still valid — here the entire mechanism the session mapped is gone, not one isolated piece.",
+          "cite": "D3 §3.12"
+        },
+        {
+          "option": 1,
+          "text": "`fork_session` branches from a shared, still-valid baseline to compare approaches — it doesn't refresh a session whose baseline is itself now obsolete.",
+          "cite": "D3 §3.12"
+        },
+        {
+          "option": 2,
+          "text": "Resuming as-is reasons over stale tool results as though they were still current — exactly the failure a fresh start avoids.",
+          "cite": "D3 §3.12"
+        }
+      ]
+    },
+    {
+      "g": 30,
+      "block": 1,
+      "blockLabel": "Code Generation with Claude Code",
+      "domain": "D5",
+      "section": "§5.12",
+      "kd": null,
+      "letterPlanned": "B",
+      "stem": "A single long-running Claude Code session is migrating 200 legacy endpoints to a new validation library, one at a time, holding every discovered quirk in conversation history alone. By endpoint 140, its suggestions start referencing generic 'typical' validation patterns instead of the specific quirks it identified for earlier endpoints. What is the most effective way to prevent this?",
+      "options": [
+        "Increase the summarization frequency so older endpoint findings compress more aggressively, freeing room for new ones.",
+        "Write each endpoint's discovered quirks to a scratchpad file as they're found, and read from it at the start of each continuation.",
+        "Switch to a model with a larger context window so all 200 endpoints' findings can stay in conversation history at once.",
+        "Restart the session from scratch every 20 endpoints so accumulated history never grows large enough to degrade."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "Writing intermediate findings to a scratchpad file, read at the start of each continuation, lets the task survive context limits and counteracts context degradation — the model reaching for generic patterns instead of specifics it discovered earlier.",
+        "cite": "D5 §5.12"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "More aggressive summarization of exact quirks is what blurs them into generic patterns in the first place — it doesn't preserve them.",
+          "cite": "D5 §5.12"
+        },
+        {
+          "option": 2,
+          "text": "A larger context window doesn't stop degradation; the documented fix is persisted state, not raw capacity.",
+          "cite": "D5 §5.12"
+        },
+        {
+          "option": 3,
+          "text": "Restarting from scratch every 20 endpoints discards findings a scratchpad would have preserved, re-losing exactly the specifics needed.",
+          "cite": "D5 §5.12"
+        }
+      ]
+    }
+  ]
+}

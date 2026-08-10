@@ -1,0 +1,562 @@
+{
+  "label": "Customer Support Resolution Agent",
+  "narrative": "A Claude Agent SDK support agent grows across this block from raw agentic-loop mechanics through tool API correctness, critical-action safeguards, coordinator prompting, custom commands, error propagation, MCP tooling choices, escalation calibration, session management, and long-conversation reliability.",
+  "letterPlan": ["B", "A", "D", "C", "A", "B", "C", "D", "A", "B", "C", "A", "D", "B", "C"],
+  "questions": [
+    {
+      "g": 1,
+      "block": 0,
+      "blockLabel": "Customer Support Resolution Agent",
+      "domain": "D1",
+      "section": "§1.1",
+      "kd": null,
+      "stem": "Your support agent's response sometimes pairs a short acknowledgment — 'Let me check that order for you' — with a `tool_use` block for `lookup_order`. The harness currently checks whether the response contains any text at all; whenever it does, it treats the turn as finished and returns that text to the customer without executing the tool. What should the harness check instead?",
+      "options": [
+        "Whether the response text is empty — a non-empty reply always signals the turn is complete.",
+        "Whether the response's `stop_reason` field equals `tool_use`, and execute every such block regardless of accompanying text.",
+        "Whether the response text includes a phrase like 'let me check,' parsed as a natural-language completion cue.",
+        "Whether a fixed maximum number of loop iterations has already been reached before running any pending tool call."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "The loop must branch on the structured `stop_reason` field — `tool_use` means execute the pending block regardless of any accompanying acknowledgment text; only `end_turn` means the response is actually finished.",
+        "cite": "D1 §1.1"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Text presence is not the stop signal — Claude can emit acknowledgment text alongside a `tool_use` block in the same response; treating any non-empty text as completion causes exactly this dropped-tool-call bug.",
+          "cite": "D1 §1.1"
+        },
+        {
+          "option": 2,
+          "text": "Parsing reply text for a natural-language completion phrase is the documented anti-pattern the exam explicitly rejects in favor of checking the structured `stop_reason` field.",
+          "cite": "D1 §1.1"
+        },
+        {
+          "option": 3,
+          "text": "Iteration counts are unrelated to whether Claude still has a pending tool call to run; stopping on a counter instead of `stop_reason` can cut a turn off mid-loop.",
+          "cite": "D1 §1.1"
+        }
+      ]
+    },
+    {
+      "g": 2,
+      "block": 0,
+      "blockLabel": "Customer Support Resolution Agent",
+      "domain": "D2",
+      "section": "§2.1",
+      "kd": null,
+      "stem": "In one turn, your agent's response contains three `tool_use` blocks — `get_customer`, `lookup_order`, and `check_warranty_status` — all needed before Claude can continue. The harness executes and appends `tool_result` blocks for the first two, then calls Claude again, planning to supply the third result on a later turn. What is wrong with this approach?",
+      "options": [
+        "Every pending `tool_use` block in that turn needs a matching `tool_result` before the next Claude call; splitting them across turns leaves the batch incomplete.",
+        "Nothing — Claude tracks which tool calls are still outstanding across turns using the conversation history alone.",
+        "The fix is to raise `max_tokens` so all three tool calls fit inside a single larger response.",
+        "The three tools should be consolidated into one composite tool so only a single result needs to be returned."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "The application executes each requested tool and appends a `tool_result` content block for it before Claude continues; leaving one `tool_use` block from the same turn unanswered gives Claude an incomplete context to reason from next.",
+        "cite": "D2 §2.1"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "The API is stateless — nothing server-side tracks outstanding tool calls across requests; the messages array the application sends is the only record Claude has of what happened.",
+          "cite": "D5 §5.1"
+        },
+        {
+          "option": 2,
+          "text": "`max_tokens` governs response length and produces its own distinct stop reason; it has no bearing on how many `tool_use` blocks a turn contains or whether their results were supplied.",
+          "cite": "D1 §1.1"
+        },
+        {
+          "option": 3,
+          "text": "Bundling into a composite tool addresses a different problem — reducing round-trips for tools always called together — not a harness bug that fails to return results for tools it already called.",
+          "cite": "D2 §2.8"
+        }
+      ]
+    },
+    {
+      "g": 3,
+      "block": 0,
+      "blockLabel": "Customer Support Resolution Agent",
+      "domain": "D2",
+      "section": "§2.3",
+      "kd": null,
+      "stem": "Your `file_warranty_claim` tool returns a bare `isError: true` whenever a claim is denied because the product is past its warranty window — a written, final policy outcome. The agent treats every denial as an outage: it apologizes for a technical problem and retries, and the ops dashboard now counts these denials as tool failures. How should the tool represent this outcome?",
+      "options": [
+        "Keep returning isError true, but have the tool itself retry automatically up to three times before surfacing anything.",
+        "Return isError false with an empty result, since a denied claim is technically a completed lookup.",
+        "Add a retryable flag set to true so the agent knows to try the call again with adjusted parameters.",
+        "Return `retriable: false` plus a customer-friendly explanation of the policy outcome, so the agent stops retrying and communicates it directly."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "Business-rule errors are a distinct category: `retriable: false` signals that re-invoking cannot change the outcome, and a customer-friendly explanation lets the agent communicate the policy result directly instead of treating it as a failure.",
+        "cite": "D2 §2.3"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Retrying is the correct response only to transient errors like timeouts; a warranty-window denial is a fixed policy outcome that no retry will ever change, so retrying only wastes attempts.",
+          "cite": "D2 §2.3"
+        },
+        {
+          "option": 1,
+          "text": "A denial is not an empty result — it is a definite, negative answer the tool determined; masking it as a successful empty lookup hides the actual outcome from the agent's reasoning.",
+          "cite": "D2 §2.3"
+        },
+        {
+          "option": 2,
+          "text": "Marking a business-rule denial as retryable is the exact failure mode the exam rejects — it wastes retry attempts on an outcome that can never change regardless of parameters.",
+          "cite": "D2 §2.3"
+        }
+      ]
+    },
+    {
+      "g": 4,
+      "block": 0,
+      "blockLabel": "Customer Support Resolution Agent",
+      "domain": "D2",
+      "section": "§2.4",
+      "kd": 12,
+      "stem": "Your `reverse_loyalty_redemption` tool permanently claws back redeemed loyalty points and cannot be undone once it runs. Policy requires the agent to show impact details and get explicit confirmation before every reversal. The team is choosing between four designs to guarantee this ordering. Which design makes skipping the preview architecturally impossible, not just discouraged?",
+      "options": [
+        "A single `reverse_loyalty_redemption` tool with a `dry_run: boolean` parameter, defaulting to true.",
+        "A system-prompt instruction plus worked examples showing the agent previewing before every reversal.",
+        "Two tools: `preview_loyalty_reversal`, returning impact details and a single-use confirmation token, and `execute_loyalty_reversal`, which requires that token.",
+        "A server-side timing check that blocks execution if fewer than five seconds have passed since the tool was first called."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "The two-tool token-binding pattern makes the sequence architecturally impossible to skip: no confirmation token exists until a preview call generates one, so execute cannot run first — a code-level guarantee, not a hope.",
+        "cite": "D2 §2.4 / KD#12"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "A `dry_run` boolean on a single tool is exactly the design the exam rejects: the agent can call it with `dry_run=false` on the very first attempt, bypassing the preview entirely.",
+          "cite": "D2 §2.4"
+        },
+        {
+          "option": 1,
+          "text": "Prompt instructions and few-shot examples are probabilistic — the model may not follow them under load; critical, irreversible sequencing needs a deterministic, code-level guarantee instead.",
+          "cite": "D2 §2.4 / KD#12"
+        },
+        {
+          "option": 3,
+          "text": "A server-side timing heuristic is fragile to timing conditions and doesn't actually verify a preview occurred — it can be satisfied by simply waiting, with no preview ever shown.",
+          "cite": "D2 §2.4"
+        }
+      ]
+    },
+    {
+      "g": 5,
+      "block": 0,
+      "blockLabel": "Customer Support Resolution Agent",
+      "domain": "D1",
+      "section": "§1.4",
+      "kd": null,
+      "stem": "Your returns-investigation coordinator's prompt is a numbered script: check `lookup_order`, then `check_return_eligibility`, then if eligible call `process_refund`, then done. On a case involving a partial shipment where only some items arrived damaged, the coordinator follows all four steps correctly but never investigates the missing items separately. Which change to the coordinator's prompt is most effective?",
+      "options": [
+        "Rewrite the prompt to state the investigation's goal and quality criteria — full resolution of every issue raised — and let it adapt its steps to what each case reveals.",
+        "Add a fifth numbered step specifically checking for missing items after the refund step.",
+        "Increase the number of investigation subagents so more cases get dedicated attention.",
+        "Add a partial-shipment flag the coordinator checks before starting the fixed sequence."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "Coordinator prompts should specify goals and quality criteria, not step-by-step procedures; a goal-oriented prompt lets the coordinator adapt its investigation to whatever a case reveals, instead of locking into a script that breaks on cases it wasn't written to anticipate.",
+        "cite": "D1 §1.4"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "Adding another fixed step deepens the same rigidity that caused the problem — the next case the script doesn't anticipate will surface an identical gap.",
+          "cite": "D1 §1.4"
+        },
+        {
+          "option": 2,
+          "text": "More subagents executing the same brittle script does not fix the script; the coordinator's rigid, procedural prompt is the root cause, not a capacity shortage.",
+          "cite": "D1 §1.4"
+        },
+        {
+          "option": 3,
+          "text": "A flag for one specific edge case still leaves a fixed, procedural sequence underneath; the underlying problem is the prompt's step-by-step rigidity, not this one missing branch.",
+          "cite": "D1 §1.4"
+        }
+      ]
+    },
+    {
+      "g": 6,
+      "block": 0,
+      "blockLabel": "Customer Support Resolution Agent",
+      "domain": "D3",
+      "section": "§3.4",
+      "kd": null,
+      "stem": "Your team ships an `/escalate-case` command so any engineer can type `/escalate-case billing-dispute` to open a pre-formatted escalation with the reason code attached. It must be available to everyone the moment they clone the repository, and the typed reason code must land inside the command's generated note. Where should the command live, and how does it read the typed text?",
+      "options": [
+        "In `~/.claude/commands/`, reading the reason code from an environment variable set before each invocation.",
+        "In `.claude/commands/` at the repo root, reading the reason code as `$ARGUMENTS`.",
+        "In the personal skills folder, with the reason code hardcoded into the file since commands can't take typed input.",
+        "In `~/.claude/skills/escalate-case/`, reading the reason code from the conversation history automatically."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "Project-wide commands live in `.claude/commands/` in the repo, so they're version-controlled and available to everyone on clone; the text typed after the command name is available inside the file as `$ARGUMENTS`.",
+        "cite": "D3 §3.4"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Personal commands in `~/.claude/commands/` aren't shared via version control, so new clones wouldn't get the command; an environment variable also isn't how typed command text is passed in.",
+          "cite": "D3 §3.4"
+        },
+        {
+          "option": 2,
+          "text": "Commands and skills can both take the typed text as `$ARGUMENTS`; hardcoding a value defeats the purpose of a reusable command and isn't required.",
+          "cite": "D3 §3.4"
+        },
+        {
+          "option": 3,
+          "text": "A personal-scope location isn't shared with the team on clone, and Claude doesn't automatically infer a reason code from conversation history in place of a typed argument.",
+          "cite": "D3 §3.4"
+        }
+      ]
+    },
+    {
+      "g": 7,
+      "block": 0,
+      "blockLabel": "Customer Support Resolution Agent",
+      "domain": "D1",
+      "section": "§1.9",
+      "kd": null,
+      "stem": "Your delivery-status subagent's carrier-tracking lookup times out. Instead of reporting the timeout, it silently falls back to a cached status from two days earlier and reports success with no indication the data may be stale. The coordinator presents this to the customer as current. What is the most effective fix?",
+      "options": [
+        "Have the subagent retry the carrier lookup indefinitely until it succeeds, never falling back to cached data.",
+        "Have the coordinator re-run the entire case whenever any subagent's tool call is slower than expected.",
+        "Have the subagent report the timeout as structured error context — failure type, what was attempted, and that the fallback is stale — instead of masking it as success.",
+        "Remove the cached-status fallback entirely so the subagent has nothing to report when a lookup times out."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "A subagent must never catch and silently return success; when it falls back to older data, that must be surfaced as structured context — failure type, what was attempted, and the staleness — so the coordinator can decide how to present it, rather than masking the gap.",
+        "cite": "D1 §1.9"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Retrying indefinitely ignores that a carrier timeout may need a coordinator-level decision — retry, use the fallback with a caveat, or escalate — which the subagent isn't positioned to make alone.",
+          "cite": "D1 §1.9"
+        },
+        {
+          "option": 1,
+          "text": "Never terminate the entire workflow for one subagent's failure — re-running the whole case discards other subagents' completed work over a single recoverable timeout.",
+          "cite": "D1 §1.9"
+        },
+        {
+          "option": 3,
+          "text": "Removing the fallback doesn't fix the reporting problem; the actual defect is that success was reported without disclosing the fallback, not that a fallback exists at all.",
+          "cite": "D1 §1.9"
+        }
+      ]
+    },
+    {
+      "g": 8,
+      "block": 0,
+      "blockLabel": "Customer Support Resolution Agent",
+      "domain": "D2",
+      "section": "§2.6",
+      "kd": null,
+      "stem": "Your team is adding case-escalation ticketing to the support agent's MCP tooling. A well-maintained community MCP server already integrates with your ticketing platform's standard API. An engineer proposes building a custom in-house server instead, arguing it gives the team full control over field mapping. What is the most effective approach?",
+      "options": [
+        "Build the custom server, since any control an engineer might later want justifies the investment upfront.",
+        "Use the community server for now, but plan to replace it with a custom one once volume grows.",
+        "Run both servers in parallel and let the agent choose whichever responds first for each request.",
+        "Use the existing community server for this standard integration, and reserve custom-server effort for workflows unique to the team."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "For standard integrations, prefer existing community MCP servers; build custom servers only for unique, team-specific workflows no existing server covers — building a custom server here reinvents a maintained standard integration.",
+        "cite": "D2 §2.6"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Wanting more control alone doesn't justify reinventing a maintained standard integration; custom-build effort belongs on workflows unique to the team, not a well-covered ticketing API.",
+          "cite": "D2 §2.6"
+        },
+        {
+          "option": 1,
+          "text": "There's no documented basis for a volume threshold that should trigger replacing a working community integration with a custom one built for the same standard workflow.",
+          "cite": "D2 §2.6"
+        },
+        {
+          "option": 2,
+          "text": "Running duplicate servers for the same capability adds maintenance burden and ambiguity about which result to trust, with no benefit over simply choosing the community server.",
+          "cite": "D2 §2.6"
+        }
+      ]
+    },
+    {
+      "g": 9,
+      "block": 0,
+      "blockLabel": "Customer Support Resolution Agent",
+      "domain": "D2",
+      "section": "§2.8",
+      "kd": null,
+      "stem": "Telemetry shows your agent calls `get_customer`, waits a full turn, then calls `fetch_loyalty_tier` with the same customer ID on nearly every loyalty-related case — two round-trips where one would do. An engineer has sketched a combined `get_customer_with_loyalty_tier` tool and asks you to review the design. What should you recommend?",
+      "options": [
+        "Keep the two tools separate and instead prompt the agent to bundle related tool requests into a single turn when both are needed.",
+        "Build the combined tool, since it removes a round-trip whenever both pieces of data are needed.",
+        "Add a `PreToolUse` hook that automatically calls fetch_loyalty_tier whenever get_customer runs.",
+        "Give the agent a tool_choice setting that forces both tools to be named in the same response every time."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "The preferred approach is prompting the agent to bundle related tool requests into one turn, since it can naturally request multiple tools simultaneously — a composite tool hides the composition rather than fixing the sequencing.",
+        "cite": "D2 §2.8"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "Building a composite tool is explicitly not the preferred fix here — it hides two distinct operations behind one interface instead of letting the agent request both naturally in one turn.",
+          "cite": "D2 §2.8"
+        },
+        {
+          "option": 2,
+          "text": "A hook auto-firing a second tool call on every `get_customer` invocation forces the pairing even for cases that never needed loyalty data, and hooks aren't the documented fix for this pattern.",
+          "cite": "D2 §2.7"
+        },
+        {
+          "option": 3,
+          "text": "Forcing both tools into every response over-applies the fix — plenty of cases legitimately need only one of the two, and a blanket tool_choice constraint removes that flexibility.",
+          "cite": "D2 §2.5"
+        }
+      ]
+    },
+    {
+      "g": 10,
+      "block": 0,
+      "blockLabel": "Customer Support Resolution Agent",
+      "domain": "D1",
+      "section": "§1.12",
+      "kd": null,
+      "stem": "A customer disputes a $14,000 wire-transfer-linked charge, claiming it was unauthorized. `get_customer` and `lookup_order` both return clean results, but nothing in the transaction history clearly confirms or refutes the claim, and a wrong call either way carries real financial and legal exposure. What should the agent do?",
+      "options": [
+        "Approve the dispute, since a wrongly denied unauthorized-charge claim is the worse outcome for the customer relationship.",
+        "Escalate to a human — a wrong decision here carries high-stakes consequences the agent shouldn't resolve alone.",
+        "Deny the dispute and cite standard chargeback policy, since no evidence in the record supports the claim.",
+        "Ask the customer to resubmit with more documentation before taking any position on the dispute."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "High-stakes ambiguity — where a wrong decision could cause significant harm — is one of the documented escalation triggers; a large disputed charge with genuinely unclear evidence is exactly this case, not one the agent should resolve unilaterally.",
+        "cite": "D1 §1.12"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Approving without evidence isn't a policy-authorized action; the agent must not invent a resolution favoring one side when the case is genuinely ambiguous and high-stakes.",
+          "cite": "D1 §1.12"
+        },
+        {
+          "option": 2,
+          "text": "Denying based on the absence of confirming evidence overstates what an unclear record actually shows, and risks a wrong call on a high-exposure case the agent isn't positioned to close out alone.",
+          "cite": "D1 §1.12"
+        },
+        {
+          "option": 3,
+          "text": "Requesting more documentation delays without resolving the actual decision point — the ambiguity here isn't a missing-information gap the customer can fill, it's a high-stakes judgment call.",
+          "cite": "D1 §1.12"
+        }
+      ]
+    },
+    {
+      "g": 11,
+      "block": 0,
+      "blockLabel": "Customer Support Resolution Agent",
+      "domain": "D1",
+      "section": "§1.16",
+      "kd": null,
+      "stem": "After an expensive investigation into a customer's disputed multi-order billing history, the team wants to evaluate two candidate resolutions — a partial refund versus a full account credit — starting from that same completed investigation, without either evaluation's reasoning influencing the other. What is the most effective way to continue?",
+      "options": [
+        "Resume the investigation session and evaluate both resolutions in it, one after the other.",
+        "Start two brand-new sessions and have each independently redo the full billing investigation.",
+        "Use `fork_session` to branch two independent sessions from the completed investigation's shared baseline.",
+        "Resume the session and ask it to weigh both resolutions together in a single combined recommendation."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "`fork_session` creates branches that inherit context up to the branch point, then diverge independently — exactly what's needed to compare two candidate resolutions from one shared, expensive baseline without either contaminating the other.",
+        "cite": "D1 §1.16"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Evaluating both resolutions sequentially in the same resumed session lets the second evaluation's reasoning be biased by the first's conclusions — the opposite of an independent comparison.",
+          "cite": "D1 §1.16"
+        },
+        {
+          "option": 1,
+          "text": "Two brand-new sessions would each have to redo the expensive investigation from scratch, wasting the work already completed and shared by both candidate resolutions.",
+          "cite": "D1 §1.16"
+        },
+        {
+          "option": 3,
+          "text": "A single combined recommendation isn't an independent comparison of the two options — it collapses exactly the separation `fork_session` exists to preserve.",
+          "cite": "D1 §1.16"
+        }
+      ]
+    },
+    {
+      "g": 12,
+      "block": 0,
+      "blockLabel": "Customer Support Resolution Agent",
+      "domain": "D1",
+      "section": "§1.18",
+      "kd": null,
+      "stem": "Before an escalation summary reaches a human agent, your team routes it through a second Claude Code instance that has no access to the first, drafting instance's reasoning trace, and asks it to independently flag any missing context or unsupported claims before the handoff goes out. Which named architecture pattern does this design exemplify?",
+      "options": [
+        "Evaluator-optimizer — a generator produces the draft, and an independent critic reviews it separately.",
+        "Coverage annotation — the output is marked showing which conclusions are well-supported versus where gaps exist.",
+        "Structured error propagation — failures are reported with type, attempted action, and partial results.",
+        "Context isolation — a subagent receives only what the coordinator explicitly chooses to pass it."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "Evaluator-optimizer names exactly this two-stage design: a generator produces the draft, and an independent critic or reviewer instance evaluates it separately, mirroring human peer review without the drafting instance's confirmation bias.",
+        "cite": "D1 §1.18"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "Coverage annotation describes marking which synthesis conclusions are well-supported versus data-gapped, not a second independent instance reviewing a completed draft for missed context.",
+          "cite": "D1 §1.18"
+        },
+        {
+          "option": 2,
+          "text": "Structured error propagation describes how a failing subagent reports failure type, attempted parameters, and partial results — this scenario has no failure being reported.",
+          "cite": "D1 §1.18"
+        },
+        {
+          "option": 3,
+          "text": "Context isolation describes what a subagent receives from the coordinator, not a second reviewing instance independently evaluating a completed draft afterward.",
+          "cite": "D1 §1.18"
+        }
+      ]
+    },
+    {
+      "g": 13,
+      "block": 0,
+      "blockLabel": "Customer Support Resolution Agent",
+      "domain": "D5",
+      "section": "§5.4",
+      "kd": 21,
+      "stem": "Your support agent already extracts precise transactional facts — order ID, agreed credit amount, promised delivery date — into a persistent case-facts block included in every prompt, outside the summarized conversation history. An engineer proposes replacing it with a vector-database retrieval system 'to make fact recall more robust.' How should the team evaluate this proposal?",
+      "options": [
+        "Adopt it — semantic retrieval is always a stronger foundation for precise numeric recall than a structured block.",
+        "Adopt it, but keep the case-facts block too, so both mechanisms independently store the same figures.",
+        "Reject it, and instead raise the summarization threshold so the existing history compresses less often.",
+        "Reject it — the case-facts block already solves session-level precision; external retrieval infrastructure is overkill for facts that fit in a single persistent block."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "The persistent case-facts block already survives summarization by living outside compressed history; adding external storage and retrieval is unneeded infrastructure for facts that comfortably fit in one small, always-included block — overkill for session-level precision.",
+        "cite": "D5 §5.4 / KD#21"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Semantic retrieval is suited to recalling specific exchanges across months of history, not to a handful of precise transactional figures a case-facts block already carries reliably in every prompt.",
+          "cite": "D5 §5.4"
+        },
+        {
+          "option": 1,
+          "text": "Running both mechanisms for the same figures adds complexity and a second source of truth to keep in sync, with no accuracy gain the case-facts block doesn't already provide.",
+          "cite": "D5 §5.4"
+        },
+        {
+          "option": 2,
+          "text": "Raising the summarization threshold only delays compression — the facts still eventually pass into summarized history and lose precision, and it doesn't address a proposal for a block that already avoids that failure mode.",
+          "cite": "D5 §5.4 / KD#21"
+        }
+      ]
+    },
+    {
+      "g": 14,
+      "block": 0,
+      "blockLabel": "Customer Support Resolution Agent",
+      "domain": "D5",
+      "section": "§5.8",
+      "kd": null,
+      "stem": "A customer calls in and gives only a phone number to identify themselves. The `get_customer` tool returns three separate accounts sharing that number, since the number is registered to a shared family plan. The agent must proceed on the correct one before discussing any order or billing detail. What should it do?",
+      "options": [
+        "Select the account with the most recent order activity, since that's the account most likely calling in now.",
+        "Ask the customer for an additional identifier, such as an email address or order number, to confirm the right account.",
+        "Select the first account the tool returns and proceed, correcting course later if the customer objects.",
+        "Escalate to a human immediately, since multiple accounts sharing one phone number can't be resolved by the agent."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "When a lookup returns several matching records, the agent must request additional identifiers — email, order number, another detail — never pick a match by heuristic; this resolves the ambiguity directly.",
+        "cite": "D5 §5.8"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Picking the account with the most recent activity is exactly the heuristic-selection pattern the exam rejects — it risks acting on the wrong family member's account and discussing the wrong order or billing detail.",
+          "cite": "D5 §5.8"
+        },
+        {
+          "option": 2,
+          "text": "Selecting the first result is arbitrary and carries the same misidentification risk as picking by recency; nothing about tool result order indicates which account is actually calling.",
+          "cite": "D5 §5.8"
+        },
+        {
+          "option": 3,
+          "text": "Escalating is unnecessary here — the ambiguity is directly resolvable by asking for one more identifier, without involving a human.",
+          "cite": "D5 §5.8"
+        }
+      ]
+    },
+    {
+      "g": 15,
+      "block": 0,
+      "blockLabel": "Customer Support Resolution Agent",
+      "domain": "D5",
+      "section": "§5.9",
+      "kd": null,
+      "stem": "Your agent auto-closes cases whenever its per-field confidence on the resolution details is high, and human reviewers only ever look at the low-confidence cases flagged for review. Months later, a reviewer stumbles onto a systematic error affecting a class of auto-closed cases that had never been sampled. What should the oversight design add?",
+      "options": [
+        "Lower the confidence threshold so more cases route to human review by default.",
+        "A second, independent confidence score computed by the same model on the same resolution.",
+        "Regular stratified random sampling of the high-confidence, auto-closed stream, not only the flagged low-confidence cases.",
+        "A quarterly survey asking customers whether their auto-closed case felt correctly resolved."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "Even high-confidence outputs need regular, stratified auditing — sampling only the flagged low-confidence stream leaves the automated high-confidence path completely unmeasured, letting a novel, systematic error pattern compound undetected exactly as happened here.",
+        "cite": "D5 §5.9"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Lowering the threshold routes more cases to review generally, but doesn't add the stratified auditing of the high-confidence stream needed to catch a systematic error already living inside cases the model is confident about.",
+          "cite": "D5 §5.9"
+        },
+        {
+          "option": 1,
+          "text": "A second score from the same model on the same resolution isn't independent, ground-truth-based measurement — self-reported confidence is exactly what needs calibration and auditing against a validation source, not more of itself.",
+          "cite": "D5 §5.9"
+        },
+        {
+          "option": 3,
+          "text": "Customer sentiment about whether a case 'felt' correctly resolved is not the same as verified resolution accuracy and isn't the documented oversight mechanism for catching systematic errors in the automated stream.",
+          "cite": "D5 §5.9"
+        }
+      ]
+    }
+  ]
+}

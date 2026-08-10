@@ -1,0 +1,577 @@
+{
+  "label": "Customer Support Resolution Agent",
+  "narrative": "One team builds a customer support resolution agent on the Claude Agent SDK with the custom MCP tools get_customer, lookup_order, process_refund, and escalate_to_human, targeting 80%+ first-contact resolution. The block follows the build in sequence: bringing up the agentic loop and tool harness, hardening tool-layer semantics and error categories, calibrating escalation policy at scale, and keeping long conversations and the nightly support-ops automation reliable.",
+  "letterPlan": ["B", "A", "D", "C", "A", "C", "B", "D", "A", "C", "B", "A", "D", "C", "B"],
+  "questions": [
+    {
+      "g": 1,
+      "block": 0,
+      "blockLabel": "Customer Support Resolution Agent",
+      "domain": "D1",
+      "section": "§1.1",
+      "kd": null,
+      "letterPlanned": "B",
+      "stem": "Your support agent's harness receives a response with `stop_reason: \"tool_use\"` containing two tool_use blocks — `get_customer` and `lookup_order`. The loop executes only the first block, appends that single result, and re-invokes Claude, which then re-requests the ignored lookup, adding an extra round-trip to most multi-tool turns. How should the loop handle these responses?",
+      "options": [
+        "Set `tool_choice` to force a single named tool per request so each response can only ever contain one tool call for the harness to run.",
+        "Extract every `tool_use` block in the response, execute each tool, and append a `tool_result` for each before calling Claude again.",
+        "Keep executing only the first block — Claude re-requests anything it still needs, so the simpler loop converges on its own.",
+        "Parse the reply text for tool names Claude mentions and execute whichever tools the prose references before continuing the loop."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "The loop structure is: extract the tool_use content blocks, execute each tool, append tool_result blocks, then call Claude again — a multi-tool response is handled in one iteration, not one tool at a time.",
+        "cite": "D1 §1.1"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Forcing a specific tool locks every turn to that one tool and cannot express requests that legitimately need two lookups — it misuses a routing control as a loop fix.",
+          "cite": "D2 §2.1"
+        },
+        {
+          "option": 2,
+          "text": "Relying on Claude to re-request dropped tools rationalizes the defect — each ignored block costs a full extra API round-trip, which is exactly the observed waste.",
+          "cite": "D1 §1.1"
+        },
+        {
+          "option": 3,
+          "text": "Loop decisions come from structured stop_reason values and tool_use blocks, never from parsing reply prose for tool names.",
+          "cite": "D1 §1.1"
+        }
+      ]
+    },
+    {
+      "g": 2,
+      "block": 0,
+      "blockLabel": "Customer Support Resolution Agent",
+      "domain": "D2",
+      "section": "§2.1",
+      "kd": null,
+      "letterPlanned": "A",
+      "stem": "The same harness assumes every response includes a tool call. When a customer opens with a greeting or sends a thank-you, Claude replies with plain text and `stop_reason: \"end_turn\"`, and the harness throws an exception and drops the conversation. `tool_choice` is left at its default. What should the harness do instead?",
+      "options": [
+        "Branch on the response: process `tool_use` blocks when `stop_reason` is `\"tool_use\"`, and return the plain-text reply to the customer on `\"end_turn\"`.",
+        "Set `tool_choice` to `{\"type\": \"any\"}` so every response is guaranteed to contain a tool call the harness can process.",
+        "Add a system-prompt rule instructing Claude to call at least one tool on every turn, including greetings and thanks.",
+        "Instruct Claude to begin tool-free replies with a fixed marker word, and string-match for that marker before parsing."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "With tool_choice at its default auto, Claude decides whether a tool is needed; a correct harness handles both response shapes — executing tools on tool_use and returning the text reply on end_turn.",
+        "cite": "D2 §2.1"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "\"any\" forces at least one tool call even on greetings where none is appropriate, producing spurious tool invocations to paper over a harness defect.",
+          "cite": "D2 §2.1"
+        },
+        {
+          "option": 2,
+          "text": "A prompt rule is probabilistic and, like forcing \"any\", manufactures pointless tool calls instead of fixing the harness's missing end_turn path.",
+          "cite": "D2 §2.1"
+        },
+        {
+          "option": 3,
+          "text": "Response handling belongs on the structured stop_reason field, not on string-matching marker text in the reply.",
+          "cite": "D1 §1.1"
+        }
+      ]
+    },
+    {
+      "g": 3,
+      "block": 0,
+      "blockLabel": "Customer Support Resolution Agent",
+      "domain": "D2",
+      "section": "§2.6",
+      "kd": null,
+      "letterPlanned": "D",
+      "stem": "Designing the support agent's MCP server, the team must expose three things: refund and escalation actions the agent performs, a return-policy document set the agent only ever reads, and a reusable escalation-summary template. They are deciding which MCP primitive should carry each. Which assignment matches the protocol's capability categories?",
+      "options": [
+        "Define all three as tools — actions, policy reads, and the template each become a callable tool so the agent has one uniform interface.",
+        "Expose the actions as tools, the policy documents as prompts, and the escalation template as a resource the agent fetches.",
+        "Expose the actions as resources so they stay read-only and auditable, and the policy documents and template as tools.",
+        "Expose the actions as tools, the policy document set as resources, and the escalation-summary template as a prompt."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "The three MCP primitives map by capability: tools are actions Claude calls, resources are read-only data Claude can access, and prompts are pre-built reusable templates.",
+        "cite": "D2 §2.6"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Wrapping read-only reference data as tools adds a tool-call round-trip for what should simply be readable data, collapsing the protocol's action/data distinction.",
+          "cite": "D2 §2.6"
+        },
+        {
+          "option": 1,
+          "text": "It swaps the last two categories: prompts are reusable instruction templates, not document storage, and resources are the read-only data primitive.",
+          "cite": "D2 §2.6"
+        },
+        {
+          "option": 2,
+          "text": "Resources are read-only by definition — refund and escalation actions change state and must be tools.",
+          "cite": "D2 §2.6"
+        }
+      ]
+    },
+    {
+      "g": 4,
+      "block": 0,
+      "blockLabel": "Customer Support Resolution Agent",
+      "domain": "D2",
+      "section": "§2.3",
+      "kd": null,
+      "letterPlanned": "C",
+      "stem": "Your `process_refund` tool returns a bare `isError: true` whenever a final-sale item is ineligible for refund under written policy. The agent treats these as outages — apologizing for technical difficulties and promising to retry later — and the ops dashboard counts them as tool failures, inflating error rates. How should the tool represent this outcome?",
+      "options": [
+        "Return `isError: true` with `isRetryable: true` so the agent keeps the case open and re-attempts the refund on a later turn.",
+        "Return a successful result with the denial explanation embedded in a message field, so no error handling fires at all.",
+        "Return a business-category error with `retriable: false` and a customer-friendly policy explanation — the denial is a valid answer, not a tool failure.",
+        "Keep the generic error but instruct the agent to escalate every `process_refund` failure to a human for interpretation."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "A business-rule denial is not a failure of the tool — it is a valid answer that the action is disallowed. Structuring it as retriable: false with a customer-friendly explanation stops pointless retries and lets the agent state the policy accurately.",
+        "cite": "D2 §2.3"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Marking a policy outcome retryable wastes attempts on a result no retry can change — those are the transient category's semantics, not a business rule's.",
+          "cite": "D2 §2.3"
+        },
+        {
+          "option": 1,
+          "text": "Returning success with embedded error metadata masks failures and corrupts agent decision-making — the corpus rules this pattern out explicitly.",
+          "cite": "D2 §2.3"
+        },
+        {
+          "option": 3,
+          "text": "Escalating every failure floods humans with self-explanatory policy outcomes; a structured category lets the agent explain the denial directly.",
+          "cite": "D2 §2.3"
+        }
+      ]
+    },
+    {
+      "g": 5,
+      "block": 0,
+      "blockLabel": "Customer Support Resolution Agent",
+      "domain": "D1",
+      "section": "§1.9",
+      "kd": 9,
+      "letterPlanned": "A",
+      "stem": "On multi-issue cases, the coordinator runs billing, returns, and delivery subagents in parallel. Today, any subagent hitting a transient database timeout reports a failure upward, and the coordinator aborts the entire case — discarding the other subagents' completed work — before a human restarts it from scratch. Where should this error handling live instead?",
+      "options": [
+        "Retry transient failures inside each subagent with backoff, escalating only unresolved errors with context and partial results, while the other subagents' work continues.",
+        "Terminate the case at the first subagent failure, as now, since partial investigations risk inconsistent multi-issue resolutions.",
+        "Have subagents catch failures and report success with whatever data they gathered, so the coordinator never sees an error.",
+        "Route every tool error, transient or not, directly to human escalation so no automated retry can mask a real problem."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "Transient failures belong at the subagent level — local retry with backoff — and only errors the subagent cannot resolve escalate, carrying context and partial progress; one subagent's failure must never terminate the whole workflow.",
+        "cite": "D1 §1.9"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "Never terminate the entire workflow for one subagent failure — the other issues' completed investigations are valid work the coordinator should keep.",
+          "cite": "D1 §1.9"
+        },
+        {
+          "option": 2,
+          "text": "Catching errors and silently returning success is explicitly prohibited — it hides failures from the coordinator's recovery logic.",
+          "cite": "D1 §1.9"
+        },
+        {
+          "option": 3,
+          "text": "Transient errors are retryable locally; escalating all of them to humans discards the transient/permanent distinction that drives recovery decisions.",
+          "cite": "KD#9"
+        }
+      ]
+    },
+    {
+      "g": 6,
+      "block": 0,
+      "blockLabel": "Customer Support Resolution Agent",
+      "domain": "D2",
+      "section": "§2.8",
+      "kd": null,
+      "letterPlanned": "C",
+      "stem": "Telemetry shows the agent calls `lookup_order`, waits a full turn, then calls `check_return_eligibility` with the same order identifier on nearly every return case — two round-trips where one would do. An engineer has already sketched a combined `lookup_order_with_eligibility` tool and asks you to review the design. What should you recommend?",
+      "options": [
+        "Approve the composite tool — collapsing a habitually sequential pair into one definition is the standard remedy for repeated two-turn calls.",
+        "Skip the composite and add a `PreToolUse` hook that intercepts `lookup_order` and silently appends an eligibility call in the same turn.",
+        "Skip the composite — instruct the agent in its prompt to request both tools in a single turn whenever a return case needs both.",
+        "Keep the sequential calls — the eligibility check depends on the lookup completing first, so the extra turn is structurally required."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "The corpus prefers prompting the agent to bundle habitually-paired tool requests into one turn — the model can naturally request multiple tools simultaneously — over creating a composite tool.",
+        "cite": "D2 §2.8"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "A composite tool hides the composition; bundling-by-prompt is the documented preferred approach for habitually-paired calls.",
+          "cite": "D2 §2.8"
+        },
+        {
+          "option": 1,
+          "text": "Hooks validate, block, or transform tool interactions — reaching for hook infrastructure to inject extra calls is a disproportionate mechanism where a bundling instruction suffices.",
+          "cite": "D2 §2.7"
+        },
+        {
+          "option": 3,
+          "text": "Both calls take the same order identifier the customer supplied — nothing structural forces sequencing; the extra turn is habit, not dependency.",
+          "cite": "D2 §2.8"
+        }
+      ]
+    },
+    {
+      "g": 7,
+      "block": 0,
+      "blockLabel": "Customer Support Resolution Agent",
+      "domain": "D1",
+      "section": "§1.14",
+      "kd": 11,
+      "letterPlanned": "B",
+      "stem": "Privacy rules require verifying identity via `get_customer` before the agent discloses any order detail. After two rounds of system-prompt strengthening, violations fell from 12% to 3% of conversations, then stopped improving — audits still find disclosures to unverified callers every week. The team asks how to reach zero. What should you advise?",
+      "options": [
+        "Write a third, more forceful prompt revision with stronger MUST language — compliance has improved each round, so iteration will reach zero.",
+        "Add a programmatic precondition that blocks `lookup_order` until `get_customer` has returned a verified identifier for the session.",
+        "Expand the few-shot examples to cover more conversation shapes in which the agent previously skipped verification.",
+        "Log every violation and alert a supervisor for same-day correction so no unverified disclosure goes unreviewed."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "For security-critical sequencing, enforce at the code level: a precondition that blocks the downstream call until verification succeeds is deterministic, where prompt compliance is probabilistic.",
+        "cite": "D1 §1.14"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Prompt instructions can reduce violations but never guarantee zero — the plateau at 3% is the expected behavior of a probabilistic control, not a sign one more revision will finish the job.",
+          "cite": "KD#11"
+        },
+        {
+          "option": 2,
+          "text": "Few-shot examples of the correct sequence are still probabilistic guidance — the corpus rejects them for mandatory sequencing.",
+          "cite": "D1 §1.14"
+        },
+        {
+          "option": 3,
+          "text": "After-the-fact detection does not prevent the disclosure; the requirement is to make the violating call impossible, not to review it later.",
+          "cite": "D1 §1.14"
+        }
+      ]
+    },
+    {
+      "g": 8,
+      "block": 0,
+      "blockLabel": "Customer Support Resolution Agent",
+      "domain": "D1",
+      "section": "§1.11",
+      "kd": null,
+      "letterPlanned": "D",
+      "stem": "To speed up eligibility checks, an engineer gave the returns subagent a general `run_report_query` tool accepting free-form queries against the support database. Logs now show it querying unrelated customer-PII tables mid-case for extra context. A prompt line restricting it to return tables cut the misuse roughly in half. What is the most effective fix?",
+      "options": [
+        "Strengthen the prompt restriction and add examples of acceptable queries, since the first instruction already halved the misuse.",
+        "Route every `run_report_query` call through the coordinator for approval before it executes.",
+        "Split the returns subagent into separate query and decision subagents so out-of-scope access is easier to spot.",
+        "Replace it with a scoped `get_return_eligibility` tool that accepts an order identifier and validates the request at the interface level."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "Least privilege is enforced at the tool interface: replacing the broad query capability with a scoped, validating tool fixes the root cause deterministically — the documented pattern for an over-broad tool being misused.",
+        "cite": "D1 §1.11"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Prompt instructions against misusing a tool are probabilistic — the corpus's fetch_url pattern rejects exactly this fix; halving misuse is not eliminating it.",
+          "cite": "D1 §1.11"
+        },
+        {
+          "option": 1,
+          "text": "Routing a simple, high-frequency check through the coordinator adds a full extra loop per case and still leaves the over-broad capability in place.",
+          "cite": "D1 §1.11"
+        },
+        {
+          "option": 2,
+          "text": "Adding subagents is separation theater — the mechanism for separation of responsibilities is tool restriction, and the broad query interface would survive the split.",
+          "cite": "D1 §1.11"
+        }
+      ]
+    },
+    {
+      "g": 9,
+      "block": 0,
+      "blockLabel": "Customer Support Resolution Agent",
+      "domain": "D5",
+      "section": "§5.8",
+      "kd": null,
+      "letterPlanned": "A",
+      "stem": "Mid-conversation, the agent offers a policy-compliant store credit for a damaged item. The customer replies: 'No — I want to talk to a person.' Following its three-attempts-before-escalation instruction, the agent offers a replacement instead, and the customer repeats the demand, now angrier. What behavior should the escalation design enforce here?",
+      "options": [
+        "Call `escalate_to_human` immediately once the customer explicitly asks for a person — an explicit request overrides any remaining resolution attempts.",
+        "Continue offering alternative resolutions until the three-attempt budget is exhausted, then escalate with a summary of what was tried.",
+        "Acknowledge the frustration and propose one more concrete resolution first, since dissatisfaction alone is not a request for a human.",
+        "Have the agent rate its own confidence in resolving the case and escalate only if the score falls below a threshold."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "An explicit request for a human triggers immediate escalation — the agent must not attempt to solve first, and no attempt counter overrides that structural signal.",
+        "cite": "D5 §5.8"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "A minimum-attempts rule violates the immediate-escalation requirement for explicit human requests — the documented trap of never escalating until N attempts have been made.",
+          "cite": "D5 §5.8"
+        },
+        {
+          "option": 2,
+          "text": "Acknowledge-then-offer applies to expressions of frustration without a human request; 'I want to talk to a person' is explicit, so offering alternatives misapplies that pattern.",
+          "cite": "D5 §5.8"
+        },
+        {
+          "option": 3,
+          "text": "Self-rated confidence is uncalibrated and irrelevant here — the structural signal, an explicit request, has already fired.",
+          "cite": "D5 §5.8"
+        }
+      ]
+    },
+    {
+      "g": 10,
+      "block": 0,
+      "blockLabel": "Customer Support Resolution Agent",
+      "domain": "D1",
+      "section": "§1.12",
+      "kd": null,
+      "letterPlanned": "C",
+      "stem": "A customer reports a package missing. Confirming the claim needs a warehouse-scan lookup, but that system has returned errors for two hours. The agent has silently retried nine times while the customer waits, and no policy covers proceeding without the scan record. What should the agent do now?",
+      "options": [
+        "Keep retrying on a longer backoff until the warehouse system recovers, keeping the conversation open however long that takes.",
+        "Close the case as unresolvable and invite the customer to open a new request once the system is back.",
+        "Escalate to a human now, reporting the failing lookup, the retry history, and the claim details gathered so far.",
+        "Approve the refund without the scan record, since the customer should not be penalized for an internal outage."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "When repeated attempts cannot make progress, escalation is the defined trigger — and the handoff should carry what was attempted plus the context gathered so far.",
+        "cite": "D1 §1.12"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Indefinite retries after repeated failures is exactly the 'unable to make progress' condition escalation exists for — waiting hours holds the customer hostage to an outage.",
+          "cite": "D1 §1.12"
+        },
+        {
+          "option": 1,
+          "text": "Abandoning the case pushes the burden back onto the customer; the escalation path, not closure, handles blocked-but-valid claims.",
+          "cite": "D1 §1.12"
+        },
+        {
+          "option": 3,
+          "text": "Nothing in policy authorizes refunds without the required verification — the agent must not invent policy to resolve its own blockage.",
+          "cite": "D1 §1.12"
+        }
+      ]
+    },
+    {
+      "g": 11,
+      "block": 0,
+      "blockLabel": "Customer Support Resolution Agent",
+      "domain": "D4",
+      "section": "§4.15",
+      "kd": null,
+      "letterPlanned": "B",
+      "stem": "A quarterly audit of escalation routing finds the human queue dominated by routine warranty lookups the agent was authorized to resolve, while two goodwill-credit edge cases the agent settled autonomously were later reversed on appeal. No written guidance defines which cases route where. Which change most effectively fixes this calibration?",
+      "options": [
+        "Have the agent self-rate its confidence on each case and auto-escalate anything scoring below a numeric threshold.",
+        "Add explicit escalation criteria to the system prompt, with few-shot examples contrasting cases to resolve autonomously against cases to escalate.",
+        "Train a separate classifier model on historical tickets to pre-route every case before the agent sees it.",
+        "Escalate any case whose messages carry negative sentiment, since frustrated customers signal the genuinely complex cases."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "The root cause is undefined decision boundaries: explicit escalate-when / resolve-when criteria with few-shot examples distinguishing the two is the documented fix for mis-calibrated routing.",
+        "cite": "D4 §4.15"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Model self-rated confidence is uncalibrated — confidently wrong cases sail through, as the reversed goodwill decisions show.",
+          "cite": "D4 §4.15"
+        },
+        {
+          "option": 2,
+          "text": "A separate classifier model is overkill that adds infrastructure without addressing the missing decision boundaries in the prompt.",
+          "cite": "D4 §4.15"
+        },
+        {
+          "option": 3,
+          "text": "Customer mood does not correlate with case complexity — sentiment-triggered escalation floods the queue with resolvable-but-angry cases.",
+          "cite": "D5 §5.8"
+        }
+      ]
+    },
+    {
+      "g": 12,
+      "block": 0,
+      "blockLabel": "Customer Support Resolution Agent",
+      "domain": "D1",
+      "section": "§1.13",
+      "kd": null,
+      "letterPlanned": "A",
+      "stem": "Escalations currently arrive with a one-line note, and human agents keep re-asking customers for details the agent already gathered. An engineer proposes wiring the human console to display the full conversation transcript at handoff so nothing is lost. How should you evaluate this proposal?",
+      "options": [
+        "Prefer a structured handoff summary — customer ID, root cause, amount, actions taken, recommended action — over a raw transcript a human must re-read end to end.",
+        "Approve it — the transcript is the most complete record of the case, and completeness is what escalation handoffs need most.",
+        "Reject it and instead have human agents re-run the AI agent's tool calls to rebuild each case from source systems.",
+        "Reject it and instead trigger escalations earlier in conversations, so less context accumulates before each handoff."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "The handoff mechanism is a complete, self-contained structured summary carrying the named fields; human agents lack transcript access by design, and a summary beats forcing them to re-read an entire conversation.",
+        "cite": "D1 §1.13"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "Completeness is not the bottleneck — a raw transcript forces re-reading the whole conversation to find what matters; the corpus explicitly rejects transcript access as the fix.",
+          "cite": "D1 §1.13"
+        },
+        {
+          "option": 2,
+          "text": "Re-running the agent's tools duplicates work already done and slows resolution — the information exists; it was just never packaged.",
+          "cite": "D1 §1.13"
+        },
+        {
+          "option": 3,
+          "text": "Escalating earlier does not fix the information loss and degrades the autonomous resolution rate.",
+          "cite": "D1 §1.13"
+        }
+      ]
+    },
+    {
+      "g": 13,
+      "block": 0,
+      "blockLabel": "Customer Support Resolution Agent",
+      "domain": "D5",
+      "section": "§5.13",
+      "kd": 23,
+      "letterPlanned": "D",
+      "stem": "The agent's system prompt requires restating the confirmed order ID whenever any monetary amount is quoted. In long multi-issue conversations this holds for roughly eight turns, then stops — affected sessions measure only about 2,700 tokens, and no summarization or trimming is configured. What is the most likely root cause?",
+      "options": [
+        "The conversation overflowed the context window, and the system prompt was truncated out first.",
+        "The system prompt applies only to the first turn, so later requests no longer include it.",
+        "A summarization pass compressed the order-ID rule out of the retained history.",
+        "Accumulated assistant responses increasingly dilute the system prompt's influence as the conversation grows."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "Behavioral drift at a few thousand tokens is attention dilution: each accumulated assistant response weighs against the system prompt's authority, degrading rule-following long before any capacity limit matters.",
+        "cite": "KD#23"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Context-window overflow is impossible at roughly 2,700 tokens — the window is orders of magnitude larger.",
+          "cite": "KD#23"
+        },
+        {
+          "option": 1,
+          "text": "False — the system prompt is included with every request; it never expires after turn one.",
+          "cite": "KD#23"
+        },
+        {
+          "option": 2,
+          "text": "No summarization or trimming exists in this design, so nothing was evicted — the rule is still present in context, just increasingly outweighed.",
+          "cite": "D5 §5.13"
+        }
+      ]
+    },
+    {
+      "g": 14,
+      "block": 0,
+      "blockLabel": "Customer Support Resolution Agent",
+      "domain": "D3",
+      "section": "§3.8",
+      "kd": null,
+      "letterPlanned": "C",
+      "stem": "A nightly support-ops job runs `claude -p` to triage the day's unresolved tickets and flag handling errors. Every night it flags the documented under-$5 automatic goodwill credit as an unauthorized refund, because the job receives only the ticket dump and a two-line prompt. What change would most reduce this recurring false positive?",
+      "options": [
+        "Paste the full support-policy manual into each night's prompt ahead of the ticket dump.",
+        "Run the job interactively instead of with `-p` so an engineer can correct the flag each night.",
+        "Add the triage criteria and documented policy behaviors, including the goodwill-credit rule, to the project CLAUDE.md the headless run loads.",
+        "Post-process the job's output with a script that deletes any finding mentioning goodwill credits."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "CLAUDE.md is the documented mechanism for giving CI-invoked Claude project context — conventions and review criteria — which is exactly what eliminates false positives on documented, deliberate behavior.",
+        "cite": "D3 §3.8"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Re-pasting the manual into every job's prompt duplicates content that belongs in version-controlled project context, must be maintained per job, and bloats each invocation.",
+          "cite": "D3 §3.8"
+        },
+        {
+          "option": 1,
+          "text": "-p is the documented way to run Claude Code in a pipeline; reverting to interactive mode abandons the automation rather than informing it.",
+          "cite": "D3 §3.8"
+        },
+        {
+          "option": 3,
+          "text": "A keyword filter suppresses the symptom and would also hide a genuinely unauthorized credit — the fix is missing context, not censored output.",
+          "cite": "D3 §3.8"
+        }
+      ]
+    },
+    {
+      "g": 15,
+      "block": 0,
+      "blockLabel": "Customer Support Resolution Agent",
+      "domain": "D1",
+      "section": "§1.16",
+      "kd": null,
+      "letterPlanned": "B",
+      "stem": "A named Claude Code session spent three days tracing a recurring refund miscalculation through the support tooling. Overnight, teammates rewrote only the tax-and-fees configuration module; everything else the session analyzed is untouched. The team wants to continue this morning without stale conclusions or needless re-analysis. What is the most effective way to continue?",
+      "options": [
+        "Resume the named session and continue where it left off — its saved context is the point of naming it.",
+        "Resume the named session with `--resume` and state exactly which module changed, so it re-analyzes just those files.",
+        "Start a fresh session and re-run the full analysis so every tool result reflects the current code.",
+        "Use `fork_session` to branch the investigation, keeping one branch on the old code and one on the new."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "When most prior context is still valid, resume the named session and tell the agent exactly which files changed so it performs targeted re-analysis of just those files.",
+        "cite": "D1 §1.16"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Resuming as-is leaves the session reasoning over stale tool results for the rewritten module as if they were current.",
+          "cite": "D1 §1.16"
+        },
+        {
+          "option": 2,
+          "text": "Re-analyzing everything discards three days of still-valid context — wasteful when only one module changed.",
+          "cite": "D1 §1.16"
+        },
+        {
+          "option": 3,
+          "text": "fork_session is for comparing divergent approaches from a shared baseline, not for refreshing stale results — neither branch would reflect the rewritten module.",
+          "cite": "D1 §1.16"
+        }
+      ]
+    }
+  ]
+}

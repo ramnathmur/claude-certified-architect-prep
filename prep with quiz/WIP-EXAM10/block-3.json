@@ -1,0 +1,577 @@
+{
+  "label": "Multi-Agent Research System",
+  "narrative": "A research team builds a coordinator-led multi-agent system to investigate packaging-waste compliance regulations across jurisdictions, delegating to web-search, document-analysis, synthesis, and report-generation subagents. The block follows the system's evolution in sequence: standing up the hub-and-spoke architecture and subagent configuration, hardening context passing and the MCP tool ecosystem, then keeping source conflicts, provenance, and batch-scale runs reliable as the system matures.",
+  "letterPlan": ["A", "C", "B", "D", "A", "C", "D", "B", "A", "D", "C", "B", "A", "D", "C"],
+  "questions": [
+    {
+      "g": 31,
+      "block": 2,
+      "blockLabel": "Multi-Agent Research System",
+      "domain": "D1",
+      "section": "§1.2",
+      "kd": null,
+      "letterPlanned": "A",
+      "stem": "The coordinator issues three parallel `Task` calls — web-search, filing document-analysis, and internal-report document-analysis — for a packaging-waste compliance review. The web-search subagent returns first, with partial early findings. An engineer wants the coordinator to forward those findings straight to report-generation immediately, without waiting on the other two calls. What should the architecture require instead?",
+      "options": [
+        "Wait until every Task call in that delegation round completes, then aggregate all three subagents' results before invoking report-generation.",
+        "Forward the early findings now, and have report-generation issue a follow-up request once the remaining two subagents finish.",
+        "Let the web-search subagent message document-analysis directly with its early findings, so report-generation only needs one aggregated input later.",
+        "Cancel the two still-running Task calls and proceed with only the completed web-search findings to avoid delay."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "The coordinator aggregates results only once every Task call in a delegation round completes — passing a partial subset onward, or letting subagents message each other directly, breaks the hub's role as the single aggregation and information-control point.",
+        "cite": "D1 §1.2"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "Splitting report-generation's input across two deliveries defeats coordinated aggregation and risks it acting on a state the coordinator was still assembling.",
+          "cite": "D1 §1.2"
+        },
+        {
+          "option": 2,
+          "text": "Subagents do not communicate directly — information flow between them exists only through the coordinator, which decides what each subagent receives and when.",
+          "cite": "D1 §1.2"
+        },
+        {
+          "option": 3,
+          "text": "Cancelling calls and proceeding on a partial subset discards two-thirds of the delegated work and abandons the completion-based aggregation the hub pattern requires.",
+          "cite": "D1 §1.2"
+        }
+      ]
+    },
+    {
+      "g": 32,
+      "block": 2,
+      "blockLabel": "Multi-Agent Research System",
+      "domain": "D2",
+      "section": "§2.6",
+      "kd": null,
+      "letterPlanned": "C",
+      "stem": "An engineer evaluating a new citation-checking MCP server for personal use adds it to the project's version-controlled `.mcp.json` so 'everyone can see what I'm testing,' even though no teammate uses it yet and it isn't ready to be a shared dependency. What is the most effective correction?",
+      "options": [
+        "Leave it in `.mcp.json` — visibility into experimental tools benefits the whole team regardless of adoption status.",
+        "Move it to `.mcp.json` but gate it behind an `${EXPERIMENTAL}` environment variable so it stays effectively invisible.",
+        "Move it to the engineer's own `~/.claude.json`, since personal and experimental servers belong in user scope, not shared project config.",
+        "Keep it in the shared project config, adding a comment noting it is experimental and not yet team-approved."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "`.mcp.json` is for shared, version-controlled team configuration; personal overrides and experimental servers belong in the user-scoped `~/.claude.json` until the tool is actually adopted team-wide.",
+        "cite": "D2 §2.6"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Committing an unadopted, personal tool to shared project config makes every teammate's session load a dependency nobody else uses or has vetted.",
+          "cite": "D2 §2.6"
+        },
+        {
+          "option": 1,
+          "text": "An environment-variable gate still leaves the server declared in version-controlled project config — the scope itself is the problem, not the absence of a toggle.",
+          "cite": "D2 §2.6"
+        },
+        {
+          "option": 3,
+          "text": "A comment is documentation, not configuration — the server still loads for every teammate; the scope itself is the problem, not the absence of a note.",
+          "cite": "D2 §2.6"
+        }
+      ]
+    },
+    {
+      "g": 33,
+      "block": 2,
+      "blockLabel": "Multi-Agent Research System",
+      "domain": "D1",
+      "section": "§1.3",
+      "kd": null,
+      "letterPlanned": "B",
+      "stem": "The document-analysis subagent keeps calling `draft_report_section`, a formatting tool meant only for report-generation, even after its `system_prompt` is rewritten twice to say 'only extract and summarize, never draft report text.' Its `AgentDefinition` still lists `draft_report_section` among its `allowed_tools`, left over from an early prototype. What is the most effective fix?",
+      "options": [
+        "Rewrite the system_prompt a third time with stronger, more explicit wording against drafting report text.",
+        "Remove `draft_report_section` from the subagent's `allowed_tools`, since a system_prompt instruction cannot override a tool the configuration still grants.",
+        "Add a few-shot example to the system_prompt showing the subagent correctly declining to draft report text.",
+        "Give the coordinator a review step that flags any document-analysis output containing drafted report text."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "`allowed_tools` is the enforcement lever — a subagent that still has a tool granted can still call it regardless of what the system_prompt says; removing the tool from the configuration is the fix that actually removes the capability.",
+        "cite": "D1 §1.3"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "A third prompt revision repeats a fix that already failed twice — system_prompt wording is behavioral guidance, not a capability restriction, and cannot override a tool the AgentDefinition still grants.",
+          "cite": "D1 §1.3"
+        },
+        {
+          "option": 2,
+          "text": "A few-shot example is still prompt-level guidance; it does not remove the subagent's actual ability to call draft_report_section.",
+          "cite": "D1 §1.3"
+        },
+        {
+          "option": 3,
+          "text": "Detecting the problem after the fact doesn't stop it from recurring — the subagent still has, and will keep using, a tool outside its scope.",
+          "cite": "D1 §1.11"
+        }
+      ]
+    },
+    {
+      "g": 34,
+      "block": 2,
+      "blockLabel": "Multi-Agent Research System",
+      "domain": "D2",
+      "section": "§2.2",
+      "kd": 10,
+      "letterPlanned": "D",
+      "stem": "The web-search subagent's `extract_key_findings` tool and the document-analysis subagent's `extract_citations` tool are each described only as 'extracts relevant text from a source.' When a request could plausibly involve either a web page or a filing PDF, selection between the two tools is close to a coin flip. What is the most effective fix?",
+      "options": [
+        "Add a pre-routing classifier that inspects the source type before either subagent runs and directs the request accordingly.",
+        "Merge both into a single `extract_content` tool available to both subagents, removing the need to choose between them.",
+        "Add a system-prompt rule instructing each subagent to defer to the other whenever source type is unclear.",
+        "Expand both descriptions with the specific input formats each accepts, concrete examples, and an explicit boundary statement for when not to use each."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "The primary lever for tool selection is the description itself — specifying accepted input formats, examples, and explicit boundary cases is the documented fix for near-identical descriptions, and should be checked before adding any new infrastructure.",
+        "cite": "D2 §2.2; KD#10"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "A pre-routing classifier adds infrastructure that compensates for an under-specified signal instead of fixing the signal itself.",
+          "cite": "KD#10"
+        },
+        {
+          "option": 1,
+          "text": "Merging into one tool loses the semantic precision that lets a subagent scope its own action to its role — the fix is better descriptions, not fewer tools.",
+          "cite": "D2 §2.2"
+        },
+        {
+          "option": 2,
+          "text": "Deferring to the other subagent on ambiguity is a probabilistic prompt instruction and does nothing to fix the descriptions actually causing the ambiguity.",
+          "cite": "D2 §2.2"
+        }
+      ]
+    },
+    {
+      "g": 35,
+      "block": 2,
+      "blockLabel": "Multi-Agent Research System",
+      "domain": "D1",
+      "section": "§1.5",
+      "kd": null,
+      "letterPlanned": "A",
+      "stem": "The coordinator delegates synthesis by telling the subagent to 'use the compliance-cost findings from the filing-review step,' without including those findings in the prompt itself. The synthesis subagent, whose context holds nothing from that step, writes plausible-sounding cost figures that trace to no actual filing. What is the most effective fix?",
+      "options": [
+        "Include the filing-review subagent's complete findings directly in the synthesis subagent's prompt, in structured form with source metadata attached.",
+        "Instruct the synthesis subagent to ask the coordinator for the filing-review findings whenever it needs them mid-task.",
+        "Have the synthesis subagent re-run its own filing search to independently verify the compliance-cost figures before writing.",
+        "Add a post-generation check that flags any cost figure in the synthesis output lacking a citation."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "Subagents have isolated context and cannot see prior findings by reference — the coordinator must include the complete findings directly in the prompt, in structured form separating content from source metadata, so the subagent has real data instead of fabricating plausible figures.",
+        "cite": "D1 §1.5"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "A findings-on-request pattern still starts from the same gap — nothing guarantees the coordinator supplies the actual data instead of another pointer, and it adds an avoidable round-trip.",
+          "cite": "D1 §1.5"
+        },
+        {
+          "option": 2,
+          "text": "Independent re-verification duplicates work the filing-review subagent already did and risks a different, possibly conflicting, set of figures.",
+          "cite": "D1 §1.5"
+        },
+        {
+          "option": 3,
+          "text": "A post-hoc citation check catches the symptom after fabricated numbers are already written — it doesn't stop the subagent from lacking real data in the first place.",
+          "cite": "D1 §1.5"
+        }
+      ]
+    },
+    {
+      "g": 36,
+      "block": 2,
+      "blockLabel": "Multi-Agent Research System",
+      "domain": "D5",
+      "section": "§5.10",
+      "kd": null,
+      "letterPlanned": "C",
+      "stem": "Mid-batch, the document-analysis subagent finds two credible sources reporting different compliance-cost estimates for the same regulation. Rather than finish analyzing the current filing, it pauses the entire review and messages the coordinator asking which figure to use before it will continue to the next document. What should the design require instead?",
+      "options": [
+        "Keep the pause — waiting for an explicit reconciliation decision before continuing prevents the batch from compounding an unresolved conflict.",
+        "Have the subagent apply a heuristic to pick the more plausible figure so the batch never has to stop.",
+        "Have the subagent complete analysis using both values, explicitly annotate the conflict with source attribution, and continue the batch without stopping.",
+        "Have the subagent discard both figures for that filing and mark the record as unextractable."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "Subagents should not resolve conflicts autonomously, but they also should not block the pipeline waiting for reconciliation — complete analysis with both conflicting values, annotate the conflict with source attribution, and let the coordinator or a human reconcile later.",
+        "cite": "D5 §5.10"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Stopping and asking before completing analysis blocks the pipeline unnecessarily — the documented approach is to finish with both values annotated, not halt for a decision that can happen downstream.",
+          "cite": "D5 §5.10"
+        },
+        {
+          "option": 1,
+          "text": "Applying a heuristic to pick a value abandons a decision that belongs above the subagent's scope — annotation exists to preserve both values, not resolve between them.",
+          "cite": "D5 §5.10"
+        },
+        {
+          "option": 3,
+          "text": "Discarding both figures throws away real, credible findings instead of preserving them with attribution for reconciliation.",
+          "cite": "D5 §5.10"
+        }
+      ]
+    },
+    {
+      "g": 37,
+      "block": 2,
+      "blockLabel": "Multi-Agent Research System",
+      "domain": "D2",
+      "section": "§2.4",
+      "kd": 12,
+      "letterPlanned": "D",
+      "stem": "The report-generation subagent's `finalize_and_distribute_report` tool accepts a `send_now: boolean` so an internal QA pass can run before external distribution. Logs show it is sometimes called with `send_now=true` on the very first attempt, skipping the QA preview entirely. Which redesign makes skipping the preview architecturally impossible?",
+      "options": [
+        "Add a system-prompt rule requiring QA review before any call with `send_now=true`, with examples of the correct sequence.",
+        "Change the tool's default behavior so an internal QA pass runs automatically unless a caller explicitly skips it.",
+        "Add an orchestration-layer confirmation dialog that a human must click before the tool executes.",
+        "Replace the single tool with `preview_report` (returning a single-use confirmation token) and `distribute_report` (requiring that token)."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "A boolean parameter on one tool is always bypassable by calling it directly with the unsafe value; splitting into a preview tool that issues a single-use token and an execute tool that requires it makes skipping the preview architecturally impossible, not just discouraged.",
+        "cite": "D2 §2.4; KD#12"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "A prompt rule is probabilistic guidance — it reduces but cannot guarantee against the exact bypass already observed in logs.",
+          "cite": "KD#12"
+        },
+        {
+          "option": 1,
+          "text": "Changing the default behavior still leaves a bypassable parameter in place — nothing stops a caller from explicitly overriding it on the first call, exactly as already happens.",
+          "cite": "D2 §2.4"
+        },
+        {
+          "option": 2,
+          "text": "An orchestration-layer dialog requires separate infrastructure outside the tool contract and is not the two-tool guarantee the corpus recommends for mandatory previews.",
+          "cite": "D2 §2.4"
+        }
+      ]
+    },
+    {
+      "g": 38,
+      "block": 2,
+      "blockLabel": "Multi-Agent Research System",
+      "domain": "D1",
+      "section": "§1.6",
+      "kd": null,
+      "letterPlanned": "B",
+      "stem": "Investigating packaging-waste compliance costs, the coordinator delegates 'financing and grant mechanisms' to both the web-search subagent and the document-analysis subagent without distinguishing their scopes. Both independently research the same grant programs, and token usage nearly doubles with no added coverage. What is the most effective fix?",
+      "options": [
+        "Have the synthesis subagent deduplicate the two overlapping findings sets before writing the report.",
+        "Have the coordinator explicitly partition the topic into distinct subtopics or source types before delegating to each subagent.",
+        "Restrict the document-analysis subagent's tools so it can no longer research grant programs at all.",
+        "Merge the web-search and document-analysis subagents into one subagent to eliminate the possibility of overlap."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "The coordinator must explicitly partition the research space — assigning distinct subtopics or source types to each subagent — before delegating; this prevents duplication at the source instead of cleaning it up afterward.",
+        "cite": "D1 §1.6"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Deduplicating after the fact still pays the token cost of the duplicated research; the fix belongs at partitioning time, before delegation.",
+          "cite": "D1 §1.6"
+        },
+        {
+          "option": 2,
+          "text": "Removing the tool eliminates a subagent's ability to contribute to that subtopic at all, rather than simply assigning it a distinct scope.",
+          "cite": "D1 §1.6"
+        },
+        {
+          "option": 3,
+          "text": "Merging subagents collapses the specialization that hub-and-spoke depends on, rather than fixing the coordinator's failure to partition the task.",
+          "cite": "D1 §1.2"
+        }
+      ]
+    },
+    {
+      "g": 39,
+      "block": 2,
+      "blockLabel": "Multi-Agent Research System",
+      "domain": "D2",
+      "section": "§2.5",
+      "kd": null,
+      "letterPlanned": "A",
+      "stem": "The report-generation subagent has two formatting tools, `render_as_table` and `render_as_narrative`. On some requests it instead writes a plain-text paragraph describing how it would format the data, without calling either tool. What is the most effective fix?",
+      "options": [
+        "Set `tool_choice` to `{\"type\": \"any\"}` so the subagent must call one of its defined tools rather than respond in prose.",
+        "Set `tool_choice` to force `render_as_table` specifically, since a table is the safer default for most data.",
+        "Add a system-prompt rule stating the subagent must always use a formatting tool, never plain text.",
+        "Remove the subagent's ability to reply without calling a tool, by disabling free-text responses entirely."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "`tool_choice: {\"type\": \"any\"}` guarantees the model calls some tool rather than returning conversational text, while still letting it pick whichever of the two formatting tools actually fits — exactly the guarantee needed when a subagent sometimes replies in prose instead of calling a tool.",
+        "cite": "D2 §2.5"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "Forcing one specific tool blocks the other legitimate formatting choice entirely — the fix needs to guarantee a tool call, not dictate which one.",
+          "cite": "D2 §2.5"
+        },
+        {
+          "option": 2,
+          "text": "A prompt instruction to always use a tool is exactly the kind of probabilistic guidance `tool_choice: any` exists to replace with a guarantee.",
+          "cite": "D2 §2.5"
+        },
+        {
+          "option": 3,
+          "text": "There is no documented mechanism for disabling free-text replies outright — response shape is controlled through `tool_choice`, not by removing that capability.",
+          "cite": "D2 §2.5"
+        }
+      ]
+    },
+    {
+      "g": 40,
+      "block": 2,
+      "blockLabel": "Multi-Agent Research System",
+      "domain": "D1",
+      "section": "§1.7",
+      "kd": null,
+      "letterPlanned": "D",
+      "stem": "Investigating packaging-waste compliance costs across several regions, the coordinator's adaptive plan discovers mid-investigation that one region's cost data sits behind a specialized industry-report subscription no assigned source provides. The coordinator revises the remaining subtasks to substitute an accessible regulatory-filing source for that region instead. Which decomposition pattern does this exemplify, and why does it suit this task?",
+      "options": [
+        "Fixed sequential pipeline — the coordinator is following a predetermined script that happens to include a substitution step.",
+        "Least-privilege tool scoping — the coordinator is restricting which source each subagent can access.",
+        "Fixed sequential pipeline, because reproducibility across regions requires every subtask to follow the same predefined steps regardless of what is discovered.",
+        "Dynamic adaptive decomposition — subtasks are generated and revised from intermediate findings, which suits an investigation whose full source landscape wasn't known up front."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "Generating and revising subtasks in response to a mid-investigation discovery is dynamic adaptive decomposition — appropriate because the full scope and source landscape weren't known until initial findings came in, unlike a task where every step could be set in advance.",
+        "cite": "D1 §1.7"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "A fixed pipeline's steps are set in advance and don't change based on discoveries — revising the plan mid-stream is the opposite of what a fixed pipeline does.",
+          "cite": "D1 §1.7"
+        },
+        {
+          "option": 1,
+          "text": "Substituting a source category is a decomposition-strategy decision, not a tool-access restriction on any subagent.",
+          "cite": "D1 §1.7"
+        },
+        {
+          "option": 2,
+          "text": "Reproducibility is the argument for a fixed pipeline on a predictable, template-following task — this task's own source landscape wasn't knowable until research began.",
+          "cite": "D1 §1.7"
+        }
+      ]
+    },
+    {
+      "g": 41,
+      "block": 2,
+      "blockLabel": "Multi-Agent Research System",
+      "domain": "D2",
+      "section": "§2.7",
+      "kd": null,
+      "letterPlanned": "C",
+      "stem": "Policy requires that any single citation-purge action affecting more than 25 sources at once route to human sign-off before it runs. Today this rule exists only as a system-prompt instruction. During a high-volume cleanup pass, a purge affecting 60 sources executed without sign-off. What change most reliably closes this gap?",
+      "options": [
+        "Rewrite the system-prompt instruction with stronger, more explicit threshold language.",
+        "Add a few-shot example showing the subagent correctly pausing at the 25-source threshold.",
+        "Add a `PreToolUse` hook that blocks any purge call above the threshold and routes it to escalation.",
+        "Log every purge action's source count so a supervisor can review the day's activity afterward."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "Threshold enforcement on a critical operation needs to be deterministic, not probabilistic — a PreToolUse hook fires regardless of what the LLM does, blocking any call above the threshold before it executes and routing it to escalation.",
+        "cite": "D2 §2.7"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "A stronger prompt is still prompt-level compliance — probabilistic by nature, which is exactly what already failed once at 60 sources.",
+          "cite": "D2 §2.7"
+        },
+        {
+          "option": 1,
+          "text": "A few-shot example is additional prompt guidance, not a deterministic block — it cannot guarantee the threshold is never crossed again.",
+          "cite": "D2 §2.7"
+        },
+        {
+          "option": 3,
+          "text": "After-the-fact logging documents a violation that has already happened; it doesn't prevent the purge from executing in the first place.",
+          "cite": "D2 §2.7"
+        }
+      ]
+    },
+    {
+      "g": 42,
+      "block": 2,
+      "blockLabel": "Multi-Agent Research System",
+      "domain": "D5",
+      "section": "§5.11",
+      "kd": null,
+      "letterPlanned": "B",
+      "stem": "To speed up report assembly, the report-generation subagent stops carrying a source mapping for each individual claim through the pipeline, instead appending one consolidated bibliography section listing every source used somewhere in the document. Reviewers can no longer trace any specific claim back to the source that supports it. What is the most effective fix?",
+      "options": [
+        "Keep the consolidated bibliography, but sort it alphabetically by source name so reviewers can scan it faster.",
+        "Require every claim to carry its own structured claim-to-source mapping through the pipeline, preserved and merged by each downstream agent.",
+        "Have the report-generation subagent re-search the original sources at the end to reconstruct which claim came from where.",
+        "Drop source citations from the report body entirely and rely on the bibliography as the sole attribution record."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "Provenance must survive synthesis — requiring structured claim-to-source mappings that downstream agents preserve and merge is what lets a final report attribute every individual claim, which a general end-of-document bibliography cannot do.",
+        "cite": "D5 §5.11"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "A better-sorted bibliography is still a document-level list — it does nothing to restore claim-level traceability.",
+          "cite": "D5 §5.11"
+        },
+        {
+          "option": 2,
+          "text": "Re-deriving attributions after the fact by searching again is expensive and error-prone; the mapping should be preserved through the pipeline, not reconstructed later.",
+          "cite": "D5 §5.11"
+        },
+        {
+          "option": 3,
+          "text": "Removing citations from the body entirely makes the traceability problem worse, since even the document-level list no longer connects to specific claims.",
+          "cite": "D5 §5.11"
+        }
+      ]
+    },
+    {
+      "g": 43,
+      "block": 2,
+      "blockLabel": "Multi-Agent Research System",
+      "domain": "D1",
+      "section": "§1.8",
+      "kd": null,
+      "letterPlanned": "A",
+      "stem": "Frustrated by the round-trip cost of the coordinator's refinement loop, an engineer grants the synthesis subagent its own web-search tool so it can independently fill small gaps it notices while drafting, without reporting back to the coordinator first. What is the most effective response to this change?",
+      "options": [
+        "Revert it — gap evaluation and re-delegation belong to the coordinator, not the synthesis subagent, which should report gaps instead of researching independently.",
+        "Keep it, but restrict the synthesis subagent's web-search tool to a narrow, pre-approved list of source domains.",
+        "Keep it, and remove the coordinator's refinement loop entirely since synthesis can now self-correct.",
+        "Keep it, but require the synthesis subagent to log every independent search it performs for later audit."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "The coordinator owns gap evaluation and loop termination as part of its aggregation-and-validation responsibility; letting the synthesis subagent search independently breaks separation of responsibilities and least-privilege tooling instead of routing the gap back through the coordinator's refinement loop.",
+        "cite": "D1 §1.8"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "Scoping the domains still leaves the synthesis subagent doing research work outside its role — the problem is the responsibility boundary, not which sources it can reach.",
+          "cite": "D1 §1.8"
+        },
+        {
+          "option": 2,
+          "text": "Removing the refinement loop discards the coordinator's defined mechanism for evaluating coverage and knowing when a report is sufficient.",
+          "cite": "D1 §1.8"
+        },
+        {
+          "option": 3,
+          "text": "Logging the independent searches documents the boundary violation after the fact without preventing it from happening again.",
+          "cite": "D1 §1.8"
+        }
+      ]
+    },
+    {
+      "g": 44,
+      "block": 2,
+      "blockLabel": "Multi-Agent Research System",
+      "domain": "D3",
+      "section": "§3.10",
+      "kd": 14,
+      "letterPlanned": "D",
+      "stem": "The research team runs two workloads through Claude: a live fact-check a researcher waits on mid-call, and a nightly regeneration of source-credibility summaries for that day's newly ingested documents, with no one waiting on the output. Which API approach fits each, and why?",
+      "options": [
+        "Batch API for both — the 50% cost savings applies regardless of whether anyone is waiting on the result.",
+        "Synchronous API for both — batch processing's latency ceiling is too unpredictable for any research workload.",
+        "Batch API for the live fact-check, synchronous for the nightly summaries, since overnight jobs benefit from immediate results.",
+        "Synchronous for the live fact-check, batch for the nightly summaries — the fact-check is blocking and needs an immediate response; the summaries have no latency pressure."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "The API choice should match the latency requirement: a blocking, live interaction needs the synchronous API's immediate response, while a non-blocking overnight job with no one waiting is exactly the profile the Batches API's 50% savings and up-to-24-hour window suit.",
+        "cite": "D3 §3.10; KD#14"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "The live fact-check is blocking — a researcher is waiting mid-call, and batch processing carries no latency guarantee, making it unsuitable regardless of cost savings.",
+          "cite": "D3 §3.10"
+        },
+        {
+          "option": 1,
+          "text": "Defaulting to synchronous for the nightly job forfeits the cost savings on a workload with no latency pressure at all — exactly the case batch is designed for.",
+          "cite": "D3 §3.10"
+        },
+        {
+          "option": 2,
+          "text": "This assignment is inverted — the blocking, live case needs synchronous, and the non-blocking overnight case is what batch actually suits.",
+          "cite": "D3 §3.10"
+        }
+      ]
+    },
+    {
+      "g": 45,
+      "block": 2,
+      "blockLabel": "Multi-Agent Research System",
+      "domain": "D1",
+      "section": "§1.10",
+      "kd": null,
+      "letterPlanned": "C",
+      "stem": "Two of five assigned source categories time out entirely; the other three return complete, usable findings. Rather than pass anything forward, the synthesis subagent halts and reports a failure, reasoning the input set is too incomplete to work from. What should the design require instead?",
+      "options": [
+        "Keep the failure report — an incomplete input set should always be treated as an unrecoverable error.",
+        "Have the synthesis subagent wait indefinitely for the two timed-out categories to eventually return before proceeding.",
+        "Have the synthesis subagent complete synthesis using the three available categories and annotate which conclusions have coverage gaps.",
+        "Have the coordinator silently substitute cached results from a prior, unrelated research run for the missing categories."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "When upstream inputs are incomplete, the synthesis agent should complete synthesis with what is available, annotate coverage so readers know which conclusions are well-supported versus where gaps exist, and propagate that uncertainty upward — not refuse to produce output at all.",
+        "cite": "D1 §1.10"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Treating incomplete input as an unrecoverable error discards three genuinely complete, usable source categories for no reason.",
+          "cite": "D1 §1.10"
+        },
+        {
+          "option": 1,
+          "text": "Waiting indefinitely blocks the report on categories that already timed out, with no guarantee they ever return.",
+          "cite": "D1 §1.10"
+        },
+        {
+          "option": 3,
+          "text": "Substituting unrelated cached results fabricates coverage rather than honestly annotating the actual gap.",
+          "cite": "D1 §1.10"
+        }
+      ]
+    }
+  ]
+}

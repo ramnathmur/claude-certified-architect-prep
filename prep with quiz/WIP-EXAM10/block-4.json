@@ -1,0 +1,577 @@
+{
+  "label": "Structured Data Extraction",
+  "narrative": "A team builds a structured-extraction pipeline that pulls fielded data out of equipment-inspection and maintenance reports into a validated JSON schema. The block follows the pipeline's evolution in sequence: designing the extraction schema and its tool-calling guarantees, layering in structured error handling, semantic validation, and retry-with-feedback, then scaling to parallel and batch runs while keeping long compiled documents and CI-integrated reporting reliable.",
+  "letterPlan": ["C", "A", "D", "B", "C", "D", "A", "B", "C", "D", "B", "A", "C", "D", "B"],
+  "questions": [
+    {
+      "g": 46,
+      "block": 3,
+      "blockLabel": "Structured Data Extraction",
+      "domain": "D4",
+      "section": "§4.5",
+      "kd": null,
+      "letterPlanned": "C",
+      "stem": "The pipeline extracts equipment-inspection reports into a fixed schema. Source reports write dates as \"3/14,\" \"14 March,\" and \"2024-03-14,\" and technician hours as \"3.5 hrs,\" \"3h30m,\" and \"210 min.\" The schema defines `inspection_date` as ISO-8601 and `labor_hours` as a decimal. Where should normalization guidance for these varied source formats live?",
+      "options": [
+        "Loosen the schema to accept any string format, and have a downstream script normalize the values after extraction.",
+        "Add a `format` enum field so the model can flag which of the three date or duration styles it encountered.",
+        "Include explicit normalization rules for each source format directly in the extraction prompt, alongside the strict output schema.",
+        "Retry the extraction whenever a non-normalized value comes back, until the output finally complies."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "The schema constrains the output's shape; normalization rules belong in the prompt to govern how messy source formats map into that shape — the two work together, not as substitutes.",
+        "cite": "D4 §4.5"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Loosening the schema reintroduces the inconsistency it exists to prevent, and just pushes normalization work downstream instead of handling it at extraction time.",
+          "cite": "D4 §4.5"
+        },
+        {
+          "option": 1,
+          "text": "A format-flag field records which style was seen instead of converting it, leaving downstream consumers to still handle three different value shapes.",
+          "cite": "D4 §4.5"
+        },
+        {
+          "option": 3,
+          "text": "Retrying treats a formatting-mapping gap as if it were a random model error; nothing about the request has changed, so nothing about the output will either.",
+          "cite": "D4 §4.5"
+        }
+      ]
+    },
+    {
+      "g": 47,
+      "block": 3,
+      "blockLabel": "Structured Data Extraction",
+      "domain": "D4",
+      "section": "§4.2",
+      "kd": null,
+      "letterPlanned": "A",
+      "stem": "A new extraction field asks the model to copy `defect_severity` directly from the report's explicit \"Severity:\" label into the output — no computation, comparison, or multi-step inference required. An engineer proposes adding \"think step by step before extracting this field\" to improve accuracy. What is the most effective response?",
+      "options": [
+        "Skip the reasoning cue — copying an explicitly labeled value is exactly the single-step case it isn't meant for.",
+        "Add it — step-by-step reasoning cues improve accuracy on every extracted field, including a direct label copy.",
+        "Add it only when the source report runs longer than one page, regardless of the field's actual complexity.",
+        "Add it alongside several new few-shot examples, since layering on more prompting techniques compounds accuracy gains."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "Reasoning cues are for multi-step mathematical reasoning, multi-stage analysis, N-item comparison, or step-wise transformation; a single-step, already-explicit label copy is the documented case where a cue is not needed.",
+        "cite": "D4 §4.2"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "This overgeneralizes a technique that helps multi-step tasks into a blanket rule, contradicting the explicit guidance not to add it for single-step work.",
+          "cite": "D4 §4.2"
+        },
+        {
+          "option": 2,
+          "text": "Document length has nothing to do with whether a given field's extraction is single-step or multi-step; the field's own reasoning demands are what matter.",
+          "cite": "D4 §4.2"
+        },
+        {
+          "option": 3,
+          "text": "Stacking more prompting techniques onto a task that needs neither doesn't compound a benefit — there is no reasoning gap here for either technique to close.",
+          "cite": "D4 §4.2"
+        }
+      ]
+    },
+    {
+      "g": 48,
+      "block": 3,
+      "blockLabel": "Structured Data Extraction",
+      "domain": "D4",
+      "section": "§4.6",
+      "kd": null,
+      "letterPlanned": "D",
+      "stem": "A pipeline's retry step resubmits a failed document within the same conversation, needing the model to call `resubmit_correction`. The conversation's tool list still includes the original `extract_fields` tool. With `tool_choice` left at `{\"type\": \"any\"}`, logs show the model sometimes re-calls `extract_fields` instead of submitting the correction. What configuration most reliably fixes this?",
+      "options": [
+        "Leave `tool_choice` at `{\"type\": \"any\"}`, since it already guarantees a tool call happens every turn.",
+        "Switch to `{\"type\": \"auto\"}`, giving the model full discretion over which tool, if any, to call.",
+        "Remove `extract_fields` from the conversation's tool list entirely, so only `resubmit_correction` can ever be called again.",
+        "Set `tool_choice` to `{\"type\": \"tool\", \"name\": \"resubmit_correction\"}` specifically on the resubmit turn."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "Forcing the specific tool guarantees that tool is the one called on this turn; `\"any\"` only guarantees some tool from the array gets called, and does not exclude an earlier-stage tool still sitting in the same conversation's tool list.",
+        "cite": "D4 §4.6"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "`\"any\"` is exactly what already explains the failure — it lets the model reach back for `extract_fields`, which remains a valid choice from its perspective.",
+          "cite": "D4 §4.6"
+        },
+        {
+          "option": 1,
+          "text": "`\"auto\"` is even less constrained than `\"any\"` — it doesn't even guarantee a tool call at all, let alone the correct one for this turn.",
+          "cite": "D4 §4.6"
+        },
+        {
+          "option": 2,
+          "text": "Permanently removing the tool breaks the earlier extraction stage for every future document; the fix needs to apply to this turn's decision, not delete the tool from the pipeline.",
+          "cite": "D4 §4.6"
+        }
+      ]
+    },
+    {
+      "g": 49,
+      "block": 3,
+      "blockLabel": "Structured Data Extraction",
+      "domain": "D2",
+      "section": "§2.3",
+      "kd": 8,
+      "letterPlanned": "B",
+      "stem": "A `run_document_ocr` tool sometimes fails to produce usable text — for example, on a low-quality scan — and currently returns only `{\"isError\": true}`. The pipeline's retry-with-feedback step is supposed to resubmit with a corrective instruction, but has nothing specific to change, so it resends the identical request and gets the identical failure. What should the tool's error response include instead?",
+      "options": [
+        "Only a boolean `isRetryable: true` field, so the pipeline knows a retry is worth attempting at all.",
+        "A structured payload — failure type, what was attempted, and any partial output — for the retry step to act on.",
+        "The same `{\"isError\": true}` response as before, but log the failure server-side for a human to review each morning.",
+        "Internal retries inside the tool itself, up to five attempts, before returning any response to the pipeline."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "Structured error context — failure type, what was attempted, and any partial results — is what a retry-with-feedback step needs to construct a corrective retry, rather than resending an identical request against an identical failure.",
+        "cite": "D2 §2.3; KD#8"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "A retryable flag tells the pipeline whether to retry at all, not what to change — without detail, the retry just repeats the identical failing request.",
+          "cite": "D2 §2.3"
+        },
+        {
+          "option": 2,
+          "text": "Logging for a human to review the next morning gives an automated, in-session retry-with-feedback step nothing to act on right now.",
+          "cite": "D2 §2.3"
+        },
+        {
+          "option": 3,
+          "text": "Retrying internally without surfacing any diagnostic detail just repeats a scan-quality problem the tool itself cannot fix, and still leaves the pipeline with nothing specific if all attempts fail.",
+          "cite": "D2 §2.3"
+        }
+      ]
+    },
+    {
+      "g": 50,
+      "block": 3,
+      "blockLabel": "Structured Data Extraction",
+      "domain": "D4",
+      "section": "§4.7",
+      "kd": null,
+      "letterPlanned": "C",
+      "stem": "Since the parts-replacement pipeline moved to `tool_use` with a strict schema, every response parses cleanly and every field passes its type check. Auditors still occasionally find records where `part_number` holds a value that matches the expected format but was actually copied from an adjacent line item, not the part the record describes. What is the most accurate way to interpret this?",
+      "options": [
+        "The `part_number` field's type constraints must be too loose; tighten them further until this stops happening.",
+        "Revert to prompt-based JSON requests, since `tool_use` is evidently not producing reliable output.",
+        "Expected — schema validation guarantees structural correctness, not semantic correctness; a misplaced value like this needs its own validation and retry step.",
+        "Nothing further is needed — a schema-valid response has already been confirmed correct."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "Strict schemas via tool_use eliminate the syntax-error class but do nothing for the semantic class — a value that's the right type in the right field-shape but drawn from the wrong source line is a semantic error requiring its own check.",
+        "cite": "D4 §4.7"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "No amount of type tightening can verify that a syntactically valid value was pulled from the correct source line — that's a cross-referencing problem, not a type problem.",
+          "cite": "D4 §4.7"
+        },
+        {
+          "option": 1,
+          "text": "Reverting would reintroduce the syntax-error class tool_use eliminated, stacking it on top of a semantic error that would still be unresolved.",
+          "cite": "D4 §4.7"
+        },
+        {
+          "option": 3,
+          "text": "Passing schema validation proves only structural validity; semantic errors sail through it by definition, so treating a schema pass as proof of correctness misses exactly this failure class.",
+          "cite": "D4 §4.7"
+        }
+      ]
+    },
+    {
+      "g": 51,
+      "block": 3,
+      "blockLabel": "Structured Data Extraction",
+      "domain": "D4",
+      "section": "§4.8",
+      "kd": null,
+      "letterPlanned": "D",
+      "stem": "An inspection record's schema requires `inspection_date` and `next_due_date`, both valid ISO-8601 strings — the schema itself has no way to express that `next_due_date` must fall after `inspection_date`. A recent batch shipped several records where the two dates were reversed, undetected until a downstream audit caught them. What should the team add?",
+      "options": [
+        "A third schema field, `date_order_valid: boolean`, and have the model self-report whether the order is correct.",
+        "Tighter string-format constraints on both date fields, since each is already type-correct as written.",
+        "A system-prompt reminder that `next_due_date` must come after `inspection_date`.",
+        "A Pydantic validator that checks `next_due_date > inspection_date` after extraction, independent of what the schema alone can enforce."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "Pydantic validators encode business logic — like a field-ordering constraint — that no JSON schema can express; this is exactly the semantic-validation layer that should run in code after extraction.",
+        "cite": "D4 §4.8"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Asking the model to self-report a boolean isn't independent verification — the same model that reversed the dates once could just as easily misjudge its own flag.",
+          "cite": "D4 §4.8"
+        },
+        {
+          "option": 1,
+          "text": "Both fields are already valid, correctly-typed ISO-8601 strings; no amount of format tightening can express an ordering relationship between two separate fields.",
+          "cite": "D4 §4.8"
+        },
+        {
+          "option": 2,
+          "text": "A prompt reminder is probabilistic guidance, and exactly the kind of rule an already schema-passing, already-reversed batch shows isn't being reliably followed.",
+          "cite": "D4 §4.8"
+        }
+      ]
+    },
+    {
+      "g": 52,
+      "block": 3,
+      "blockLabel": "Structured Data Extraction",
+      "domain": "D4",
+      "section": "§4.9",
+      "kd": null,
+      "letterPlanned": "A",
+      "stem": "The retry-with-feedback loop for defect-code extraction resubmits each failure with the specific validation error, and most retries eventually succeed. The team wants to know, across thousands of retries, which recurring source-document construct — an abbreviation, a merged table cell, a handwritten annotation — drives most first-pass failures, so they can fix the prompt or schema at the source. What should they add?",
+      "options": [
+        "A `detected_pattern` field on each extraction identifying which construct triggered it, so failures can be grouped and analyzed across retries.",
+        "A free-text `notes` field where the model explains, in its own words, why the first attempt likely failed.",
+        "A dashboard that counts total retries per day, without attributing any of them to a specific cause.",
+        "A cap of one retry attempt for any document that has previously required a retry."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "A `detected_pattern` field lets the team group failures by the specific construct that triggered them, turning isolated retries into a systematic signal about which recurring prompt or schema weakness to fix.",
+        "cite": "D4 §4.9"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "Free-text notes are unstructured and don't aggregate — they can't be grouped or counted by cause the way a structured pattern field can.",
+          "cite": "D4 §4.9"
+        },
+        {
+          "option": 2,
+          "text": "A raw retry count shows volume but nothing about cause, which is exactly what the team needs to identify the underlying weakness.",
+          "cite": "D4 §4.9"
+        },
+        {
+          "option": 3,
+          "text": "Capping retries doesn't diagnose why failures recur; it only reduces how many chances each individual document gets, an unrelated lever.",
+          "cite": "D4 §4.9"
+        }
+      ]
+    },
+    {
+      "g": 53,
+      "block": 3,
+      "blockLabel": "Structured Data Extraction",
+      "domain": "D4",
+      "section": "§4.10",
+      "kd": null,
+      "letterPlanned": "B",
+      "stem": "A parts-replacement record states `total_parts_cost: $340.00`, but a later billing audit finds the four listed part prices actually sum to $310.00 — a $30 discrepancy nobody caught at extraction time. What design change most directly catches this class of error at the moment of extraction, rather than in a later audit?",
+      "options": [
+        "Add a monthly reconciliation report that cross-checks a sample of records against their source documents.",
+        "Extract a `calculated_total` by re-summing the listed part prices, alongside the original `stated_total`, flagging `conflict_detected` when they disagree.",
+        "Instruct the model in the prompt to \"double-check the total before finalizing,\" then trust its confirmation.",
+        "Require a second, independent extraction pass over the same document, then compare its total to the first pass."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "Building the re-derivation into the output schema — a stated value plus an independently re-derived value plus a conflict flag — surfaces the mismatch as machine-readable data at extraction time, not weeks later.",
+        "cite": "D4 §4.10"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Monthly reconciliation catches the problem only much later, and only for whatever records happen to be sampled — the pattern moves detection to extraction time instead.",
+          "cite": "D4 §4.10"
+        },
+        {
+          "option": 2,
+          "text": "Asking the model to \"double-check\" conversationally is a soft request, not a structural check — self-correction needs to be built into the output schema, not requested as a courtesy.",
+          "cite": "D4 §4.10"
+        },
+        {
+          "option": 3,
+          "text": "A full second pass duplicates the cost of the entire extraction rather than adding a lightweight structural re-derivation of just the total.",
+          "cite": "D4 §4.10"
+        }
+      ]
+    },
+    {
+      "g": 54,
+      "block": 3,
+      "blockLabel": "Structured Data Extraction",
+      "domain": "D1",
+      "section": "§1.15",
+      "kd": null,
+      "letterPlanned": "C",
+      "stem": "A batch of three unrelated inspection reports arrives needing extraction, and none depends on another's results. The coordinator currently issues one `Task` call for the first report, waits for its result, then issues the next `Task` call for the second report in a following response, and so on. What most effectively reduces this latency?",
+      "options": [
+        "Combine the three reports into one document and extract them with a single `Task` call instead.",
+        "Keep the calls sequential, but shorten each subagent's system prompt to reduce the delay between them.",
+        "Issue all three `Task` calls for the independent reports within a single coordinator response, so they run in parallel.",
+        "Keep the calls sequential as before, but pre-fetch each report's file contents earlier to save time."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "Parallel execution requires emitting multiple independent `Task` calls within a single coordinator response; issuing them across separate turns runs them sequentially regardless of how independent the underlying work actually is.",
+        "cite": "D1 §1.15"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Merging unrelated reports into one call reintroduces cross-document interference risk and abandons the clean parallel-and-independent structure the task already has.",
+          "cite": "D1 §1.15"
+        },
+        {
+          "option": 1,
+          "text": "Shortening prompts doesn't change the sequential structure — the calls still execute one after another because they're issued across separate turns.",
+          "cite": "D1 §1.15"
+        },
+        {
+          "option": 3,
+          "text": "Pre-fetching content doesn't address the root cause; the calls remain sequential because of how and when they're issued, not because of fetch timing.",
+          "cite": "D1 §1.15"
+        }
+      ]
+    },
+    {
+      "g": 55,
+      "block": 3,
+      "blockLabel": "Structured Data Extraction",
+      "domain": "D4",
+      "section": "§4.11",
+      "kd": null,
+      "letterPlanned": "D",
+      "stem": "A nightly batch of 200 inspection-report extractions runs through the Message Batches API. Results return the next morning: 188 succeed, and 12 fail because those particular scans were long enough to exceed a per-request limit. The team needs to fix and reprocess only the 12 failures. What is the most effective way to proceed?",
+      "options": [
+        "Resubmit the entire batch of 200 unchanged, since re-running from scratch guarantees nothing is missed.",
+        "Resubmit the 12 failed reports unchanged, since the batch discount makes repeated attempts inexpensive.",
+        "Wait for the next scheduled nightly run to pick up the 12 failed reports automatically alongside new documents.",
+        "Resubmit only the 12 failed reports, identified by `custom_id`, chunked into shorter segments before resubmission."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "`custom_id` identifies exactly which requests failed, so only those need reprocessing, and the underlying cause — length exceeding a limit — should be fixed, such as by chunking, before resubmitting, not just retried unchanged.",
+        "cite": "D4 §4.11"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Resubmitting all 200 re-pays for 188 already-successful extractions and risks duplicate downstream results for those records.",
+          "cite": "D4 §4.11"
+        },
+        {
+          "option": 1,
+          "text": "Resubmitting unchanged repeats the same length-limit failure; the cause needs fixing before retrying, not just cost-tolerant repetition.",
+          "cite": "D4 §4.11"
+        },
+        {
+          "option": 2,
+          "text": "Waiting for the next scheduled run doesn't fix the underlying cause and needlessly delays reprocessing of failures already identified by `custom_id`.",
+          "cite": "D4 §4.11"
+        }
+      ]
+    },
+    {
+      "g": 56,
+      "block": 3,
+      "blockLabel": "Structured Data Extraction",
+      "domain": "D3",
+      "section": "§3.9",
+      "kd": null,
+      "letterPlanned": "B",
+      "stem": "A nightly `claude -p` step summarizes each night's extraction batch into a compliance ledger, needing exactly three fields every run: `batch_id`, `records_processed`, `flagged_for_review`. On batches with zero flagged records, the step sometimes replies with a sentence like \"No records required review\" instead of the record, and the ledger parser throws. What is the most reliable fix?",
+      "options": [
+        "Add a prompt sentence asking the model to always respond in JSON, even when nothing was flagged.",
+        "Add `--output-format json` together with `--json-schema`, so the CLI enforces the three-field shape on every run, including zero-flag runs.",
+        "Document the expected three-field shape in the project's CLAUDE.md, so every session understands the ledger's requirements.",
+        "Have the parser fall back to a default record whenever it receives a line it cannot parse."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "`--output-format json` together with `--json-schema` enforces well-formed, schema-compliant output on every run, including the zero-flag case, where a prompt instruction alone can still be skipped.",
+        "cite": "D3 §3.9"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "A prompt instruction to \"respond in JSON\" is exactly the unreliable approach already failing on zero-flag runs.",
+          "cite": "D3 §3.9"
+        },
+        {
+          "option": 2,
+          "text": "CLAUDE.md documentation doesn't enforce output shape — it's read as behavioral guidance, not parsed by the CLI as a structural contract.",
+          "cite": "D3 §3.9"
+        },
+        {
+          "option": 3,
+          "text": "A default-record fallback silently manufactures data the pipeline never actually confirmed, masking the underlying reliability problem instead of fixing it.",
+          "cite": "D3 §3.9"
+        }
+      ]
+    },
+    {
+      "g": 57,
+      "block": 3,
+      "blockLabel": "Structured Data Extraction",
+      "domain": "D4",
+      "section": "§4.16",
+      "kd": null,
+      "letterPlanned": "A",
+      "stem": "The review step for extracted inspection records is instructed only to \"flag anything that looks unusual.\" On a 300-record sample, it flags a technician working a rare but legitimate double-shift and misses a genuinely fabricated-looking part number in a different record. Reviewers say the flagging feels arbitrary. What change would most reliably fix this?",
+      "options": [
+        "Replace the vague instruction with explicit, testable criteria — for example, a named format check or a defined historical range — with examples of each.",
+        "Instruct the model to \"use better judgment when flagging unusual values\" instead of the current wording.",
+        "Lower the threshold for what counts as unusual, so the model flags a larger share of records overall.",
+        "Have a second model instance independently review the same records and flag anything it also finds unusual."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "Replacing an abstract instruction with explicit, testable criteria — naming exactly what to check and providing examples — is the documented fix for inconsistent flagging driven by vague intent.",
+        "cite": "D4 §4.16"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "\"Better judgment\" is still an abstract instruction — no more testable or consistent than the wording it replaces.",
+          "cite": "D4 §4.16"
+        },
+        {
+          "option": 2,
+          "text": "A blanket volume adjustment doesn't fix which specific things get flagged, and can raise false positives on legitimate outliers as easily as it catches real problems.",
+          "cite": "D4 §4.16"
+        },
+        {
+          "option": 3,
+          "text": "A second independent opinion is useful for review quality generally, but doesn't give either instance the concrete criteria the first instance is missing.",
+          "cite": "D4 §4.16"
+        }
+      ]
+    },
+    {
+      "g": 58,
+      "block": 3,
+      "blockLabel": "Structured Data Extraction",
+      "domain": "D5",
+      "section": "§5.2",
+      "kd": 20,
+      "letterPlanned": "C",
+      "stem": "A single extraction call processes one lengthy compiled inspection binder — several individual site reports concatenated into one long document. The pipeline reliably captures the binder's cover-sheet summary and its final sign-off section, but a defect noted only in a site report buried in the binder's middle is consistently missed. What is the most effective fix?",
+      "options": [
+        "Summarize the entire binder down to under 20,000 tokens before extraction, to reduce what the model must process.",
+        "Alternate which site report appears first in the concatenation order across runs, to average out position bias over time.",
+        "Add explicit section headings marking each site report's boundaries, and place a short key-findings summary at the start of the binder.",
+        "Increase `max_tokens` on the extraction call so the model has more room to generate a longer response."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "Explicit section headings help the model navigate mid-document content, and a key-findings summary at the start places critical information in the most reliably processed position — the documented mitigations for lost-in-the-middle degradation.",
+        "cite": "D5 §5.2; KD#20"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Aggressive pre-summarization risks discarding the specific mid-binder defect before extraction even runs.",
+          "cite": "D5 §5.2"
+        },
+        {
+          "option": 1,
+          "text": "Rotating position doesn't fix the underlying attention pattern — whichever report ends up in the middle is still at risk, regardless of which one that is.",
+          "cite": "D5 §5.2; KD#20"
+        },
+        {
+          "option": 3,
+          "text": "`max_tokens` controls how much the model can generate in its response, not how well it attends to content buried in the middle of a long input.",
+          "cite": "D5 §5.2"
+        }
+      ]
+    },
+    {
+      "g": 59,
+      "block": 3,
+      "blockLabel": "Structured Data Extraction",
+      "domain": "D5",
+      "section": "§5.5",
+      "kd": null,
+      "letterPlanned": "D",
+      "stem": "The pipeline's `run_document_ocr` tool returns 50+ fields per page — bounding boxes, per-character confidence, font metadata — when only the plain text and an overall page-confidence score matter downstream. On multi-page inspection binders, this bulk accumulates in context, and extraction quality on later pages starts to drift. What is the most effective fix?",
+      "options": [
+        "Instruct the model in the system prompt to ignore the irrelevant OCR fields when reasoning about later pages.",
+        "Summarize the whole conversation more aggressively once it grows past a fixed token threshold.",
+        "Switch to a larger-context model so the extra OCR fields no longer risk exhausting the window.",
+        "Add a `PostToolUse` hook that trims `run_document_ocr` results to just the plain text and page-confidence fields before they enter context."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "A `PostToolUse` hook filtering tool results down to the relevant fields before they accumulate in context removes the noise at the source, rather than asking the model to work around tokens that are still consumed.",
+        "cite": "D5 §5.5"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "The irrelevant fields are still consumed as tokens even if the model is told to ignore them — the attention cost remains.",
+          "cite": "D5 §5.5"
+        },
+        {
+          "option": 1,
+          "text": "Aggressive summarization treats the symptom while verbose OCR output keeps flooding in on every subsequent page.",
+          "cite": "D5 §5.5"
+        },
+        {
+          "option": 2,
+          "text": "A larger context window raises cost and delays the problem without addressing the actual noise accumulating from verbose tool output.",
+          "cite": "D5 §5.5"
+        }
+      ]
+    },
+    {
+      "g": 60,
+      "block": 3,
+      "blockLabel": "Structured Data Extraction",
+      "domain": "D4",
+      "section": "§4.19",
+      "kd": 19,
+      "letterPlanned": "B",
+      "stem": "A request for the pipeline reads only \"just pull the important stuff out of these inspection files,\" with no target schema or field list specified. Rather than asking which fields count as \"important\" before doing anything, what should the pipeline do?",
+      "options": [
+        "Ask a single compound clarifying question listing every possible field category, and wait for a reply before extracting anything.",
+        "Proceed using a stated, reasonable default field set — for example, defect codes, dates, technician, cost — and invite the user to adjust it.",
+        "Silently pick a default field set and extract without mentioning anywhere what was assumed.",
+        "Extract every field the source document happens to contain, on the theory that more coverage always satisfies \"important.\""
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "Stating a reasonable set of assumptions and proceeding, rather than blocking on a clarifying question or guessing silently, avoids the abandonment that comes with making users answer questions before any work starts.",
+        "cite": "D4 §4.19; KD#19"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Even one compound question still demands upfront effort from the user before anything happens, when the documented pattern favors proceeding over asking.",
+          "cite": "D4 §4.19; KD#19"
+        },
+        {
+          "option": 2,
+          "text": "Hidden defaults leave the user unaware of what was actually assumed, unable to tell whether the output matches their intent.",
+          "cite": "D4 §4.19"
+        },
+        {
+          "option": 3,
+          "text": "Extracting every available field ignores that \"important\" was never defined, producing an unfocused dump rather than a stated, correctable assumption.",
+          "cite": "D4 §4.19"
+        }
+      ]
+    }
+  ]
+}

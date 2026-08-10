@@ -1,0 +1,577 @@
+{
+  "label": "Structured Data Extraction",
+  "narrative": "A recruiting-operations team builds a pipeline that extracts structured candidate records — job history, education, certifications, skills, compensation expectations — from submitted resumes and application forms into a validated JSON schema. The block follows the pipeline in sequence: schema design and its fabrication risks, the coordinator-subagent architecture that runs it, semantic-vs-syntax validation and retry-with-feedback, then the context-management and human-oversight layers that keep long documents, batches, and interactive correction sessions reliable.",
+  "letterPlan": ["B", "C", "D", "A", "C", "D", "B", "A", "C", "D", "B", "C", "A", "D", "B"],
+  "questions": [
+    {
+      "g": 46,
+      "block": 3,
+      "blockLabel": "Structured Data Extraction",
+      "domain": "D4",
+      "section": "§4.5",
+      "kd": null,
+      "letterPlanned": "B",
+      "stem": "A recruiting pipeline extracts structured candidate records from resumes and application forms. The schema marks `current_employer` required and non-nullable, reasoning every applicant needs one listed. An audit of 6,000 records finds 14% carry a plausible employer name tracing to no real company — those applicants are recent graduates or first-time job seekers with no prior employer. What schema change most directly stops this?",
+      "options": [
+        "Keep the field required, but add a post-extraction lookup that flags employer names unverifiable against a business registry.",
+        "Make `current_employer` nullable so the model can return `null` when no employer exists, instead of a value the schema forces it to produce.",
+        "Add a prompt instruction telling the model to only fill the field when confident the employer name is accurate.",
+        "Replace missing values with a placeholder string like `\"N/A\"` while keeping the field required and non-nullable."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "Nullable fields let the model return `null` instead of fabricating a value to satisfy a required field — the correct fix when information may be genuinely absent.",
+        "cite": "D4 §4.5"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Post-hoc lookup validation doesn't remove the generation-time pressure that produced the fabrication in the first place — it only catches some of it after the fact.",
+          "cite": "D4 §4.5"
+        },
+        {
+          "option": 2,
+          "text": "A prompt instruction asking for confidence-gated filling is probabilistic guidance, not a structural guarantee — the model can still fabricate under required-field pressure.",
+          "cite": "D4 §4.5"
+        },
+        {
+          "option": 3,
+          "text": "A placeholder string is still a fabricated non-null value forced by the required field — it doesn't solve the underlying problem, just renames it.",
+          "cite": "D4 §4.5"
+        }
+      ]
+    },
+    {
+      "g": 47,
+      "block": 3,
+      "blockLabel": "Structured Data Extraction",
+      "domain": "D1",
+      "section": "§1.3",
+      "kd": null,
+      "letterPlanned": "C",
+      "stem": "The recruiting pipeline's coordinator has `parsing_agent`, `validation_agent`, and `enrichment_agent` subagent types fully described in its system prompt, each with a clearly scoped role. Engineers notice it never delegates any of the three — it attempts every applicant's full parse-validate-enrich cycle itself in one long response. Its `AgentDefinition` lists only `read_document` among `allowed_tools`. What most reliably fixes this?",
+      "options": [
+        "Rewrite the coordinator's system prompt to explicitly instruct it to delegate to the three subagent types.",
+        "Add more detailed descriptions of each subagent's scope to the coordinator's system prompt.",
+        "Add `Task` to the coordinator's `allowed_tools` — without it, the coordinator cannot spawn subagents at all.",
+        "Increase the coordinator's max_tokens so it has room to reason about when to delegate."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "A coordinator's allowedTools must include Task — without that grant, no amount of prompt wording enables spawning subagents; it's a structural, configuration-level gap.",
+        "cite": "D1 §1.3"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Rewriting the prompt cannot grant a tool the configuration withholds — the prompt cannot compensate for a missing `Task` grant.",
+          "cite": "D1 §1.3"
+        },
+        {
+          "option": 1,
+          "text": "The subagent descriptions are already clear and complete; adding more description text doesn't enable spawning when the tool itself is absent.",
+          "cite": "D1 §1.3"
+        },
+        {
+          "option": 3,
+          "text": "Token budget has no bearing on whether the coordinator is permitted to call `Task` — this addresses a nonexistent constraint.",
+          "cite": "D1 §1.3"
+        }
+      ]
+    },
+    {
+      "g": 48,
+      "block": 3,
+      "blockLabel": "Structured Data Extraction",
+      "domain": "D4",
+      "section": "§4.7",
+      "kd": null,
+      "letterPlanned": "D",
+      "stem": "Since the pipeline moved to `tool_use` with a strict JSON schema, every extracted record parses cleanly and every field passes its type check. Auditors still occasionally find `years_of_experience` holding a plausible integer that turns out to be the applicant's age, copied from a birthdate line elsewhere in the resume rather than computed from listed job history. What is the most accurate way to interpret this?",
+      "options": [
+        "The schema must be under-constrained — tighten the `years_of_experience` field definition further.",
+        "`tool_use` is unreliable for this pipeline; revert to prompt-based JSON requests instead.",
+        "This is a syntax error the schema failed to catch and should be reported as a validation bug.",
+        "This is expected — `tool_use` eliminated syntax errors, but semantic errors like a value pulled from the wrong source line still require separate validation."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "Strict schemas via tool_use eliminate malformed JSON and wrong-typed fields, but do nothing for content that is schema-valid yet semantically wrong — that class needs business-rule validation and feedback, not schema tightening.",
+        "cite": "D4 §4.7"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "No schema constraint can verify a number came from the right source sentence — the field is a valid integer either way, so tightening the schema catches nothing here.",
+          "cite": "D4 §4.7"
+        },
+        {
+          "option": 1,
+          "text": "Reverting to prompt-based JSON would reintroduce the syntax-error class tool_use already eliminated, stacked on top of the still-unsolved semantic error.",
+          "cite": "D4 §4.7"
+        },
+        {
+          "option": 2,
+          "text": "A schema validator proves only structural validity; a wrong-but-plausible value passes type checking by definition, so this isn't a syntax failure.",
+          "cite": "D4 §4.7"
+        }
+      ]
+    },
+    {
+      "g": 49,
+      "block": 3,
+      "blockLabel": "Structured Data Extraction",
+      "domain": "D5",
+      "section": "§5.2",
+      "kd": 20,
+      "letterPlanned": "A",
+      "stem": "A weekly candidate-shortlist digest concatenates all 40 candidates' extracted profiles into one long prompt so a synthesis pass can highlight standout qualifications. It reliably surfaces details for the first and last several candidates, but consistently omits a rare, relevant certification held by a candidate in the middle — even though that candidate's own record correctly includes it. What is the most effective fix?",
+      "options": [
+        "Restructure the synthesis input so each candidate's extracted facts arrive as a discrete structured block rather than one long undifferentiated prompt.",
+        "Shorten the digest to only the top 15 candidates by resume length so the prompt fits comfortably.",
+        "Randomize the order candidates appear in each week's digest so no position is consistently favored.",
+        "Switch to a model with a larger context window so the full 40-candidate digest fits with room to spare."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "Structured, position-independent blocks per candidate reduce reliance on the model's attention pattern across one long undifferentiated input — the corpus's preferred fix alongside key-findings-first framing.",
+        "cite": "D5 §5.2; KD#20"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "Trimming to the top candidates by an unrelated proxy (resume length) risks dropping genuinely qualified candidates and doesn't fix the underlying attention pattern.",
+          "cite": "D5 §5.2"
+        },
+        {
+          "option": 2,
+          "text": "Rotating position doesn't fix the fundamental degraded-attention pattern in the middle of long inputs — it only moves which content lands there.",
+          "cite": "D5 §5.2; KD#20"
+        },
+        {
+          "option": 3,
+          "text": "A larger context window doesn't fix attention quality at a given position — more available tokens don't guarantee more consistent attention across them.",
+          "cite": "D5 §5.2"
+        }
+      ]
+    },
+    {
+      "g": 50,
+      "block": 3,
+      "blockLabel": "Structured Data Extraction",
+      "domain": "D3",
+      "section": "§3.1",
+      "kd": null,
+      "letterPlanned": "C",
+      "stem": "The pipeline's project-root CLAUDE.md defines formatting and normalization conventions every extraction session must follow. A subdirectory-level CLAUDE.md inside the validation module adds stricter numeric-precision rules specific to that module. An engineer assumes the subdirectory file replaces the root file's guidance whenever Claude works inside `validation/`. Is this assumption correct?",
+      "options": [
+        "Yes — directory-level `CLAUDE.md` always takes precedence over the project-root file for files in that directory.",
+        "No — only the most specific file loads; the root file is ignored once a directory-level file exists.",
+        "No — all discovered `CLAUDE.md` files concatenate into context; the subdirectory file adds to the root file's guidance, it doesn't override it.",
+        "It depends on file modification time — whichever CLAUDE.md was edited more recently takes precedence."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "CLAUDE.md files load as a concatenated set from root down to the working directory — every discovered file contributes; there is no documented override-precedence mechanism between levels.",
+        "cite": "D3 §3.1"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "There is no override-precedence mechanism between CLAUDE.md levels — this states the opposite of how concatenation actually works.",
+          "cite": "D3 §3.1"
+        },
+        {
+          "option": 1,
+          "text": "The root file is never dropped; it stays part of the concatenated context alongside every subdirectory file discovered along the path.",
+          "cite": "D3 §3.1"
+        },
+        {
+          "option": 3,
+          "text": "File modification time plays no role in CLAUDE.md loading — all discovered files load together regardless of edit history.",
+          "cite": "D3 §3.1"
+        }
+      ]
+    },
+    {
+      "g": 51,
+      "block": 3,
+      "blockLabel": "Structured Data Extraction",
+      "domain": "D3",
+      "section": "§3.6",
+      "kd": null,
+      "letterPlanned": "D",
+      "stem": "The team wants a dedup-and-merge step for duplicate resume submissions. Several valid architectural approaches exist — deduplicating at ingestion, at validation, or as a separate reconciliation pass — and the right fit depends on tradeoffs the team hasn't worked through. An engineer wants to start implementing the ingestion-time approach immediately. What is the most effective approach?",
+      "options": [
+        "Start direct execution on the ingestion-time approach; switch to planning mode only if it turns out to be harder than expected.",
+        "Implement all three approaches in parallel branches and compare results before choosing one.",
+        "Direct execution is appropriate here since a specific approach (ingestion-time) has already been named.",
+        "Use planning mode first — multiple valid approaches with real tradeoffs is exactly the case planning mode exists for, before committing to an implementation."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "Multiple viable approaches, real architectural tradeoffs, and no settled decision yet is the textbook case for planning mode — explore and present a plan before any side effects.",
+        "cite": "D3 §3.6"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Reactive switching from direct execution to planning after hitting difficulty is expensive — plan upfront when the task already shows the signs that call for it.",
+          "cite": "D3 §3.6"
+        },
+        {
+          "option": 1,
+          "text": "Building three parallel implementations before evaluating tradeoffs is expensive rework exactly planning mode is meant to avoid.",
+          "cite": "D3 §3.6"
+        },
+        {
+          "option": 2,
+          "text": "Naming one approach doesn't resolve the underlying tradeoffs; the choice among ingestion-time, validation-time, and reconciliation-pass still needs the exploration planning mode provides.",
+          "cite": "D3 §3.6"
+        }
+      ]
+    },
+    {
+      "g": 52,
+      "block": 3,
+      "blockLabel": "Structured Data Extraction",
+      "domain": "D1",
+      "section": "§1.6",
+      "kd": null,
+      "letterPlanned": "B",
+      "stem": "Asked to extract 'every credential the candidate holds,' the coordinator decomposes the task into subtasks covering only formal degrees. The parsing, validation, and enrichment subagents all complete their assigned subtasks correctly. The final candidate record never mentions the professional certifications, licenses, or continuing-education units documented elsewhere in the same application packet. What is the most likely root cause?",
+      "options": [
+        "The `parsing_agent`'s extraction accuracy on non-degree credential formats.",
+        "The coordinator's task decomposition was too narrow — it never assigned any subtask to cover non-degree credentials.",
+        "The validation subagent's schema didn't include a confidence field for uncertain matches.",
+        "The enrichment subagent's tool selection for credential lookups."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "Every subagent executed correctly on what it was assigned — the gap traces to the coordinator's own partitioning of the task, which never covered the missing credential types in the first place.",
+        "cite": "D1 §1.6"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "The parsing subagent performed correctly on its assigned subtask; it was never asked to look for non-degree credentials at all.",
+          "cite": "D1 §1.6"
+        },
+        {
+          "option": 2,
+          "text": "A missing confidence field wouldn't explain complete omission of an entire credential category — the subtask covering it was never created.",
+          "cite": "D1 §1.6"
+        },
+        {
+          "option": 3,
+          "text": "Tool selection inside the enrichment subagent is irrelevant when the coordinator never delegated a subtask covering these credentials to begin with.",
+          "cite": "D1 §1.6"
+        }
+      ]
+    },
+    {
+      "g": 53,
+      "block": 3,
+      "blockLabel": "Structured Data Extraction",
+      "domain": "D4",
+      "section": "§4.8",
+      "kd": null,
+      "letterPlanned": "A",
+      "stem": "The pipeline's extraction tool already enforces its JSON schema via `tool_use` — every response is schema-valid. An engineer argues that validating the extracted record again in application code, using a separate Pydantic model, is redundant now that the schema is enforced at generation time. Is this reasoning correct?",
+      "options": [
+        "No — `tool_use` enforces structure at generation time, but code-side validation still checks business rules like date ordering and cross-field consistency that no schema can express.",
+        "Yes — once a tool's input schema enforces required fields and types, a second validation pass in code adds no additional guarantee.",
+        "Yes — Pydantic validation only matters for legacy pipelines still using prompt-based JSON instead of `tool_use`.",
+        "No, but only because the Pydantic model should replace the tool schema entirely rather than run alongside it."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "Tool use enforces shape at generation time; code-side validation catches semantic and business-rule violations the schema has no way to express, plus provides defense-in-depth for downstream consumers.",
+        "cite": "D4 §4.8"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "This restates the misconception directly — schema enforcement and business-rule validation check different things, so the second pass isn't redundant.",
+          "cite": "D4 §4.8"
+        },
+        {
+          "option": 2,
+          "text": "The value of code-side validation doesn't depend on which output method produced the JSON — business rules still need checking regardless.",
+          "cite": "D4 §4.8"
+        },
+        {
+          "option": 3,
+          "text": "The two serve complementary roles — the tool schema constrains generation, the Pydantic layer validates meaning; replacing one with the other loses the piece it doesn't cover.",
+          "cite": "D4 §4.8"
+        }
+      ]
+    },
+    {
+      "g": 54,
+      "block": 3,
+      "blockLabel": "Structured Data Extraction",
+      "domain": "D4",
+      "section": "§4.9",
+      "kd": null,
+      "letterPlanned": "C",
+      "stem": "Across thousands of retry-with-feedback cycles in the extraction pipeline, the team wants to know which recurring source-document construct — a multi-column resume layout, a non-standard date abbreviation, a scanned image-only PDF — drives most first-pass validation failures, so they can fix the prompt or schema at the source instead of just retrying. What should they add?",
+      "options": [
+        "A free-text `retry_reason` field the reviewing engineer fills in by hand after each failed attempt.",
+        "A fixed cap of two retries per document to reduce wasted token spend.",
+        "A `detected_pattern` field on each extraction, identifying which source construct triggered the failure, so failures can be aggregated and analyzed by pattern.",
+        "An automatic escalation to human review after the first failed retry, bypassing the loop entirely."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "Tracking which construct triggered each failure in a structured field lets the team aggregate across retries and identify systematic prompt or schema weaknesses, rather than treating each failure as isolated.",
+        "cite": "D4 §4.9"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Free-text notes filled in by hand don't aggregate — they don't answer which pattern drives most failures at scale the way a structured field does.",
+          "cite": "D4 §4.9"
+        },
+        {
+          "option": 1,
+          "text": "Lowering the retry cap doesn't surface which construct is causing failures — it only changes how many attempts each document gets.",
+          "cite": "D4 §4.9"
+        },
+        {
+          "option": 3,
+          "text": "Escalating everything after one retry doesn't identify the recurring pattern either — it routes around the diagnostic question instead of answering it.",
+          "cite": "D4 §4.9"
+        }
+      ]
+    },
+    {
+      "g": 55,
+      "block": 3,
+      "blockLabel": "Structured Data Extraction",
+      "domain": "D5",
+      "section": "§5.3",
+      "kd": null,
+      "letterPlanned": "D",
+      "stem": "A recruiter's working session correcting a batch of parsed candidate records reaches 65,000 tokens. It holds a counter-offer salary figure stated verbally, a start date reached after negotiation, tangents comparing compensation benchmarks across unrelated roles, and the last few exchanges finalizing the shortlist. Which strategy cuts tokens while keeping the session useful?",
+      "options": [
+        "Summarize the entire session history into a single condensed paragraph.",
+        "Keep only the most recent 10,000 tokens and discard everything earlier.",
+        "Increase the context window so nothing needs to be trimmed.",
+        "Extract the `desired_salary` figure and `start_date` into a compact structured block, summarize the benchmarking tangents, and keep the most recent exchanges verbatim."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "The hybrid approach preserves precise transactional facts verbatim in a structured block, compresses lower-density discussion, and keeps recent turns for conversational coherence — pure summarization risks losing exact figures.",
+        "cite": "D5 §5.3"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Full summarization loses precision on exactly the figures that matter most — a counter-offer was discussed isn't the same as the actual number.",
+          "cite": "D5 §5.3"
+        },
+        {
+          "option": 1,
+          "text": "A pure sliding window can drop the salary figure or start date if either was mentioned earlier than the retained window.",
+          "cite": "D5 §5.3"
+        },
+        {
+          "option": 2,
+          "text": "A larger window delays the problem without solving it, and doesn't address the precision loss pure summarization would still cause once the window fills again.",
+          "cite": "D5 §5.3"
+        }
+      ]
+    },
+    {
+      "g": 56,
+      "block": 3,
+      "blockLabel": "Structured Data Extraction",
+      "domain": "D1",
+      "section": "§1.8",
+      "kd": null,
+      "letterPlanned": "B",
+      "stem": "The enrichment pass has surfaced a licensing-verification gap on 12 candidate records — the source documents that would resolve it are available and simply weren't queried during the first extraction pass. An engineer suggests shipping the batch now with a 'verification pending' note on those records instead of re-running extraction against the available source. What should the coordinator do instead?",
+      "options": [
+        "Ship with the caveat noted, since coverage annotations exist precisely for situations like this.",
+        "Re-delegate a targeted extraction query against the available source and re-invoke enrichment before shipping.",
+        "Continue re-delegating indefinitely on every future gap until every record hits 100% coverage.",
+        "Have the `enrichment_agent` query the licensing source itself, without routing back through the coordinator."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "The gap is recoverable — the source is available and simply wasn't queried — so the coordinator's refinement loop should re-delegate a targeted query and re-invoke, not settle for a caveat.",
+        "cite": "D1 §1.8"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Coverage annotation is for gaps that genuinely cannot be resolved, not a substitute for the refinement loop when re-delegation is still available.",
+          "cite": "D1 §1.8"
+        },
+        {
+          "option": 2,
+          "text": "Looping indefinitely without a sufficiency criterion is also wrong — the coordinator needs a defined stopping point, not open-ended re-delegation as the answer to every gap.",
+          "cite": "D1 §1.8"
+        },
+        {
+          "option": 3,
+          "text": "Having the enrichment subagent independently query sources it wasn't scoped for breaks separation of responsibilities and least-privilege tooling.",
+          "cite": "D1 §1.8"
+        }
+      ]
+    },
+    {
+      "g": 57,
+      "block": 3,
+      "blockLabel": "Structured Data Extraction",
+      "domain": "D4",
+      "section": "§4.2",
+      "kd": null,
+      "letterPlanned": "C",
+      "stem": "A new schema field, `duplicate_certification_flags`, requires comparing each listed certification against every other one to catch near-duplicates — up to a dozen comparisons per candidate. Prompted with only the field name, the model misses a third of true duplicates once a resume lists more than six certifications. Which prompting addition most reliably improves accuracy?",
+      "options": [
+        "Lower the temperature setting to reduce variability between runs.",
+        "Add three or four few-shot examples of clearly non-duplicate certification pairs.",
+        "Add a step-by-step reasoning cue instructing the model to compare each certification pair before deciding.",
+        "Split the field into two separate schema fields to simplify the comparison."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "Comparison across N items is one of the documented triggers for a reasoning cue — instructing step-by-step comparison improves accuracy on this kind of multi-item task.",
+        "cite": "D4 §4.2"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Temperature controls output variability, not the model's ability to systematically compare many items against each other.",
+          "cite": "D4 §4.2"
+        },
+        {
+          "option": 1,
+          "text": "Non-duplicate examples don't target the actual failure mode — missed true duplicates — the way a reasoning cue for the comparison task itself would.",
+          "cite": "D4 §4.2"
+        },
+        {
+          "option": 3,
+          "text": "Splitting the field doesn't reduce the number of pairwise comparisons the model still needs to reason through correctly.",
+          "cite": "D4 §4.2"
+        }
+      ]
+    },
+    {
+      "g": 58,
+      "block": 3,
+      "blockLabel": "Structured Data Extraction",
+      "domain": "D5",
+      "section": "§5.5",
+      "kd": null,
+      "letterPlanned": "A",
+      "stem": "Each `verify_reference` call in the enrichment step returns 25+ fields — a contact's organizational history, past call logs, other candidates they've referenced — when only `reference_name`, `relationship`, and `confirmation_status` matter for the record. On long multi-candidate sessions this bulk accumulates turn after turn, and the model starts confusing which reference belongs to which candidate. What is the most effective fix?",
+      "options": [
+        "Add a `PostToolUse` hook that trims `verify_reference` results to only the relevant fields before they enter context.",
+        "Add a system-prompt instruction telling the model to ignore the irrelevant fields in each result.",
+        "Summarize the whole session more aggressively once it grows long.",
+        "Switch to a larger-context model so the extra fields stop causing confusion."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "Trimming tool outputs to relevant fields before they enter context, via a PostToolUse hook, conserves context and prevents the model from being distracted by irrelevant fields turn after turn.",
+        "cite": "D5 §5.5"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "Telling the model to ignore fields in the system prompt doesn't remove the tokens from context — they're still consumed and still available to distract attention.",
+          "cite": "D5 §5.5"
+        },
+        {
+          "option": 2,
+          "text": "Aggressive summarization treats the symptom while the verbose results keep flooding in on every subsequent call.",
+          "cite": "D5 §5.5"
+        },
+        {
+          "option": 3,
+          "text": "A larger context window raises cost and doesn't address the underlying noise problem — the irrelevant fields are still there, just with more room around them.",
+          "cite": "D5 §5.5"
+        }
+      ]
+    },
+    {
+      "g": 59,
+      "block": 3,
+      "blockLabel": "Structured Data Extraction",
+      "domain": "D4",
+      "section": "§4.19",
+      "kd": 19,
+      "letterPlanned": "D",
+      "stem": "A hiring manager submits a request that reads only 'just tell me if this candidate is qualified,' with no target schema or list of criteria specified. Rather than sending back several clarifying questions about which qualifications matter before doing anything, what should the pipeline do?",
+      "options": [
+        "Ask all the clarifying questions in a single compound message so at least it's only one round-trip.",
+        "Use a hidden default set of criteria and return an answer without mentioning what was assumed.",
+        "Decline to process the request until the hiring manager provides an explicit schema and criteria list.",
+        "State a reasonable default field set — education, experience, certifications, and skills matched to the role — and proceed, inviting corrections."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "Proceeding with stated, reasonable assumptions and inviting corrections avoids the abandonment heavy upfront questioning causes, while keeping the assumption visible for the requester to correct.",
+        "cite": "D4 §4.19; KD#19"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Compounding several questions into one message still demands upfront effort from the requester before any value is delivered.",
+          "cite": "D4 §4.19; KD#19"
+        },
+        {
+          "option": 1,
+          "text": "Hidden defaults leave the requester unaware of what was assumed, so they can't tell whether the answer matches their actual intent.",
+          "cite": "D4 §4.19"
+        },
+        {
+          "option": 2,
+          "text": "Blocking entirely on a fully specified schema is the same abandonment-inducing pattern as heavy upfront questioning, just framed as a refusal instead of a question list.",
+          "cite": "D4 §4.19"
+        }
+      ]
+    },
+    {
+      "g": 60,
+      "block": 3,
+      "blockLabel": "Structured Data Extraction",
+      "domain": "D5",
+      "section": "§5.6",
+      "kd": null,
+      "letterPlanned": "B",
+      "stem": "Before a schema migration, the team must survey a large archive of previously processed candidate records to catalog which legacy field-naming conventions are still in use. Running this survey in the coordinator's main session returns thousands of per-record summaries and nearly fills its context before the migration-design conversation starts. What is the most effective way to proceed?",
+      "options": [
+        "Run `/compact` partway through the survey to free up room before continuing.",
+        "Use an Explore subagent to run the survey in isolation; it returns a concise summary to the main session.",
+        "Split the survey across several sessions using `--continue` and merge the findings manually afterward.",
+        "Reduce the survey to a random sample of records instead of the full archive."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "Isolating verbose discovery in an Explore subagent keeps the bulk out of the main conversation; only a concise summary returns, preserving context for the design phase that follows.",
+        "cite": "D5 §5.6"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Running /compact mid-survey loses precision the migration design may still need, and doesn't prevent the fill-up — it only reacts to it after the fact.",
+          "cite": "D5 §5.6"
+        },
+        {
+          "option": 2,
+          "text": "Splitting across sessions with manual merging adds coordination overhead and consistency risk that subagent isolation avoids entirely.",
+          "cite": "D5 §5.6"
+        },
+        {
+          "option": 3,
+          "text": "Sampling risks missing legacy conventions absent from the sample entirely — a different problem, and still doesn't address exhausting context in the main session.",
+          "cite": "D5 §5.6"
+        }
+      ]
+    }
+  ]
+}

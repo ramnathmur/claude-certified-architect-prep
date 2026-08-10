@@ -1,0 +1,382 @@
+{
+  "label": "Claude Code for Continuous Integration",
+  "narrative": "A generic engineering team runs Claude Code inside its CI/CD pipeline to power automated code review, PR feedback, and test generation. Across this block, the pipeline matures from a bare, ad hoc invocation into a properly scoped system: non-interactive execution, schema-guaranteed structured findings, skill-scoped tooling, workload-appropriate use of the Batches API, disciplined CLAUDE.md/rules/Skills organization, careful session management across long-running investigations, and multi-instance review architecture that catches what same-session self-review misses.",
+  "letterPlan": ["A","B","C","D","A","B","C","D","A","B","D","C","A","D","C"],
+  "questions": [
+    {
+      "g": 31,
+      "block": 2,
+      "blockLabel": "Claude Code for Continuous Integration",
+      "domain": "D1",
+      "section": "§1.15",
+      "kd": null,
+      "stem": "Your CI coordinator runs three independent analysis subagents on every PR — correctness, style, and dependency-risk — each spawned via a separate `Task` call. Today the coordinator emits one `Task` call, waits for its subagent to finish, then emits the next `Task` call in a following response, tripling wall-clock time versus running all three together. What is the most effective fix?",
+      "options": [
+        "Emit all three `Task` calls together in a single coordinator response so the subagents run in parallel, rather than spreading them across separate turns.",
+        "Increase the CI runner's parallelism setting so multiple pipeline jobs can execute at once, leaving the coordinator's own sequential calling pattern unchanged.",
+        "Merge the three subagents into one combined agent that performs correctness, style, and dependency-risk checks itself, avoiding delegation entirely.",
+        "Keep the three sequential Task calls but reduce each subagent's scope so individual calls complete faster."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "Multiple Task calls issued together in one coordinator response execute in parallel; spreading them across separate responses forces them to run sequentially, exactly the tripled wall-clock time observed here.",
+        "cite": "D1 §1.15"
+      },
+      "whyWrong": [
+        {"option": 1, "text": "Runner-level parallelism affects other CI jobs, not this coordinator's own sequential Task-calling pattern — the fix has to change how and when the Task calls are emitted.", "cite": "D1 §1.15"},
+        {"option": 2, "text": "Merging distinct specialist subagents into one loses the benefit of parallel, independently-scoped delegation and doesn't address the actual sequencing defect.", "cite": "D1 §1.8"},
+        {"option": 3, "text": "Shrinking each subagent's scope reduces per-call latency, but the three calls are still emitted across separate turns, so they still run one after another.", "cite": "D1 §1.15"}
+      ]
+    },
+    {
+      "g": 32,
+      "block": 2,
+      "blockLabel": "Claude Code for Continuous Integration",
+      "domain": "D3",
+      "section": "§3.3",
+      "kd": null,
+      "stem": "After an incident where a `/apply-autofix` skill's Bash access let it run an unintended shell script mid-fix, the team is scoping a new `/format-pr` skill that should only ever read and edit files during PR formatting cleanup — never execute shell commands. Which SKILL.md frontmatter change most directly enforces this?",
+      "options": [
+        "Add a `context: fork` entry so the skill's actions run in an isolated subagent, away from the main session.",
+        "Set `allowed-tools: [Read, Edit]` in the skill's frontmatter so its execution is scoped to those two tools.",
+        "Add a hint describing the expected input so engineers invoke the skill correctly.",
+        "Move the skill to the older commands-style location for a stricter execution model."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "`allowed-tools` in SKILL.md frontmatter is the mechanism for scoping which tools a skill may use during execution — restricting it to `[Read, Edit]` keeps `/format-pr` from ever reaching Bash.",
+        "cite": "D3 §3.3"
+      },
+      "whyWrong": [
+        {"option": 0, "text": "`context: fork` isolates a skill's output/context from the main session; it does not restrict which tools the skill is permitted to call.", "cite": "D3 §3.3"},
+        {"option": 2, "text": "`argument-hint` only affects what's displayed when invoking the command — it has no effect on tool access.", "cite": "D3 §3.3"},
+        {"option": 3, "text": "`.claude/commands/` and `.claude/skills/` are functionally unified naming locations for the same `/name` mechanism; moving between them doesn't add a tool-scoping restriction.", "cite": "D3 §3.4"}
+      ]
+    },
+    {
+      "g": 33,
+      "block": 2,
+      "blockLabel": "Claude Code for Continuous Integration",
+      "domain": "D3",
+      "section": "§3.8",
+      "kd": 15,
+      "stem": "A new CI step must run Claude Code fully unattended to review each pull request; no one is available to answer interactive prompts. An engineer, unfamiliar with the CLI, sets `CLAUDE_HEADLESS=true` in the pipeline's environment config, expecting it to suppress interactive prompts. The step still hangs waiting for input on every run. What actually fixes this?",
+      "options": [
+        "Increase the CI runner's timeout so the step has more time to wait for `CLAUDE_HEADLESS=true` to take effect.",
+        "Add `--batch` to the invocation alongside the existing environment variable.",
+        "Invoke Claude Code with `-p` (or `--print`), which processes the prompt, prints to stdout, and exits without waiting for interactive input.",
+        "Pipe `stdin < /dev/null` into the invocation while leaving everything else unchanged."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "`-p`/`--print` is the documented flag for non-interactive Claude Code — it processes the prompt, prints the result, and exits; without it, Claude Code waits for interactive input and a pipeline hangs.",
+        "cite": "D3 §3.8; KD#15"
+      },
+      "whyWrong": [
+        {"option": 0, "text": "`CLAUDE_HEADLESS=true` is not a real Claude Code setting — no amount of waiting makes a nonexistent environment variable take effect.", "cite": "D3 §3.8; KD#15"},
+        {"option": 1, "text": "`--batch` is not a documented Claude Code flag.", "cite": "D3 §3.8; KD#15"},
+        {"option": 3, "text": "Redirecting stdin from `/dev/null` is an undocumented Unix workaround, not the sanctioned approach — `-p` is.", "cite": "D3 §3.8; KD#15"}
+      ]
+    },
+    {
+      "g": 34,
+      "block": 2,
+      "blockLabel": "Claude Code for Continuous Integration",
+      "domain": "D3",
+      "section": "§3.9",
+      "kd": null,
+      "stem": "Your CI pipeline's merge gate calls `claude -p` and needs a single verdict object — a `pass_fail` flag plus a list of blocking file paths — to decide whether the queue unblocks a PR. Prose responses vary in wording enough that the gate script's parser fails on roughly one run in twenty. Which configuration most reliably guarantees parseable output?",
+      "options": [
+        "Add a line to CLAUDE.md instructing Claude to always respond with the verdict object in JSON.",
+        "Add a formatting instruction directly in the prompt describing the exact JSON shape expected.",
+        "Increase `max_tokens` so the response always has enough room to include a complete JSON block.",
+        "Invoke with `--output-format json` and `--json-schema` to enforce the verdict object's exact schema."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "`--output-format json` together with `--json-schema` forces schema-conformant JSON the gate script can reliably parse — a guarantee prompt-based or CLAUDE.md-based instructions can't provide.",
+        "cite": "D3 §3.9"
+      },
+      "whyWrong": [
+        {"option": 0, "text": "A CLAUDE.md instruction to respond in JSON is not enforced — the model can still return prose, exactly the intermittent failure already being seen.", "cite": "D3 §3.9"},
+        {"option": 1, "text": "A prompt-level formatting instruction is compliance the model may or may not follow on any given run — it doesn't remove the underlying variability.", "cite": "D3 §3.9"},
+        {"option": 2, "text": "A token-budget increase addresses truncation, not format compliance — the parser is failing on wording variance, not on cut-off responses.", "cite": "D3 §3.9"}
+      ]
+    },
+    {
+      "g": 35,
+      "block": 2,
+      "blockLabel": "Claude Code for Continuous Integration",
+      "domain": "D3",
+      "section": "§3.10",
+      "kd": null,
+      "stem": "Finance asks your team to move the CI pipeline's pre-merge review — the check a PR cannot merge without, while the author waits on the result — onto the Message Batches API to capture its 50% cost discount. What should the team do?",
+      "options": [
+        "Keep it synchronous — the Batches API has no latency SLA and can take up to 24 hours, unacceptable for a check the author is actively blocked on.",
+        "Move it to batch; the 50% savings apply regardless of what kind of workload it is.",
+        "Move it to batch, then poll frequently, since testing shows batches usually return within an hour.",
+        "Split the review into two parallel batch requests to halve the worst-case latency."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "Batch is for non-blocking, latency-tolerant work; a pre-merge check the author is waiting on must match its API to the latency requirement and stay synchronous, since batch carries no latency SLA.",
+        "cite": "D3 §3.10"
+      },
+      "whyWrong": [
+        {"option": 1, "text": "Cost savings don't override the latency mismatch — a blocking check cannot tolerate an up-to-24-hour, no-SLA response time regardless of discount.", "cite": "D3 §3.10"},
+        {"option": 2, "text": "Typical fast turnaround in testing doesn't remove the lack of an SLA — the one run that takes the full 24 hours defeats the point of a pre-merge gate.", "cite": "D3 §3.10"},
+        {"option": 3, "text": "Splitting into more batch requests doesn't change the API's own processing-window guarantee — each request still carries the same no-SLA risk.", "cite": "D3 §3.10"}
+      ]
+    },
+    {
+      "g": 36,
+      "block": 2,
+      "blockLabel": "Claude Code for Continuous Integration",
+      "domain": "D3",
+      "section": "§3.11",
+      "kd": null,
+      "stem": "Your CI pipeline's CLAUDE.md holds three kinds of guidance: formatting conventions every review must follow, a security-review checklist invoked only during periodic audits, and a stricter validation rule that should apply automatically whenever Claude Code touches files under `payments/`. An engineer proposes bundling the checklist and the payments rule into one new Skill, leaving only formatting in CLAUDE.md. How should the team evaluate this?",
+      "options": [
+        "Approve the proposal — bundling both non-universal items into one Skill is a reasonable consolidation.",
+        "Split three ways instead: keep formatting in CLAUDE.md, move the security checklist to a Skill invoked on demand, and move the `payments/` rule to `.claude/rules/` with a path glob so it loads automatically.",
+        "Move all three, including the universal formatting conventions, into the same new Skill.",
+        "Reject the proposal and leave all three exactly where they are in CLAUDE.md."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "Universal, always-relevant content stays in CLAUDE.md; workflow-specific guidance invoked on demand (the security checklist) belongs in a Skill; conventions that should load automatically based on file location (the `payments/` rule) belong in `.claude/rules/` with a glob — a Skill only loads on explicit invocation, so it can't provide that automatic path-triggered behavior.",
+        "cite": "D3 §3.11"
+      },
+      "whyWrong": [
+        {"option": 0, "text": "The `payments/` rule needs to load automatically whenever matching files are touched; a Skill only runs when explicitly invoked, so bundling it in loses that automatic trigger.", "cite": "D3 §3.2; §3.11"},
+        {"option": 2, "text": "Moving the universal formatting conventions into a Skill means they no longer load by default — every session would need an explicit invocation to get baseline conventions.", "cite": "D3 §3.11; §3.3"},
+        {"option": 3, "text": "Leaving all three in CLAUDE.md loads the security checklist and the payments-specific rule into every session regardless of relevance — the exact 'wall of rules' problem this section addresses.", "cite": "D3 §3.11"}
+      ]
+    },
+    {
+      "g": 37,
+      "block": 2,
+      "blockLabel": "Claude Code for Continuous Integration",
+      "domain": "D3",
+      "section": "§3.12",
+      "kd": null,
+      "stem": "A named Claude Code session spent a full day mapping how the CI pipeline's retry-and-backoff logic works, ahead of a planned refactor. Before the team picks the work back up, an unrelated migration this week rewrote that retry logic entirely. What is the most effective way to continue?",
+      "options": [
+        "`--resume` the named session and continue directly from where the mapping left off.",
+        "`fork_session` from the named session to branch into the refactor work.",
+        "Start a fresh session, briefed with a short summary of the prior mapping's key findings, rather than resuming the named session.",
+        "Resume the named session and run a context-compaction pass so it re-reads the current state of the retry logic."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "When tool results are stale — here, the entire retry-and-backoff logic the session mapped no longer describes the actual code — starting fresh with a short summary of prior findings beats resuming a session anchored to now-incorrect tool results.",
+        "cite": "D3 §3.12"
+      },
+      "whyWrong": [
+        {"option": 0, "text": "Resuming carries forward the session's stale tool results from before the migration rewrote the retry logic — the session doesn't know its own findings are now wrong.", "cite": "D3 §3.12"},
+        {"option": 1, "text": "`fork_session` inherits the same context up to the branch point, so a fork of this session still starts from the same stale mapping; it's for comparing two approaches from a shared valid baseline, not for recovering from staleness.", "cite": "D3 §3.12"},
+        {"option": 3, "text": "`/compact` compresses existing context — it doesn't re-execute any exploration or refresh stale tool results with current file contents.", "cite": "D3 §3.12"}
+      ]
+    },
+    {
+      "g": 38,
+      "block": 2,
+      "blockLabel": "Claude Code for Continuous Integration",
+      "domain": "D4",
+      "section": "§4.6",
+      "kd": null,
+      "stem": "Your CI pipeline's test-generation step defines a separate test-writing tool per language — `write_python_test`, `write_js_test`, `write_go_test` — each shaped to that framework's assertion style. A PR's diff includes template files whose eventual language isn't determined by file extension alone, and the step must still emit one schema-valid test definition per changed file, never a prose explanation. Which `tool_choice` configuration is most effective?",
+      "options": [
+        "`{\"type\": \"tool\", \"name\": \"write_python_test\"}`, forcing the Python tool on every call.",
+        "`{\"type\": \"auto\"}`, letting the model decide whether to call a tool or explain in text.",
+        "Leave `tool_choice` at its default and add a prompt instruction: 'always call the matching test-writing tool for this file's language.'",
+        "`{\"type\": \"any\"}`, requiring the model to call some test-writing tool while letting it pick the one that fits the file's actual language."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "`{\"type\": \"any\"}` guarantees a tool call happens on every file — always structured output — while still letting the model choose whichever language-specific tool actually fits, exactly the case where the correct type isn't known ahead of time.",
+        "cite": "D4 §4.6"
+      },
+      "whyWrong": [
+        {"option": 0, "text": "Forcing `write_python_test` specifically guarantees structure only for Python files — it produces a wrong or failing call for every JS or Go file in the diff.", "cite": "D4 §4.6"},
+        {"option": 1, "text": "`{\"type\": \"auto\"}` leaves the model free to explain in prose instead of calling any tool — no structure guarantee at all.", "cite": "D4 §4.6"},
+        {"option": 2, "text": "A prompt instruction to 'always call the matching tool' is probabilistic compliance, not a guarantee — the same class of failure `tool_choice` exists to eliminate.", "cite": "D4 §4.6"}
+      ]
+    },
+    {
+      "g": 39,
+      "block": 2,
+      "blockLabel": "Claude Code for Continuous Integration",
+      "domain": "D4",
+      "section": "§4.1",
+      "kd": null,
+      "stem": "The team adds few-shot examples teaching the review bot which findings should block a merge outright versus post as a non-blocking comment. The first draft has fifteen examples: ten obvious blocking cases (a hardcoded credential) and five obvious non-blocking ones (a naming nit). The bot still guesses inconsistently on genuinely borderline cases — a caught-but-unhandled edge case, a deprecated-but-functional call. What is the most effective revision?",
+      "options": [
+        "Replace the set with 4-6 examples targeted specifically at the genuinely ambiguous cases, each with a rationale for the call made.",
+        "Add ten more obvious blocking examples so the ratio of blocking to non-blocking examples better reflects real traffic.",
+        "Replace the examples with a more detailed written rule distinguishing blocking from non-blocking findings.",
+        "Have the bot self-rate its confidence in each finding and auto-block anything below a fixed threshold."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "Few-shot examples are most effective when targeted at exactly the ambiguous cases where the model gets it wrong — a handful of well-chosen borderline examples outperforms many examples of clear-cut cases the model already handles correctly.",
+        "cite": "D4 §4.1"
+      },
+      "whyWrong": [
+        {"option": 1, "text": "More clear-cut examples don't teach the boundary — the bot is already correct on obvious cases; the failure is specifically on borderline ones.", "cite": "D4 §4.1"},
+        {"option": 2, "text": "Written instructions are already what's failing to draw a consistent boundary; more prose doesn't fix what examples are better suited to demonstrate.", "cite": "D4 §4.1; KD#16"},
+        {"option": 3, "text": "Model self-rated confidence is a poorly-calibrated proxy for actual difficulty — a confidently-wrong call on a borderline case is exactly the failure mode being reported.", "cite": "D4 §4.15; D5 §5.8"}
+      ]
+    },
+    {
+      "g": 40,
+      "block": 2,
+      "blockLabel": "Claude Code for Continuous Integration",
+      "domain": "D4",
+      "section": "§4.3",
+      "kd": null,
+      "stem": "An engineer wants the review bot to respond in a fixed JSON-only format, with no prose preamble, for the life of the CI run. They set an environment variable, RESPONSE_FORMAT=json, in the pipeline's runner config, expecting the harness to relay it to Claude before each call. Responses keep mixing in prose anyway. Where should this constraint actually be defined?",
+      "options": [
+        "In the first user message of each run, since that's where the model reads its immediate instructions.",
+        "In the system prompt, where persistent behavioral and response-format constraints belong for the entire conversation.",
+        "In the first assistant message, prefilled to demonstrate the expected JSON-only style.",
+        "The environment variable approach is correct — the harness just needs to be fixed to actually forward it."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "The system prompt is the correct location for persistent behavioral rules and response-format requirements that should hold for an entire conversation.",
+        "cite": "D4 §4.3"
+      },
+      "whyWrong": [
+        {"option": 0, "text": "A constraint stated only in the first user message can lose authority as later messages accumulate — it's not the durable, per-request-included instruction the system prompt provides.", "cite": "D4 §4.3"},
+        {"option": 2, "text": "A prefilled first assistant message the model 'said' itself doesn't bind later responses — the model can still deviate from its own earlier statement.", "cite": "D4 §4.3"},
+        {"option": 3, "text": "Environment variables have no effect on model behavior at all — the API has no mechanism to read pipeline env vars into a request; the constraint has to be an actual message field.", "cite": "D4 §4.3"}
+      ]
+    },
+    {
+      "g": 41,
+      "block": 2,
+      "blockLabel": "Claude Code for Continuous Integration",
+      "domain": "D4",
+      "section": "§4.4",
+      "kd": null,
+      "stem": "Mid-run, a critical CVE advisory is published for a dependency the pipeline is currently reviewing a PR against. The team wants the review bot's very next response, still in the same run, to factor in this new advisory without waiting for the pipeline's next full invocation. What is the most effective way to inject this?",
+      "options": [
+        "Rewrite the system prompt to mention the new advisory, then continue the run.",
+        "Send a separate, synthetic user-role message announcing the advisory before the next real turn.",
+        "Wait for the next scheduled pipeline invocation, when the advisory can be included in the initial prompt.",
+        "Prefix the advisory details onto the next user message the bot processes, so the update reaches it as real-time context."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "Prefilling isn't limited to assistant-message continuation — prefixing incoming real-time context, like an advisory update, onto the next message is the documented pattern for injecting mid-conversation updates without restarting anything.",
+        "cite": "D4 §4.4"
+      },
+      "whyWrong": [
+        {"option": 0, "text": "Rewriting the system prompt mid-run typically requires rebuilding the session/request setup — a heavier, less direct change than prefixing the update onto the next message.", "cite": "D4 §4.4"},
+        {"option": 1, "text": "Sending a separate synthetic user message breaks the natural flow of the review conversation rather than attaching the update to real, ongoing work.", "cite": "D4 §4.4"},
+        {"option": 2, "text": "Waiting loses the point of a mid-run update — the goal is factoring in the advisory before this run finishes, not on the next scheduled pass.", "cite": "D4 §4.4"}
+      ]
+    },
+    {
+      "g": 42,
+      "block": 2,
+      "blockLabel": "Claude Code for Continuous Integration",
+      "domain": "D4",
+      "section": "§4.12",
+      "kd": null,
+      "stem": "The nightly dependency-audit job reviews 30 independent package manifests across the org's services in a single pass. Comments are detailed for the first several manifests, then shrink to one-line 'no issues' notes for the rest — including one manifest with a real license-incompatible dependency the pass missed entirely. What should the team do?",
+      "options": [
+        "Switch to a model with a larger context window so all 30 manifests fit more comfortably.",
+        "Reduce the batch to 15 manifests per nightly run to lighten each pass's load.",
+        "Restructure into a focused per-manifest pass plus a separate integration pass checking for cross-service inconsistencies.",
+        "Instruct the job to 'review every manifest with equal thoroughness' in the prompt."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "Attention dilution across many items in one pass — not context-window size — causes shallow, inconsistent coverage; per-item focused passes plus a separate integration pass restore consistent depth.",
+        "cite": "D4 §4.12"
+      },
+      "whyWrong": [
+        {"option": 0, "text": "A larger context window doesn't fix attention quality — more available tokens doesn't mean consistent attention per manifest.", "cite": "D4 §4.12"},
+        {"option": 1, "text": "Shrinking the batch size may help somewhat but doesn't structurally fix the root cause — dilution reappears once the per-run count is large enough again.", "cite": "D4 §4.12"},
+        {"option": 3, "text": "A prompt instruction to be equally thorough is exactly the kind of proportionate-sounding fix that doesn't survive contact with many items in one pass — probabilistic guidance, not a structural fix.", "cite": "D4 §4.12"}
+      ]
+    },
+    {
+      "g": 43,
+      "block": 2,
+      "blockLabel": "Claude Code for Continuous Integration",
+      "domain": "D4",
+      "section": "§4.13",
+      "kd": null,
+      "stem": "The team routes the independent second-instance reviewer's findings automatically: any finding it flags immediately blocks the PR. Some flagged issues are genuinely uncertain edge cases a human would want to weigh in on, while others are clear-cut. What change lets downstream routing distinguish these without adding a third review pass?",
+      "options": [
+        "Have the independent reviewer self-report a confidence score alongside each finding, so high-confidence findings auto-block and low-confidence ones route to a human.",
+        "Escalate every finding from the independent reviewer to a human, regardless of how clear-cut it looks.",
+        "Average the confidence of all findings on a PR into a single PR-level score.",
+        "Add a second same-conversation review pass to double-check only the uncertain-looking findings."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "Confidence-calibrated routing — the reviewing instance self-reporting confidence per finding — lets downstream automation auto-act on high-confidence findings while routing low-confidence ones to a human, without adding another pass.",
+        "cite": "D4 §4.13"
+      },
+      "whyWrong": [
+        {"option": 1, "text": "Escalating everything defeats the purpose of automating the clear-cut cases and doesn't use the distinction the team is asking for.", "cite": "D4 §4.13"},
+        {"option": 2, "text": "A single averaged PR-level score loses the per-finding granularity needed to route individual findings differently.", "cite": "D4 §4.13"},
+        {"option": 3, "text": "A second pass in the same conversation still carries the first pass's own reasoning in context — it isn't independent scrutiny, and it's the extra pass the team is trying to avoid.", "cite": "D4 §4.13"}
+      ]
+    },
+    {
+      "g": 44,
+      "block": 2,
+      "blockLabel": "Claude Code for Continuous Integration",
+      "domain": "D5",
+      "section": "§5.1",
+      "kd": 25,
+      "stem": "Each commit on an open PR triggers a fresh `claude -p` invocation to re-review the changed files. A developer replies inline on one finding, 'intentional, ignore this,' then pushes a follow-up commit. The next invocation re-flags the identical finding, with no memory of the developer's reply. An engineer proposes adding a `session_id` so the CLI can look up the earlier exchange itself. Is this the correct diagnosis?",
+      "options": [
+        "Yes — a `session_id` parameter is exactly the missing piece; without it the CLI has nowhere to store the exchange.",
+        "No — the pipeline needs a vector database wired in to recall the developer's prior replies.",
+        "No — the run has hit a context-window limit from accumulated PR history, dropping the earlier exchange.",
+        "No — each `-p` invocation is a separate, stateless call with no memory of prior runs; the harness must explicitly pass the developer's reply into the new prompt."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "The API is fully stateless — every call is independent with no server-side memory. Each fresh `-p` invocation only 'remembers' prior context if the harness explicitly includes it, here the developer's reply, in the new request.",
+        "cite": "D5 §5.1"
+      },
+      "whyWrong": [
+        {"option": 0, "text": "No such parameter exists; the API has no session-lookup mechanism — this is the exact fabricated-parameter misconception the corpus documents.", "cite": "D5 §5.1; KD#25"},
+        {"option": 1, "text": "A vector database is for retrieval over long, sprawling histories, not for basic run-to-run memory of one recent reply — a much smaller, simpler problem.", "cite": "D5 §5.1; KD#25"},
+        {"option": 2, "text": "A single developer reply and one follow-up commit is nowhere near a context-window limit — the invocation is stateless from the start, not overflowing.", "cite": "D5 §5.1"}
+      ]
+    },
+    {
+      "g": 45,
+      "block": 2,
+      "blockLabel": "Claude Code for Continuous Integration",
+      "domain": "D5",
+      "section": "§5.7",
+      "kd": null,
+      "stem": "Over the past year, hundreds of independent CI review sessions have each analyzed a different PR in isolation, with no shared memory between runs. A security lead wants to know whether a specific unsafe-deserialization pattern has ever been flagged before, across any of that history, without manually rereading hundreds of separate review outputs. Which approach most effectively supports this kind of recall?",
+      "options": [
+        "Maintain a single progressively-summarized digest of all findings, updated after every review.",
+        "Keep only a rolling window of the most recent 50 reviews' findings.",
+        "Use semantic retrieval — embeddings over the archived review history — to retrieve specifically relevant past findings on demand.",
+        "Require every finding to carry an exact-match keyword tag and grep the archive for the tag."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "Semantic retrieval over the full archived history retrieves specifically relevant past exchanges on demand — the fix for precise recall from a long, sprawling record that summarization or windowing would compress or discard.",
+        "cite": "D5 §5.7"
+      },
+      "whyWrong": [
+        {"option": 0, "text": "A progressively-summarized digest compresses away exactly the specific pattern-level detail this kind of lookup needs.", "cite": "D5 §5.7"},
+        {"option": 1, "text": "A rolling window of only the most recent reviews discards most of the year's history the lead needs to search.", "cite": "D5 §5.7"},
+        {"option": 3, "text": "Exact-match keyword tagging misses findings described in different wording, since useful recall here depends on meaning, not literal text.", "cite": "D5 §5.7"}
+      ]
+    }
+  ]
+}

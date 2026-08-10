@@ -1,0 +1,382 @@
+{
+  "label": "Developer Productivity with Claude",
+  "narrative": "A platform engineering team builds and refines a developer-productivity agent on Claude Code: exploring an unfamiliar internal monorepo, applying path-scoped conventions, generating boilerplate, enforcing release and merge preconditions, and automating dependency and license checks — combining built-in tools (Read, Write, Edit, Bash, Grep, Glob) with a handful of custom MCP servers.",
+  "letterPlan": ["A", "B", "C", "D", "B", "A", "D", "C", "A", "B", "D", "A", "C", "B", "D"],
+  "questions": [
+    {
+      "g": 16,
+      "block": 1,
+      "blockLabel": "Developer Productivity with Claude",
+      "domain": "D1",
+      "section": "§1.2",
+      "kd": null,
+      "stem": "A platform team's onboarding agent runs a code-review subagent and a test-generation subagent under one coordinator. To save a round trip, an engineer proposes letting the two subagents message each other directly with extra test scenarios, skipping the coordinator. What is the strongest reason to keep this routed through the coordinator?",
+      "options": [
+        "The coordinator keeps full visibility into every inter-agent request and can apply uniform error handling and information control — direct peer messaging removes that centralized oversight.",
+        "Peer-to-peer messaging distributes error handling across subagents, which reduces the coordinator's workload and scales better as the agent roster grows.",
+        "Coordinator mediation only matters once three or more subagents run in parallel; two subagents exchanging one message don't need it.",
+        "Routing through the coordinator only pays off at larger scale, so bypassing it for a single exchange is a reasonable optimization."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "Hub-and-spoke keeps the coordinator as the single point of visibility, giving it centralized, uniform error handling and control over what context each subagent receives — properties that direct subagent-to-subagent messaging removes.",
+        "cite": "D1 §1.2"
+      },
+      "whyWrong": [
+        {"option": 1, "text": "The corpus treats centralized error handling as the benefit of the hub-and-spoke pattern, not something a coordinator sheds by delegating; decentralized handling is the failure mode, not an efficiency gain.", "cite": "D1 §1.2"},
+        {"option": 2, "text": "The pattern's correctness doesn't hinge on how many subagents are involved or whether calls are parallel — the coordinator mediates every inter-agent exchange regardless of scale.", "cite": "D1 §1.2"},
+        {"option": 3, "text": "Hub-and-spoke is the correct architecture independent of scale; treating coordinator mediation as overhead to shed for a single exchange misreads why the pattern exists.", "cite": "D1 §1.2"}
+      ]
+    },
+    {
+      "g": 17,
+      "block": 1,
+      "blockLabel": "Developer Productivity with Claude",
+      "domain": "D2",
+      "section": "§2.9",
+      "kd": 27,
+      "stem": "After a schema change, an automation must regenerate a config file where nearly every line differs from the previous version. The current script issues a separate targeted-replacement call per changed line, and several calls fail because the old text no longer appears verbatim. Which approach is most appropriate?",
+      "options": [
+        "Keep retrying the same targeted-replacement call with a shorter anchor string, hoping a shorter match is less likely to collide.",
+        "Read the file's current contents, generate the updated version, and write it back in one pass — appropriate when most of the content is changing, not a small portion.",
+        "Switch to a shell-based find-and-replace command so the substitution no longer depends on matching existing text.",
+        "Enumerate matching file paths first, then keep using the same targeted-replacement call, since that confirms the file's identity beforehand."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "When most of a file's content is changing, a unique-anchor targeted replacement isn't the right tool at all — reading the file, generating the new version, and writing it back is the sanctioned approach for wholesale changes.",
+        "cite": "D2 §2.9"
+      },
+      "whyWrong": [
+        {"option": 0, "text": "Shorter anchor strings are more likely to match multiple locations, not fewer — this makes the ambiguity worse, and it doesn't address the deeper issue that most of the file is changing anyway.", "cite": "D2 §2.9"},
+        {"option": 2, "text": "A shell-based find-and-replace bypasses the tool built for reliable file modification; the sanctioned fallback for this case is reading and rewriting the file, not routing around it with a shell command.", "cite": "D2 §2.9"},
+        {"option": 3, "text": "Enumerating file paths locates which file to change, but it does nothing about a targeted-replacement call failing because the anchor text isn't unique or the change is too broad for that mechanism.", "cite": "D2 §2.9"}
+      ]
+    },
+    {
+      "g": 18,
+      "block": 1,
+      "blockLabel": "Developer Productivity with Claude",
+      "domain": "D3",
+      "section": "§3.2",
+      "kd": null,
+      "stem": "A monorepo's infra/terraform/ directory requires every modified file to carry a change-justification comment — a rule that applies nowhere else in the repository, regardless of which service's code sits alongside it. Where should this rule live so it loads automatically only when Terraform files are touched, without bloating every other session?",
+      "options": [
+        "In root CLAUDE.md under a Terraform heading, trusting the model to apply it only when Terraform files are present.",
+        "As a Skill invoked explicitly before committing Terraform changes, so engineers have to remember to run it manually.",
+        "In `.claude/rules/terraform.md` with frontmatter scoping it to `infra/terraform/**`, so it loads automatically only for matching files.",
+        "In a separate `CLAUDE.md` placed inside `infra/terraform/`, since directory-level files apply only within that subdirectory."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "Path-scoped rules with YAML frontmatter glob patterns load automatically only when Claude is working on matching files, keeping the Terraform-specific requirement out of every other session.",
+        "cite": "D3 §3.2"
+      },
+      "whyWrong": [
+        {"option": 0, "text": "A CLAUDE.md heading loads into every session regardless of which files are being touched and relies on the model inferring when to apply it, rather than deterministic path matching.", "cite": "D3 §3.2"},
+        {"option": 1, "text": "A Skill is workflow-scoped and invoked on demand — it depends on the engineer remembering to run it, which doesn't guarantee the rule applies on every Terraform edit.", "cite": "D3 §3.2"},
+        {"option": 3, "text": "Scattering a separate CLAUDE.md per directory is the documented weaker alternative to rules/ glob patterns, especially awkward once the scoped convention needs to apply more precisely than a whole subdirectory.", "cite": "D3 §3.2"}
+      ]
+    },
+    {
+      "g": 19,
+      "block": 1,
+      "blockLabel": "Developer Productivity with Claude",
+      "domain": "D2",
+      "section": "§2.2",
+      "kd": null,
+      "stem": "The `resolve_module_owner` tool description reads only: 'Returns the current owner of a module.' It works only for actively maintained modules — for archived ones it returns stale data with no warning, and engineers now cite that output as authoritative. What is the most effective fix?",
+      "options": [
+        "Rename the tool to a more specific name without changing its description, since a clearer name alone resolves the ambiguity.",
+        "Leave the description as-is and add a pre-routing classifier that filters out archived modules before the call is made.",
+        "Add a `dry_run` parameter so engineers can preview whether a module is archived before trusting the result.",
+        "Expand the description to state explicitly that results are unreliable for archived or deprecated modules, so the agent recognizes the boundary case."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "A good tool description states what a tool does, what input it needs, and explicitly names its boundary cases — where it should NOT be trusted — which is exactly the gap here.",
+        "cite": "D2 §2.2"
+      },
+      "whyWrong": [
+        {"option": 0, "text": "A clearer name alone doesn't communicate the boundary case; the exam principle is that descriptions, not names, are the primary lever the model reasons from.", "cite": "D2 §2.2"},
+        {"option": 1, "text": "Adding a classifier is infrastructure layered on top of an under-specified description — the corpus's rule is to fix the description first, not compensate for it with a new component.", "cite": "D2 §2.2"},
+        {"option": 2, "text": "A `dry_run` parameter solves a different problem — guaranteeing a mandatory preview before an action — not a description that fails to flag when a result is unreliable.", "cite": "D2 §2.4"}
+      ]
+    },
+    {
+      "g": 20,
+      "block": 1,
+      "blockLabel": "Developer Productivity with Claude",
+      "domain": "D1",
+      "section": "§1.14",
+      "kd": null,
+      "stem": "The automation's `generate_release_notes` tool must run only after `tag_release` finishes, since notes reference the new tag. This ordering exists only as a step in the system prompt. When a slow CI run delayed `tag_release`, the agent invoked `generate_release_notes` first, producing notes citing a tag that didn't exist yet. What change most reliably prevents this?",
+      "options": [
+        "Reorder the system prompt so the tag-creation step is described before the release-notes step, making the sequence read unambiguously.",
+        "Add a programmatic precondition that blocks `generate_release_notes` from running until `tag_release` has returned a completed tag identifier.",
+        "Add a few-shot example showing the correct call order, so the agent has a concrete pattern to imitate.",
+        "Increase the delay between the two calls so tag creation has more time to finish first."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "A programmatic precondition makes the dependency architecturally enforced — the second tool literally cannot run without the first completing — where a prompt-only rule remains probabilistic.",
+        "cite": "D1 §1.14"
+      },
+      "whyWrong": [
+        {"option": 0, "text": "Reordering prose in the system prompt is still a prompt instruction; the model can still deviate from it under load or ambiguity, since nothing enforces the order in code.", "cite": "D1 §1.14"},
+        {"option": 2, "text": "Few-shot examples make correct behavior more likely, not guaranteed — for a consistency-critical ordering, that's the same probabilistic reliability the corpus warns against.", "cite": "D1 §1.14"},
+        {"option": 3, "text": "A fixed delay is a timing heuristic that assumes a particular latency; it's fragile to slow runs and doesn't actually verify the first step completed.", "cite": "D1 §1.14"}
+      ]
+    },
+    {
+      "g": 21,
+      "block": 1,
+      "blockLabel": "Developer Productivity with Claude",
+      "domain": "D2",
+      "section": "§2.3",
+      "kd": null,
+      "stem": "The `check_deprecated_packages` audit tool returns an empty result list both when a repository genuinely has zero deprecated packages, and when its backend vulnerability index is unreachable — the same signal either way. Engineers now can't tell a clean audit from one that silently didn't run. What should the tool's response distinguish?",
+      "options": [
+        "Return a genuine empty result set only for a real zero-findings audit, and a distinct access-failure signal when the index couldn't be reached — never collapse the two into the same empty response.",
+        "Keep returning an empty list for both cases, since the automation only needs to know whether remediation is required, not why the list came back empty.",
+        "Flag every empty result as a failure to be safe, so engineers double-check even genuinely clean audits before trusting them.",
+        "Automatically retry once on any empty result before reporting, in case the first response was a transient fluke."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "An empty result is a successful, informative answer — zero deprecated packages — and must be distinguishable from a query that couldn't run at all; conflating the two in either direction corrupts what the agent reports downstream.",
+        "cite": "D2 §2.3"
+      },
+      "whyWrong": [
+        {"option": 1, "text": "Collapsing both cases into the same empty response means the automation can silently report \"clean\" when the audit never actually ran — exactly the corrupted decision-making the corpus warns an ambiguous empty signal causes.", "cite": "D2 §2.3"},
+        {"option": 2, "text": "Flagging every empty result as a failure treats a valid, successful zero-findings answer as an error, causing the agent to needlessly re-work or escalate audits that already succeeded.", "cite": "D2 §2.3"},
+        {"option": 3, "text": "A blind retry does nothing to distinguish the two cases going forward — a genuine zero-findings audit gets retried for no reason, and an unreachable index likely fails the same way again.", "cite": "D2 §2.3"}
+      ]
+    },
+    {
+      "g": 22,
+      "block": 1,
+      "blockLabel": "Developer Productivity with Claude",
+      "domain": "D3",
+      "section": "§3.5",
+      "kd": 4,
+      "stem": "An engineer assumes the shared `.claude/skills/commit/SKILL.md` always wins over any personal skill with the same name, reasoning project config should win since it's what the team agreed on. After the team updates the shared skill's checks, the engineer's `/commit` behavior doesn't change at all. What is going on?",
+      "options": [
+        "Rename personal experiments to a different command instead, so a same-named override can never occur in the first place.",
+        "Shared skills can't be overridden by personal configuration at all — only standalone slash commands support personal overrides.",
+        "The engineer is right that project configuration always wins; the shared update should have applied, so this must be a caching bug.",
+        "Personal skills override project skills sharing the same name — the engineer's command almost certainly resolves to their own `~/.claude/skills/commit/SKILL.md`."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "Personal skills at `~/.claude/skills/` override project skills of the same name — the engineer's shared-skill update never had a chance to matter because their own personal override is what actually runs.",
+        "cite": "D3 §3.5"
+      },
+      "whyWrong": [
+        {"option": 0, "text": "Renaming to a different command avoids future collisions but doesn't explain the current behavior, and it also loses the familiar `/commit` name for that engineer.", "cite": "D3 §3.5"},
+        {"option": 1, "text": "Commands and skills are unified in current Claude Code — the same-name override rule applies to both, not just to commands.", "cite": "D3 §3.4"},
+        {"option": 2, "text": "This inverts the actual precedence rule — project configuration does not automatically win; a personal skill of the same name takes precedence, which is exactly what's masking the update.", "cite": "D3 §3.5"}
+      ]
+    },
+    {
+      "g": 23,
+      "block": 1,
+      "blockLabel": "Developer Productivity with Claude",
+      "domain": "D1",
+      "section": "§1.5",
+      "kd": null,
+      "stem": "A mapping subagent and a dependency-audit subagent independently report the same module's line count — 2,340 and 2,510 — because they ran against different commits. Both numbers reach the report-writing subagent as plain sentences, with no timestamp or commit reference attached, and it silently keeps the audit subagent's figure. What should change?",
+      "options": [
+        "Have the report-writing subagent always prefer whichever figure is higher, treating the larger number as the safer estimate to report.",
+        "Instruct the report-writing subagent in its prompt to double-check figures against each other before writing them down.",
+        "Require each subagent's output to carry structured metadata, including which commit each figure was measured against, so the report-writing subagent can preserve and attribute both figures instead of silently picking one.",
+        "Have the report-writing subagent re-run its own line-count check to settle which figure is correct before writing the report."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "Structured metadata carrying each figure's source commit lets the report-writing subagent preserve and attribute both values instead of merging them into a single unsourced number — the corpus's explicit rule for conflicting statistics.",
+        "cite": "D1 §1.5"
+      },
+      "whyWrong": [
+        {"option": 0, "text": "Picking whichever number is larger is an arbitrary rule with no connection to which figure is actually correct for the report's intended commit — it doesn't resolve the underlying attribution loss.", "cite": "D1 §1.5"},
+        {"option": 1, "text": "A prompt instruction to double-check is probabilistic and still doesn't give the subagent the structured metadata needed to actually reconcile or attribute the two figures.", "cite": "D1 §1.5"},
+        {"option": 3, "text": "Having the report-writing subagent re-run the line-count check duplicates work already done by a specialized subagent and breaks the separation of responsibilities between mapping/audit and reporting roles.", "cite": "D1 §1.11"}
+      ]
+    },
+    {
+      "g": 24,
+      "block": 1,
+      "blockLabel": "Developer Productivity with Claude",
+      "domain": "D2",
+      "section": "§2.7",
+      "kd": null,
+      "stem": "Three internal MCP tools return timestamps in different formats: Unix epoch from one, ISO 8601 from another, a locale-formatted string from a third. None of these tools are ones the team controls. Downstream reporting has started mis-ordering build history because of the mismatch. What is the most effective fix?",
+      "options": [
+        "Add a `PostToolUse` hook that intercepts each tool's output and normalizes all timestamps to one format before results reach the agent's context.",
+        "Document each tool's timestamp format in the system prompt so the agent converts them consistently when writing the report.",
+        "Create a dedicated normalization tool the agent calls after every retrieval to convert the value.",
+        "Fork each of the three tools' source code and patch them to emit one consistent format."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "A `PostToolUse` hook intercepts and normalizes output centrally and deterministically, working even for third-party tools the team cannot modify — the corpus's primary use case for this hook.",
+        "cite": "D2 §2.7"
+      },
+      "whyWrong": [
+        {"option": 1, "text": "Documenting formats in the system prompt relies on the LLM correctly interpreting and converting three different formats every time, which is probabilistic, not guaranteed.", "cite": "D2 §2.7"},
+        {"option": 2, "text": "A tool the agent must remember to call after every retrieval adds an extra LLM call and depends on the agent reliably invoking it — hooks avoid that overhead entirely.", "cite": "D2 §2.7"},
+        {"option": 3, "text": "Patching source code you don't control creates fragmented, unmaintainable forks of tools the team doesn't own — exactly the alternative the corpus rejects.", "cite": "D2 §2.7"}
+      ]
+    },
+    {
+      "g": 25,
+      "block": 1,
+      "blockLabel": "Developer Productivity with Claude",
+      "domain": "D1",
+      "section": "§1.10",
+      "kd": null,
+      "stem": "A dependency-scanning subagent audits every service's lockfile for outdated packages. One lockfile fails to parse after a tooling upgrade changed its schema, so the subagent silently substitutes last week's cached scan for that service instead of failing. The report lists every service's findings with identical confidence, stale data included. What should the output do instead?",
+      "options": [
+        "Drop the affected service from the report entirely, since a stale substitution is worse than no data at all.",
+        "Complete the report using available data, but annotate the substituted service's findings as based on stale, pre-upgrade data, flagging the confidence difference.",
+        "Re-run the entire audit for every service once the parser is fixed, and hold the whole report until then.",
+        "Return an error for the whole audit run, since one service's data cannot be verified as current."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "Graceful degradation means completing the report from available data while explicitly annotating which parts rest on lower-confidence or stale input, propagating the uncertainty instead of hiding it.",
+        "cite": "D1 §1.10"
+      },
+      "whyWrong": [
+        {"option": 0, "text": "Dropping the service discards recoverable value — the stale data is still informative once flagged, and omission throws away information the corpus says should be annotated, not deleted.", "cite": "D1 §1.10"},
+        {"option": 2, "text": "Holding the entire report hostage to one recoverable parsing gap blocks a deliverable that's otherwise complete and correct for every other service.", "cite": "D1 §1.10"},
+        {"option": 3, "text": "Returning an error for the whole run treats a partial, still-usable result as a total failure — the corpus's principle is to complete and annotate, not abort.", "cite": "D1 §1.10"}
+      ]
+    },
+    {
+      "g": 26,
+      "block": 1,
+      "blockLabel": "Developer Productivity with Claude",
+      "domain": "D3",
+      "section": "§3.7",
+      "kd": null,
+      "stem": "An engineer unfamiliar with the team's job queue asks Claude Code to add deduplication so a job never runs twice concurrently. The first version misses cross-instance duplication, the second misses a dedup key that changes mid-retry, the third leaves stale locks after a crash — a different gap each time. What is the most effective next step?",
+      "options": [
+        "Keep iterating on the current implementation, addressing each newly discovered gap as it surfaces.",
+        "Ask Claude Code to write an exhaustive design document covering every conceivable distributed-systems edge case before any code is written.",
+        "Switch to generating the deduplication logic with a larger, more capable model, since the current model keeps missing requirements.",
+        "Restart the task and have Claude Code interview the engineer first — asking about cross-instance behavior, retry key-changes, and crash recovery — before generating any implementation."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "The interview pattern front-loads exactly the domain-specific questions — cross-instance behavior, key changes, crash recovery — that three separate generation attempts each discovered the hard way, replacing several correction cycles with one clarifying turn.",
+        "cite": "D3 §3.7"
+      },
+      "whyWrong": [
+        {"option": 0, "text": "Continuing to patch one newly discovered gap at a time is the slow, reactive pattern the corpus contrasts against front-loaded clarification — each fix risks missing the next gap.", "cite": "D3 §3.7"},
+        {"option": 1, "text": "An exhaustive upfront design document isn't the interview pattern — it substitutes broad, generic coverage for a few targeted questions specific to this task's actual unknowns.", "cite": "D3 §3.7"},
+        {"option": 2, "text": "The repeated misses trace to unsurfaced requirements, not generation quality — a larger model would face the same unspecified requirements and likely miss them too.", "cite": "D3 §3.7"}
+      ]
+    },
+    {
+      "g": 27,
+      "block": 1,
+      "blockLabel": "Developer Productivity with Claude",
+      "domain": "D2",
+      "section": "§2.5",
+      "kd": null,
+      "stem": "The build-automation subagent has accumulated 18 tools across three MCP servers plus all six built-ins, added as new needs arose. It frequently calls the wrong one among near-duplicate options, even after every description was rewritten to be clearer. What is the most effective next step?",
+      "options": [
+        "Restrict the subagent's tool set to the handful actually relevant to its role, reducing what it must discriminate between each turn.",
+        "Keep all 18 tools, since removing any could be useful, and add a `tool_choice` pre-filter that narrows the candidate set each turn.",
+        "Leave the tool set as-is; the recent description rewrite just needs more time to take effect.",
+        "Give every other subagent the same 18-tool set too, so tool access stays consistent across the team's automations."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "Reducing the tool count to the 4-5 actually relevant to the role shrinks the decision space the model must discriminate across on every turn — the corpus's documented fix once description quality alone hasn't resolved misrouting.",
+        "cite": "D2 §2.5"
+      },
+      "whyWrong": [
+        {"option": 1, "text": "A pre-filtering classifier is infrastructure added on top of an oversized tool set rather than reducing the set itself — the corpus treats tool count as the root cause here, not a symptom to route around.", "cite": "D2 §2.5"},
+        {"option": 2, "text": "The scenario states descriptions were already rewritten and misrouting persisted — the bottleneck is tool count, not description clarity needing more time.", "cite": "D2 §2.5"},
+        {"option": 3, "text": "Broadening every subagent's tool set to match spreads the same reliability problem to peers that currently select correctly with a smaller, role-scoped set.", "cite": "D2 §2.5"}
+      ]
+    },
+    {
+      "g": 28,
+      "block": 1,
+      "blockLabel": "Developer Productivity with Claude",
+      "domain": "D1",
+      "section": "§1.11",
+      "kd": null,
+      "stem": "The boilerplate-generation subagent scaffolds new module files from a template — nothing else. Its AgentDefinition includes shell access, added at design time on the reasoning that scaffolding might someday need a shell command. It has since started running git history-rewriting commands on branches other subagents are also working on. What is the most effective fix?",
+      "options": [
+        "Add a system-prompt instruction telling the subagent to only use its shell access for scaffolding commands, never git history operations.",
+        "Leave shell access in place, since removing it would block any legitimate command scaffolding might someday need.",
+        "Remove `Bash` from the subagent's allowed tools and give it only `Write` and `Edit`, since scaffolding never actually required a shell command.",
+        "Add a `PreToolUse` hook that blocks only the specific history-rewriting commands, leaving shell access otherwise available."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "Removing the unneeded shell access entirely closes the capability at the interface level — a scaffolding role that only ever needs to write files has no legitimate use for a shell tool in the first place.",
+        "cite": "D1 §1.11"
+      },
+      "whyWrong": [
+        {"option": 0, "text": "A prompt instruction restricting how a tool is used is probabilistic — it doesn't remove the capability, so the subagent can still deviate from it.", "cite": "D1 §1.11"},
+        {"option": 1, "text": "Keeping broad access 'in case it's needed someday' is exactly the anti-pattern least-privilege design rejects — scope to what the role actually requires now.", "cite": "D1 §1.11"},
+        {"option": 3, "text": "Blocking only the two specific commands seen so far leaves the underlying broad shell access in place for whatever misuse comes next — the fix belongs at the tool-scope level, not a growing blocklist.", "cite": "D1 §1.11"}
+      ]
+    },
+    {
+      "g": 29,
+      "block": 1,
+      "blockLabel": "Developer Productivity with Claude",
+      "domain": "D2",
+      "section": "§2.6",
+      "kd": null,
+      "stem": "Designing the build-automation agent's MCP server, the team must expose three things: `trigger_rebuild` and `invalidate_cache`, actions the agent performs; a build-configuration reference the agent should only ever read, never edit; and a reusable postmortem template the agent fills in after a failed build. Which MCP primitive should carry each?",
+      "options": [
+        "Expose all three as tools, since a single uniform interface is simpler for the agent to reason about than mixing primitive types.",
+        "Expose the rebuild/cache actions as tools, the build-configuration reference as a resource, and the postmortem template as a prompt.",
+        "Expose the actions as resources so their effects stay auditable, and the configuration reference and template as tools.",
+        "Expose the actions as tools, the configuration reference as a prompt, and the postmortem template as a resource."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "The three MCP primitives map by capability: tools are actions Claude calls, resources are read-only data Claude can access, and prompts are pre-built reusable templates — matching the rebuild/cache actions, the read-only config reference, and the fill-in-the-blank postmortem template exactly.",
+        "cite": "D2 §2.6"
+      },
+      "whyWrong": [
+        {"option": 0, "text": "Forcing the read-only reference and the reusable template into the tools primitive discards the protocol's distinction between an action Claude invokes and data or a template it merely consumes.", "cite": "D2 §2.6"},
+        {"option": 2, "text": "Resources are read-only by design and cannot represent actions like triggering a rebuild or invalidating a cache — auditability is a property of logging the action, not of misclassifying it as a resource.", "cite": "D2 §2.6"},
+        {"option": 3, "text": "This swaps the reference and the template's roles: a static reference document the agent reads is a resource, not a prompt, and a reusable fill-in template is a prompt, not a resource.", "cite": "D2 §2.6"}
+      ]
+    },
+    {
+      "g": 30,
+      "block": 1,
+      "blockLabel": "Developer Productivity with Claude",
+      "domain": "D1",
+      "section": "§1.17",
+      "kd": null,
+      "stem": "Code generation and code review run as two separate Claude Code sessions with no shared conversation history — independent on paper. Both, however, were configured with the same few-shot example set, which happens to omit a common null-input edge case. The reviewer approves a generated function that mishandles exactly that case. What is the most effective fix?",
+      "options": [
+        "Give the reviewer session extended thinking so it reasons more carefully before approving.",
+        "Add a self-review instruction to the generator's own prompt asking it to double-check edge cases before finishing.",
+        "Merge the two sessions into one, since running them separately clearly isn't preventing missed edge cases anyway.",
+        "Give the reviewer session a different, independently curated example set that includes edge cases the generator's set omits, so its independence isn't undermined by sharing the same blind spot."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "True independence requires the reviewer's inputs, not just its conversation history, to differ from the generator's — sharing the same example set reproduces the same blind spot even without any shared session or transcript.",
+        "cite": "D1 §1.17"
+      },
+      "whyWrong": [
+        {"option": 0, "text": "Extended thinking makes the reviewer reason longer over the same inputs; it doesn't introduce the missing null-input example the shared set never included.", "cite": "D1 §1.17"},
+        {"option": 1, "text": "A self-review instruction added to the generator's own prompt keeps the check inside the same instance and the same reasoning that produced the bug — the opposite of independent review.", "cite": "D1 §1.17"},
+        {"option": 2, "text": "Merging the two sessions removes even the nominal separation that exists today, which moves further from independent review, not toward a fix.", "cite": "D1 §1.17"}
+      ]
+    }
+  ]
+}
