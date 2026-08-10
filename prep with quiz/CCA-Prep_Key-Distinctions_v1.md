@@ -1,7 +1,8 @@
 # CCA-F Key Distinctions — High-Yield Exam Traps
 
-**Source:** guide_en.MD — all practice questions and explanations  
-**Version:** 1.0 | 2026-06-27  
+**Source:** guide_en.MD — all practice questions and explanations; CCA-Prep_Domain-2_v2.md §2.9 and CCA-F Official Exam Guide task 2.5 (built-in tools)  
+**Version:** 1.1 | 2026-07-06  
+**Changelog v1.1:** Added Built-in Tools section (#26–29: Grep vs Glob, Edit vs Read+Write fallback, incremental investigation vs bulk read, MCP-vs-built-in tool preference) to seed the Developer Productivity scenario — closes the corpus gap flagged in GENERATION-INTELLIGENCE.md Session 1.  
 **Purpose:** Each entry is a documented exam trap — a pair of options that look similar but have a decisive difference. Understand the WHY, not just the answer.
 
 ---
@@ -263,3 +264,60 @@ Claude has **no server-side memory**. The only way Claude "remembers" prior conv
 **Exam trap:** "Claude needs a `session_id` parameter" → False. The API is stateless; the application manages conversation state.
 
 **Exam trap:** "Claude needs a vector database to maintain conversation memory" → False. Simple conversation memory is the `messages[]` array. Vector databases are for retrieval over long histories (months), not standard multi-turn conversations.
+
+---
+
+## Built-in Tools
+
+*(Grounded in Domain-2 §2.9 and official Exam Guide task 2.5 — built-in tool selection for the Developer Productivity scenario.)*
+
+### 26. Grep (content search) vs Glob (path pattern match)
+
+| | Grep | Glob |
+|---|---|---|
+| Searches | *Inside* files — content | File *names / paths* — patterns |
+| Finds | Function names, error strings, import statements, call sites | Files by name or extension (`**/*.test.tsx`) |
+| "Find all callers of `processPayment`" | ✅ Grep the symbol across the codebase | ❌ Wrong tool |
+| "Enumerate all TypeScript test files" | ❌ Wrong tool | ✅ Glob `**/*.test.tsx` |
+
+**Exam trap:** Locate every file that references a deprecated `formatDate` function → Grep for `formatDate` (target is file *content*). ❌ Glob `**/formatDate*` only matches files *named* formatDate, not files that use it. Conversely, Grepping for the word "test" to find test files matches unrelated files and misses test files that don't contain the literal word — that's a Glob job.
+
+---
+
+### 27. Edit (unique-text match) vs Read + Write fallback when the anchor is non-unique
+
+| | Edit | Read + Write fallback |
+|---|---|---|
+| Mechanism | Replace via a **unique** text anchor | Load full file → modify → write full file |
+| Fails when | Anchor appears more than once (can't decide which) | — |
+| Correct for | Targeted single-occurrence modification | Modification where no unique anchor exists |
+
+**Exam trap:** Edit fails because the anchor isn't unique →
+- ✅ Fall back to Read + Write for a reliable full-file modification
+- ❌ Retry Edit with a *shorter* anchor — shorter strings are *more* likely to be non-unique, not less
+- ❌ Force it with Bash `sed` — bypasses the tool designed for the job; the sanctioned fallback is Read + Write
+
+---
+
+### 28. Incremental investigation (Grep → Read) vs reading all files upfront
+
+| | Incremental (Grep → Read) | Bulk read upfront |
+|---|---|---|
+| Discovery driver | Content search locates entry points, then targeted reads follow imports/flows | Read every file "for full context" first |
+| Context window | Spent only on relevant files | Burned on irrelevant files |
+| Exam verdict | ✅ Correct pattern | ❌ Anti-pattern |
+
+**Exam trap:** To understand a codebase, "Read every file first to get full context" → Wrong. Start with Grep to find entry points, then Read to trace. ❌ Globbing the whole tree and Reading each match before searching is the *same* anti-pattern — discovery should be driven by content search, then targeted reads, not exhaustive upfront reading.
+
+---
+
+### 29. MCP tool vs built-in tool preference — fix the description, don't remove the built-in
+
+Agents may **default to a familiar built-in (Grep, Read) over a more capable MCP tool** because selection runs on descriptions. If the MCP tool's description doesn't make its superior capability explicit, the agent falls back to the built-in.
+
+**Exam trap:** A semantic, index-backed code-search MCP server exists, but the agent keeps using built-in Grep →
+- ✅ Enhance the MCP tool's description — spell out its unique capability, outputs, and what built-in tools *cannot* provide
+- ❌ Remove or disable Grep so the agent has no alternative (breaks legitimate content-search cases; root cause is an under-specified description, not the built-in's existence)
+- ❌ Add a "always prefer MCP tools" system-prompt rule (blunt and keyword-sensitive; misroutes cases where the built-in genuinely is right)
+
+**Rule (mirrors #10):** Fix the signal (description) before adding a layer — or removing a tool — to compensate for the bad signal.
