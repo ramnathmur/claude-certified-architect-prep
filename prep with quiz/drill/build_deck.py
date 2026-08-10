@@ -70,8 +70,11 @@ EX_FLOOR = 10            # exam-mechanics cards are cheap marks; keep an absolut
 # Reserved known-gap tags and their minimum card counts (see CARD-SPEC.md section 7).
 # d5.2 is deliberately small: prompt caching is on the official out-of-scope list and
 # appears in official samples only as a wrong option. See CARD-SPEC.md section 7.
+# d2.8 added 2026-08-10: composite-tool-vs-prompt-bundling, missed independently in
+# Exams 5, 8, 10, and 11 (EXAM-LOG.md). Section 2.8 has exactly one teachable point
+# per the corpus's own note, so 2 is the natural ceiling, not an undershoot.
 GAP_MINIMUMS = {
-    "d1.1": 10, "d2.1": 4, "d2.2": 4, "d3.6": 7,
+    "d1.1": 10, "d2.1": 4, "d2.2": 4, "d2.8": 2, "d3.6": 7,
     "d3.1": 5, "d4.5": 8, "d5.1": 6, "d5.2": 2,
 }
 

@@ -1,11 +1,41 @@
 # Session State
 
 status: COMPLETE
-phase: CLOSED
+phase: SCORE_LOGGED
 started_at: 2026-08-10
 completed_at: 2026-08-10
-exam_file: mock-exams/CCA-Prep_MockTest-12_v1.html
+exam_file: mock-exams/CCA-Prep_MockTest-11_v1.html (scored this session; Exam 12 remains the most recently generated, unattempted)
 format: FULL60
+
+## Score-entry note (2026-08-10, this session)
+
+Exam 11 scored: 55/60 (925/1000). Weakest domain D5 (88.9%), not confirmed — the
+prior scored exam by attempt chronology (Exam 9, 2026-08-09) was weakest in D2, a
+different domain. D2's own confirmed-weakness streak from Exam 9 is broken here:
+it recovers to 90.9% on Exam 11's standard (non-adjusted) quota, though this
+doesn't yet test whether the recovery holds under Exam 12's larger, weakness-
+adjusted D2 allocation, since Exam 12 remains unattempted.
+
+Full breakdown, observations, and cross-referenced misses logged in EXAM-LOG.md
+under "## Exam 11". Professor's Note — Intent for Exam 13 appended there (Exam 12
+already exists, so per the Exam 9→12 skip precedent this note targets 13, the
+next paper that can actually act on it). DASHBOARD-DATA.jsonl's exam_n:11 row
+updated to match. exams_scored is now 8 — Insights Round 3 does not fire yet
+(needs 9); it will fire the next time any exam is scored, most likely Exam 12.
+
+One finding worth flagging outside the routine pipeline: Q9 (D2 §2.8, composite
+tool vs. prompt-bundling for habitually-paired tool calls) was missed on this
+exam exactly as it was on Exams 5, 8, and 10 — four separate sittings on a
+section the corpus itself says carries exactly one teachable point. The CCA-F
+drill deck (prep with quiz/drill/) already carried two cards on this fact
+(d2-046, d2-047); both were retagged known-gap/d2.8 this session given the
+now-confirmed four-exam pattern, and GAP_MINIMUMS in build_deck.py updated to
+track it. Deck re-embedded as deckVersion 4.
+
+Next action: paste the Exam 11 results JSON into the drill deck's Import view
+(prep with quiz/drill/CCA-Prep_Drill_v1.html) to boost the matching cards —
+dry-run confirmed all 5 missed questions match at least 2 cards each, so
+nothing here needs a new card. Then continue toward sitting Exam 12.
 score: Pending (generated this session, not yet attempted)
 weakest_domain: D2 — CONFIRMED weak (Exam 10 81.8% → Exam 9 63.6%, by attempt chronology)
 notes: >

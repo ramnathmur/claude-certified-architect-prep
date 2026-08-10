@@ -1256,9 +1256,11 @@ Two of the three exams in this round (8, 10) are clean, fast, unconfounded pacin
 **File:** `mock-exams/CCA-Prep_MockTest-11_v1.html`
 **Format:** FULL60 (4 scenario blocks x 15 = 60 questions)
 **Scenarios drawn:** Customer Support Resolution Agent; Developer Productivity with Claude; Claude Code for Continuous Integration; Structured Data Extraction
-**Attempt date:** Not yet attempted
-**Score source:** Pending
-**Total score:** Pending
+**Attempt date:** 2026-08-10
+**Score source:** results-json
+**Total score:** 55 / 60 correct (estimated scaled: 925 / 1000; pass line 720)
+
+**Note on scoring order:** Exam 11 was generated 2026-07-29 and attempted today, 2026-08-10 — after Exam 9 (generated 2026-07-19) was scored on 2026-08-09. Per orchestration-prompt v10 Phase 2e, the confirmed-weakness comparison is against "the most recent PRIOR SCORED entry" by attempt chronology, which is **Exam 9** (weakest: D2, confirmed), not Exam 10.
 
 **Generated consuming both the Professor's Note — Intent for Exam 11 and Insights Round 2** (both written after Exam 10 scored 54/60, 910/1000, 2026-07-29). Base FULL-60 distribution kept unchanged (D1 16 / D2 11 / D3 12 / D4 12 / D5 9) — D2's 3-exam decline is real but was only a single exam as sole-weakest, not yet meeting the two-consecutive-exam confirmed-weakness bar. Section bias: (a) D4 §4.6 re-tested a **fourth** consecutive time (missed Exam 7/8/10) via a genuinely new mechanism — a scenario where `"any"` is actually correct (a per-language test-writing tool roster where the template type isn't knowable ahead of time), testing whether the learner over-generalized "always force specific" from the last two misses rather than repeating outcome-branching, precondition-gating, or stale-tool-list framings; (b) D3 §3.11 re-tested a **second** formal time via a category-mismatch facet (path-scoped content wrongly bundled into a Skill), distinct from both priors' half-split framing; (c) D3 §3.1/§3.6 touched only for routine periodic confirmation (both recovered in Exam 10, no urgency); (d) D2 given its fullest-ever breadth — all 9 sections covered, spread across two independently-authored blocks (Customer Support 5, Developer Productivity 6) rather than concentrated in one.
 
@@ -1337,7 +1339,50 @@ All six Phase 4.e.6 Fidelity Verification Gate checks passed on the shipped file
 59. [D4] A hiring manager submits a request that reads only 'just tell me if this candidate is qualified,' with no target schema or list of criteria specified. Rather than sending back several clarifying questions about which qualifications matter before doing anything, what should the pipeline do?
 60. [D5] Before a schema migration, the team must survey a large archive of previously processed candidate records to catalog which legacy field-naming conventions are still in use. Running this survey in the coordinator's main session returns thousands of per-record summaries and nearly fills its context before the migration-design conversation starts. What is the most effective way to proceed?
 
+#### Domain Breakdown
+| Domain | Total Q | Correct | % | Confirmed weak? |
+|---|---|---|---|---|
+| D1 Agentic Architecture | 16 | 15 | 93.8% | no |
+| D2 Tool Design & MCP | 11 | 10 | 90.9% | no |
+| D3 Claude Code Config | 12 | 11 | 91.7% | no |
+| D4 Prompt Engineering | 12 | 11 | 91.7% | no |
+| D5 Context Management | 9 | 8 | 88.9% | no |
+
+#### Scenario Block Breakdown
+| Block | Questions | Correct | % |
+|---|---|---|---|
+| Customer Support Resolution Agent | 15 | 12 | 80.0% |
+| Developer Productivity with Claude | 15 | 15 | 100.0% |
+| Claude Code for Continuous Integration | 15 | 14 | 93.3% |
+| Structured Data Extraction | 15 | 14 | 93.3% |
+
+#### Observations
+
+- **D5 is this paper's sole weakest domain (88.9%, 8/9)** — not confirmed: the most recent prior scored exam (Exam 9, by attempt chronology) was weakest in D2, a different domain, so the two-consecutive-exam bar isn't met. D5 was also this project's sole weakest domain once before, in Exam 6 — not consecutive with this one either.
+- **D2's confirmed-weakness streak is broken.** Exam 9 scored D2 at 63.6% and confirmed it weak (two consecutive exams, Exam 10 then Exam 9). This exam recovers to 90.9%, its second-strongest domain. Caveat: Exam 11 ran the standard, non-adjusted FULL-60 quota (D2 at 11 questions) — it doesn't yet test whether D2 holds up under Exam 12's larger, weakness-adjusted 15-question D2 allocation, since Exam 12 remains unattempted.
+- **A single miss repeats a four-exam pattern.** Q9 (§2.8, composite tool vs. prompt-bundling for two habitually-paired calls) was missed here exactly as it was in Exam 5, Exam 8, and Exam 10 — the same specific misconception recurring across four separate sittings despite the corpus carrying exactly one teachable point on it. This is now the single most persistent individual miss in the project's history.
+- **No Key Distinction was hit among the five misses** — unusual; prior scored exams typically show at least one KD-tagged miss. All five map to plain corpus sections: §2.8 (Q9), §1.18 (Q12 — named-pattern recall, evaluator-optimizer confused with context isolation), §5.8 (Q14 — escalation/ambiguity, over-escalated a resolvable case where one clarifying question was the efficient right move, the opposite failure mode from the domain's usual guess-instead-of-ask trap), §4.13 (Q43 — confidence-calibrated routing, reached for a second review pass instead of a structured per-finding confidence signal), §3.1 (Q50 — CLAUDE.md concatenation, assumed a subdirectory file overrides root rather than adding to it; this is the drill deck's own tracked `d3.1` known-gap).
+- **Timing: 2,418s total, 40.3s/question average.** Two of the three slowest questions were misses (Q43 at 108s, Q50 at 101s) — plausible genuine deliberation on harder items, not fast wrong guesses. The third slowest, Q25 (105s), was answered correctly.
+
+### Questions Used
+Already logged under the Exam 11 generation entry above — no new stems from scoring.
+
 ---
+
+### Professor's Note — Intent for Exam 13
+Written after Exam 11 (2026-08-10). Based on results-json. **Note the numbering: titled "Intent for Exam 13," not Exam 12 — Exam 12 was already generated (2026-08-10, unattempted) before this score arrived, mirroring the Exam 9→12 skip precedent.**
+
+- Misconceptions revealed:
+  1. **A four-exam-running miss on D2 §2.8** (composite tool vs. prompt-bundling for habitually-paired tool calls) — missed in Exams 5, 8, 10, and now 11, despite the corpus carrying exactly one teachable point on it.
+  2. **§1.18 named-pattern confusion** (D1) — evaluator-optimizer (independent critic reviewing a draft) mistaken for context isolation (a subagent scoped to limited input); both involve "independence" but name different mechanisms.
+  3. **§5.8 over-escalation** (D5) — routed a resolvable ambiguity (multiple accounts sharing one phone number) straight to a human instead of asking one clarifying question, the opposite failure mode from the domain's more common under-escalation trap.
+- Weakest this paper: D5 at 88.9% — not yet confirmed (different domain than Exam 9's D2).
+- Intent for next paper: within the fixed domain quota, give §2.8 a fifth test — not because it needs more depth (the corpus has only the one lesson), but because four straight misses on a single-fact section is itself the signal worth confirming isn't noise; give D5 §5.8 a second formal test to see whether this exam's over-escalation miss recurs or was a one-off; and note for whoever scores Exam 12 next that its weakness-adjusted 15-question D2 quota is the real test of whether this exam's D2 recovery holds at scale.
+- Watch next: does D5 confirm as weak once Exam 12 (or whichever exam is attempted next) is scored, and does D2's recovery survive Exam 12's larger, targeted quota.
+
+---
+
+*Superseded 2026-08-10 — the two notes below predate both Exam 11's scoring and Exam 12's generation, both of which have since happened (see the entries above and below). Left in place as history rather than deleted; do not treat "Next exam: Exam 12" or "Exam 11 remains unscored" as current. Current state as of Exam 11's scoring: exams_scored = 8 (not a multiple of 3 — Insights Round 3 fires on the next exam scored, most likely Exam 12). Exam 12 exists, generated, unattempted. Next exam to generate after that is Exam 13.*
 
 *Next exam: Exam 12. Next deduplication check: all 30 Exam-1 stems + all 60 Exam-2 stems + all 60 Exam-3 stems + all 60 Exam-4 stems + all 60 Exam-5 stems + all 60 Exam-6 stems + all 60 Exam-7 stems + all 60 Exam-8 stems + all 60 Exam-9 stems + all 60 Exam-10 stems + all 60 Exam-11 stems above + all 76 practice-test stems are off-limits.*
 
