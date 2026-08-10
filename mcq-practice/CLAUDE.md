@@ -1,6 +1,10 @@
 # mcq-practice — Project Instructions
 
-> **⚠️ STATUS: SPEC ONLY — NOT BUILT (as of 2026-06-26).** This folder contains the requirements + this instruction file + `index.html`, but the application (`mcq_launcher.py`, `prompt_builder.py`, `html_renderer.py`, `text_renderer.py`, `templates/`, `sessions/`) does **not** exist yet. Until implemented, this generator is **NOT** part of the exam-readiness path — do not count it toward mocks or Go/No-Go. The academy delivery system (`academy/`) does not depend on it.
+> **⚠️ STATUS: BUILT & UNIT-TESTED — NOT YET RUN END-TO-END (as of 2026-07-11).** This folder (`mcq-practice/`) holds the requirements doc and this instruction file — the source of truth for design rules — but the **application itself is implemented in the sibling project** `C:\Claude Cowork\Projects\mcq-practice-app\`, not here.
+>
+> Over there, `mcq_launcher.py`, `prompt_builder.py`, `html_renderer.py`, `text_renderer.py`, `qa_validator.py`, and `templates/session_template.html` all exist and are covered by 58 passing pytest tests, including structured per-distractor explanations, a distractor typology system, concept tagging, a retry-wrong-answers mode, a QA validator pass, and a results-JSON export. It has **never been run end-to-end against a live `claude -p` call**: `data/sessions/` exists only as an empty directory (no session output has ever been written there) and `stems_log.txt` is 0 bytes.
+>
+> Until a live run happens and is reviewed, treat this generator as **not yet exercised — do not count it toward mocks or Go/No-Go.** Current state and next steps: `C:\Claude Cowork\Projects\mcq-practice-app\HANDOFF.md`. The academy delivery system (`academy/`) does not depend on it.
 
 **Purpose:** Reusable MCQ practice application for the CCA-F (Claude Certified Architect — Foundations) exam.  
 **Requirements doc:** `The Requirements for Anthropic Exam MCQ Prep.md` — this is the source of truth. Read it before implementing or modifying anything.

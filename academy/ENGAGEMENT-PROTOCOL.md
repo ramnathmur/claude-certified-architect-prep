@@ -213,6 +213,8 @@ The state files are the safety net. Because `LEARNER-MODEL.md` and `PROGRESS.md`
 
 A level only advances on a recall in a **later** session than the previous one — spacing is required; same-session repeats don't count toward promotion.
 
+**Confidence-capture rule (added 2026-07-10, adopted from cross-project migration audit):** in any MCQ-format check (SR flash, comprehension check, scenario drill, mock exam), ask "confident, or guessing?" before revealing correctness. A correct-but-guessed answer is NOT a clean recall — it does not advance mastery state. Log it as the prior state unchanged, with a note ("correct but guessed — not counted"). This tightens the existing honesty rule (synthetic data never counts) to also exclude lucky guesses from promotion.
+
 ### Reinforcement Queue (spaced-repetition intervals → "Next review due")
 - 🔴 Weak → due **next session**.
 - 🟡 Developing → due in **1–2 sessions**.

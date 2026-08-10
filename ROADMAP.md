@@ -36,8 +36,9 @@
 - [x] Convert **Claude 101** to interactive HTML (both QA gates passed) → `courses/claude-101/claude-101.html`
 - [ ] Decide scope for remaining Academy courses (see `courses/COURSE-ROADMAP.md`)
 - [ ] Complete Anthropic Academy 200-level courses (https://anthropic.skilljar.com/)
-- [ ] Download community PDF guide (daronyondem/claude-architect-exam-guide)
+- [x] Obtain exam guide PDF — got the **official** Anthropic Exam Guide (Skilljar), stored at `prep with quiz/source/CCA-F-Official-Exam-Guide.pdf`; supersedes the community fork. (2026-07-06)
 - [ ] Work through claudecertifications.com 25 practice questions
+  - 🟢 Adjacent track: **`prep with quiz/` mock-exam generator** now grounded in that official guide — corpus v2 (full task-statement coverage), FULL-60 Mock Test 2 generated with per-option feedback + a per-exam "Professor's Note" learning loop. Invoke `/cca-exam` from `prep with quiz/`. Handoff: `prep with quiz/resume-prompt.md`. **Next: take Mock Test 2 and paste its results JSON to close the loop.**
 - [ ] Request exam access via Infosys / Claude Partner Network
 
 ---

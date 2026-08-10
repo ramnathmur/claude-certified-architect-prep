@@ -496,6 +496,13 @@ This is the hardest integration scenario type. All 5 domains must compose correc
 60 questions, timed, **held-out** (no reuse of taught examples or `practice/` bank items), **scenario-balanced** across the 6 scenarios. **Prefer the official Skilljar practice exam** (it exists — same scenarios/format as the real exam); otherwise use the held-out bank authored for this purpose (see the PROGRESS.md build task). No assistance, no discussion during exam.
 After exam: Exam Coach produces a domain-AND-scenario gap report scored against the Go/No-Go floors (≥720 total, no domain <70%, no scenario <70%).
 
+**Methodology update (2026-07-10, adopted from cross-project migration audit vs the HTML mock-exam generator in `prep with quiz/`):**
+- **Domain quota, enforced not just balanced:** D1=16, D2=11, D3=12, D4=12, D5=9 (60 questions × the official 27/18/20/20/15 weights). If using the held-out bank, hit this exact split.
+- **Generic scenario framing:** no invented company, product, or persona names in stems — "your agent," "the pipeline," "production logs show." (Confirmed by the sibling project's audit of all 76 known real-exam question texts: zero invented names.)
+- **Distractor archetypes:** where a wrong answer must be authored, draw from the four canonical types — symptom-level fix, over-engineering, wrong problem, non-existent feature — rather than an arbitrary miss.
+- **Confidence capture:** after each answer, ask "confident, or guessing?" before revealing correctness. A correct guess does NOT count as a clean recall for LEARNER-MODEL.md mastery promotion (see ENGAGEMENT-PROTOCOL.md → Cross-Session Memory) — only confident-correct answers advance mastery state.
+- **Scaled-score reporting:** report both the raw score (X/60) and the scaled estimate — `round((X/60) × 900 + 100)` — against the 720 floor, per domain and per scenario, not just a pass/fail total. (Formula matches the sibling generator project's calibrated model, not a naive ×1000 proportion — a 0-correct floor of 100 is more realistic than 0.)
+
 ---
 
 ### Session 36 · Mock #1 Analysis + Targeted Re-Drill · [P + EC] · 45 min
