@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Domain 2 — Tool Design & MCP Integration: Cheatsheet</title>
+<meta name="description" content="Exam reference for tool interface design, error handling, and MCP server integration patterns."/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --ink: #1b2027;
+  --ink2: #3c434c;
+  --ink3: #6b7480;
+  --surface: #f2f4f6;
+  --surface2: #e7eaed;
+  --surface3: #dbdfe3;
+  --accent: #33566f;
+  --accent-light: #d8e3ea;
+  --accent-dark: #1f384a;
+  --teal: #2a7a6e;
+  --teal-light: #d4f0ec;
+  --coral: #c85a3a;
+  --coral-light: #fae8e2;
+  --purple: #5a3a8a;
+  --purple-light: #ece6f5;
+  --green: #3a7a4a;
+  --green-light: #e2f0e6;
+  --blue: #2a5a8a;
+  --blue-light: #ddeaf5;
+  --gray-light: #f0ece6;
+  --border: #cbd1d8;
+  --shadow: 0 1px 2px rgba(27,32,39,0.06);
+  --shadow-lg: 0 4px 16px rgba(27,32,39,0.10);
+  --radius: 6px;
+  --radius-sm: 4px;
+  --display: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --sans: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'JetBrains Mono', Consolas, 'Courier New', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.6;
+}
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+.skip-link {
+  position: absolute; left: -9999px; top: 0; z-index: 200;
+  background: var(--ink); color: var(--surface); padding: 8px 16px; border-radius: 0 0 6px 0;
+}
+.skip-link:focus { left: 0; }
+.doc-header {
+  padding: 44px 40px 32px;
+  border-bottom: 1px solid var(--border);
+}
+.doc-header-inner { max-width: 1040px; margin: 0 auto; }
+.doc-eyebrow {
+  font-family: var(--mono);
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 14px;
+}
+.doc-header h1 {
+  font-family: var(--display);
+  font-size: clamp(24px, 3.2vw, 34px);
+  font-weight: 600; line-height: 1.2;
+  color: var(--ink);
+  margin-bottom: 12px;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.doc-header h1 em { font-style: normal; color: var(--accent-dark); }
+.doc-sub {
+  font-size: 15px; font-weight: 400;
+  color: var(--ink2);
+  max-width: 680px; line-height: 1.55;
+  margin-bottom: 16px;
+}
+.doc-meta {
+  display: flex; gap: 18px; flex-wrap: wrap;
+  font-family: var(--mono);
+  font-size: 11px; color: var(--ink3);
+}
+.doc-meta span::before { content: '·'; margin-right: 18px; color: var(--border); }
+.doc-meta span:first-child::before { content: ''; margin: 0; }
+.nav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(242,244,246,0.97);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 40px;
+}
+.nav-inner {
+  max-width: 1040px; margin: 0 auto;
+  display: flex; gap: 0; overflow-x: auto; align-items: center;
+}
+.nav-link {
+  font-family: var(--mono);
+  font-size: 12px; font-weight: 500;
+  color: var(--ink3); text-decoration: none;
+  padding: 13px 16px; white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.nav-link:hover { color: var(--ink); border-color: var(--accent); }
+.nav-link.active { color: var(--ink); border-color: var(--accent); }
+.container { max-width: 1040px; margin: 0 auto; padding: 0 40px; }
+.section { padding: 48px 0; }
+.section + .section { border-top: 1px solid var(--border); }
+.section-label {
+  font-family: var(--mono);
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 10px;
+}
+.section-title {
+  font-family: var(--display);
+  font-size: clamp(20px, 2.6vw, 26px);
+  font-weight: 600; line-height: 1.25;
+  color: var(--ink); margin-bottom: 12px;
+  letter-spacing: -0.01em;
+}
+.section-intro {
+  font-size: 14.5px; font-weight: 400;
+  color: var(--ink2); max-width: 680px;
+  margin-bottom: 28px; line-height: 1.6;
+}
+[id] { scroll-margin-top: 56px; }
+.prose { max-width: 680px; }
+.prose p { margin-bottom: 14px; color: var(--ink2); font-size: 14.5px; }
+.prose p strong { color: var(--ink); font-weight: 600; }
+.prose h3 {
+  font-family: var(--display); font-size: 16px; font-weight: 600;
+  color: var(--ink); margin: 26px 0 10px;
+}
+.prose ul, .prose ol { padding-left: 20px; margin-bottom: 14px; color: var(--ink2); font-size: 14.5px; }
+.prose li { margin-bottom: 6px; }
+.prose a { color: var(--accent-dark); text-decoration-color: var(--accent); text-underline-offset: 3px; }
+.note-box {
+  margin: 18px 0; padding: 12px 14px;
+  background: var(--surface3);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: 13px; color: var(--ink2);
+  max-width: 680px;
+}
+.note-box strong { font-weight: 600; color: var(--ink); }
+.table-wrap { overflow-x: auto; margin: 22px 0; }
+.data-table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+  border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
+}
+.data-table caption {
+  caption-side: bottom; text-align: left;
+  font-size: 12px; color: var(--ink3); padding: 8px 4px;
+}
+.data-table thead th {
+  font-family: var(--mono);
+  font-size: 10.5px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ink3); text-align: left;
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  background: var(--surface3);
+}
+.data-table td { padding: 9px 14px; border-bottom: 1px solid var(--border); color: var(--ink2); vertical-align: top; }
+.data-table tbody tr:nth-child(even) { background: var(--surface2); }
+.data-table tbody tr:last-child td { border-bottom: none; }
+code {
+  font-family: var(--mono); font-size: 0.86em;
+  background: var(--surface2); border: 1px solid var(--border);
+  padding: 1px 5px; border-radius: 3px; color: var(--ink);
+}
+pre.code-block {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px 18px; margin: 20px 0;
+  overflow-x: auto; font-family: var(--mono);
+  font-size: 12.5px; line-height: 1.55; color: var(--ink2);
+}
+pre.code-block code { background: none; border: none; padding: 0; }
+.footer-strip {
+  background: var(--ink); color: rgba(242,244,246,0.55);
+  text-align: center; padding: 24px 40px; font-size: 12px; line-height: 1.5;
+  margin-top: 48px;
+}
+.footer-strip strong { color: rgba(242,244,246,0.85); }
+@media (max-width: 720px) {
+  .container, .doc-header { padding-left: 20px; padding-right: 20px; }
+  .nav { padding: 0 16px; }
+}
+@media print {
+  .nav, .skip-link { display: none; }
+  body { background: #fff; }
+}
+</style>
+</head>
+<body>
+
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="doc-header">
+  <div class="doc-header-inner">
+    <div class="doc-eyebrow">Exam Reference · Domain 2 · 18% Weight</div>
+    <h1>Tool Design & MCP Integration</h1>
+    <p class="doc-sub">Master tool interface design, structured error responses, and MCP server configuration. Tool descriptions are the routing layer—fix descriptions before adding infrastructure.</p>
+    <div class="doc-meta">
+      <span>Content: Cheatsheet</span>
+      <span>Pass cut: 720/1000</span>
+      <span>Study type: Lookup reference</span>
+    </div>
+  </div>
+</header>
+
+<nav class="nav" aria-label="Sections">
+  <div class="nav-inner">
+    <a class="nav-link active" href="#tool-interface">Tool Interface</a>
+    <a class="nav-link" href="#error-responses">Error Responses</a>
+    <a class="nav-link" href="#tool-distribution">Tool Distribution</a>
+    <a class="nav-link" href="#mcp-integration">MCP Integration</a>
+    <a class="nav-link" href="#built-in-tools">Built-in Tools</a>
+    <a class="nav-link" href="#mnemonics">Mnemonics</a>
+  </div>
+</nav>
+
+<main id="main">
+
+<section class="section" id="tool-interface">
+  <div class="container">
+    <div class="section-label">TS 2.1</div>
+    <h2 class="section-title">Tool Interface Design</h2>
+    <p class="section-intro">Tool descriptions ARE the routing mechanism. Misrouting is a description problem until proven otherwise.</p>
+    <div class="prose">
+      <h3>Five Components of Production-Grade Tool Description</h3>
+      <ol>
+        <li><strong>Primary purpose</strong> — one sentence</li>
+        <li><strong>Input contract</strong> — formats, types, constraints</li>
+        <li><strong>Example queries it handles well</strong> — concrete strings</li>
+        <li><strong>Edge cases and limitations</strong> — what it won't do</li>
+        <li><strong>Explicit boundaries vs. similar tools</strong> — "Use this for X. For Y, use `other_tool`."</li>
+      </ol>
+      <h3>The Misrouting Fix-Ranking (Memorise Verbatim)</h3>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <caption>Fix priority for misrouting scenarios</caption>
+        <thead>
+          <tr><th>Fix</th><th>Rank</th><th>Why</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Expand tool descriptions</strong></td><td><strong>1st — correct</strong></td><td>Low effort, high leverage, fixes root cause</td></tr>
+          <tr><td>Few-shot examples in system prompt</td><td>2nd</td><td>Treats symptom, token overhead on every call</td></tr>
+          <tr><td>Merge tools into one</td><td>3rd</td><td>Loses useful semantic distinction, high refactor cost</td></tr>
+          <tr><td>Train a routing classifier</td><td>4th — wrong</td><td>Extra model call, latency, new failure point</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <h3>Tool Splitting</h3>
+      <p><strong>Code smell:</strong> a tool description containing "or" between behaviours, or "depending on" between conditions. Split into purpose-specific tools with tight contracts.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="error-responses">
+  <div class="container">
+    <div class="section-label">TS 2.2</div>
+    <h2 class="section-title">Structured Error Responses</h2>
+    <p class="section-intro">The MCP <code>isError</code> flag is the agent's primary recovery signal.</p>
+    <div class="table-wrap">
+      <table class="data-table">
+        <caption>Four error categories agents must distinguish</caption>
+        <thead>
+          <tr><th>Category</th><th>Examples</th><th>Retryable?</th><th>Agent Response</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Transient</strong></td><td>Network timeout, 503, rate limit</td><td>Yes (same input)</td><td>Backoff + retry, then escalate</td></tr>
+          <tr><td><strong>Validation</strong></td><td>Wrong format, missing field, malformed ID</td><td>Yes (after fixing input)</td><td>Correct input and retry</td></tr>
+          <tr><td><strong>Business</strong></td><td>Refund exceeds limit, account locked, not eligible</td><td><strong>No</strong></td><td>Switch workflow; surface description to user</td></tr>
+          <tr><td><strong>Permission</strong></td><td>401, 403, missing scope</td><td>No (by this agent)</td><td>Escalate or request elevated creds</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <h3>THE Most-Tested Distinction in 2.2</h3>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr><th>Case</th><th>Response</th><th>Agent Action</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Access failure</strong> (tool can't reach source)</td><td><code>isError: true</code>, category transient/permission</td><td>Decide whether to retry</td></tr>
+          <tr><td><strong>Valid empty result</strong> (tool queried successfully, found nothing)</td><td><code>isError: false</code>, empty array / null result</td><td>Tell user "no results"</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note-box"><strong>Critical:</strong> Conflating these is the canonical 2.2 exam trap. Returning <code>[]</code> for both "no such customer" AND "database unreachable" causes the agent to retry endlessly.</div>
+  </div>
+</section>
+
+<section class="section" id="tool-distribution">
+  <div class="container">
+    <div class="section-label">TS 2.3</div>
+    <h2 class="section-title">Tool Distribution and tool_choice</h2>
+    <p class="section-intro">Scope tools to roles. The sweet spot is 4-5 tools per agent.</p>
+    <div class="prose">
+      <h3>The tool_choice Values</h3>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr><th>Need</th><th><code>tool_choice</code> Value</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Model may or may not call a tool</td><td><code>"auto"</code> (default)</td></tr>
+          <tr><td>Model MUST call some tool, of its choice</td><td><code>"any"</code></td></tr>
+          <tr><td>Model MUST call this specific tool</td><td><code>{"type": "tool", "name": "extract_intent"}</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <h3>Force-a-Specific-First-Step Pattern (Exam Favourite)</h3>
+      <p><strong>Scenario:</strong> "Every customer message must first extract intent and entities before routing. Currently done via system prompt instruction; ~15% of messages skip the extraction."</p>
+      <p><strong>Correct fix:</strong> set <code>tool_choice: {"type": "tool", "name": "extract_intent"}</code> on the first turn. Switch to <code>"auto"</code> for subsequent turns. The model literally cannot output anything other than the forced tool call. 15% miss rate → 0%.</p>
+      <p><strong>Key rule:</strong> When the requirement is "the model MUST do X first", reach for <code>tool_choice: {"type": "tool", "name": "X"}</code>, not a prompt instruction. Prompts request; <code>tool_choice</code> requires.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="mcp-integration">
+  <div class="container">
+    <div class="section-label">TS 2.4</div>
+    <h2 class="section-title">MCP Server Integration</h2>
+    <p class="section-intro">Credential handling and server configuration scoping.</p>
+    <div class="table-wrap">
+      <table class="data-table">
+        <caption>MCP configuration scoping hierarchy</caption>
+        <thead>
+          <tr><th>Level</th><th>Path</th><th>Version-Controlled?</th><th>Purpose</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Project</strong></td><td><code>.mcp.json</code> (repo root)</td><td>Yes</td><td>Team-wide integrations for this project</td></tr>
+          <tr><td><strong>User</strong></td><td><code>~/.claude.json</code></td><td>No</td><td>Personal/experimental servers across all projects</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <h3>Credential Handling — ${VAR} Expansion (Most-Tested 2.4 Pattern)</h3>
+      <p><strong>Wrong:</strong> hardcoding actual tokens in config files.</p>
+      <p><strong>Right:</strong> use <code>${VAR}</code> expansion and store secrets in each developer's local environment.</p>
+      <p><strong>Rule:</strong> "shared config, personal credentials". The `.mcp.json` stays committed and shared. Secrets live in each developer's local environment. Rotate any leaked token — git history is forever.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="built-in-tools">
+  <div class="container">
+    <div class="section-label">TS 2.5</div>
+    <h2 class="section-title">Built-in Tools: Grep vs Glob</h2>
+    <p class="section-intro">THE most-tested distinction in this section.</p>
+    <div class="table-wrap">
+      <table class="data-table">
+        <caption>Grep vs Glob decision matrix</caption>
+        <thead>
+          <tr><th>Tool</th><th>Searches</th><th>Returns</th><th>Mnemonic</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Grep</strong></td><td>File <strong>contents</strong></td><td>Matching lines + filenames</td><td>"What does the code <em>say</em>?"</td></tr>
+          <tr><td><strong>Glob</strong></td><td>File <strong>paths</strong></td><td>File paths matching pattern</td><td>"What files <em>exist</em>?"</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <h3>Mirror Traps</h3>
+      <ul>
+        <li>"Find all React component files" → <strong>Glob</strong> <code>**/*.tsx</code>, NOT Grep</li>
+        <li>"Find all callers of <code>formatDate</code>" → <strong>Grep</strong> <code>formatDate(</code>, NOT Glob</li>
+      </ul>
+      <h3>Edit Tool Escalation Ladder</h3>
+      <ol>
+        <li><strong>Expand the <code>old_string</code> anchor</strong> with surrounding context until unique — the FIRST move</li>
+        <li>If anchor cannot be made unique → <strong>Read + Write</strong> the full file</li>
+        <li>If intent was actually "change every occurrence" → use <code>replace_all: true</code></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="mnemonics">
+  <div class="container">
+    <div class="section-label">Quick Reference</div>
+    <h2 class="section-title">One-Line Mnemonics</h2>
+    <div class="prose">
+      <ul>
+        <li><strong>Misrouting:</strong> descriptions are the routing layer — expand them first.</li>
+        <li><strong>"Or" / "depending on" in a tool description:</strong> split the tool.</li>
+        <li><strong><code>isError: true</code>:</strong> the tool couldn't look. <strong><code>isError: false</code> + empty:</strong> the tool looked and found nothing.</li>
+        <li><strong>Tool count:</strong> 4-5 per agent. More degrades selection.</li>
+        <li><strong>"Must do X first":</strong> <code>tool_choice: {"type": "tool", "name": "X"}</code> — never a prompt instruction.</li>
+        <li><strong>Credentials in committed <code>.mcp.json</code>:</strong> <code>${VAR}</code> expansion + rotate the leaked token. Don't relocate the file.</li>
+        <li><strong>Grep vs Glob:</strong> content = Grep, paths = Glob. Wrong choice = wasted time or impossible task.</li>
+        <li><strong>Edit fails with "multiple matches":</strong> expand the anchor first; Read + Write only as fallback.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer-strip">
+  <strong>Domain 2: Tool Design & MCP Integration</strong><br/>
+  Exam weight 18% · Claude Certified Architect Prep · Study reference
+</footer>
+
+<script>
+(function () {
+  var links = document.querySelectorAll('.nav-link');
+  if (!links.length) return;
+  var map = {};
+  links.forEach(function (l) { map[l.getAttribute('href').slice(1)] = l; });
+  var obs = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) {
+        links.forEach(function (l) { l.classList.remove('active'); });
+        var l = map[e.target.id]; if (l) l.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -60% 0px' });
+  document.querySelectorAll('section[id]').forEach(function (s) { obs.observe(s); });
+})();
+</script>
+</body>
+</html>
