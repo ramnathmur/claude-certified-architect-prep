@@ -96,13 +96,13 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html{scroll-behavior:smooth;}
 body{font-family:var(--sans);background:var(--cream);color:var(--ink);font-size:16px;line-height:1.7;}
-.hero{background:var(--ink);color:var(--cream);padding:56px 40px 44px;text-align:center;}
-.hero-eyebrow{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:0.18em;text-transform:uppercase;color:var(--amber);margin-bottom:18px;}
-.hero h1{font-family:var(--serif);font-size:clamp(28px,4.5vw,46px);font-weight:400;line-height:1.15;margin-bottom:14px;color:#fff;}
-.hero h1 em{font-style:italic;color:var(--amber);}
-.hero-sub{font-size:15px;font-weight:300;color:rgba(250,247,242,0.72);max-width:620px;margin:0 auto 22px;line-height:1.6;}
+.hero{background:var(--cream2);border-bottom:1px solid var(--border);color:var(--ink);padding:20px 40px 18px;text-align:center;}
+.hero-eyebrow{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:0.18em;text-transform:uppercase;color:var(--amber-dark);margin-bottom:8px;}
+.hero h1{font-family:var(--serif);font-size:clamp(20px,3vw,28px);font-weight:400;line-height:1.15;margin-bottom:6px;color:var(--ink);}
+.hero h1 em{font-style:italic;color:var(--amber-dark);}
+.hero-sub{font-size:13px;font-weight:300;color:var(--ink2);max-width:620px;margin:0 auto 12px;line-height:1.5;}
 .hero-tags{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
-.tag{font-size:11px;font-weight:500;letter-spacing:0.06em;padding:5px 12px;border-radius:99px;border:1px solid rgba(250,247,242,0.18);color:rgba(250,247,242,0.72);}
+.tag{font-size:11px;font-weight:500;letter-spacing:0.06em;padding:4px 11px;border-radius:99px;border:1px solid var(--border);color:var(--ink2);background:#fff;}
 .nav-bar{position:sticky;top:0;z-index:100;background:rgba(250,247,242,0.96);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:12px 40px;display:flex;flex-direction:column;}
 .nav-bar-row{display:flex;align-items:center;gap:18px;}
 .nav-progress{flex:1;min-width:0;}
@@ -192,7 +192,7 @@ body{font-family:var(--sans);background:var(--cream);color:var(--ink);font-size:
 @media (max-width:720px){
   .container{padding:24px 16px 60px;}
   .nav-bar{padding:10px 16px;gap:12px;}
-  .hero{padding:38px 16px;}
+  .hero{padding:16px 16px 14px;}
   .q-card{padding:20px;}
   .block-hdr{padding:20px;}
   .nav-timer,.score-pill{font-size:11px;padding:5px 9px;}
@@ -337,7 +337,8 @@ function renderJumpMap(){
   document.getElementById("navJumpMap").innerHTML = rows;
 }
 
-function renderPage(g){
+function renderPage(g, opts={}){
+  const scrollTop = opts.scrollTop !== false;
   const q = DATA.questions.find(x=>x.g===g);
   currentG = g;
   setView("question");
@@ -358,7 +359,7 @@ function renderPage(g){
   if(answered) paintAnswered(q); else markShown(q);
   renderJumpMap();
   updateNav();
-  window.scrollTo(0,0);
+  if(scrollTop) window.scrollTo(0,0);
 }
 
 function goNext(){
@@ -398,7 +399,9 @@ function pick(g,i){
   state.times[g]=Math.max(1,Math.round((Date.now()-shown)/1000));
   state.answers[g]=i;
   save();
-  renderPage(g);
+  renderPage(g,{scrollTop:false});
+  const btn=document.getElementById("nextBtn");
+  if(btn){ btn.scrollIntoView({behavior:"smooth",block:"end"}); btn.focus({preventScroll:true}); }
 }
 
 function paintAnswered(q){
@@ -513,7 +516,7 @@ function submitExam(){
   r.classList.add("shown");
 
   const payload={
-    exam_n:3, format:"FULL60", attempted_date:new Date().toISOString().slice(0,10),
+    exam_n:4, format:"FULL60", attempted_date:new Date().toISOString().slice(0,10),
     total_correct:totalCorrect, total_questions:60, total_seconds:tSec,
     estimated_scaled:scaled,
     domains:Object.fromEntries(DOM_ORDER.map(d=>[d,{correct:perDom[d].correct,of:perDom[d].of}])),
