@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 1 — The one budget everything spends · CCDV-F</title>
+<meta name="description" content="Claude Certified Developer Foundations, Chapter 1: the context window as one fixed volume every part of a request draws from, why tool results are the line item nobody measures, and how to tell three kinds of truncation apart.">
+<meta name="author" content="Ram">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: light dark;
+
+  --ink:    oklch(0.15 0.01 80);
+  --ink2:   oklch(0.30 0.015 75);
+  --ink3:   oklch(0.53 0.015 75);
+  --cream:  oklch(0.97 0.008 85);
+  --cream2: oklch(0.94 0.012 85);
+  --cream3: oklch(0.91 0.015 80);
+  --border: oklch(0.87 0.012 80);
+
+  --amber:       oklch(0.64 0.14 68);
+  --amber-light: oklch(0.93 0.035 80);
+  --amber-dark:  oklch(0.47 0.11 60);
+  --blue:        oklch(0.43 0.09 245);
+  --blue-light:  oklch(0.93 0.025 240);
+  --coral:       oklch(0.55 0.14 30);
+  --coral-light: oklch(0.94 0.025 35);
+  --purple:      oklch(0.38 0.14 300);
+  --purple-light:oklch(0.93 0.03 300);
+  --green:       oklch(0.50 0.10 150);
+  --green-light: oklch(0.94 0.025 145);
+
+  --surface-raised:  oklch(0.15 0.01 80);
+  --on-raised:       oklch(0.97 0.008 85);
+  --on-raised-muted: oklch(0.97 0.008 85 / 0.74);
+  --on-raised-dim:   oklch(0.97 0.008 85 / 0.6);
+  --on-raised-border:oklch(0.97 0.008 85 / 0.15);
+  --nav-bg:          oklch(0.97 0.008 85 / 0.96);
+
+  --font-serif: Georgia, 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+  --font-sans:  system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono:  ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+  --font-body-active: var(--font-sans);
+
+  --fs-body: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --fs-sm:   clamp(0.8125rem, 0.78rem + 0.15vw, 0.9375rem);
+  --fs-xs:   clamp(0.6875rem, 0.67rem + 0.1vw, 0.75rem);
+  --fs-h1:   clamp(2rem, 1.4rem + 3vw, 3.375rem);
+  --fs-h2:   clamp(1.5rem, 1.2rem + 1.5vw, 2.125rem);
+  --fs-h3:   clamp(1.25rem, 1.1rem + 0.75vw, 1.5rem);
+  --fs-pull: clamp(1.375rem, 1.15rem + 1.1vw, 1.625rem);
+  --lh-body: 1.7;
+  --lh-heading: 1.2;
+  --measure: 68ch;
+
+  --space-section: clamp(3rem, 2.5rem + 2.5vw, 4rem);
+  --space-block:   clamp(1.5rem, 1.25rem + 1.25vw, 2.5rem);
+  --space-inline:  clamp(1.25rem, 1rem + 1.25vw, 2rem);
+  --radius:    12px;
+  --radius-sm: 8px;
+  --shadow:    0 2px 16px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
+  --t-fast: 0.15s;
+  --t-med:  0.25s;
+}
+
+[data-theme="dark"] {
+  --ink:    oklch(0.90 0.008 85);
+  --ink2:   oklch(0.78 0.01 80);
+  --ink3:   oklch(0.58 0.01 75);
+  --cream:  oklch(0.15 0.012 75);
+  --cream2: oklch(0.19 0.012 75);
+  --cream3: oklch(0.23 0.015 75);
+  --border: oklch(0.32 0.01 75);
+  --shadow:    0 2px 16px rgba(0,0,0,0.3);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+  --amber:       oklch(0.72 0.13 68);
+  --amber-light: oklch(0.24 0.04 70);
+  --amber-dark:  oklch(0.78 0.10 65);
+  --blue:        oklch(0.70 0.09 245);
+  --blue-light:  oklch(0.24 0.035 245);
+  --coral:       oklch(0.68 0.13 30);
+  --coral-light: oklch(0.26 0.04 30);
+  --purple:      oklch(0.68 0.12 300);
+  --purple-light:oklch(0.25 0.04 300);
+  --green:       oklch(0.68 0.10 150);
+  --green-light: oklch(0.24 0.035 150);
+  --nav-bg: oklch(0.15 0.012 75 / 0.92);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink:    oklch(0.90 0.008 85);
+    --ink2:   oklch(0.78 0.01 80);
+    --ink3:   oklch(0.58 0.01 75);
+    --cream:  oklch(0.15 0.012 75);
+    --cream2: oklch(0.19 0.012 75);
+    --cream3: oklch(0.23 0.015 75);
+    --border: oklch(0.32 0.01 75);
+    --shadow:    0 2px 16px rgba(0,0,0,0.3);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+    --amber:       oklch(0.72 0.13 68);
+    --amber-light: oklch(0.24 0.04 70);
+    --amber-dark:  oklch(0.78 0.10 65);
+    --blue:        oklch(0.70 0.09 245);
+    --blue-light:  oklch(0.24 0.035 245);
+    --coral:       oklch(0.68 0.13 30);
+    --coral-light: oklch(0.26 0.04 30);
+    --purple:      oklch(0.68 0.12 300);
+    --purple-light:oklch(0.25 0.04 300);
+    --green:       oklch(0.68 0.10 150);
+    --green-light: oklch(0.24 0.035 150);
+    --nav-bg: oklch(0.15 0.012 75 / 0.92);
+  }
+}
+
+[data-font="serif"]  { --font-body-active: var(--font-serif); }
+[data-font="legible"]{ --font-body-active: 'Atkinson Hyperlegible', var(--font-sans); --lh-body: 1.85; letter-spacing: 0.01em; }
+
+* , *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 78px; }
+
+body {
+  margin: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-body-active);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
+
+.skip-link {
+  position: absolute; left: -9999px; top: 0; z-index: 200;
+  background: var(--ink); color: var(--cream);
+  padding: 0.7rem 1.1rem; border-radius: var(--radius-sm);
+}
+.skip-link:focus { left: 0.6rem; top: 0.6rem; }
+
+h1, h2, h3 { font-family: var(--font-serif); line-height: var(--lh-heading); font-weight: 400; color: var(--ink); }
+h2 { font-size: var(--fs-h2); margin: 0 0 1em; }
+h3 { font-size: var(--fs-h3); margin: var(--space-block) 0 0.75em; }
+p { margin: 0 0 1.1em; }
+code { font-family: var(--font-mono); font-size: 0.9em; background: var(--cream3); padding: 0.12em 0.4em; border-radius: 4px; }
+a { color: var(--amber-dark, var(--amber)); }
+[data-theme="dark"] a, :root:not([data-theme="light"]) a { color: var(--amber); }
+
+/* ---- nav ---- */
+.nav {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--nav-bg);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-inner {
+  max-width: 1000px; margin: 0 auto;
+  padding: 0.7rem clamp(1rem, 3vw, 2.5rem);
+  display: flex; align-items: center; gap: 1.1rem;
+  flex-wrap: wrap;
+}
+.nav-brand {
+  font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3);
+  white-space: nowrap;
+}
+.nav-links { display: flex; gap: 0.9rem; flex-wrap: wrap; margin-right: auto; }
+.nav-link {
+  font-size: var(--fs-sm); color: var(--ink2); text-decoration: none;
+  padding: 0.2rem 0; border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+.nav-link.active { color: var(--amber-dark, var(--amber)); border-bottom-color: var(--amber); }
+[data-theme="dark"] .nav-link.active, :root:not([data-theme="light"]) .nav-link.active { color: var(--amber); }
+.nav-progress { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink3); white-space: nowrap; }
+.nav-btn {
+  font-family: var(--font-sans); font-size: 1rem; line-height: 1;
+  background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  width: 34px; height: 34px; cursor: pointer; color: var(--ink2);
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: border-color var(--t-fast);
+}
+.nav-btn:hover { border-color: var(--amber); }
+.nav-btn.font-toggle { font-family: var(--font-serif); font-size: 0.85rem; width: auto; padding: 0 0.6rem; }
+
+/* ---- chapter-nav (prev/next) ---- */
+.chapter-nav {
+  max-width: 1000px; margin: 0 auto;
+  padding: 0.85rem clamp(1rem, 3vw, 2.5rem);
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  font-size: var(--fs-sm); color: var(--ink3);
+}
+.chapter-nav-link { color: var(--ink3); text-decoration: none; }
+.chapter-nav-link.disabled { cursor: default; opacity: 0.55; }
+.chapter-nav-link em { font-style: normal; font-size: var(--fs-xs); }
+.chapter-nav-current { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase; }
+
+/* ---- header ---- */
+.hero {
+  background: var(--cream);
+  padding: clamp(2rem, 4vw, 3.5rem) clamp(1rem, 3vw, 2.5rem) clamp(1.5rem, 3vw, 2.5rem);
+  border-bottom: 1px solid var(--border);
+}
+.hero-inner { max-width: 900px; margin: 0 auto; }
+.eyebrow {
+  display: flex; align-items: center; gap: 0.6rem;
+  font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber-dark, var(--amber));
+  margin-bottom: 0.9rem;
+}
+[data-theme="dark"] .eyebrow, :root:not([data-theme="light"]) .eyebrow { color: var(--amber); }
+.eyebrow .icon { font-size: 1.3rem; letter-spacing: 0; }
+.hero h1 { font-size: var(--fs-h1); margin: 0; max-width: 18ch; }
+
+/* ---- main ---- */
+main { max-width: 900px; margin: 0 auto; padding: 0 clamp(1rem, 3vw, 2.5rem); }
+section { padding: var(--space-section) 0 0; }
+section:last-of-type { padding-bottom: var(--space-section); }
+.measure { max-width: var(--measure); }
+
+/* ---- box vocabulary ---- */
+.analogy, .callout-tip, .callout-warning, .callout-remember {
+  border-radius: var(--radius); padding: 22px 26px; margin: var(--space-block) 0;
+}
+.analogy      { background: var(--amber-light);  border-left: 3.5px solid var(--amber); }
+.callout-tip  { background: var(--amber-light);  border-left: 3.5px solid var(--amber); }
+.callout-warning { background: var(--coral-light); border-left: 3.5px solid var(--coral); }
+.callout-remember { background: var(--purple-light); border-left: 3.5px solid var(--purple); }
+.callout-def {
+  background: var(--blue-light); border-radius: var(--radius-sm);
+  padding: 18px 22px; margin: var(--space-block) 0;
+}
+.box-tag {
+  display: block; font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3);
+  margin-bottom: 8px;
+}
+.analogy .box-tag { color: var(--amber-dark, var(--amber)); }
+[data-theme="dark"] .analogy .box-tag, :root:not([data-theme="light"]) .analogy .box-tag { color: var(--amber); }
+.callout-remember .box-tag { color: var(--purple); }
+.callout-def .box-tag { color: var(--blue); }
+.analogy p, .callout-tip p, .callout-def p, .callout-remember p, .callout-warning p { margin-bottom: 0.6em; }
+.analogy p:last-child, .callout-tip p:last-child, .callout-def p:last-child, .callout-remember p:last-child { margin-bottom: 0; }
+
+.takeaway, .worked {
+  background: var(--surface-raised); color: var(--on-raised);
+  border-radius: var(--radius); padding: 26px 28px; margin: var(--space-block) 0;
+}
+.takeaway .box-tag, .worked .box-tag { color: var(--on-raised-dim); }
+.takeaway p, .worked p { color: var(--on-raised-muted); margin-bottom: 0; }
+.takeaway strong, .worked strong { color: var(--on-raised); }
+.worked p { font-family: var(--font-mono); font-size: var(--fs-sm); line-height: 1.75; }
+
+.pullquote {
+  max-width: 640px; margin: var(--space-block) auto;
+  padding-left: 22px; border-left: 3px solid var(--amber);
+  font-family: var(--font-serif); font-size: var(--fs-pull); line-height: 1.45;
+  color: var(--ink2);
+}
+
+.split {
+  display: grid; grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden; margin: var(--space-block) 0;
+}
+.split-half { padding: 22px 24px; background: var(--cream2); }
+.split-half + .split-half { border-left: 1px solid var(--border); }
+.split-tag {
+  display: block; font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.06em; color: var(--ink3); margin-bottom: 10px;
+}
+.split-half p { margin-bottom: 0; font-size: var(--fs-sm); }
+@media (max-width: 640px) {
+  .split { grid-template-columns: 1fr; }
+  .split-half + .split-half { border-left: none; border-top: 1px solid var(--border); }
+}
+
+.xlink-grid { display: grid; gap: 12px; margin: var(--space-block) 0; }
+.xlink {
+  background: var(--cream2); border-radius: var(--radius-sm);
+  padding: 14px 18px; display: flex; gap: 12px; align-items: baseline;
+  font-size: var(--fs-sm);
+}
+.xlink b { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.05em; color: var(--ink3); white-space: nowrap; }
+.xlink span { color: var(--ink2); }
+
+table.ref {
+  width: 100%; border-collapse: collapse; margin: var(--space-block) 0;
+  font-size: var(--fs-sm); border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden;
+}
+table.ref th, table.ref td { padding: 12px 16px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); }
+table.ref th { background: var(--cream3); font-weight: 600; font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); }
+table.ref tr:last-child td { border-bottom: none; }
+table.ref td:first-child { font-family: var(--font-mono); font-size: var(--fs-xs); width: 24%; }
+
+/* ---- diagram ---- */
+.diagram { margin: var(--space-block) 0; text-align: center; }
+.diagram svg { max-width: 100%; height: auto; }
+.diagram-caption { font-size: var(--fs-xs); color: var(--ink3); margin-top: 0.6rem; font-family: var(--font-mono); }
+
+/* ---- self-test / mcq ---- */
+.mcq {
+  background: var(--green-light); border-radius: var(--radius);
+  padding: 22px 24px; margin: var(--space-block) 0;
+}
+.mcq-num {
+  font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--green); margin-bottom: 10px; display: flex; gap: 10px; align-items: center;
+}
+.mcq-tag { background: var(--cream); padding: 2px 8px; border-radius: 4px; color: var(--ink3); }
+.mcq-stem { font-size: var(--fs-body); margin-bottom: 1rem; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 0.4rem; }
+.mcq-opt {
+  font-family: var(--font-sans); font-size: var(--fs-sm); text-align: left;
+  background: var(--cream); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 11px 14px; cursor: pointer; color: var(--ink);
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+.mcq-opt:hover:not(:disabled) { border-color: var(--amber); }
+.mcq-opt:disabled { cursor: default; }
+.mcq-opt.mcq-selected { border-color: var(--amber); }
+.mcq-opt.mcq-correct { background: var(--green-light); border-color: var(--green); font-weight: 600; }
+.mcq-opt.mcq-incorrect { background: var(--coral-light); border-color: var(--coral); text-decoration: line-through; }
+.mcq-submit {
+  font-family: var(--font-sans); font-size: var(--fs-sm); font-weight: 600;
+  background: var(--ink); color: var(--cream); border: none; border-radius: var(--radius-sm);
+  padding: 9px 18px; cursor: pointer; margin-top: 4px;
+}
+.mcq-submit:disabled { opacity: 0.5; cursor: default; }
+.mcq-feedback { font-weight: 600; margin-top: 12px; }
+.mcq-feedback.right { color: var(--green); }
+.mcq-feedback.wrong { color: var(--coral); }
+.mcq-explain { margin-top: 10px; font-size: var(--fs-sm); color: var(--ink2); background: var(--cream); border-radius: var(--radius-sm); padding: 12px 16px; }
+
+/* ---- end of chapter ---- */
+.chapter-end {
+  background: var(--surface-raised); color: var(--on-raised);
+  border-radius: var(--radius); padding: 30px clamp(24px, 4vw, 40px);
+  margin: var(--space-section) 0; text-align: center;
+}
+.chapter-end p { color: var(--on-raised-muted); margin-bottom: 1.2rem; }
+.chapter-end .chapter-nav { padding: 0; color: var(--on-raised-dim); }
+.chapter-end .chapter-nav-link { color: var(--on-raised); }
+.chapter-end .chapter-nav-link.disabled { color: var(--on-raised-dim); }
+.chapter-end .chapter-nav-current { color: var(--on-raised-dim); }
+
+footer { text-align: center; padding: 2rem 1rem 3rem; font-size: var(--fs-xs); color: var(--ink3); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#hook">Skip to content</a>
+
+<nav class="nav" aria-label="Chapter navigation">
+  <div class="nav-inner">
+    <span class="nav-brand">CCDV-F &middot; Ch. 1</span>
+    <div class="nav-links">
+      <a class="nav-link" href="#hook">Hook</a>
+      <a class="nav-link" href="#container">The Container</a>
+      <a class="nav-link" href="#rule">The Rule</a>
+      <a class="nav-link" href="#failures">Two Failures</a>
+      <a class="nav-link" href="#boundaries">Boundaries</a>
+      <a class="nav-link" href="#exam-cues">Exam Cues</a>
+      <a class="nav-link" href="#self-test">Self-Test</a>
+    </div>
+    <div class="nav-progress">Progress: <span id="depth-pct">0</span>%</div>
+    <button class="nav-btn theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark mode" title="Toggle dark mode">&#127769;</button>
+    <button class="nav-btn font-toggle" id="font-toggle" type="button" aria-label="Change reading font" title="Cycle reading font">Aa</button>
+  </div>
+</nav>
+
+<div class="chapter-nav">
+  <span class="chapter-nav-link disabled" aria-disabled="true">&#9668; Course index <em>(coming soon)</em></span>
+  <span class="chapter-nav-current">Chapter 1 of 34</span>
+  <a class="chapter-nav-link" href="Ch02_Why-the-same-prompt-answers-twice-differently.html">Chapter 2 &#9658;</a>
+</div>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="eyebrow"><span class="icon">&#128230;</span> Chapter 1 of 34 &middot; The Context Window</div>
+    <h1>The one budget everything spends</h1>
+  </div>
+</header>
+
+<main>
+
+<section id="hook">
+  <h2>Twenty-five thousand six hundred of forty thousand</h2>
+  <div class="measure">
+    <p>Twenty-five thousand six hundred tokens is what eight turns of tool output cost one agent. The agent processed sales receipts and had been given a 40,000-token context budget, a cap the team set as a cost control rather than a limit the model imposed. In development it ran against twenty test receipts, each tool result around 800 tokens, and the full twenty-turn session stayed comfortably under the cap. In production the receipts arrived with supporting documentation, transaction records and correspondence attached. Average tool output grew to roughly 3,200 tokens per call. Eight turns of that is 25,600 tokens, and once the system prompt, the user messages and the assistant messages were added on top, the running total reached the cap at turn eight.</p>
+    <p>What the team saw was an agent choosing the wrong tools and returning incomplete analyses. A token usage audit found the cause two days after deployment.</p>
+  </div>
+
+  <div class="diagram">
+    <svg viewBox="0 0 640 460" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="diagram-title diagram-desc">
+      <title id="diagram-title">The receipt agent's 40,000-token budget at turn eight</title>
+      <desc id="diagram-desc">A container filled to its cap: 25,600 tokens of tool results on the bottom, 14,400 tokens of system prompt, messages and model output above it, reaching exactly the 40,000-token ceiling.</desc>
+      <defs>
+        <linearGradient id="gradAmber" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#e7ad5c"/>
+          <stop offset="100%" stop-color="#b06a1f"/>
+        </linearGradient>
+        <linearGradient id="gradNeutral" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#eef1f1"/>
+          <stop offset="100%" stop-color="#c7d0d3"/>
+        </linearGradient>
+      </defs>
+
+      <line x1="150" y1="50" x2="500" y2="50" stroke="#8a5a1a" stroke-width="1.5" stroke-dasharray="5 4"/>
+      <text x="150" y="36" font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#8a5a1a">40,000 tokens — the cap this team set</text>
+
+      <rect x="150" y="50" width="350" height="340" rx="10" fill="none" stroke="#7a6a55" stroke-width="1.5"/>
+
+      <rect x="150" y="50" width="350" height="122" fill="url(#gradNeutral)"/>
+      <text x="325" y="100" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12.5" font-weight="600" fill="#3a4245">SYSTEM PROMPT + MESSAGES</text>
+      <text x="325" y="118" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12.5" font-weight="600" fill="#3a4245">+ MODEL'S OWN ANSWER</text>
+      <text x="325" y="140" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="12" fill="#5a6265">14,400 tokens</text>
+
+      <rect x="150" y="172" width="350" height="218" fill="url(#gradAmber)"/>
+      <text x="325" y="270" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14.5" font-weight="700" fill="#3a2000">TOOL RESULTS</text>
+      <text x="325" y="292" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="12.5" fill="#4a2c05">25,600 tokens &middot; 8 turns &middot; 64% of the cap</text>
+
+      <line x1="500" y1="172" x2="525" y2="172" stroke="#7a6a55" stroke-width="1.5"/>
+      <text x="530" y="176" font-family="ui-monospace, Menlo, monospace" font-size="12" fill="#7a6a55">&#8592; cap reached here, turn 8</text>
+    </svg>
+    <div class="diagram-caption">Figure 1.1 — the receipt agent's 40,000-token window at the moment it filled</div>
+  </div>
+</section>
+
+<section id="container">
+  <h2>One container, and everything that rides in it</h2>
+  <div class="measure">
+    <div class="analogy">
+      <span class="box-tag">Hold this analogy</span>
+      <p>A shipping container has a fixed internal volume. You can pack it well or pack it badly, and the number of cubic metres does not move. Every carton you load takes volume from the same figure, and when the figure is spent the doors close on whatever is inside.</p>
+    </div>
+
+    <div class="callout-def">
+      <span class="box-tag">Definition</span>
+      <p>The context window is the total number of tokens the model can take in for a single request. It holds the system prompt, the full conversation so far, the tool definitions, every tool result, any documents you inject, and the model's own output. All of it at once, measured against one number.</p>
+    </div>
+
+    <p>That last item is the one that makes the container image worth keeping. The model's answer is built inside the same volume, while the doors are shut, out of whatever room the loading left.</p>
+
+    <h3>The unit on every line of the manifest</h3>
+    <p>Claude reads tokens, not characters or words. The characters-per-token average depends on the tokenizer of the model at hand and differs between model generations, so any rule of thumb you carry from one model is model-dependent and worth confirming at build time.</p>
+    <p>Tokens are the unit of the input, the unit of the output, and the unit of price. Estimating what a feature costs and estimating whether an input fits are the same arithmetic on the same unit, which is why the habit worth building is to think in tokens rather than in pages or paragraphs.</p>
+    <p>The volumes themselves are set by the model. Current Claude API models carry at least a 200k-token context window, and the newest flagship models, Fable included, serve 1M tokens by default. The receipt agent's 40,000 was a figure its team chose. The model had far more room.</p>
+
+    <h3>Cargo that is already aboard before the first message</h3>
+    <div class="callout-tip">
+      <span class="box-tag">Easy to forget</span>
+      <p>Tool definitions load with the container. An MCP server adds its tool definitions to the context window even when none of its tools are called in the current turn, so connecting several servers at once spends budget before the user's first message arrives. The system prompt behaves the same way: it is sent on every request, whether or not the current turn needs anything in it.</p>
+      <p>This is the part of the manifest that is easiest to forget, because nobody wrote it as part of the conversation. It arrives because the session was configured, and it arrives on every trip.</p>
+    </div>
+
+    <h3>The container is emptied and reloaded for every trip</h3>
+    <p>Nothing is kept between requests. A conversation works because your application sends the whole message history again on every API call, so turn nineteen is one request carrying all nineteen turns.</p>
+    <div class="callout-remember">
+      <span class="box-tag">Remember this</span>
+      <p>Two consequences follow. The budget is refilled to full at the start of every request, so a session never accumulates a debt it cannot clear. And the budget is re-charged in full on every request, so the tokens you loaded on turn three are paid for again on turn four, and again on turn nineteen.</p>
+    </div>
+
+    <h3>The two ways a container fails to ship</h3>
+    <p>These are different failures at different points in the request, and they leave you holding different things.</p>
+    <div class="split">
+      <div class="split-half">
+        <span class="split-tag">THE MANIFEST EXCEEDS THE VOLUME AT THE DOCK</span>
+        <p>A request whose input is already larger than the context window is rejected with a validation error before generation begins. Nothing was generated, so there is no partial output to salvage and no stop reason to read.</p>
+      </div>
+      <div class="split-half">
+        <span class="split-tag">THE DOORS CLOSE MID-LOAD</span>
+        <p>A request that fits on input can still reach the ceiling during generation. Current models stop and return the output generated so far with a <code>model_context_window_exceeded</code> stop reason rather than raising an error. What arrives is a successful response holding real, incomplete content.</p>
+      </div>
+    </div>
+    <p>Neither path silently drops your oldest content.</p>
+
+    <h3>Reading the loading plan</h3>
+    <p>The receipt agent's ledger, laid out as a manifest, shows where a real request's budget actually goes.</p>
+    <div class="worked">
+      <span class="box-tag">Worked example</span>
+      <p>In development: twenty tool results at roughly 800 tokens each, comfortably inside a 40,000-token cap across the full session. In production: tool results at roughly 3,200 tokens per call, so 25,600 tokens across eight turns, with the system prompt, the user messages and the assistant messages loaded on top of that to reach 40,000.</p>
+    </div>
+    <p>Read the second column as a proportion. Tool results were the largest line item on the manifest by a wide margin, and they were the only line item nobody had measured. The system prompt was written by hand and reviewed before it shipped. The user messages were short. The tool results were whatever a document happened to contain that day, and the assistant's own replies grew alongside them, because summarising a longer document takes more words than summarising a short one.</p>
+    <div class="worked">
+      <span class="box-tag">Worked example</span>
+      <p>A published session trace shows the same shape turn by turn. Four consecutive calls to <code>fetch_policy_document</code> returned 2,400 tokens each, so by the end of turn four there were 9,600 tokens of tool results sitting in the window, occupying room that the instructions about which tool to call next were also occupying.</p>
+    </div>
+  </div>
+</section>
+
+<section id="rule">
+  <h2>The rule that falls out of a fixed volume</h2>
+  <div class="measure">
+    <p>Three facts are on the table. The volume is fixed for a given model. Every component draws from that one volume. The whole manifest is loaded again on every request. Derive from them in order.</p>
+    <p>Because every component draws from one volume, the components compete with each other. Room spent on tool results is room the model's own answer cannot use. That is also why raising the cap on output length cannot create room: it raises a ceiling on one line item that is drawn from the same total.</p>
+    <p>Because the whole manifest is reloaded every request, what decides when the ceiling arrives is the spend per turn. Twenty turns at 800 tokens a tool result left dev comfortably under the cap. Eight turns at 3,200 tokens a tool result reached it in production, on the same agent, the same window and the same code. The tool-result line item changed size by four times; everything else in the request moved only in step with it.</p>
+    <p>Because the volume is fixed while the spend rate is not, a request that fitted yesterday can fail today with no change to your model, your prompt or your code. In development the window rarely fills, because test inputs are small and sessions are short. In production, tool outputs run longer, drawn from documents nobody sized in advance.</p>
+    <div class="takeaway">
+      <span class="box-tag">The rule</span>
+      <p>Before an agent ships, measure the actual token cost of a tool result against the largest input you can find in your target data, then set that per-turn figure against the ceiling. A fixture set tells you the code works. It tells you nothing about the spend rate: fixtures are authored by whoever wrote them, while production traffic arrives from whatever a real document happens to contain.</p>
+    </div>
+  </div>
+</section>
+
+<section id="failures">
+  <h2>Two truncations that look identical on screen</h2>
+  <div class="measure">
+    <p>An agent returns half a JSON object, stopped mid-structure. That single surface feature is produced by three different failures with three different fixes, and the surface feature does not separate them. Read the stop reason.</p>
+
+    <table class="ref">
+      <thead><tr><th>Stop signal</th><th>What actually happened</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr><td><code>stop_reason: max_tokens</code></td><td>Hit the output cap. The window was never the constraint on that call.</td><td>Raising <code>max_tokens</code> addresses the stated cause.</td></tr>
+        <tr><td><code>stop_reason: model_context_window_exceeded</code></td><td>The request fitted on input and generation walked into the ceiling.</td><td>Raising <code>max_tokens</code> buys nothing — it sets how much Claude can write, not how much context it can read.</td></tr>
+        <tr><td>Validation error, no stop reason</td><td>The input alone exceeded the window before generation began.</td><td>There was no generation to stop, so there is nothing to salvage — reduce input before retrying.</td></tr>
+      </tbody>
+    </table>
+
+    <p>That confusion is documented: a Module 2 checkpoint offers &ldquo;increase <code>max_tokens</code> in the API call to give Claude more room to respond&rdquo; as the answer to a session whose window was filling, and marks it wrong for exactly this reason.</p>
+
+    <p>The receipt agent shows the same disagreement one level up. Its visible symptom was wrong tool selection, which points at the tool schemas. The schemas had not changed. Accumulated tool results had crowded out the system prompt and the early instructions, and the agent was choosing tools from a window that no longer held the guidance it started with. <strong>The check follows directly: when tool selection degrades after a fixed number of turns, look at whether the window is filling before you start debugging the schema.</strong></p>
+  </div>
+</section>
+
+<section id="boundaries">
+  <h2>Where the container stops being the right picture</h2>
+  <div class="measure">
+    <p>Keeping a long session under the ceiling is a separate job with its own instruments. Pruning, compaction, clearing and subagent handoff each buy room, and each destroys a specific kind of continuity in exchange. Chapter 8 owns that choice. Paying less for the part of the manifest that never changes between requests is prompt caching, and measuring context pressure before a request goes out belongs beside it; both are chapter 9. Which model you run decides which volume you get, and that decision is chapter 3.</p>
+
+    <div class="pullquote">Cartons in a container do not interact with each other. The contents of a context window do.</div>
+
+    <p>The image itself has a limit worth stating. The model reads everything in the window as one stream of tokens, with no structural marker separating your instructions from a document a tool fetched, so the contents affect how the model behaves as well as how full the window is. The receipt agent is the mild version of that, where crowded-out instructions degraded tool choice. Chapter 28 covers the sharp version, where fetched content carries instructions of its own.</p>
+
+    <div class="xlink-grid">
+      <a class="xlink" href="Ch03_Two-dials-not-one.html"><b>CH. 3</b><span>Which model you run decides which context-window size you get.</span></a>
+      <div class="xlink"><b>CH. 8</b><span>Pruning, compaction, clearing and subagent handoff — buying room, and what each costs.</span></div>
+      <div class="xlink"><b>CH. 9</b><span>Prompt caching, and measuring context pressure before a request goes out.</span></div>
+      <div class="xlink"><b>CH. 28</b><span>The sharp version of contents affecting behavior — fetched content carrying its own instructions.</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="exam-cues">
+  <h2>Phrases that put you in this chapter</h2>
+  <div class="measure">
+    <div class="callout-remember">
+      <span class="box-tag">Remember this</span>
+      <p>A stem naming a turn number, a token figure set against a ceiling, or a session that ran fine in testing and fails in production is asking about this pot. So is any stem carrying &ldquo;the response stops mid-structure&rdquo;, &ldquo;rejected before generation&rdquo;, &ldquo;fits on input&rdquo;, or &ldquo;tool results accumulate&rdquo;. The give-away is a quantity measured against a limit rather than a quality being judged.</p>
+    </div>
+  </div>
+</section>
+
+<section id="self-test">
+  <h2>Self-test</h2>
+  <div class="measure">
+
+    <div class="mcq" data-qtype="multi" data-correct="A,B">
+      <div class="mcq-num">Question 1 <span class="mcq-tag">Select TWO</span></div>
+      <p class="mcq-stem">An agent registers six tools and calls one of them on a given turn. The team is auditing what that request spends against the context window. Which two of the following are counted against the window on that request?</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. The definitions of all six registered tools, including the five not called.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. The model's own output for that request.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. The wall-clock latency of the tool call.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. The number of retries the SDK performed before the call succeeded.</button>
+      </div>
+      <button class="mcq-submit" type="button">Check answer</button>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: A and B.</strong> The window holds the system prompt, the conversation history, the tool definitions, every tool result and the model's own output at once, and definitions occupy budget whether or not a tool is used in the turn. Latency and retry counts are not text in the request, so they cost nothing against the window.</div>
+    </div>
+
+    <div class="mcq" data-qtype="single" data-correct="A">
+      <div class="mcq-num">Question 2 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">A generation stops mid-structure. The response carries <code>stop_reason: max_tokens</code>, and a count of the input shows it used under a tenth of the model's window. The team wants the shortest change that addresses the stated cause.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. Raise <code>max_tokens</code> on the call.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Summarise the conversation history before the next request.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. Add a line to the system prompt instructing the model to always close its JSON.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Move the workload to a model with a 1M-token window.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: A.</strong> The stop reason names the output cap, and the input measurement rules the window out. B and D relieve a ceiling the measurement shows was never approached, and C is an instruction the model can fail to follow, so it does not enforce the structure.</div>
+    </div>
+
+    <div class="mcq" data-qtype="single" data-correct="A">
+      <div class="mcq-num">Question 3 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">A request comes back as a validation error with no content. The on-call engineer needs to know whether any partial output exists to salvage before retrying.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. No output exists; the input alone exceeded the window, so the request was rejected before generation began.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Partial output exists in the response body under a <code>model_context_window_exceeded</code> stop reason.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. Partial output exists, but the oldest turns were dropped to make room, so early context is missing from it.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Output exists and was discarded by the SDK; re-reading the response object recovers it.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: A.</strong> An oversized input is rejected before generation, so nothing was produced to salvage. B describes the other edge behaviour, which arrives as a successful response carrying truncated content, and C describes silent eviction of old turns, which does not happen.</div>
+    </div>
+
+    <div class="mcq" data-qtype="single" data-correct="B">
+      <div class="mcq-num">Question 4 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">A team connects four MCP servers to one session so the tools are available if they turn out to be needed. Before the user sends a first message, they want to know what has already been spent from the window.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. Nothing; definitions cost budget only on the turn a tool is called.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. The tool definitions of all four servers, plus the system prompt.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. Only the definitions of the server whose tools the first message will use.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Nothing measurable; definitions are compiled server-side and are not part of the request.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: B.</strong> MCP servers add their tool definitions to the context window whether or not the tools are used in the current turn, and the system prompt is sent on every request. Connecting servers speculatively spends budget before the conversation starts.</div>
+    </div>
+
+    <div class="mcq" data-qtype="single" data-correct="B">
+      <div class="mcq-num">Question 5 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">An agent's tool selections start going wrong at turn eight in production. It completed twenty-turn sessions cleanly against the test fixtures. The tool schemas, the model and the prompt are unchanged, and average tool output has gone from about 800 tokens per call to about 3,200. The team must name the mechanism before choosing a fix.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. The tool descriptions became ambiguous as the conversation grew.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. The per-turn spend rose while the ceiling stayed the same, so accumulated tool results crowded out the system prompt and the early instructions.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. Sampling drifted over the longer session, so lowering the temperature will stabilise selection.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. The window is too small for this workload, so the fix is a model with a larger window.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: B.</strong> The window did not change; what changed is how much each turn spends against it, and instructions crowded out of the window are what degrade tool choice. A reads the symptom as a schema problem, C reaches for a lever the scenario gives no evidence for, and D buys a bigger container for a spend-rate the team has not yet measured.</div>
+    </div>
+
+  </div>
+</section>
+
+<div class="chapter-end">
+  <p>End of Chapter 1 — The Context Window</p>
+  <div class="chapter-nav">
+    <span class="chapter-nav-link disabled" aria-disabled="true">&#9668; Course index <em>(coming soon)</em></span>
+    <span class="chapter-nav-current">Chapter 1 of 34</span>
+    <a class="chapter-nav-link" href="Ch02_Why-the-same-prompt-answers-twice-differently.html">Chapter 2 &#9658;</a>
+  </div>
+</div>
+
+</main>
+
+<footer>CCDV-F Regeneration &middot; Chapter 1 of 34 &middot; pilot build</footer>
+
+<script>
+var fill = null;
+var pct = document.getElementById('depth-pct');
+function onScroll() {
+  var h = document.documentElement;
+  var max = h.scrollHeight - h.clientHeight;
+  var p = max > 0 ? (h.scrollTop || document.body.scrollTop) / max : 0;
+  var v = Math.round(p * 100);
+  if (pct) pct.textContent = v;
+  var links = document.querySelectorAll('.nav-link[href^="#"]');
+  var cur = '';
+  document.querySelectorAll('section[id]').forEach(function (s) {
+    if (s.getBoundingClientRect().top <= 120) cur = s.id;
+  });
+  links.forEach(function (l) {
+    l.classList.toggle('active', l.getAttribute('href') === '#' + cur);
+  });
+}
+window.addEventListener('scroll', onScroll, { passive: true });
+window.addEventListener('resize', onScroll);
+document.addEventListener('DOMContentLoaded', onScroll);
+
+var toggle = document.getElementById('theme-toggle');
+var root = document.documentElement;
+var stored = localStorage.getItem('ccdv-theme');
+if (stored) root.setAttribute('data-theme', stored);
+function isDark() {
+  var attr = root.getAttribute('data-theme');
+  if (attr === 'dark') return true;
+  if (attr === 'light') return false;
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+function updateToggle() {
+  if (!toggle) return;
+  var dark = isDark();
+  toggle.innerHTML = dark ? '&#9728;&#65039;' : '&#127769;';
+  toggle.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+}
+updateToggle();
+if (toggle) {
+  toggle.addEventListener('click', function () {
+    var next = isDark() ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    localStorage.setItem('ccdv-theme', next);
+    updateToggle();
+  });
+}
+
+var fontToggle = document.getElementById('font-toggle');
+var fontModes = ['default', 'serif', 'legible'];
+var fontLabels = { default: 'Aa', serif: 'Aa (serif)', legible: 'Aa+ (legible)' };
+var storedFont = localStorage.getItem('ccdv-font');
+if (storedFont && storedFont !== 'default') root.setAttribute('data-font', storedFont);
+function updateFontToggle() {
+  if (!fontToggle) return;
+  var current = root.getAttribute('data-font') || 'default';
+  fontToggle.textContent = fontLabels[current];
+  fontToggle.setAttribute('aria-label', 'Reading font: ' + current + '. Click to change.');
+}
+updateFontToggle();
+if (fontToggle) {
+  fontToggle.addEventListener('click', function () {
+    var current = root.getAttribute('data-font') || 'default';
+    var next = fontModes[(fontModes.indexOf(current) + 1) % fontModes.length];
+    if (next === 'default') { root.removeAttribute('data-font'); }
+    else { root.setAttribute('data-font', next); }
+    localStorage.setItem('ccdv-font', next);
+    updateFontToggle();
+  });
+}
+
+document.querySelectorAll('.mcq').forEach(function (mcq) {
+  var qtype = mcq.dataset.qtype;
+  var correct = mcq.dataset.correct.split(',');
+  var options = Array.prototype.slice.call(mcq.querySelectorAll('.mcq-opt'));
+  var feedback = mcq.querySelector('.mcq-feedback');
+  var explain = mcq.querySelector('.mcq-explain');
+  var resolved = false;
+
+  if (qtype === 'single') {
+    options.forEach(function (opt) {
+      opt.addEventListener('click', function () {
+        if (resolved) return;
+        resolved = true;
+        var letter = opt.dataset.letter;
+        options.forEach(function (o) {
+          o.disabled = true;
+          if (correct.indexOf(o.dataset.letter) !== -1) o.classList.add('mcq-correct');
+          else if (o === opt) o.classList.add('mcq-incorrect');
+        });
+        var ok = letter === correct[0];
+        feedback.hidden = false;
+        feedback.textContent = ok ? 'Correct.' : 'Not quite.';
+        feedback.className = 'mcq-feedback ' + (ok ? 'right' : 'wrong');
+        explain.hidden = false;
+      });
+    });
+  } else {
+    var selected = [];
+    options.forEach(function (opt) {
+      opt.setAttribute('aria-pressed', 'false');
+      opt.addEventListener('click', function () {
+        if (resolved) return;
+        var letter = opt.dataset.letter;
+        var idx = selected.indexOf(letter);
+        if (idx === -1) { selected.push(letter); opt.setAttribute('aria-pressed', 'true'); opt.classList.add('mcq-selected'); }
+        else { selected.splice(idx, 1); opt.setAttribute('aria-pressed', 'false'); opt.classList.remove('mcq-selected'); }
+      });
+    });
+    var submit = mcq.querySelector('.mcq-submit');
+    if (submit) {
+      submit.addEventListener('click', function () {
+        if (resolved) return;
+        resolved = true;
+        var ok = selected.length === correct.length && selected.every(function (l) { return correct.indexOf(l) !== -1; });
+        options.forEach(function (o) {
+          o.disabled = true;
+          var letter = o.dataset.letter;
+          var was = selected.indexOf(letter) !== -1;
+          var isRight = correct.indexOf(letter) !== -1;
+          if (isRight) o.classList.add('mcq-correct');
+          else if (was) o.classList.add('mcq-incorrect');
+        });
+        submit.disabled = true;
+        feedback.hidden = false;
+        feedback.textContent = ok ? 'Correct — both required options selected.' : 'Not quite — multiple-response items are all-or-nothing on the real exam.';
+        feedback.className = 'mcq-feedback ' + (ok ? 'right' : 'wrong');
+        explain.hidden = false;
+      });
+    }
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 2 — Why the same prompt answers twice differently · CCDV-F</title>
+<meta name="description" content="Claude Certified Developer Foundations, Chapter 2: why identical prompts return different wording, the score-and-draw mechanism behind it, and how to test a task that has more than one correct answer.">
+<meta name="author" content="Ram">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: light dark;
+
+  --ink:    oklch(0.15 0.01 80);
+  --ink2:   oklch(0.30 0.015 75);
+  --ink3:   oklch(0.53 0.015 75);
+  --cream:  oklch(0.97 0.008 85);
+  --cream2: oklch(0.94 0.012 85);
+  --cream3: oklch(0.91 0.015 80);
+  --border: oklch(0.87 0.012 80);
+
+  --amber:       oklch(0.64 0.14 68);
+  --amber-light: oklch(0.93 0.035 80);
+  --amber-dark:  oklch(0.47 0.11 60);
+  --blue:        oklch(0.43 0.09 245);
+  --blue-light:  oklch(0.93 0.025 240);
+  --coral:       oklch(0.55 0.14 30);
+  --coral-light: oklch(0.94 0.025 35);
+  --purple:      oklch(0.38 0.14 300);
+  --purple-light:oklch(0.93 0.03 300);
+  --green:       oklch(0.50 0.10 150);
+  --green-light: oklch(0.94 0.025 145);
+
+  --surface-raised:  oklch(0.15 0.01 80);
+  --on-raised:       oklch(0.97 0.008 85);
+  --on-raised-muted: oklch(0.97 0.008 85 / 0.74);
+  --on-raised-dim:   oklch(0.97 0.008 85 / 0.6);
+  --on-raised-border:oklch(0.97 0.008 85 / 0.15);
+  --nav-bg:          oklch(0.97 0.008 85 / 0.96);
+
+  --font-serif: Georgia, 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+  --font-sans:  system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono:  ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+  --font-body-active: var(--font-sans);
+
+  --fs-body: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --fs-sm:   clamp(0.8125rem, 0.78rem + 0.15vw, 0.9375rem);
+  --fs-xs:   clamp(0.6875rem, 0.67rem + 0.1vw, 0.75rem);
+  --fs-h1:   clamp(2rem, 1.4rem + 3vw, 3.375rem);
+  --fs-h2:   clamp(1.5rem, 1.2rem + 1.5vw, 2.125rem);
+  --fs-h3:   clamp(1.25rem, 1.1rem + 0.75vw, 1.5rem);
+  --fs-pull: clamp(1.375rem, 1.15rem + 1.1vw, 1.625rem);
+  --lh-body: 1.7;
+  --lh-heading: 1.2;
+  --measure: 68ch;
+
+  --space-section: clamp(3rem, 2.5rem + 2.5vw, 4rem);
+  --space-block:   clamp(1.5rem, 1.25rem + 1.25vw, 2.5rem);
+  --space-inline:  clamp(1.25rem, 1rem + 1.25vw, 2rem);
+  --radius:    12px;
+  --radius-sm: 8px;
+  --shadow:    0 2px 16px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
+  --t-fast: 0.15s;
+  --t-med:  0.25s;
+}
+
+[data-theme="dark"] {
+  --ink:    oklch(0.90 0.008 85);
+  --ink2:   oklch(0.78 0.01 80);
+  --ink3:   oklch(0.58 0.01 75);
+  --cream:  oklch(0.15 0.012 75);
+  --cream2: oklch(0.19 0.012 75);
+  --cream3: oklch(0.23 0.015 75);
+  --border: oklch(0.32 0.01 75);
+  --shadow:    0 2px 16px rgba(0,0,0,0.3);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+  --amber:       oklch(0.72 0.13 68);
+  --amber-light: oklch(0.24 0.04 70);
+  --amber-dark:  oklch(0.78 0.10 65);
+  --blue:        oklch(0.70 0.09 245);
+  --blue-light:  oklch(0.24 0.035 245);
+  --coral:       oklch(0.68 0.13 30);
+  --coral-light: oklch(0.26 0.04 30);
+  --purple:      oklch(0.68 0.12 300);
+  --purple-light:oklch(0.25 0.04 300);
+  --green:       oklch(0.68 0.10 150);
+  --green-light: oklch(0.24 0.035 150);
+  --nav-bg: oklch(0.15 0.012 75 / 0.92);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink:    oklch(0.90 0.008 85);
+    --ink2:   oklch(0.78 0.01 80);
+    --ink3:   oklch(0.58 0.01 75);
+    --cream:  oklch(0.15 0.012 75);
+    --cream2: oklch(0.19 0.012 75);
+    --cream3: oklch(0.23 0.015 75);
+    --border: oklch(0.32 0.01 75);
+    --shadow:    0 2px 16px rgba(0,0,0,0.3);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+    --amber:       oklch(0.72 0.13 68);
+    --amber-light: oklch(0.24 0.04 70);
+    --amber-dark:  oklch(0.78 0.10 65);
+    --blue:        oklch(0.70 0.09 245);
+    --blue-light:  oklch(0.24 0.035 245);
+    --coral:       oklch(0.68 0.13 30);
+    --coral-light: oklch(0.26 0.04 30);
+    --purple:      oklch(0.68 0.12 300);
+    --purple-light:oklch(0.25 0.04 300);
+    --green:       oklch(0.68 0.10 150);
+    --green-light: oklch(0.24 0.035 150);
+    --nav-bg: oklch(0.15 0.012 75 / 0.92);
+  }
+}
+
+[data-font="serif"]  { --font-body-active: var(--font-serif); }
+[data-font="legible"]{ --font-body-active: 'Atkinson Hyperlegible', var(--font-sans); --lh-body: 1.85; letter-spacing: 0.01em; }
+
+* , *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 78px; }
+
+body {
+  margin: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-body-active);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
+
+.skip-link {
+  position: absolute; left: -9999px; top: 0; z-index: 200;
+  background: var(--ink); color: var(--cream);
+  padding: 0.7rem 1.1rem; border-radius: var(--radius-sm);
+}
+.skip-link:focus { left: 0.6rem; top: 0.6rem; }
+
+h1, h2, h3 { font-family: var(--font-serif); line-height: var(--lh-heading); font-weight: 400; color: var(--ink); }
+h2 { font-size: var(--fs-h2); margin: 0 0 1em; }
+h3 { font-size: var(--fs-h3); margin: var(--space-block) 0 0.75em; }
+p { margin: 0 0 1.1em; }
+code { font-family: var(--font-mono); font-size: 0.9em; background: var(--cream3); padding: 0.12em 0.4em; border-radius: 4px; }
+a { color: var(--amber-dark, var(--amber)); }
+[data-theme="dark"] a, :root:not([data-theme="light"]) a { color: var(--amber); }
+
+.nav {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--nav-bg);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-inner {
+  max-width: 1000px; margin: 0 auto;
+  padding: 0.7rem clamp(1rem, 3vw, 2.5rem);
+  display: flex; align-items: center; gap: 1.1rem;
+  flex-wrap: wrap;
+}
+.nav-brand {
+  font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3);
+  white-space: nowrap;
+}
+.nav-links { display: flex; gap: 0.9rem; flex-wrap: wrap; margin-right: auto; }
+.nav-link {
+  font-size: var(--fs-sm); color: var(--ink2); text-decoration: none;
+  padding: 0.2rem 0; border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+.nav-link.active { color: var(--amber-dark, var(--amber)); border-bottom-color: var(--amber); }
+[data-theme="dark"] .nav-link.active, :root:not([data-theme="light"]) .nav-link.active { color: var(--amber); }
+.nav-progress { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink3); white-space: nowrap; }
+.nav-btn {
+  font-family: var(--font-sans); font-size: 1rem; line-height: 1;
+  background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  width: 34px; height: 34px; cursor: pointer; color: var(--ink2);
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: border-color var(--t-fast);
+}
+.nav-btn:hover { border-color: var(--amber); }
+.nav-btn.font-toggle { font-family: var(--font-serif); font-size: 0.85rem; width: auto; padding: 0 0.6rem; }
+
+.chapter-nav {
+  max-width: 1000px; margin: 0 auto;
+  padding: 0.85rem clamp(1rem, 3vw, 2.5rem);
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  font-size: var(--fs-sm); color: var(--ink3);
+}
+.chapter-nav-link { color: var(--ink3); text-decoration: none; }
+.chapter-nav-link.disabled { cursor: default; opacity: 0.55; }
+.chapter-nav-link em { font-style: normal; font-size: var(--fs-xs); }
+.chapter-nav-current { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase; }
+
+.hero {
+  background: var(--cream);
+  padding: clamp(2rem, 4vw, 3.5rem) clamp(1rem, 3vw, 2.5rem) clamp(1.5rem, 3vw, 2.5rem);
+  border-bottom: 1px solid var(--border);
+}
+.hero-inner { max-width: 900px; margin: 0 auto; }
+.eyebrow {
+  display: flex; align-items: center; gap: 0.6rem;
+  font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber-dark, var(--amber));
+  margin-bottom: 0.9rem;
+}
+[data-theme="dark"] .eyebrow, :root:not([data-theme="light"]) .eyebrow { color: var(--amber); }
+.eyebrow .icon { font-size: 1.3rem; letter-spacing: 0; }
+.hero h1 { font-size: var(--fs-h1); margin: 0; max-width: 20ch; }
+
+main { max-width: 900px; margin: 0 auto; padding: 0 clamp(1rem, 3vw, 2.5rem); }
+section { padding: var(--space-section) 0 0; }
+section:last-of-type { padding-bottom: var(--space-section); }
+.measure { max-width: var(--measure); }
+
+.analogy, .callout-tip, .callout-warning, .callout-remember {
+  border-radius: var(--radius); padding: 22px 26px; margin: var(--space-block) 0;
+}
+.analogy      { background: var(--amber-light);  border-left: 3.5px solid var(--amber); }
+.callout-tip  { background: var(--amber-light);  border-left: 3.5px solid var(--amber); }
+.callout-warning { background: var(--coral-light); border-left: 3.5px solid var(--coral); }
+.callout-remember { background: var(--purple-light); border-left: 3.5px solid var(--purple); }
+.callout-def {
+  background: var(--blue-light); border-radius: var(--radius-sm);
+  padding: 18px 22px; margin: var(--space-block) 0;
+}
+.box-tag {
+  display: block; font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3);
+  margin-bottom: 8px;
+}
+.analogy .box-tag { color: var(--amber-dark, var(--amber)); }
+[data-theme="dark"] .analogy .box-tag, :root:not([data-theme="light"]) .analogy .box-tag { color: var(--amber); }
+.callout-remember .box-tag { color: var(--purple); }
+.callout-def .box-tag { color: var(--blue); }
+.callout-warning .box-tag { color: var(--coral); }
+.analogy p, .callout-tip p, .callout-def p, .callout-remember p, .callout-warning p { margin-bottom: 0.6em; }
+.analogy p:last-child, .callout-tip p:last-child, .callout-def p:last-child, .callout-remember p:last-child, .callout-warning p:last-child { margin-bottom: 0; }
+
+.takeaway, .worked {
+  background: var(--surface-raised); color: var(--on-raised);
+  border-radius: var(--radius); padding: 26px 28px; margin: var(--space-block) 0;
+}
+.takeaway .box-tag, .worked .box-tag { color: var(--on-raised-dim); }
+.takeaway p, .worked p { color: var(--on-raised-muted); margin-bottom: 0; }
+.takeaway strong, .worked strong { color: var(--on-raised); }
+.worked p { font-family: var(--font-mono); font-size: var(--fs-sm); line-height: 1.75; }
+
+.pullquote {
+  max-width: 640px; margin: var(--space-block) auto;
+  padding-left: 22px; border-left: 3px solid var(--amber);
+  font-family: var(--font-serif); font-size: var(--fs-pull); line-height: 1.45;
+  color: var(--ink2);
+}
+
+.split {
+  display: grid; grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden; margin: var(--space-block) 0;
+}
+.split-half { padding: 22px 24px; background: var(--cream2); }
+.split-half + .split-half { border-left: 1px solid var(--border); }
+.split-tag {
+  display: block; font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.06em; color: var(--ink3); margin-bottom: 10px;
+}
+.split-half p { margin-bottom: 0; font-size: var(--fs-sm); }
+@media (max-width: 640px) {
+  .split { grid-template-columns: 1fr; }
+  .split-half + .split-half { border-left: none; border-top: 1px solid var(--border); }
+}
+
+.xlink-grid { display: grid; gap: 12px; margin: var(--space-block) 0; }
+.xlink {
+  background: var(--cream2); border-radius: var(--radius-sm);
+  padding: 14px 18px; display: flex; gap: 12px; align-items: baseline;
+  font-size: var(--fs-sm);
+}
+.xlink b { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.05em; color: var(--ink3); white-space: nowrap; }
+.xlink span { color: var(--ink2); }
+a.xlink { text-decoration: none; }
+a.xlink:hover { box-shadow: var(--shadow); }
+
+table.ref {
+  width: 100%; border-collapse: collapse; margin: var(--space-block) 0;
+  font-size: var(--fs-sm); border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden;
+}
+table.ref th, table.ref td { padding: 12px 16px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); }
+table.ref th { background: var(--cream3); font-weight: 600; font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); }
+table.ref tr:last-child td { border-bottom: none; }
+table.ref td:first-child { font-family: var(--font-mono); font-size: var(--fs-xs); width: 22%; }
+
+.diagram { margin: var(--space-block) 0; text-align: center; }
+.diagram svg { max-width: 100%; height: auto; }
+.diagram-caption { font-size: var(--fs-xs); color: var(--ink3); margin-top: 0.6rem; font-family: var(--font-mono); }
+
+.mcq {
+  background: var(--green-light); border-radius: var(--radius);
+  padding: 22px 24px; margin: var(--space-block) 0;
+}
+.mcq-num {
+  font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--green); margin-bottom: 10px; display: flex; gap: 10px; align-items: center;
+}
+.mcq-tag { background: var(--cream); padding: 2px 8px; border-radius: 4px; color: var(--ink3); }
+.mcq-stem { font-size: var(--fs-body); margin-bottom: 1rem; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 0.4rem; }
+.mcq-opt {
+  font-family: var(--font-sans); font-size: var(--fs-sm); text-align: left;
+  background: var(--cream); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 11px 14px; cursor: pointer; color: var(--ink);
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+.mcq-opt:hover:not(:disabled) { border-color: var(--amber); }
+.mcq-opt:disabled { cursor: default; }
+.mcq-opt.mcq-selected { border-color: var(--amber); }
+.mcq-opt.mcq-correct { background: var(--green-light); border-color: var(--green); font-weight: 600; }
+.mcq-opt.mcq-incorrect { background: var(--coral-light); border-color: var(--coral); text-decoration: line-through; }
+.mcq-submit {
+  font-family: var(--font-sans); font-size: var(--fs-sm); font-weight: 600;
+  background: var(--ink); color: var(--cream); border: none; border-radius: var(--radius-sm);
+  padding: 9px 18px; cursor: pointer; margin-top: 4px;
+}
+.mcq-submit:disabled { opacity: 0.5; cursor: default; }
+.mcq-feedback { font-weight: 600; margin-top: 12px; }
+.mcq-feedback.right { color: var(--green); }
+.mcq-feedback.wrong { color: var(--coral); }
+.mcq-explain { margin-top: 10px; font-size: var(--fs-sm); color: var(--ink2); background: var(--cream); border-radius: var(--radius-sm); padding: 12px 16px; }
+
+.chapter-end {
+  background: var(--surface-raised); color: var(--on-raised);
+  border-radius: var(--radius); padding: 30px clamp(24px, 4vw, 40px);
+  margin: var(--space-section) 0; text-align: center;
+}
+.chapter-end p { color: var(--on-raised-muted); margin-bottom: 1.2rem; }
+.chapter-end .chapter-nav { padding: 0; color: var(--on-raised-dim); }
+.chapter-end .chapter-nav-link { color: var(--on-raised); }
+.chapter-end .chapter-nav-link.disabled { color: var(--on-raised-dim); }
+.chapter-end .chapter-nav-current { color: var(--on-raised-dim); }
+
+footer { text-align: center; padding: 2rem 1rem 3rem; font-size: var(--fs-xs); color: var(--ink3); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#hook">Skip to content</a>
+
+<nav class="nav" aria-label="Chapter navigation">
+  <div class="nav-inner">
+    <span class="nav-brand">CCDV-F &middot; Ch. 2</span>
+    <div class="nav-links">
+      <a class="nav-link" href="#hook">Five Calls</a>
+      <a class="nav-link" href="#mechanism">The Mechanism</a>
+      <a class="nav-link" href="#rule">The Rule</a>
+      <a class="nav-link" href="#split-case">The Split Case</a>
+      <a class="nav-link" href="#sampling-dial">The Dial</a>
+      <a class="nav-link" href="#exam-cues">Exam Cues</a>
+      <a class="nav-link" href="#self-test">Self-Test</a>
+    </div>
+    <div class="nav-progress">Progress: <span id="depth-pct">0</span>%</div>
+    <button class="nav-btn theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark mode" title="Toggle dark mode">&#127769;</button>
+    <button class="nav-btn font-toggle" id="font-toggle" type="button" aria-label="Change reading font" title="Cycle reading font">Aa</button>
+  </div>
+</nav>
+
+<div class="chapter-nav">
+  <a class="chapter-nav-link" href="Ch01_The-one-budget-everything-spends.html">&#9668; Chapter 1</a>
+  <span class="chapter-nav-current">Chapter 2 of 34</span>
+  <span class="chapter-nav-link disabled" aria-disabled="true">Chapter 3 &#9658;</span>
+</div>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="eyebrow"><span class="icon">&#127967;&#65039;</span> Chapter 2 of 34 &middot; Sampling &amp; Repeated Calls</div>
+    <h1>Why the same prompt answers twice differently</h1>
+  </div>
+</header>
+
+<main>
+
+<section id="hook">
+  <h2>Five calls, two wordings</h2>
+  <div class="measure">
+    <p>A support-ticket triage endpoint reads an incoming ticket and returns a category with a reason. An engineer sends the same test ticket to it five times in a row before release, nothing else running against the system between calls. Four replies read close to: &ldquo;This is a billing issue: the customer was charged twice for the same order.&rdquo; The fifth reads: &ldquo;The customer reports a duplicate charge, which places this under billing.&rdquo; Same ticket, same code, five minutes apart.</p>
+    <p>The engineer files a defect. An unchanged input returning changed output is what a bug looks like: a stale cache, a race condition, a load balancer sending the fifth call somewhere the first four never reached. One mechanism, working exactly as built, produced all five replies and produced the difference between them.</p>
+  </div>
+</section>
+
+<section id="mechanism">
+  <h2>Fifty forecasts from one atmosphere</h2>
+  <div class="measure">
+    <div class="analogy">
+      <span class="box-tag">Hold this analogy</span>
+      <p>National weather services run their forecast model several dozen times, back to back, for the same forecast date, using the same model each time: the same equations describing how pressure, temperature and moisture move through the atmosphere. What changes between runs is the starting point. Today's atmosphere can never be measured everywhere at once, so each run begins from a slightly different snapshot, nudged within the range the measurement gaps allow. Run the same physics forward from several dozen slightly different starting points and the result is several dozen different forecasts for Tuesday. Some agree closely. Some do not.</p>
+    </div>
+
+    <p>Claude generates a response through a comparable two-step process, run once for every position in the reply. First, it scores every token in its vocabulary, the same unit Chapter 1 measured the budget in, against the full window Chapter 1 measured: the system prompt, the conversation history, and every token this response has already produced. Those scores become a probability distribution, a weight attached to each candidate token, produced by the same trained network every time. Second, it draws one token from that distribution rather than always taking the highest-scoring candidate. The model then moves to the next position and scores again, now conditioning on a sequence that includes the token it just drew.</p>
+
+    <div class="callout-def">
+      <span class="box-tag">What stays fixed, what varies</span>
+      <p>Two things stay fixed at each of these steps. The vocabulary being scored is the same finite set of candidate tokens every time, and the sequence the scores are conditioned on is the prompt plus every token generated in this response so far. What varies is which candidate the draw lands on. A high weight makes a candidate likely to be drawn. It does not make that candidate the only one the draw can land on.</p>
+    </div>
+
+    <div class="diagram">
+      <svg viewBox="0 0 640 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="d2-title d2-desc">
+        <title id="d2-title">One scoring step: five candidate tokens, one distribution, one draw</title>
+        <desc id="d2-desc">A bar chart of five candidate tokens with probabilities 42, 26, 16, 10 and 6 percent. The tallest bar is usually drawn, but the draw this time lands on the third, lower-probability bar.</desc>
+        <defs>
+          <linearGradient id="gradAmber2" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#e7ad5c"/>
+            <stop offset="100%" stop-color="#b06a1f"/>
+          </linearGradient>
+        </defs>
+        <line x1="60" y1="320" x2="580" y2="320" stroke="#7a6a55" stroke-width="1.5"/>
+        <rect x="85"  y="100" width="70" height="220" rx="4" fill="url(#gradAmber2)"/>
+        <rect x="185" y="184" width="70" height="136" rx="4" fill="url(#gradAmber2)" opacity="0.85"/>
+        <rect x="285" y="236" width="70" height="84"  rx="4" fill="none" stroke="#2f7d5a" stroke-width="3"/>
+        <rect x="285" y="236" width="70" height="84"  rx="4" fill="url(#gradAmber2)" opacity="0.85"/>
+        <rect x="385" y="268" width="70" height="52"  rx="4" fill="url(#gradAmber2)" opacity="0.7"/>
+        <rect x="485" y="289" width="70" height="31"  rx="4" fill="url(#gradAmber2)" opacity="0.55"/>
+
+        <text x="120" y="90"  text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#5a4a30">42%</text>
+        <text x="220" y="174" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#5a4a30">26%</text>
+        <text x="320" y="226" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#2f7d5a" font-weight="700">16%</text>
+        <text x="420" y="258" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#5a4a30">10%</text>
+        <text x="520" y="279" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#5a4a30">6%</text>
+
+        <text x="120" y="70" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11.5" fill="#8a7a5a">usually drawn</text>
+        <text x="320" y="345" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#2f7d5a">&#8593; drawn this time</text>
+      </svg>
+      <div class="diagram-caption">Figure 2.1 — one scoring step over five candidate tokens</div>
+    </div>
+
+    <p>The forecast ensemble and the model diverge on where the nudge sits. A weather ensemble branches at the start, from a handful of different snapshots, and each branch then runs forward from that one nudge through the same governing equations. Token generation branches at every position: dozens or hundreds of times inside one reply, with each draw becoming part of what the next draw is conditioned on. A response of two hundred tokens is two hundred of these score-and-draw steps, run one after another.</p>
+
+    <p>A setting called <code>temperature</code> changes how concentrated the distribution is at each of those steps. Pulled low, it sharpens the scores toward the highest-probability tokens, so the same candidate wins most of the time. Pushed higher, it flattens the scores, so a wider set of candidates has a real chance of being drawn. The vocabulary being scored stays the same size either way. Only the shape of the weights across it changes. Either setting runs the identical two-step process: score the vocabulary against everything generated so far, then draw.</p>
+
+    <p>Send the same prompt to Claude twice and two independent runs of that process start from the same place. Nothing requires the draw at position one, or position twelve, or position forty, to land on the same token both times. Two runs can diverge in wording while both are legitimate draws from the same distribution, the same way two ensemble members can describe Tuesday's rainfall differently while both are legitimate runs of the same forecast model.</p>
+  </div>
+</section>
+
+<section id="rule">
+  <h2>Fifty tracks, and no single correct one</h2>
+  <div class="measure">
+    <p>Derive the rule from the two-step process directly. Each response is one sampled path through a space of continuations the model judged plausible, so two responses to an identical prompt are two independent draws from the same distribution.</p>
+
+    <div class="takeaway">
+      <span class="box-tag">The rule</span>
+      <p>Whether a given draw is acceptable depends on whether it has the property the task actually needs: the right category, the required fact, a number inside the range that makes sense, valid structure. It does not depend on whether its exact wording matches some reference string, because the distribution was never a distribution over strings to match.</p>
+    </div>
+
+    <p>A forecast ensemble that returns several dozen slightly different tracks for Tuesday has run several dozen times and produced several dozen legitimate outputs. The correct read is the shape of all of them together against what actually needs to be true, rain or no rain, not any single track held up against a fixed reference track. Two wordings of &ldquo;this is a billing issue&rdquo; from one ticket are the same case: neither is the reference, and what matters is whether each one lands on the category the ticket actually belongs in.</p>
+
+    <p>That is the mechanism working as designed, not the system failing. The engineer's defect ticket named the symptom correctly and diagnosed the cause wrong: nothing raced and nothing went stale. The two replies disagree in wording for the same reason two ensemble members disagree on Tuesday's rainfall total.</p>
+  </div>
+</section>
+
+<section id="split-case">
+  <h2>The day the ensemble splits in two</h2>
+  <div class="measure">
+    <p>Not every ensemble run agrees closely. Some forecast dates split the members into two distinct groups: half send a storm out to sea, half bring it ashore two hundred miles apart. Read from outside, a two-cluster result looks worse than a tight one, as if the model had failed on half its runs.</p>
+
+    <div class="callout-remember">
+      <span class="box-tag">Remember this</span>
+      <p>Read against the mechanism, the split is information: it means today's atmosphere sits at a genuine branch point, close enough to a threshold that a small difference in the starting snapshot decides which side the storm lands on. A single run could never report that. Several dozen runs, spread into two clusters, do.</p>
+    </div>
+
+    <p>The triage endpoint has the same kind of day. Feed it a ticket that mentions both a duplicate charge and a failed login, and repeated calls stop varying only in wording. The category itself starts to flip, BILLING on some calls, ESCALATION on others. Read from outside, that looks like a worse bug than four slightly different sentences about the same category, evidence of something more broken underneath. Read against the mechanism, it is the identical process as the wording case: at the token position where the category gets decided, the distribution split its probability close to evenly between two candidates instead of favouring one heavily, so the draw lands on one side about as often as the other.</p>
+
+    <p>The size of the difference between two replies, a synonym traded for another synonym against a whole category changing, reads out how peaked or how split the distribution was at the position that mattered. It says nothing about whether the mechanism itself changed between the two cases, because it did not. Both cases take the same fix <a href="#rule">already derived above</a>: judge the reply by whether it has the property it needs, regardless of how far its wording drifted from another run.</p>
+  </div>
+</section>
+
+<section id="sampling-dial">
+  <h2>The dial some models do not have</h2>
+  <div class="measure">
+    <p>Sampling controls exist at the API level on some models: <code>temperature</code>, <code>top_p</code>, and <code>top_k</code>, each reshaping the distribution before the draw. They are not universal. On the newest Claude models, setting a non-default value for any of the three is rejected outright, returned as a 400 error, and steering the output runs entirely through what the prompt asks for instead. Where the parameters are accepted, <code>temperature</code> set to zero makes output more repeatable. It does not make two calls identical: the guarantee the number seems to promise is a stronger claim than the API makes. Which models accept which parameters changes release to release, so a specific list is worth confirming against the API reference at build time rather than carried from memory.</p>
+
+    <div class="callout-warning">
+      <span class="box-tag">Warning</span>
+      <p>No dial, on any current model, switches the draw off, and that is the edge of what configuration buys here. The consequence lands on testing: a feature built on the call has to be tested against whatever property a correct answer must carry, however the words land.</p>
+    </div>
+
+    <div class="xlink-grid">
+      <div class="xlink"><b>CH. 26</b><span>Where testing a call that has more than one correct answer becomes a build.</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="exam-cues">
+  <h2>Reading a stem for repeated calls</h2>
+  <div class="measure">
+    <div class="callout-remember">
+      <span class="box-tag">Remember this</span>
+      <p>The words that flag this chapter compare across calls rather than describing one output alone: &ldquo;the same prompt returns different wording,&rdquo; &ldquo;results vary from run to run,&rdquo; &ldquo;a test asserting exact text is flaky,&rdquo; &ldquo;the response text changed between identical requests,&rdquo; &ldquo;two calls, two different answers, both rated correct.&rdquo; Each names a change measured between two responses, which is where this mechanism shows up.</p>
+    </div>
+  </div>
+</section>
+
+<section id="self-test">
+  <h2>Self-test</h2>
+  <div class="measure">
+
+    <div class="mcq" data-qtype="single" data-correct="C">
+      <div class="mcq-num">Question 1 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">A unit test checks a summarization endpoint by comparing its output against one fixed reference string. The test passes most runs and fails roughly one run in five, and a human reviewer rates every failing output as correct. What is the most accurate diagnosis and fix?</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. The model is unreliable for this task; move the workload to a larger model.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Set <code>temperature</code> to 0 on every call so the endpoint returns identical text on every run.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. The test asserts exact text against a task with more than one correct wording; rewrite it to check the property a correct summary must have, such as required facts being present.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Add retry logic that resubmits the request until the output matches the reference string exactly.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: C.</strong> The failures are draws from the same distribution as the passes rather than a quality regression, so the fix belongs in what the test checks rather than in what the model runs. B does not deliver what it promises: <code>temperature</code> 0 makes output more repeatable, it does not make output identical, and current models are not required to accept the parameter at all. A spends more on a model that was never the problem, and D burns calls chasing a string match the task's own correctness never depended on.</div>
+    </div>
+
+    <div class="mcq" data-qtype="single" data-correct="C">
+      <div class="mcq-num">Question 2 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">A colleague says Claude keeps a large set of complete responses from training and, for any new prompt, retrieves and returns the closest match verbatim. Which statement corrects this?</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. Correct: Claude retrieves the nearest stored response and returns it unchanged.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Claude generates the entire reply in one step, then edits it for fluency before sending it.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. At every position in the reply, Claude scores its vocabulary of candidate tokens against the prompt and everything generated so far, and draws one token from that distribution; the reply is built one draw at a time, never retrieved whole.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Claude only scores and draws tokens when a non-default <code>temperature</code> is set; otherwise it returns one fixed, precomputed reply.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: C.</strong> Generation is a sequence of scored draws, each conditioned on the full sequence so far, and that is true on every call regardless of any sampling parameter. A and B both describe a single retrieval or single-shot step that does not exist. D ties the scoring-and-drawing step to one parameter, but the two-step process runs on every call, including the ones where <code>temperature</code> is left at its default.</div>
+    </div>
+
+    <div class="mcq" data-qtype="multi" data-correct="A,C">
+      <div class="mcq-num">Question 3 <span class="mcq-tag">Select TWO</span></div>
+      <p class="mcq-stem">A dashboard shows a Claude-backed endpoint returning different exact response text on back-to-back calls with the same input, while downstream consumers report every answer as usable. Which two statements are accurate?</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. The variation is expected: generation draws from a probability distribution at each token position, so wording can differ across calls without either output being wrong.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. The deployment should be rolled back until the difference in output text is eliminated.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. A test that checks this endpoint for exact string equality will register failures unrelated to any regression in the feature itself.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. The variation confirms that a sampling parameter was left unset and must be pinned to a fixed value before the endpoint can be trusted.</button>
+        <button class="mcq-opt" data-letter="E" type="button">E. The variation will stop once the conversation history grows large enough to fill the context window.</button>
+      </div>
+      <button class="mcq-submit" type="button">Check answer</button>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: A and C.</strong> Wording variance with no change in usability is the sampling mechanism operating normally, and an exact-text test cannot tell that apart from a real regression, which is why it needs to check a property instead. B reaches for a bigger fix than the evidence supports. D assumes a parameter guarantees identical output, which no current model promises even when the parameter is accepted. E reaches for context-window pressure, a different mechanism with no support in what the dashboard shows.</div>
+    </div>
+
+    <div class="mcq" data-qtype="single" data-correct="B">
+      <div class="mcq-num">Question 4 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">A developer wants a Claude call to return byte-identical output on every run with the same input, and plans to set <code>temperature</code> to 0 and pin <code>top_p</code> to a fixed value to guarantee it. What is the most accurate assessment of this plan?</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. It works as planned on every current model: <code>temperature</code> 0 with a fixed <code>top_p</code> guarantees identical output across calls.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Sampling parameters do not guarantee determinism, and the newest Claude models reject non-default values for <code>temperature</code>, <code>top_p</code>, and <code>top_k</code> outright; where the parameters are accepted, <code>temperature</code> 0 only makes output more repeatable.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. Determinism is achieved by disabling streaming, which forces the full response to be computed before any token is sampled.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Determinism follows automatically once <code>max_tokens</code> is set low enough that only one continuation is plausible.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: B.</strong> No current parameter combination is documented to guarantee identical output, and the newest models do not accept these parameters at all. C invokes a real API setting that has no bearing on sampling. D assumes a short response has only one plausible continuation, which the draw does not require.</div>
+    </div>
+
+  </div>
+</section>
+
+</main>
+
+<div class="chapter-end">
+  <p>End of Chapter 2 — Sampling &amp; Repeated Calls</p>
+  <div class="chapter-nav">
+    <a class="chapter-nav-link" href="Ch01_The-one-budget-everything-spends.html">&#9668; Chapter 1</a>
+    <span class="chapter-nav-current">Chapter 2 of 34</span>
+    <a class="chapter-nav-link" href="Ch03_Two-dials-not-one.html">Chapter 3 &#9658;</a>
+  </div>
+</div>
+
+<footer>CCDV-F Regeneration &middot; Chapter 2 of 34</footer>
+
+<script>
+var pct = document.getElementById('depth-pct');
+function onScroll() {
+  var h = document.documentElement;
+  var max = h.scrollHeight - h.clientHeight;
+  var p = max > 0 ? (h.scrollTop || document.body.scrollTop) / max : 0;
+  var v = Math.round(p * 100);
+  if (pct) pct.textContent = v;
+  var links = document.querySelectorAll('.nav-link[href^="#"]');
+  var cur = '';
+  document.querySelectorAll('section[id]').forEach(function (s) {
+    if (s.getBoundingClientRect().top <= 120) cur = s.id;
+  });
+  links.forEach(function (l) {
+    l.classList.toggle('active', l.getAttribute('href') === '#' + cur);
+  });
+}
+window.addEventListener('scroll', onScroll, { passive: true });
+window.addEventListener('resize', onScroll);
+document.addEventListener('DOMContentLoaded', onScroll);
+
+var toggle = document.getElementById('theme-toggle');
+var root = document.documentElement;
+var stored = localStorage.getItem('ccdv-theme');
+if (stored) root.setAttribute('data-theme', stored);
+function isDark() {
+  var attr = root.getAttribute('data-theme');
+  if (attr === 'dark') return true;
+  if (attr === 'light') return false;
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+function updateToggle() {
+  if (!toggle) return;
+  var dark = isDark();
+  toggle.innerHTML = dark ? '&#9728;&#65039;' : '&#127769;';
+  toggle.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+}
+updateToggle();
+if (toggle) {
+  toggle.addEventListener('click', function () {
+    var next = isDark() ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    localStorage.setItem('ccdv-theme', next);
+    updateToggle();
+  });
+}
+
+var fontToggle = document.getElementById('font-toggle');
+var fontModes = ['default', 'serif', 'legible'];
+var fontLabels = { default: 'Aa', serif: 'Aa (serif)', legible: 'Aa+ (legible)' };
+var storedFont = localStorage.getItem('ccdv-font');
+if (storedFont && storedFont !== 'default') root.setAttribute('data-font', storedFont);
+function updateFontToggle() {
+  if (!fontToggle) return;
+  var current = root.getAttribute('data-font') || 'default';
+  fontToggle.textContent = fontLabels[current];
+  fontToggle.setAttribute('aria-label', 'Reading font: ' + current + '. Click to change.');
+}
+updateFontToggle();
+if (fontToggle) {
+  fontToggle.addEventListener('click', function () {
+    var current = root.getAttribute('data-font') || 'default';
+    var next = fontModes[(fontModes.indexOf(current) + 1) % fontModes.length];
+    if (next === 'default') { root.removeAttribute('data-font'); }
+    else { root.setAttribute('data-font', next); }
+    localStorage.setItem('ccdv-font', next);
+    updateFontToggle();
+  });
+}
+
+document.querySelectorAll('.mcq').forEach(function (mcq) {
+  var qtype = mcq.dataset.qtype;
+  var correct = mcq.dataset.correct.split(',');
+  var options = Array.prototype.slice.call(mcq.querySelectorAll('.mcq-opt'));
+  var feedback = mcq.querySelector('.mcq-feedback');
+  var explain = mcq.querySelector('.mcq-explain');
+  var resolved = false;
+
+  if (qtype === 'single') {
+    options.forEach(function (opt) {
+      opt.addEventListener('click', function () {
+        if (resolved) return;
+        resolved = true;
+        var letter = opt.dataset.letter;
+        options.forEach(function (o) {
+          o.disabled = true;
+          if (correct.indexOf(o.dataset.letter) !== -1) o.classList.add('mcq-correct');
+          else if (o === opt) o.classList.add('mcq-incorrect');
+        });
+        var ok = letter === correct[0];
+        feedback.hidden = false;
+        feedback.textContent = ok ? 'Correct.' : 'Not quite.';
+        feedback.className = 'mcq-feedback ' + (ok ? 'right' : 'wrong');
+        explain.hidden = false;
+      });
+    });
+  } else {
+    var selected = [];
+    options.forEach(function (opt) {
+      opt.setAttribute('aria-pressed', 'false');
+      opt.addEventListener('click', function () {
+        if (resolved) return;
+        var letter = opt.dataset.letter;
+        var idx = selected.indexOf(letter);
+        if (idx === -1) { selected.push(letter); opt.setAttribute('aria-pressed', 'true'); opt.classList.add('mcq-selected'); }
+        else { selected.splice(idx, 1); opt.setAttribute('aria-pressed', 'false'); opt.classList.remove('mcq-selected'); }
+      });
+    });
+    var submit = mcq.querySelector('.mcq-submit');
+    if (submit) {
+      submit.addEventListener('click', function () {
+        if (resolved) return;
+        resolved = true;
+        var ok = selected.length === correct.length && selected.every(function (l) { return correct.indexOf(l) !== -1; });
+        options.forEach(function (o) {
+          o.disabled = true;
+          var letter = o.dataset.letter;
+          var was = selected.indexOf(letter) !== -1;
+          var isRight = correct.indexOf(letter) !== -1;
+          if (isRight) o.classList.add('mcq-correct');
+          else if (was) o.classList.add('mcq-incorrect');
+        });
+        submit.disabled = true;
+        feedback.hidden = false;
+        feedback.textContent = ok ? 'Correct — both required options selected.' : 'Not quite — multiple-response items are all-or-nothing on the real exam.';
+        feedback.className = 'mcq-feedback ' + (ok ? 'right' : 'wrong');
+        explain.hidden = false;
+      });
+    }
+  }
+});
+</script>
+</body>
+</html>

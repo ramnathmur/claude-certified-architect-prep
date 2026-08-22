@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 4 — What is actually on the wire · CCDV-F</title>
+<meta name="description" content="Claude Certified Developer Foundations, Chapter 4: a Claude call is an HTTP request over a versioned JSON contract, and the same letter can be carried by four different counters, each with its own identity check and its own clock.">
+<meta name="author" content="Ram">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: light dark;
+
+  --ink:    oklch(0.15 0.01 80);
+  --ink2:   oklch(0.30 0.015 75);
+  --ink3:   oklch(0.53 0.015 75);
+  --cream:  oklch(0.97 0.008 85);
+  --cream2: oklch(0.94 0.012 85);
+  --cream3: oklch(0.91 0.015 80);
+  --border: oklch(0.87 0.012 80);
+
+  --amber:       oklch(0.64 0.14 68);
+  --amber-light: oklch(0.93 0.035 80);
+  --amber-dark:  oklch(0.47 0.11 60);
+  --blue:        oklch(0.43 0.09 245);
+  --blue-light:  oklch(0.93 0.025 240);
+  --coral:       oklch(0.55 0.14 30);
+  --coral-light: oklch(0.94 0.025 35);
+  --purple:      oklch(0.38 0.14 300);
+  --purple-light:oklch(0.93 0.03 300);
+  --green:       oklch(0.50 0.10 150);
+  --green-light: oklch(0.94 0.025 145);
+
+  --surface-raised:  oklch(0.15 0.01 80);
+  --on-raised:       oklch(0.97 0.008 85);
+  --on-raised-muted: oklch(0.97 0.008 85 / 0.74);
+  --on-raised-dim:   oklch(0.97 0.008 85 / 0.6);
+  --on-raised-border:oklch(0.97 0.008 85 / 0.15);
+  --nav-bg:          oklch(0.97 0.008 85 / 0.96);
+
+  --font-serif: Georgia, 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+  --font-sans:  system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono:  ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+  --font-body-active: var(--font-sans);
+
+  --fs-body: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --fs-sm:   clamp(0.8125rem, 0.78rem + 0.15vw, 0.9375rem);
+  --fs-xs:   clamp(0.6875rem, 0.67rem + 0.1vw, 0.75rem);
+  --fs-h1:   clamp(2rem, 1.4rem + 3vw, 3.375rem);
+  --fs-h2:   clamp(1.5rem, 1.2rem + 1.5vw, 2.125rem);
+  --fs-h3:   clamp(1.25rem, 1.1rem + 0.75vw, 1.5rem);
+  --fs-pull: clamp(1.375rem, 1.15rem + 1.1vw, 1.625rem);
+  --lh-body: 1.7;
+  --lh-heading: 1.2;
+  --measure: 68ch;
+
+  --space-section: clamp(3rem, 2.5rem + 2.5vw, 4rem);
+  --space-block:   clamp(1.5rem, 1.25rem + 1.25vw, 2.5rem);
+  --space-inline:  clamp(1.25rem, 1rem + 1.25vw, 2rem);
+  --radius:    12px;
+  --radius-sm: 8px;
+  --shadow:    0 2px 16px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
+  --t-fast: 0.15s;
+  --t-med:  0.25s;
+}
+
+[data-theme="dark"] {
+  --ink:    oklch(0.90 0.008 85);
+  --ink2:   oklch(0.78 0.01 80);
+  --ink3:   oklch(0.58 0.01 75);
+  --cream:  oklch(0.15 0.012 75);
+  --cream2: oklch(0.19 0.012 75);
+  --cream3: oklch(0.23 0.015 75);
+  --border: oklch(0.32 0.01 75);
+  --shadow:    0 2px 16px rgba(0,0,0,0.3);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+  --amber:       oklch(0.72 0.13 68);
+  --amber-light: oklch(0.24 0.04 70);
+  --amber-dark:  oklch(0.78 0.10 65);
+  --blue:        oklch(0.70 0.09 245);
+  --blue-light:  oklch(0.24 0.035 245);
+  --coral:       oklch(0.68 0.13 30);
+  --coral-light: oklch(0.26 0.04 30);
+  --purple:      oklch(0.68 0.12 300);
+  --purple-light:oklch(0.25 0.04 300);
+  --green:       oklch(0.68 0.10 150);
+  --green-light: oklch(0.24 0.035 150);
+  --nav-bg: oklch(0.15 0.012 75 / 0.92);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink:    oklch(0.90 0.008 85);
+    --ink2:   oklch(0.78 0.01 80);
+    --ink3:   oklch(0.58 0.01 75);
+    --cream:  oklch(0.15 0.012 75);
+    --cream2: oklch(0.19 0.012 75);
+    --cream3: oklch(0.23 0.015 75);
+    --border: oklch(0.32 0.01 75);
+    --shadow:    0 2px 16px rgba(0,0,0,0.3);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+    --amber:       oklch(0.72 0.13 68);
+    --amber-light: oklch(0.24 0.04 70);
+    --amber-dark:  oklch(0.78 0.10 65);
+    --blue:        oklch(0.70 0.09 245);
+    --blue-light:  oklch(0.24 0.035 245);
+    --coral:       oklch(0.68 0.13 30);
+    --coral-light: oklch(0.26 0.04 30);
+    --purple:      oklch(0.68 0.12 300);
+    --purple-light:oklch(0.25 0.04 300);
+    --green:       oklch(0.68 0.10 150);
+    --green-light: oklch(0.24 0.035 150);
+    --nav-bg: oklch(0.15 0.012 75 / 0.92);
+  }
+}
+
+[data-font="serif"]  { --font-body-active: var(--font-serif); }
+[data-font="legible"]{ --font-body-active: 'Atkinson Hyperlegible', var(--font-sans); --lh-body: 1.85; letter-spacing: 0.01em; }
+
+* , *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 78px; }
+
+body {
+  margin: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-body-active);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
+
+.skip-link {
+  position: absolute; left: -9999px; top: 0; z-index: 200;
+  background: var(--ink); color: var(--cream);
+  padding: 0.7rem 1.1rem; border-radius: var(--radius-sm);
+}
+.skip-link:focus { left: 0.6rem; top: 0.6rem; }
+
+h1, h2, h3 { font-family: var(--font-serif); line-height: var(--lh-heading); font-weight: 400; color: var(--ink); }
+h2 { font-size: var(--fs-h2); margin: 0 0 1em; }
+h3 { font-size: var(--fs-h3); margin: var(--space-block) 0 0.75em; }
+p { margin: 0 0 1.1em; }
+code { font-family: var(--font-mono); font-size: 0.9em; background: var(--cream3); padding: 0.12em 0.4em; border-radius: 4px; }
+a { color: var(--amber-dark, var(--amber)); }
+[data-theme="dark"] a, :root:not([data-theme="light"]) a { color: var(--amber); }
+
+.nav {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--nav-bg);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-inner {
+  max-width: 1000px; margin: 0 auto;
+  padding: 0.7rem clamp(1rem, 3vw, 2.5rem);
+  display: flex; align-items: center; gap: 1.1rem;
+  flex-wrap: wrap;
+}
+.nav-brand {
+  font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3);
+  white-space: nowrap;
+}
+.nav-links { display: flex; gap: 0.9rem; flex-wrap: wrap; margin-right: auto; }
+.nav-link {
+  font-size: var(--fs-sm); color: var(--ink2); text-decoration: none;
+  padding: 0.2rem 0; border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+.nav-link.active { color: var(--amber-dark, var(--amber)); border-bottom-color: var(--amber); }
+[data-theme="dark"] .nav-link.active, :root:not([data-theme="light"]) .nav-link.active { color: var(--amber); }
+.nav-progress { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink3); white-space: nowrap; }
+.nav-btn {
+  font-family: var(--font-sans); font-size: 1rem; line-height: 1;
+  background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  width: 34px; height: 34px; cursor: pointer; color: var(--ink2);
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: border-color var(--t-fast);
+}
+.nav-btn:hover { border-color: var(--amber); }
+.nav-btn.font-toggle { font-family: var(--font-serif); font-size: 0.85rem; width: auto; padding: 0 0.6rem; }
+
+.chapter-nav {
+  max-width: 1000px; margin: 0 auto;
+  padding: 0.85rem clamp(1rem, 3vw, 2.5rem);
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  font-size: var(--fs-sm); color: var(--ink3);
+}
+.chapter-nav-link { color: var(--ink3); text-decoration: none; }
+.chapter-nav-link.disabled { cursor: default; opacity: 0.55; }
+.chapter-nav-link em { font-style: normal; font-size: var(--fs-xs); }
+.chapter-nav-current { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase; }
+
+.hero {
+  background: var(--cream);
+  padding: clamp(2rem, 4vw, 3.5rem) clamp(1rem, 3vw, 2.5rem) clamp(1.5rem, 3vw, 2.5rem);
+  border-bottom: 1px solid var(--border);
+}
+.hero-inner { max-width: 900px; margin: 0 auto; }
+.eyebrow {
+  display: flex; align-items: center; gap: 0.6rem;
+  font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber-dark, var(--amber));
+  margin-bottom: 0.9rem;
+}
+[data-theme="dark"] .eyebrow, :root:not([data-theme="light"]) .eyebrow { color: var(--amber); }
+.eyebrow .icon { font-size: 1.3rem; letter-spacing: 0; }
+.hero h1 { font-size: var(--fs-h1); margin: 0; max-width: 20ch; }
+
+main { max-width: 900px; margin: 0 auto; padding: 0 clamp(1rem, 3vw, 2.5rem); }
+section { padding: var(--space-section) 0 0; }
+section:last-of-type { padding-bottom: var(--space-section); }
+.measure { max-width: var(--measure); }
+
+.analogy, .callout-tip, .callout-warning, .callout-remember {
+  border-radius: var(--radius); padding: 22px 26px; margin: var(--space-block) 0;
+}
+.analogy      { background: var(--amber-light);  border-left: 3.5px solid var(--amber); }
+.callout-tip  { background: var(--amber-light);  border-left: 3.5px solid var(--amber); }
+.callout-warning { background: var(--coral-light); border-left: 3.5px solid var(--coral); }
+.callout-remember { background: var(--purple-light); border-left: 3.5px solid var(--purple); }
+.callout-def {
+  background: var(--blue-light); border-radius: var(--radius-sm);
+  padding: 18px 22px; margin: var(--space-block) 0;
+}
+.box-tag {
+  display: block; font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3);
+  margin-bottom: 8px;
+}
+.analogy .box-tag { color: var(--amber-dark, var(--amber)); }
+[data-theme="dark"] .analogy .box-tag, :root:not([data-theme="light"]) .analogy .box-tag { color: var(--amber); }
+.callout-remember .box-tag { color: var(--purple); }
+.callout-def .box-tag { color: var(--blue); }
+.callout-warning .box-tag { color: var(--coral); }
+.analogy p, .callout-tip p, .callout-def p, .callout-remember p, .callout-warning p { margin-bottom: 0.6em; }
+.analogy p:last-child, .callout-tip p:last-child, .callout-def p:last-child, .callout-remember p:last-child, .callout-warning p:last-child { margin-bottom: 0; }
+
+.takeaway, .worked {
+  background: var(--surface-raised); color: var(--on-raised);
+  border-radius: var(--radius); padding: 26px 28px; margin: var(--space-block) 0;
+}
+.takeaway .box-tag, .worked .box-tag { color: var(--on-raised-dim); }
+.takeaway p, .worked p { color: var(--on-raised-muted); margin-bottom: 0; }
+.takeaway strong, .worked strong { color: var(--on-raised); }
+.worked p { font-family: var(--font-mono); font-size: var(--fs-sm); line-height: 1.75; }
+
+.pullquote {
+  max-width: 640px; margin: var(--space-block) auto;
+  padding-left: 22px; border-left: 3px solid var(--amber);
+  font-family: var(--font-serif); font-size: var(--fs-pull); line-height: 1.45;
+  color: var(--ink2);
+}
+
+.split {
+  display: grid; grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden; margin: var(--space-block) 0;
+}
+.split-half { padding: 22px 24px; background: var(--cream2); }
+.split-half + .split-half { border-left: 1px solid var(--border); }
+.split-tag {
+  display: block; font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.06em; color: var(--ink3); margin-bottom: 10px;
+}
+.split-half p { margin-bottom: 0; font-size: var(--fs-sm); }
+.split-half ul { margin: 0; padding-left: 1.1em; font-size: var(--fs-sm); }
+.split-half li { margin-bottom: 0.5em; }
+.split-half li:last-child { margin-bottom: 0; }
+@media (max-width: 640px) {
+  .split { grid-template-columns: 1fr; }
+  .split-half + .split-half { border-left: none; border-top: 1px solid var(--border); }
+}
+
+.xlink-grid { display: grid; gap: 12px; margin: var(--space-block) 0; }
+.xlink {
+  background: var(--cream2); border-radius: var(--radius-sm);
+  padding: 14px 18px; display: flex; gap: 12px; align-items: baseline;
+  font-size: var(--fs-sm);
+}
+.xlink b { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.05em; color: var(--ink3); white-space: nowrap; }
+.xlink span { color: var(--ink2); }
+a.xlink { text-decoration: none; }
+a.xlink:hover { box-shadow: var(--shadow); }
+
+table.ref {
+  width: 100%; border-collapse: collapse; margin: var(--space-block) 0;
+  font-size: var(--fs-sm); border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden;
+}
+table.ref th, table.ref td { padding: 12px 16px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); }
+table.ref th { background: var(--cream3); font-weight: 600; font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); }
+table.ref tr:last-child td { border-bottom: none; }
+table.ref td:first-child { font-weight: 600; width: 20%; }
+
+.diagram { margin: var(--space-block) 0; text-align: center; }
+.diagram svg { max-width: 100%; height: auto; }
+.diagram-caption { font-size: var(--fs-xs); color: var(--ink3); margin-top: 0.6rem; font-family: var(--font-mono); }
+
+.mcq {
+  background: var(--green-light); border-radius: var(--radius);
+  padding: 22px 24px; margin: var(--space-block) 0;
+}
+.mcq-num {
+  font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--green); margin-bottom: 10px; display: flex; gap: 10px; align-items: center;
+}
+.mcq-tag { background: var(--cream); padding: 2px 8px; border-radius: 4px; color: var(--ink3); }
+.mcq-stem { font-size: var(--fs-body); margin-bottom: 1rem; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 0.4rem; }
+.mcq-opt {
+  font-family: var(--font-sans); font-size: var(--fs-sm); text-align: left;
+  background: var(--cream); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 11px 14px; cursor: pointer; color: var(--ink);
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+.mcq-opt:hover:not(:disabled) { border-color: var(--amber); }
+.mcq-opt:disabled { cursor: default; }
+.mcq-opt.mcq-selected { border-color: var(--amber); }
+.mcq-opt.mcq-correct { background: var(--green-light); border-color: var(--green); font-weight: 600; }
+.mcq-opt.mcq-incorrect { background: var(--coral-light); border-color: var(--coral); text-decoration: line-through; }
+.mcq-submit {
+  font-family: var(--font-sans); font-size: var(--fs-sm); font-weight: 600;
+  background: var(--ink); color: var(--cream); border: none; border-radius: var(--radius-sm);
+  padding: 9px 18px; cursor: pointer; margin-top: 4px;
+}
+.mcq-submit:disabled { opacity: 0.5; cursor: default; }
+.mcq-feedback { font-weight: 600; margin-top: 12px; }
+.mcq-feedback.right { color: var(--green); }
+.mcq-feedback.wrong { color: var(--coral); }
+.mcq-explain { margin-top: 10px; font-size: var(--fs-sm); color: var(--ink2); background: var(--cream); border-radius: var(--radius-sm); padding: 12px 16px; }
+
+.chapter-end {
+  background: var(--surface-raised); color: var(--on-raised);
+  border-radius: var(--radius); padding: 30px clamp(24px, 4vw, 40px);
+  margin: var(--space-section) 0; text-align: center;
+}
+.chapter-end p { color: var(--on-raised-muted); margin-bottom: 1.2rem; }
+.chapter-end .chapter-nav { padding: 0; color: var(--on-raised-dim); }
+.chapter-end .chapter-nav-link { color: var(--on-raised); }
+.chapter-end .chapter-nav-link.disabled { color: var(--on-raised-dim); }
+.chapter-end .chapter-nav-current { color: var(--on-raised-dim); }
+
+footer { text-align: center; padding: 2rem 1rem 3rem; font-size: var(--fs-xs); color: var(--ink3); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#hook">Skip to content</a>
+
+<nav class="nav" aria-label="Chapter navigation">
+  <div class="nav-inner">
+    <span class="nav-brand">CCDV-F &middot; Ch. 4</span>
+    <div class="nav-links">
+      <a class="nav-link" href="#hook">The Letter</a>
+      <a class="nav-link" href="#wire">On the Wire</a>
+      <a class="nav-link" href="#counters">Three Counters</a>
+      <a class="nav-link" href="#rule">The Rule</a>
+      <a class="nav-link" href="#case-study">Case Study</a>
+      <a class="nav-link" href="#boundaries">Boundaries</a>
+      <a class="nav-link" href="#exam-cues">Exam Cues</a>
+      <a class="nav-link" href="#self-test">Self-Test</a>
+      <a class="nav-link" href="#snapshot">Snapshot</a>
+    </div>
+    <div class="nav-progress">Progress: <span id="depth-pct">0</span>%</div>
+    <button class="nav-btn theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark mode" title="Toggle dark mode">&#127769;</button>
+    <button class="nav-btn font-toggle" id="font-toggle" type="button" aria-label="Change reading font" title="Cycle reading font">Aa</button>
+  </div>
+</nav>
+
+<div class="chapter-nav">
+  <a class="chapter-nav-link" href="Ch03_Two-dials-not-one.html">&#9668; Chapter 3</a>
+  <span class="chapter-nav-current">Chapter 4 of 34</span>
+  <a class="chapter-nav-link" href="Ch05_Who-is-waiting.html">Chapter 5 &#9658;</a>
+</div>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="eyebrow"><span class="icon">&#9993;&#65039;</span> Chapter 4 of 34 &middot; The Request Layer</div>
+    <h1>What is actually on the wire</h1>
+  </div>
+</header>
+
+<main>
+
+<section id="hook">
+  <h2>The letter leaves the building</h2>
+  <div class="measure">
+    <p>Seal an envelope, address it, and hand it to a courier. Nothing happens to the paper inside until someone at the other end opens it. Everything in between is the courier's problem: which van, which route, which rules about what may cross which border.</p>
+
+    <p>Your code does the same thing every time it calls Claude. An architect building a contract-review assistant writes one call: send the clause under review and an instruction to flag anything that conflicts with the firm's standard terms, get a judgment back. That call reads like a function running inside the same program as everything else.</p>
+
+    <p>It isn't.</p>
+
+    <p>Somewhere between the keystroke and the answer, the request left the building, in the same physical sense as the letter, and someone else's infrastructure carried it. This chapter follows that one request out and back, then follows what happens when the firm's compliance team insists it travel by a specific courier.</p>
+  </div>
+</section>
+
+<section id="wire">
+  <h2>What a request actually is</h2>
+  <div class="measure">
+    <div class="callout-def">
+      <span class="box-tag">Definition</span>
+      <p>Strip away the SDK and here is what your call becomes: an HTTP request, addressed to one endpoint, carrying one JSON body, going out over the same internet connection as everything else your machine does. That connection runs over the same encrypted transport, TLS, as any other sensitive web traffic. The endpoint names a resource: <code>/v1/messages</code> means create a message. The verb is POST, because you are asking the server to create something.</p>
+    </div>
+
+    <p>The body is the letter. JSON is the language it is written in, because JSON is a format both sides parse the same way regardless of what language wrote it or what language reads it. The body carries the model you want, the conversation so far, and whatever limits you are placing on the answer. None of that content depends on which language your code is written in, and none of it depends, yet, on who is going to carry it.</p>
+
+    <p>Around the body sit the headers, and the headers are the envelope. One header names the contract version, because the shape of the JSON body is itself a versioned agreement between you and whoever reads it. That header exists so Anthropic can change the shape of the contract over time without breaking requests already written against an older shape. Another header carries your credential, proof that whoever holds it is allowed to hand this specific letter to this specific counter. Change the credential and the letter is unchanged. Only who is allowed to send it has changed.</p>
+
+    <p>Send the request and a response comes back the same way: a JSON body describing what Claude produced, wrapped in headers describing what happened to the request itself. An HTTP status code reports that outcome before the body is even worth reading: success, a mistake in how the request was built, or a failure on the server's side. <strong>A body that looks like well-formed JSON can still be reporting an error rather than an answer, which is why the status code gets read first.</strong></p>
+
+    <div class="callout-tip">
+      <span class="box-tag">What the SDK is</span>
+      <p>The whole exchange is one round trip, out and back. That is what the SDK is: a convenience layer that builds the body, attaches the headers, sends the request, and turns the JSON that comes back into objects your code can use without parsing text by hand. It validates the body before it leaves your machine, retries a request that failed for a reason worth retrying, and hands back a typed object. Every one of those functions could be written directly against the same endpoint, in the same JSON, by someone willing to do it by hand. The SDK saves you the labor of exercising a capability the raw request already had.</p>
+    </div>
+
+    <p>Anthropic ships that wrapper across common application languages: Python, TypeScript, Java, Go, C#, PHP, Ruby. Whichever one your application is written in, the method that sends a message does the same four things underneath. The differences between the SDKs are differences of language idiom. What gets sent over the wire does not change with the language that built it.</p>
+
+    <p>The reason this matters here is the next step. The letter does not have to go to Anthropic's own counter. Amazon, Google, and Microsoft each host the same Claude models on infrastructure they operate, under rules they each set for their own counter. Same letter. A different counter, a different ID check, different rules about what that counter will carry.</p>
+  </div>
+</section>
+
+<section id="counters">
+  <h2>The same letter, three counters</h2>
+  <div class="measure">
+    <p>Look at the three that Anthropic documents by name: Amazon Bedrock, Google Cloud, and Microsoft Foundry. Each runs Claude on its own infrastructure, under a licensing arrangement with Anthropic, and each expects the letter addressed and signed its own way.</p>
+
+    <p>On Amazon Bedrock, the address changes to an AWS endpoint, and the ID check changes with it. Instead of an Anthropic API key, the request is signed with AWS credentials: a service role, a temporary session issued by AWS's own identity service, or a short-lived bearer token. The model name changes shape too. <code>claude-opus-5</code> at Anthropic's own counter becomes <code>anthropic.claude-opus-5</code> at Amazon's, because Amazon prefixes every model it hosts with the name of the vendor who built it.</p>
+
+    <p>On Google Cloud, the ID check moves to Google's own credential chain. The address changes in a smaller but real way: the model name moves out of the letter's body and into the address itself, part of the URL the request is sent to, and the version marker moves from a header into a field inside the body.</p>
+
+    <p>On Microsoft Foundry, the request is authenticated either with an Azure-issued key or with a Microsoft Entra ID token, and the model is addressed by a deployment name chosen at setup, which defaults to the model's own name but does not have to match it. Its billing follows the same pattern of borrowed infrastructure: charges run through the customer's existing Azure Marketplace account rather than a separate invoice from Anthropic.</p>
+
+    <table class="ref">
+      <thead><tr><th>Counter</th><th>Auth</th><th>Model-name quirk</th></tr></thead>
+      <tbody>
+        <tr><td>Amazon Bedrock</td><td>AWS IAM role, session, or bearer token</td><td>Vendor-prefixed: <code>anthropic.claude-opus-5</code></td></tr>
+        <tr><td>Google Cloud</td><td>Google's own credential chain</td><td>Model name moves into the request URL</td></tr>
+        <tr><td>Microsoft Foundry</td><td>Azure key or Microsoft Entra ID token</td><td>Addressed by a customer-chosen deployment name</td></tr>
+      </tbody>
+    </table>
+
+    <div class="diagram">
+      <svg viewBox="0 0 640 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="d4-title d4-desc">
+        <title id="d4-title">One request, four counters</title>
+        <desc id="d4-desc">The same JSON request fans out to four possible counters: Anthropic direct, Amazon Bedrock, Google Cloud, and Microsoft Foundry, each with its own authentication method.</desc>
+        <rect x="20" y="140" width="130" height="70" rx="10" fill="none" stroke="#7a6a55" stroke-width="1.5"/>
+        <text x="85" y="170" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#3a2000">SAME REQUEST</text>
+        <text x="85" y="188" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="10.5" fill="#5a4a30">same JSON body</text>
+
+        <line x1="150" y1="160" x2="330" y2="55"  stroke="#b06a1f" stroke-width="1.5"/>
+        <line x1="150" y1="170" x2="330" y2="140" stroke="#b06a1f" stroke-width="1.5"/>
+        <line x1="150" y1="180" x2="330" y2="220" stroke="#b06a1f" stroke-width="1.5"/>
+        <line x1="150" y1="190" x2="330" y2="300" stroke="#b06a1f" stroke-width="1.5"/>
+
+        <rect x="330" y="25"  width="290" height="55" rx="8" fill="url(#g1)"/>
+        <rect x="330" y="112" width="290" height="55" rx="8" fill="url(#g1)"/>
+        <rect x="330" y="199" width="290" height="55" rx="8" fill="url(#g1)"/>
+        <rect x="330" y="286" width="290" height="45" rx="8" fill="url(#g1)"/>
+        <defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#f0e6d4"/><stop offset="100%" stop-color="#e7ad5c" stop-opacity="0.55"/></linearGradient></defs>
+
+        <text x="350" y="48"  font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#3a2000">Anthropic (direct)</text>
+        <text x="350" y="65"  font-family="system-ui, sans-serif" font-size="11.5" fill="#5a4a30">Anthropic API key</text>
+        <text x="350" y="135" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#3a2000">Amazon Bedrock</text>
+        <text x="350" y="152" font-family="system-ui, sans-serif" font-size="11.5" fill="#5a4a30">AWS IAM role / session token</text>
+        <text x="350" y="222" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#3a2000">Google Cloud</text>
+        <text x="350" y="239" font-family="system-ui, sans-serif" font-size="11.5" fill="#5a4a30">Google credential chain</text>
+        <text x="350" y="305" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#3a2000">Microsoft Foundry</text>
+        <text x="350" y="321" font-family="system-ui, sans-serif" font-size="11.5" fill="#5a4a30">Azure key / Entra ID token</text>
+      </svg>
+      <div class="diagram-caption">Figure 4.1 — the same JSON body, four different identity checks</div>
+    </div>
+
+    <p>None of the three counters asks you to rewrite the letter itself. What each one insists on is its own proof of identity and its own address, because each counter is operated by a different company, running its own infrastructure, under its own rules for who is allowed to use it. That is also where the three counters stop being interchangeable: each one publishes, separately, which parts of what Anthropic ships it actually carries. Fast mode, from the previous chapter, is a working example &mdash; it is a Claude-API-only offering, absent from all three partner counters at the time of writing.</p>
+
+    <p>A firm chooses a counter for reasons that have nothing to do with which one is technically superior: cloud spend already committed to one provider, or a data boundary its security team already audits. Region control follows a similar logic &mdash; a partner counter's regional endpoint can guarantee a jurisdiction pin that Anthropic's own direct API does not currently offer everywhere.</p>
+  </div>
+</section>
+
+<section id="rule">
+  <h2>What changes when a different counter takes the letter</h2>
+  <div class="measure">
+    <p>Pull the rule out of what the three counters actually do, one step at a time. Authentication changes with the counter by necessity, because identity is a property of whoever operates the infrastructure the request travels through. The model's name is a resource identifier, and a resource identifier belongs to whoever publishes the catalogue. A model's retirement date is an operational decision made by whoever runs the infrastructure that model sits on.</p>
+
+    <div class="split">
+      <div class="split-half">
+        <span class="split-tag">CHANGES BY COUNTER</span>
+        <ul>
+          <li>Authentication method and credential type</li>
+          <li>The model's name / identifier shape</li>
+          <li>The model's retirement schedule</li>
+        </ul>
+      </div>
+      <div class="split-half">
+        <span class="split-tag">STAYS FIXED EVERYWHERE</span>
+        <ul>
+          <li>The Messages API contract itself &mdash; no counter redesigns the JSON body</li>
+          <li>How usage/cost is reported back, token for token</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="takeaway">
+      <span class="box-tag">The working rule</span>
+      <p>Which counter carries a request is a configuration decision, absorbed by choosing which flavor of the SDK's client to instantiate, for exactly as long as every capability the application depends on is one that counter actually carries. The moment the application depends on something a given counter does not carry, the decision stops being configuration and starts being a redesign.</p>
+    </div>
+  </div>
+</section>
+
+<section id="case-study">
+  <h2>When the schedule isn't Anthropic's to keep</h2>
+  <div class="measure">
+    <p>Here is where the surface reading and the mechanism disagree, and the mechanism wins.</p>
+
+    <p>The same architect from the opening case ships two deployments of the contract-review assistant: one calling Claude directly, for the firm's general work, and one routed through Amazon Bedrock, because the litigation team's engagement runs entirely inside an AWS environment their client has already approved. Both deployments call the same model. The architect reasons that a single model, running the same weights, has a single retirement date, and checks Anthropic's own model-deprecation page to confirm it. The page lists the model as active, with no retirement date set. He reports both deployments as safe and moves on.</p>
+
+    <p>Weeks later, the Bedrock-routed deployment starts failing. The direct deployment keeps working without incident.</p>
+
+    <p><strong>The surface reading treated &ldquo;active&rdquo; as a fact about the model. It is a fact about whoever is answering the question,</strong> and Anthropic's own page only answers it for the infrastructure Anthropic itself operates. Amazon Bedrock and Google Cloud are documented, explicitly, as partner-operated: each one sets its own retirement schedule for the models it hosts, on its own timeline, and that schedule can fall earlier or later than Anthropic's. The architect checked a real, authoritative page. It was the wrong authority for that specific deployment, because the deployment in question was never running on infrastructure that page describes.</p>
+
+    <p>Nothing in the application code pointed at the cause. The request that failed used the same model name in spirit, the same JSON body, the same conversation-handling logic as the one still working on the direct deployment, because that logic was never vendor-specific to begin with. The only difference was which counter had carried the letter, and that difference lived entirely outside the code the architect could see by reading his own repository.</p>
+
+    <p>The same trap catches feature availability too. A request that depends on a capability the direct API ships first can keep working on Anthropic's own infrastructure for months before a partner counter catches up, if it ever does. The operational habit that follows is unglamorous: track retirement per deployment. A spreadsheet with one row per model name undercounts a firm running the same model through two counters. A spreadsheet with one row per deployment does not.</p>
+  </div>
+</section>
+
+<section id="boundaries">
+  <h2>Where the letter analogy stops carrying weight</h2>
+  <div class="measure">
+    <p>Everything above describes the plain Anthropic SDK, a wrapper around one request out and one response back. There is a second, different SDK, the Claude Agent SDK. It runs a whole agent loop inside your own process: many requests, tool execution between them, iteration until the task is done, closer to a standing correspondence than to the single letter this chapter has been following. The wrapper-around-one-request picture here is exactly right for the plain SDK. It stops being the right picture the moment your code is driving that loop instead of a single call.</p>
+
+    <div class="xlink-grid">
+      <a class="xlink" href="Ch05_Who-is-waiting.html"><b>CH. 5</b><span>Which shape a request should take &mdash; synchronous, streamed, batched &mdash; is a separate decision, covered next.</span></a>
+    </div>
+
+    <p>And the honest limit on the analogy itself. A real letter, handed to a different courier, arrives unchanged. That part does not survive contact with what actually happens on the wire. The address has to be rewritten for each counter, sometimes down to which field a single value sits in, and two counters carrying what looks like the identical letter can still be running different clocks on how long they intend to keep accepting it. The analogy earns its keep on the parts that genuinely hold: one letter, several counters, each with its own rules for identity and carriage. It does not stretch to cover a request arriving byte-for-byte identical wherever it is sent.</p>
+  </div>
+</section>
+
+<section id="exam-cues">
+  <h2>Three phrases that route here</h2>
+  <div class="measure">
+    <div class="callout-remember">
+      <span class="box-tag">Remember this</span>
+      <p>A stem naming an existing AWS, Azure, or Google Cloud commitment. A stem requiring data or inference to stay inside a named cloud's boundary. A stem where a request that used to work has started failing with no change to the code, on either the model side or the application side. Any of the three is the signal to check that platform's own documentation, not Anthropic's, before answering.</p>
+    </div>
+  </div>
+</section>
+
+<section id="self-test">
+  <h2>Self-test: which carrier, which clock</h2>
+  <div class="measure">
+
+    <div class="mcq" data-qtype="single" data-correct="B">
+      <div class="mcq-num">Question 1 <span class="mcq-tag">Select 1</span></div>
+      <p class="mcq-stem">A bank's procurement policy requires all new vendor spending to route through its existing AWS Enterprise Agreement, and its security team requires model inference to stay inside AWS's own network boundary.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. Call the Claude API directly, routed through the bank's own API gateway.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Call Claude through Amazon Bedrock, authenticated with the bank's existing AWS IAM roles.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. Add a policy statement to the project's CLAUDE.md instructing that Claude may only be called through AWS.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Switch the application to the most capable Claude model, since larger AWS commitments come with better enterprise terms.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: B.</strong> Bedrock runs on AWS-operated infrastructure and bills through the existing AWS relationship, satisfying both constraints at once. A is a client-side routing change; the request still leaves AWS's boundary to reach Anthropic's own infrastructure. C is an instruction that nothing in the system enforces. D addresses neither procurement nor the network boundary.</div>
+    </div>
+
+    <div class="mcq" data-qtype="single" data-correct="B">
+      <div class="mcq-num">Question 2 <span class="mcq-tag">Select 1</span></div>
+      <p class="mcq-stem">An application calls Claude through Google Cloud. A teammate checks Anthropic's own model-deprecation page, finds the model listed as active, and reports no action needed. Two months later, requests through Google Cloud begin failing, while a separate direct-API deployment of the same model keeps working.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. The model was never deprecated; the failures are unrelated.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Google Cloud, as the operator of that delivery route, sets its own retirement schedule for the models it hosts, separately from Anthropic's own schedule; the team should have checked Google Cloud's own documentation for that model.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. The application's API key expired and needs rotating.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Add automatic retry with backoff so failed requests recover on their own.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: B.</strong> Partner-operated platforms set their own retirement timelines, which can fall earlier or later than Anthropic's. Anthropic's deprecation page only answers the question for infrastructure Anthropic itself operates. C invents a failure mode the scenario does not support. D retries against a route that is failing for a structural reason, which no retry will fix.</div>
+    </div>
+
+    <div class="mcq" data-qtype="multi" data-correct="A,B">
+      <div class="mcq-num">Question 3 <span class="mcq-tag">Select 2</span></div>
+      <p class="mcq-stem">Select the two statements that correctly describe how authentication changes when Claude is invoked through a third-party platform rather than the direct Anthropic API.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. On Amazon Bedrock, requests can be authenticated with AWS credentials, including temporary credentials issued through an assumed IAM role, instead of an Anthropic API key.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. On Microsoft Foundry, requests can be authenticated with a Microsoft Entra ID token instead of an Anthropic API key.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. All three third-party platforms accept the same Anthropic-issued API key used by the direct API.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. No credential is required on any third-party platform, because the cloud account's own network boundary is sufficient.</button>
+      </div>
+      <button class="mcq-submit" type="button">Check answer</button>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: A, B.</strong> Each platform substitutes its own identity system for Anthropic's API key: AWS credentials on Bedrock, Entra ID or an Azure key on Foundry. C and D both describe a credential-free or credential-portable world that none of the three platforms documents.</div>
+    </div>
+
+    <div class="mcq" data-qtype="single" data-correct="B">
+      <div class="mcq-num">Question 4 <span class="mcq-tag">Select 1</span></div>
+      <p class="mcq-stem">A team built a feature around the Claude API's structured outputs, a JSON-schema-constrained response. To consolidate cost under an existing cloud contract, they move the integration to Amazon Bedrock, changing only the SDK client class and the credentials. In testing, the feature stops returning schema-constrained JSON.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. A bug in the SDK silently dropped the schema parameter; retry the request.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Structured outputs is a capability the direct API supports that Amazon Bedrock does not carry; the application depended on a feature the new counter does not offer, so the change was not a pure configuration swap.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. Bedrock requires a higher token ceiling for schema-constrained responses to return correctly.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Lower the model's effort level so the response is formatted more carefully.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: B.</strong> Feature parity is not guaranteed across platforms, and structured outputs is documented as unavailable on Bedrock. A and C invent mechanisms neither platform documents. D reaches for a lever from a different decision entirely and does not restore a missing capability.</div>
+    </div>
+
+    <div class="mcq" data-qtype="single" data-correct="B">
+      <div class="mcq-num">Question 5 <span class="mcq-tag">Select 1</span></div>
+      <p class="mcq-stem">An architect is asked whether moving a Claude integration from the direct API to Google Cloud will require rewriting the application's conversation-handling logic.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. Yes: Google Cloud uses a request format that shares nothing with the Messages API.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. No. The request is still built against the same Messages API contract. What changes is how it is addressed and authenticated.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. It depends on whether the application uses a streaming response.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Yes: tool calling is only available through the direct API.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: B.</strong> Google Cloud's integration is documented as using the same Messages API shape, with the model name and version marker moved to different parts of the request. A and D both overstate the difference. C raises a real but separate decision that does not bear on whether the vendor swap itself requires a rewrite.</div>
+    </div>
+
+  </div>
+</section>
+
+<section id="snapshot">
+  <h2>What will drift: platform specifics</h2>
+  <div class="measure">
+    <p>Everything below is a detail that moves with a product update rather than a rule of judgment. Treat it as a snapshot taken while writing this chapter, worth a glance rather than memorization.</p>
+
+    <div class="callout-warning">
+      <span class="box-tag">Snapshot &middot; verify at build time</span>
+      <p><strong>The platforms named in this chapter, as currently documented:</strong> Amazon Bedrock, Google Cloud (through its Agent Platform integration, commonly called Vertex AI), and Microsoft Foundry. A fourth option, Claude Platform on AWS, is Anthropic-operated despite running on AWS, bills through AWS Marketplace, and is documented separately from the AWS-operated Bedrock.</p>
+      <p><strong>Model identifier formats, as currently documented:</strong> Amazon Bedrock prefixes every model with <code>anthropic.</code>, for example <code>anthropic.claude-opus-5</code>. Google Cloud's integration passes the model in the request URL rather than the JSON body, and its version marker is a body field fixed to the literal value <code>vertex-2023-10-16</code>. Microsoft Foundry addresses models by a deployment name that defaults to the model ID but can be renamed at provisioning time.</p>
+      <p><strong>Which platforms set their own deprecation schedule, as currently documented:</strong> Amazon Bedrock and Google Cloud are named explicitly as partner-operated, with their own retirement timelines that can differ from Anthropic's. Microsoft Foundry is documented as following the Claude API's own lifecycle schedule, despite running partly on Azure infrastructure.</p>
+      <p><strong>Feature parity, as currently documented:</strong> none of the three third-party platforms carries the Batch API, Claude Managed Agents, the Admin or Usage API endpoints, or the newest agent-infrastructure features such as Agent Skills, the MCP connector, and programmatic tool calling. Structured outputs and some server-side tools are available on some platforms and not others; check the specific platform's current feature list before an application comes to depend on either.</p>
+    </div>
+
+    <p>Re-verify all of the above against each platform's own current documentation before treating any single line of it as settled.</p>
+  </div>
+</section>
+
+</main>
+
+<div class="chapter-end">
+  <p>End of Chapter 4 — The Request Layer</p>
+  <div class="chapter-nav">
+    <a class="chapter-nav-link" href="Ch03_Two-dials-not-one.html">&#9668; Chapter 3</a>
+    <span class="chapter-nav-current">Chapter 4 of 34</span>
+    <a class="chapter-nav-link" href="Ch05_Who-is-waiting.html">Chapter 5 &#9658;</a>
+  </div>
+</div>
+
+<footer>CCDV-F Regeneration &middot; Chapter 4 of 34</footer>
+
+<script>
+var pct = document.getElementById('depth-pct');
+function onScroll() {
+  var h = document.documentElement;
+  var max = h.scrollHeight - h.clientHeight;
+  var p = max > 0 ? (h.scrollTop || document.body.scrollTop) / max : 0;
+  var v = Math.round(p * 100);
+  if (pct) pct.textContent = v;
+  var links = document.querySelectorAll('.nav-link[href^="#"]');
+  var cur = '';
+  document.querySelectorAll('section[id]').forEach(function (s) {
+    if (s.getBoundingClientRect().top <= 120) cur = s.id;
+  });
+  links.forEach(function (l) {
+    l.classList.toggle('active', l.getAttribute('href') === '#' + cur);
+  });
+}
+window.addEventListener('scroll', onScroll, { passive: true });
+window.addEventListener('resize', onScroll);
+document.addEventListener('DOMContentLoaded', onScroll);
+
+var toggle = document.getElementById('theme-toggle');
+var root = document.documentElement;
+var stored = localStorage.getItem('ccdv-theme');
+if (stored) root.setAttribute('data-theme', stored);
+function isDark() {
+  var attr = root.getAttribute('data-theme');
+  if (attr === 'dark') return true;
+  if (attr === 'light') return false;
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+function updateToggle() {
+  if (!toggle) return;
+  var dark = isDark();
+  toggle.innerHTML = dark ? '&#9728;&#65039;' : '&#127769;';
+  toggle.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+}
+updateToggle();
+if (toggle) {
+  toggle.addEventListener('click', function () {
+    var next = isDark() ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    localStorage.setItem('ccdv-theme', next);
+    updateToggle();
+  });
+}
+
+var fontToggle = document.getElementById('font-toggle');
+var fontModes = ['default', 'serif', 'legible'];
+var fontLabels = { default: 'Aa', serif: 'Aa (serif)', legible: 'Aa+ (legible)' };
+var storedFont = localStorage.getItem('ccdv-font');
+if (storedFont && storedFont !== 'default') root.setAttribute('data-font', storedFont);
+function updateFontToggle() {
+  if (!fontToggle) return;
+  var current = root.getAttribute('data-font') || 'default';
+  fontToggle.textContent = fontLabels[current];
+  fontToggle.setAttribute('aria-label', 'Reading font: ' + current + '. Click to change.');
+}
+updateFontToggle();
+if (fontToggle) {
+  fontToggle.addEventListener('click', function () {
+    var current = root.getAttribute('data-font') || 'default';
+    var next = fontModes[(fontModes.indexOf(current) + 1) % fontModes.length];
+    if (next === 'default') { root.removeAttribute('data-font'); }
+    else { root.setAttribute('data-font', next); }
+    localStorage.setItem('ccdv-font', next);
+    updateFontToggle();
+  });
+}
+
+document.querySelectorAll('.mcq').forEach(function (mcq) {
+  var qtype = mcq.dataset.qtype;
+  var correct = mcq.dataset.correct.split(',');
+  var options = Array.prototype.slice.call(mcq.querySelectorAll('.mcq-opt'));
+  var feedback = mcq.querySelector('.mcq-feedback');
+  var explain = mcq.querySelector('.mcq-explain');
+  var resolved = false;
+
+  if (qtype === 'single') {
+    options.forEach(function (opt) {
+      opt.addEventListener('click', function () {
+        if (resolved) return;
+        resolved = true;
+        var letter = opt.dataset.letter;
+        options.forEach(function (o) {
+          o.disabled = true;
+          if (correct.indexOf(o.dataset.letter) !== -1) o.classList.add('mcq-correct');
+          else if (o === opt) o.classList.add('mcq-incorrect');
+        });
+        var ok = letter === correct[0];
+        feedback.hidden = false;
+        feedback.textContent = ok ? 'Correct.' : 'Not quite.';
+        feedback.className = 'mcq-feedback ' + (ok ? 'right' : 'wrong');
+        explain.hidden = false;
+      });
+    });
+  } else {
+    var selected = [];
+    options.forEach(function (opt) {
+      opt.setAttribute('aria-pressed', 'false');
+      opt.addEventListener('click', function () {
+        if (resolved) return;
+        var letter = opt.dataset.letter;
+        var idx = selected.indexOf(letter);
+        if (idx === -1) { selected.push(letter); opt.setAttribute('aria-pressed', 'true'); opt.classList.add('mcq-selected'); }
+        else { selected.splice(idx, 1); opt.setAttribute('aria-pressed', 'false'); opt.classList.remove('mcq-selected'); }
+      });
+    });
+    var submit = mcq.querySelector('.mcq-submit');
+    if (submit) {
+      submit.addEventListener('click', function () {
+        if (resolved) return;
+        resolved = true;
+        var ok = selected.length === correct.length && selected.every(function (l) { return correct.indexOf(l) !== -1; });
+        options.forEach(function (o) {
+          o.disabled = true;
+          var letter = o.dataset.letter;
+          var was = selected.indexOf(letter) !== -1;
+          var isRight = correct.indexOf(letter) !== -1;
+          if (isRight) o.classList.add('mcq-correct');
+          else if (was) o.classList.add('mcq-incorrect');
+        });
+        submit.disabled = true;
+        feedback.hidden = false;
+        feedback.textContent = ok ? 'Correct — both required options selected.' : 'Not quite — multiple-response items are all-or-nothing on the real exam.';
+        feedback.className = 'mcq-feedback ' + (ok ? 'right' : 'wrong');
+        explain.hidden = false;
+      });
+    }
+  }
+});
+</script>
+</body>
+</html>

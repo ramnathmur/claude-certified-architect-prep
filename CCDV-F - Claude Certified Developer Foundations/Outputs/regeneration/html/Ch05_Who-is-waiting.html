@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 5 — Who is waiting? · CCDV-F</title>
+<meta name="description" content="Claude Certified Developer Foundations, Chapter 5: whether anyone is waiting for an answer, and what they need while they wait, decides which of five request shapes a call should take.">
+<meta name="author" content="Ram">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: light dark;
+
+  --ink:    oklch(0.15 0.01 80);
+  --ink2:   oklch(0.30 0.015 75);
+  --ink3:   oklch(0.53 0.015 75);
+  --cream:  oklch(0.97 0.008 85);
+  --cream2: oklch(0.94 0.012 85);
+  --cream3: oklch(0.91 0.015 80);
+  --border: oklch(0.87 0.012 80);
+
+  --amber:       oklch(0.64 0.14 68);
+  --amber-light: oklch(0.93 0.035 80);
+  --amber-dark:  oklch(0.47 0.11 60);
+  --blue:        oklch(0.43 0.09 245);
+  --blue-light:  oklch(0.93 0.025 240);
+  --coral:       oklch(0.55 0.14 30);
+  --coral-light: oklch(0.94 0.025 35);
+  --purple:      oklch(0.38 0.14 300);
+  --purple-light:oklch(0.93 0.03 300);
+  --green:       oklch(0.50 0.10 150);
+  --green-light: oklch(0.94 0.025 145);
+
+  --surface-raised:  oklch(0.15 0.01 80);
+  --on-raised:       oklch(0.97 0.008 85);
+  --on-raised-muted: oklch(0.97 0.008 85 / 0.74);
+  --on-raised-dim:   oklch(0.97 0.008 85 / 0.6);
+  --on-raised-border:oklch(0.97 0.008 85 / 0.15);
+  --nav-bg:          oklch(0.97 0.008 85 / 0.96);
+
+  --font-serif: Georgia, 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+  --font-sans:  system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono:  ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+  --font-body-active: var(--font-sans);
+
+  --fs-body: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --fs-sm:   clamp(0.8125rem, 0.78rem + 0.15vw, 0.9375rem);
+  --fs-xs:   clamp(0.6875rem, 0.67rem + 0.1vw, 0.75rem);
+  --fs-h1:   clamp(2rem, 1.4rem + 3vw, 3.375rem);
+  --fs-h2:   clamp(1.5rem, 1.2rem + 1.5vw, 2.125rem);
+  --fs-h3:   clamp(1.25rem, 1.1rem + 0.75vw, 1.5rem);
+  --fs-pull: clamp(1.375rem, 1.15rem + 1.1vw, 1.625rem);
+  --lh-body: 1.7;
+  --lh-heading: 1.2;
+  --measure: 68ch;
+
+  --space-section: clamp(3rem, 2.5rem + 2.5vw, 4rem);
+  --space-block:   clamp(1.5rem, 1.25rem + 1.25vw, 2.5rem);
+  --space-inline:  clamp(1.25rem, 1rem + 1.25vw, 2rem);
+  --radius:    12px;
+  --radius-sm: 8px;
+  --shadow:    0 2px 16px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
+  --t-fast: 0.15s;
+  --t-med:  0.25s;
+}
+
+[data-theme="dark"] {
+  --ink:    oklch(0.90 0.008 85);
+  --ink2:   oklch(0.78 0.01 80);
+  --ink3:   oklch(0.58 0.01 75);
+  --cream:  oklch(0.15 0.012 75);
+  --cream2: oklch(0.19 0.012 75);
+  --cream3: oklch(0.23 0.015 75);
+  --border: oklch(0.32 0.01 75);
+  --shadow:    0 2px 16px rgba(0,0,0,0.3);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+  --amber:       oklch(0.72 0.13 68);
+  --amber-light: oklch(0.24 0.04 70);
+  --amber-dark:  oklch(0.78 0.10 65);
+  --blue:        oklch(0.70 0.09 245);
+  --blue-light:  oklch(0.24 0.035 245);
+  --coral:       oklch(0.68 0.13 30);
+  --coral-light: oklch(0.26 0.04 30);
+  --purple:      oklch(0.68 0.12 300);
+  --purple-light:oklch(0.25 0.04 300);
+  --green:       oklch(0.68 0.10 150);
+  --green-light: oklch(0.24 0.035 150);
+  --nav-bg: oklch(0.15 0.012 75 / 0.92);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink:    oklch(0.90 0.008 85);
+    --ink2:   oklch(0.78 0.01 80);
+    --ink3:   oklch(0.58 0.01 75);
+    --cream:  oklch(0.15 0.012 75);
+    --cream2: oklch(0.19 0.012 75);
+    --cream3: oklch(0.23 0.015 75);
+    --border: oklch(0.32 0.01 75);
+    --shadow:    0 2px 16px rgba(0,0,0,0.3);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+    --amber:       oklch(0.72 0.13 68);
+    --amber-light: oklch(0.24 0.04 70);
+    --amber-dark:  oklch(0.78 0.10 65);
+    --blue:        oklch(0.70 0.09 245);
+    --blue-light:  oklch(0.24 0.035 245);
+    --coral:       oklch(0.68 0.13 30);
+    --coral-light: oklch(0.26 0.04 30);
+    --purple:      oklch(0.68 0.12 300);
+    --purple-light:oklch(0.25 0.04 300);
+    --green:       oklch(0.68 0.10 150);
+    --green-light: oklch(0.24 0.035 150);
+    --nav-bg: oklch(0.15 0.012 75 / 0.92);
+  }
+}
+
+[data-font="serif"]  { --font-body-active: var(--font-serif); }
+[data-font="legible"]{ --font-body-active: 'Atkinson Hyperlegible', var(--font-sans); --lh-body: 1.85; letter-spacing: 0.01em; }
+
+* , *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 78px; }
+
+body {
+  margin: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-body-active);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
+
+.skip-link {
+  position: absolute; left: -9999px; top: 0; z-index: 200;
+  background: var(--ink); color: var(--cream);
+  padding: 0.7rem 1.1rem; border-radius: var(--radius-sm);
+}
+.skip-link:focus { left: 0.6rem; top: 0.6rem; }
+
+h1, h2, h3 { font-family: var(--font-serif); line-height: var(--lh-heading); font-weight: 400; color: var(--ink); }
+h2 { font-size: var(--fs-h2); margin: 0 0 1em; }
+h3 { font-size: var(--fs-h3); margin: var(--space-block) 0 0.75em; }
+p { margin: 0 0 1.1em; }
+code { font-family: var(--font-mono); font-size: 0.9em; background: var(--cream3); padding: 0.12em 0.4em; border-radius: 4px; }
+a { color: var(--amber-dark, var(--amber)); }
+[data-theme="dark"] a, :root:not([data-theme="light"]) a { color: var(--amber); }
+
+.nav {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--nav-bg);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-inner {
+  max-width: 1000px; margin: 0 auto;
+  padding: 0.7rem clamp(1rem, 3vw, 2.5rem);
+  display: flex; align-items: center; gap: 1.1rem;
+  flex-wrap: wrap;
+}
+.nav-brand {
+  font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3);
+  white-space: nowrap;
+}
+.nav-links { display: flex; gap: 0.9rem; flex-wrap: wrap; margin-right: auto; }
+.nav-link {
+  font-size: var(--fs-sm); color: var(--ink2); text-decoration: none;
+  padding: 0.2rem 0; border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+.nav-link.active { color: var(--amber-dark, var(--amber)); border-bottom-color: var(--amber); }
+[data-theme="dark"] .nav-link.active, :root:not([data-theme="light"]) .nav-link.active { color: var(--amber); }
+.nav-progress { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink3); white-space: nowrap; }
+.nav-btn {
+  font-family: var(--font-sans); font-size: 1rem; line-height: 1;
+  background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  width: 34px; height: 34px; cursor: pointer; color: var(--ink2);
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: border-color var(--t-fast);
+}
+.nav-btn:hover { border-color: var(--amber); }
+.nav-btn.font-toggle { font-family: var(--font-serif); font-size: 0.85rem; width: auto; padding: 0 0.6rem; }
+
+.chapter-nav {
+  max-width: 1000px; margin: 0 auto;
+  padding: 0.85rem clamp(1rem, 3vw, 2.5rem);
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  font-size: var(--fs-sm); color: var(--ink3);
+}
+.chapter-nav-link { color: var(--ink3); text-decoration: none; }
+.chapter-nav-link.disabled { cursor: default; opacity: 0.55; }
+.chapter-nav-link em { font-style: normal; font-size: var(--fs-xs); }
+.chapter-nav-current { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase; }
+
+.hero {
+  background: var(--cream);
+  padding: clamp(2rem, 4vw, 3.5rem) clamp(1rem, 3vw, 2.5rem) clamp(1.5rem, 3vw, 2.5rem);
+  border-bottom: 1px solid var(--border);
+}
+.hero-inner { max-width: 900px; margin: 0 auto; }
+.eyebrow {
+  display: flex; align-items: center; gap: 0.6rem;
+  font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber-dark, var(--amber));
+  margin-bottom: 0.9rem;
+}
+[data-theme="dark"] .eyebrow, :root:not([data-theme="light"]) .eyebrow { color: var(--amber); }
+.eyebrow .icon { font-size: 1.3rem; letter-spacing: 0; }
+.hero h1 { font-size: var(--fs-h1); margin: 0; max-width: 20ch; }
+
+main { max-width: 900px; margin: 0 auto; padding: 0 clamp(1rem, 3vw, 2.5rem); }
+section { padding: var(--space-section) 0 0; }
+section:last-of-type { padding-bottom: var(--space-section); }
+.measure { max-width: var(--measure); }
+
+.analogy, .callout-tip, .callout-warning, .callout-remember {
+  border-radius: var(--radius); padding: 22px 26px; margin: var(--space-block) 0;
+}
+.analogy      { background: var(--amber-light);  border-left: 3.5px solid var(--amber); }
+.callout-tip  { background: var(--amber-light);  border-left: 3.5px solid var(--amber); }
+.callout-warning { background: var(--coral-light); border-left: 3.5px solid var(--coral); }
+.callout-remember { background: var(--purple-light); border-left: 3.5px solid var(--purple); }
+.callout-def {
+  background: var(--blue-light); border-radius: var(--radius-sm);
+  padding: 18px 22px; margin: var(--space-block) 0;
+}
+.box-tag {
+  display: block; font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3);
+  margin-bottom: 8px;
+}
+.analogy .box-tag { color: var(--amber-dark, var(--amber)); }
+[data-theme="dark"] .analogy .box-tag, :root:not([data-theme="light"]) .analogy .box-tag { color: var(--amber); }
+.callout-remember .box-tag { color: var(--purple); }
+.callout-def .box-tag { color: var(--blue); }
+.callout-warning .box-tag { color: var(--coral); }
+.analogy p, .callout-tip p, .callout-def p, .callout-remember p, .callout-warning p { margin-bottom: 0.6em; }
+.analogy p:last-child, .callout-tip p:last-child, .callout-def p:last-child, .callout-remember p:last-child, .callout-warning p:last-child { margin-bottom: 0; }
+
+.takeaway, .worked {
+  background: var(--surface-raised); color: var(--on-raised);
+  border-radius: var(--radius); padding: 26px 28px; margin: var(--space-block) 0;
+}
+.takeaway .box-tag, .worked .box-tag { color: var(--on-raised-dim); }
+.takeaway p, .worked p { color: var(--on-raised-muted); margin-bottom: 0; }
+.takeaway strong, .worked strong { color: var(--on-raised); }
+.worked p { font-family: var(--font-mono); font-size: var(--fs-sm); line-height: 1.75; }
+
+.pullquote {
+  max-width: 640px; margin: var(--space-block) auto;
+  padding-left: 22px; border-left: 3px solid var(--amber);
+  font-family: var(--font-serif); font-size: var(--fs-pull); line-height: 1.45;
+  color: var(--ink2);
+}
+
+.xlink-grid { display: grid; gap: 12px; margin: var(--space-block) 0; }
+.xlink {
+  background: var(--cream2); border-radius: var(--radius-sm);
+  padding: 14px 18px; display: flex; gap: 12px; align-items: baseline;
+  font-size: var(--fs-sm);
+}
+.xlink b { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.05em; color: var(--ink3); white-space: nowrap; }
+.xlink span { color: var(--ink2); }
+a.xlink { text-decoration: none; }
+a.xlink:hover { box-shadow: var(--shadow); }
+
+.diagram { margin: var(--space-block) 0; text-align: center; }
+.diagram svg { max-width: 100%; height: auto; }
+.diagram-caption { font-size: var(--fs-xs); color: var(--ink3); margin-top: 0.6rem; font-family: var(--font-mono); }
+
+.mcq {
+  background: var(--green-light); border-radius: var(--radius);
+  padding: 22px 24px; margin: var(--space-block) 0;
+}
+.mcq-num {
+  font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--green); margin-bottom: 10px; display: flex; gap: 10px; align-items: center;
+}
+.mcq-tag { background: var(--cream); padding: 2px 8px; border-radius: 4px; color: var(--ink3); }
+.mcq-stem { font-size: var(--fs-body); margin-bottom: 1rem; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 0.4rem; }
+.mcq-opt {
+  font-family: var(--font-sans); font-size: var(--fs-sm); text-align: left;
+  background: var(--cream); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 11px 14px; cursor: pointer; color: var(--ink);
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+.mcq-opt:hover:not(:disabled) { border-color: var(--amber); }
+.mcq-opt:disabled { cursor: default; }
+.mcq-opt.mcq-selected { border-color: var(--amber); }
+.mcq-opt.mcq-correct { background: var(--green-light); border-color: var(--green); font-weight: 600; }
+.mcq-opt.mcq-incorrect { background: var(--coral-light); border-color: var(--coral); text-decoration: line-through; }
+.mcq-submit {
+  font-family: var(--font-sans); font-size: var(--fs-sm); font-weight: 600;
+  background: var(--ink); color: var(--cream); border: none; border-radius: var(--radius-sm);
+  padding: 9px 18px; cursor: pointer; margin-top: 4px;
+}
+.mcq-submit:disabled { opacity: 0.5; cursor: default; }
+.mcq-feedback { font-weight: 600; margin-top: 12px; }
+.mcq-feedback.right { color: var(--green); }
+.mcq-feedback.wrong { color: var(--coral); }
+.mcq-explain { margin-top: 10px; font-size: var(--fs-sm); color: var(--ink2); background: var(--cream); border-radius: var(--radius-sm); padding: 12px 16px; }
+
+.chapter-end {
+  background: var(--surface-raised); color: var(--on-raised);
+  border-radius: var(--radius); padding: 30px clamp(24px, 4vw, 40px);
+  margin: var(--space-section) 0; text-align: center;
+}
+.chapter-end p { color: var(--on-raised-muted); margin-bottom: 1.2rem; }
+.chapter-end .chapter-nav { padding: 0; color: var(--on-raised-dim); }
+.chapter-end .chapter-nav-link { color: var(--on-raised); }
+.chapter-end .chapter-nav-link.disabled { color: var(--on-raised-dim); }
+.chapter-end .chapter-nav-current { color: var(--on-raised-dim); }
+
+footer { text-align: center; padding: 2rem 1rem 3rem; font-size: var(--fs-xs); color: var(--ink3); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#hook">Skip to content</a>
+
+<nav class="nav" aria-label="Chapter navigation">
+  <div class="nav-inner">
+    <span class="nav-brand">CCDV-F &middot; Ch. 5</span>
+    <div class="nav-links">
+      <a class="nav-link" href="#hook">Waiting or Not</a>
+      <a class="nav-link" href="#modes">Five Modes</a>
+      <a class="nav-link" href="#rule">The Decision</a>
+      <a class="nav-link" href="#case-study">Case Study</a>
+      <a class="nav-link" href="#boundaries">Boundaries</a>
+      <a class="nav-link" href="#exam-cues">Exam Cues</a>
+      <a class="nav-link" href="#self-test">Self-Test</a>
+    </div>
+    <div class="nav-progress">Progress: <span id="depth-pct">0</span>%</div>
+    <button class="nav-btn theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark mode" title="Toggle dark mode">&#127769;</button>
+    <button class="nav-btn font-toggle" id="font-toggle" type="button" aria-label="Change reading font" title="Cycle reading font">Aa</button>
+  </div>
+</nav>
+
+<div class="chapter-nav">
+  <a class="chapter-nav-link" href="Ch04_What-is-actually-on-the-wire.html">&#9668; Chapter 4</a>
+  <span class="chapter-nav-current">Chapter 5 of 34</span>
+  <span class="chapter-nav-link disabled" aria-disabled="true">Chapter 6 <em>(coming soon)</em> &#9658;</span>
+</div>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="eyebrow"><span class="icon">&#127974;&#65039;</span> Chapter 5 of 34 &middot; Request Shapes</div>
+    <h1>Who is waiting?</h1>
+  </div>
+</header>
+
+<main>
+
+<section id="hook">
+  <h2>The rule the owner gives new staff before anything else</h2>
+  <div class="measure">
+    <div class="analogy">
+      <span class="box-tag">Hold this analogy</span>
+      <p>A restaurant owner trains new staff on one distinction before teaching them anything else: know who is standing there waiting, and know who is not. A table ordering &agrave; la carte is waiting, seated, watching for the kitchen door to swing open. A counter-service customer is waiting too, but standing where they can watch the order get built rather than sitting until a finished plate arrives. Delivery is not waiting in the same way. The customer has gone back to their desk, and the kitchen fires the ticket the moment it lands, on the same footing as any other order. A catering order booked a week out is not waiting at all. The kitchen chooses which slow Tuesday afternoon to prep it, and charges less for the privilege of choosing.</p>
+    </div>
+    <p>The owner never says a word about software. The same distinction sorts every request your code will ever send to the Messages API, and it decides which of five request shapes that call should take.</p>
+  </div>
+</section>
+
+<section id="modes">
+  <h2>The four ways this kitchen takes an order, and the one it doesn't</h2>
+  <div class="measure">
+    <p>Five patterns cover every way your code can get an answer back out of the Messages API: call it and wait for the whole thing, call it and watch the answer arrive in pieces, call it without blocking your own thread while it runs, hand it a pile of work to complete on its own schedule, or keep a channel open in both directions for as long as the conversation lasts. Four of those five have a service mode in this kitchen already. The fifth doesn't, and the absence is worth understanding too. None of the five is a style choice: each one changes what your code has to do to use the answer, and three of them change what you pay for it.</p>
+
+    <h3>&Agrave; la carte: nothing leaves the kitchen until the plate is finished</h3>
+    <p>At the table, the kitchen is out of sight, and the dish arrives only once it is completely done, with nothing partial reaching you in between. This is the synchronous request: your code sends it and blocks until the complete response comes back in one piece. It is the right default whenever a single caller needs the finished answer and either the wait is short or nobody is watching it happen: a backend job, a short classification call, anything where the finished answer is all that matters.</p>
+    <div class="callout-warning">
+      <span class="box-tag">Characteristic misuse</span>
+      <p>Calling it over and over inside a loop and treating the loop as a substitute for volume handling. Each call still blocks, still ties up whatever issued it, and still counts as one request against the same rate limit as every other call. Two identical calls cost the same whether one is the only request of the day or the ten-thousandth sent in a tight loop; the shape itself carries no volume discount.</p>
+    </div>
+
+    <h3>Counter service: you watch the order get built</h3>
+    <p>At the counter, you are still standing there, still waiting, this time in full view of the kitchen. You watch the sandwich get built ingredient by ingredient, and the wait feels shorter even though the kitchen is doing the same work at the same speed. This is streaming: Claude sends the response in pieces as it generates them, over the same connection, and your code reassembles the pieces into the finished message. A response that starts arriving within 300 milliseconds feels faster than the same content delivered whole after two seconds, even though the kitchen spent the same two seconds cooking either way. That is worth the added complexity when a live caller is watching the output arrive, a chat interface being the obvious case, and worth nothing at all when nobody is watching it arrive.</p>
+
+    <h3>Delivery: the order still starts now, you just are not standing there</h3>
+    <p>Order delivery, and the kitchen fires the ticket the instant it arrives, exactly as it would for a table. What's different is what you do with yourself while it cooks. You go back to your desk instead of standing there blocked, watching the kitchen, and something notifies you once the order is ready. This is what async/await buys a program that calls Claude: a client that does not block the thread that issued the request. The call still runs in real time, at the same priority as any other request. Reach for it when a server is handling many callers at once and cannot afford to freeze a thread for every request in flight.</p>
+    <div class="callout-warning">
+      <span class="box-tag">Characteristic misuse</span>
+      <p>Treating it as a cost lever. Freeing a thread and lowering a bill are different problems, solved by different mechanisms, and the fix for one does nothing for the other.</p>
+    </div>
+
+    <h3>The catering order: renting out the kitchen's slow afternoon</h3>
+    <p>A catering order placed a week ahead never has anyone standing at the counter for it, and the kitchen does not start it the moment it lands. It starts whenever the kitchen has a stretch of unclaimed capacity, and it charges less because the customer accepted that arrangement. This is the Message Batches API. You submit a large set of requests in one call, and results come back once the whole batch completes, sometimes in minutes and sometimes taking most of a day. The per-token price is lower than the same calls made one at a time, and that permission is only worth granting when nobody is standing at the counter for any single result in the set.</p>
+    <div class="callout-warning">
+      <span class="box-tag">Characteristic misuse</span>
+      <p>Granting it and then treating the result as if it had been ordered &agrave; la carte: building a user-facing flow around a batch call, and discovering that a live person is now standing at the counter waiting on a result that was designed to arrive whenever the kitchen got round to it.</p>
+    </div>
+
+    <h3>The line this kitchen never offers</h3>
+    <p>None of the four modes above keeps a channel open in both directions the whole time, where the kitchen can speak to the table unprompted and the table can speak back without placing a new order. That fifth mode is what a websocket is: a single connection, held open, over which either side can send at any moment without waiting for the other to ask first.</p>
+    <p>Claude's Messages API does not expose one. Every request still begins with your code, the same as every order in this kitchen begins with the customer. The one-directional need, pushing a growing answer to a caller who is already waiting, is fully met by streaming over an ordinary connection: Claude sends the response as a sequence of server-sent events on the same HTTP connection used for the request itself. A websocket would buy two-way traffic that nothing in this relationship uses.</p>
+  </div>
+</section>
+
+<section id="rule">
+  <h2>One question, settled before you write a line of code</h2>
+  <div class="measure">
+    <p>Everything above turns on one thing: whether anyone is waiting for this specific answer right now, and if so, what they need while they wait.</p>
+
+    <div class="diagram">
+      <svg viewBox="0 0 640 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="d5-title d5-desc">
+        <title id="d5-title">The decision that picks a request shape</title>
+        <desc id="d5-desc">A flowchart: is anyone waiting for this answer right now? No leads to batch. Yes leads to: do they need to be blocked personally? No leads to async/await. Yes leads to: does a growing answer serve them better than silence? No leads to synchronous, yes leads to streaming.</desc>
+        <defs>
+          <marker id="arr5" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#7a6a55"/></marker>
+        </defs>
+
+        <rect x="170" y="15" width="300" height="55" rx="10" fill="none" stroke="#7a6a55" stroke-width="1.5"/>
+        <text x="320" y="38" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12.5">Is anyone waiting for this</text>
+        <text x="320" y="55" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12.5">answer right now?</text>
+
+        <rect x="170" y="120" width="300" height="55" rx="10" fill="none" stroke="#7a6a55" stroke-width="1.5"/>
+        <text x="320" y="143" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12.5">Do they need to be blocked</text>
+        <text x="320" y="160" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12.5">personally, waiting on it?</text>
+
+        <rect x="170" y="225" width="300" height="55" rx="10" fill="none" stroke="#7a6a55" stroke-width="1.5"/>
+        <text x="320" y="248" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12.5">Does a growing answer serve</text>
+        <text x="320" y="265" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12.5">them better than silence?</text>
+
+        <rect x="15" y="20" width="120" height="45" rx="8" fill="url(#g5)"/>
+        <text x="75" y="47" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#3a2000">BATCH</text>
+
+        <rect x="15" y="125" width="120" height="45" rx="8" fill="url(#g5)"/>
+        <text x="75" y="145" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12.5" font-weight="700" fill="#3a2000">ASYNC /</text>
+        <text x="75" y="160" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12.5" font-weight="700" fill="#3a2000">AWAIT</text>
+        <defs><linearGradient id="g5" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#f0e6d4"/><stop offset="100%" stop-color="#e7ad5c" stop-opacity="0.6"/></linearGradient></defs>
+
+        <rect x="140" y="330" width="150" height="45" rx="8" fill="url(#g5)"/>
+        <text x="215" y="357" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#3a2000">SYNCHRONOUS</text>
+
+        <rect x="350" y="330" width="150" height="45" rx="8" fill="url(#g5)"/>
+        <text x="425" y="357" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#3a2000">STREAMING</text>
+
+        <line x1="170" y1="45" x2="135" y2="42" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr5)"/>
+        <text x="148" y="35" font-family="ui-monospace, monospace" font-size="11" fill="#7a6a55">no</text>
+
+        <line x1="320" y1="70" x2="320" y2="120" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr5)"/>
+        <text x="330" y="98" font-family="ui-monospace, monospace" font-size="11" fill="#7a6a55">yes</text>
+
+        <line x1="170" y1="150" x2="135" y2="147" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr5)"/>
+        <text x="148" y="140" font-family="ui-monospace, monospace" font-size="11" fill="#7a6a55">no</text>
+
+        <line x1="320" y1="175" x2="320" y2="225" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr5)"/>
+        <text x="330" y="203" font-family="ui-monospace, monospace" font-size="11" fill="#7a6a55">yes</text>
+
+        <line x1="270" y1="280" x2="220" y2="330" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr5)"/>
+        <text x="225" y="308" font-family="ui-monospace, monospace" font-size="11" fill="#7a6a55">no</text>
+
+        <line x1="370" y1="280" x2="420" y2="330" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr5)"/>
+        <text x="395" y="308" font-family="ui-monospace, monospace" font-size="11" fill="#7a6a55">yes</text>
+      </svg>
+      <div class="diagram-caption">Figure 5.1 — the one question, asked up to three times</div>
+    </div>
+
+    <div class="takeaway">
+      <span class="box-tag">The decision</span>
+      <p>Nobody is waiting: hand the work to the Message Batches API and collect it on the provider's schedule. Somebody is waiting but does not need to be blocked personally while the request is in flight: call through a non-blocking client and let async/await free the thread until the response lands. Somebody is waiting and is blocked, wanting only the finished answer: call synchronously. Somebody is waiting, is blocked, and a growing answer serves them better than silence: stream it.</p>
+    </div>
+
+    <p>That produces the realtime-versus-batch tradeoff as a consequence rather than a rule to memorise. A single request cannot be both at once, because whether a caller is waiting is a fact about the request, fixed before you choose a lever. Take a fraud-review queue that scores overnight transactions and a live support chat, both sitting on the same model. Nobody reads a fraud score until the morning shift logs on, so that queue is a batch job regardless of how interesting the model's reasoning is. Someone reads every word of the chat reply as it lands, so it is synchronous or streamed regardless of how simple the question was. <strong>The task's difficulty never entered into either decision.</strong></p>
+
+    <div class="callout-def">
+      <span class="box-tag">A word that means two things</span>
+      <p>Anthropic's own materials describe the Batch API itself as asynchronous processing, and in one sense that is fair: nothing blocks while a batch runs. But async/await, as a client-side pattern, is doing a different job. It frees a thread while a request that is still running in real time completes. Batch defers when the request even begins. The shared word &ldquo;asynchronous&rdquo; is the only thing the two mechanisms share.</p>
+    </div>
+  </div>
+</section>
+
+<section id="case-study">
+  <h2>A rate limit that three nights of chunking never touched</h2>
+  <div class="measure">
+    <p>A nightly classification job kept hitting rate-limit errors at the same point, three nights running. The developer running it had already tried the obvious fix: split the input list into smaller chunks, on the reasoning that a smaller batch would be gentler on the API. The errors kept firing anyway.</p>
+
+    <p>A senior developer asked how the requests were actually being submitted. The answer was a loop, calling the synchronous endpoint once per item, just working through smaller groups than before. <strong>That is serial calls against the synchronous endpoint, wearing the vocabulary of batching.</strong> Splitting the list into chunks does not change what the API sees. It still sees one request per item, back to back, and the rate limit does not care how the items were grouped on your side before you sent them.</p>
+
+    <p>The surface feature here is genuinely misleading. The job was processing input in batches, in the everyday sense of that word, and everyday usage is exactly what makes this trap easy to fall into. The fix was to submit the entire set as one Message Batches API call. The per-token cost dropped below the synchronous rate, and the rate limit stopped firing, because the application was no longer making thousands of individual requests. It was making one.</p>
+
+    <div class="callout-tip">
+      <span class="box-tag">Practical detail</span>
+      <p>A single Message Batches API call accepts up to 100,000 requests or 256&nbsp;MB, whichever limit arrives first, returning a single <code>batch_id</code> that the application polls until the job reports done. Batch results do not return in submission order, so match them back to their inputs using the <code>custom_id</code> set on each request going in.</p>
+    </div>
+
+    <p>Three nights of failed runs meant three nights of a job re-triggered, checked, and explained to whoever needed the output by morning, all because the fix that looked obvious, splitting the list into smaller pieces, never touched the actual cause.</p>
+  </div>
+</section>
+
+<section id="boundaries">
+  <h2>What's on a different menu</h2>
+  <div class="measure">
+    <p>Consuming a stream without corrupting your conversation history is its own discipline: assembling delta events into complete blocks, committing a turn only once the stream actually closes, and recovering when a connection drops partway through. None of that is decided by the question this chapter answers.</p>
+
+    <div class="xlink-grid">
+      <div class="xlink"><b>CH. 12</b><span>Once &ldquo;stream it&rdquo; is the right call, everything that happens next in consuming that stream safely.</span></div>
+      <div class="xlink"><b>CH. 9</b><span>What the batch discount is actually worth in your own numbers, and how it compounds with prompt caching.</span></div>
+      <a class="xlink" href="Ch03_Two-dials-not-one.html"><b>CH. 3</b><span>Which model answers the request is a separate dial from how the request is shaped &mdash; a batch job can run against any tier.</span></a>
+      <div class="xlink"><b>CH. 25</b><span>Sending images or PDFs alongside any of these five shapes adds its own budget question on top.</span></div>
+      <a class="xlink" href="Ch04_What-is-actually-on-the-wire.html"><b>CH. 4</b><span>Underneath all five shapes sits the same REST API this chapter's own foundation already laid out.</span></a>
+    </div>
+  </div>
+</section>
+
+<section id="exam-cues">
+  <h2>Words the stem uses instead of a stopwatch</h2>
+  <div class="measure">
+    <div class="callout-remember">
+      <span class="box-tag">Remember this</span>
+      <p>A stem never says &ldquo;use batch.&rdquo; It says &ldquo;overnight,&rdquo; &ldquo;nightly,&rdquo; &ldquo;no user is waiting,&rdquo; &ldquo;runs on a schedule,&rdquo; or states a volume in the thousands against a deadline measured in hours. It signals synchronous with a single document or a single lookup, or with &ldquo;the answer is needed right away.&rdquo; It signals streaming with &ldquo;should appear as it's generated&rdquo; or &ldquo;watch the reply build.&rdquo; It signals async/await with &ldquo;must not block the request thread&rdquo; while a live caller still waits on the other end. And on the rare stem that mentions a persistent, two-way connection to Claude itself, read it as the wrong-shape distractor: that connection does not exist.</p>
+    </div>
+  </div>
+</section>
+
+<section id="self-test">
+  <h2>Self-test</h2>
+  <div class="measure">
+
+    <div class="mcq" data-qtype="single" data-correct="A">
+      <div class="mcq-num">Question 1 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">A compliance team has 40,000 scanned intake forms that must be classified against a fixed taxonomy by Monday morning. Nobody reviews an individual result as it completes; the whole set is loaded into a dashboard once every form is done. The team is watching cost closely this quarter.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. Submit the whole set as a single Message Batches API call and collect the results once it completes.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Fan out parallel synchronous calls across many worker threads to finish faster.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. Keep the synchronous call, but lower <code>max_tokens</code> on each request to cut cost.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Route the job to a smaller model to cut cost per call.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: A.</strong> Nobody is waiting on any individual result, so the batch discount is available at no latency cost to anyone. B still makes one synchronous call per document at the synchronous rate, and risks the same rate limits at this volume. C and D change what gets sent or which model answers; neither one changes who is waiting, which is the constraint the scenario actually states.</div>
+    </div>
+
+    <div class="mcq" data-qtype="single" data-correct="B">
+      <div class="mcq-num">Question 2 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">A web application calls Claude to answer a live user's question inline in a chat window. The engineering team is worried that holding a connection open per request will exhaust the server's thread pool under load. The user still expects a reply within a couple of seconds.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. Move the call to the Message Batches API so the request does not tie up a thread.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Call Claude through a non-blocking client so the thread is freed while the request is in flight, and pick up the result when it returns.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. Reduce <code>max_tokens</code> so each response completes faster.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Switch to a smaller model so each response completes faster.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: B.</strong> The user is waiting live, which rules out batch regardless of the thread-pool concern; batch would trade away the couple of seconds the scenario requires. Async/await solves the concurrency problem without changing that the request runs in real time. C and D address latency; neither touches the thread-exhaustion problem the scenario actually states.</div>
+    </div>
+
+    <div class="mcq" data-qtype="single" data-correct="B">
+      <div class="mcq-num">Question 3 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">A team is building a live chat interface and wants Claude's answer to appear progressively as it is generated, the same way a human would see someone typing. One engineer proposes opening a websocket connection to Claude so the server can push tokens to the browser as they are produced.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. Open a websocket connection directly to Claude and consume the push stream.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Use the Messages API's streaming mode over the standard connection and forward the events to the browser.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. Poll the Messages API every few hundred milliseconds for the latest partial output.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Submit the request to the Message Batches API and display the result once it completes.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: B.</strong> Claude's API does not expose a websocket. The one-directional need, pushing a growing answer to a client that is already waiting, is exactly what streaming over the standard connection provides. A names a shape Claude does not offer. C recreates streaming badly with a polling loop, and D removes the progressive-appearance requirement entirely.</div>
+    </div>
+
+    <div class="mcq" data-qtype="single" data-correct="C">
+      <div class="mcq-num">Question 4 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">A nightly job classifying 60,000 records has hit rate-limit errors for three nights running. The team already split the input list into smaller chunks and loops over each chunk, calling the synchronous endpoint once per record. The errors keep firing at the same point every run.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. Split the input into even smaller chunks so each loop finishes faster.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Add retry-with-backoff around each synchronous call to absorb the rate-limit errors.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. Submit the records as a single Message Batches API call instead of looping over the synchronous endpoint.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Request a rate-limit increase for the account.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: C.</strong> Chunking a loop over the synchronous endpoint still sends one request per record, so smaller chunks in A do not change what the API sees. B absorbs the symptom without removing the cause, and D raises a ceiling while leaving the workload paying synchronous rates and serializing thousands of calls. C changes the submission model itself, which is what the workload needed.</div>
+    </div>
+
+    <div class="mcq" data-qtype="multi" data-correct="A,C">
+      <div class="mcq-num">Question 5 <span class="mcq-tag">Select TWO</span></div>
+      <p class="mcq-stem">Which two statements are true of the Message Batches API only?</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. Results can take substantially longer to return than a synchronous call, up to a day.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. It frees your application thread from blocking while the request is in flight.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. It costs less per token than the same call made synchronously.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. It delivers the first tokens of the answer before the rest has finished generating.</button>
+      </div>
+      <button class="mcq-submit" type="button">Check answer</button>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: A and C.</strong> These are the batch trade: a provider-controlled schedule in exchange for a lower unit cost. B describes async/await, which still runs in real time rather than on a schedule. D describes streaming, which changes when output becomes visible rather than its cost or completion time.</div>
+    </div>
+
+  </div>
+</section>
+
+</main>
+
+<div class="chapter-end">
+  <p>End of Chapter 5 — Request Shapes</p>
+  <div class="chapter-nav">
+    <a class="chapter-nav-link" href="Ch04_What-is-actually-on-the-wire.html">&#9668; Chapter 4</a>
+    <span class="chapter-nav-current">Chapter 5 of 34</span>
+    <span class="chapter-nav-link disabled" aria-disabled="true">Chapter 6 <em>(coming soon)</em> &#9658;</span>
+  </div>
+</div>
+
+<footer>CCDV-F Regeneration &middot; Chapter 5 of 34</footer>
+
+<script>
+var pct = document.getElementById('depth-pct');
+function onScroll() {
+  var h = document.documentElement;
+  var max = h.scrollHeight - h.clientHeight;
+  var p = max > 0 ? (h.scrollTop || document.body.scrollTop) / max : 0;
+  var v = Math.round(p * 100);
+  if (pct) pct.textContent = v;
+  var links = document.querySelectorAll('.nav-link[href^="#"]');
+  var cur = '';
+  document.querySelectorAll('section[id]').forEach(function (s) {
+    if (s.getBoundingClientRect().top <= 120) cur = s.id;
+  });
+  links.forEach(function (l) {
+    l.classList.toggle('active', l.getAttribute('href') === '#' + cur);
+  });
+}
+window.addEventListener('scroll', onScroll, { passive: true });
+window.addEventListener('resize', onScroll);
+document.addEventListener('DOMContentLoaded', onScroll);
+
+var toggle = document.getElementById('theme-toggle');
+var root = document.documentElement;
+var stored = localStorage.getItem('ccdv-theme');
+if (stored) root.setAttribute('data-theme', stored);
+function isDark() {
+  var attr = root.getAttribute('data-theme');
+  if (attr === 'dark') return true;
+  if (attr === 'light') return false;
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+function updateToggle() {
+  if (!toggle) return;
+  var dark = isDark();
+  toggle.innerHTML = dark ? '&#9728;&#65039;' : '&#127769;';
+  toggle.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+}
+updateToggle();
+if (toggle) {
+  toggle.addEventListener('click', function () {
+    var next = isDark() ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    localStorage.setItem('ccdv-theme', next);
+    updateToggle();
+  });
+}
+
+var fontToggle = document.getElementById('font-toggle');
+var fontModes = ['default', 'serif', 'legible'];
+var fontLabels = { default: 'Aa', serif: 'Aa (serif)', legible: 'Aa+ (legible)' };
+var storedFont = localStorage.getItem('ccdv-font');
+if (storedFont && storedFont !== 'default') root.setAttribute('data-font', storedFont);
+function updateFontToggle() {
+  if (!fontToggle) return;
+  var current = root.getAttribute('data-font') || 'default';
+  fontToggle.textContent = fontLabels[current];
+  fontToggle.setAttribute('aria-label', 'Reading font: ' + current + '. Click to change.');
+}
+updateFontToggle();
+if (fontToggle) {
+  fontToggle.addEventListener('click', function () {
+    var current = root.getAttribute('data-font') || 'default';
+    var next = fontModes[(fontModes.indexOf(current) + 1) % fontModes.length];
+    if (next === 'default') { root.removeAttribute('data-font'); }
+    else { root.setAttribute('data-font', next); }
+    localStorage.setItem('ccdv-font', next);
+    updateFontToggle();
+  });
+}
+
+document.querySelectorAll('.mcq').forEach(function (mcq) {
+  var qtype = mcq.dataset.qtype;
+  var correct = mcq.dataset.correct.split(',');
+  var options = Array.prototype.slice.call(mcq.querySelectorAll('.mcq-opt'));
+  var feedback = mcq.querySelector('.mcq-feedback');
+  var explain = mcq.querySelector('.mcq-explain');
+  var resolved = false;
+
+  if (qtype === 'single') {
+    options.forEach(function (opt) {
+      opt.addEventListener('click', function () {
+        if (resolved) return;
+        resolved = true;
+        var letter = opt.dataset.letter;
+        options.forEach(function (o) {
+          o.disabled = true;
+          if (correct.indexOf(o.dataset.letter) !== -1) o.classList.add('mcq-correct');
+          else if (o === opt) o.classList.add('mcq-incorrect');
+        });
+        var ok = letter === correct[0];
+        feedback.hidden = false;
+        feedback.textContent = ok ? 'Correct.' : 'Not quite.';
+        feedback.className = 'mcq-feedback ' + (ok ? 'right' : 'wrong');
+        explain.hidden = false;
+      });
+    });
+  } else {
+    var selected = [];
+    options.forEach(function (opt) {
+      opt.setAttribute('aria-pressed', 'false');
+      opt.addEventListener('click', function () {
+        if (resolved) return;
+        var letter = opt.dataset.letter;
+        var idx = selected.indexOf(letter);
+        if (idx === -1) { selected.push(letter); opt.setAttribute('aria-pressed', 'true'); opt.classList.add('mcq-selected'); }
+        else { selected.splice(idx, 1); opt.setAttribute('aria-pressed', 'false'); opt.classList.remove('mcq-selected'); }
+      });
+    });
+    var submit = mcq.querySelector('.mcq-submit');
+    if (submit) {
+      submit.addEventListener('click', function () {
+        if (resolved) return;
+        resolved = true;
+        var ok = selected.length === correct.length && selected.every(function (l) { return correct.indexOf(l) !== -1; });
+        options.forEach(function (o) {
+          o.disabled = true;
+          var letter = o.dataset.letter;
+          var was = selected.indexOf(letter) !== -1;
+          var isRight = correct.indexOf(letter) !== -1;
+          if (isRight) o.classList.add('mcq-correct');
+          else if (was) o.classList.add('mcq-incorrect');
+        });
+        submit.disabled = true;
+        feedback.hidden = false;
+        feedback.textContent = ok ? 'Correct — both required options selected.' : 'Not quite — multiple-response items are all-or-nothing on the real exam.';
+        feedback.className = 'mcq-feedback ' + (ok ? 'right' : 'wrong');
+        explain.hidden = false;
+      });
+    }
+  }
+});
+</script>
+</body>
+</html>
