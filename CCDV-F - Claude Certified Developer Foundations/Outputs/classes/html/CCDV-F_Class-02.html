@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 2 — What the Assistant Knows on Monday Morning · CCDV-F</title>
+<meta name="description" content="Claude Certified Developer Foundations, Class 2: memory scope as a design-time decision about what survives the board being wiped, and why choosing late costs more than choosing badly.">
+<meta name="author" content="Ram">
+<style>
+@layer engine, skin, utilities;
+
+/* ============================== SKIN: "Lecture Hall" ============================== */
+@layer skin {
+  :root {
+    color-scheme: light dark;
+
+    /* -- color primitives (oklch) -- */
+    --paper:        oklch(0.977 0.004 250);
+    --paper-sunk:   oklch(0.947 0.006 250);
+    --ink:          oklch(0.24 0.018 255);
+    --ink-soft:     oklch(0.46 0.016 255);
+    --ink-faint:    oklch(0.62 0.012 255);
+    --rule:         oklch(0.87 0.008 255);
+    --accent:       oklch(0.50 0.13 250);
+    --accent-lift:  oklch(0.62 0.14 250);
+    --clay:         oklch(0.58 0.10 45);
+    --flag:         oklch(0.56 0.12 145);
+
+    /* -- derived tints -- */
+    --accent-wash:  color-mix(in oklch, var(--accent) 8%, var(--paper));
+    --accent-edge:  color-mix(in oklch, var(--accent) 32%, var(--paper));
+    --clay-wash:    color-mix(in oklch, var(--clay) 10%, var(--paper));
+    --flag-wash:    color-mix(in oklch, var(--flag) 10%, var(--paper));
+
+    /* -- type -- */
+    --face-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --face-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                 Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
+    --face-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+    --t-body:  clamp(1.0rem, 0.94rem + 0.30vw, 1.125rem);
+    --t-small: clamp(0.83rem, 0.80rem + 0.14vw, 0.90rem);
+    --t-lead:  clamp(1.13rem, 1.03rem + 0.48vw, 1.32rem);
+    --t-h2:    clamp(1.55rem, 1.28rem + 1.35vw, 2.35rem);
+    --t-h3:    clamp(1.08rem, 1.00rem + 0.38vw, 1.24rem);
+    --t-hero:  clamp(2.0rem, 1.45rem + 2.7vw, 3.4rem);
+    --measure: 64ch;
+    --lh: 1.68;
+
+    /* -- shape + space -- */
+    --r: 3px;
+    --hair: 1px;
+    --gap: clamp(1.1rem, 0.9rem + 1vw, 1.9rem);
+
+    /* -- motion -- */
+    --dur: 180ms;
+    --ease: cubic-bezier(.2,.6,.3,1);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:      oklch(0.185 0.014 260);
+      --paper-sunk: oklch(0.225 0.016 260);
+      --ink:        oklch(0.93 0.008 255);
+      --ink-soft:   oklch(0.76 0.012 255);
+      --ink-faint:  oklch(0.60 0.012 255);
+      --rule:       oklch(0.34 0.014 258);
+      --accent:     oklch(0.76 0.12 250);
+      --accent-lift:oklch(0.84 0.11 250);
+      --clay:       oklch(0.74 0.10 48);
+      --flag:       oklch(0.74 0.12 152);
+      --accent-wash: color-mix(in oklch, var(--accent) 14%, var(--paper));
+      --accent-edge: color-mix(in oklch, var(--accent) 40%, var(--paper));
+      --clay-wash:   color-mix(in oklch, var(--clay) 16%, var(--paper));
+      --flag-wash:   color-mix(in oklch, var(--flag) 16%, var(--paper));
+    }
+  }
+}
+
+/* ============================== ENGINE ============================== */
+@layer engine {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--face-body);
+    font-size: var(--t-body);
+    line-height: var(--lh);
+    font-synthesis-weight: none;
+  }
+
+  /* ---- skip link ---- */
+  .skip {
+    position: absolute; left: -9999px; top: 0; z-index: 100;
+    background: var(--accent); color: var(--paper);
+    padding: .7rem 1.1rem; border-radius: var(--r);
+  }
+  .skip:focus { left: .6rem; top: .6rem; }
+
+  /* ---- top bar ---- */
+  .bar {
+    position: sticky; top: 0; z-index: 40;
+    background: color-mix(in oklch, var(--paper) 88%, transparent);
+    backdrop-filter: blur(9px);
+    border-bottom: var(--hair) solid var(--rule);
+  }
+  .bar-in {
+    max-width: 78rem; margin: 0 auto;
+    padding: .6rem clamp(.9rem, 3vw, 2rem);
+    display: flex; align-items: center; gap: 1rem;
+  }
+  .brand {
+    font-family: var(--face-mono);
+    font-size: .68rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--ink-faint); white-space: nowrap;
+  }
+  .brand b { color: var(--accent); font-weight: 600; }
+  .bar-title {
+    font-family: var(--face-display);
+    font-size: .95rem; color: var(--ink-soft);
+    margin-left: auto; text-align: right;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .counter {
+    font-family: var(--face-mono); font-size: .72rem;
+    color: var(--ink-faint); white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .progress { height: 2px; background: var(--rule); }
+  .progress span {
+    display: block; height: 100%; width: 0;
+    background: var(--accent);
+    transition: width var(--dur) var(--ease);
+  }
+
+  .btn {
+    font: inherit; font-size: var(--t-small);
+    color: var(--ink); background: transparent;
+    border: var(--hair) solid var(--rule); border-radius: var(--r);
+    padding: .5rem .85rem; cursor: pointer;
+    min-height: 44px; display: inline-flex; align-items: center; gap: .5rem;
+    transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+  .btn:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-wash); }
+  .btn:disabled { opacity: .38; cursor: not-allowed; }
+  .btn-primary { border-color: var(--accent-edge); background: var(--accent-wash); color: var(--accent); font-weight: 600; }
+
+  :focus-visible { outline: 2px solid var(--accent-lift); outline-offset: 3px; }
+
+  /* ---- drawer ---- */
+  .drawer {
+    position: fixed; inset: 0; z-index: 60;
+    background: color-mix(in oklch, var(--ink) 42%, transparent);
+    display: none; padding: clamp(.8rem, 4vw, 3rem);
+  }
+  .drawer[open] { display: grid; place-items: start center; }
+  .drawer-panel {
+    background: var(--paper); border: var(--hair) solid var(--rule);
+    border-radius: var(--r); max-width: 34rem; width: 100%;
+    padding: clamp(1rem, 3vw, 1.7rem); box-shadow: 0 18px 50px -20px color-mix(in oklch, var(--ink) 45%, transparent);
+  }
+  .drawer h2 { font-size: var(--t-h3); margin: 0 0 .9rem; font-family: var(--face-display); }
+  .toc { list-style: none; margin: 0; padding: 0; counter-reset: t; }
+  .toc li { counter-increment: t; }
+  .toc button {
+    width: 100%; text-align: left; font: inherit; font-size: var(--t-small);
+    background: none; border: 0; border-top: var(--hair) solid var(--rule);
+    padding: .72rem .2rem; color: var(--ink); cursor: pointer;
+    display: flex; gap: .8rem; align-items: baseline; min-height: 44px;
+  }
+  .toc button::before {
+    content: counter(t, decimal-leading-zero);
+    font-family: var(--face-mono); font-size: .7rem; color: var(--ink-faint);
+  }
+  .toc button:hover { color: var(--accent); }
+  .toc button[aria-current="true"] { color: var(--accent); font-weight: 600; }
+
+  /* ---- screens ---- */
+  main { max-width: 78rem; margin: 0 auto; padding: 0 clamp(.9rem, 3vw, 2rem); }
+  .screen { display: none; padding: clamp(1.8rem, 5vw, 3.6rem) 0 1rem; }
+  .screen.on { display: block; animation: rise var(--dur) var(--ease); }
+  @keyframes rise { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+
+  .wrap { max-width: var(--measure); margin-inline: auto; }
+  .wrap-wide { max-width: 52rem; margin-inline: auto; }
+
+  .label {
+    font-family: var(--face-mono); font-size: .68rem;
+    letter-spacing: .13em; text-transform: uppercase; color: var(--accent);
+    padding-bottom: .45rem; border-bottom: var(--hair) solid var(--accent-edge);
+    display: inline-block; margin-bottom: 1.1rem;
+  }
+
+  h1 { font-family: var(--face-display); font-size: var(--t-hero); line-height: 1.06;
+       margin: 0 0 1.1rem; font-weight: 600; letter-spacing: -.015em; }
+  h2 { font-family: var(--face-display); font-size: var(--t-h2); line-height: 1.14;
+       margin: 0 0 1.1rem; font-weight: 600; letter-spacing: -.01em; }
+  h3 { font-family: var(--face-body); font-size: var(--t-h3); margin: 2rem 0 .6rem; font-weight: 650; }
+  p { margin: 0 0 1.05em; }
+  .lead { font-size: var(--t-lead); color: var(--ink-soft); line-height: 1.5; }
+  strong { font-weight: 650; }
+  em { font-style: italic; }
+  code { font-family: var(--face-mono); font-size: .88em;
+         background: var(--paper-sunk); padding: .12em .38em; border-radius: 2px; }
+
+  .entry, .exit {
+    font-size: var(--t-small); color: var(--ink-soft);
+    border-left: 2px solid var(--accent-edge);
+    padding: .1rem 0 .1rem .95rem; margin: 0 0 1.6rem;
+  }
+  .exit { border-left-color: color-mix(in oklch, var(--clay) 45%, var(--paper)); margin: 2rem 0 0; }
+  .exit b, .entry b { color: var(--ink); font-weight: 600; }
+
+  .pull {
+    font-family: var(--face-display); font-size: var(--t-lead);
+    line-height: 1.4; color: var(--ink);
+    border-top: var(--hair) solid var(--rule);
+    border-bottom: var(--hair) solid var(--rule);
+    padding: 1.1rem 0; margin: 1.8rem 0;
+  }
+
+  .note {
+    background: var(--paper-sunk); border-radius: var(--r);
+    padding: 1rem 1.15rem; margin: 1.5rem 0; font-size: var(--t-small);
+  }
+  .note.warn { background: var(--clay-wash); }
+  .note.good { background: var(--flag-wash); }
+  .note p:last-child { margin-bottom: 0; }
+  .note-k {
+    font-family: var(--face-mono); font-size: .66rem; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--ink-faint); display: block; margin-bottom: .4rem;
+  }
+
+  figure { margin: 2rem 0; }
+  figure svg { display: block; width: 100%; height: auto; }
+  figcaption {
+    font-size: var(--t-small); color: var(--ink-soft);
+    margin-top: .8rem; padding-top: .7rem; border-top: var(--hair) solid var(--rule);
+  }
+
+  .tbl-scroll { overflow-x: auto; margin: 1.6rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: var(--t-small); }
+  th, td { text-align: left; padding: .68rem .8rem; border-bottom: var(--hair) solid var(--rule);
+           vertical-align: top; }
+  th { font-family: var(--face-mono); font-size: .68rem; letter-spacing: .08em;
+       text-transform: uppercase; color: var(--ink-faint); font-weight: 500; }
+  tbody tr:hover { background: var(--paper-sunk); }
+
+  details { border-top: var(--hair) solid var(--rule); padding: .8rem 0; margin: 1.4rem 0; }
+  summary { cursor: pointer; font-size: var(--t-small); color: var(--accent);
+            font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+  summary::marker { color: var(--ink-faint); }
+
+  /* ---- checkpoint ---- */
+  .check { border: var(--hair) solid var(--accent-edge); border-radius: var(--r);
+           padding: 1.2rem 1.3rem; margin: 2rem 0; background: var(--accent-wash); }
+  .check .note-k { color: var(--accent); }
+  .check p { margin-bottom: .9rem; }
+  .answer { margin-top: 1rem; padding-top: 1rem; border-top: var(--hair) solid var(--accent-edge);
+            font-size: var(--t-small); }
+  .answer[hidden] { display: none; }
+
+  ul, ol { margin: 0 0 1.05em; padding-left: 1.3em; }
+  li { margin-bottom: .45em; }
+
+  /* ---- foot nav ---- */
+  .foot {
+    max-width: var(--measure); margin: 2.8rem auto 0;
+    border-top: var(--hair) solid var(--rule); padding: 1.2rem 0 3rem;
+    display: flex; gap: .8rem; align-items: center; justify-content: space-between;
+  }
+  .hint { font-size: .72rem; color: var(--ink-faint); font-family: var(--face-mono); }
+
+  @media (max-width: 640px) {
+    .bar-title { display: none; }
+    .hint { display: none; }
+    .bar-in { gap: .5rem; padding-inline: .75rem; }
+    .btn { padding: .5rem .62rem; }
+    .counter { margin-left: auto; flex: 0 0 auto; }
+  }
+  @media (max-width: 480px) {
+    /* the course link + contents button + counter is all that fits; the brand
+       repeats what the page title already says, so it goes first */
+    .brand { display: none; }
+  }
+
+  /* ---- floor: motion / contrast / forced-colors ---- */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+  @media (prefers-contrast: more) {
+    :root { --rule: var(--ink-soft); --ink-soft: var(--ink); }
+  }
+  @media (forced-colors: active) {
+    .btn, .drawer-panel, .check, figure svg { border: 1px solid ButtonText; }
+    .label, .brand b { color: LinkText; }
+    .progress span { background: Highlight; }
+  }
+
+  /* ---- print: flatten every screen ---- */
+  @media print {
+    .bar, .foot, .drawer, .skip, .hint { display: none !important; }
+    .screen { display: block !important; page-break-after: always; padding: 0 0 1.5rem; }
+    .answer[hidden] { display: block !important; }
+    figure, .check, table { break-inside: avoid; }
+    body { background: #fff; color: #111; }
+  }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the class</a>
+
+<header class="bar">
+  <div class="bar-in">
+    <span class="brand">CCDV&#8209;F&nbsp;· <b>Class 02</b></span>
+    <a class="btn" id="courseLink" href="index.html">&#8598;&nbsp;Course</a>
+    <button class="btn" id="tocBtn" aria-haspopup="dialog">Contents</button>
+    <span class="bar-title" id="barTitle">What the Assistant Knows on Monday Morning</span>
+    <span class="counter"><span id="cNow">1</span>&#8202;/&#8202;<span id="cAll">10</span></span>
+  </div>
+  <div class="progress"><span id="bar"></span></div>
+</header>
+
+<div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="tocH">
+  <div class="drawer-panel">
+    <h2 id="tocH">Class 2 &mdash; contents</h2>
+    <ol class="toc" id="toc"></ol>
+    <p style="margin:1rem 0 0"><button class="btn" id="tocClose">Close</button></p>
+  </div>
+</div>
+
+<main id="main">
+<!-- ---------- 1 · cover ---------- -->
+<section class="screen on" data-title="The promise">
+  <div class="wrap">
+    <span class="label">Claude Certified Developer &middot; Foundations</span>
+    <h1>What the Assistant Knows on Monday Morning</h1>
+    <p class="lead">Last class the board got rewritten before every sentence. Here's the question we
+    didn't ask: what happens to it when everybody goes home? Memory is not a feature you switch on. It
+    is a decision about what gets copied off the board before it's wiped &mdash; and it costs far more
+    to make late than early.</p>
+
+    <div class="note">
+      <span class="note-k">What you leave holding</span>
+      <ol style="margin-bottom:0">
+        <li>The board is wiped at the end of a session, and nothing survives that you didn't write down.</li>
+        <li>Four scopes, four different currencies of cost. None of them is free.</li>
+        <li>In-context isn't a memory strategy &mdash; it's what you get when you haven't chosen one.</li>
+        <li>The shape of development is not the shape of production, and that gap hides the bug.</li>
+        <li>Choosing late costs more than choosing badly.</li>
+      </ol>
+    </div>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Begin &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 2 · the wipe ---------- -->
+<section class="screen" data-title="What happens when everybody goes home">
+  <div class="wrap">
+    <span class="label">01 &middot; The wipe</span>
+    <h2>What happens to the board when everybody goes home?</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll be able to say what "memory" actually means
+    here, in mechanical terms rather than as a product feature.</p>
+
+    <p>It gets wiped, and it doesn't come back. There is no board tomorrow.</p>
+    <p>In fact there was never really a board at all &mdash; there was a request, and a reply, and then
+    nothing. The board is a thing your program keeps rebuilding out of a transcript it's holding onto.</p>
+    <p>So if you want your agent to know something on Monday that it learned on Friday, somebody has to
+    write it down somewhere that <em>is not the board</em>.</p>
+
+    <p class="pull">That's the whole of what memory means here. Not a feature you switch on &mdash; a
+    decision about what gets copied off the board before it's wiped, and where you put the copy.</p>
+
+    <p>And like most decisions, it is cheap to make early and expensive to make late. The rest of this
+    class is about why that gap is so much wider than it looks.</p>
+
+    <p class="exit"><b>Next.</b> Four ways of solving this, and doctors got there a century before we
+    did.</p>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 3 · the doctor ---------- -->
+<section class="screen" data-title="Four ways of remembering a patient">
+  <div class="wrap">
+    <span class="label">02 &middot; The four scopes</span>
+    <h2>Four ways of remembering a patient</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll hold all four memory scopes as one picture
+    rather than four definitions.</p>
+
+    <p>Forget computers for a minute. Think about doctors, because doctors solved this problem a
+    hundred years ago and they solved it four different ways depending on the situation.</p>
+  </div>
+
+  <div class="wrap-wide">
+  <figure>
+    <svg viewBox="0 0 760 300" role="img" aria-label="Four medical situations mapped to four memory scopes. The emergency room keeps nothing, matching a stateless agent. The GP pulls a file written at the time, matching external storage. The file is a summary rather than a transcript, matching summarised memory. The appointment itself holds everything said so far and ends at the door, matching in-context state.">
+      <g stroke="var(--rule)" stroke-width="1.4" fill="none">
+        <rect x="14" y="34" width="176" height="146" rx="3"/>
+        <rect x="204" y="34" width="176" height="146" rx="3"/>
+        <rect x="394" y="34" width="176" height="146" rx="3"/>
+        <rect x="584" y="34" width="162" height="146" rx="3"/>
+      </g>
+      <g font-family="var(--face-mono)" font-size="10" fill="var(--ink-faint)" letter-spacing="1.2">
+        <text x="14" y="24">EMERGENCY ROOM</text><text x="204" y="24">YOUR OWN GP</text>
+        <text x="394" y="24">WHAT'S IN THE FILE</text><text x="584" y="24">THE APPOINTMENT</text>
+      </g>
+      <g font-family="var(--face-body)" font-size="12" fill="var(--ink-soft)">
+        <text x="28" y="62">Knows nothing</text><text x="28" y="80">about you.</text>
+        <text x="28" y="106">Nothing kept</text><text x="28" y="124">when you leave.</text>
+        <text x="218" y="62">Pulls your file</text><text x="218" y="80">before you sit down.</text>
+        <text x="218" y="106">Written at the time,</text><text x="218" y="124">read back later.</text>
+        <text x="408" y="62">Not a transcript.</text>
+        <text x="408" y="88">Somebody chose</text><text x="408" y="106">four lines to keep.</text>
+        <text x="408" y="132">The rest is gone.</text>
+        <text x="598" y="62">Everything you've</text><text x="598" y="80">said so far.</text>
+        <text x="598" y="106">Over when you</text><text x="598" y="124">walk out.</text>
+      </g>
+      <g font-family="var(--face-body)" font-size="13" font-weight="650">
+        <text x="28" y="164" fill="var(--flag)">stateless</text>
+        <text x="218" y="164" fill="var(--accent)">external storage</text>
+        <text x="408" y="164" fill="var(--clay)">summarised</text>
+        <text x="598" y="164" fill="var(--ink-faint)">in&#8209;context</text>
+      </g>
+      <line x1="14" y1="208" x2="746" y2="208" stroke="var(--rule)" stroke-width="1.2"/>
+      <text x="14" y="236" font-family="var(--face-body)" font-size="12.5" fill="var(--ink-soft)">Only the middle two survive a session ending. The fourth ends at the door, every time.</text>
+      <text x="14" y="262" font-family="var(--face-body)" font-size="12.5" fill="var(--clay)">And the third fails silently &mdash; the file looks complete whether or not the missing line mattered.</text>
+    </svg>
+    <figcaption><b>Two of the four cannot carry anything into tomorrow.</b> Which means the real choice
+    is narrower than the list of options makes it look.</figcaption>
+  </figure>
+  </div>
+
+  <div class="wrap">
+    <p>The last one deserves a hard look, because people call it a memory strategy and it really isn't.
+    In-context state doesn't survive a session ending. It doesn't survive a clear command. It's what you
+    get when you haven't chosen anything yet.</p>
+    <p class="pull">It's the appointment, not the file.</p>
+
+    <p class="exit"><b>Next.</b> None of the four is free, and the costs are in different currencies
+    &mdash; which is what makes the choice interesting rather than obvious.</p>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 4 · costs ---------- -->
+<section class="screen" data-title="What each one costs">
+  <div class="wrap">
+    <span class="label">03 &middot; Four currencies</span>
+    <h2>What each one costs</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll be able to name the specific failure each
+    scope buys you, not just its benefit.</p>
+
+    <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>Scope</th><th>What it costs</th><th>What you lose</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>In-context</strong></td>
+          <td>No retrieval cost at all &mdash; it's already on the board. But the bill grows with the
+              length of the conversation, and grows <em>quadratically</em> in the model's work.</td>
+          <td>Everything, the moment the session ends.</td>
+        </tr>
+        <tr>
+          <td><strong>External storage</strong></td>
+          <td>Latency on every call that touches it, plus read-and-write code you now own forever. A
+              database and a few hundred lines &mdash; not hard, just not nothing.</td>
+          <td>Nothing on the persistence side.</td>
+        </tr>
+        <tr>
+          <td><strong>Summarised</strong></td>
+          <td>Cheaper per session than replaying the whole history. The summarisation step is itself a
+              prompt you wrote.</td>
+          <td>Whatever the summariser decided not to keep &mdash; <strong>silently, on every
+              compression, forever</strong>.</td>
+        </tr>
+        <tr>
+          <td><strong>Stateless</strong></td>
+          <td>Nothing at all. There is nothing to store or fetch.</td>
+          <td>Any follow-up that depends on an earlier session. There's no route to it.</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+
+    <div class="note warn">
+      <span class="note-k">The one that hides</span>
+      <p style="margin-bottom:0">Summarised memory's failure is the dangerous one, because it doesn't
+      look like a failure. A vague summarisation prompt drops task-critical state on every compression
+      and the file still reads as complete. Nobody gets an error. The agent simply, permanently, does
+      not know a thing it was told.</p>
+    </div>
+
+    <p class="exit"><b>Next.</b> A real postmortem, in which the symptom pointed at completely the
+    wrong component.</p>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 5 · session four ---------- -->
+<section class="screen" data-title="The agent that filled the window on session four">
+  <div class="wrap">
+    <span class="label">04 &middot; Postmortem</span>
+    <h2>The agent that filled the window on session four</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll recognise a memory-architecture failure
+    wearing a tool-selection failure's clothes.</p>
+
+    <p>A team built an agent to help a support engineer work through escalation cases. In development it
+    ran beautifully. The developer would sit down, work a case in one continuous stretch, ten or fifteen
+    turns, and the in-context state held the whole history perfectly. It shipped. Nobody measured how
+    many tokens a session was actually using.</p>
+    <p>Then production, which had a different shape.</p>
+    <p>Each individual session was <em>shorter</em> than in development &mdash; an engineer would check
+    in, ask a few things, go away. But they came back the next day, and the next, on the same case. And
+    the state kept accumulating across those sessions.</p>
+  </div>
+
+  <div class="wrap-wide">
+  <figure>
+    <svg viewBox="0 0 760 280" role="img" aria-label="Across four sessions the injected history grows until, by session four, more than forty-five thousand tokens of system prompt, tool schemas and accumulated history are consumed before the first tool call, leaving too little budget to finish the analysis.">
+      <line x1="30" y1="232" x2="746" y2="232" stroke="var(--rule)" stroke-width="1.2"/>
+      <line x1="30" y1="40" x2="30" y2="232" stroke="var(--rule)" stroke-width="1.2"/>
+      <line x1="30" y1="46" x2="746" y2="46" stroke="var(--clay)" stroke-width="1.5" stroke-dasharray="5 4"/>
+      <text x="600" y="38" font-family="var(--face-mono)" font-size="10.5" fill="var(--clay)">the context limit</text>
+
+      <g stroke="var(--rule)" stroke-width="1.1">
+        <rect x="70" y="196" width="90" height="36" fill="var(--accent-wash)"/>
+        <rect x="230" y="160" width="90" height="72" fill="var(--accent-wash)"/>
+        <rect x="390" y="112" width="90" height="120" fill="var(--accent-wash)"/>
+        <rect x="550" y="62" width="90" height="170" fill="var(--accent-wash)"/>
+      </g>
+      <rect x="550" y="62" width="90" height="170" fill="none" stroke="var(--clay)" stroke-width="1.8"/>
+
+      <g font-family="var(--face-mono)" font-size="10.5" fill="var(--ink-faint)" text-anchor="middle">
+        <text x="115" y="250">session 1</text><text x="275" y="250">session 2</text>
+        <text x="435" y="250">session 3</text><text x="595" y="250">session 4</text>
+      </g>
+      <text x="595" y="54" font-family="var(--face-mono)" font-size="10.5" fill="var(--clay)" text-anchor="middle">45,000+ before turn one</text>
+      <text x="70" y="188" font-family="var(--face-body)" font-size="11.5" fill="var(--ink-faint)">accumulated history, re-injected at every start</text>
+      <text x="30" y="272" font-family="var(--face-body)" font-size="12.5" fill="var(--ink-soft)">Sessions got <tspan font-style="italic">shorter</tspan> in production. The state between them did not.</text>
+    </svg>
+    <figcaption><b>The budget was gone before any work started.</b> Which is why the symptom looked like
+    bad tool choices &mdash; the agent kept beginning an analysis and never reaching the end of it.</figcaption>
+  </figure>
+  </div>
+
+  <div class="wrap">
+    <p>By the fourth session the history being injected at the start ran to more than forty thousand
+    tokens. Before a single tool call. Add the system prompt and the tool schemas and the agent had
+    burned over forty-five thousand tokens of its budget before doing one useful thing. Then the tool
+    calls started, each adding its output to the board, and somewhere in the middle of the analysis the
+    budget ran out.</p>
+
+    <p>From the outside, the agent started returning incomplete results. And the team's first diagnosis
+    was that it was picking the wrong tools.</p>
+
+    <p class="pull">It was never a tool problem. It was a memory architecture problem wearing a tool
+    problem's clothes.</p>
+
+    <p class="exit"><b>Next.</b> The fix took about an hour. That hour is the most expensive part of
+    this story, and it's worth understanding why.</p>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 6 · the expensive hour ---------- -->
+<section class="screen" data-title="Why an hour of work is the expensive answer">
+  <div class="wrap">
+    <span class="label">05 &middot; Timing</span>
+    <h2>Why an hour of work is the expensive answer</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll know why the same refactor costs one thing
+    at design time and something else entirely three weeks after launch.</p>
+
+    <p>The refactor is mechanical. Pull the accumulated history out of live context, put it in a
+    database, inject only the part each session needs. A few hundred lines, and a database the team
+    already has. At design time it would have been a slightly longer afternoon and nobody would remember
+    it.</p>
+
+    <p>What it cost was <em>when</em>.</p>
+
+    <p>That hour happened under production pressure, with users complaining and a deadline already
+    running. And it wasn't really an hour &mdash; the storage layer, the retrieval logic, what to inject
+    and what to leave out, every one of those is a decision. Decisions made in a hurry with people
+    watching are worse decisions and slower ones.</p>
+
+    <div class="note warn">
+      <span class="note-k">The thing that let it happen</span>
+      <p style="margin-bottom:0">The shape of development was not the shape of production. One long
+      session against many short ones with state piling up between them. Those are different problems,
+      and in-context memory handles them completely differently. The developer had no way to see it,
+      because their own usage pattern hid it &mdash; <strong>the same blindness as Alex Morgan's laptop
+      in Class 1, wearing a different costume.</strong></p>
+    </div>
+
+    <p>The habit that prevents it is dull and it works. Before choosing in-context, add up what a
+    session will actually contain &mdash; history, plus system prompt, plus tool schemas &mdash; and
+    compare that number to the window. Measure the real shape, not the one you use while building.</p>
+
+    <div class="check">
+      <span class="note-k">Checkpoint</span>
+      <p>Your agent works perfectly in every test you run. What single number tells you whether it will
+      still work in production &mdash; and on which session would you measure it?</p>
+      <button class="btn" data-reveal="b1">Commit to an answer, then reveal</button>
+      <div class="answer" id="b1" hidden>
+        <p>Total tokens at session <em>start</em> &mdash; accumulated history plus system prompt plus
+        tool schemas &mdash; before any tool call, measured against the window.</p>
+        <p style="margin-bottom:0">And measure it on a session <strong>several days into a real
+        workflow</strong>, never a fresh one. A fresh session is precisely the shape that hid the
+        problem during development.</p>
+      </div>
+    </div>
+
+    <p class="exit"><b>Next.</b> The choice itself, as a ladder rather than a menu.</p>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 7 · choosing ---------- -->
+<section class="screen" data-title="How to choose">
+  <div class="wrap">
+    <span class="label">06 &middot; The ladder</span>
+    <h2>How to actually choose</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll have the decision as three questions asked
+    in order, with in-context correctly excluded from the list.</p>
+  </div>
+
+  <div class="wrap-wide">
+  <figure>
+    <svg viewBox="0 0 760 260" role="img" aria-label="A three-question decision ladder. First, does anything need to survive the session ending? If not, run stateless. If yes, it must live outside the model, which is external storage. Then, only if the full history would outgrow the budget, summarise before storing. In-context memory sits outside the ladder because it is not an answer to the question.">
+      <g stroke="var(--rule)" stroke-width="1.4" fill="none">
+        <rect x="14" y="30" width="330" height="52" rx="3"/>
+        <rect x="14" y="102" width="330" height="52" rx="3"/>
+        <rect x="14" y="174" width="330" height="52" rx="3"/>
+      </g>
+      <g font-family="var(--face-body)" font-size="12.5" fill="var(--ink)">
+        <text x="30" y="52">Does anything need to survive</text><text x="30" y="70">this session ending?</text>
+        <text x="30" y="124">Then it must live outside</text><text x="30" y="142">the model. No alternative.</text>
+        <text x="30" y="196">Is the full history too big</text><text x="30" y="214">to carry?</text>
+      </g>
+      <g font-family="var(--face-mono)" font-size="10.5">
+        <text x="356" y="46" fill="var(--ink-faint)">NO</text>
+        <text x="356" y="70" fill="var(--ink-faint)">YES</text>
+        <text x="356" y="196" fill="var(--ink-faint)">YES</text>
+      </g>
+      <g font-family="var(--face-body)" font-size="13" font-weight="650">
+        <text x="400" y="50" fill="var(--flag)">stateless &mdash; and be glad</text>
+        <text x="400" y="128" fill="var(--accent)">external storage</text>
+        <text x="400" y="200" fill="var(--clay)">summarise first</text>
+      </g>
+      <g font-family="var(--face-body)" font-size="11.5" fill="var(--ink-faint)">
+        <text x="400" y="68">cheapest thing here, no failure modes</text>
+        <text x="400" y="146">survives, and can be shared</text>
+        <text x="400" y="218">spend real care on that prompt</text>
+      </g>
+      <path d="M344 56 L394 40" stroke="var(--rule)" stroke-width="1.2" fill="none"/>
+      <path d="M344 70 L179 102" stroke="var(--rule)" stroke-width="1.2" fill="none"/>
+      <path d="M344 128 L394 122" stroke="var(--rule)" stroke-width="1.2" fill="none"/>
+      <path d="M179 154 L179 174" stroke="var(--rule)" stroke-width="1.2" fill="none"/>
+      <path d="M344 200 L394 194" stroke="var(--rule)" stroke-width="1.2" fill="none"/>
+      <line x1="14" y1="242" x2="746" y2="242" stroke="var(--rule)" stroke-width="1.2" stroke-dasharray="4 4"/>
+      <text x="14" y="256" font-family="var(--face-body)" font-size="12" fill="var(--ink-faint)">in-context is not on this ladder &mdash; it is not an answer to the question</text>
+    </svg>
+    <figcaption><b>In-context is excluded on purpose.</b> It covers you <em>within</em> a session, which
+    you get whether you choose it or not &mdash; so it can never be the answer to "what survives?"</figcaption>
+  </figure>
+  </div>
+
+  <div class="wrap">
+    <p>Two more things worth holding.</p>
+    <p>State kept outside can be <strong>shared</strong> &mdash; between sessions, between users, between
+    several agents working the same case. State on the board is trapped in one conversation. If two
+    agents need to know the same thing, in-context was never going to work.</p>
+    <p>And the choice is not once and forever. An agent that starts stateless can grow into needing
+    storage. What you don't want is to discover that at three in the afternoon with a queue of
+    complaints.</p>
+
+    <p class="exit"><b>Last screen.</b> The recap, and a question where the team's own diagnosis is the
+    trap.</p>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 8 · recap ---------- -->
+<section class="screen" data-title="Recap and the closing question">
+  <div class="wrap">
+    <span class="label">Recap</span>
+    <h2>What you're leaving with</h2>
+    <p class="lead">Memory is not something the model has. It is something you decided to write
+    down.</p>
+
+    <ol>
+      <li><strong>The board is wiped when the session ends</strong>, so anything that survives, survives
+      because you put it somewhere else.</li>
+      <li><strong>Four scopes, four currencies.</strong> Tokens, latency, lost detail, or no continuity
+      at all. Nothing here is free.</li>
+      <li><strong>In-context isn't a strategy</strong> &mdash; it's the absence of one, and it covers
+      only within a session.</li>
+      <li><strong>Summarised memory fails silently</strong>, because the file looks complete whether or
+      not the missing line mattered.</li>
+      <li><strong>Development shape hides production shape.</strong> Measure tokens at session start on
+      a realistic session, before you commit.</li>
+    </ol>
+
+    <div class="check">
+      <span class="note-k">Before Class 3</span>
+      <p>A team ships an agent that helps an analyst work a quarterly financial close &mdash; a process
+      running over several days, the analyst returning each morning.</p>
+      <p>Three weeks after launch, users report it "gets confused towards the end" and "forgets what we
+      agreed on Tuesday." The team's leading theory is that they need a more capable model, and a budget
+      request is already being drafted.</p>
+      <p>What's your theory? And what single number would you make them produce before anyone spends
+      anything?</p>
+      <button class="btn" data-reveal="b2">Commit to an answer, then reveal</button>
+      <div class="answer" id="b2" hidden>
+        <p><strong>They ran out of context window, not model capability.</strong> And the reason the
+        wrong diagnosis is the natural one: the symptom of a full context window is indistinguishable
+        from a model that isn't clever enough. Nothing errors, nothing crashes &mdash; the thing just
+        gets vaguer and drops details.</p>
+        <p>Those two complaints are two failures with one root. "Forgets Tuesday" is
+        <em>cross-session</em>: that state was never written down, so there was nothing to recall. "Gets
+        confused towards the end" is <em>within-session</em>: the board filled and the line that
+        mattered got buried. One architectural fix removes both.</p>
+        <p style="margin-bottom:0"><strong>The number:</strong> tokens at session start &mdash; history
+        plus system prompt plus tool schemas &mdash; on a session four or five days into a real close.
+        And before signing that budget request, check whether the more capable model even has a larger
+        window. Often it doesn't, and you'd pay more per token to hit the same wall slightly later.</p>
+      </div>
+    </div>
+
+    <p style="color:var(--ink-soft);font-size:var(--t-small)">Class 3 &mdash; <em>You Can Only Guard the
+    Edges</em>: you cannot audit the middle, so every control you have sits at what goes in and what
+    shape you insist on getting back.</p>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">Class 2 of 29</span>
+      <a class="btn btn-primary" href="CCDV-F_Class-03.html">Class 3: You Can Only Guard the Edges &rarr;</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<script>
+(function () {
+  var screens = [].slice.call(document.querySelectorAll('.screen'));
+  var toc = document.getElementById('toc');
+  var barEl = document.getElementById('bar');
+  var cNow = document.getElementById('cNow');
+  var cAll = document.getElementById('cAll');
+  var barTitle = document.getElementById('barTitle');
+  var drawer = document.getElementById('drawer');
+  var i = 0;
+
+  cAll.textContent = screens.length;
+
+  screens.forEach(function (s, n) {
+    var li = document.createElement('li');
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = s.dataset.title || ('Screen ' + (n + 1));
+    b.addEventListener('click', function () { go(n); closeDrawer(); });
+    li.appendChild(b);
+    toc.appendChild(li);
+  });
+  var tocBtns = [].slice.call(toc.querySelectorAll('button'));
+
+  function go(n, keepScroll) {
+    i = Math.max(0, Math.min(screens.length - 1, n));
+    screens.forEach(function (s, k) { s.classList.toggle('on', k === i); });
+    tocBtns.forEach(function (b, k) { b.setAttribute('aria-current', k === i ? 'true' : 'false'); });
+    cNow.textContent = i + 1;
+    barEl.style.width = ((i + 1) / screens.length * 100) + '%';
+    barTitle.textContent = screens[i].dataset.title || '';
+    if (!keepScroll) window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+    if (location.hash !== '#s' + (i + 1)) history.replaceState(null, '', '#s' + (i + 1));
+    document.querySelectorAll('[data-next]').forEach(function (b) { b.disabled = (i === screens.length - 1); });
+    document.querySelectorAll('[data-prev]').forEach(function (b) { b.disabled = (i === 0); });
+  }
+
+  document.addEventListener('click', function (e) {
+    var n = e.target.closest('[data-next]');
+    var p = e.target.closest('[data-prev]');
+    var r = e.target.closest('[data-reveal]');
+    if (n) go(i + 1);
+    if (p) go(i - 1);
+    if (r) {
+      var box = document.getElementById(r.dataset.reveal);
+      if (box) { box.hidden = false; r.disabled = true; box.setAttribute('tabindex', '-1'); box.focus(); }
+    }
+  });
+
+  function openDrawer() { drawer.setAttribute('open', ''); document.getElementById('main').setAttribute('inert', ''); tocBtns[i].focus(); }
+  function closeDrawer() { drawer.removeAttribute('open'); document.getElementById('main').removeAttribute('inert'); }
+  document.getElementById('tocBtn').addEventListener('click', openDrawer);
+  document.getElementById('tocClose').addEventListener('click', closeDrawer);
+  drawer.addEventListener('click', function (e) { if (e.target === drawer) closeDrawer(); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && drawer.hasAttribute('open')) return closeDrawer();
+    if (e.target.matches('input, textarea')) return;
+    if (e.key === 'ArrowRight') go(i + 1);
+    if (e.key === 'ArrowLeft') go(i - 1);
+  });
+
+  var start = parseInt((location.hash || '').replace('#s', ''), 10);
+  go(isNaN(start) ? 0 : start - 1, true);
+})();
+</script>
+</body>
+</html>

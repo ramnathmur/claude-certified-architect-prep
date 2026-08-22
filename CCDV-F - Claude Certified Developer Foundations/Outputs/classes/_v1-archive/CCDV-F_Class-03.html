@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 3 — You Can Only Guard the Edges · CCDV-F</title>
+<meta name="description" content="Claude Certified Developer Foundations, Class 3: content boundaries and schema design - you cannot audit the middle, so control lives at what you let in and what shape you insist on getting back.">
+<meta name="author" content="Ram">
+<style>
+@layer engine, skin, utilities;
+
+/* ============================== SKIN: "Lecture Hall" ============================== */
+@layer skin {
+  :root {
+    color-scheme: light dark;
+
+    /* -- color primitives (oklch) -- */
+    --paper:        oklch(0.977 0.004 250);
+    --paper-sunk:   oklch(0.947 0.006 250);
+    --ink:          oklch(0.24 0.018 255);
+    --ink-soft:     oklch(0.46 0.016 255);
+    --ink-faint:    oklch(0.62 0.012 255);
+    --rule:         oklch(0.87 0.008 255);
+    --accent:       oklch(0.50 0.13 250);
+    --accent-lift:  oklch(0.62 0.14 250);
+    --clay:         oklch(0.58 0.10 45);
+    --flag:         oklch(0.56 0.12 145);
+
+    /* -- derived tints -- */
+    --accent-wash:  color-mix(in oklch, var(--accent) 8%, var(--paper));
+    --accent-edge:  color-mix(in oklch, var(--accent) 32%, var(--paper));
+    --clay-wash:    color-mix(in oklch, var(--clay) 10%, var(--paper));
+    --flag-wash:    color-mix(in oklch, var(--flag) 10%, var(--paper));
+
+    /* -- type -- */
+    --face-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --face-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                 Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
+    --face-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+    --t-body:  clamp(1.0rem, 0.94rem + 0.30vw, 1.125rem);
+    --t-small: clamp(0.83rem, 0.80rem + 0.14vw, 0.90rem);
+    --t-lead:  clamp(1.13rem, 1.03rem + 0.48vw, 1.32rem);
+    --t-h2:    clamp(1.55rem, 1.28rem + 1.35vw, 2.35rem);
+    --t-h3:    clamp(1.08rem, 1.00rem + 0.38vw, 1.24rem);
+    --t-hero:  clamp(2.0rem, 1.45rem + 2.7vw, 3.4rem);
+    --measure: 64ch;
+    --lh: 1.68;
+
+    /* -- shape + space -- */
+    --r: 3px;
+    --hair: 1px;
+    --gap: clamp(1.1rem, 0.9rem + 1vw, 1.9rem);
+
+    /* -- motion -- */
+    --dur: 180ms;
+    --ease: cubic-bezier(.2,.6,.3,1);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:      oklch(0.185 0.014 260);
+      --paper-sunk: oklch(0.225 0.016 260);
+      --ink:        oklch(0.93 0.008 255);
+      --ink-soft:   oklch(0.76 0.012 255);
+      --ink-faint:  oklch(0.60 0.012 255);
+      --rule:       oklch(0.34 0.014 258);
+      --accent:     oklch(0.76 0.12 250);
+      --accent-lift:oklch(0.84 0.11 250);
+      --clay:       oklch(0.74 0.10 48);
+      --flag:       oklch(0.74 0.12 152);
+      --accent-wash: color-mix(in oklch, var(--accent) 14%, var(--paper));
+      --accent-edge: color-mix(in oklch, var(--accent) 40%, var(--paper));
+      --clay-wash:   color-mix(in oklch, var(--clay) 16%, var(--paper));
+      --flag-wash:   color-mix(in oklch, var(--flag) 16%, var(--paper));
+    }
+  }
+}
+
+/* ============================== ENGINE ============================== */
+@layer engine {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--face-body);
+    font-size: var(--t-body);
+    line-height: var(--lh);
+    font-synthesis-weight: none;
+  }
+
+  /* ---- skip link ---- */
+  .skip {
+    position: absolute; left: -9999px; top: 0; z-index: 100;
+    background: var(--accent); color: var(--paper);
+    padding: .7rem 1.1rem; border-radius: var(--r);
+  }
+  .skip:focus { left: .6rem; top: .6rem; }
+
+  /* ---- top bar ---- */
+  .bar {
+    position: sticky; top: 0; z-index: 40;
+    background: color-mix(in oklch, var(--paper) 88%, transparent);
+    backdrop-filter: blur(9px);
+    border-bottom: var(--hair) solid var(--rule);
+  }
+  .bar-in {
+    max-width: 78rem; margin: 0 auto;
+    padding: .6rem clamp(.9rem, 3vw, 2rem);
+    display: flex; align-items: center; gap: 1rem;
+  }
+  .brand {
+    font-family: var(--face-mono);
+    font-size: .68rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--ink-faint); white-space: nowrap;
+  }
+  .brand b { color: var(--accent); font-weight: 600; }
+  .bar-title {
+    font-family: var(--face-display);
+    font-size: .95rem; color: var(--ink-soft);
+    margin-left: auto; text-align: right;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .counter {
+    font-family: var(--face-mono); font-size: .72rem;
+    color: var(--ink-faint); white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .progress { height: 2px; background: var(--rule); }
+  .progress span {
+    display: block; height: 100%; width: 0;
+    background: var(--accent);
+    transition: width var(--dur) var(--ease);
+  }
+
+  .btn {
+    font: inherit; font-size: var(--t-small);
+    color: var(--ink); background: transparent;
+    border: var(--hair) solid var(--rule); border-radius: var(--r);
+    padding: .5rem .85rem; cursor: pointer;
+    min-height: 44px; display: inline-flex; align-items: center; gap: .5rem;
+    transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+  .btn:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-wash); }
+  .btn:disabled { opacity: .38; cursor: not-allowed; }
+  .btn-primary { border-color: var(--accent-edge); background: var(--accent-wash); color: var(--accent); font-weight: 600; }
+
+  :focus-visible { outline: 2px solid var(--accent-lift); outline-offset: 3px; }
+
+  /* ---- drawer ---- */
+  .drawer {
+    position: fixed; inset: 0; z-index: 60;
+    background: color-mix(in oklch, var(--ink) 42%, transparent);
+    display: none; padding: clamp(.8rem, 4vw, 3rem);
+  }
+  .drawer[open] { display: grid; place-items: start center; }
+  .drawer-panel {
+    background: var(--paper); border: var(--hair) solid var(--rule);
+    border-radius: var(--r); max-width: 34rem; width: 100%;
+    padding: clamp(1rem, 3vw, 1.7rem); box-shadow: 0 18px 50px -20px color-mix(in oklch, var(--ink) 45%, transparent);
+  }
+  .drawer h2 { font-size: var(--t-h3); margin: 0 0 .9rem; font-family: var(--face-display); }
+  .toc { list-style: none; margin: 0; padding: 0; counter-reset: t; }
+  .toc li { counter-increment: t; }
+  .toc button {
+    width: 100%; text-align: left; font: inherit; font-size: var(--t-small);
+    background: none; border: 0; border-top: var(--hair) solid var(--rule);
+    padding: .72rem .2rem; color: var(--ink); cursor: pointer;
+    display: flex; gap: .8rem; align-items: baseline; min-height: 44px;
+  }
+  .toc button::before {
+    content: counter(t, decimal-leading-zero);
+    font-family: var(--face-mono); font-size: .7rem; color: var(--ink-faint);
+  }
+  .toc button:hover { color: var(--accent); }
+  .toc button[aria-current="true"] { color: var(--accent); font-weight: 600; }
+
+  /* ---- screens ---- */
+  main { max-width: 78rem; margin: 0 auto; padding: 0 clamp(.9rem, 3vw, 2rem); }
+  .screen { display: none; padding: clamp(1.8rem, 5vw, 3.6rem) 0 1rem; }
+  .screen.on { display: block; animation: rise var(--dur) var(--ease); }
+  @keyframes rise { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+
+  .wrap { max-width: var(--measure); margin-inline: auto; }
+  .wrap-wide { max-width: 52rem; margin-inline: auto; }
+
+  .label {
+    font-family: var(--face-mono); font-size: .68rem;
+    letter-spacing: .13em; text-transform: uppercase; color: var(--accent);
+    padding-bottom: .45rem; border-bottom: var(--hair) solid var(--accent-edge);
+    display: inline-block; margin-bottom: 1.1rem;
+  }
+
+  h1 { font-family: var(--face-display); font-size: var(--t-hero); line-height: 1.06;
+       margin: 0 0 1.1rem; font-weight: 600; letter-spacing: -.015em; }
+  h2 { font-family: var(--face-display); font-size: var(--t-h2); line-height: 1.14;
+       margin: 0 0 1.1rem; font-weight: 600; letter-spacing: -.01em; }
+  h3 { font-family: var(--face-body); font-size: var(--t-h3); margin: 2rem 0 .6rem; font-weight: 650; }
+  p { margin: 0 0 1.05em; }
+  .lead { font-size: var(--t-lead); color: var(--ink-soft); line-height: 1.5; }
+  strong { font-weight: 650; }
+  em { font-style: italic; }
+  code { font-family: var(--face-mono); font-size: .88em;
+         background: var(--paper-sunk); padding: .12em .38em; border-radius: 2px; }
+
+  .entry, .exit {
+    font-size: var(--t-small); color: var(--ink-soft);
+    border-left: 2px solid var(--accent-edge);
+    padding: .1rem 0 .1rem .95rem; margin: 0 0 1.6rem;
+  }
+  .exit { border-left-color: color-mix(in oklch, var(--clay) 45%, var(--paper)); margin: 2rem 0 0; }
+  .exit b, .entry b { color: var(--ink); font-weight: 600; }
+
+  .pull {
+    font-family: var(--face-display); font-size: var(--t-lead);
+    line-height: 1.4; color: var(--ink);
+    border-top: var(--hair) solid var(--rule);
+    border-bottom: var(--hair) solid var(--rule);
+    padding: 1.1rem 0; margin: 1.8rem 0;
+  }
+
+  .note {
+    background: var(--paper-sunk); border-radius: var(--r);
+    padding: 1rem 1.15rem; margin: 1.5rem 0; font-size: var(--t-small);
+  }
+  .note.warn { background: var(--clay-wash); }
+  .note.good { background: var(--flag-wash); }
+  .note p:last-child { margin-bottom: 0; }
+  .note-k {
+    font-family: var(--face-mono); font-size: .66rem; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--ink-faint); display: block; margin-bottom: .4rem;
+  }
+
+  figure { margin: 2rem 0; }
+  figure svg { display: block; width: 100%; height: auto; }
+  figcaption {
+    font-size: var(--t-small); color: var(--ink-soft);
+    margin-top: .8rem; padding-top: .7rem; border-top: var(--hair) solid var(--rule);
+  }
+
+  .tbl-scroll { overflow-x: auto; margin: 1.6rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: var(--t-small); }
+  th, td { text-align: left; padding: .68rem .8rem; border-bottom: var(--hair) solid var(--rule);
+           vertical-align: top; }
+  th { font-family: var(--face-mono); font-size: .68rem; letter-spacing: .08em;
+       text-transform: uppercase; color: var(--ink-faint); font-weight: 500; }
+  tbody tr:hover { background: var(--paper-sunk); }
+
+  details { border-top: var(--hair) solid var(--rule); padding: .8rem 0; margin: 1.4rem 0; }
+  summary { cursor: pointer; font-size: var(--t-small); color: var(--accent);
+            font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+  summary::marker { color: var(--ink-faint); }
+
+  /* ---- checkpoint ---- */
+  .check { border: var(--hair) solid var(--accent-edge); border-radius: var(--r);
+           padding: 1.2rem 1.3rem; margin: 2rem 0; background: var(--accent-wash); }
+  .check .note-k { color: var(--accent); }
+  .check p { margin-bottom: .9rem; }
+  .answer { margin-top: 1rem; padding-top: 1rem; border-top: var(--hair) solid var(--accent-edge);
+            font-size: var(--t-small); }
+  .answer[hidden] { display: none; }
+
+  ul, ol { margin: 0 0 1.05em; padding-left: 1.3em; }
+  li { margin-bottom: .45em; }
+
+  /* ---- foot nav ---- */
+  .foot {
+    max-width: var(--measure); margin: 2.8rem auto 0;
+    border-top: var(--hair) solid var(--rule); padding: 1.2rem 0 3rem;
+    display: flex; gap: .8rem; align-items: center; justify-content: space-between;
+  }
+  .hint { font-size: .72rem; color: var(--ink-faint); font-family: var(--face-mono); }
+
+  @media (max-width: 640px) {
+    .bar-title { display: none; }
+    .hint { display: none; }
+    .bar-in { gap: .5rem; padding-inline: .75rem; }
+    .btn { padding: .5rem .62rem; }
+    .counter { margin-left: auto; flex: 0 0 auto; }
+  }
+  @media (max-width: 480px) {
+    /* the course link + contents button + counter is all that fits; the brand
+       repeats what the page title already says, so it goes first */
+    .brand { display: none; }
+  }
+
+  /* ---- floor: motion / contrast / forced-colors ---- */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+  @media (prefers-contrast: more) {
+    :root { --rule: var(--ink-soft); --ink-soft: var(--ink); }
+  }
+  @media (forced-colors: active) {
+    .btn, .drawer-panel, .check, figure svg { border: 1px solid ButtonText; }
+    .label, .brand b { color: LinkText; }
+    .progress span { background: Highlight; }
+  }
+
+  /* ---- print: flatten every screen ---- */
+  @media print {
+    .bar, .foot, .drawer, .skip, .hint { display: none !important; }
+    .screen { display: block !important; page-break-after: always; padding: 0 0 1.5rem; }
+    .answer[hidden] { display: block !important; }
+    figure, .check, table { break-inside: avoid; }
+    body { background: #fff; color: #111; }
+  }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the class</a>
+
+<header class="bar">
+  <div class="bar-in">
+    <span class="brand">CCDV&#8209;F&nbsp;· <b>Class 03</b></span>
+    <a class="btn" id="courseLink" href="index.html">&#8598;&nbsp;Course</a>
+    <button class="btn" id="tocBtn" aria-haspopup="dialog">Contents</button>
+    <span class="bar-title" id="barTitle">You Can Only Guard the Edges</span>
+    <span class="counter"><span id="cNow">1</span>&#8202;/&#8202;<span id="cAll">10</span></span>
+  </div>
+  <div class="progress"><span id="bar"></span></div>
+</header>
+
+<div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="tocH">
+  <div class="drawer-panel">
+    <h2 id="tocH">Class 3 &mdash; contents</h2>
+    <ol class="toc" id="toc"></ol>
+    <p style="margin:1rem 0 0"><button class="btn" id="tocClose">Close</button></p>
+  </div>
+</div>
+
+<main id="main">
+<!-- ---------- 1 · cover ---------- -->
+<section class="screen on" data-title="The promise">
+  <div class="wrap">
+    <span class="label">Claude Certified Developer &middot; Foundations</span>
+    <h1>You Can Only Guard the Edges</h1>
+    <p class="lead">Every other component you've built on has an inside you can open up. This one
+    doesn't. There is no line where it went wrong. So every control you have sits at the two edges
+    &mdash; what you let in, and what shape you insist on getting back.</p>
+
+    <div class="note">
+      <span class="note-k">What you leave holding</span>
+      <ol style="margin-bottom:0">
+        <li>You cannot audit the middle, so control lives at the edges or nowhere.</li>
+        <li>The shape you ask for decides whether a wrong answer is <em>detectable</em>.</li>
+        <li>A required field with no escape hatch makes a guess the only permitted output.</li>
+        <li>Confidence is a property of the writing, not of the world.</li>
+        <li>The boundary that matters is between text you authored and text that showed up.</li>
+      </ol>
+    </div>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Begin &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 2 · the middle ---------- -->
+<section class="screen" data-title="You cannot audit the middle">
+  <div class="wrap">
+    <span class="label">01 &middot; The opaque part</span>
+    <h2>You cannot audit the middle</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll know why the usual debugging instinct has
+    nowhere to attach, and where that leaves you.</p>
+
+    <p>If a function in your code returns the wrong number, you can step through it. Set a breakpoint,
+    watch the variables, find the line where it went wrong. Every ordinary piece of software you've
+    worked with has an inside you can open up and look at.</p>
+    <p>This doesn't. There's no line where it went wrong. There's a very large pile of arithmetic that
+    produced a plausible next token, and then another, and nothing in there corresponds to a step in a
+    reasoning you could check.</p>
+    <p>So if you can't inspect the middle, where does control live?</p>
+  </div>
+
+  <div class="wrap-wide">
+  <figure>
+    <svg viewBox="0 0 760 230" role="img" aria-label="A pipeline with three parts. The input edge and the output edge are both inspectable and controllable. The middle is opaque, with no breakpoint and no step-through. Control can only be applied at the two edges.">
+      <rect x="14" y="52" width="180" height="110" rx="3" fill="none" stroke="var(--accent)" stroke-width="1.6"/>
+      <rect x="290" y="52" width="180" height="110" rx="3" fill="var(--paper-sunk)" stroke="var(--rule)" stroke-width="1.4" stroke-dasharray="5 4"/>
+      <rect x="566" y="52" width="180" height="110" rx="3" fill="none" stroke="var(--accent)" stroke-width="1.6"/>
+
+      <text x="30" y="88" font-family="var(--face-body)" font-size="14" fill="var(--ink)" font-weight="650">what goes in</text>
+      <text x="30" y="112" font-family="var(--face-body)" font-size="12" fill="var(--accent)">you choose this, in code</text>
+      <text x="30" y="134" font-family="var(--face-body)" font-size="12" fill="var(--ink-faint)">redact, or don't send</text>
+
+      <text x="306" y="88" font-family="var(--face-body)" font-size="14" fill="var(--ink-soft)" font-weight="650">the middle</text>
+      <text x="306" y="112" font-family="var(--face-body)" font-size="12" fill="var(--ink-faint)">no breakpoint</text>
+      <text x="306" y="134" font-family="var(--face-body)" font-size="12" fill="var(--ink-faint)">no step-through, no line</text>
+
+      <text x="582" y="88" font-family="var(--face-body)" font-size="14" fill="var(--ink)" font-weight="650">what comes back</text>
+      <text x="582" y="112" font-family="var(--face-body)" font-size="12" fill="var(--accent)">you choose the shape</text>
+      <text x="582" y="134" font-family="var(--face-body)" font-size="12" fill="var(--ink-faint)">so errors announce themselves</text>
+
+      <path d="M194 107 L284 107" stroke="var(--ink-faint)" stroke-width="1.4" fill="none" marker-end="url(#e1)"/>
+      <path d="M470 107 L560 107" stroke="var(--ink-faint)" stroke-width="1.4" fill="none" marker-end="url(#e1)"/>
+      <text x="14" y="42" font-family="var(--face-mono)" font-size="10" fill="var(--accent)" letter-spacing="1.3">CONTROLLABLE</text>
+      <text x="290" y="42" font-family="var(--face-mono)" font-size="10" fill="var(--ink-faint)" letter-spacing="1.3">OPAQUE</text>
+      <text x="566" y="42" font-family="var(--face-mono)" font-size="10" fill="var(--accent)" letter-spacing="1.3">CONTROLLABLE</text>
+      <text x="14" y="200" font-family="var(--face-body)" font-size="12.5" fill="var(--ink-soft)">Both halves of this class are the same idea, applied at opposite ends.</text>
+      <defs><marker id="e1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--ink-faint)"/></marker></defs>
+    </svg>
+    <figcaption><b>Two edges, and nothing in between you can reach.</b> Which is why "prompt it more
+    carefully" is not a control &mdash; it is an attempt to reach into the middle.</figcaption>
+  </figure>
+  </div>
+
+  <div class="wrap">
+    <p class="exit"><b>Next.</b> Start at the output edge, with a piece of paper that has been solving
+    this problem since long before computers.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 3 · the cheque ---------- -->
+<section class="screen" data-title="Start with a cheque">
+  <div class="wrap">
+    <span class="label">02 &middot; The output edge</span>
+    <h2>Start with a cheque</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll see what a schema is actually for &mdash;
+    and it isn't parsing convenience.</p>
+
+    <p>A bank cheque asks for the amount twice. Once in digits, once written out in words.</p>
+    <p>Nobody does that for elegance. They do it because a slip of the pen gives you two versions that
+    disagree, and disagreement is something a clerk can <em>see</em>.</p>
+  </div>
+
+  <div class="wrap-wide">
+  <figure>
+    <svg viewBox="0 0 760 230" role="img" aria-label="Two cheques. On the first, the digits and the written words agree, and the cheque passes. On the second a digit has slipped, so the two disagree and a clerk can see the error. The form makes the mistake visible without anyone having to check the payer's arithmetic.">
+      <g stroke="var(--rule)" stroke-width="1.4" fill="none">
+        <rect x="14" y="40" width="340" height="120" rx="3"/>
+        <rect x="406" y="40" width="340" height="120" rx="3"/>
+      </g>
+      <g font-family="var(--face-mono)" font-size="10" fill="var(--ink-faint)" letter-spacing="1.2">
+        <text x="14" y="30">WRITTEN CAREFULLY</text><text x="406" y="30">A DIGIT SLIPPED</text>
+      </g>
+      <g font-family="var(--face-body)" font-size="12" fill="var(--ink-faint)">
+        <text x="32" y="72">amount, in figures</text><text x="32" y="118">amount, in words</text>
+        <text x="424" y="72">amount, in figures</text><text x="424" y="118">amount, in words</text>
+      </g>
+      <g font-family="var(--face-display)" font-size="17" fill="var(--ink)">
+        <text x="190" y="76">1,240.00</text><text x="190" y="122">one thousand two hundred and forty</text>
+      </g>
+      <g font-family="var(--face-display)" font-size="17">
+        <text x="582" y="76" fill="var(--clay)">12,400.00</text>
+        <text x="582" y="122" fill="var(--ink)">one thousand two hundred and forty</text>
+      </g>
+      <line x1="32" y1="88" x2="338" y2="88" stroke="var(--rule)" stroke-width="1"/>
+      <line x1="424" y1="88" x2="730" y2="88" stroke="var(--rule)" stroke-width="1"/>
+      <text x="32" y="150" font-family="var(--face-mono)" font-size="11" fill="var(--flag)">they agree &mdash; passes</text>
+      <text x="424" y="150" font-family="var(--face-mono)" font-size="11" fill="var(--clay)">they disagree &mdash; visible, instantly</text>
+      <text x="14" y="196" font-family="var(--face-body)" font-size="12.5" fill="var(--ink-soft)">Nobody re-did the arithmetic. The form did the checking.</text>
+    </svg>
+    <figcaption><b>A good form does not prevent mistakes; it makes mistakes announce themselves.</b>
+    That is the job a schema is really doing, and it is a bigger job than making the JSON easy to
+    parse.</figcaption>
+  </figure>
+  </div>
+
+  <div class="wrap">
+    <p class="pull">The shape you ask for decides whether a wrong answer can slip through wearing the
+    right clothes.</p>
+    <p class="exit"><b>Next.</b> Why that matters more here than in ordinary software &mdash; because of
+    what "structured output" actually is.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 4 · text ---------- -->
+<section class="screen" data-title="Everything coming back is text">
+  <div class="wrap">
+    <span class="label">03 &middot; Unrepresentable</span>
+    <h2>Everything coming back is text</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll be able to look at a field and say whether
+    a wrong value would be caught or would pass.</p>
+
+    <p>There's no mode where the machine starts emitting objects. It's text. It's always text.
+    "Structured output" means text that happens to parse as JSON, produced by something that has seen an
+    enormous amount of JSON and is good at producing more.</p>
+    <p>So the structure is a <em>convention it's following</em>, not a guarantee the system enforces.
+    Good conventions, followed well, most of the time. Not a promise.</p>
+    <p>Which makes the question for every field: <strong>if the model gets this one wrong, do I find
+    out?</strong></p>
+
+    <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>Ask for status as&hellip;</th><th>A plausible reply</th><th>What your code does</th></tr></thead>
+      <tbody>
+        <tr><td>free text</td><td><code>"shipped"</code></td><td>Accepts it. Correct, by luck.</td></tr>
+        <tr><td>free text</td><td><code>"probably shipped"</code></td><td>Accepts it. A string is always valid.</td></tr>
+        <tr><td>free text</td><td><code>"shipped (partial &mdash; 2 of 3)"</code></td><td>Accepts it, and something downstream now treats a partial shipment as complete.</td></tr>
+        <tr><td><strong>one of four values</strong></td><td><code>"probably shipped"</code></td><td><strong>Rejects it. You know.</strong></td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p>You've lost nothing by constraining it &mdash; the model was never going to be more correct in
+    free text. You've gained the ability to tell.</p>
+
+    <p class="pull">Make the wrong answer unrepresentable. A fixed set of values, say so. A number, ask
+    for a number. Two fields that must agree, ask for both and check.</p>
+
+    <p class="exit"><b>Next.</b> The field everybody leaves out, and why the model's behaviour without
+    it was entirely predictable from Class 1.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 5 · the box ---------- -->
+<section class="screen" data-title="The box everybody forgets">
+  <div class="wrap">
+    <span class="label">04 &middot; The escape hatch</span>
+    <h2>The box everybody forgets</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll know why a required field is an instruction
+    to invent, and what to add instead.</p>
+
+    <p>You ask for a field called <code>confidence_score</code>. The scan was unreadable. What comes
+    back?</p>
+    <p>A number. A perfectly sensible-looking number.</p>
+    <p>And you should have predicted that, because of how the thing works. It's predicting the likeliest
+    continuation of the text in front of it. After a field name like <code>confidence_score</code>, what
+    usually follows in every document it has ever seen? A number. Almost never a refusal.</p>
+
+    <p class="pull">You created a position where the likely completion is a value &mdash; then were
+    surprised to get one.</p>
+
+    <div class="note good">
+      <span class="note-k">Give it a legal way out</span>
+      <p style="margin-bottom:0">An explicit <code>"unknown"</code> in the enum. A nullable field with
+      instructions on when null is correct. A separate <code>readable: true/false</code> alongside the
+      value. Any of them turns "I couldn't tell" into a legal move.</p>
+    </div>
+
+    <p>A schema with no box for "could not tell" hasn't stopped the model being uncertain. It has
+    stopped <em>you</em> finding out. It's the paper form with no "not applicable" &mdash; people write
+    something in every box, because the box is there and blank looks like a mistake.</p>
+
+    <div class="check">
+      <span class="note-k">Checkpoint</span>
+      <p>You add <code>"unknown"</code> to an enum and the model still almost never picks it. Nothing is
+      broken. What did you most likely leave out?</p>
+      <button class="btn" data-reveal="c1">Commit to an answer, then reveal</button>
+      <div class="answer" id="c1" hidden>
+        <p>The <strong>condition under which "unknown" is the right answer.</strong> Adding a legal value
+        makes it possible; it doesn't make it likely. Loading is a prediction, and a bare
+        <code>"unknown"</code> sitting in a list is a rare continuation.</p>
+        <p style="margin-bottom:0">Say plainly, in the instruction, when to use it &mdash; "use unknown
+        when the field is illegible or absent, rather than inferring from context." Now the refusal is
+        the likely completion in exactly the cases you wanted it.</p>
+      </div>
+    </div>
+
+    <p class="exit"><b>Next.</b> Two things to assume about everything that comes back, one mechanical
+    and one about your own instincts.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 6 · malformed + confidence ---------- -->
+<section class="screen" data-title="Assume it is malformed. And ignore how sure it sounds.">
+  <div class="wrap">
+    <span class="label">05 &middot; Two assumptions</span>
+    <h2>Assume it's malformed. And ignore how sure it sounds.</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll have the realistic failure list, and one
+    instinct deliberately switched off.</p>
+
+    <h3>Write the parser as though the text is broken</h3>
+    <p>Even with a good schema, eventually it is. The realistic failures aren't exotic:</p>
+    <ul>
+      <li>A field missing entirely.</li>
+      <li>A number arriving as a string.</li>
+      <li>A single item where you expected a list of one.</li>
+      <li>The JSON wrapped in a chatty sentence and a code fence.</li>
+      <li><strong>The response cut off mid-object</strong> because it hit the output limit.</li>
+    </ul>
+    <p>That last one deserves naming, because truncation is where "it worked in testing" misleads most
+    &mdash; short test inputs never truncate. Validate before you use. Fail loudly. A parser that
+    silently returns an empty object on malformed input will hide a production problem for months.</p>
+
+    <h3>Confidence tells you nothing</h3>
+    <p>Your instincts will fight this one. When a person is unsure you can usually hear it &mdash; they
+    hedge, they slow down, they say "I think." You've spent your whole life reading that signal and it's
+    mostly reliable.</p>
+    <p>That signal isn't here. A wrong answer comes back in exactly the same voice as a right one: same
+    fluency, same steadiness, same air of having checked.</p>
+
+    <div class="note warn">
+      <span class="note-k">And it has to be that way</span>
+      <p style="margin-bottom:0">Fluency is what the thing was built to produce. Correctness is a
+      property of the world. Nothing in the machinery connects the two &mdash; so there is no tell to
+      learn, and getting better at reading it will not help you.</p>
+    </div>
+
+    <p>So "it sounded sure" is not evidence. If you need to know whether an answer is right, something
+    <em>outside</em> the model has to check: a validation rule, a lookup against a real record, a second
+    pass, a human. The exam blueprint names this outright &mdash; <em>skepticism toward confident
+    output</em>.</p>
+
+    <p class="exit"><b>Next.</b> The other edge, where the same principle runs in the opposite
+    direction.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 7 · the input edge ---------- -->
+<section class="screen" data-title="The other edge: what goes on the board">
+  <div class="wrap">
+    <span class="label">06 &middot; The input edge</span>
+    <h2>What goes on the board</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll be able to say why a prompt line asking the
+    model not to use a field is not a control &mdash; and what is.</p>
+
+    <p>You cannot put something in front of the model and ask it not to look. There is no private region
+    of the board. Everything you send is in the request, and everything in the request was read.</p>
+    <p>That sounds obvious stated plainly, and people design around it constantly &mdash; sending the
+    whole customer record because it was easier than selecting fields, then adding a line to the prompt
+    saying "do not use the national ID number." That line is a request to the thing making predictions.
+    It is not a control.</p>
+
+    <p class="pull">A content boundary is a decision made <em>before the text goes out</em>, in your
+    code, about what to include. Redact it, or don't send it. There is no third option.</p>
+
+    <p>And be clear how far "sent" reaches: into the request, into your logs, into whatever
+    observability tooling you've wired up, and potentially into the reply. Every one of those is a place
+    that data now lives.</p>
+
+    <h3>Instructions you wrote, versus text that arrived</h3>
+    <p>Some of the text on the board you wrote &mdash; your system prompt, your rules, your schema. Some
+    of it <em>arrived</em>: a fetched web page, an uploaded document, the output of a tool, an email
+    body.</p>
+  </div>
+
+  <div class="wrap-wide">
+  <figure>
+    <svg viewBox="0 0 760 240" role="img" aria-label="On the board, text you authored and text that arrived from outside look identical to the model. No formatting makes one authoritative. The separation has to be constructed by marking arrived content as data and by ensuring nothing it says can trigger an action without passing the harness.">
+      <rect x="14" y="42" width="440" height="130" rx="3" fill="none" stroke="var(--rule)" stroke-width="1.5"/>
+      <text x="14" y="32" font-family="var(--face-mono)" font-size="10" fill="var(--ink-faint)" letter-spacing="1.3">THE BOARD &mdash; ALL OF IT LOOKS THE SAME</text>
+      <g stroke="var(--rule)" stroke-width="1.1">
+        <rect x="34" y="62" width="180" height="42" fill="var(--accent-wash)"/>
+        <rect x="254" y="62" width="180" height="42" fill="var(--clay-wash)"/>
+        <rect x="34" y="118" width="180" height="34" fill="var(--accent-wash)"/>
+        <rect x="254" y="118" width="180" height="34" fill="var(--clay-wash)"/>
+      </g>
+      <g font-family="var(--face-body)" font-size="12" fill="var(--ink)">
+        <text x="46" y="80">your system prompt</text><text x="266" y="80">a fetched web page</text>
+        <text x="46" y="139">your schema</text><text x="266" y="139">an uploaded document</text>
+      </g>
+      <text x="46" y="96" font-family="var(--face-mono)" font-size="10" fill="var(--accent)">authored</text>
+      <text x="266" y="96" font-family="var(--face-mono)" font-size="10" fill="var(--clay)">arrived</text>
+
+      <path d="M454 107 L536 107" stroke="var(--ink-faint)" stroke-width="1.4" fill="none" marker-end="url(#e2)"/>
+      <rect x="542" y="62" width="204" height="90" rx="3" fill="none" stroke="var(--accent)" stroke-width="1.6"/>
+      <text x="558" y="88" font-family="var(--face-body)" font-size="13" fill="var(--ink)" font-weight="650">the harness</text>
+      <text x="558" y="110" font-family="var(--face-body)" font-size="11.5" fill="var(--ink-soft)">every request passes here</text>
+      <text x="558" y="132" font-family="var(--face-body)" font-size="11.5" fill="var(--accent)">and it grants nothing extra</text>
+      <text x="14" y="204" font-family="var(--face-body)" font-size="12.5" fill="var(--ink-soft)">Marking arrived text as data helps. The harness is what makes it hold.</text>
+      <defs><marker id="e2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--ink-faint)"/></marker></defs>
+    </svg>
+    <figcaption><b>No formatting makes one authoritative.</b> The real defence isn't labelling &mdash;
+    it's that a request produced by arrived text still has to get past a harness that would have refused
+    it anyway.</figcaption>
+  </figure>
+  </div>
+
+  <div class="wrap">
+    <p>Put arrived content somewhere clearly marked as data, say plainly that it's data and not
+    instruction, and &mdash; the part that actually works &mdash; make sure nothing it says can trigger
+    an action on its own. You already know why from Class 1: the model can only ask.</p>
+    <p class="pull">The boundary that matters isn't between safe content and unsafe content. It's
+    between text you authored and text that showed up.</p>
+    <p class="exit"><b>Last screen.</b> The recap, and the invoice pipeline.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 8 · recap ---------- -->
+<section class="screen" data-title="Recap and the closing question">
+  <div class="wrap">
+    <span class="label">Recap</span>
+    <h2>What you're leaving with</h2>
+    <p class="lead">One principle, applied at both ends: you cannot reach into the middle, so you shape
+    what enters and you shape what must come back.</p>
+
+    <ol>
+      <li><strong>There is no breakpoint.</strong> Control at the edges, or nowhere.</li>
+      <li><strong>A schema makes errors announce themselves.</strong> Parsing convenience is the smaller
+      benefit.</li>
+      <li><strong>Required plus unconstrained makes a guess the only legal output.</strong> Give it a way
+      to say it doesn't know, and say when to use it.</li>
+      <li><strong>Fluency and correctness are unconnected.</strong> Verification has to come from
+      outside.</li>
+      <li><strong>A prompt line is not a redaction.</strong> Decide before the text leaves your
+      code.</li>
+    </ol>
+
+    <div class="check">
+      <span class="note-k">Before Class 4</span>
+      <p>You extract five fields from scanned supplier invoices &mdash; vendor, invoice number, date,
+      currency, total &mdash; across about twenty thousand documents a night. Your schema declares all
+      five as <strong>required strings</strong>.</p>
+      <p>Three weeks in, finance says the extracted numbers are <em>"mostly right."</em></p>
+      <p>Why is "mostly right" a worse report than "twelve per cent wrong"? And name two schema changes
+      that would have made this a different conversation.</p>
+      <button class="btn" data-reveal="c2">Commit to an answer, then reveal</button>
+      <div class="answer" id="c2" hidden>
+        <p><strong>"Mostly right" is a report about detectability, not accuracy.</strong> If the pipeline
+        could tell good extractions from bad, finance would have said "twelve per cent got rejected,
+        here they are" &mdash; a number, and a pile you can inspect. That they can only say "mostly
+        right" means the wrong ones and the right ones are in the same pile wearing the same clothes,
+        and a human eventually noticed by feel. The model's accuracy may be identical in both worlds.
+        What differs is whether anyone can tell <em>which</em> twelve per cent to go and look at.</p>
+        <p><strong>Required plus string is the trap.</strong> A required field must be filled; a string
+        accepts anything. Hand that a smudged scan and the model's only legal move is a plausible-looking
+        string, because blank isn't available and "I couldn't read it" isn't a string it was invited to
+        write.</p>
+        <p><strong>Change one &mdash; give it a way out.</strong> Nullable fields with an instruction on
+        when null is right, or a <code>readable: false</code> alongside. An unreadable scan then produces
+        a row you route to a human rather than one that quietly enters the ledger.</p>
+        <p style="margin-bottom:0"><strong>Change two &mdash; stop using strings for things that aren't
+        strings.</strong> <code>total</code> as a number; a string total carries <code>"1,234.56"</code>,
+        <code>"1.234,56"</code> and <code>"approximately 1200"</code> equally happily.
+        <code>currency</code> as an enum of ISO codes, so <code>"$"</code>, <code>"US Dollars"</code> and
+        <code>"USD"</code> can't be silently accepted as three different things. <code>date</code> in one
+        fixed format. <em>And a free third: ask for the line items too, and check they sum. That's the
+        cheque.</em></p>
+      </div>
+    </div>
+
+    <p style="color:var(--ink-soft);font-size:var(--t-small)">Class 4 &mdash; <em>The Bread That Stopped
+    Rising</em>: configuration as the written record of what was true when it worked.</p>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">Class 3 of 29</span>
+      <a class="btn btn-primary" href="CCDV-F_Class-04.html">Class 4: The Bread That Stopped Rising &rarr;</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<script>
+(function () {
+  var screens = [].slice.call(document.querySelectorAll('.screen'));
+  var toc = document.getElementById('toc');
+  var barEl = document.getElementById('bar');
+  var cNow = document.getElementById('cNow');
+  var cAll = document.getElementById('cAll');
+  var barTitle = document.getElementById('barTitle');
+  var drawer = document.getElementById('drawer');
+  var i = 0;
+
+  cAll.textContent = screens.length;
+
+  screens.forEach(function (s, n) {
+    var li = document.createElement('li');
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = s.dataset.title || ('Screen ' + (n + 1));
+    b.addEventListener('click', function () { go(n); closeDrawer(); });
+    li.appendChild(b);
+    toc.appendChild(li);
+  });
+  var tocBtns = [].slice.call(toc.querySelectorAll('button'));
+
+  function go(n, keepScroll) {
+    i = Math.max(0, Math.min(screens.length - 1, n));
+    screens.forEach(function (s, k) { s.classList.toggle('on', k === i); });
+    tocBtns.forEach(function (b, k) { b.setAttribute('aria-current', k === i ? 'true' : 'false'); });
+    cNow.textContent = i + 1;
+    barEl.style.width = ((i + 1) / screens.length * 100) + '%';
+    barTitle.textContent = screens[i].dataset.title || '';
+    if (!keepScroll) window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+    if (location.hash !== '#s' + (i + 1)) history.replaceState(null, '', '#s' + (i + 1));
+    document.querySelectorAll('[data-next]').forEach(function (b) { b.disabled = (i === screens.length - 1); });
+    document.querySelectorAll('[data-prev]').forEach(function (b) { b.disabled = (i === 0); });
+  }
+
+  document.addEventListener('click', function (e) {
+    var n = e.target.closest('[data-next]');
+    var p = e.target.closest('[data-prev]');
+    var r = e.target.closest('[data-reveal]');
+    if (n) go(i + 1);
+    if (p) go(i - 1);
+    if (r) {
+      var box = document.getElementById(r.dataset.reveal);
+      if (box) { box.hidden = false; r.disabled = true; box.setAttribute('tabindex', '-1'); box.focus(); }
+    }
+  });
+
+  function openDrawer() { drawer.setAttribute('open', ''); document.getElementById('main').setAttribute('inert', ''); tocBtns[i].focus(); }
+  function closeDrawer() { drawer.removeAttribute('open'); document.getElementById('main').removeAttribute('inert'); }
+  document.getElementById('tocBtn').addEventListener('click', openDrawer);
+  document.getElementById('tocClose').addEventListener('click', closeDrawer);
+  drawer.addEventListener('click', function (e) { if (e.target === drawer) closeDrawer(); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && drawer.hasAttribute('open')) return closeDrawer();
+    if (e.target.matches('input, textarea')) return;
+    if (e.key === 'ArrowRight') go(i + 1);
+    if (e.key === 'ArrowLeft') go(i - 1);
+  });
+
+  var start = parseInt((location.hash || '').replace('#s', ''), 10);
+  go(isNaN(start) ? 0 : start - 1, true);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 4 — The Bread That Stopped Rising · CCDV-F</title>
+<meta name="description" content="Claude Certified Developer Foundations, Class 4: configuration management as the written record of what was true when it worked - model pinning, prompt versioning and plugin dependencies.">
+<meta name="author" content="Ram">
+<style>
+@layer engine, skin, utilities;
+
+/* ============================== SKIN: "Lecture Hall" ============================== */
+@layer skin {
+  :root {
+    color-scheme: light dark;
+
+    /* -- color primitives (oklch) -- */
+    --paper:        oklch(0.977 0.004 250);
+    --paper-sunk:   oklch(0.947 0.006 250);
+    --ink:          oklch(0.24 0.018 255);
+    --ink-soft:     oklch(0.46 0.016 255);
+    --ink-faint:    oklch(0.62 0.012 255);
+    --rule:         oklch(0.87 0.008 255);
+    --accent:       oklch(0.50 0.13 250);
+    --accent-lift:  oklch(0.62 0.14 250);
+    --clay:         oklch(0.58 0.10 45);
+    --flag:         oklch(0.56 0.12 145);
+
+    /* -- derived tints -- */
+    --accent-wash:  color-mix(in oklch, var(--accent) 8%, var(--paper));
+    --accent-edge:  color-mix(in oklch, var(--accent) 32%, var(--paper));
+    --clay-wash:    color-mix(in oklch, var(--clay) 10%, var(--paper));
+    --flag-wash:    color-mix(in oklch, var(--flag) 10%, var(--paper));
+
+    /* -- type -- */
+    --face-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --face-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                 Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
+    --face-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+    --t-body:  clamp(1.0rem, 0.94rem + 0.30vw, 1.125rem);
+    --t-small: clamp(0.83rem, 0.80rem + 0.14vw, 0.90rem);
+    --t-lead:  clamp(1.13rem, 1.03rem + 0.48vw, 1.32rem);
+    --t-h2:    clamp(1.55rem, 1.28rem + 1.35vw, 2.35rem);
+    --t-h3:    clamp(1.08rem, 1.00rem + 0.38vw, 1.24rem);
+    --t-hero:  clamp(2.0rem, 1.45rem + 2.7vw, 3.4rem);
+    --measure: 64ch;
+    --lh: 1.68;
+
+    /* -- shape + space -- */
+    --r: 3px;
+    --hair: 1px;
+    --gap: clamp(1.1rem, 0.9rem + 1vw, 1.9rem);
+
+    /* -- motion -- */
+    --dur: 180ms;
+    --ease: cubic-bezier(.2,.6,.3,1);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:      oklch(0.185 0.014 260);
+      --paper-sunk: oklch(0.225 0.016 260);
+      --ink:        oklch(0.93 0.008 255);
+      --ink-soft:   oklch(0.76 0.012 255);
+      --ink-faint:  oklch(0.60 0.012 255);
+      --rule:       oklch(0.34 0.014 258);
+      --accent:     oklch(0.76 0.12 250);
+      --accent-lift:oklch(0.84 0.11 250);
+      --clay:       oklch(0.74 0.10 48);
+      --flag:       oklch(0.74 0.12 152);
+      --accent-wash: color-mix(in oklch, var(--accent) 14%, var(--paper));
+      --accent-edge: color-mix(in oklch, var(--accent) 40%, var(--paper));
+      --clay-wash:   color-mix(in oklch, var(--clay) 16%, var(--paper));
+      --flag-wash:   color-mix(in oklch, var(--flag) 16%, var(--paper));
+    }
+  }
+}
+
+/* ============================== ENGINE ============================== */
+@layer engine {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--face-body);
+    font-size: var(--t-body);
+    line-height: var(--lh);
+    font-synthesis-weight: none;
+  }
+
+  /* ---- skip link ---- */
+  .skip {
+    position: absolute; left: -9999px; top: 0; z-index: 100;
+    background: var(--accent); color: var(--paper);
+    padding: .7rem 1.1rem; border-radius: var(--r);
+  }
+  .skip:focus { left: .6rem; top: .6rem; }
+
+  /* ---- top bar ---- */
+  .bar {
+    position: sticky; top: 0; z-index: 40;
+    background: color-mix(in oklch, var(--paper) 88%, transparent);
+    backdrop-filter: blur(9px);
+    border-bottom: var(--hair) solid var(--rule);
+  }
+  .bar-in {
+    max-width: 78rem; margin: 0 auto;
+    padding: .6rem clamp(.9rem, 3vw, 2rem);
+    display: flex; align-items: center; gap: 1rem;
+  }
+  .brand {
+    font-family: var(--face-mono);
+    font-size: .68rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--ink-faint); white-space: nowrap;
+  }
+  .brand b { color: var(--accent); font-weight: 600; }
+  .bar-title {
+    font-family: var(--face-display);
+    font-size: .95rem; color: var(--ink-soft);
+    margin-left: auto; text-align: right;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .counter {
+    font-family: var(--face-mono); font-size: .72rem;
+    color: var(--ink-faint); white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .progress { height: 2px; background: var(--rule); }
+  .progress span {
+    display: block; height: 100%; width: 0;
+    background: var(--accent);
+    transition: width var(--dur) var(--ease);
+  }
+
+  .btn {
+    font: inherit; font-size: var(--t-small);
+    color: var(--ink); background: transparent;
+    border: var(--hair) solid var(--rule); border-radius: var(--r);
+    padding: .5rem .85rem; cursor: pointer;
+    min-height: 44px; display: inline-flex; align-items: center; gap: .5rem;
+    transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+  .btn:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-wash); }
+  .btn:disabled { opacity: .38; cursor: not-allowed; }
+  .btn-primary { border-color: var(--accent-edge); background: var(--accent-wash); color: var(--accent); font-weight: 600; }
+
+  :focus-visible { outline: 2px solid var(--accent-lift); outline-offset: 3px; }
+
+  /* ---- drawer ---- */
+  .drawer {
+    position: fixed; inset: 0; z-index: 60;
+    background: color-mix(in oklch, var(--ink) 42%, transparent);
+    display: none; padding: clamp(.8rem, 4vw, 3rem);
+  }
+  .drawer[open] { display: grid; place-items: start center; }
+  .drawer-panel {
+    background: var(--paper); border: var(--hair) solid var(--rule);
+    border-radius: var(--r); max-width: 34rem; width: 100%;
+    padding: clamp(1rem, 3vw, 1.7rem); box-shadow: 0 18px 50px -20px color-mix(in oklch, var(--ink) 45%, transparent);
+  }
+  .drawer h2 { font-size: var(--t-h3); margin: 0 0 .9rem; font-family: var(--face-display); }
+  .toc { list-style: none; margin: 0; padding: 0; counter-reset: t; }
+  .toc li { counter-increment: t; }
+  .toc button {
+    width: 100%; text-align: left; font: inherit; font-size: var(--t-small);
+    background: none; border: 0; border-top: var(--hair) solid var(--rule);
+    padding: .72rem .2rem; color: var(--ink); cursor: pointer;
+    display: flex; gap: .8rem; align-items: baseline; min-height: 44px;
+  }
+  .toc button::before {
+    content: counter(t, decimal-leading-zero);
+    font-family: var(--face-mono); font-size: .7rem; color: var(--ink-faint);
+  }
+  .toc button:hover { color: var(--accent); }
+  .toc button[aria-current="true"] { color: var(--accent); font-weight: 600; }
+
+  /* ---- screens ---- */
+  main { max-width: 78rem; margin: 0 auto; padding: 0 clamp(.9rem, 3vw, 2rem); }
+  .screen { display: none; padding: clamp(1.8rem, 5vw, 3.6rem) 0 1rem; }
+  .screen.on { display: block; animation: rise var(--dur) var(--ease); }
+  @keyframes rise { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+
+  .wrap { max-width: var(--measure); margin-inline: auto; }
+  .wrap-wide { max-width: 52rem; margin-inline: auto; }
+
+  .label {
+    font-family: var(--face-mono); font-size: .68rem;
+    letter-spacing: .13em; text-transform: uppercase; color: var(--accent);
+    padding-bottom: .45rem; border-bottom: var(--hair) solid var(--accent-edge);
+    display: inline-block; margin-bottom: 1.1rem;
+  }
+
+  h1 { font-family: var(--face-display); font-size: var(--t-hero); line-height: 1.06;
+       margin: 0 0 1.1rem; font-weight: 600; letter-spacing: -.015em; }
+  h2 { font-family: var(--face-display); font-size: var(--t-h2); line-height: 1.14;
+       margin: 0 0 1.1rem; font-weight: 600; letter-spacing: -.01em; }
+  h3 { font-family: var(--face-body); font-size: var(--t-h3); margin: 2rem 0 .6rem; font-weight: 650; }
+  p { margin: 0 0 1.05em; }
+  .lead { font-size: var(--t-lead); color: var(--ink-soft); line-height: 1.5; }
+  strong { font-weight: 650; }
+  em { font-style: italic; }
+  code { font-family: var(--face-mono); font-size: .88em;
+         background: var(--paper-sunk); padding: .12em .38em; border-radius: 2px; }
+
+  .entry, .exit {
+    font-size: var(--t-small); color: var(--ink-soft);
+    border-left: 2px solid var(--accent-edge);
+    padding: .1rem 0 .1rem .95rem; margin: 0 0 1.6rem;
+  }
+  .exit { border-left-color: color-mix(in oklch, var(--clay) 45%, var(--paper)); margin: 2rem 0 0; }
+  .exit b, .entry b { color: var(--ink); font-weight: 600; }
+
+  .pull {
+    font-family: var(--face-display); font-size: var(--t-lead);
+    line-height: 1.4; color: var(--ink);
+    border-top: var(--hair) solid var(--rule);
+    border-bottom: var(--hair) solid var(--rule);
+    padding: 1.1rem 0; margin: 1.8rem 0;
+  }
+
+  .note {
+    background: var(--paper-sunk); border-radius: var(--r);
+    padding: 1rem 1.15rem; margin: 1.5rem 0; font-size: var(--t-small);
+  }
+  .note.warn { background: var(--clay-wash); }
+  .note.good { background: var(--flag-wash); }
+  .note p:last-child { margin-bottom: 0; }
+  .note-k {
+    font-family: var(--face-mono); font-size: .66rem; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--ink-faint); display: block; margin-bottom: .4rem;
+  }
+
+  figure { margin: 2rem 0; }
+  figure svg { display: block; width: 100%; height: auto; }
+  figcaption {
+    font-size: var(--t-small); color: var(--ink-soft);
+    margin-top: .8rem; padding-top: .7rem; border-top: var(--hair) solid var(--rule);
+  }
+
+  .tbl-scroll { overflow-x: auto; margin: 1.6rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: var(--t-small); }
+  th, td { text-align: left; padding: .68rem .8rem; border-bottom: var(--hair) solid var(--rule);
+           vertical-align: top; }
+  th { font-family: var(--face-mono); font-size: .68rem; letter-spacing: .08em;
+       text-transform: uppercase; color: var(--ink-faint); font-weight: 500; }
+  tbody tr:hover { background: var(--paper-sunk); }
+
+  details { border-top: var(--hair) solid var(--rule); padding: .8rem 0; margin: 1.4rem 0; }
+  summary { cursor: pointer; font-size: var(--t-small); color: var(--accent);
+            font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+  summary::marker { color: var(--ink-faint); }
+
+  /* ---- checkpoint ---- */
+  .check { border: var(--hair) solid var(--accent-edge); border-radius: var(--r);
+           padding: 1.2rem 1.3rem; margin: 2rem 0; background: var(--accent-wash); }
+  .check .note-k { color: var(--accent); }
+  .check p { margin-bottom: .9rem; }
+  .answer { margin-top: 1rem; padding-top: 1rem; border-top: var(--hair) solid var(--accent-edge);
+            font-size: var(--t-small); }
+  .answer[hidden] { display: none; }
+
+  ul, ol { margin: 0 0 1.05em; padding-left: 1.3em; }
+  li { margin-bottom: .45em; }
+
+  /* ---- foot nav ---- */
+  .foot {
+    max-width: var(--measure); margin: 2.8rem auto 0;
+    border-top: var(--hair) solid var(--rule); padding: 1.2rem 0 3rem;
+    display: flex; gap: .8rem; align-items: center; justify-content: space-between;
+  }
+  .hint { font-size: .72rem; color: var(--ink-faint); font-family: var(--face-mono); }
+
+  @media (max-width: 640px) {
+    .bar-title { display: none; }
+    .hint { display: none; }
+    .bar-in { gap: .5rem; padding-inline: .75rem; }
+    .btn { padding: .5rem .62rem; }
+    .counter { margin-left: auto; flex: 0 0 auto; }
+  }
+  @media (max-width: 480px) {
+    /* the course link + contents button + counter is all that fits; the brand
+       repeats what the page title already says, so it goes first */
+    .brand { display: none; }
+  }
+
+  /* ---- floor: motion / contrast / forced-colors ---- */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+  @media (prefers-contrast: more) {
+    :root { --rule: var(--ink-soft); --ink-soft: var(--ink); }
+  }
+  @media (forced-colors: active) {
+    .btn, .drawer-panel, .check, figure svg { border: 1px solid ButtonText; }
+    .label, .brand b { color: LinkText; }
+    .progress span { background: Highlight; }
+  }
+
+  /* ---- print: flatten every screen ---- */
+  @media print {
+    .bar, .foot, .drawer, .skip, .hint { display: none !important; }
+    .screen { display: block !important; page-break-after: always; padding: 0 0 1.5rem; }
+    .answer[hidden] { display: block !important; }
+    figure, .check, table { break-inside: avoid; }
+    body { background: #fff; color: #111; }
+  }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the class</a>
+
+<header class="bar">
+  <div class="bar-in">
+    <span class="brand">CCDV&#8209;F&nbsp;· <b>Class 04</b></span>
+    <a class="btn" id="courseLink" href="index.html">&#8598;&nbsp;Course</a>
+    <button class="btn" id="tocBtn" aria-haspopup="dialog">Contents</button>
+    <span class="bar-title" id="barTitle">The Bread That Stopped Rising</span>
+    <span class="counter"><span id="cNow">1</span>&#8202;/&#8202;<span id="cAll">10</span></span>
+  </div>
+  <div class="progress"><span id="bar"></span></div>
+</header>
+
+<div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="tocH">
+  <div class="drawer-panel">
+    <h2 id="tocH">Class 4 &mdash; contents</h2>
+    <ol class="toc" id="toc"></ol>
+    <p style="margin:1rem 0 0"><button class="btn" id="tocClose">Close</button></p>
+  </div>
+</div>
+
+<main id="main">
+<!-- ---------- 1 · cover ---------- -->
+<section class="screen on" data-title="The promise">
+  <div class="wrap">
+    <span class="label">Claude Certified Developer &middot; Foundations</span>
+    <h1>The Bread That Stopped Rising</h1>
+    <p class="lead">You didn't change the recipe. The recipe was never the system. Configuration is the
+    written record of what was true when it worked &mdash; and without it, "it got worse" is a
+    complaint rather than a question you can answer.</p>
+
+    <div class="note">
+      <span class="note-k">What you leave holding</span>
+      <ol style="margin-bottom:0">
+        <li>Five things decide behaviour, and your git log records one of them.</li>
+        <li>Model changes are statistical and undocumented, which is why pinning matters more here.</li>
+        <li>A prompt is source code. Convenient to edit and impossible to attribute are the same property.</li>
+        <li>An undeclared dependency doesn't travel badly &mdash; it doesn't travel at all, and fails silently.</li>
+        <li>Configuration doesn't make a system deterministic. It makes it <em>attributable</em>.</li>
+      </ol>
+    </div>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Begin &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 2 · the bread ---------- -->
+<section class="screen" data-title="The bread that stopped rising">
+  <div class="wrap">
+    <span class="label">01 &middot; The system, not the recipe</span>
+    <h2>You didn't change the recipe</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll have the shape of the whole class in one
+    homely picture.</p>
+
+    <p>You've been making the same loaf for two years. Same recipe, same oven, same hands. Last Tuesday
+    it came out flat and it's been flat ever since.</p>
+    <p>You didn't change the recipe. So what changed?</p>
+    <p>Well &mdash; the flour is from a different mill, because the shop ran out of your usual. The
+    yeast is a new packet from a new box. It's November now and the kitchen sits four degrees colder
+    than it did in September. And your oven has been drifting low for a while, slowly enough that nobody
+    noticed.</p>
+
+    <p class="pull">The recipe was never the system. The recipe was one part of a system, and the other
+    parts were changing quietly the whole time.</p>
+
+    <p>Now: can you find out which one did it? Only if you wrote down what they were. If your notes say
+    <em>"flour: bread flour,"</em> you're finished &mdash; you can't get back to the flour that worked.
+    If they say <em>"flour: Shipton Mill, batch 4471,"</em> you can go and buy that flour and settle the
+    question in an afternoon.</p>
+
+    <p class="exit"><b>Next.</b> Five things in a Claude application that change without you touching
+    anything &mdash; and how many of them your version control is watching.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 3 · five moving parts ---------- -->
+<section class="screen" data-title="What changes under you">
+  <div class="wrap">
+    <span class="label">02 &middot; The moving parts</span>
+    <h2>What changes under you without you touching anything</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll see why twenty years of disciplined
+    version control still leaves you mostly blind here.</p>
+
+    <p>This catches people who've built ordinary software for a long time. You know how to version your
+    code &mdash; you've been doing it your whole career. But in a Claude application, most of the things
+    that decide behaviour <em>aren't your code</em>.</p>
+  </div>
+
+  <div class="wrap-wide">
+  <figure>
+    <svg viewBox="0 0 760 250" role="img" aria-label="Five things decide the behaviour of a Claude application: the model version, the prompt, installed skills and plugins, the settings, and undeclared dependencies of a plugin. Only the prompt is normally inside version control, so a git log covers one of the five.">
+      <rect x="14" y="34" width="470" height="176" rx="3" fill="none" stroke="var(--rule)" stroke-width="1.4" stroke-dasharray="5 4"/>
+      <text x="14" y="24" font-family="var(--face-mono)" font-size="10" fill="var(--ink-faint)" letter-spacing="1.3">WHAT DECIDES BEHAVIOUR</text>
+
+      <g stroke="var(--rule)" stroke-width="1.1" fill="var(--paper-sunk)">
+        <rect x="34" y="52" width="200" height="30"/><rect x="34" y="92" width="200" height="30"/>
+        <rect x="34" y="132" width="200" height="30"/><rect x="34" y="172" width="200" height="30"/>
+        <rect x="254" y="52" width="210" height="30"/>
+      </g>
+      <g font-family="var(--face-body)" font-size="12" fill="var(--ink)">
+        <text x="46" y="72">the model version</text><text x="46" y="112">installed skills / plugins</text>
+        <text x="46" y="152">the settings</text><text x="46" y="192">a plugin's own dependencies</text>
+        <text x="266" y="72">the prompt</text>
+      </g>
+      <rect x="254" y="52" width="210" height="30" fill="var(--accent-wash)" stroke="var(--accent)" stroke-width="1.6"/>
+      <text x="266" y="72" font-family="var(--face-body)" font-size="12" fill="var(--ink)">the prompt</text>
+
+      <rect x="520" y="52" width="226" height="30" rx="3" fill="none" stroke="var(--accent)" stroke-width="1.6"/>
+      <text x="536" y="72" font-family="var(--face-mono)" font-size="11" fill="var(--accent)">git log sees this one</text>
+      <path d="M464 67 L514 67" stroke="var(--accent)" stroke-width="1.4" fill="none" marker-end="url(#f1)"/>
+
+      <g font-family="var(--face-mono)" font-size="10.5" fill="var(--clay)">
+        <text x="520" y="112">and not this</text><text x="520" y="152">or this</text>
+        <text x="520" y="192">or this</text>
+      </g>
+      <g stroke="var(--clay)" stroke-width="1.2" stroke-dasharray="3 3" fill="none">
+        <path d="M234 107 L514 107"/><path d="M234 147 L514 147"/><path d="M234 187 L514 187"/>
+      </g>
+      <text x="14" y="238" font-family="var(--face-body)" font-size="12.5" fill="var(--ink-soft)">Five moving parts. Your version control is watching one.</text>
+      <defs><marker id="f1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/></marker></defs>
+    </svg>
+    <figcaption><b>Disciplined version control is not the same as a complete record.</b> Four of the five
+    can change on a Tuesday with nothing appearing in any diff you would think to read.</figcaption>
+  </figure>
+  </div>
+
+  <div class="wrap">
+    <p class="exit"><b>Next.</b> Take the first of those five, and ask why pinning it matters more here
+    than pinning a library ever did.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 4 · pinning ---------- -->
+<section class="screen" data-title="Pinning the model, and why it matters more here">
+  <div class="wrap">
+    <span class="label">03 &middot; Model pinning</span>
+    <h2>Pinning the model, and why it matters more here</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll be able to say exactly how a model upgrade
+    differs from a library upgrade &mdash; and why no changelog can close the gap.</p>
+
+    <p>In ordinary software you pin library versions, and you do it because a minor upgrade might change
+    behaviour in some documented way you'd rather review first. Sensible, dull, well understood.</p>
+    <p>Model versions are the same practice for a much sharper reason.</p>
+
+    <div class="tbl-scroll">
+    <table>
+      <thead><tr><th></th><th>A library upgrade</th><th>A model upgrade</th></tr></thead>
+      <tbody>
+        <tr><td><strong>The change is</strong></td><td>discrete and documented</td><td>statistical and undocumented</td></tr>
+        <tr><td><strong>You find out by</strong></td><td>reading the changelog</td><td>noticing your eval score moved three points</td></tr>
+        <tr><td><strong>What broke</strong></td><td>a named function returns something different</td><td>nothing in particular. Everything is slightly different</td></tr>
+        <tr><td><strong>Can it be enumerated?</strong></td><td>Yes &mdash; that's what a changelog is</td><td>No. It's a different function from text to text</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p>Slightly different phrasing. A slightly different rate of choosing tool A over tool B. There's no
+    line item explaining it because there's no line.</p>
+
+    <p class="pull">Point at a specific dated version, not a moving alias. Upgrade deliberately, as a
+    change with a date attached, and re-run your evals when you do.</p>
+
+    <p>The blueprint names this outright &mdash; <em>breaking behaviour changes across model
+    releases</em> &mdash; and it's on the exam because it's what bites people who assumed newer is a free
+    upgrade.</p>
+
+    <div class="note warn">
+      <span class="note-k">The failure it prevents, precisely</span>
+      <p style="margin-bottom:0">Without pinning: your model changed on a Tuesday, your prompt changed on
+      a Wednesday, your quality dropped on a Thursday, and there is genuinely no way to tell which one
+      did it. With pinning, one of those dates leaves the suspect list.</p>
+    </div>
+
+    <p class="exit"><b>Next.</b> The second of the five, and the one teams most often keep somewhere
+    convenient.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 5 · prompt + plugins ---------- -->
+<section class="screen" data-title="A prompt is source code. Plugins bring what they declare.">
+  <div class="wrap">
+    <span class="label">04 &middot; Prompts and packages</span>
+    <h2>A prompt is source code</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll have the two remaining moving parts under
+    the same discipline as your code.</p>
+
+    <p>Say it plainly, because a lot of teams don't act like it: the prompt is the part of your system
+    that most directly determines what it does. That makes it source code, and it gets treated like
+    source code. In version control. Reviewed before it changes. With a diff you can read and a date and
+    a name attached.</p>
+
+    <p>The common failure is a prompt living somewhere convenient and unversioned &mdash; a database
+    row, an admin panel, a config service &mdash; precisely so it can be tweaked quickly without a
+    deploy. Which works, right up until somebody says "it got worse sometime last month" and there's no
+    history to look at, no diff, and nobody quite remembers what they changed.</p>
+
+    <p class="pull">Convenient to edit and impossible to attribute are the same property described
+    twice.</p>
+
+    <h3>Plugins bring what they declare, and nothing else</h3>
+    <p>Back to Alex Morgan from Class 1, because this is the same lesson at a different altitude.</p>
+    <p>A plugin bundles skills, hooks, subagents and MCP servers into one installable thing. What it
+    does <em>not</em> bundle is anything the author was relying on but never listed: the deny rule that
+    made a hook safe on their machine, the environment variable set in their shell profile, the script
+    sitting one directory up.</p>
+    <p>Those things were part of the working system. They just weren't part of the package.</p>
+
+    <div class="note warn">
+      <span class="note-k">So it isn't a dependency that travels badly</span>
+      <p style="margin-bottom:0">It's one that doesn't travel <em>at all</em> &mdash; and worse, fails
+      <strong>silently</strong>, because the install succeeded and everything looks fine right up to the
+      exact step that needed it.</p>
+    </div>
+
+    <p>Declare what you depend on. Validate it at install time so a missing one announces itself
+    immediately. Test the install on a clean machine &mdash; not because clean-machine testing is
+    virtuous, but because it's the only test where your own assumptions aren't quietly holding the thing
+    up.</p>
+
+    <details>
+      <summary>Go deeper &mdash; the same logic runs upward</summary>
+      <p style="margin:.9rem 0 0">An organisation can deploy plugins centrally through managed settings,
+      and managed settings sit above user and project settings &mdash; so something deployed at that
+      level cannot be overridden locally. That's deliberate: it's how a company makes a control actually
+      hold rather than merely recommending it. Class 5 does the full hierarchy.</p>
+    </details>
+
+    <p class="exit"><b>Next.</b> What all that pinning actually bought you &mdash; which is not what
+    most people expect.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 6 · reproducible vs identical ---------- -->
+<section class="screen" data-title="Reproducible is not the same as identical">
+  <div class="wrap">
+    <span class="label">05 &middot; What it buys</span>
+    <h2>Reproducible is not the same as identical</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll know what pinning actually delivers, and
+    why people are disappointed when they expect the wrong thing.</p>
+
+    <p>Pin everything &mdash; model version, prompt, skills, settings, temperature &mdash; run the same
+    input twice, and you can still get two different answers. That's sampling. It isn't a bug and it
+    isn't a configuration failure. Class 6 covers why.</p>
+    <p>So what did all that pinning buy?</p>
+  </div>
+
+  <div class="wrap-wide">
+  <figure>
+    <svg viewBox="0 0 760 250" role="img" aria-label="With configuration pinned, repeated eval runs produce a stable band of scores with normal spread, so a genuine shift outside that band is visible as a change. Without pinning, variance and drift are mixed together and no shift can be separated from noise.">
+      <text x="14" y="24" font-family="var(--face-mono)" font-size="10" fill="var(--accent)" letter-spacing="1.3">PINNED</text>
+      <text x="406" y="24" font-family="var(--face-mono)" font-size="10" fill="var(--clay)" letter-spacing="1.3">NOT PINNED</text>
+
+      <rect x="14" y="52" width="340" height="60" fill="var(--accent-wash)" stroke="none"/>
+      <line x1="14" y1="82" x2="354" y2="82" stroke="var(--accent)" stroke-width="1.4" stroke-dasharray="4 4"/>
+      <g fill="var(--accent)">
+        <circle cx="50" cy="74" r="3.5"/><circle cx="98" cy="92" r="3.5"/><circle cx="146" cy="70" r="3.5"/>
+        <circle cx="194" cy="88" r="3.5"/><circle cx="242" cy="78" r="3.5"/><circle cx="290" cy="86" r="3.5"/>
+      </g>
+      <circle cx="330" cy="140" r="5" fill="var(--clay)"/>
+      <text x="14" y="132" font-family="var(--face-body)" font-size="11.5" fill="var(--ink-faint)">the normal band</text>
+      <text x="248" y="164" font-family="var(--face-body)" font-size="11.5" fill="var(--clay)">outside it &mdash; something changed</text>
+      <text x="14" y="196" font-family="var(--face-body)" font-size="12" fill="var(--ink-soft)">Short list of suspects. You can go and check them.</text>
+
+      <g fill="var(--clay)">
+        <circle cx="440" cy="64" r="3.5"/><circle cx="484" cy="112" r="3.5"/><circle cx="528" cy="72" r="3.5"/>
+        <circle cx="572" cy="134" r="3.5"/><circle cx="616" cy="86" r="3.5"/><circle cx="660" cy="120" r="3.5"/>
+        <circle cx="704" cy="70" r="3.5"/>
+      </g>
+      <text x="406" y="164" font-family="var(--face-body)" font-size="11.5" fill="var(--clay)">variance and drift, mixed</text>
+      <text x="406" y="196" font-family="var(--face-body)" font-size="12" fill="var(--ink-soft)">No band. Nothing is inside or outside anything.</text>
+      <line x1="380" y1="40" x2="380" y2="210" stroke="var(--rule)" stroke-width="1.2"/>
+      <text x="14" y="234" font-family="var(--face-body)" font-size="12.5" fill="var(--ink)">Same non-determinism on both sides. Only one of them lets you say anything about it.</text>
+    </svg>
+    <figcaption><b>Pinning does not remove the scatter; it gives the scatter a shape.</b> A change is
+    only detectable against a band you can measure, and you only get a band when everything else is
+    held still.</figcaption>
+  </figure>
+  </div>
+
+  <div class="wrap">
+    <p>With everything pinned, run your evals and you get a distribution &mdash; some spread, some
+    average. Run them next week and you get the spread again. If the average has moved outside that
+    spread, something real changed and you have a short list of what it could have been. If it hasn't,
+    that's just the day.</p>
+    <p>Without pinning, every measurement is a mixture of variance and drift and you can never separate
+    them. You end up arguing from anecdote &mdash; which is where the "we need a better model"
+    conversation from Class 2 comes from.</p>
+
+    <p class="pull">Configuration doesn't make the system deterministic. It makes the system
+    <em>attributable</em>. That's the thing worth having.</p>
+
+    <p class="exit"><b>Last screen.</b> The recap, and a scenario with three changes and one
+    complaint.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 7 · recap ---------- -->
+<section class="screen" data-title="Recap and the closing question">
+  <div class="wrap">
+    <span class="label">Recap</span>
+    <h2>What you're leaving with</h2>
+    <p class="lead">Configuration is not paperwork. It is the difference between a question you can
+    answer and a complaint you can only argue about.</p>
+
+    <ol>
+      <li><strong>Five moving parts, one in git.</strong> Model, prompt, skills and plugins, settings,
+      undeclared dependencies.</li>
+      <li><strong>Model changes are statistical and undocumented.</strong> Pin to a dated version and
+      re-run evals when you move.</li>
+      <li><strong>A prompt is source code</strong>, and unversioned convenience is unattributable by
+      construction.</li>
+      <li><strong>An undeclared dependency doesn't travel at all</strong>, and fails silently at the
+      exact step that needed it.</li>
+      <li><strong>Pinning buys attribution, not determinism.</strong> It gives the scatter a shape so a
+      shift becomes visible.</li>
+    </ol>
+
+    <div class="check">
+      <span class="note-k">Before Class 5</span>
+      <p>A team runs a support-triage agent. On the 3rd they upgraded to a newer model, expecting an
+      improvement. On the 5th somebody tightened two sentences in the system prompt to fix a complaint
+      about tone. On the 9th, a plugin they use for ticket lookup auto-updated.</p>
+      <p>On the 12th, someone notices misroutes are up by about a third. The prompt is in git. The model
+      is pointed at a moving alias. The plugin version isn't recorded anywhere.</p>
+      <p>Which can they investigate, and which are they guessing about? And &mdash; the one that matters
+      &mdash; suppose they'd pinned everything perfectly. What would they <em>still</em> need?</p>
+      <button class="btn" data-reveal="d1">Commit to an answer, then reveal</button>
+      <div class="answer" id="d1" hidden>
+        <p><strong>The prompt they can investigate.</strong> It's in git. Diff it, revert it, re-run.</p>
+        <p><strong>The model they cannot.</strong> A moving alias means they can't establish what ran on
+        the 3rd, or on the 12th, or whether it changed again on the 8th while nobody was looking. "The
+        upgrade on the 3rd" isn't even a well-defined event &mdash; which is strictly worse than not
+        upgrading, because now they don't know what they have.</p>
+        <p><strong>The plugin they cannot.</strong> No recorded version, so no way back to the one that
+        worked. One of three is answerable; two are permanent guesses. And the misroutes could be caused
+        by none of the three &mdash; a shift in what customers wrote that fortnight produces the same
+        graph.</p>
+        <p style="margin-bottom:0"><strong>What they'd still need: a baseline, and a definition.</strong>
+        Configuration tells you what changed. It cannot tell you whether the result got worse, because
+        "up by about a third" compares to a number nobody wrote down. And "misroute" has to be defined
+        tightly enough that two people counting the same tickets get the same figure, or the metric moves
+        when the counter's mood moves. That is what an eval is &mdash; <strong>configuration makes inputs
+        attributable; evals make outputs measurable</strong> &mdash; and either one alone leaves you
+        guessing.</p>
+      </div>
+    </div>
+
+    <p style="color:var(--ink-soft);font-size:var(--t-small)">Class 5 &mdash; <em>Signs, and
+    Interlocks</em>: Claude Code as a harness with a permission model, and the difference between a
+    convention and a guardrail.</p>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">Class 4 of 29</span>
+      <a class="btn btn-primary" href="CCDV-F_Class-05.html">Class 5: Signs, and Interlocks &rarr;</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<script>
+(function () {
+  var screens = [].slice.call(document.querySelectorAll('.screen'));
+  var toc = document.getElementById('toc');
+  var barEl = document.getElementById('bar');
+  var cNow = document.getElementById('cNow');
+  var cAll = document.getElementById('cAll');
+  var barTitle = document.getElementById('barTitle');
+  var drawer = document.getElementById('drawer');
+  var i = 0;
+
+  cAll.textContent = screens.length;
+
+  screens.forEach(function (s, n) {
+    var li = document.createElement('li');
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = s.dataset.title || ('Screen ' + (n + 1));
+    b.addEventListener('click', function () { go(n); closeDrawer(); });
+    li.appendChild(b);
+    toc.appendChild(li);
+  });
+  var tocBtns = [].slice.call(toc.querySelectorAll('button'));
+
+  function go(n, keepScroll) {
+    i = Math.max(0, Math.min(screens.length - 1, n));
+    screens.forEach(function (s, k) { s.classList.toggle('on', k === i); });
+    tocBtns.forEach(function (b, k) { b.setAttribute('aria-current', k === i ? 'true' : 'false'); });
+    cNow.textContent = i + 1;
+    barEl.style.width = ((i + 1) / screens.length * 100) + '%';
+    barTitle.textContent = screens[i].dataset.title || '';
+    if (!keepScroll) window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+    if (location.hash !== '#s' + (i + 1)) history.replaceState(null, '', '#s' + (i + 1));
+    document.querySelectorAll('[data-next]').forEach(function (b) { b.disabled = (i === screens.length - 1); });
+    document.querySelectorAll('[data-prev]').forEach(function (b) { b.disabled = (i === 0); });
+  }
+
+  document.addEventListener('click', function (e) {
+    var n = e.target.closest('[data-next]');
+    var p = e.target.closest('[data-prev]');
+    var r = e.target.closest('[data-reveal]');
+    if (n) go(i + 1);
+    if (p) go(i - 1);
+    if (r) {
+      var box = document.getElementById(r.dataset.reveal);
+      if (box) { box.hidden = false; r.disabled = true; box.setAttribute('tabindex', '-1'); box.focus(); }
+    }
+  });
+
+  function openDrawer() { drawer.setAttribute('open', ''); document.getElementById('main').setAttribute('inert', ''); tocBtns[i].focus(); }
+  function closeDrawer() { drawer.removeAttribute('open'); document.getElementById('main').removeAttribute('inert'); }
+  document.getElementById('tocBtn').addEventListener('click', openDrawer);
+  document.getElementById('tocClose').addEventListener('click', closeDrawer);
+  drawer.addEventListener('click', function (e) { if (e.target === drawer) closeDrawer(); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && drawer.hasAttribute('open')) return closeDrawer();
+    if (e.target.matches('input, textarea')) return;
+    if (e.key === 'ArrowRight') go(i + 1);
+    if (e.key === 'ArrowLeft') go(i - 1);
+  });
+
+  var start = parseInt((location.hash || '').replace('#s', ''), 10);
+  go(isNaN(start) ? 0 : start - 1, true);
+})();
+</script>
+</body>
+</html>

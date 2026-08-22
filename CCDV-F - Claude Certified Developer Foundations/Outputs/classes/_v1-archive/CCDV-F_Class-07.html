@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 7 — Two Dials, and When Each One Pays · CCDV-F</title>
+<meta name="description" content="CCDV-F Class 7: reasoning modes and prompting modes - thinking is tokens spent before the answer, examples are tokens spent showing the shape.">
+<meta name="author" content="Ram">
+<style>
+@layer engine, skin, utilities;
+
+/* ============================== SKIN: "Lecture Hall" ============================== */
+@layer skin {
+  :root {
+    color-scheme: light dark;
+
+    /* -- color primitives (oklch) -- */
+    --paper:        oklch(0.977 0.004 250);
+    --paper-sunk:   oklch(0.947 0.006 250);
+    --ink:          oklch(0.24 0.018 255);
+    --ink-soft:     oklch(0.46 0.016 255);
+    --ink-faint:    oklch(0.62 0.012 255);
+    --rule:         oklch(0.87 0.008 255);
+    --accent:       oklch(0.50 0.13 250);
+    --accent-lift:  oklch(0.62 0.14 250);
+    --clay:         oklch(0.58 0.10 45);
+    --flag:         oklch(0.56 0.12 145);
+
+    /* -- derived tints -- */
+    --accent-wash:  color-mix(in oklch, var(--accent) 8%, var(--paper));
+    --accent-edge:  color-mix(in oklch, var(--accent) 32%, var(--paper));
+    --clay-wash:    color-mix(in oklch, var(--clay) 10%, var(--paper));
+    --flag-wash:    color-mix(in oklch, var(--flag) 10%, var(--paper));
+
+    /* -- type -- */
+    --face-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --face-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                 Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
+    --face-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+    --t-body:  clamp(1.0rem, 0.94rem + 0.30vw, 1.125rem);
+    --t-small: clamp(0.83rem, 0.80rem + 0.14vw, 0.90rem);
+    --t-lead:  clamp(1.13rem, 1.03rem + 0.48vw, 1.32rem);
+    --t-h2:    clamp(1.55rem, 1.28rem + 1.35vw, 2.35rem);
+    --t-h3:    clamp(1.08rem, 1.00rem + 0.38vw, 1.24rem);
+    --t-hero:  clamp(2.0rem, 1.45rem + 2.7vw, 3.4rem);
+    --measure: 64ch;
+    --lh: 1.68;
+
+    /* -- shape + space -- */
+    --r: 3px;
+    --hair: 1px;
+    --gap: clamp(1.1rem, 0.9rem + 1vw, 1.9rem);
+
+    /* -- motion -- */
+    --dur: 180ms;
+    --ease: cubic-bezier(.2,.6,.3,1);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:      oklch(0.185 0.014 260);
+      --paper-sunk: oklch(0.225 0.016 260);
+      --ink:        oklch(0.93 0.008 255);
+      --ink-soft:   oklch(0.76 0.012 255);
+      --ink-faint:  oklch(0.60 0.012 255);
+      --rule:       oklch(0.34 0.014 258);
+      --accent:     oklch(0.76 0.12 250);
+      --accent-lift:oklch(0.84 0.11 250);
+      --clay:       oklch(0.74 0.10 48);
+      --flag:       oklch(0.74 0.12 152);
+      --accent-wash: color-mix(in oklch, var(--accent) 14%, var(--paper));
+      --accent-edge: color-mix(in oklch, var(--accent) 40%, var(--paper));
+      --clay-wash:   color-mix(in oklch, var(--clay) 16%, var(--paper));
+      --flag-wash:   color-mix(in oklch, var(--flag) 16%, var(--paper));
+    }
+  }
+}
+
+/* ============================== ENGINE ============================== */
+@layer engine {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--face-body);
+    font-size: var(--t-body);
+    line-height: var(--lh);
+    font-synthesis-weight: none;
+  }
+
+  /* ---- skip link ---- */
+  .skip {
+    position: absolute; left: -9999px; top: 0; z-index: 100;
+    background: var(--accent); color: var(--paper);
+    padding: .7rem 1.1rem; border-radius: var(--r);
+  }
+  .skip:focus { left: .6rem; top: .6rem; }
+
+  /* ---- top bar ---- */
+  .bar {
+    position: sticky; top: 0; z-index: 40;
+    background: color-mix(in oklch, var(--paper) 88%, transparent);
+    backdrop-filter: blur(9px);
+    border-bottom: var(--hair) solid var(--rule);
+  }
+  .bar-in {
+    max-width: 78rem; margin: 0 auto;
+    padding: .6rem clamp(.9rem, 3vw, 2rem);
+    display: flex; align-items: center; gap: 1rem;
+  }
+  .brand {
+    font-family: var(--face-mono);
+    font-size: .68rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--ink-faint); white-space: nowrap;
+  }
+  .brand b { color: var(--accent); font-weight: 600; }
+  .bar-title {
+    font-family: var(--face-display);
+    font-size: .95rem; color: var(--ink-soft);
+    margin-left: auto; text-align: right;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .counter {
+    font-family: var(--face-mono); font-size: .72rem;
+    color: var(--ink-faint); white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .progress { height: 2px; background: var(--rule); }
+  .progress span {
+    display: block; height: 100%; width: 0;
+    background: var(--accent);
+    transition: width var(--dur) var(--ease);
+  }
+
+  .btn {
+    font: inherit; font-size: var(--t-small);
+    color: var(--ink); background: transparent;
+    border: var(--hair) solid var(--rule); border-radius: var(--r);
+    padding: .5rem .85rem; cursor: pointer;
+    min-height: 44px; display: inline-flex; align-items: center; gap: .5rem;
+    transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+  .btn:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-wash); }
+  .btn:disabled { opacity: .38; cursor: not-allowed; }
+  .btn-primary { border-color: var(--accent-edge); background: var(--accent-wash); color: var(--accent); font-weight: 600; }
+
+  :focus-visible { outline: 2px solid var(--accent-lift); outline-offset: 3px; }
+
+  /* ---- drawer ---- */
+  .drawer {
+    position: fixed; inset: 0; z-index: 60;
+    background: color-mix(in oklch, var(--ink) 42%, transparent);
+    display: none; padding: clamp(.8rem, 4vw, 3rem);
+  }
+  .drawer[open] { display: grid; place-items: start center; }
+  .drawer-panel {
+    background: var(--paper); border: var(--hair) solid var(--rule);
+    border-radius: var(--r); max-width: 34rem; width: 100%;
+    padding: clamp(1rem, 3vw, 1.7rem); box-shadow: 0 18px 50px -20px color-mix(in oklch, var(--ink) 45%, transparent);
+  }
+  .drawer h2 { font-size: var(--t-h3); margin: 0 0 .9rem; font-family: var(--face-display); }
+  .toc { list-style: none; margin: 0; padding: 0; counter-reset: t; }
+  .toc li { counter-increment: t; }
+  .toc button {
+    width: 100%; text-align: left; font: inherit; font-size: var(--t-small);
+    background: none; border: 0; border-top: var(--hair) solid var(--rule);
+    padding: .72rem .2rem; color: var(--ink); cursor: pointer;
+    display: flex; gap: .8rem; align-items: baseline; min-height: 44px;
+  }
+  .toc button::before {
+    content: counter(t, decimal-leading-zero);
+    font-family: var(--face-mono); font-size: .7rem; color: var(--ink-faint);
+  }
+  .toc button:hover { color: var(--accent); }
+  .toc button[aria-current="true"] { color: var(--accent); font-weight: 600; }
+
+  /* ---- screens ---- */
+  main { max-width: 78rem; margin: 0 auto; padding: 0 clamp(.9rem, 3vw, 2rem); }
+  .screen { display: none; padding: clamp(1.8rem, 5vw, 3.6rem) 0 1rem; }
+  .screen.on { display: block; animation: rise var(--dur) var(--ease); }
+  @keyframes rise { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+
+  .wrap { max-width: var(--measure); margin-inline: auto; }
+  .wrap-wide { max-width: 52rem; margin-inline: auto; }
+
+  .label {
+    font-family: var(--face-mono); font-size: .68rem;
+    letter-spacing: .13em; text-transform: uppercase; color: var(--accent);
+    padding-bottom: .45rem; border-bottom: var(--hair) solid var(--accent-edge);
+    display: inline-block; margin-bottom: 1.1rem;
+  }
+
+  h1 { font-family: var(--face-display); font-size: var(--t-hero); line-height: 1.06;
+       margin: 0 0 1.1rem; font-weight: 600; letter-spacing: -.015em; }
+  h2 { font-family: var(--face-display); font-size: var(--t-h2); line-height: 1.14;
+       margin: 0 0 1.1rem; font-weight: 600; letter-spacing: -.01em; }
+  h3 { font-family: var(--face-body); font-size: var(--t-h3); margin: 2rem 0 .6rem; font-weight: 650; }
+  p { margin: 0 0 1.05em; }
+  .lead { font-size: var(--t-lead); color: var(--ink-soft); line-height: 1.5; }
+  strong { font-weight: 650; }
+  em { font-style: italic; }
+  code { font-family: var(--face-mono); font-size: .88em;
+         background: var(--paper-sunk); padding: .12em .38em; border-radius: 2px; }
+
+  .entry, .exit {
+    font-size: var(--t-small); color: var(--ink-soft);
+    border-left: 2px solid var(--accent-edge);
+    padding: .1rem 0 .1rem .95rem; margin: 0 0 1.6rem;
+  }
+  .exit { border-left-color: color-mix(in oklch, var(--clay) 45%, var(--paper)); margin: 2rem 0 0; }
+  .exit b, .entry b { color: var(--ink); font-weight: 600; }
+
+  .pull {
+    font-family: var(--face-display); font-size: var(--t-lead);
+    line-height: 1.4; color: var(--ink);
+    border-top: var(--hair) solid var(--rule);
+    border-bottom: var(--hair) solid var(--rule);
+    padding: 1.1rem 0; margin: 1.8rem 0;
+  }
+
+  .note {
+    background: var(--paper-sunk); border-radius: var(--r);
+    padding: 1rem 1.15rem; margin: 1.5rem 0; font-size: var(--t-small);
+  }
+  .note.warn { background: var(--clay-wash); }
+  .note.good { background: var(--flag-wash); }
+  .note p:last-child { margin-bottom: 0; }
+  .note-k {
+    font-family: var(--face-mono); font-size: .66rem; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--ink-faint); display: block; margin-bottom: .4rem;
+  }
+
+  figure { margin: 2rem 0; }
+  figure svg { display: block; width: 100%; height: auto; }
+  figcaption {
+    font-size: var(--t-small); color: var(--ink-soft);
+    margin-top: .8rem; padding-top: .7rem; border-top: var(--hair) solid var(--rule);
+  }
+
+  .tbl-scroll { overflow-x: auto; margin: 1.6rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: var(--t-small); }
+  th, td { text-align: left; padding: .68rem .8rem; border-bottom: var(--hair) solid var(--rule);
+           vertical-align: top; }
+  th { font-family: var(--face-mono); font-size: .68rem; letter-spacing: .08em;
+       text-transform: uppercase; color: var(--ink-faint); font-weight: 500; }
+  tbody tr:hover { background: var(--paper-sunk); }
+
+  details { border-top: var(--hair) solid var(--rule); padding: .8rem 0; margin: 1.4rem 0; }
+  summary { cursor: pointer; font-size: var(--t-small); color: var(--accent);
+            font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+  summary::marker { color: var(--ink-faint); }
+
+  /* ---- checkpoint ---- */
+  .check { border: var(--hair) solid var(--accent-edge); border-radius: var(--r);
+           padding: 1.2rem 1.3rem; margin: 2rem 0; background: var(--accent-wash); }
+  .check .note-k { color: var(--accent); }
+  .check p { margin-bottom: .9rem; }
+  .answer { margin-top: 1rem; padding-top: 1rem; border-top: var(--hair) solid var(--accent-edge);
+            font-size: var(--t-small); }
+  .answer[hidden] { display: none; }
+
+  ul, ol { margin: 0 0 1.05em; padding-left: 1.3em; }
+  li { margin-bottom: .45em; }
+
+  /* ---- foot nav ---- */
+  .foot {
+    max-width: var(--measure); margin: 2.8rem auto 0;
+    border-top: var(--hair) solid var(--rule); padding: 1.2rem 0 3rem;
+    display: flex; gap: .8rem; align-items: center; justify-content: space-between;
+  }
+  .hint { font-size: .72rem; color: var(--ink-faint); font-family: var(--face-mono); }
+
+  @media (max-width: 640px) {
+    .bar-title { display: none; }
+    .hint { display: none; }
+    .bar-in { gap: .5rem; padding-inline: .75rem; }
+    .btn { padding: .5rem .62rem; }
+    .counter { margin-left: auto; flex: 0 0 auto; }
+  }
+  @media (max-width: 480px) {
+    /* the course link + contents button + counter is all that fits; the brand
+       repeats what the page title already says, so it goes first */
+    .brand { display: none; }
+  }
+
+  /* ---- floor: motion / contrast / forced-colors ---- */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+  @media (prefers-contrast: more) {
+    :root { --rule: var(--ink-soft); --ink-soft: var(--ink); }
+  }
+  @media (forced-colors: active) {
+    .btn, .drawer-panel, .check, figure svg { border: 1px solid ButtonText; }
+    .label, .brand b { color: LinkText; }
+    .progress span { background: Highlight; }
+  }
+
+  /* ---- print: flatten every screen ---- */
+  @media print {
+    .bar, .foot, .drawer, .skip, .hint { display: none !important; }
+    .screen { display: block !important; page-break-after: always; padding: 0 0 1.5rem; }
+    .answer[hidden] { display: block !important; }
+    figure, .check, table { break-inside: avoid; }
+    body { background: #fff; color: #111; }
+  }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the class</a>
+
+<header class="bar">
+  <div class="bar-in">
+    <span class="brand">CCDV&#8209;F&nbsp;· <b>Class 07</b></span>
+    <a class="btn" id="courseLink" href="index.html">&#8598;&nbsp;Course</a>
+    <button class="btn" id="tocBtn" aria-haspopup="dialog">Contents</button>
+    <span class="bar-title" id="barTitle">Two Dials, and When Each One Pays</span>
+    <span class="counter"><span id="cNow">1</span>&#8202;/&#8202;<span id="cAll">10</span></span>
+  </div>
+  <div class="progress"><span id="bar"></span></div>
+</header>
+
+<div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="tocH">
+  <div class="drawer-panel">
+    <h2 id="tocH">Class 7 &mdash; contents</h2>
+    <ol class="toc" id="toc"></ol>
+    <p style="margin:1rem 0 0"><button class="btn" id="tocClose">Close</button></p>
+  </div>
+</div>
+
+<main id="main">
+<!-- ---------- 1 · cover ---------- -->
+<section class="screen on" data-title="The promise">
+  <div class="wrap">
+    <span class="label">Claude Certified Developer &middot; Foundations</span>
+    <h1>Two Dials, and When Each One Pays</h1>
+    <p class="lead">You can spend tokens <em>before</em> the answer, letting the model think. Or spend
+    them <em>inside</em> the prompt, showing it examples. Both cost the same currency, both are set
+    independently of which model you run, and both are wasted on the wrong kind of task.</p>
+
+    <div class="note">
+      <span class="note-k">What you leave holding</span>
+      <ol style="margin-bottom:0">
+        <li>Model choice and reasoning mode are separate decisions, set separately.</li>
+        <li>Thinking earns its cost where there is a search space, and is wasted on lookups.</li>
+        <li>Adaptive thinking with an effort setting replaced the fixed token budget.</li>
+        <li>Examples pin down a <em>shape</em> that description keeps missing.</li>
+        <li>Adding examples can let a cheaper model do the job &mdash; the levers interact.</li>
+      </ol>
+    </div>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Begin &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 2 · two levers ---------- -->
+<section class="screen" data-title="Two independent levers">
+  <div class="wrap">
+    <span class="label">01 &middot; Independence</span>
+    <h2>Which model, and whether it thinks, are different questions</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll stop treating "use a better model" and
+    "let it think" as the same move.</p>
+
+    <p>Choosing which model to run is one decision. Whether the model reasons before answering is a
+    <em>separate</em> decision, and you make it per call.</p>
+    <p>They compose, which means there are four positions rather than one slider.</p>
+  </div>
+
+  <div class="wrap-wide">
+  <figure>
+    <svg viewBox="0 0 760 270" role="img" aria-label="A two-by-two grid. Model capability runs along one axis and reasoning effort along the other. A capable model with reasoning off is fast and direct. A smaller model with reasoning on spends tokens to think. The most demanding tasks pair a capable model with higher effort. The two settings are independent, so all four positions are available.">
+      <line x1="120" y1="40" x2="120" y2="220" stroke="var(--rule)" stroke-width="1.3"/>
+      <line x1="120" y1="220" x2="720" y2="220" stroke="var(--rule)" stroke-width="1.3"/>
+      <text x="80" y="130" font-family="var(--face-mono)" font-size="10" fill="var(--ink-faint)" transform="rotate(-90 80 130)" text-anchor="middle">REASONING EFFORT</text>
+      <text x="420" y="252" font-family="var(--face-mono)" font-size="10" fill="var(--ink-faint)" text-anchor="middle">MODEL CAPABILITY</text>
+
+      <rect x="140" y="56" width="270" height="72" rx="3" fill="var(--paper-sunk)" stroke="var(--rule)" stroke-width="1.2"/>
+      <rect x="430" y="56" width="270" height="72" rx="3" fill="var(--accent-wash)" stroke="var(--accent)" stroke-width="1.5"/>
+      <rect x="140" y="142" width="270" height="72" rx="3" fill="var(--paper-sunk)" stroke="var(--rule)" stroke-width="1.2"/>
+      <rect x="430" y="142" width="270" height="72" rx="3" fill="var(--paper-sunk)" stroke="var(--rule)" stroke-width="1.2"/>
+
+      <g font-family="var(--face-body)" font-size="12.5" fill="var(--ink)">
+        <text x="156" y="82">smaller model, thinking on</text>
+        <text x="446" y="82">capable model, higher effort</text>
+        <text x="156" y="168">smaller model, thinking off</text>
+        <text x="446" y="168">capable model, thinking off</text>
+      </g>
+      <g font-family="var(--face-body)" font-size="11.5" fill="var(--ink-soft)">
+        <text x="156" y="104">spends tokens to reason its way</text>
+        <text x="156" y="120">through a task above its envelope</text>
+        <text x="446" y="104">the most demanding work</text>
+        <text x="446" y="120">&mdash; and the most expensive</text>
+        <text x="156" y="190">cheap and quick; fine for</text>
+        <text x="156" y="206">classification and lookups</text>
+        <text x="446" y="190">fast and direct &mdash; capability</text>
+        <text x="446" y="206">without the thinking bill</text>
+      </g>
+    </svg>
+    <figcaption><b>Four positions, not one slider.</b> Reaching for a bigger model when the task needed
+    thinking &mdash; or thinking when the task needed a bigger model &mdash; spends money on the wrong
+    axis.</figcaption>
+  </figure>
+  </div>
+
+  <div class="wrap">
+    <p class="exit"><b>Next.</b> How reasoning is actually configured now, which is not how it used to
+    be.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 3 · adaptive thinking ---------- -->
+<section class="screen" data-title="Adaptive thinking and effort">
+  <div class="wrap">
+    <span class="label">02 &middot; Reasoning</span>
+    <h2>Adaptive thinking, and the dial that replaced the budget</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll know what to set, what is deprecated, and
+    where thinking is simply wasted money.</p>
+
+    <p>On current models the reasoning mode is <strong>adaptive thinking</strong>: the model decides
+    when and how much to think, and you tune the depth with an <strong>effort setting</strong> rather
+    than a fixed token budget.</p>
+
+    <div class="note warn">
+      <span class="note-k">Two things that changed</span>
+      <p>The older <code>budget_tokens</code> control is <strong>deprecated</strong>, and on the newest
+      model generations it returns a <strong>400</strong>.</p>
+      <p style="margin-bottom:0">Thinking content is <strong>omitted from responses by default</strong>
+      on the newest models. If you need to show it, request summarised display.</p>
+    </div>
+
+    <p>And per-model defaults differ &mdash; some of the newest models think adaptively by default, or
+    always. So "does this model think unless I tell it to?" is a question with a per-model answer, worth
+    confirming rather than assuming.</p>
+
+    <h3>Where thinking earns its cost</h3>
+    <p>Reasoning pays on <strong>hard, multi-step problems</strong>. It is wasted on lookups and
+    classification.</p>
+    <p>That's worth having as a test rather than a slogan. Ask whether the task has a
+    <em>search space</em> &mdash; several candidate approaches, where working through one and rejecting
+    it changes the answer. Debugging has that. Planning a multi-file refactor has it. Deciding which of
+    six categories a support ticket belongs to does not: there is nothing to explore, only something to
+    recognise, and paying for deliberation buys you a slower version of the same label.</p>
+
+    <p class="pull">Thinking is tokens spent before the answer. If working through the problem wouldn't
+    change the answer, you're buying nothing.</p>
+
+    <p class="exit"><b>Next.</b> The other dial &mdash; tokens spent inside the prompt instead of before
+    the answer.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 4 · shots ---------- -->
+<section class="screen" data-title="Zero, one and multi-shot">
+  <div class="wrap">
+    <span class="label">03 &middot; Examples</span>
+    <h2>Zero-shot, one-shot, multi-shot</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll know what an example does that a paragraph
+    of instructions can't.</p>
+
+    <p>Separate from <em>how you word</em> a prompt is <em>how many worked examples</em> you put inside
+    it.</p>
+    <ul>
+      <li><strong>Zero-shot</strong> &mdash; the instruction and no examples. Describe the task, ask for
+      the result.</li>
+      <li><strong>One-shot</strong> &mdash; one example of the input paired with the desired output.</li>
+      <li><strong>Multi-shot</strong> (or few-shot) &mdash; several such pairs.</li>
+    </ul>
+
+    <div class="note">
+      <span class="note-k">Worth being precise about</span>
+      <p style="margin-bottom:0">The examples are <strong>not training data</strong>. Nothing is being
+      learned or retained. They sit in the prompt, on the board, and they show the model the exact shape
+      of the answer you want &mdash; which a description alone often fails to pin down.</p>
+    </div>
+
+    <p>That's the real distinction. A description tells the model what you want <em>about</em> the
+    answer. An example <em>is</em> the answer, and shape is much easier to copy than to infer. Casing,
+    field order, how an edge case gets rendered, whether an empty list is <code>[]</code> or omitted
+    &mdash; a paragraph keeps missing those; one correct example settles them all at once.</p>
+
+    <h3>The trade</h3>
+    <p>Every example costs tokens on <em>every call</em>, and consumes context budget. So this is the
+    same trade as thinking, spent at a different moment.</p>
+    <p>Reach for zero-shot when the task is simple and the output shape is obvious. Move to one- or
+    multi-shot when the output has a specific structure, casing or edge case that a description keeps
+    missing. One or two correct examples usually fix that faster than another paragraph of
+    instructions.</p>
+
+    <p class="pull">Add the smallest amount of prompt that produces a reliable result.</p>
+
+    <p class="exit"><b>Next.</b> The two dials interact &mdash; and the interaction is where the money
+    is.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 5 · interaction + recap ---------- -->
+<section class="screen" data-title="Recap and the closing question">
+  <div class="wrap">
+    <span class="label">04 &middot; Interaction, and recap</span>
+    <h2>The levers interact</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll have the joint decision rather than three
+    separate ones.</p>
+
+    <p>A more capable model often succeeds zero-shot on a task where a smaller model needs a few
+    examples to match the structure.</p>
+    <p>Which means examples are not only a quality lever. <strong>Adding examples can let a cheaper
+    model do the job</strong> &mdash; you are trading a permanent per-call token cost against a
+    permanent per-token price difference, and which way that lands depends on your volume and your
+    prompt length.</p>
+
+    <p class="pull">Try the simplest model and the fewest examples that meet your eval. Add capability
+    or examples only where the eval says you need them.</p>
+
+    <p>Notice what that sentence rests on. "Where the eval says" is doing the work &mdash; without a
+    measurement, every one of these decisions is somebody's impression. Class 26 builds the eval; this
+    class just tells you which dial to reach for once you have one.</p>
+
+    <h3>Recap</h3>
+    <ol>
+      <li><strong>Model choice and reasoning mode are independent</strong>, set separately, giving four
+      positions.</li>
+      <li><strong>Adaptive thinking plus an effort setting.</strong> <code>budget_tokens</code> is
+      deprecated and 400s on the newest models; thinking content is omitted by default.</li>
+      <li><strong>Thinking pays where there is a search space</strong>, and is wasted on
+      classification.</li>
+      <li><strong>Examples pin down shape</strong>, cost tokens on every call, and are not training
+      data.</li>
+      <li><strong>Examples can substitute for capability</strong>, so the two decisions are made
+      together.</li>
+    </ol>
+
+    <div class="check">
+      <span class="note-k">Before Class 8</span>
+      <p>A team runs a support-ticket classifier over six fixed categories, at high volume. Quality is
+      acceptable but the bill is uncomfortable. Somebody proposes turning on a higher reasoning effort so
+      the model "thinks more carefully about the ambiguous ones."</p>
+      <p>What's wrong with that, and what would you try instead?</p>
+      <button class="btn" data-reveal="g1">Commit to an answer, then reveal</button>
+      <div class="answer" id="g1" hidden>
+        <p><strong>It's the wrong dial, and it moves the bill the wrong way.</strong> Classification into
+        six fixed categories has no search space &mdash; there is nothing to work through, only something
+        to recognise. Deliberation buys a slower, more expensive version of the same label. And the
+        proposal was made to fix cost, while raising effort raises cost.</p>
+        <p style="margin-bottom:0"><strong>Try the opposite corner.</strong> Drop to a cheaper model with
+        thinking off, and spend a few tokens on <em>examples</em> instead &mdash; particularly worked
+        examples of the ambiguous cases that are actually causing the misses. That's the interaction from
+        this screen: examples buying back the capability you gave up. Then let the eval say whether the
+        quality drop is acceptable, rather than anyone's impression.</p>
+      </div>
+    </div>
+
+    <p style="color:var(--ink-soft);font-size:var(--t-small)">Class 8 &mdash; choosing a model:
+    capability, latency and cost as one budget with three names.</p>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">Class 7 of 29</span>
+      <a class="btn btn-primary" href="CCDV-F_Class-08.html">Class 8: There Is No Best Model &rarr;</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<script>
+(function () {
+  var screens = [].slice.call(document.querySelectorAll('.screen'));
+  var toc = document.getElementById('toc');
+  var barEl = document.getElementById('bar');
+  var cNow = document.getElementById('cNow');
+  var cAll = document.getElementById('cAll');
+  var barTitle = document.getElementById('barTitle');
+  var drawer = document.getElementById('drawer');
+  var i = 0;
+
+  cAll.textContent = screens.length;
+
+  screens.forEach(function (s, n) {
+    var li = document.createElement('li');
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = s.dataset.title || ('Screen ' + (n + 1));
+    b.addEventListener('click', function () { go(n); closeDrawer(); });
+    li.appendChild(b);
+    toc.appendChild(li);
+  });
+  var tocBtns = [].slice.call(toc.querySelectorAll('button'));
+
+  function go(n, keepScroll) {
+    i = Math.max(0, Math.min(screens.length - 1, n));
+    screens.forEach(function (s, k) { s.classList.toggle('on', k === i); });
+    tocBtns.forEach(function (b, k) { b.setAttribute('aria-current', k === i ? 'true' : 'false'); });
+    cNow.textContent = i + 1;
+    barEl.style.width = ((i + 1) / screens.length * 100) + '%';
+    barTitle.textContent = screens[i].dataset.title || '';
+    if (!keepScroll) window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+    if (location.hash !== '#s' + (i + 1)) history.replaceState(null, '', '#s' + (i + 1));
+    document.querySelectorAll('[data-next]').forEach(function (b) { b.disabled = (i === screens.length - 1); });
+    document.querySelectorAll('[data-prev]').forEach(function (b) { b.disabled = (i === 0); });
+  }
+
+  document.addEventListener('click', function (e) {
+    var n = e.target.closest('[data-next]');
+    var p = e.target.closest('[data-prev]');
+    var r = e.target.closest('[data-reveal]');
+    if (n) go(i + 1);
+    if (p) go(i - 1);
+    if (r) {
+      var box = document.getElementById(r.dataset.reveal);
+      if (box) { box.hidden = false; r.disabled = true; box.setAttribute('tabindex', '-1'); box.focus(); }
+    }
+  });
+
+  function openDrawer() { drawer.setAttribute('open', ''); document.getElementById('main').setAttribute('inert', ''); tocBtns[i].focus(); }
+  function closeDrawer() { drawer.removeAttribute('open'); document.getElementById('main').removeAttribute('inert'); }
+  document.getElementById('tocBtn').addEventListener('click', openDrawer);
+  document.getElementById('tocClose').addEventListener('click', closeDrawer);
+  drawer.addEventListener('click', function (e) { if (e.target === drawer) closeDrawer(); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && drawer.hasAttribute('open')) return closeDrawer();
+    if (e.target.matches('input, textarea')) return;
+    if (e.key === 'ArrowRight') go(i + 1);
+    if (e.key === 'ArrowLeft') go(i - 1);
+  });
+
+  var start = parseInt((location.hash || '').replace('#s', ''), 10);
+  go(isNaN(start) ? 0 : start - 1, true);
+})();
+</script>
+</body>
+</html>

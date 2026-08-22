@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 1 — You Can't Reach Through a Telephone · CCDV-F</title>
+<meta name="description" content="Claude Certified Developer Foundations, Class 1: why the model is never in the room, and what follows from it about where instructions live and what each surface can touch.">
+<meta name="author" content="Ram">
+<style>
+@layer engine, skin, utilities;
+
+/* ============================== SKIN: "Lecture Hall" ============================== */
+@layer skin {
+  :root {
+    color-scheme: light dark;
+
+    /* -- color primitives (oklch) -- */
+    --paper:        oklch(0.977 0.004 250);
+    --paper-sunk:   oklch(0.947 0.006 250);
+    --ink:          oklch(0.24 0.018 255);
+    --ink-soft:     oklch(0.46 0.016 255);
+    --ink-faint:    oklch(0.62 0.012 255);
+    --rule:         oklch(0.87 0.008 255);
+    --accent:       oklch(0.50 0.13 250);
+    --accent-lift:  oklch(0.62 0.14 250);
+    --clay:         oklch(0.58 0.10 45);
+    --flag:         oklch(0.56 0.12 145);
+
+    /* -- derived tints -- */
+    --accent-wash:  color-mix(in oklch, var(--accent) 8%, var(--paper));
+    --accent-edge:  color-mix(in oklch, var(--accent) 32%, var(--paper));
+    --clay-wash:    color-mix(in oklch, var(--clay) 10%, var(--paper));
+    --flag-wash:    color-mix(in oklch, var(--flag) 10%, var(--paper));
+
+    /* -- type -- */
+    --face-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --face-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                 Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
+    --face-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+    --t-body:  clamp(1.0rem, 0.94rem + 0.30vw, 1.125rem);
+    --t-small: clamp(0.83rem, 0.80rem + 0.14vw, 0.90rem);
+    --t-lead:  clamp(1.13rem, 1.03rem + 0.48vw, 1.32rem);
+    --t-h2:    clamp(1.55rem, 1.28rem + 1.35vw, 2.35rem);
+    --t-h3:    clamp(1.08rem, 1.00rem + 0.38vw, 1.24rem);
+    --t-hero:  clamp(2.0rem, 1.45rem + 2.7vw, 3.4rem);
+    --measure: 64ch;
+    --lh: 1.68;
+
+    /* -- shape + space -- */
+    --r: 3px;
+    --hair: 1px;
+    --gap: clamp(1.1rem, 0.9rem + 1vw, 1.9rem);
+
+    /* -- motion -- */
+    --dur: 180ms;
+    --ease: cubic-bezier(.2,.6,.3,1);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:      oklch(0.185 0.014 260);
+      --paper-sunk: oklch(0.225 0.016 260);
+      --ink:        oklch(0.93 0.008 255);
+      --ink-soft:   oklch(0.76 0.012 255);
+      --ink-faint:  oklch(0.60 0.012 255);
+      --rule:       oklch(0.34 0.014 258);
+      --accent:     oklch(0.76 0.12 250);
+      --accent-lift:oklch(0.84 0.11 250);
+      --clay:       oklch(0.74 0.10 48);
+      --flag:       oklch(0.74 0.12 152);
+      --accent-wash: color-mix(in oklch, var(--accent) 14%, var(--paper));
+      --accent-edge: color-mix(in oklch, var(--accent) 40%, var(--paper));
+      --clay-wash:   color-mix(in oklch, var(--clay) 16%, var(--paper));
+      --flag-wash:   color-mix(in oklch, var(--flag) 16%, var(--paper));
+    }
+  }
+}
+
+/* ============================== ENGINE ============================== */
+@layer engine {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--face-body);
+    font-size: var(--t-body);
+    line-height: var(--lh);
+    font-synthesis-weight: none;
+  }
+
+  /* ---- skip link ---- */
+  .skip {
+    position: absolute; left: -9999px; top: 0; z-index: 100;
+    background: var(--accent); color: var(--paper);
+    padding: .7rem 1.1rem; border-radius: var(--r);
+  }
+  .skip:focus { left: .6rem; top: .6rem; }
+
+  /* ---- top bar ---- */
+  .bar {
+    position: sticky; top: 0; z-index: 40;
+    background: color-mix(in oklch, var(--paper) 88%, transparent);
+    backdrop-filter: blur(9px);
+    border-bottom: var(--hair) solid var(--rule);
+  }
+  .bar-in {
+    max-width: 78rem; margin: 0 auto;
+    padding: .6rem clamp(.9rem, 3vw, 2rem);
+    display: flex; align-items: center; gap: 1rem;
+  }
+  .brand {
+    font-family: var(--face-mono);
+    font-size: .68rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--ink-faint); white-space: nowrap;
+  }
+  .brand b { color: var(--accent); font-weight: 600; }
+  .bar-title {
+    font-family: var(--face-display);
+    font-size: .95rem; color: var(--ink-soft);
+    margin-left: auto; text-align: right;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .counter {
+    font-family: var(--face-mono); font-size: .72rem;
+    color: var(--ink-faint); white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .progress { height: 2px; background: var(--rule); }
+  .progress span {
+    display: block; height: 100%; width: 0;
+    background: var(--accent);
+    transition: width var(--dur) var(--ease);
+  }
+
+  .btn {
+    font: inherit; font-size: var(--t-small);
+    color: var(--ink); background: transparent;
+    border: var(--hair) solid var(--rule); border-radius: var(--r);
+    padding: .5rem .85rem; cursor: pointer;
+    min-height: 44px; display: inline-flex; align-items: center; gap: .5rem;
+    transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+  .btn:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-wash); }
+  .btn:disabled { opacity: .38; cursor: not-allowed; }
+  .btn-primary { border-color: var(--accent-edge); background: var(--accent-wash); color: var(--accent); font-weight: 600; }
+
+  :focus-visible { outline: 2px solid var(--accent-lift); outline-offset: 3px; }
+
+  /* ---- drawer ---- */
+  .drawer {
+    position: fixed; inset: 0; z-index: 60;
+    background: color-mix(in oklch, var(--ink) 42%, transparent);
+    display: none; padding: clamp(.8rem, 4vw, 3rem);
+  }
+  .drawer[open] { display: grid; place-items: start center; }
+  .drawer-panel {
+    background: var(--paper); border: var(--hair) solid var(--rule);
+    border-radius: var(--r); max-width: 34rem; width: 100%;
+    padding: clamp(1rem, 3vw, 1.7rem); box-shadow: 0 18px 50px -20px color-mix(in oklch, var(--ink) 45%, transparent);
+  }
+  .drawer h2 { font-size: var(--t-h3); margin: 0 0 .9rem; font-family: var(--face-display); }
+  .toc { list-style: none; margin: 0; padding: 0; counter-reset: t; }
+  .toc li { counter-increment: t; }
+  .toc button {
+    width: 100%; text-align: left; font: inherit; font-size: var(--t-small);
+    background: none; border: 0; border-top: var(--hair) solid var(--rule);
+    padding: .72rem .2rem; color: var(--ink); cursor: pointer;
+    display: flex; gap: .8rem; align-items: baseline; min-height: 44px;
+  }
+  .toc button::before {
+    content: counter(t, decimal-leading-zero);
+    font-family: var(--face-mono); font-size: .7rem; color: var(--ink-faint);
+  }
+  .toc button:hover { color: var(--accent); }
+  .toc button[aria-current="true"] { color: var(--accent); font-weight: 600; }
+
+  /* ---- screens ---- */
+  main { max-width: 78rem; margin: 0 auto; padding: 0 clamp(.9rem, 3vw, 2rem); }
+  .screen { display: none; padding: clamp(1.8rem, 5vw, 3.6rem) 0 1rem; }
+  .screen.on { display: block; animation: rise var(--dur) var(--ease); }
+  @keyframes rise { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+
+  .wrap { max-width: var(--measure); margin-inline: auto; }
+  .wrap-wide { max-width: 52rem; margin-inline: auto; }
+
+  .label {
+    font-family: var(--face-mono); font-size: .68rem;
+    letter-spacing: .13em; text-transform: uppercase; color: var(--accent);
+    padding-bottom: .45rem; border-bottom: var(--hair) solid var(--accent-edge);
+    display: inline-block; margin-bottom: 1.1rem;
+  }
+
+  h1 { font-family: var(--face-display); font-size: var(--t-hero); line-height: 1.06;
+       margin: 0 0 1.1rem; font-weight: 600; letter-spacing: -.015em; }
+  h2 { font-family: var(--face-display); font-size: var(--t-h2); line-height: 1.14;
+       margin: 0 0 1.1rem; font-weight: 600; letter-spacing: -.01em; }
+  h3 { font-family: var(--face-body); font-size: var(--t-h3); margin: 2rem 0 .6rem; font-weight: 650; }
+  p { margin: 0 0 1.05em; }
+  .lead { font-size: var(--t-lead); color: var(--ink-soft); line-height: 1.5; }
+  strong { font-weight: 650; }
+  em { font-style: italic; }
+  code { font-family: var(--face-mono); font-size: .88em;
+         background: var(--paper-sunk); padding: .12em .38em; border-radius: 2px; }
+
+  .entry, .exit {
+    font-size: var(--t-small); color: var(--ink-soft);
+    border-left: 2px solid var(--accent-edge);
+    padding: .1rem 0 .1rem .95rem; margin: 0 0 1.6rem;
+  }
+  .exit { border-left-color: color-mix(in oklch, var(--clay) 45%, var(--paper)); margin: 2rem 0 0; }
+  .exit b, .entry b { color: var(--ink); font-weight: 600; }
+
+  .pull {
+    font-family: var(--face-display); font-size: var(--t-lead);
+    line-height: 1.4; color: var(--ink);
+    border-top: var(--hair) solid var(--rule);
+    border-bottom: var(--hair) solid var(--rule);
+    padding: 1.1rem 0; margin: 1.8rem 0;
+  }
+
+  .note {
+    background: var(--paper-sunk); border-radius: var(--r);
+    padding: 1rem 1.15rem; margin: 1.5rem 0; font-size: var(--t-small);
+  }
+  .note.warn { background: var(--clay-wash); }
+  .note.good { background: var(--flag-wash); }
+  .note p:last-child { margin-bottom: 0; }
+  .note-k {
+    font-family: var(--face-mono); font-size: .66rem; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--ink-faint); display: block; margin-bottom: .4rem;
+  }
+
+  figure { margin: 2rem 0; }
+  figure svg { display: block; width: 100%; height: auto; }
+  figcaption {
+    font-size: var(--t-small); color: var(--ink-soft);
+    margin-top: .8rem; padding-top: .7rem; border-top: var(--hair) solid var(--rule);
+  }
+
+  .tbl-scroll { overflow-x: auto; margin: 1.6rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: var(--t-small); }
+  th, td { text-align: left; padding: .68rem .8rem; border-bottom: var(--hair) solid var(--rule);
+           vertical-align: top; }
+  th { font-family: var(--face-mono); font-size: .68rem; letter-spacing: .08em;
+       text-transform: uppercase; color: var(--ink-faint); font-weight: 500; }
+  tbody tr:hover { background: var(--paper-sunk); }
+
+  details { border-top: var(--hair) solid var(--rule); padding: .8rem 0; margin: 1.4rem 0; }
+  summary { cursor: pointer; font-size: var(--t-small); color: var(--accent);
+            font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+  summary::marker { color: var(--ink-faint); }
+
+  /* ---- checkpoint ---- */
+  .check { border: var(--hair) solid var(--accent-edge); border-radius: var(--r);
+           padding: 1.2rem 1.3rem; margin: 2rem 0; background: var(--accent-wash); }
+  .check .note-k { color: var(--accent); }
+  .check p { margin-bottom: .9rem; }
+  .answer { margin-top: 1rem; padding-top: 1rem; border-top: var(--hair) solid var(--accent-edge);
+            font-size: var(--t-small); }
+  .answer[hidden] { display: none; }
+
+  ul, ol { margin: 0 0 1.05em; padding-left: 1.3em; }
+  li { margin-bottom: .45em; }
+
+  /* ---- foot nav ---- */
+  .foot {
+    max-width: var(--measure); margin: 2.8rem auto 0;
+    border-top: var(--hair) solid var(--rule); padding: 1.2rem 0 3rem;
+    display: flex; gap: .8rem; align-items: center; justify-content: space-between;
+  }
+  .hint { font-size: .72rem; color: var(--ink-faint); font-family: var(--face-mono); }
+
+  @media (max-width: 640px) {
+    .bar-title { display: none; }
+    .hint { display: none; }
+    .bar-in { gap: .5rem; padding-inline: .75rem; }
+    .btn { padding: .5rem .62rem; }
+    .counter { margin-left: auto; flex: 0 0 auto; }
+  }
+  @media (max-width: 480px) {
+    /* the course link + contents button + counter is all that fits; the brand
+       repeats what the page title already says, so it goes first */
+    .brand { display: none; }
+  }
+
+  /* ---- floor: motion / contrast / forced-colors ---- */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+  @media (prefers-contrast: more) {
+    :root { --rule: var(--ink-soft); --ink-soft: var(--ink); }
+  }
+  @media (forced-colors: active) {
+    .btn, .drawer-panel, .check, figure svg { border: 1px solid ButtonText; }
+    .label, .brand b { color: LinkText; }
+    .progress span { background: Highlight; }
+  }
+
+  /* ---- print: flatten every screen ---- */
+  @media print {
+    .bar, .foot, .drawer, .skip, .hint { display: none !important; }
+    .screen { display: block !important; page-break-after: always; padding: 0 0 1.5rem; }
+    .answer[hidden] { display: block !important; }
+    figure, .check, table { break-inside: avoid; }
+    body { background: #fff; color: #111; }
+  }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the class</a>
+
+<header class="bar">
+  <div class="bar-in">
+    <span class="brand">CCDV&#8209;F&nbsp;· <b>Class 01</b></span>
+    <a class="btn" id="courseLink" href="index.html">&#8598;&nbsp;Course</a>
+    <button class="btn" id="tocBtn" aria-haspopup="dialog">Contents</button>
+    <span class="bar-title" id="barTitle">You Can't Reach Through a Telephone</span>
+    <span class="counter"><span id="cNow">1</span>&#8202;/&#8202;<span id="cAll">10</span></span>
+  </div>
+  <div class="progress"><span id="bar"></span></div>
+</header>
+
+<div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="tocH">
+  <div class="drawer-panel">
+    <h2 id="tocH">Class 1 &mdash; contents</h2>
+    <ol class="toc" id="toc"></ol>
+    <p style="margin:1rem 0 0"><button class="btn" id="tocClose">Close</button></p>
+  </div>
+</div>
+
+<main id="main">
+<!-- ==== SCREENS ==== -->
+
+<!-- ---------- 1 · cover ---------- -->
+<section class="screen on" data-title="The promise">
+  <div class="wrap">
+    <span class="label">Claude Certified Developer &middot; Foundations</span>
+    <h1>You Can't Reach Through a Telephone</h1>
+    <p class="lead">One physical fact about where this thing runs. Everything else in the class is
+    derived from it &mdash; where instructions live, how they get loaded, what each surface can touch,
+    and why a plugin that works perfectly on your laptop dies on everybody else's.</p>
+
+    <div class="note">
+      <span class="note-k">What you leave holding</span>
+      <ol style="margin-bottom:0">
+        <li>The model is never in the room. It can only ask; something else has hands.</li>
+        <li>The board is finite and gets rewritten every turn, so every instruction is rent.</li>
+        <li>Loading is a prediction, not a lookup &mdash; which is why the description does all the work.</li>
+        <li>Four surfaces, one variable: whose hands.</li>
+        <li>Directions are not the thing. A path gets resolved later, somewhere else.</li>
+      </ol>
+    </div>
+
+    <p style="color:var(--ink-soft);font-size:var(--t-small)">Ten screens. Use the arrow keys, or the
+    buttons at the foot of each screen.</p>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Begin &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 2 · the wire ---------- -->
+<section class="screen" data-title="Where the thing you're talking to actually is">
+  <div class="wrap">
+    <span class="label">01 &middot; The wire</span>
+    <h2>Where is the thing you're talking to?</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll be able to say exactly what happened when
+    Claude Code edited a file on your disk &mdash; and it isn't what it looks like.</p>
+
+    <p>Not in the room with you.</p>
+
+    <p>Claude runs on machines in Anthropic's data centre. Not on your laptop, not on your server, not
+    anywhere you can point at. When your program uses Claude, here is the whole of what physically
+    happens: some text goes out over the internet, and some text comes back. Out, and back. There is
+    no other part to it.</p>
+
+    <p>Now you're going to object, and it's a good objection, because everybody makes it. You've sat
+    and watched Claude Code work in your terminal. It opened your files. It changed them. It ran your
+    tests and read the output. You watched it happen with your own eyes. So it must be on your
+    machine.</p>
+
+    <p>It isn't. And what really happened is more interesting than what you thought happened.</p>
+  </div>
+
+  <div class="wrap-wide">
+  <figure>
+    <svg viewBox="0 0 760 300" role="img" aria-label="Your machine holds the harness, which is the only component with hands: it reads and writes your files. Anthropic's data centre holds the model, which has no hands at all. Between them travels only text, outbound and inbound.">
+      <g fill="none" stroke="var(--rule)" stroke-width="1.5">
+        <rect x="14" y="40" width="300" height="220" rx="3"/>
+        <rect x="446" y="40" width="300" height="220" rx="3"/>
+      </g>
+      <text x="24" y="30" font-family="var(--face-mono)" font-size="11" fill="var(--ink-faint)" letter-spacing="1.4">YOUR MACHINE</text>
+      <text x="456" y="30" font-family="var(--face-mono)" font-size="11" fill="var(--ink-faint)" letter-spacing="1.4">ANTHROPIC'S DATA CENTRE</text>
+
+      <g fill="none" stroke="var(--accent)" stroke-width="1.5">
+        <rect x="44" y="76" width="240" height="62" rx="3"/>
+      </g>
+      <text x="60" y="103" font-family="var(--face-body)" font-size="15" fill="var(--ink)" font-weight="650">the harness</text>
+      <text x="60" y="124" font-family="var(--face-body)" font-size="12.5" fill="var(--accent)">has hands</text>
+
+      <g fill="none" stroke="var(--rule)" stroke-width="1.5" stroke-dasharray="4 4">
+        <rect x="44" y="164" width="240" height="62" rx="3"/>
+      </g>
+      <text x="60" y="191" font-family="var(--face-body)" font-size="15" fill="var(--ink-soft)">your files, your tools</text>
+      <text x="60" y="212" font-family="var(--face-body)" font-size="12.5" fill="var(--ink-faint)">reached by the harness, never by Claude</text>
+      <path d="M164 138 L164 164" stroke="var(--accent)" stroke-width="1.5" fill="none"/>
+
+      <g fill="none" stroke="var(--rule)" stroke-width="1.5">
+        <rect x="476" y="120" width="240" height="62" rx="3"/>
+      </g>
+      <text x="492" y="147" font-family="var(--face-body)" font-size="15" fill="var(--ink)" font-weight="650">the model</text>
+      <text x="492" y="168" font-family="var(--face-body)" font-size="12.5" fill="var(--clay)">no hands at all</text>
+
+      <path d="M314 122 L440 122" stroke="var(--ink-faint)" stroke-width="1.5" marker-end="url(#ar)"/>
+      <path d="M446 176 L320 176" stroke="var(--ink-faint)" stroke-width="1.5" marker-end="url(#ar)"/>
+      <text x="330" y="112" font-family="var(--face-mono)" font-size="11" fill="var(--ink-faint)">text out</text>
+      <text x="330" y="196" font-family="var(--face-mono)" font-size="11" fill="var(--ink-faint)">text back</text>
+
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 z" fill="var(--ink-faint)"/>
+        </marker>
+      </defs>
+    </svg>
+    <figcaption><b>The model has no hands on any surface.</b> Only text crosses the wire, in both
+    directions &mdash; so every change to your disk was made by a program on your own machine, acting
+    on a request.</figcaption>
+  </figure>
+  </div>
+
+  <div class="wrap">
+    <p>There's a small program running on your laptop &mdash; the thing you started when you typed
+    <code>claude</code>. Call it the <strong>harness</strong>, which is what everyone calls it. That
+    little program is the one on the phone, and it's the one with hands.</p>
+
+    <p>Claude sends back a piece of text that says, more or less, <em>"I'd like to open the file at
+    <code>src/main.py</code>."</em> Now look carefully at what that is. It isn't an action. It's a
+    sentence. It's a request, written down, and it arrives the same way every other piece of text
+    arrives.</p>
+
+    <p>The harness reads that request. It decides whether to allow it. If it allows it, <em>the
+    harness</em> opens the file &mdash; your computer, your disk, your permissions &mdash; and then
+    types the contents back down the phone.</p>
+
+    <p>So Claude never touched your file. Your own computer touched your file, because Claude asked
+    it to.</p>
+
+    <p class="pull">You can't reach through a telephone. Not even a very good telephone.</p>
+
+    <p class="exit"><b>Carry this forward.</b> Everything left in the class is one question:
+    <em>who's on the other end of the phone, and what have they got within arm's reach?</em></p>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 3 · the blackboard ---------- -->
+<section class="screen" data-title="The blackboard rewritten before every sentence">
+  <div class="wrap">
+    <span class="label">02 &middot; Memory</span>
+    <h2>The board that gets rewritten before every sentence</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll know why a long conversation costs more
+    than a short one &mdash; and why the limit isn't about storage.</p>
+
+    <p>This one is stranger than the first.</p>
+    <p><strong>Claude doesn't remember your last message.</strong></p>
+    <p>I don't mean it forgets. Forgetting means you had something and lost it. It never had it. Every
+    request that goes over the wire is complete in itself, and between requests nothing is kept.
+    Nothing at all.</p>
+    <p>So how do you have a conversation with it? Your program cheats. Every time you send a new
+    message, it sends the entire conversation again, from the very first line. Turn forty is one
+    enormous request containing all forty turns.</p>
+  </div>
+
+  <div class="wrap-wide">
+  <figure>
+    <svg viewBox="0 0 760 250" role="img" aria-label="Three successive requests drawn as stacked bars. Each new request repeats every earlier turn in full and appends the new one, so the request grows with every exchange while the ceiling stays fixed.">
+      <line x1="620" y1="26" x2="620" y2="212" stroke="var(--clay)" stroke-width="1.5" stroke-dasharray="5 4"/>
+      <text x="628" y="120" font-family="var(--face-mono)" font-size="11" fill="var(--clay)">the</text>
+      <text x="628" y="134" font-family="var(--face-mono)" font-size="11" fill="var(--clay)">ceiling</text>
+
+      <g font-family="var(--face-mono)" font-size="11" fill="var(--ink-faint)">
+        <text x="14" y="52">turn 1</text>
+        <text x="14" y="116">turn 2</text>
+        <text x="14" y="180">turn 3</text>
+      </g>
+
+      <g stroke="var(--rule)" stroke-width="1.2">
+        <rect x="80" y="34" width="120" height="26" fill="var(--accent-wash)"/>
+        <rect x="80" y="98" width="120" height="26" fill="var(--accent-wash)"/>
+        <rect x="200" y="98" width="130" height="26" fill="var(--accent-wash)"/>
+        <rect x="80" y="162" width="120" height="26" fill="var(--accent-wash)"/>
+        <rect x="200" y="162" width="130" height="26" fill="var(--accent-wash)"/>
+        <rect x="330" y="162" width="150" height="26" fill="var(--accent-wash)"/>
+      </g>
+      <g font-family="var(--face-body)" font-size="11.5" fill="var(--ink-soft)">
+        <text x="90" y="51">first turn</text>
+        <text x="90" y="115">first turn</text>
+        <text x="210" y="115">second turn</text>
+        <text x="90" y="179">first turn</text>
+        <text x="210" y="179">second turn</text>
+        <text x="340" y="179">third turn</text>
+      </g>
+      <g stroke="var(--accent)" stroke-width="1.5" fill="none">
+        <rect x="80" y="34" width="120" height="26"/>
+        <rect x="80" y="98" width="250" height="26"/>
+        <rect x="80" y="162" width="400" height="26"/>
+      </g>
+      <text x="500" y="180" font-family="var(--face-mono)" font-size="11" fill="var(--ink-faint)">&rarr; and so on</text>
+      <text x="80" y="228" font-family="var(--face-body)" font-size="12.5" fill="var(--ink-soft)">Each bar is one request. Nothing is remembered between them; it is all re-sent.</text>
+    </svg>
+    <figcaption><b>The cost of a conversation is not the last message &mdash; it is every message, every
+    time.</b> Which is why anything you pin permanently into that request is charged again on every
+    turn that follows.</figcaption>
+  </figure>
+  </div>
+
+  <div class="wrap">
+    <p>Picture a blackboard. Before anybody says a single sentence, somebody wipes the board clean and
+    rewrites everything that's been said so far, from the beginning. Then the next sentence gets said.
+    Then they wipe it and write the whole thing out again, including the new bit. Every sentence. All
+    the way through.</p>
+    <p>That isn't an analogy for how it works. That's how it works.</p>
+
+    <div class="note">
+      <span class="note-k">Two consequences worth more than any rule</span>
+      <p><strong>Anything written permanently in the corner of that board is paid for on every
+      sentence.</strong> Not once, at setup. Every time. It's rent, not a purchase.</p>
+      <p style="margin-bottom:0"><strong>The board is only so big</strong> &mdash; and the reason isn't
+      that they ran out of chalk. When the model reads the board it doesn't go left to right the way
+      you do; it weighs every word against every other word. Double the words and you've roughly
+      quadrupled the work. There's a second cost too, and it's the one you feel: the more junk on the
+      board, the harder it is to find the one line that mattered. A crowded board makes the thing
+      dumber, not just slower.</p>
+    </div>
+
+    <p class="exit"><b>Next.</b> You've now got a hard physical limit and a pile of instructions you'd
+    like followed. Those two facts are about to collide, and the design of the whole instruction
+    system falls out of the collision.</p>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 4 · where instructions live ---------- -->
+<section class="screen" data-title="Where instructions live, and why these three">
+  <div class="wrap">
+    <span class="label">03 &middot; The library</span>
+    <h2>So where do you put your instructions?</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll be able to derive the three homes for
+    instructions rather than memorise them &mdash; and say what each one costs.</p>
+
+    <p>Now you have a real problem, and I want you to feel the problem before I hand you the answer.</p>
+    <p>You've got forty different sets of rules you'd like followed. Coding standards. A review
+    checklist. How this team writes migrations. The house format for a report. Written out in full
+    they'd fill the board and leave no room for the actual work.</p>
+    <p>So you can't have them all up there. But you don't know in advance which one you'll need.</p>
+    <p>What do you do in a library? A library has a hundred thousand books and nobody can carry a
+    hundred thousand books. So the library keeps a card catalogue. One card per book &mdash; the title,
+    one line about what's inside. The cards are tiny. The whole catalogue fits in one room. And the
+    books sit on the shelves doing nothing at all until somebody actually wants one.</p>
+  </div>
+
+  <div class="wrap-wide">
+  <figure>
+    <svg viewBox="0 0 760 260" role="img" aria-label="On the board sit forty one-line catalogue cards, costing almost nothing. The full instruction bodies stay on disk. Only the body whose card was chosen is fetched into the board, so thirty-nine bodies never cost anything.">
+      <text x="14" y="24" font-family="var(--face-mono)" font-size="11" fill="var(--ink-faint)" letter-spacing="1.4">ON THE BOARD &mdash; ALWAYS</text>
+      <text x="470" y="24" font-family="var(--face-mono)" font-size="11" fill="var(--ink-faint)" letter-spacing="1.4">ON DISK &mdash; UNTIL WANTED</text>
+      <rect x="14" y="36" width="330" height="186" rx="3" fill="none" stroke="var(--accent)" stroke-width="1.5"/>
+      <rect x="470" y="36" width="276" height="186" rx="3" fill="none" stroke="var(--rule)" stroke-width="1.5" stroke-dasharray="4 4"/>
+
+      <g stroke="var(--rule)" stroke-width="1.1" fill="var(--paper-sunk)">
+        <rect x="32" y="56" width="294" height="20"/><rect x="32" y="84" width="294" height="20"/>
+        <rect x="32" y="112" width="294" height="20"/><rect x="32" y="140" width="294" height="20"/>
+      </g>
+      <g font-family="var(--face-body)" font-size="11" fill="var(--ink-soft)">
+        <text x="42" y="70">name + one line &mdash; about 30 words</text>
+        <text x="42" y="98">name + one line</text>
+        <text x="42" y="126">name + one line</text>
+        <text x="42" y="154">name + one line</text>
+        <text x="42" y="182" fill="var(--ink-faint)">&hellip; forty of these fit on about a page</text>
+      </g>
+
+      <g stroke="var(--rule)" stroke-width="1.2" fill="none">
+        <rect x="490" y="56" width="34" height="140"/><rect x="530" y="56" width="34" height="140"/>
+        <rect x="610" y="56" width="34" height="140"/><rect x="650" y="56" width="34" height="140"/>
+        <rect x="690" y="56" width="34" height="140"/>
+      </g>
+      <rect x="570" y="56" width="34" height="140" fill="var(--accent-wash)" stroke="var(--accent)" stroke-width="1.6"/>
+      <text x="587" y="212" font-family="var(--face-mono)" font-size="10" fill="var(--accent)" text-anchor="middle">fetched</text>
+
+      <path d="M344 128 L560 128" stroke="var(--accent)" stroke-width="1.5" fill="none" marker-end="url(#ar2)"/>
+      <text x="368" y="118" font-family="var(--face-mono)" font-size="11" fill="var(--accent)">only on a match</text>
+      <text x="14" y="248" font-family="var(--face-body)" font-size="12.5" fill="var(--ink-soft)">Thirty-nine bodies never enter the board, so they never cost a thing.</text>
+      <defs><marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/></marker></defs>
+    </svg>
+    <figcaption><b>Progressive disclosure is forced, not clever.</b> Given a finite board and an
+    unknown-in-advance need, a catalogue is the only design that works &mdash; you would have invented
+    it yourself after ten minutes with the problem.</figcaption>
+  </figure>
+  </div>
+
+  <div class="wrap">
+    <p>That's the trick, and it's exactly the trick. They call it a <strong>Skill</strong>. It's a file,
+    <code>SKILL.md</code>, with a name, one sentence saying what it's for, and then the whole body of
+    instructions underneath. The name and the sentence go on the board; the body stays on disk costing
+    you nothing, and gets fetched only when Claude decides it wants it.</p>
+
+    <p>Now, some things really <em>are</em> relevant to every job in a repository &mdash; the language
+    version, the conventions, the directories nobody's allowed to touch. Those go in
+    <code>CLAUDE.md</code>, which loads into every session whether you need it or not. That's the stuff
+    written permanently in the corner. Right trade when it genuinely applies to everything, bad trade
+    the moment it doesn't &mdash; because a bloated <code>CLAUDE.md</code> doesn't just cost money, it's
+    more junk competing with the actual question.</p>
+
+    <p>And the third place is just <strong>typing it into the conversation</strong>. Worth understanding
+    mechanically rather than as a category. Why does something you typed stay around for the whole
+    conversation? Not because it's stored anywhere &mdash; because your program retypes it into every
+    request. Why is it gone when the session ends? Because nothing was ever kept. There's no state to
+    lose.</p>
+
+    <div class="check">
+      <span class="note-k">Checkpoint</span>
+      <p>Your team has a 40-line checklist that applies only when someone touches the payments module.
+      Where does it go, and what would putting it in the wrong place cost you?</p>
+      <button class="btn" data-reveal="a1">Commit to an answer, then reveal</button>
+      <div class="answer" id="a1" hidden>
+        <p>A <strong>Skill</strong> &mdash; it applies to some tasks, not all of them. Put it in
+        <code>CLAUDE.md</code> and you pay for all 40 lines on every turn of every session in the
+        repository, including the hundreds that never go near payments. And you pay twice: once in
+        tokens, and once in the dilution of every other instruction on the board.</p>
+      </div>
+    </div>
+
+    <p class="exit"><b>Next.</b> The catalogue only works if the right card gets picked. So how does
+    Claude choose? The answer is not what almost everyone assumes, and getting it wrong sends people
+    hunting for a bug that doesn't exist.</p>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 5 · the description ---------- -->
+<section class="screen" data-title="Why the description does all the work">
+  <div class="wrap">
+    <span class="label">04 &middot; There is no matcher</span>
+    <h2>The part almost everybody gets wrong</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll know why a skill that never loads is not a
+    broken skill &mdash; and where the fix actually lives.</p>
+
+    <p>How does Claude pick which card?</p>
+    <p>You're imagining machinery. Something that takes your request, looks at the forty descriptions,
+    works out which one matches best, and picks a winner. An index. A search. A lookup.</p>
+    <p><strong>There isn't one.</strong> There's no such machinery anywhere in the system.</p>
+    <p>The card catalogue is written on the blackboard, in plain words, sitting right next to your
+    question. And Claude does the only thing it ever does: it looks at everything on the board and
+    works out what the likeliest next move is. Given your question and forty little cards, the
+    likeliest next move is asking for whichever card sounds like it was written for a question like
+    yours.</p>
+
+    <p class="pull">That's a judgment. Not a lookup.</p>
+
+    <p>And now the rule about descriptions stops being advice and becomes something you can't avoid:
+    <strong>the description does all the work, by itself.</strong> The instructions in the body can't
+    help it. At the moment the decision gets made, nobody has read the body. It isn't on the board. As
+    far as that decision is concerned, it doesn't exist.</p>
+
+    <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>Written as&hellip;</th><th>Reads like</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>"When reviewing a pull request that touches database migrations"</td>
+            <td>A question somebody asks out loud</td>
+            <td>Matches the moment somebody asks it</td></tr>
+        <tr><td>"Database migration review guidelines"</td>
+            <td>A label on a filing cabinet</td>
+            <td>Nobody has a reason to walk to that shelf</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p>A librarian who files the migrations book under "Assorted Engineering Topics" hasn't lost it.
+    It's right there on the shelf, perfectly intact. It's just that nobody who needs it will ever have
+    a reason to walk to that shelf.</p>
+
+    <div class="note warn">
+      <span class="note-k">This saves you an afternoon</span>
+      <p style="margin-bottom:0">It's a guess, so sometimes it guesses wrong. When your skill doesn't
+      fire and you go hunting for the broken lookup, you'll hunt for a very long time. Nothing's
+      broken. A judgment went the other way, and the fix lives in that one sentence, not in the
+      plumbing.</p>
+    </div>
+
+    <p class="exit"><b>Next.</b> Back to the telephone &mdash; and this time we use it to derive all
+    four surfaces from a single question.</p>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 6 · four surfaces ---------- -->
+<section class="screen" data-title="Four surfaces, one question">
+  <div class="wrap">
+    <span class="label">05 &middot; Whose hands</span>
+    <h2>Four phones, one question</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll be able to work out what a surface can
+    reach without having seen it before, instead of recalling a table.</p>
+    <p>Back to the telephone. Who's on the other end, and what have they got within reach?</p>
+  </div>
+
+  <div class="wrap-wide">
+  <figure>
+    <svg viewBox="0 0 760 330" role="img" aria-label="Four surfaces drawn as four horizontal strips. In Claude Code and the Agent SDK the hands sit on your side of the wire, so your disk is reachable. On the Messages API and a hosted agent the hands sit on Anthropic's side, so nothing of yours is reachable. Only the position of the hands changes.">
+      <line x1="380" y1="14" x2="380" y2="292" stroke="var(--clay)" stroke-width="1.5" stroke-dasharray="5 4"/>
+      <text x="386" y="26" font-family="var(--face-mono)" font-size="10" fill="var(--clay)">the wire</text>
+      <text x="14" y="26" font-family="var(--face-mono)" font-size="10" fill="var(--ink-faint)">YOUR SIDE</text>
+      <text x="700" y="26" font-family="var(--face-mono)" font-size="10" fill="var(--ink-faint)" text-anchor="end">THEIRS</text>
+
+      <g font-family="var(--face-body)" font-size="13" fill="var(--ink)">
+        <text x="14" y="66">Claude Code, your terminal</text>
+        <text x="14" y="132">Agent SDK, in your program</text>
+        <text x="14" y="198">Messages API, from a service</text>
+        <text x="14" y="264">A hosted agent</text>
+      </g>
+      <g font-family="var(--face-body)" font-size="11.5" fill="var(--ink-faint)">
+        <text x="14" y="82">your disk, your tools</text>
+        <text x="14" y="148">your repo &mdash; once settingSources says so</text>
+        <text x="14" y="214">nothing of yours is reachable</text>
+        <text x="14" y="280">nothing of yours; kept between sessions</text>
+      </g>
+
+      <g stroke="var(--rule)" stroke-width="1.2">
+        <line x1="14" y1="94" x2="746" y2="94"/><line x1="14" y1="160" x2="746" y2="160"/>
+        <line x1="14" y1="226" x2="746" y2="226"/><line x1="14" y1="292" x2="746" y2="292"/>
+      </g>
+
+      <g fill="var(--accent)">
+        <circle cx="300" cy="62" r="8"/><circle cx="300" cy="128" r="8"/>
+        <circle cx="470" cy="194" r="8"/><circle cx="470" cy="260" r="8"/>
+      </g>
+      <g font-family="var(--face-mono)" font-size="10" fill="var(--accent)" text-anchor="middle">
+        <text x="300" y="45">hands</text><text x="300" y="111">hands</text>
+        <text x="470" y="177">hands</text><text x="470" y="243">hands</text>
+      </g>
+      <text x="14" y="318" font-family="var(--face-body)" font-size="12.5" fill="var(--ink-soft)">The model sits on the right in all four. Only the dot moves.</text>
+    </svg>
+    <figcaption><b>There is one variable, not four rules.</b> The model is remote on every surface; what
+    changes is which side of the wire the hands are on &mdash; and that alone decides what the
+    instructions may assume is present.</figcaption>
+  </figure>
+  </div>
+
+  <div class="wrap">
+    <h3>Claude Code, in your terminal</h3>
+    <p>The harness is on your laptop. Your hands, your disk, your tools. So where would you keep a
+    skill? On your disk, obviously &mdash; a folder called <code>.claude/skills</code>, because the
+    harness is sitting right there and can read it.</p>
+
+    <h3>The Agent SDK</h3>
+    <p>Same engine, but now it's a library living inside a program <em>you</em> wrote, and your program
+    might be a web service on a machine with no repository anywhere near it. So should it go rummaging
+    around the filesystem and stuff whatever it finds into your prompts? Of course not &mdash; that
+    would be a defect. So it doesn't, unless you tell it to, with a setting called
+    <code>settingSources</code>. Not a gotcha to memorise. A library minding its own business.</p>
+
+    <h3>The Messages API, called from a service</h3>
+    <p>Stop and think about where a skill's body would have to be for anybody to read it. The decision
+    about which skill to load happens over there, on Anthropic's side of the wire. So the body has to be
+    over there too. And whose machine is over there? Theirs.</p>
+    <div class="note">
+      <span class="note-k">The harder reason, which is the better one</span>
+      <p style="margin-bottom:0">Even if Anthropic wanted to hand that container your disk, there's no
+      wire to do it on. Your program dialled out to them; they never dialled in to you. No address, no
+      route back through your firewall, no credentials. And there had better not be &mdash; because the
+      moment there is, some container in their data centre can reach some customer's files, and the
+      whole arrangement that lets a bank and a two-person startup share the same machines falls
+      apart.</p>
+    </div>
+
+    <h3>A hosted agent that Anthropic runs for you</h3>
+    <p>Same container story, with one addition: they keep it. You call it by an ID and it's still there
+    tomorrow.</p>
+
+    <p class="pull">Take a skill that runs <code>./scripts/lint-diff.sh</code> and move it to the
+    Messages API. It will load perfectly. Then it will die &mdash; because you wrote instructions for
+    your own toolbox and handed them to somebody in another country who's never seen it.</p>
+
+    <p class="exit"><b>Next.</b> One more actor to place on this map, and it behaves in two ways that
+    people file together as "surprising." They aren't the same kind of fact, and one of them is where
+    the incidents come from.</p>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 7 · the subagent ---------- -->
+<section class="screen" data-title="The helper who walks in">
+  <div class="wrap">
+    <span class="label">06 &middot; Delegation</span>
+    <h2>The helper who walks in</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll know which half of a subagent's behaviour
+    is a feature you're paying for, and which half is a security invariant &mdash; and why only one of
+    them can hurt you.</p>
+
+    <p>When you hand a job off to a subagent, it starts with an empty head. No conversation history.
+    It doesn't inherit your skills either &mdash; it gets only what its own configuration lists.</p>
+    <p>But it runs with your permissions.</p>
+    <p>People file those two together under "surprising." They aren't the same kind of fact at all.</p>
+  </div>
+
+  <div class="wrap-wide">
+  <figure>
+    <svg viewBox="0 0 760 250" role="img" aria-label="From parent to subagent, the conversation history and skills are blocked and do not travel. The permission scope passes straight through unchanged. Knowledge stops at the boundary; authority does not.">
+      <rect x="30" y="52" width="200" height="140" rx="3" fill="none" stroke="var(--rule)" stroke-width="1.5"/>
+      <rect x="530" y="52" width="200" height="140" rx="3" fill="none" stroke="var(--rule)" stroke-width="1.5"/>
+      <text x="40" y="42" font-family="var(--face-mono)" font-size="11" fill="var(--ink-faint)" letter-spacing="1.4">PARENT</text>
+      <text x="540" y="42" font-family="var(--face-mono)" font-size="11" fill="var(--ink-faint)" letter-spacing="1.4">SUBAGENT</text>
+
+      <g font-family="var(--face-body)" font-size="12.5" fill="var(--ink-soft)">
+        <text x="46" y="84">conversation history</text>
+        <text x="46" y="112">skills</text>
+        <text x="46" y="150">permission scope</text>
+        <text x="46" y="172" font-size="11" fill="var(--ink-faint)">what it may do</text>
+      </g>
+      <text x="546" y="98" font-family="var(--face-body)" font-size="12.5" fill="var(--ink-faint)">empty &mdash; by design</text>
+      <text x="546" y="150" font-family="var(--face-body)" font-size="12.5" fill="var(--clay)">the same scope</text>
+      <text x="546" y="172" font-family="var(--face-body)" font-size="11" fill="var(--ink-faint)">arrives intact</text>
+
+      <path d="M230 90 L400 90" stroke="var(--ink-faint)" stroke-width="1.4" stroke-dasharray="5 4" fill="none"/>
+      <path d="M230 112 L400 112" stroke="var(--ink-faint)" stroke-width="1.4" stroke-dasharray="5 4" fill="none"/>
+      <g stroke="var(--ink-faint)" stroke-width="2">
+        <line x1="392" y1="82" x2="408" y2="98"/><line x1="408" y1="82" x2="392" y2="98"/>
+        <line x1="392" y1="104" x2="408" y2="120"/><line x1="408" y1="104" x2="392" y2="120"/>
+      </g>
+      <text x="300" y="72" font-family="var(--face-mono)" font-size="10.5" fill="var(--ink-faint)">does not travel</text>
+
+      <path d="M230 152 L522 152" stroke="var(--clay)" stroke-width="2" fill="none" marker-end="url(#ar3)"/>
+      <text x="300" y="140" font-family="var(--face-mono)" font-size="10.5" fill="var(--clay)">travels, unchanged</text>
+
+      <text x="30" y="226" font-family="var(--face-body)" font-size="12.5" fill="var(--ink-soft)">The guardrails stayed behind. The capability walked through the door.</text>
+      <defs><marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--clay)"/></marker></defs>
+    </svg>
+    <figcaption><b>The two halves fail in opposite directions.</b> Missing knowledge fails closed &mdash;
+    the work comes back mediocre and somebody notices. Inherited authority fails open, which is where
+    the incidents come from.</figcaption>
+  </figure>
+  </div>
+
+  <div class="wrap">
+    <h3>The empty head is the product</h3>
+    <p>That isn't a limitation, it's the entire thing you're buying. Why did you delegate in the first
+    place? Because the board is only so big and you didn't want to fill it. If the helper walked in
+    carrying a copy of your whole conversation, you'd have paid for all that text a second time and got
+    nothing for it. The point is that the helper starts clean &mdash; it can go and read sixty thousand
+    tokens' worth of files in its own room, think it over, and hand you back three sentences. Your board
+    only ever absorbs the three sentences.</p>
+
+    <h3>Inherited authority is close to forced</h3>
+    <p>Ask why permissions must carry over. Suppose they didn't &mdash; suppose a helper could hold
+    powers you don't. Then "send a helper" becomes a way of getting powers you don't have, and anybody
+    who could talk the system into calling for one would get a free upgrade. So it can't work that way.
+    Someone you send on an errand can't do things you aren't allowed to do. It's a power of attorney:
+    you can't hand over more authority than you've got. The helper isn't a new person. It's you, in
+    another room, still wearing your badge.</p>
+
+    <details>
+      <summary>Go deeper &mdash; it varies by which subagent, and that catches people</summary>
+      <p style="margin-top:.9rem">The built-in <strong>Explore</strong> and <strong>Plan</strong>
+      subagents deliberately skip <code>CLAUDE.md</code> and git status, to stay fast and cheap &mdash;
+      so your project rules genuinely aren't in their context. The <strong>general-purpose</strong>
+      subagent loads both. If you delegate to Explore and a <code>CLAUDE.md</code> rule gets ignored,
+      nothing malfunctioned; that context was never loaded.</p>
+      <p style="margin-bottom:0">Custom subagents don't see your skills automatically and must list them
+      in their own frontmatter. Built-in agents have no preloaded skills at all &mdash; if you need
+      skill-backed behaviour, the route is a custom subagent that names them.</p>
+    </details>
+
+    <p class="exit"><b>Next.</b> One story, and it's the same idea one level up: what happens when a
+    working setup meets a machine that isn't yours.</p>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 8 · Alex Morgan ---------- -->
+<section class="screen" data-title="Alex Morgan's laptop">
+  <div class="wrap">
+    <span class="label">07 &middot; Late binding</span>
+    <h2>Alex Morgan's laptop</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll know why an install succeeding tells you
+    almost nothing, and why the author was structurally incapable of catching this by testing.</p>
+
+    <p>A developer wrote a deployment routine as a skill, wrapped it in a plugin, tested it on their own
+    machine, and shipped it to the team through their internal marketplace. Everybody's install worked.
+    Nobody's run worked.</p>
+    <p>Inside the skill was a line pointing at
+    <code>/Users/alexmorgan/projects/deploy-utils/validate.sh</code>.</p>
+    <p>Think about what that line actually is. It isn't a file. It's <em>directions</em> to a file. It's
+    somebody saying "go down the hall, second door on the left." And directions only work if you're
+    standing where the person who wrote them was standing.</p>
+  </div>
+
+  <div class="wrap-wide">
+  <figure>
+    <svg viewBox="0 0 760 250" role="img" aria-label="One slip of directions is copied to two machines. On the author's machine the path it names exists. On a teammate's machine it does not. The install copied the slip successfully in both cases; only running it resolves the path.">
+      <rect x="290" y="18" width="180" height="52" rx="3" fill="var(--paper-sunk)" stroke="var(--rule)" stroke-width="1.2"/>
+      <text x="380" y="42" font-family="var(--face-mono)" font-size="10.5" fill="var(--ink-soft)" text-anchor="middle">/Users/alexmorgan/&hellip;</text>
+      <text x="380" y="58" font-family="var(--face-body)" font-size="11" fill="var(--ink-faint)" text-anchor="middle">directions, not a file</text>
+
+      <path d="M330 70 L190 118" stroke="var(--ink-faint)" stroke-width="1.4" fill="none" marker-end="url(#ar4)"/>
+      <path d="M430 70 L570 118" stroke="var(--ink-faint)" stroke-width="1.4" fill="none" marker-end="url(#ar4)"/>
+      <text x="212" y="98" font-family="var(--face-mono)" font-size="10" fill="var(--ink-faint)">copied</text>
+      <text x="500" y="98" font-family="var(--face-mono)" font-size="10" fill="var(--ink-faint)">copied</text>
+
+      <rect x="40" y="124" width="240" height="86" rx="3" fill="none" stroke="var(--flag)" stroke-width="1.5"/>
+      <text x="56" y="150" font-family="var(--face-body)" font-size="13" fill="var(--ink)">the author's machine</text>
+      <text x="56" y="174" font-family="var(--face-body)" font-size="12" fill="var(--flag)">the hall is there. the door is there.</text>
+      <text x="56" y="196" font-family="var(--face-mono)" font-size="11" fill="var(--flag)">runs</text>
+
+      <rect x="480" y="124" width="240" height="86" rx="3" fill="none" stroke="var(--clay)" stroke-width="1.5"/>
+      <text x="496" y="150" font-family="var(--face-body)" font-size="13" fill="var(--ink)">everyone else's machine</text>
+      <text x="496" y="174" font-family="var(--face-body)" font-size="12" fill="var(--clay)">no such hall. no such door.</text>
+      <text x="496" y="196" font-family="var(--face-mono)" font-size="11" fill="var(--clay)">installs, then dies</text>
+
+      <text x="40" y="238" font-family="var(--face-body)" font-size="12.5" fill="var(--ink-soft)">Both installs succeeded. Installing copies the slip; it never checks the directions.</text>
+      <defs><marker id="ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--ink-faint)"/></marker></defs>
+    </svg>
+    <figcaption><b>A successful install is not evidence the thing will run.</b> Installing copies the
+    paper; running resolves what the paper points at, on a machine the author never saw.</figcaption>
+  </figure>
+  </div>
+
+  <div class="wrap">
+    <p>They call this <strong>late binding</strong>, if you want the term. All it means is that the
+    words get written down now and looked up later, and "later" happens somewhere else.</p>
+
+    <p>There was a second failure in the same package and it's the nastier kind. One of the skills used
+    an environment variable, <code>DEPLOY_TOKEN</code>. Alex had set it in a shell profile years earlier
+    and completely forgotten about it. It wasn't in the README. Nothing in the package mentioned it at
+    all. Three people spent two hours chasing that one down.</p>
+
+    <p class="pull">Alex could not have caught either of these by testing. That machine satisfied every
+    assumption Alex had made, so every test passed and every test was meaningless &mdash; you cannot
+    test for the absence of something that's always there.</p>
+
+    <div class="note">
+      <span class="note-k">The habits that follow</span>
+      <ul style="margin-bottom:0">
+        <li>Reference paths <strong>relative to the project</strong>, never absolutely.</li>
+        <li><code>$CLAUDE_PROJECT_DIR</code> for scripts kept in the project;
+            <code>${CLAUDE_PLUGIN_ROOT}</code> for scripts bundled inside the plugin. Two variables,
+            because there are two different meanings of "here" &mdash; the repository someone is
+            working in, and the package your skill shipped inside.</li>
+        <li>Document and <strong>validate every environment variable at install time</strong>, so a
+            missing one announces itself immediately rather than two hours into somebody's
+            afternoon.</li>
+        <li><strong>Install once on a clean machine</strong> before handing it to anybody &mdash; the
+            only test where your own assumptions aren't quietly holding the thing up.</li>
+      </ul>
+    </div>
+
+    <div class="check">
+      <span class="note-k">Checkpoint</span>
+      <p>A teammate reports that your plugin "installed fine but doesn't work." Before you look at any
+      code, what are the two most likely causes, and which one will take longer to find?</p>
+      <button class="btn" data-reveal="a2">Commit to an answer, then reveal</button>
+      <div class="answer" id="a2" hidden>
+        <p>An <strong>absolute path</strong> that exists only on your machine, and an
+        <strong>undeclared environment variable</strong>. The path takes longer to <em>type</em> but
+        almost no time to find &mdash; it's sitting in the file as plain text and any reviewer reading
+        it can spot it.</p>
+        <p style="margin-bottom:0">The environment variable is the expensive one, because
+        <em>nothing in the package announces it</em>. The skill runs perfectly right up to the step
+        that needs it. That's why it cost three people two hours.</p>
+      </div>
+    </div>
+
+    <p class="exit"><b>Last teaching screen.</b> Before the recap, one habit that tells you where to
+    spend your memory for the whole course.</p>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 9 · forced vs convention ---------- -->
+<section class="screen" data-title="What's real, what's just this release">
+  <div class="wrap">
+    <span class="label">08 &middot; Where to spend your memory</span>
+    <h2>What's real, and what somebody just decided one Tuesday</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll have a habit worth keeping for all
+    twenty-nine classes: sorting what you can reason from against what you must simply
+    recognise.</p>
+
+    <p>Some of what I've told you is close to physics. It'll be true in five years, and you can work
+    things out from it. Some of it is just how they've set it up this year.</p>
+    <p>Treating both with the same reverence teaches you to spend memory in the wrong places.</p>
+
+    <div class="tbl-scroll">
+    <table>
+      <thead><tr><th style="width:50%">Close to physics &mdash; reason from it</th><th>This release's convention &mdash; recognise it</th></tr></thead>
+      <tbody>
+        <tr><td>The model runs on their machines and never on yours</td>
+            <td>The file is called <code>CLAUDE.md</code></td></tr>
+        <tr><td>Nothing is remembered between calls</td>
+            <td>Skills live in <code>.claude/skills</code></td></tr>
+        <tr><td>The board is finite and rewritten every turn</td>
+            <td>The SDK's filesystem setting starts off</td></tr>
+        <tr><td>A helper can't hold more authority than whoever sent it</td>
+            <td>The variables are <code>$CLAUDE_PROJECT_DIR</code> and <code>${CLAUDE_PLUGIN_ROOT}</code></td></tr>
+        <tr><td>There's no wire from their container back to your laptop</td>
+            <td>Beta header strings and their dates</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p>Learn the right-hand column, because the exam names mechanisms in its options and you'll have to
+    recognise them. But don't mistake it for the left. From the left you can derive an answer to a
+    question nobody taught you. The right is vocabulary, and somebody could change it next quarter.</p>
+
+    <p class="exit"><b>One screen left.</b> The recap, and a question that needs the whole class rather
+    than any one screen.</p>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 10 · recap ---------- -->
+<section class="screen" data-title="Recap and the closing question">
+  <div class="wrap">
+    <span class="label">Recap</span>
+    <h2>What you're leaving with</h2>
+    <p class="lead">Everything in this class came out of one fact stated on the second screen. If you
+    can rebuild the chain, you don't need the details.</p>
+
+    <ol>
+      <li><strong>The model is never in the room.</strong> It can only ask. Something else has hands,
+      and which something changes per surface.</li>
+      <li><strong>The board is finite and rewritten every turn</strong>, so every instruction you pin to
+      it is rent, charged again on every exchange.</li>
+      <li><strong>Loading is a prediction, not a lookup.</strong> There is no matcher, so the
+      description does all the work, alone, and it's probabilistic.</li>
+      <li><strong>Four surfaces, one variable.</strong> Whose hands &mdash; which decides what the
+      instructions may assume is present.</li>
+      <li><strong>Directions are not the thing.</strong> A path resolves later, on a machine the author
+      never saw, which is why install success proves nothing.</li>
+    </ol>
+
+    <p>And the one that ties the subagent to the security classes ahead: <strong>context doesn't travel,
+    authority does.</strong> Missing knowledge fails closed. Inherited authority fails open.</p>
+
+    <div class="check">
+      <span class="note-k">Before Class 2</span>
+      <p>A team keeps its coding standards in <code>CLAUDE.md</code>. In the terminal it works fine
+      &mdash; good, consistent results, day after day. Then they run the same workflow as a scheduled
+      overnight job on the Agent SDK, pointed at the same repository. Now the output ignores several of
+      those standards. <strong>Not every night. But often enough that somebody complained.</strong></p>
+      <p>What's the first thing you'd check &mdash; and what does the <em>intermittency</em> tell you? If
+      the file simply never loaded, you'd expect the standards missing every night, not most.</p>
+      <button class="btn" data-reveal="a3">Commit to an answer, then reveal</button>
+      <div class="answer" id="a3" hidden>
+        <p>First check whether the job has filesystem sources configured to include
+        <code>CLAUDE.md</code>. In the terminal it loads unconditionally; under the SDK it loads only if
+        <code>settingSources</code> says so. If it isn't loaded, the standards were never on the board.</p>
+        <p style="margin-bottom:0">But the intermittency says that can't be the whole story, because a
+        file that never loads fails <em>every</em> night. Something probabilistic is also involved, and
+        the only probabilistic mechanism in the picture is description-matching. Some of those standards
+        are almost certainly in a skill &mdash; and a skill loads on a judgment, so it fires on some
+        phrasings of the nightly task and not others.</p>
+      </div>
+    </div>
+
+    <p style="color:var(--ink-soft);font-size:var(--t-small)">Class 2 &mdash; <em>What the Assistant
+    Knows on Monday Morning</em>: what happens to the board when everybody goes home, and why choosing
+    that late costs far more than choosing it early.</p>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">Class 1 of 29</span>
+      <a class="btn btn-primary" href="CCDV-F_Class-02.html">Class 2: What the Assistant Knows on Monday Morning &rarr;</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<script>
+(function () {
+  var screens = [].slice.call(document.querySelectorAll('.screen'));
+  var toc = document.getElementById('toc');
+  var barEl = document.getElementById('bar');
+  var cNow = document.getElementById('cNow');
+  var cAll = document.getElementById('cAll');
+  var barTitle = document.getElementById('barTitle');
+  var drawer = document.getElementById('drawer');
+  var i = 0;
+
+  cAll.textContent = screens.length;
+
+  screens.forEach(function (s, n) {
+    var li = document.createElement('li');
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = s.dataset.title || ('Screen ' + (n + 1));
+    b.addEventListener('click', function () { go(n); closeDrawer(); });
+    li.appendChild(b);
+    toc.appendChild(li);
+  });
+  var tocBtns = [].slice.call(toc.querySelectorAll('button'));
+
+  function go(n, keepScroll) {
+    i = Math.max(0, Math.min(screens.length - 1, n));
+    screens.forEach(function (s, k) { s.classList.toggle('on', k === i); });
+    tocBtns.forEach(function (b, k) { b.setAttribute('aria-current', k === i ? 'true' : 'false'); });
+    cNow.textContent = i + 1;
+    barEl.style.width = ((i + 1) / screens.length * 100) + '%';
+    barTitle.textContent = screens[i].dataset.title || '';
+    if (!keepScroll) window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+    if (location.hash !== '#s' + (i + 1)) history.replaceState(null, '', '#s' + (i + 1));
+    document.querySelectorAll('[data-next]').forEach(function (b) { b.disabled = (i === screens.length - 1); });
+    document.querySelectorAll('[data-prev]').forEach(function (b) { b.disabled = (i === 0); });
+  }
+
+  document.addEventListener('click', function (e) {
+    var n = e.target.closest('[data-next]');
+    var p = e.target.closest('[data-prev]');
+    var r = e.target.closest('[data-reveal]');
+    if (n) go(i + 1);
+    if (p) go(i - 1);
+    if (r) {
+      var box = document.getElementById(r.dataset.reveal);
+      if (box) { box.hidden = false; r.disabled = true; box.setAttribute('tabindex', '-1'); box.focus(); }
+    }
+  });
+
+  function openDrawer() { drawer.setAttribute('open', ''); document.getElementById('main').setAttribute('inert', ''); tocBtns[i].focus(); }
+  function closeDrawer() { drawer.removeAttribute('open'); document.getElementById('main').removeAttribute('inert'); }
+  document.getElementById('tocBtn').addEventListener('click', openDrawer);
+  document.getElementById('tocClose').addEventListener('click', closeDrawer);
+  drawer.addEventListener('click', function (e) { if (e.target === drawer) closeDrawer(); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && drawer.hasAttribute('open')) return closeDrawer();
+    if (e.target.matches('input, textarea')) return;
+    if (e.key === 'ArrowRight') go(i + 1);
+    if (e.key === 'ArrowLeft') go(i - 1);
+  });
+
+  var start = parseInt((location.hash || '').replace('#s', ''), 10);
+  go(isNaN(start) ? 0 : start - 1, true);
+})();
+</script>
+</body>
+</html>

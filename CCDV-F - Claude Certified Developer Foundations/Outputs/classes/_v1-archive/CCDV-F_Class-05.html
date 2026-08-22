@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 5 — Signs, and Interlocks · CCDV-F</title>
+<meta name="description" content="Claude Certified Developer Foundations, Class 5: Claude Code as a harness with a permission model - the six modes, the four settings levels, and the difference between a convention and a guardrail.">
+<meta name="author" content="Ram">
+<style>
+@layer engine, skin, utilities;
+
+/* ============================== SKIN: "Lecture Hall" ============================== */
+@layer skin {
+  :root {
+    color-scheme: light dark;
+
+    /* -- color primitives (oklch) -- */
+    --paper:        oklch(0.977 0.004 250);
+    --paper-sunk:   oklch(0.947 0.006 250);
+    --ink:          oklch(0.24 0.018 255);
+    --ink-soft:     oklch(0.46 0.016 255);
+    --ink-faint:    oklch(0.62 0.012 255);
+    --rule:         oklch(0.87 0.008 255);
+    --accent:       oklch(0.50 0.13 250);
+    --accent-lift:  oklch(0.62 0.14 250);
+    --clay:         oklch(0.58 0.10 45);
+    --flag:         oklch(0.56 0.12 145);
+
+    /* -- derived tints -- */
+    --accent-wash:  color-mix(in oklch, var(--accent) 8%, var(--paper));
+    --accent-edge:  color-mix(in oklch, var(--accent) 32%, var(--paper));
+    --clay-wash:    color-mix(in oklch, var(--clay) 10%, var(--paper));
+    --flag-wash:    color-mix(in oklch, var(--flag) 10%, var(--paper));
+
+    /* -- type -- */
+    --face-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --face-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                 Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
+    --face-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+    --t-body:  clamp(1.0rem, 0.94rem + 0.30vw, 1.125rem);
+    --t-small: clamp(0.83rem, 0.80rem + 0.14vw, 0.90rem);
+    --t-lead:  clamp(1.13rem, 1.03rem + 0.48vw, 1.32rem);
+    --t-h2:    clamp(1.55rem, 1.28rem + 1.35vw, 2.35rem);
+    --t-h3:    clamp(1.08rem, 1.00rem + 0.38vw, 1.24rem);
+    --t-hero:  clamp(2.0rem, 1.45rem + 2.7vw, 3.4rem);
+    --measure: 64ch;
+    --lh: 1.68;
+
+    /* -- shape + space -- */
+    --r: 3px;
+    --hair: 1px;
+    --gap: clamp(1.1rem, 0.9rem + 1vw, 1.9rem);
+
+    /* -- motion -- */
+    --dur: 180ms;
+    --ease: cubic-bezier(.2,.6,.3,1);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:      oklch(0.185 0.014 260);
+      --paper-sunk: oklch(0.225 0.016 260);
+      --ink:        oklch(0.93 0.008 255);
+      --ink-soft:   oklch(0.76 0.012 255);
+      --ink-faint:  oklch(0.60 0.012 255);
+      --rule:       oklch(0.34 0.014 258);
+      --accent:     oklch(0.76 0.12 250);
+      --accent-lift:oklch(0.84 0.11 250);
+      --clay:       oklch(0.74 0.10 48);
+      --flag:       oklch(0.74 0.12 152);
+      --accent-wash: color-mix(in oklch, var(--accent) 14%, var(--paper));
+      --accent-edge: color-mix(in oklch, var(--accent) 40%, var(--paper));
+      --clay-wash:   color-mix(in oklch, var(--clay) 16%, var(--paper));
+      --flag-wash:   color-mix(in oklch, var(--flag) 16%, var(--paper));
+    }
+  }
+}
+
+/* ============================== ENGINE ============================== */
+@layer engine {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--face-body);
+    font-size: var(--t-body);
+    line-height: var(--lh);
+    font-synthesis-weight: none;
+  }
+
+  /* ---- skip link ---- */
+  .skip {
+    position: absolute; left: -9999px; top: 0; z-index: 100;
+    background: var(--accent); color: var(--paper);
+    padding: .7rem 1.1rem; border-radius: var(--r);
+  }
+  .skip:focus { left: .6rem; top: .6rem; }
+
+  /* ---- top bar ---- */
+  .bar {
+    position: sticky; top: 0; z-index: 40;
+    background: color-mix(in oklch, var(--paper) 88%, transparent);
+    backdrop-filter: blur(9px);
+    border-bottom: var(--hair) solid var(--rule);
+  }
+  .bar-in {
+    max-width: 78rem; margin: 0 auto;
+    padding: .6rem clamp(.9rem, 3vw, 2rem);
+    display: flex; align-items: center; gap: 1rem;
+  }
+  .brand {
+    font-family: var(--face-mono);
+    font-size: .68rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--ink-faint); white-space: nowrap;
+  }
+  .brand b { color: var(--accent); font-weight: 600; }
+  .bar-title {
+    font-family: var(--face-display);
+    font-size: .95rem; color: var(--ink-soft);
+    margin-left: auto; text-align: right;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .counter {
+    font-family: var(--face-mono); font-size: .72rem;
+    color: var(--ink-faint); white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .progress { height: 2px; background: var(--rule); }
+  .progress span {
+    display: block; height: 100%; width: 0;
+    background: var(--accent);
+    transition: width var(--dur) var(--ease);
+  }
+
+  .btn {
+    font: inherit; font-size: var(--t-small);
+    color: var(--ink); background: transparent;
+    border: var(--hair) solid var(--rule); border-radius: var(--r);
+    padding: .5rem .85rem; cursor: pointer;
+    min-height: 44px; display: inline-flex; align-items: center; gap: .5rem;
+    transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+  .btn:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-wash); }
+  .btn:disabled { opacity: .38; cursor: not-allowed; }
+  .btn-primary { border-color: var(--accent-edge); background: var(--accent-wash); color: var(--accent); font-weight: 600; }
+
+  :focus-visible { outline: 2px solid var(--accent-lift); outline-offset: 3px; }
+
+  /* ---- drawer ---- */
+  .drawer {
+    position: fixed; inset: 0; z-index: 60;
+    background: color-mix(in oklch, var(--ink) 42%, transparent);
+    display: none; padding: clamp(.8rem, 4vw, 3rem);
+  }
+  .drawer[open] { display: grid; place-items: start center; }
+  .drawer-panel {
+    background: var(--paper); border: var(--hair) solid var(--rule);
+    border-radius: var(--r); max-width: 34rem; width: 100%;
+    padding: clamp(1rem, 3vw, 1.7rem); box-shadow: 0 18px 50px -20px color-mix(in oklch, var(--ink) 45%, transparent);
+  }
+  .drawer h2 { font-size: var(--t-h3); margin: 0 0 .9rem; font-family: var(--face-display); }
+  .toc { list-style: none; margin: 0; padding: 0; counter-reset: t; }
+  .toc li { counter-increment: t; }
+  .toc button {
+    width: 100%; text-align: left; font: inherit; font-size: var(--t-small);
+    background: none; border: 0; border-top: var(--hair) solid var(--rule);
+    padding: .72rem .2rem; color: var(--ink); cursor: pointer;
+    display: flex; gap: .8rem; align-items: baseline; min-height: 44px;
+  }
+  .toc button::before {
+    content: counter(t, decimal-leading-zero);
+    font-family: var(--face-mono); font-size: .7rem; color: var(--ink-faint);
+  }
+  .toc button:hover { color: var(--accent); }
+  .toc button[aria-current="true"] { color: var(--accent); font-weight: 600; }
+
+  /* ---- screens ---- */
+  main { max-width: 78rem; margin: 0 auto; padding: 0 clamp(.9rem, 3vw, 2rem); }
+  .screen { display: none; padding: clamp(1.8rem, 5vw, 3.6rem) 0 1rem; }
+  .screen.on { display: block; animation: rise var(--dur) var(--ease); }
+  @keyframes rise { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+
+  .wrap { max-width: var(--measure); margin-inline: auto; }
+  .wrap-wide { max-width: 52rem; margin-inline: auto; }
+
+  .label {
+    font-family: var(--face-mono); font-size: .68rem;
+    letter-spacing: .13em; text-transform: uppercase; color: var(--accent);
+    padding-bottom: .45rem; border-bottom: var(--hair) solid var(--accent-edge);
+    display: inline-block; margin-bottom: 1.1rem;
+  }
+
+  h1 { font-family: var(--face-display); font-size: var(--t-hero); line-height: 1.06;
+       margin: 0 0 1.1rem; font-weight: 600; letter-spacing: -.015em; }
+  h2 { font-family: var(--face-display); font-size: var(--t-h2); line-height: 1.14;
+       margin: 0 0 1.1rem; font-weight: 600; letter-spacing: -.01em; }
+  h3 { font-family: var(--face-body); font-size: var(--t-h3); margin: 2rem 0 .6rem; font-weight: 650; }
+  p { margin: 0 0 1.05em; }
+  .lead { font-size: var(--t-lead); color: var(--ink-soft); line-height: 1.5; }
+  strong { font-weight: 650; }
+  em { font-style: italic; }
+  code { font-family: var(--face-mono); font-size: .88em;
+         background: var(--paper-sunk); padding: .12em .38em; border-radius: 2px; }
+
+  .entry, .exit {
+    font-size: var(--t-small); color: var(--ink-soft);
+    border-left: 2px solid var(--accent-edge);
+    padding: .1rem 0 .1rem .95rem; margin: 0 0 1.6rem;
+  }
+  .exit { border-left-color: color-mix(in oklch, var(--clay) 45%, var(--paper)); margin: 2rem 0 0; }
+  .exit b, .entry b { color: var(--ink); font-weight: 600; }
+
+  .pull {
+    font-family: var(--face-display); font-size: var(--t-lead);
+    line-height: 1.4; color: var(--ink);
+    border-top: var(--hair) solid var(--rule);
+    border-bottom: var(--hair) solid var(--rule);
+    padding: 1.1rem 0; margin: 1.8rem 0;
+  }
+
+  .note {
+    background: var(--paper-sunk); border-radius: var(--r);
+    padding: 1rem 1.15rem; margin: 1.5rem 0; font-size: var(--t-small);
+  }
+  .note.warn { background: var(--clay-wash); }
+  .note.good { background: var(--flag-wash); }
+  .note p:last-child { margin-bottom: 0; }
+  .note-k {
+    font-family: var(--face-mono); font-size: .66rem; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--ink-faint); display: block; margin-bottom: .4rem;
+  }
+
+  figure { margin: 2rem 0; }
+  figure svg { display: block; width: 100%; height: auto; }
+  figcaption {
+    font-size: var(--t-small); color: var(--ink-soft);
+    margin-top: .8rem; padding-top: .7rem; border-top: var(--hair) solid var(--rule);
+  }
+
+  .tbl-scroll { overflow-x: auto; margin: 1.6rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: var(--t-small); }
+  th, td { text-align: left; padding: .68rem .8rem; border-bottom: var(--hair) solid var(--rule);
+           vertical-align: top; }
+  th { font-family: var(--face-mono); font-size: .68rem; letter-spacing: .08em;
+       text-transform: uppercase; color: var(--ink-faint); font-weight: 500; }
+  tbody tr:hover { background: var(--paper-sunk); }
+
+  details { border-top: var(--hair) solid var(--rule); padding: .8rem 0; margin: 1.4rem 0; }
+  summary { cursor: pointer; font-size: var(--t-small); color: var(--accent);
+            font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+  summary::marker { color: var(--ink-faint); }
+
+  /* ---- checkpoint ---- */
+  .check { border: var(--hair) solid var(--accent-edge); border-radius: var(--r);
+           padding: 1.2rem 1.3rem; margin: 2rem 0; background: var(--accent-wash); }
+  .check .note-k { color: var(--accent); }
+  .check p { margin-bottom: .9rem; }
+  .answer { margin-top: 1rem; padding-top: 1rem; border-top: var(--hair) solid var(--accent-edge);
+            font-size: var(--t-small); }
+  .answer[hidden] { display: none; }
+
+  ul, ol { margin: 0 0 1.05em; padding-left: 1.3em; }
+  li { margin-bottom: .45em; }
+
+  /* ---- foot nav ---- */
+  .foot {
+    max-width: var(--measure); margin: 2.8rem auto 0;
+    border-top: var(--hair) solid var(--rule); padding: 1.2rem 0 3rem;
+    display: flex; gap: .8rem; align-items: center; justify-content: space-between;
+  }
+  .hint { font-size: .72rem; color: var(--ink-faint); font-family: var(--face-mono); }
+
+  @media (max-width: 640px) {
+    .bar-title { display: none; }
+    .hint { display: none; }
+    .bar-in { gap: .5rem; padding-inline: .75rem; }
+    .btn { padding: .5rem .62rem; }
+    .counter { margin-left: auto; flex: 0 0 auto; }
+  }
+  @media (max-width: 480px) {
+    /* the course link + contents button + counter is all that fits; the brand
+       repeats what the page title already says, so it goes first */
+    .brand { display: none; }
+  }
+
+  /* ---- floor: motion / contrast / forced-colors ---- */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+  @media (prefers-contrast: more) {
+    :root { --rule: var(--ink-soft); --ink-soft: var(--ink); }
+  }
+  @media (forced-colors: active) {
+    .btn, .drawer-panel, .check, figure svg { border: 1px solid ButtonText; }
+    .label, .brand b { color: LinkText; }
+    .progress span { background: Highlight; }
+  }
+
+  /* ---- print: flatten every screen ---- */
+  @media print {
+    .bar, .foot, .drawer, .skip, .hint { display: none !important; }
+    .screen { display: block !important; page-break-after: always; padding: 0 0 1.5rem; }
+    .answer[hidden] { display: block !important; }
+    figure, .check, table { break-inside: avoid; }
+    body { background: #fff; color: #111; }
+  }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the class</a>
+
+<header class="bar">
+  <div class="bar-in">
+    <span class="brand">CCDV&#8209;F&nbsp;· <b>Class 05</b></span>
+    <a class="btn" id="courseLink" href="index.html">&#8598;&nbsp;Course</a>
+    <button class="btn" id="tocBtn" aria-haspopup="dialog">Contents</button>
+    <span class="bar-title" id="barTitle">Signs, and Interlocks</span>
+    <span class="counter"><span id="cNow">1</span>&#8202;/&#8202;<span id="cAll">10</span></span>
+  </div>
+  <div class="progress"><span id="bar"></span></div>
+</header>
+
+<div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="tocH">
+  <div class="drawer-panel">
+    <h2 id="tocH">Class 5 &mdash; contents</h2>
+    <ol class="toc" id="toc"></ol>
+    <p style="margin:1rem 0 0"><button class="btn" id="tocClose">Close</button></p>
+  </div>
+</div>
+
+<main id="main">
+<!-- ---------- 1 · cover ---------- -->
+<section class="screen on" data-title="The promise">
+  <div class="wrap">
+    <span class="label">Claude Certified Developer &middot; Foundations</span>
+    <h1>Signs, and Interlocks</h1>
+    <p class="lead">A sign is followed most of the time. An interlock doesn't have a most of the time.
+    Claude Code gives you both, plus two more mechanisms &mdash; and the whole skill of configuring it
+    is knowing which of the four a given piece of knowledge belongs in.</p>
+
+    <div class="note warn">
+      <span class="note-k">Read this one twice</span>
+      <p style="margin-bottom:0">This is the ground that cost you marks on the architect exam &mdash;
+      the configuration-mechanism question, and plan mode versus direct execution. The discriminator is
+      on screen 07.</p>
+    </div>
+
+    <div class="note">
+      <span class="note-k">What you leave holding</span>
+      <ol style="margin-bottom:0">
+        <li>Every feature answers one of two questions: what gets on the board, or what the hands may do.</li>
+        <li>Six permission modes, and the two whose names mislead.</li>
+        <li>Four settings levels, one of which cannot be overridden.</li>
+        <li>When the requirement is "always" or "never," an instruction is the wrong kind of thing.</li>
+        <li>The human gate goes where the worst case is worst, not where the mode ends.</li>
+      </ol>
+    </div>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Begin &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 2 · the workshop ---------- -->
+<section class="screen" data-title="Three kinds of safety measure">
+  <div class="wrap">
+    <span class="label">01 &middot; The workshop</span>
+    <h2>Three kinds of safety measure, and they aren't the same thing</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll have the whole mechanism map as one
+    physical picture, before any of it is named.</p>
+
+    <p>Walk into a good workshop and you'll see three different kinds of safety measure. It's worth
+    noticing that they're genuinely different things, rather than three flavours of the same thing.</p>
+  </div>
+
+  <div class="wrap-wide">
+  <figure>
+    <svg viewBox="0 0 760 260" role="img" aria-label="Three workshop safety measures. A sign by the door is read by everyone on the way in. A sign on one machine is seen only by whoever is standing at that machine. An interlock physically prevents the machine running when the guard is open. The first two are advice; the third is a guarantee.">
+      <g stroke="var(--rule)" stroke-width="1.4" fill="none">
+        <rect x="14" y="42" width="230" height="130" rx="3"/>
+        <rect x="264" y="42" width="230" height="130" rx="3"/>
+      </g>
+      <rect x="514" y="42" width="232" height="130" rx="3" fill="none" stroke="var(--accent)" stroke-width="1.8"/>
+      <g font-family="var(--face-mono)" font-size="10" fill="var(--ink-faint)" letter-spacing="1.3">
+        <text x="14" y="32">BY THE DOOR</text><text x="264" y="32">ON ONE MACHINE</text>
+      </g>
+      <text x="514" y="32" font-family="var(--face-mono)" font-size="10" fill="var(--accent)" letter-spacing="1.3">ON THE GUARD</text>
+
+      <g font-family="var(--face-body)" font-size="13" fill="var(--ink)">
+        <text x="30" y="76">"Eye protection required"</text>
+        <text x="280" y="76">"Runs hot &mdash; let it cool"</text>
+        <text x="530" y="76">the machine will not start</text>
+        <text x="530" y="96">while the guard is open</text>
+      </g>
+      <g font-family="var(--face-body)" font-size="12" fill="var(--ink-soft)">
+        <text x="30" y="104">everyone reads it, every day</text>
+        <text x="30" y="126">applies everywhere</text>
+        <text x="280" y="104">seen only when you're standing there</text>
+        <text x="280" y="126">applies in one place</text>
+        <text x="530" y="126">applies whatever anyone reads</text>
+      </g>
+      <text x="30" y="156" font-family="var(--face-mono)" font-size="11" fill="var(--ink-faint)">advice</text>
+      <text x="280" y="156" font-family="var(--face-mono)" font-size="11" fill="var(--ink-faint)">advice, scoped</text>
+      <text x="530" y="156" font-family="var(--face-mono)" font-size="11" fill="var(--accent)">guarantee</text>
+
+      <line x1="14" y1="196" x2="746" y2="196" stroke="var(--rule)" stroke-width="1.2"/>
+      <text x="14" y="222" font-family="var(--face-body)" font-size="13" fill="var(--ink)">A sign is followed most of the time.</text>
+      <text x="14" y="244" font-family="var(--face-body)" font-size="13" fill="var(--accent)">An interlock does not have a most of the time.</text>
+    </svg>
+    <figcaption><b>Two of these are conventions and one is a control.</b> The whole of this class is
+    learning to tell, for any given requirement, which kind of thing the job actually needs.</figcaption>
+  </figure>
+  </div>
+
+  <div class="wrap">
+    <p>Claude Code gives you all three, plus a fourth &mdash; the apprentice you send to the library so
+    you don't have to carry the books back.</p>
+    <p class="exit"><b>Next.</b> Before the mechanisms, the frame that sorts every feature in the
+    product into one of two piles.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 3 · the frame + the loop ---------- -->
+<section class="screen" data-title="The frame, and why plan mode exists">
+  <div class="wrap">
+    <span class="label">02 &middot; Two questions</span>
+    <h2>The frame, and why plan mode exists</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll be able to sort any Claude Code feature
+    without memorising a list, and say when plan mode is the right default.</p>
+
+    <p>Claude Code is the harness from Class 1, made configurable. Every feature in it answers one of
+    exactly two questions.</p>
+
+    <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>What gets onto the board?</th><th>What are the hands allowed to do?</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>CLAUDE.md</code>, rules files, skills, subagents, slash commands, <code>/clear</code></td>
+          <td>permission modes, allow and deny rules, hooks</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p>Sort any feature into one of those two and it stops being a list to memorise.</p>
+
+    <h3>The loop: explore, plan, code</h3>
+    <p>Hand Claude Code a task and it doesn't start typing. It reads files and traces the logic first
+    &mdash; that's the <strong>explore</strong> phase. Then it proposes a <strong>plan</strong>, a
+    structured description of the edits it intends. Only once you've approved that does it
+    <strong>code</strong>.</p>
+    <p>Two reasons that sequence matters. It produces better work, because the thing understands the
+    codebase before touching it. And it's where permission modes plug in.</p>
+
+    <p class="pull"><strong>Plan mode holds it in explore</strong>, blocking every edit and every shell
+    command until you release it.</p>
+
+    <p>Which answers "plan mode or just let it run": plan mode is for an unfamiliar codebase or
+    high-stakes work, where the cost of a wrong action is high enough that you want to read the
+    intention before the action.</p>
+
+    <p class="exit"><b>Next.</b> The six modes, read as a spectrum &mdash; and two of them have names
+    that point the wrong way.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 4 · permission modes ---------- -->
+<section class="screen" data-title="The six permission modes">
+  <div class="wrap">
+    <span class="label">03 &middot; Permission modes</span>
+    <h2>The six modes</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll read any mode by asking two questions, and
+    you'll know which two names mislead.</p>
+
+    <p>For each one, the questions are always: what does it auto-approve, and what does it still
+    gate?</p>
+
+    <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>Mode</th><th>Auto-approves</th><th>Still gates</th></tr></thead>
+      <tbody>
+        <tr><td><code>default</code></td><td>Reads only</td><td>Every edit and every shell command</td></tr>
+        <tr><td><code>acceptEdits</code></td><td>Reads, edits, and common filesystem commands <em>inside the working directory</em></td><td>All other shell commands; writes outside the working directory; protected paths</td></tr>
+        <tr><td><code>plan</code></td><td>Reads only &mdash; researches and proposes, writes nothing</td><td>Everything, until you approve a plan</td></tr>
+        <tr><td><code>auto</code></td><td>Everything, but a separate classifier reviews each action first</td><td>Production deploys and migrations, mass deletes, credential exfiltration, force-push to main</td></tr>
+        <tr><td><code>dontAsk</code></td><td>Only what you pre-approved in an allow rule, plus read-only commands</td><td>Everything else &mdash; <strong>denied outright, with no confirmation queue</strong></td></tr>
+        <tr><td><code>bypassPermissions</code></td><td>Everything. No prompts, no safety checks</td><td>Nothing, apart from a last-resort prompt on catastrophic deletes</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <div class="note warn">
+      <span class="note-k">The two whose names point the wrong way</span>
+      <p><strong><code>dontAsk</code> is not the relaxed one. It's the strictest one.</strong> It doesn't
+      stop asking because it trusts you &mdash; it stops asking because anything not explicitly allowed
+      is denied and there's nobody to ask. Built for locked-down CI, not for reducing friction while you
+      work.</p>
+      <p style="margin-bottom:0"><strong><code>auto</code> is a research preview, not a safety
+      guarantee.</strong> The classifier reduces prompts; it does not make the thing safe. Availability
+      depends on plan and model version.</p>
+    </div>
+
+    <p><code>bypassPermissions</code> belongs only inside a disposable container. On a workstation
+    against a live codebase it removes every prompt between the agent and your files &mdash; and unlike
+    every other mode, it also removes the protected-path guard.</p>
+
+    <p class="exit"><b>Next.</b> Modes are only half of it. The other half is which file the rules live
+    in, and who can overrule whom.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 5 · settings levels ---------- -->
+<section class="screen" data-title="Where settings live">
+  <div class="wrap">
+    <span class="label">04 &middot; The hierarchy</span>
+    <h2>Where settings live, and who can overrule whom</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll know which control survives a developer who
+    has decided the prompts are slowing them down.</p>
+  </div>
+
+  <div class="wrap-wide">
+  <figure>
+    <svg viewBox="0 0 760 270" role="img" aria-label="Four settings levels stacked. Enterprise managed settings sit at the top and cannot be overridden by users or project files. Below them sit project settings committed to the repository, then local project overrides which are git-ignored, then user settings for one machine. A deny rule always beats an allow rule at any level.">
+      <g stroke="var(--rule)" stroke-width="1.3">
+        <rect x="120" y="46" width="520" height="46" rx="3" fill="var(--accent-wash)"/>
+        <rect x="120" y="104" width="520" height="46" rx="3" fill="var(--paper-sunk)"/>
+        <rect x="120" y="162" width="520" height="46" rx="3" fill="var(--paper-sunk)"/>
+        <rect x="120" y="220" width="520" height="40" rx="3" fill="var(--paper-sunk)"/>
+      </g>
+      <rect x="120" y="46" width="520" height="46" rx="3" fill="none" stroke="var(--accent)" stroke-width="1.8"/>
+
+      <g font-family="var(--face-body)" font-size="13" fill="var(--ink)" font-weight="650">
+        <text x="140" y="66">Enterprise &mdash; managed-settings.json</text>
+        <text x="140" y="124">Project &mdash; .claude/settings.json</text>
+        <text x="140" y="182">Local project &mdash; settings.local.json</text>
+        <text x="140" y="240">User &mdash; ~/.claude/settings.json</text>
+      </g>
+      <g font-family="var(--face-body)" font-size="11.5" fill="var(--ink-soft)">
+        <text x="140" y="84">set by administrators &mdash; cannot be overridden by users or project files</text>
+        <text x="140" y="142">committed &mdash; everyone who clones the repo</text>
+        <text x="140" y="200">git-ignored &mdash; your own preferences, not imposed on the team</text>
+        <text x="140" y="256">every project on your machine</text>
+      </g>
+
+      <path d="M96 240 L96 60" stroke="var(--ink-faint)" stroke-width="1.4" fill="none" marker-end="url(#g1)"/>
+      <text x="60" y="150" font-family="var(--face-mono)" font-size="10" fill="var(--ink-faint)" transform="rotate(-90 60 150)" text-anchor="middle">AUTHORITY</text>
+      <text x="656" y="70" font-family="var(--face-mono)" font-size="10.5" fill="var(--accent)">the durable one</text>
+      <text x="120" y="30" font-family="var(--face-body)" font-size="12.5" fill="var(--clay)">A deny rule always beats an allow rule &mdash; at any level, in any mode.</text>
+      <defs><marker id="g1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--ink-faint)"/></marker></defs>
+    </svg>
+    <figcaption><b>An enterprise deny rule is the most durable control in the system.</b> No individual
+    developer can remove it, and it holds even when somebody sets a bypass mode &mdash; which is what
+    "governance" means here, concretely.</figcaption>
+  </figure>
+  </div>
+
+  <div class="wrap">
+    <p class="exit"><b>Next.</b> The screen that matters most. Four mechanisms for carrying project
+    knowledge, and the question that picks between them.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 6 · the mechanism table ---------- -->
+<section class="screen" data-title="The mechanism table">
+  <div class="wrap">
+    <span class="label">05 &middot; The discriminator</span>
+    <h2>Which mechanism carries this piece of knowledge?</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll have four questions that pick the mechanism
+    &mdash; this is the exact ground that cost marks last time.</p>
+
+    <div class="tbl-scroll">
+    <table>
+      <thead><tr><th></th><th>What it loads</th><th>When</th><th>Context cost</th><th>What belongs in it</th></tr></thead>
+      <tbody>
+        <tr><td><strong><code>CLAUDE.md</code></strong></td>
+            <td>The whole file, prepended at session start</td>
+            <td>Every session, unconditionally</td>
+            <td>Permanent, and dilutes as it grows</td>
+            <td>Universal project constraints, commands, framework decisions</td></tr>
+        <tr><td><strong>Rules file</strong></td>
+            <td>The file, scoped by a <code>paths</code> glob in its frontmatter</td>
+            <td>Only when Claude touches a matching file</td>
+            <td>Nothing until triggered</td>
+            <td>Path-specific guidance that would be noise everywhere else</td></tr>
+        <tr><td><strong>Hook</strong></td>
+            <td>Nothing. Runs <em>your script</em> at a lifecycle event</td>
+            <td>At the event, every time</td>
+            <td>Almost none</td>
+            <td>Enforced guardrails, automatic side effects, audit logging</td></tr>
+        <tr><td><strong>Subagent</strong></td>
+            <td>Task context only, isolated from your session</td>
+            <td>When dispatched</td>
+            <td>Returns a summary, not the history</td>
+            <td>Exploration, and anything whose output would bloat the main board</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <div class="note good">
+      <span class="note-k">The discriminator, in four questions</span>
+      <p>Is it true <strong>everywhere in this project</strong>? &rarr; <code>CLAUDE.md</code></p>
+      <p>Is it true <strong>only in one part of the code</strong>? &rarr; a rules file with a
+      <code>paths</code> glob</p>
+      <p>Must it happen <strong>every single time, regardless of what the model decides</strong>?
+      &rarr; <strong>a hook</strong></p>
+      <p style="margin-bottom:0">Would doing it <strong>flood the board</strong>? &rarr; a subagent</p>
+    </div>
+
+    <details>
+      <summary>Go deeper &mdash; where the scoping actually comes from</summary>
+      <p style="margin:.9rem 0 0">A rules file's scoping comes from the <code>paths</code> glob in its
+      YAML frontmatter, <strong>not from where the file sits</strong>. You can organise
+      <code>.claude/rules/</code> into subdirectories, but that structure is organisational only &mdash;
+      a rules file with no <code>paths</code> field loads unconditionally at launch, with the same
+      priority as <code>CLAUDE.md</code>, wherever it lives.</p>
+      <p style="margin-bottom:0">So "never modify the database schema" belongs in <code>CLAUDE.md</code>
+      because it applies everywhere. "All SQL in the database module must include an explicit transaction
+      boundary" belongs in a rules file scoped to <code>src/db/**/*.sql</code>.</p>
+    </details>
+
+    <p class="exit"><b>Next.</b> The distinction inside that table which is worth more than the table.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 7 · convention vs guardrail ---------- -->
+<section class="screen" data-title="The one that cost you marks">
+  <div class="wrap">
+    <span class="label">06 &middot; Convention or guardrail</span>
+    <h2>The distinction that cost you marks</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll have a reflex: when the requirement is
+    "always" or "never," an instruction is the wrong <em>kind</em> of thing.</p>
+
+    <p>Put a line in <code>CLAUDE.md</code> saying "run Prettier after every file edit," and the agent
+    will do it <strong>most of the time</strong>. It's a sign on the wall. It's read, it's weighed
+    against everything else on the board, and it's usually followed.</p>
+    <p>Configure a <code>PostToolUse</code> hook that runs Prettier, and it happens <strong>every single
+    time, without exception</strong>, because the hook fires independently of anything the model
+    decided. It's the interlock.</p>
+
+    <p class="pull">Not a weaker version of the right mechanism &mdash; the wrong kind of thing entirely.
+    You're writing a sign where the job needs an interlock.</p>
+
+    <h3>The lifecycle events</h3>
+    <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>Event</th><th>When it runs</th><th>What it's for</th></tr></thead>
+      <tbody>
+        <tr><td><code>PreToolUse</code></td><td><strong>Before</strong> the call &mdash; the only one early enough to <strong>block</strong></td><td>Exit code 2 stops the action and writes the reason back as feedback the agent sees. Access control at the configuration layer instead of hoping</td></tr>
+        <tr><td><code>PostToolUse</code></td><td>After the call &mdash; cannot block</td><td>Side effects: formatters, triggering tests, audit logs</td></tr>
+        <tr><td><code>UserPromptSubmit</code></td><td>Before the model sees your prompt</td><td>Inject context or validate the request</td></tr>
+        <tr><td><code>SessionStart</code> / <code>SessionEnd</code></td><td>Session opens or closes</td><td>Initialise state, check required services are reachable; teardown and final audit writes</td></tr>
+        <tr><td><code>Stop</code></td><td>The model has finished responding</td><td>Notifications, cleanup, committing the audit log</td></tr>
+        <tr><td><code>Notification</code></td><td>Claude needs permission, or has been idle 60 seconds</td><td>Route those signals somewhere</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p>Note which one blocks. Only <code>PreToolUse</code> runs early enough to have a say.</p>
+
+    <div class="check">
+      <span class="note-k">Checkpoint</span>
+      <p>Your team requires that every commit message include a ticket ID. Somebody proposes adding it to
+      <code>CLAUDE.md</code>. What do you say, and what would you build instead?</p>
+      <button class="btn" data-reveal="e1">Commit to an answer, then reveal</button>
+      <div class="answer" id="e1" hidden>
+        <p><code>CLAUDE.md</code> gets you a commit message with a ticket ID <em>most of the time</em>,
+        and the failures are invisible until somebody audits the log months later.</p>
+        <p style="margin-bottom:0">"Every commit" is an <strong>always</strong>, so it wants a
+        <strong><code>PreToolUse</code> hook</strong> &mdash; the only event that runs early enough to
+        block. It inspects the pending commit, exits 2 if the ID is missing, and writes the reason to
+        stderr so the agent sees the feedback and corrects. That fires regardless of permission mode,
+        regardless of what else is on the board, and regardless of what the model decided.</p>
+      </div>
+    </div>
+
+    <p class="exit"><b>Next.</b> Two things Class 1 told you that turn out to be more nuanced.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 8 · corrections + the gate ---------- -->
+<section class="screen" data-title="Two corrections, and where the human gate goes">
+  <div class="wrap">
+    <span class="label">07 &middot; Nuance and judgement</span>
+    <h2>Two corrections to Class 1</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll have the subagent story exactly right, and
+    a single question for placing every human review gate.</p>
+
+    <p>Class 1 said subagents don't inherit the parent's <code>CLAUDE.md</code>. That's
+    <strong>partly wrong, and it depends which subagent</strong>.</p>
+    <p>The built-in <strong>Explore</strong> and <strong>Plan</strong> subagents skip
+    <code>CLAUDE.md</code> and git status deliberately, to stay fast and cheap. So project rules
+    genuinely aren't in their context. The <strong>general-purpose</strong> subagent loads both. If you
+    delegate to Explore and a <code>CLAUDE.md</code> rule gets ignored, nothing malfunctioned &mdash;
+    that context was never loaded.</p>
+    <p>And on skills: custom subagents don't see your skills automatically and must list them in their
+    own frontmatter. Built-in agents have no preloaded skills at all &mdash; if you need skill-backed
+    behaviour, the route is a custom subagent that names them.</p>
+
+    <div class="note good">
+      <span class="note-k">What stands</span>
+      <p style="margin-bottom:0">Permissions <em>do</em> inherit. So the asymmetry from Class 1 holds
+      &mdash; context doesn't travel, authority does &mdash; and now you know its exact shape.</p>
+    </div>
+
+    <h3>Where the human gate goes</h3>
+    <p>Permission modes decide what the agent does without asking. They don't decide where <em>you</em>
+    still need to look. That rests on one question: <strong>what is the worst outcome if this runs
+    without a person checking it?</strong></p>
+
+    <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>Worst case</th><th>Placement</th></tr></thead>
+      <tbody>
+        <tr><td>Low cost, reversible &mdash; a formatting fix inside the working directory</td>
+            <td>Let it through. Requiring approval buys oversight you don't need and slows the work. This is what <code>acceptEdits</code> is for</td></tr>
+        <tr><td>Hard to undo, or reaching somewhere sensitive &mdash; a write outside the working directory, a destructive shell command, a security-relevant file</td>
+            <td>Gate it. A deny rule enforces this deterministically; <code>default</code> or <code>plan</code> keeps the prompt in place while you decide</td></tr>
+        <tr><td>Code the team has marked sensitive</td>
+            <td><strong>The agent is never the only gate.</strong> Its work is an input to a human decision, however confident it or its own review sounds</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p>The gate placement and the mode choice are the same decision seen from two sides. The mode sets
+    the default for a whole session; the gate is where you override that default for the one action
+    whose cost is too high to leave to a default.</p>
+
+    <div class="note">
+      <span class="note-k">One more failure mode worth naming</span>
+      <p style="margin-bottom:0"><code>CLAUDE.md</code>'s main problem is <strong>size</strong>. Every
+      instruction you add makes every other instruction a smaller fraction of the board, so a file that
+      grows with each new idea gradually dilutes the one rule that would have caught a real mistake.
+      Hold it to constraints that change behaviour and move everything else into skills.
+      (<code>/init</code> writes you a starter by scanning the codebase &mdash; a decent baseline that
+      needs editing before you trust it.)</p>
+    </div>
+
+    <p class="exit"><b>Last screen.</b> The recap, and a scenario where the rule was in bold at the top
+    of the file and still didn't hold.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 9 · recap ---------- -->
+<section class="screen" data-title="Recap and the closing question">
+  <div class="wrap">
+    <span class="label">Recap</span>
+    <h2>What you're leaving with</h2>
+    <p class="lead">Four mechanisms, one question each. And one reflex worth more than the whole
+    table.</p>
+
+    <ol>
+      <li><strong>Two piles.</strong> Every feature is about what gets on the board, or what the hands
+      may do.</li>
+      <li><strong>Six modes</strong>, read by what they auto-approve and what they still gate.
+      <code>dontAsk</code> is the strictest, not the loosest.</li>
+      <li><strong>Four settings levels</strong>, and an enterprise deny rule is the only control that
+      survives a developer in a hurry.</li>
+      <li><strong>Always or never means a hook.</strong> Only <code>PreToolUse</code> can block.</li>
+      <li><strong>The gate goes where the worst case is worst</strong> &mdash; not where the mode
+      happens to end.</li>
+    </ol>
+
+    <div class="check">
+      <span class="note-k">Before Class 6</span>
+      <p>A team has a rule: nothing may touch <code>infra/production/</code> without a named human
+      approving it. It's written in <code>CLAUDE.md</code>, in bold, at the top. It held for four
+      months.</p>
+      <p>Then a developer, mid-refactor and moving fast, switches to <code>bypassPermissions</code>
+      because the prompts were slowing them down. Twenty minutes later a file in
+      <code>infra/production/</code> has been edited.</p>
+      <p>Why didn't the rule hold? What mechanism would have, and at which settings level? And &mdash;
+      the one that matters &mdash; that developer wasn't being reckless; they were being slow and fixed
+      it the way the tool allowed. <strong>What does that tell you about where a control has to sit
+      relative to the person it constrains?</strong></p>
+      <button class="btn" data-reveal="e2">Commit to an answer, then reveal</button>
+      <div class="answer" id="e2" hidden>
+        <p><strong>Why it didn't hold.</strong> A <code>CLAUDE.md</code> line is text on the board. It's
+        weighed against everything else there and followed most of the time &mdash; and
+        <code>bypassPermissions</code> removes the prompts that were doing the actual stopping, including
+        the protected-path guard. Bold type doesn't change what kind of thing a sentence is.</p>
+        <p><strong>What would have held.</strong> A <strong>deny rule at the enterprise level</strong>,
+        or a <code>PreToolUse</code> hook deployed through managed settings. Enterprise settings cannot
+        be overridden by users or project files, and a deny rule beats an allow rule in any mode &mdash;
+        including a bypass mode. Anything at project or user level is removable by the person it is
+        meant to constrain.</p>
+        <p style="margin-bottom:0"><strong>And the real lesson.</strong> A control that the constrained
+        person can switch off isn't a control &mdash; it's a preference with good intentions. Notice the
+        developer did nothing malicious: they hit friction and used a documented feature to remove it.
+        Any control you'd want to survive that has to sit at a level they cannot reach. Which is the same
+        idea as the interlock: <em>enforcement has to sit outside the thing being constrained.</em></p>
+      </div>
+    </div>
+
+    <p style="color:var(--ink-soft);font-size:var(--t-small)">Class 6 &mdash; tokens, context windows,
+    sampling and non-determinism: why the same prompt gives different answers, and why that is the
+    system working correctly.</p>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">Class 5 of 29</span>
+      <a class="btn btn-primary" href="CCDV-F_Class-06.html">Class 6: Why the Same Question Gives Two Answers &rarr;</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<script>
+(function () {
+  var screens = [].slice.call(document.querySelectorAll('.screen'));
+  var toc = document.getElementById('toc');
+  var barEl = document.getElementById('bar');
+  var cNow = document.getElementById('cNow');
+  var cAll = document.getElementById('cAll');
+  var barTitle = document.getElementById('barTitle');
+  var drawer = document.getElementById('drawer');
+  var i = 0;
+
+  cAll.textContent = screens.length;
+
+  screens.forEach(function (s, n) {
+    var li = document.createElement('li');
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = s.dataset.title || ('Screen ' + (n + 1));
+    b.addEventListener('click', function () { go(n); closeDrawer(); });
+    li.appendChild(b);
+    toc.appendChild(li);
+  });
+  var tocBtns = [].slice.call(toc.querySelectorAll('button'));
+
+  function go(n, keepScroll) {
+    i = Math.max(0, Math.min(screens.length - 1, n));
+    screens.forEach(function (s, k) { s.classList.toggle('on', k === i); });
+    tocBtns.forEach(function (b, k) { b.setAttribute('aria-current', k === i ? 'true' : 'false'); });
+    cNow.textContent = i + 1;
+    barEl.style.width = ((i + 1) / screens.length * 100) + '%';
+    barTitle.textContent = screens[i].dataset.title || '';
+    if (!keepScroll) window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+    if (location.hash !== '#s' + (i + 1)) history.replaceState(null, '', '#s' + (i + 1));
+    document.querySelectorAll('[data-next]').forEach(function (b) { b.disabled = (i === screens.length - 1); });
+    document.querySelectorAll('[data-prev]').forEach(function (b) { b.disabled = (i === 0); });
+  }
+
+  document.addEventListener('click', function (e) {
+    var n = e.target.closest('[data-next]');
+    var p = e.target.closest('[data-prev]');
+    var r = e.target.closest('[data-reveal]');
+    if (n) go(i + 1);
+    if (p) go(i - 1);
+    if (r) {
+      var box = document.getElementById(r.dataset.reveal);
+      if (box) { box.hidden = false; r.disabled = true; box.setAttribute('tabindex', '-1'); box.focus(); }
+    }
+  });
+
+  function openDrawer() { drawer.setAttribute('open', ''); document.getElementById('main').setAttribute('inert', ''); tocBtns[i].focus(); }
+  function closeDrawer() { drawer.removeAttribute('open'); document.getElementById('main').removeAttribute('inert'); }
+  document.getElementById('tocBtn').addEventListener('click', openDrawer);
+  document.getElementById('tocClose').addEventListener('click', closeDrawer);
+  drawer.addEventListener('click', function (e) { if (e.target === drawer) closeDrawer(); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && drawer.hasAttribute('open')) return closeDrawer();
+    if (e.target.matches('input, textarea')) return;
+    if (e.key === 'ArrowRight') go(i + 1);
+    if (e.key === 'ArrowLeft') go(i - 1);
+  });
+
+  var start = parseInt((location.hash || '').replace('#s', ''), 10);
+  go(isNaN(start) ? 0 : start - 1, true);
+})();
+</script>
+</body>
+</html>

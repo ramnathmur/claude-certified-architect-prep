@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 12 — Nothing Is Holding an Object Open for You · CCDV-F</title>
+<meta name="description" content="CCDV-F Class 12: Messages API mechanics - streaming as an event series, never acting on partial blocks, and what images cost before they are read.">
+<meta name="author" content="Ram">
+<style>
+@layer engine, skin, utilities;
+
+/* ============================== SKIN: "Lecture Hall" ============================== */
+@layer skin {
+  :root {
+    color-scheme: light dark;
+
+    /* -- color primitives (oklch) -- */
+    --paper:        oklch(0.977 0.004 250);
+    --paper-sunk:   oklch(0.947 0.006 250);
+    --ink:          oklch(0.24 0.018 255);
+    --ink-soft:     oklch(0.46 0.016 255);
+    --ink-faint:    oklch(0.62 0.012 255);
+    --rule:         oklch(0.87 0.008 255);
+    --accent:       oklch(0.50 0.13 250);
+    --accent-lift:  oklch(0.62 0.14 250);
+    --clay:         oklch(0.58 0.10 45);
+    --flag:         oklch(0.56 0.12 145);
+
+    /* -- derived tints -- */
+    --accent-wash:  color-mix(in oklch, var(--accent) 8%, var(--paper));
+    --accent-edge:  color-mix(in oklch, var(--accent) 32%, var(--paper));
+    --clay-wash:    color-mix(in oklch, var(--clay) 10%, var(--paper));
+    --flag-wash:    color-mix(in oklch, var(--flag) 10%, var(--paper));
+
+    /* -- type -- */
+    --face-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --face-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                 Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
+    --face-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+    --t-body:  clamp(1.0rem, 0.94rem + 0.30vw, 1.125rem);
+    --t-small: clamp(0.83rem, 0.80rem + 0.14vw, 0.90rem);
+    --t-lead:  clamp(1.13rem, 1.03rem + 0.48vw, 1.32rem);
+    --t-h2:    clamp(1.55rem, 1.28rem + 1.35vw, 2.35rem);
+    --t-h3:    clamp(1.08rem, 1.00rem + 0.38vw, 1.24rem);
+    --t-hero:  clamp(2.0rem, 1.45rem + 2.7vw, 3.4rem);
+    --measure: 64ch;
+    --lh: 1.68;
+
+    /* -- shape + space -- */
+    --r: 3px;
+    --hair: 1px;
+    --gap: clamp(1.1rem, 0.9rem + 1vw, 1.9rem);
+
+    /* -- motion -- */
+    --dur: 180ms;
+    --ease: cubic-bezier(.2,.6,.3,1);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:      oklch(0.185 0.014 260);
+      --paper-sunk: oklch(0.225 0.016 260);
+      --ink:        oklch(0.93 0.008 255);
+      --ink-soft:   oklch(0.76 0.012 255);
+      --ink-faint:  oklch(0.60 0.012 255);
+      --rule:       oklch(0.34 0.014 258);
+      --accent:     oklch(0.76 0.12 250);
+      --accent-lift:oklch(0.84 0.11 250);
+      --clay:       oklch(0.74 0.10 48);
+      --flag:       oklch(0.74 0.12 152);
+      --accent-wash: color-mix(in oklch, var(--accent) 14%, var(--paper));
+      --accent-edge: color-mix(in oklch, var(--accent) 40%, var(--paper));
+      --clay-wash:   color-mix(in oklch, var(--clay) 16%, var(--paper));
+      --flag-wash:   color-mix(in oklch, var(--flag) 16%, var(--paper));
+    }
+  }
+}
+
+/* ============================== ENGINE ============================== */
+@layer engine {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--face-body);
+    font-size: var(--t-body);
+    line-height: var(--lh);
+    font-synthesis-weight: none;
+  }
+
+  /* ---- skip link ---- */
+  .skip {
+    position: absolute; left: -9999px; top: 0; z-index: 100;
+    background: var(--accent); color: var(--paper);
+    padding: .7rem 1.1rem; border-radius: var(--r);
+  }
+  .skip:focus { left: .6rem; top: .6rem; }
+
+  /* ---- top bar ---- */
+  .bar {
+    position: sticky; top: 0; z-index: 40;
+    background: color-mix(in oklch, var(--paper) 88%, transparent);
+    backdrop-filter: blur(9px);
+    border-bottom: var(--hair) solid var(--rule);
+  }
+  .bar-in {
+    max-width: 78rem; margin: 0 auto;
+    padding: .6rem clamp(.9rem, 3vw, 2rem);
+    display: flex; align-items: center; gap: 1rem;
+  }
+  .brand {
+    font-family: var(--face-mono);
+    font-size: .68rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--ink-faint); white-space: nowrap;
+  }
+  .brand b { color: var(--accent); font-weight: 600; }
+  .bar-title {
+    font-family: var(--face-display);
+    font-size: .95rem; color: var(--ink-soft);
+    margin-left: auto; text-align: right;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .counter {
+    font-family: var(--face-mono); font-size: .72rem;
+    color: var(--ink-faint); white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .progress { height: 2px; background: var(--rule); }
+  .progress span {
+    display: block; height: 100%; width: 0;
+    background: var(--accent);
+    transition: width var(--dur) var(--ease);
+  }
+
+  .btn {
+    font: inherit; font-size: var(--t-small);
+    color: var(--ink); background: transparent;
+    border: var(--hair) solid var(--rule); border-radius: var(--r);
+    padding: .5rem .85rem; cursor: pointer;
+    min-height: 44px; display: inline-flex; align-items: center; gap: .5rem;
+    transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+  .btn:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-wash); }
+  .btn:disabled { opacity: .38; cursor: not-allowed; }
+  .btn-primary { border-color: var(--accent-edge); background: var(--accent-wash); color: var(--accent); font-weight: 600; }
+
+  :focus-visible { outline: 2px solid var(--accent-lift); outline-offset: 3px; }
+
+  /* ---- drawer ---- */
+  .drawer {
+    position: fixed; inset: 0; z-index: 60;
+    background: color-mix(in oklch, var(--ink) 42%, transparent);
+    display: none; padding: clamp(.8rem, 4vw, 3rem);
+  }
+  .drawer[open] { display: grid; place-items: start center; }
+  .drawer-panel {
+    background: var(--paper); border: var(--hair) solid var(--rule);
+    border-radius: var(--r); max-width: 34rem; width: 100%;
+    padding: clamp(1rem, 3vw, 1.7rem); box-shadow: 0 18px 50px -20px color-mix(in oklch, var(--ink) 45%, transparent);
+  }
+  .drawer h2 { font-size: var(--t-h3); margin: 0 0 .9rem; font-family: var(--face-display); }
+  .toc { list-style: none; margin: 0; padding: 0; counter-reset: t; }
+  .toc li { counter-increment: t; }
+  .toc button {
+    width: 100%; text-align: left; font: inherit; font-size: var(--t-small);
+    background: none; border: 0; border-top: var(--hair) solid var(--rule);
+    padding: .72rem .2rem; color: var(--ink); cursor: pointer;
+    display: flex; gap: .8rem; align-items: baseline; min-height: 44px;
+  }
+  .toc button::before {
+    content: counter(t, decimal-leading-zero);
+    font-family: var(--face-mono); font-size: .7rem; color: var(--ink-faint);
+  }
+  .toc button:hover { color: var(--accent); }
+  .toc button[aria-current="true"] { color: var(--accent); font-weight: 600; }
+
+  /* ---- screens ---- */
+  main { max-width: 78rem; margin: 0 auto; padding: 0 clamp(.9rem, 3vw, 2rem); }
+  .screen { display: none; padding: clamp(1.8rem, 5vw, 3.6rem) 0 1rem; }
+  .screen.on { display: block; animation: rise var(--dur) var(--ease); }
+  @keyframes rise { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+
+  .wrap { max-width: var(--measure); margin-inline: auto; }
+  .wrap-wide { max-width: 52rem; margin-inline: auto; }
+
+  .label {
+    font-family: var(--face-mono); font-size: .68rem;
+    letter-spacing: .13em; text-transform: uppercase; color: var(--accent);
+    padding-bottom: .45rem; border-bottom: var(--hair) solid var(--accent-edge);
+    display: inline-block; margin-bottom: 1.1rem;
+  }
+
+  h1 { font-family: var(--face-display); font-size: var(--t-hero); line-height: 1.06;
+       margin: 0 0 1.1rem; font-weight: 600; letter-spacing: -.015em; }
+  h2 { font-family: var(--face-display); font-size: var(--t-h2); line-height: 1.14;
+       margin: 0 0 1.1rem; font-weight: 600; letter-spacing: -.01em; }
+  h3 { font-family: var(--face-body); font-size: var(--t-h3); margin: 2rem 0 .6rem; font-weight: 650; }
+  p { margin: 0 0 1.05em; }
+  .lead { font-size: var(--t-lead); color: var(--ink-soft); line-height: 1.5; }
+  strong { font-weight: 650; }
+  em { font-style: italic; }
+  code { font-family: var(--face-mono); font-size: .88em;
+         background: var(--paper-sunk); padding: .12em .38em; border-radius: 2px; }
+
+  /* -- printed stream specimen -- */
+  .spec { margin: 2rem 0; border: var(--hair) solid var(--rule); border-radius: var(--r);
+          background: var(--paper-sunk); overflow: hidden; }
+  .spec-h { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem;
+            padding: .55rem .85rem; border-bottom: var(--hair) solid var(--rule);
+            font-family: var(--face-mono); font-size: .72rem; letter-spacing: .12em;
+            text-transform: uppercase; color: var(--ink-faint); }
+  .spec pre { margin: 0; padding: .85rem; overflow-x: auto; font-family: var(--face-mono);
+              font-size: .82rem; line-height: 1.62; color: var(--ink); }
+  .spec pre b { font-weight: 600; color: var(--accent); }
+  .spec pre i { font-style: normal; color: var(--ink-faint); }
+  .spec pre u { text-decoration: none; background: var(--flag-wash);
+                box-shadow: 0 0 0 2px var(--flag-wash); color: var(--ink); }
+  .spec-f { padding: .6rem .85rem; border-top: var(--hair) solid var(--rule);
+            font-size: var(--t-small); color: var(--ink-soft); }
+  .spec-f b { color: var(--ink); font-weight: 600; }
+
+  /* -- commit-before-reveal -- */
+  .commit { display: block; width: 100%; margin: .4rem 0 .8rem; padding: .6rem .7rem;
+            font: inherit; font-size: var(--t-small); line-height: 1.55;
+            color: var(--ink); background: var(--paper);
+            border: var(--hair) solid var(--accent-edge); border-radius: var(--r);
+            resize: vertical; min-height: 4.6rem; }
+  .commit:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .yours { margin-top: 1rem; padding: .7rem .85rem; border-radius: var(--r);
+           background: var(--paper-sunk); font-size: var(--t-small); }
+  .yours[hidden] { display: none; }
+  .yours .note-k { color: var(--ink-faint); }
+  .yours p { margin: .3rem 0 0; white-space: pre-wrap; }
+
+  /* -- physics vs convention -- */
+  .split { display: grid; gap: var(--gap); margin: 1.6rem 0; }
+  @media (min-width: 720px) { .split { grid-template-columns: 1fr 1fr; } }
+  .split > div { padding: 1rem 1.1rem; border-radius: var(--r); }
+  .split .phys { background: var(--accent-wash); border: var(--hair) solid var(--accent-edge); }
+  .split .conv { background: var(--paper-sunk); border: var(--hair) solid var(--rule); }
+  .split ul { margin: .5rem 0 0; padding-left: 1.1rem; }
+  .split li { margin-bottom: .5rem; font-size: var(--t-small); }
+  .split li:last-child { margin-bottom: 0; }
+
+  .entry, .exit {
+    font-size: var(--t-small); color: var(--ink-soft);
+    border-left: 2px solid var(--accent-edge);
+    padding: .1rem 0 .1rem .95rem; margin: 0 0 1.6rem;
+  }
+  .exit { border-left-color: color-mix(in oklch, var(--clay) 45%, var(--paper)); margin: 2rem 0 0; }
+  .exit b, .entry b { color: var(--ink); font-weight: 600; }
+
+  .pull {
+    font-family: var(--face-display); font-size: var(--t-lead);
+    line-height: 1.4; color: var(--ink);
+    border-top: var(--hair) solid var(--rule);
+    border-bottom: var(--hair) solid var(--rule);
+    padding: 1.1rem 0; margin: 1.8rem 0;
+  }
+
+  .note {
+    background: var(--paper-sunk); border-radius: var(--r);
+    padding: 1rem 1.15rem; margin: 1.5rem 0; font-size: var(--t-small);
+  }
+  .note.warn { background: var(--clay-wash); }
+  .note.good { background: var(--flag-wash); }
+  .note p:last-child { margin-bottom: 0; }
+  .note-k {
+    font-family: var(--face-mono); font-size: .66rem; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--ink-faint); display: block; margin-bottom: .4rem;
+  }
+
+  figure { margin: 2rem 0; }
+  figure svg { display: block; width: 100%; height: auto; }
+  figcaption {
+    font-size: var(--t-small); color: var(--ink-soft);
+    margin-top: .8rem; padding-top: .7rem; border-top: var(--hair) solid var(--rule);
+  }
+
+  .tbl-scroll { overflow-x: auto; margin: 1.6rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: var(--t-small); }
+  th, td { text-align: left; padding: .68rem .8rem; border-bottom: var(--hair) solid var(--rule);
+           vertical-align: top; }
+  th { font-family: var(--face-mono); font-size: .68rem; letter-spacing: .08em;
+       text-transform: uppercase; color: var(--ink-faint); font-weight: 500; }
+  tbody tr:hover { background: var(--paper-sunk); }
+
+  details { border-top: var(--hair) solid var(--rule); padding: .8rem 0; margin: 1.4rem 0; }
+  summary { cursor: pointer; font-size: var(--t-small); color: var(--accent);
+            font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+  summary::marker { color: var(--ink-faint); }
+
+  /* ---- checkpoint ---- */
+  .check { border: var(--hair) solid var(--accent-edge); border-radius: var(--r);
+           padding: 1.2rem 1.3rem; margin: 2rem 0; background: var(--accent-wash); }
+  .check .note-k { color: var(--accent); }
+  .check p { margin-bottom: .9rem; }
+  .answer { margin-top: 1rem; padding-top: 1rem; border-top: var(--hair) solid var(--accent-edge);
+            font-size: var(--t-small); }
+  .answer[hidden] { display: none; }
+
+  ul, ol { margin: 0 0 1.05em; padding-left: 1.3em; }
+  li { margin-bottom: .45em; }
+
+  /* ---- foot nav ---- */
+  .foot {
+    max-width: var(--measure); margin: 2.8rem auto 0;
+    border-top: var(--hair) solid var(--rule); padding: 1.2rem 0 3rem;
+    display: flex; gap: .8rem; align-items: center; justify-content: space-between;
+  }
+  .hint { font-size: .72rem; color: var(--ink-faint); font-family: var(--face-mono); }
+
+  @media (max-width: 640px) {
+    .bar-title { display: none; }
+    .hint { display: none; }
+    .bar-in { gap: .5rem; padding-inline: .75rem; }
+    .btn { padding: .5rem .62rem; }
+    .counter { margin-left: auto; flex: 0 0 auto; }
+  }
+  @media (max-width: 480px) {
+    /* the course link + contents button + counter is all that fits; the brand
+       repeats what the page title already says, so it goes first */
+    .brand { display: none; }
+  }
+
+  /* ---- floor: motion / contrast / forced-colors ---- */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+  @media (prefers-contrast: more) {
+    :root { --rule: var(--ink-soft); --ink-soft: var(--ink); }
+  }
+  @media (forced-colors: active) {
+    .btn, .drawer-panel, .check, figure svg { border: 1px solid ButtonText; }
+    .label, .brand b { color: LinkText; }
+    .progress span { background: Highlight; }
+  }
+
+  /* ---- print: flatten every screen ---- */
+  @media print {
+    .bar, .foot, .drawer, .skip, .hint { display: none !important; }
+    .screen { display: block !important; page-break-after: always; padding: 0 0 1.5rem; }
+    .answer[hidden] { display: block !important; }
+    figure, .check, table { break-inside: avoid; }
+    body { background: #fff; color: #111; }
+  }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the class</a>
+
+<header class="bar">
+  <div class="bar-in">
+    <span class="brand">CCDV&#8209;F&nbsp;· <b>Class 12</b></span>
+    <a class="btn" id="courseLink" href="index.html">&#8598;&nbsp;Course</a>
+    <button class="btn" id="tocBtn" aria-haspopup="dialog">Contents</button>
+    <span class="bar-title" id="barTitle">Nothing Is Holding an Object Open for You</span>
+    <span class="counter"><span id="cNow">1</span>&#8202;/&#8202;<span id="cAll">10</span></span>
+  </div>
+  <div class="progress"><span id="bar"></span></div>
+</header>
+
+<div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="tocH">
+  <div class="drawer-panel">
+    <h2 id="tocH">Class 12 &mdash; contents</h2>
+    <ol class="toc" id="toc"></ol>
+    <p style="margin:1rem 0 0"><button class="btn" id="tocClose">Close</button></p>
+  </div>
+</div>
+
+<main id="main">
+<!-- ---------- 1 · cover ---------- -->
+<section class="screen on" data-title="The promise">
+  <div class="wrap">
+    <span class="label">Claude Certified Developer &middot; Foundations</span>
+    <h1>Nothing Is Holding an Object Open for You</h1>
+    <p class="lead">When you stream a response, nobody hands you a message. You get a series of small
+    notes, each describing one change, and you are the one who has to build the message out of them.
+    Do that carelessly and the request that breaks is not the one you got wrong &mdash; it's the next
+    one.</p>
+
+    <div class="note">
+      <span class="note-k">What you leave holding</span>
+      <ol style="margin-bottom:0">
+        <li>Six events, and what your handler does with each.</li>
+        <li>Never act on a half-built block. Tool inputs are the ones that bite.</li>
+        <li>The pairing rule that explains why the damage shows up a turn late.</li>
+        <li>An interrupted stream gets thrown away, not saved.</li>
+        <li>Images cost context before Claude reads a word of your prompt.</li>
+      </ol>
+    </div>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Begin &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 2 · the analogy + what streaming changes ---------- -->
+<section class="screen" data-title="Somebody is reading you an address">
+  <div class="wrap">
+    <span class="label">01 &middot; Events, not an object</span>
+    <h2>Somebody is reading you an address</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll know what job streaming actually hands to
+    your code, and it's a bigger one than "show it sooner."</p>
+
+    <p>Put the API down for a minute. Somebody rings you to give you a delivery address, and the line
+    is bad.</p>
+
+    <p>You don't get an address. You get pieces of one. "Forty-two&hellip;" then a crackle, then
+    "&hellip;Bridgewater&hellip;", then a second of nothing, then "&hellip;Road." You're writing it
+    down as it arrives.</p>
+
+    <p>Now, you already know how to do this, and you do it without thinking. You don't send the courier
+    out after "Forty-two." You wait for the person to say <em>that's the whole address</em>. And you
+    wait not because you're being careful, but because "Forty-two" isn't a short address. It isn't an
+    address at all. It's a piece of one, and a piece of an address will send a van to a street that
+    doesn't exist.</p>
+
+    <p class="pull">That phone call is streaming. Every property that makes it awkward is a property
+    of a streamed response, and the awkwardness is not a flaw in the design &mdash; it's the cost of
+    hearing the first word before the last one has been spoken.</p>
+
+    <p>Here's the mapping, and it's exact. The person talking is the model. The crackly line is the
+    stream. Each burst of sound is an event. The pad you're writing on is the partial state your
+    handler is holding. And "that's the whole address" is a specific event with a name, which we'll
+    get to in a moment.</p>
+
+    <p>So what changes when you turn streaming on? In a normal request, the API hands you one finished
+    message with every content block complete. In a streamed request, it sends you a running commentary
+    on a message <em>while it is being built</em>, and your code listens and reassembles.</p>
+
+    <p>The message you end up holding is identical either way. Same blocks, same text, same tool calls.
+    What you've taken on is the assembly &mdash; and, more importantly, the judgement about what to do
+    if the commentary stops halfway.</p>
+
+    <p>Said the other way round, because this is the part that trips people: <strong>the model is not
+    holding an object open at the far end that you are reading from.</strong> There's no live handle,
+    nothing to poll, nothing that stays open. Each event is its own small message, complete in itself,
+    describing one change. Your handler applies it to the pad and waits for the next one.</p>
+
+    <p>There are six events. Once you've read the phone call above, the table is mostly confirmation of
+    what you'd guess.</p>
+
+    <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>Event</th><th>What it signals</th><th>What your handler does</th></tr></thead>
+      <tbody>
+        <tr><td><code>message_start</code></td><td>A new message begins &mdash; the shell, empty content, initial usage</td><td>Set up an empty content array to collect blocks in</td></tr>
+        <tr><td><code>content_block_start</code></td><td>A block opens, with its type (text, <code>tool_use</code>, thinking) and index</td><td>Make a slot at that index. A <code>tool_use</code> block opens with a name and id but <strong>no input yet</strong></td></tr>
+        <tr><td><code>content_block_delta</code></td><td>An incremental piece of one block &mdash; a text fragment, a fragment of tool JSON, a thinking fragment</td><td>Append to the block at that index. <strong>Tool inputs arrive as partial JSON spread across deltas</strong></td></tr>
+        <tr><td><code>content_block_stop</code></td><td>That block is complete</td><td>Finalise it. For <code>tool_use</code>, this is the <em>first</em> moment the JSON is complete enough to parse</td></tr>
+        <tr><td><code>message_delta</code></td><td>Top-level changes &mdash; the <code>stop_reason</code> and final usage</td><td>Record the stop reason. It tells you whether the model finished or stopped for another reason</td></tr>
+        <tr><td><code>message_stop</code></td><td>The stream is complete</td><td>The assembled array is now the finished message. Treat it exactly like a non-streamed response</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p><code>content_block_stop</code> is "that's the whole address." <code>message_stop</code> is
+    "that's the whole call, goodbye." You need both, and they mean different things.</p>
+
+    <p class="exit"><b>Next.</b> Let's stop describing the phone call and print one out.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 3 · one real stream ---------- -->
+<section class="screen" data-title="One stream, printed out">
+  <div class="wrap">
+    <span class="label">02 &middot; The thing itself</span>
+    <h2>One stream, printed out</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll have seen the six events in the order they
+    actually arrive, and watched a tool's arguments assemble themselves out of nothing.</p>
+
+    <p>This is one real exchange. Claude says a sentence, then calls a tool that reads a file. Two
+    content blocks, so you'll see the block events twice &mdash; once at index 0 for the text, once at
+    index 1 for the tool call. I've trimmed the long ids and left everything structural intact.</p>
+
+    <div class="spec">
+      <div class="spec-h"><span>One streamed turn &middot; text block, then a tool call</span><span>server&#8209;sent events</span></div>
+<pre><b>event: message_start</b>
+data: {"type":"message_start","message":{"id":"msg_01Qk","content":[],
+       "usage":{"input_tokens":2047,"output_tokens":1}}}
+
+<b>event: content_block_start</b>
+data: {"index":<u>0</u>,"content_block":{"type":"text","text":""}}
+
+<b>event: content_block_delta</b>
+data: {"index":<u>0</u>,"delta":{"type":"text_delta","text":"I'll read that file."}}
+
+<b>event: content_block_stop</b>
+data: {"index":<u>0</u>}                              <i>&larr; text block done</i>
+
+<b>event: content_block_start</b>
+data: {"index":<u>1</u>,"content_block":{"type":"tool_use","id":"toolu_01A",
+       "name":"read_file","input":{}}}          <i>&larr; note: input is empty</i>
+
+<b>event: content_block_delta</b>
+data: {"index":<u>1</u>,"delta":{"partial_json":"{\"path\""}}     <i>acc: {"path"</i>
+
+<b>event: content_block_delta</b>
+data: {"index":<u>1</u>,"delta":{"partial_json":": \"src/ma"}}    <i>acc: {"path": "src/ma</i>
+
+<b>event: content_block_delta</b>
+data: {"index":<u>1</u>,"delta":{"partial_json":"in.py\"}"}}      <i>acc: {"path": "src/main.py"}</i>
+
+<b>event: content_block_stop</b>
+data: {"index":<u>1</u>}                              <i>&larr; NOW it parses</i>
+
+<b>event: message_delta</b>
+data: {"delta":{"stop_reason":"tool_use"},"usage":{"output_tokens":38}}
+
+<b>event: message_stop</b>
+</pre>
+      <div class="spec-f"><b>Read the right-hand column.</b> That's the accumulator &mdash; your pad by
+      the phone. Look at what's on it after the second delta: <code>{"path": "src/ma</code>. That is not
+      "most of" a JSON object. Hand it to a JSON parser and it throws, because a string was opened and
+      never closed and an object was opened and never closed. There is no partial credit.</div>
+    </div>
+
+    <p>Walk the middle of that listing once more, because it's the whole class. At
+    <code>content_block_start</code> for index 1, you learn a tool is coming and you learn its name
+    &mdash; <code>read_file</code> &mdash; and its input is an <em>empty object</em>. The model has
+    committed to calling the tool and has not yet said what to call it with.</p>
+
+    <p>Then three deltas dribble in the arguments as text. Not as JSON &mdash; as fragments of a string
+    that will eventually <em>be</em> JSON. And only when <code>content_block_stop</code> lands at index
+    1 is the accumulated string a complete, parseable object.</p>
+
+    <p>Notice also that the two blocks don't interleave. Index 0 opens, fills, and closes before index 1
+    opens. The block events nest inside the message events, and they nest cleanly.</p>
+  </div>
+
+  <div class="wrap-wide">
+  <figure>
+    <svg viewBox="0 0 760 300" role="img" aria-label="A timeline of one streamed turn. message_start and message_stop bracket the whole message. Inside them sit two block groups that do not overlap: a text block at index zero which opens, receives one delta and closes, and a tool_use block at index one which opens with an empty input, receives three JSON fragment deltas, and closes. Underneath the tool_use deltas the accumulating string is shown growing from an open brace and quote to a complete object, and it is marked unparseable until the block's stop event, which is the first moment it is safe to act on.">
+      <text x="14" y="20" font-family="var(--face-mono)" font-size="10" fill="var(--ink-faint)" letter-spacing="1.3">ONE STREAMED TURN, ON A TIME AXIS</text>
+
+      <!-- message brackets -->
+      <line x1="30" y1="38" x2="30" y2="250" stroke="var(--accent)" stroke-width="2"/>
+      <line x1="30" y1="38" x2="46" y2="38" stroke="var(--accent)" stroke-width="2"/>
+      <line x1="30" y1="250" x2="46" y2="250" stroke="var(--accent)" stroke-width="2"/>
+      <text x="52" y="34" font-family="var(--face-mono)" font-size="10.5" fill="var(--accent)">message_start</text>
+      <text x="52" y="262" font-family="var(--face-mono)" font-size="10.5" fill="var(--accent)">message_stop</text>
+
+      <!-- text block group -->
+      <rect x="60" y="52" width="200" height="52" rx="3" fill="var(--paper-sunk)" stroke="var(--rule)" stroke-width="1.2"/>
+      <text x="72" y="70" font-family="var(--face-mono)" font-size="10" fill="var(--ink-faint)">INDEX 0 &middot; TEXT</text>
+      <text x="72" y="90" font-family="var(--face-mono)" font-size="10.5" fill="var(--ink-soft)">start &rarr; delta &rarr; stop</text>
+
+      <!-- tool block group -->
+      <rect x="280" y="52" width="450" height="52" rx="3" fill="var(--paper-sunk)" stroke="var(--rule)" stroke-width="1.2"/>
+      <text x="292" y="70" font-family="var(--face-mono)" font-size="10" fill="var(--ink-faint)">INDEX 1 &middot; TOOL_USE</text>
+      <text x="292" y="90" font-family="var(--face-mono)" font-size="10.5" fill="var(--ink-soft)">start &rarr; delta &rarr; delta &rarr; delta &rarr; stop</text>
+
+      <!-- accumulator ticks -->
+      <text x="280" y="130" font-family="var(--face-mono)" font-size="10" fill="var(--ink-faint)" letter-spacing="1.1">WHAT IS ON YOUR PAD</text>
+      <g font-family="var(--face-mono)" font-size="11">
+        <text x="292" y="152" fill="var(--clay)">{"path"</text>
+        <text x="292" y="172" fill="var(--clay)">{"path": "src/ma</text>
+        <text x="292" y="192" fill="var(--clay)">{"path": "src/main.py"}</text>
+      </g>
+      <text x="560" y="152" font-family="var(--face-body)" font-size="11.5" fill="var(--clay)">throws</text>
+      <text x="560" y="172" font-family="var(--face-body)" font-size="11.5" fill="var(--clay)">throws</text>
+      <text x="560" y="192" font-family="var(--face-body)" font-size="11.5" fill="var(--flag)">parses</text>
+
+      <!-- safe line -->
+      <line x1="280" y1="212" x2="730" y2="212" stroke="var(--flag)" stroke-width="1.8" stroke-dasharray="5 4"/>
+      <text x="280" y="230" font-family="var(--face-body)" font-size="12.5" fill="var(--flag)">content_block_stop &mdash; the first moment it is safe to act.</text>
+      <text x="60" y="230" font-family="var(--face-body)" font-size="12.5" fill="var(--ink-soft)">Safe here too.</text>
+    </svg>
+    <figcaption><b>The blocks nest inside the message, and they don't overlap.</b> Index 0 finishes
+    before index 1 begins. Every delta belongs to exactly one index, which is how your handler knows
+    which slot on the pad to append to.</figcaption>
+  </figure>
+  </div>
+
+  <div class="wrap">
+    <p class="exit"><b>Next.</b> One rule falls out of that picture, and it is most of getting streaming
+    right.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 4 · the rule ---------- -->
+<section class="screen" data-title="Don't act on half a block">
+  <div class="wrap">
+    <span class="label">03 &middot; The rule</span>
+    <h2>Don't act on half a block</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll know which block corrupts state, and
+    you'll have committed to an answer about what happens when you jump the gun.</p>
+
+    <p>The rule is the courier rule. Don't send the van until somebody says that's the whole address.
+    In the API: <strong>don't parse, and don't run, a <code>tool_use</code> block until
+    <code>content_block_stop</code> has arrived for its index.</strong></p>
+
+    <p>Text blocks are forgiving about this. If you paint a half-finished sentence on a screen, the
+    rest arrives a moment later and the user sees it appear. That's the entire point of streaming and
+    it costs you nothing.</p>
+
+    <p><code>tool_use</code> blocks are not forgiving, and the reason is the one you saw on the pad:
+    the input is a string being built toward valid JSON, and it is invalid at every moment except the
+    last one. Parse it early and you get one of two outcomes. Either the parser throws, which is the
+    lucky case because you find out immediately. Or &mdash; and this is the one that hurts &mdash; the
+    fragment happens to close cleanly and you run the tool with some of the arguments missing.</p>
+  </div>
+
+  <div class="wrap-wide">
+  <figure>
+    <svg viewBox="0 0 760 220" role="img" aria-label="A tool_use block opens with a name and id but no input. Its arguments arrive as fragments of a JSON string across several delta events, none of which is valid on its own. Only at content_block_stop is the accumulated string complete enough to parse and act on.">
+      <text x="14" y="26" font-family="var(--face-mono)" font-size="10" fill="var(--ink-faint)" letter-spacing="1.3">ONE TOOL_USE BLOCK, ARRIVING</text>
+      <g stroke="var(--rule)" stroke-width="1.2" fill="var(--paper-sunk)">
+        <rect x="14" y="44" width="118" height="40"/><rect x="140" y="44" width="118" height="40"/>
+        <rect x="266" y="44" width="118" height="40"/><rect x="392" y="44" width="118" height="40"/>
+      </g>
+      <rect x="518" y="44" width="150" height="40" fill="var(--flag-wash)" stroke="var(--flag)" stroke-width="1.6"/>
+      <g font-family="var(--face-mono)" font-size="10.5" fill="var(--ink-soft)">
+        <text x="26" y="60">block_start</text><text x="152" y="60">delta</text>
+        <text x="278" y="60">delta</text><text x="404" y="60">delta</text>
+      </g>
+      <text x="530" y="60" font-family="var(--face-mono)" font-size="10.5" fill="var(--flag)">block_stop</text>
+      <g font-family="var(--face-mono)" font-size="11" fill="var(--ink)">
+        <text x="26" y="76">name, id</text><text x="152" y="76">{"path":</text>
+        <text x="278" y="76">"src/ma</text><text x="404" y="76">in.py"}</text>
+      </g>
+      <text x="530" y="76" font-family="var(--face-body)" font-size="11.5" fill="var(--flag)">now parseable</text>
+
+      <line x1="14" y1="104" x2="510" y2="104" stroke="var(--clay)" stroke-width="1.6"/>
+      <text x="14" y="126" font-family="var(--face-body)" font-size="12.5" fill="var(--clay)">Parse or run anywhere in here and you get malformed JSON, or half the arguments.</text>
+      <line x1="518" y1="104" x2="668" y2="104" stroke="var(--flag)" stroke-width="1.6"/>
+      <text x="518" y="126" font-family="var(--face-body)" font-size="12.5" fill="var(--flag)">Act only here.</text>
+
+      <text x="14" y="170" font-family="var(--face-body)" font-size="12.5" fill="var(--ink)">And the same discipline one level up: add the assistant turn to history only after <tspan font-family="var(--face-mono)" font-size="11.5">message_stop</tspan>.</text>
+      <text x="14" y="194" font-family="var(--face-body)" font-size="12.5" fill="var(--ink-soft)">A half-built tool_use block written into history will be rejected on the next request.</text>
+    </svg>
+    <figcaption><b>Read the left bar as the danger zone.</b> Every one of those four events is a moment
+    where your code has something that looks like data and isn't yet.</figcaption>
+  </figure>
+  </div>
+
+  <div class="wrap">
+    <p>The bottom two lines of that figure are a second rule, one level up, and they're where the rest
+    of this class lives. Blocks go on the pad; turns go in the history. And the discipline is the same
+    at both levels: nothing gets committed until the event that says it's finished.</p>
+
+    <div class="check">
+      <span class="note-k">Predict before you turn the page</span>
+      <p>Your handler has a bug: it appends the assistant turn to conversation history as soon as it
+      sees <code>content_block_stop</code> for the <em>last</em> block it happens to have received
+      &mdash; rather than waiting for <code>message_stop</code>. On a clean network, every stream
+      completes normally.</p>
+      <p>Does this bug ever show up in production, and if so, when?</p>
+      <label class="label" for="c12a">Your answer</label>
+      <textarea class="commit" id="c12a" rows="3" placeholder="Write it in your own words first — the reasoning is the diagnostic, not the verdict."></textarea>
+      <button class="btn" data-reveal="k1">Commit to an answer, then reveal</button>
+      <div class="answer" id="k1" hidden>
+        <p><strong>Yes, and only when a stream is cut short.</strong> On a clean network the last
+        <code>content_block_stop</code> is immediately followed by <code>message_delta</code> and
+        <code>message_stop</code>, so committing early and committing correctly happen a few
+        milliseconds apart and look identical.</p>
+        <p>Cut the connection between the last <code>content_block_stop</code> and
+        <code>message_stop</code> and the two stop being the same thing. The handler commits a turn
+        that the model never finished &mdash; and worse, it commits one where a <em>later</em> block may
+        have been half-built or entirely absent.</p>
+        <p style="margin-bottom:0"><strong>Which is why the bug is invisible in testing.</strong> It
+        needs a network failure inside a window a few milliseconds wide. It will find that window in
+        production, because production runs the request a great many more times than your test suite
+        does.</p>
+      </div>
+    </div>
+
+    <p class="exit"><b>Next.</b> Why the damage from that mistake arrives on a later request than the
+    one that caused it.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 5 · the pairing rule ---------- -->
+<section class="screen" data-title="Why the bill arrives late">
+  <div class="wrap">
+    <span class="label">04 &middot; The pairing rule</span>
+    <h2>Why the bill arrives late</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll be able to state the invariant that
+    rejects a corrupt history, and to say which request the error will land on.</p>
+
+    <p>Back to the phone for one more moment, because the analogy has one more thing to give.</p>
+
+    <p>Suppose the line drops mid-address and you file "42 Bridgewater" in the address book anyway.
+    Nothing goes wrong. The call is over, you hang up, the day ends fine. The failure happens
+    <em>tomorrow</em>, when a courier pulls the book, reads an address that was never finished, and
+    drives to a road that doesn't exist. And when the depot investigates tomorrow's failed delivery,
+    everything about tomorrow looks correct. The van was fine, the driver was fine, the manifest was
+    fine. The fault was written into the book a day earlier by somebody who has gone home.</p>
+
+    <p>That is precisely the shape of the streaming bug, and it's the reason it's hard to trace.</p>
+
+    <p>Here's the mechanism. Conversation history is not a free-form log &mdash; it has a structural
+    rule that the API checks on every request:</p>
+
+    <div class="note">
+      <span class="note-k">The tool pairing invariant</span>
+      <p style="margin-bottom:0">Every <code>tool_use</code> block in an assistant turn must be answered
+      by a <code>tool_result</code> block carrying the <strong>same id</strong>, in the
+      <strong>immediately following</strong> user turn. One for one, ids matching, nothing in between.
+      A <code>tool_use</code> with no partner, or a <code>tool_result</code> answering an id that was
+      never issued, makes the whole request invalid.</p>
+    </div>
+
+    <p>Now put the two together. A half-built <code>tool_use</code> block gets committed into history.
+    Your code never ran that tool &mdash; it couldn't, the arguments were incomplete &mdash; so it never
+    produced a <code>tool_result</code> to pair with it. The history now holds an assistant turn with an
+    unanswered <code>tool_use</code>.</p>
+
+    <p>That history is fine sitting on disk. It only becomes a problem when you <em>send</em> it, which
+    happens on the next request. The API validates the turns you've supplied, finds the unpartnered
+    block, and rejects the call.</p>
+  </div>
+
+  <div class="wrap-wide">
+  <figure>
+    <svg viewBox="0 0 760 320" role="img" aria-label="Two conversation histories side by side. In the valid one, an assistant turn contains a tool_use block with id toolu_01A and the immediately following user turn contains a tool_result block with the same id, so the next request is accepted. In the invalid one, the assistant turn contains a half-built tool_use block that was committed after an interrupted stream, no tool_result follows it, and the next request is rejected. An arrow shows the rejection pointing back at the earlier turn rather than at the request that failed.">
+      <text x="14" y="20" font-family="var(--face-mono)" font-size="10" fill="var(--ink-faint)" letter-spacing="1.3">WHAT THE API CHECKS BEFORE IT ANSWERS</text>
+
+      <!-- VALID column -->
+      <text x="14" y="48" font-family="var(--face-mono)" font-size="10.5" fill="var(--flag)" letter-spacing="1.1">VALID</text>
+      <rect x="14" y="58" width="330" height="52" rx="3" fill="var(--paper-sunk)" stroke="var(--rule)" stroke-width="1.2"/>
+      <text x="26" y="76" font-family="var(--face-mono)" font-size="10" fill="var(--ink-faint)">ASSISTANT</text>
+      <text x="26" y="96" font-family="var(--face-mono)" font-size="11" fill="var(--ink)">tool_use  id: toolu_01A</text>
+      <rect x="14" y="118" width="330" height="52" rx="3" fill="var(--flag-wash)" stroke="var(--flag)" stroke-width="1.4"/>
+      <text x="26" y="136" font-family="var(--face-mono)" font-size="10" fill="var(--ink-faint)">USER</text>
+      <text x="26" y="156" font-family="var(--face-mono)" font-size="11" fill="var(--ink)">tool_result  id: toolu_01A</text>
+      <line x1="352" y1="90" x2="352" y2="140" stroke="var(--flag)" stroke-width="1.8"/>
+      <text x="360" y="118" font-family="var(--face-body)" font-size="12" fill="var(--flag)">paired</text>
+      <rect x="14" y="182" width="330" height="34" rx="3" fill="none" stroke="var(--flag)" stroke-width="1.4" stroke-dasharray="4 3"/>
+      <text x="26" y="204" font-family="var(--face-body)" font-size="12.5" fill="var(--flag)">Next request &mdash; accepted.</text>
+
+      <!-- INVALID column -->
+      <text x="416" y="48" font-family="var(--face-mono)" font-size="10.5" fill="var(--clay)" letter-spacing="1.1">INVALID</text>
+      <rect x="416" y="58" width="330" height="52" rx="3" fill="var(--clay-wash)" stroke="var(--clay)" stroke-width="1.4"/>
+      <text x="428" y="76" font-family="var(--face-mono)" font-size="10" fill="var(--ink-faint)">ASSISTANT &mdash; committed after a cut stream</text>
+      <text x="428" y="96" font-family="var(--face-mono)" font-size="11" fill="var(--ink)">tool_use  id: toolu_01A  (half built)</text>
+      <rect x="416" y="118" width="330" height="52" rx="3" fill="var(--paper-sunk)" stroke="var(--rule)" stroke-width="1.2" stroke-dasharray="4 3"/>
+      <text x="428" y="136" font-family="var(--face-mono)" font-size="10" fill="var(--ink-faint)">USER</text>
+      <text x="428" y="156" font-family="var(--face-body)" font-size="12" fill="var(--clay)">no tool_result &mdash; the tool never ran</text>
+      <rect x="416" y="182" width="330" height="34" rx="3" fill="none" stroke="var(--clay)" stroke-width="1.6"/>
+      <text x="428" y="204" font-family="var(--face-body)" font-size="12.5" fill="var(--clay)">Next request &mdash; rejected.</text>
+
+      <!-- blame arrow -->
+      <path d="M 470 216 C 400 262 400 262 470 100" fill="none" stroke="var(--clay)" stroke-width="1.6" stroke-dasharray="5 4"/>
+      <path d="M 470 100 l -9 10 l 12 2 z" fill="var(--clay)"/>
+      <text x="150" y="272" font-family="var(--face-body)" font-size="13" fill="var(--ink)">The request that fails is not the request that is wrong.</text>
+      <text x="150" y="296" font-family="var(--face-body)" font-size="12.5" fill="var(--ink-soft)">The fault was written into history one call earlier.</text>
+    </svg>
+    <figcaption><b>Follow the dashed arrow.</b> The error is raised on the lower request and caused by
+    the upper turn. Re-running the failing request on its own succeeds, because the retry doesn't carry
+    the corrupt history &mdash; which is exactly the evidence that sends people looking in the wrong
+    place.</figcaption>
+  </figure>
+  </div>
+
+  <div class="wrap">
+    <p>So when you meet this in the wild, the symptom reads like nonsense: a request fails, you inspect
+    it, it looks perfect, you re-run it and it works. Everything about the failing request is innocent,
+    because the failing request <em>is</em> innocent. It's carrying somebody else's mistake.</p>
+
+    <p>And one clue points straight at the cause if you know to look for it. The failures will
+    correlate with network conditions rather than with prompt content &mdash; intermittent, worse on bad
+    connections, indifferent to what you asked. Prompt bugs don't care about the network. This one is
+    made of nothing else.</p>
+
+    <div class="check">
+      <span class="note-k">Work the invariant</span>
+      <p>An assistant turn comes back with <strong>two</strong> <code>tool_use</code> blocks &mdash;
+      <code>toolu_01A</code> and <code>toolu_01B</code>. Your code runs the first tool successfully. The
+      second tool throws an exception inside your own code before producing anything.</p>
+      <p>You still want to continue the conversation. What must the next user turn contain, exactly?</p>
+      <label class="label" for="c12b">Your answer</label>
+      <textarea class="commit" id="c12b" rows="3" placeholder="State it in terms of the invariant, not in terms of what feels reasonable."></textarea>
+      <button class="btn" data-reveal="k2">Commit to an answer, then reveal</button>
+      <div class="answer" id="k2" hidden>
+        <p><strong>Two <code>tool_result</code> blocks &mdash; one for <code>toolu_01A</code> and one
+        for <code>toolu_01B</code>.</strong> The invariant counts blocks and matches ids; it does not
+        ask whether your tool succeeded.</p>
+        <p>So the failed one still gets a <code>tool_result</code> carrying id <code>toolu_01B</code>,
+        with the error described in its content and its error flag set. That's the designed path: an
+        error is a result. Reporting the failure back is what lets the model recover, apologise, or try
+        a different approach.</p>
+        <p style="margin-bottom:0"><strong>The tempting wrong answers are both structural.</strong>
+        Dropping the second block leaves a <code>tool_use</code> unpartnered and the request is
+        rejected. Dropping the <em>whole</em> turn throws away a successful tool call for no reason. And
+        note what this buys you conceptually &mdash; a tool that fails and a tool that succeeds occupy
+        the same slot in the structure, which is why "the tool errored" is something the model can be
+        told rather than something that breaks the conversation.</p>
+      </div>
+    </div>
+
+    <p class="exit"><b>Next.</b> What to actually do when the line drops.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 6 · interruption ---------- -->
+<section class="screen" data-title="When the line drops">
+  <div class="wrap">
+    <span class="label">05 &middot; Interruption</span>
+    <h2>When the line drops</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll know why keeping what you collected is the
+    damaging move, and what to do instead.</p>
+
+    <p>Streams end early. A dropped connection, a timeout, a client that navigates away &mdash; any of
+    these can stop the events before <code>message_stop</code> arrives. This is normal. It is not an
+    exceptional condition you can design away, and code that assumes streams always complete is code
+    that works until it doesn't.</p>
+
+    <p>The instinct when a stream cuts out is to keep what you've got. You have most of a response
+    sitting there; throwing it away feels wasteful. That instinct is the bug. It's the one that files
+    "42 Bridgewater" in the book.</p>
+
+    <p>Be precise about which half of the damage matters, because the two cases are not equally bad:</p>
+    <ul>
+      <li><strong>A partial text block shown to a user</strong> is cosmetic. The sentence stops
+      mid-word, it looks untidy, and nothing downstream is harmed. Survivable.</li>
+      <li><strong>A partial <code>tool_use</code> block written into history</strong> is structural. It
+      corrupts the next turn by the mechanism you just worked through, and it does so silently.</li>
+    </ul>
+
+    <p>So the discipline splits along that line. Display whatever you have &mdash; that's what the user
+    already saw arriving. Commit nothing.</p>
+
+    <div class="note good">
+      <span class="note-k">Three habits</span>
+      <p><strong>Track completion on purpose.</strong> A turn is usable only once
+      <code>message_stop</code> has arrived. Until then, what you've accumulated is provisional, and
+      your code should be able to say which of the two it's holding.</p>
+      <p><strong>On an interruption, discard the partial turn and retry the original request.</strong>
+      Not repair it, not salvage the good blocks &mdash; discard it. A turn assembled from a cut stream
+      has no guarantee of being structurally complete, and you cannot tell by looking.</p>
+      <p style="margin-bottom:0"><strong>Check <code>stop_reason</code> before continuing a loop.</strong>
+      <code>tool_use</code> means your assembled calls are ready to run. Any other value means you're on
+      a different path &mdash; the model finished its turn, or hit a limit &mdash; and running tools
+      would be wrong.</p>
+    </div>
+
+    <p class="pull">And there's a decision hiding behind all of this. Streaming buys perceived
+    responsiveness and charges you partial-state handling. On a backend job where no human is watching
+    the tokens appear, a non-streamed call removes this entire class of bug for free.</p>
+
+    <p>That's worth sitting on for a second, because it's a design judgement rather than a coding one.
+    Every habit on this screen exists to manage a risk you took on voluntarily. If nobody is watching
+    the response arrive, you bought nothing and you're paying for it in handler complexity. Class 13
+    asks the same question about latency, and the answer has the same shape: find out who is waiting
+    before you optimise for them.</p>
+
+    <p class="exit"><b>Next.</b> The other end of the request &mdash; what it costs before Claude reads
+    a word.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 7 · images ---------- -->
+<section class="screen" data-title="Images cost before they are read">
+  <div class="wrap">
+    <span class="label">06 &middot; Multimodal input</span>
+    <h2>Images cost budget before anything is read</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll be able to compute an image's context cost
+    in your head, and pick a delivery method on a single question.</p>
+
+    <p>Claude doesn't look at an image the way you do. It cuts the image into a grid of small squares
+    &mdash; 28 pixels by 28 pixels each &mdash; and every square becomes one visual token. So the cost
+    of an image is just the number of squares you can cut it into:
+    <code>&lceil;width/28&rceil; &times; &lceil;height/28&rceil;</code>.</p>
+
+    <p>The formula looks more forbidding than the idea. Take a 1,000&times;1,000 screenshot. A thousand
+    divided by 28 is about 36, so you get a 36&times;36 grid, which is <strong>1,296 tokens</strong>.
+    Do that arithmetic once by hand and you'll never need the formula again.</p>
+  </div>
+
+  <div class="wrap-wide">
+  <figure>
+    <svg viewBox="0 0 760 250" role="img" aria-label="A one thousand by one thousand pixel screenshot shown with a thirty-six by thirty-six grid laid over it, each cell being one twenty-eight pixel square and one visual token, totalling one thousand two hundred and ninety-six tokens. Beside it, a context budget bar compares ten such screenshots at nearly thirteen thousand tokens against a detailed system prompt of comparable size, showing that the images are spent before any instruction is read.">
+      <text x="14" y="20" font-family="var(--face-mono)" font-size="10" fill="var(--ink-faint)" letter-spacing="1.3">ONE SCREENSHOT, CUT INTO PATCHES</text>
+
+      <!-- the grid -->
+      <rect x="14" y="34" width="180" height="180" fill="var(--paper-sunk)" stroke="var(--rule)" stroke-width="1.3"/>
+      <g stroke="var(--accent-edge)" stroke-width="0.5" opacity="0.85">
+        <path d="M29 34V214 M44 34V214 M59 34V214 M74 34V214 M89 34V214 M104 34V214 M119 34V214 M134 34V214 M149 34V214 M164 34V214 M179 34V214"/>
+        <path d="M14 49H194 M14 64H194 M14 79H194 M14 94H194 M14 109H194 M14 124H194 M14 139H194 M14 154H194 M14 169H194 M14 184H194 M14 199H194"/>
+      </g>
+      <rect x="14" y="34" width="15" height="15" fill="var(--accent)" opacity="0.55"/>
+      <text x="14" y="232" font-family="var(--face-mono)" font-size="10.5" fill="var(--ink-soft)">1000 &times; 1000 px</text>
+      <text x="210" y="60" font-family="var(--face-body)" font-size="13" fill="var(--ink)">One shaded square = 28&times;28 px = <tspan font-weight="650">1 visual token</tspan></text>
+      <text x="210" y="84" font-family="var(--face-body)" font-size="13" fill="var(--ink)">36 across &times; 36 down =</text>
+      <text x="210" y="112" font-family="var(--face-display)" font-size="26" fill="var(--accent)">1,296 tokens</text>
+
+      <!-- budget comparison -->
+      <text x="210" y="146" font-family="var(--face-mono)" font-size="10" fill="var(--ink-faint)" letter-spacing="1.1">SPENT BEFORE YOUR PROMPT IS READ</text>
+      <rect x="210" y="158" width="420" height="26" fill="var(--accent-wash)" stroke="var(--accent)" stroke-width="1.4"/>
+      <text x="222" y="176" font-family="var(--face-body)" font-size="12.5" fill="var(--ink)">ten screenshots &mdash; about 12,960 tokens</text>
+      <rect x="210" y="192" width="420" height="26" fill="var(--paper-sunk)" stroke="var(--rule)" stroke-width="1.2"/>
+      <text x="222" y="210" font-family="var(--face-body)" font-size="12.5" fill="var(--ink-soft)">a long, detailed system prompt &mdash; comparable</text>
+      <text x="210" y="240" font-family="var(--face-body)" font-size="12.5" fill="var(--clay)">Same budget. One of them you wrote on purpose.</text>
+    </svg>
+    <figcaption><b>Ten high-resolution screenshots cost about what a detailed system prompt costs.</b>
+    The difference is that you agonised over the system prompt and pasted the screenshots without
+    thinking.</figcaption>
+  </figure>
+  </div>
+
+  <div class="wrap">
+    <p>One wrinkle before the arithmetic is safe. Each model has a maximum native resolution &mdash; a
+    long-edge limit and a visual-token limit &mdash; and anything above either is downscaled before it's
+    patched. So the formula runs on the <em>scaled</em> dimensions, not the ones in your file. These
+    limits differ by tier and have changed between model generations, so confirm the current numbers
+    when you build rather than trusting the ones in your head.</p>
+
+    <h3>Three ways to send one, and the question that decides</h3>
+
+    <p>The question is <strong>reuse</strong>, and everything else follows from it. Ask how many times
+    this image will travel to the API. Once? Many times? That single answer picks the method, and the
+    table below is really just that answer written out three ways.</p>
+
+    <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>Method</th><th>Overhead</th><th>Right when</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Inline base64</strong></td>
+            <td>The full encoded payload travels with <em>every</em> request</td>
+            <td>A one-off image, where an upload step would add complexity for no payoff</td></tr>
+        <tr><td><strong>URL reference</strong></td>
+            <td>No payload &mdash; but you take on a dependency that the URL is stable, public and reachable at request time</td>
+            <td>Already hosted at a stable public URL you control. Not for anything behind auth or signed with a short expiry</td></tr>
+        <tr><td><strong>Files API</strong></td>
+            <td>Upload once, get a <code>file_id</code>, and every later request carries the ID instead of the bytes</td>
+            <td>The same asset appears across multiple requests or turns. Beta, and <strong>not available on Bedrock or Vertex</strong></td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p>Watch what happens in a multi-turn conversation, because that's where the difference stops being
+    academic. History is replayed on every request. An image sent as base64 is re-sent in full on turn
+    two, and turn three, and turn twelve &mdash; you pay the payload every time. A <code>file_id</code>
+    is a short string that weighs nothing no matter how long the conversation runs.</p>
+
+    <p>PDFs work the same way, with block type <code>document</code> instead of <code>image</code>. Same
+    three source options, an optional <code>title</code> and <code>context</code>, and no required name
+    field.</p>
+
+    <p class="exit"><b>Next.</b> Which of today's facts to actually memorise.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 8 · physics vs convention ---------- -->
+<section class="screen" data-title="Where to spend your memory">
+  <div class="wrap">
+    <span class="label">07 &middot; What to memorise</span>
+    <h2>Where to spend your memory</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll know which of today's facts you can derive
+    under pressure and which ones you simply have to carry.</p>
+
+    <p>This class mixed two kinds of fact, and treating them with equal reverence is how people end up
+    revising badly. Some of what you learned today follows from how the thing works, and you could
+    rebuild it from first principles in an exam room with nothing in front of you. The rest is a number
+    somebody chose, and no amount of reasoning will recover it.</p>
+
+    <div class="split">
+      <div class="phys">
+        <span class="note-k">Close to physics &mdash; reason from it</span>
+        <ul>
+          <li>A stream is events, not an open object. Nothing is held at the far end.</li>
+          <li>Tool input is a string becoming JSON, so it is invalid until the moment it is complete.</li>
+          <li>Every <code>tool_use</code> needs a matching <code>tool_result</code> in the next turn
+          &mdash; including the ones whose tools failed.</li>
+          <li>A corrupt history fails on the request that <em>sends</em> it, not the one that wrote it.</li>
+          <li>Replayed history means a re-sent payload costs again; a reference doesn't.</li>
+          <li>Images are cut into fixed squares, so cost scales with area.</li>
+        </ul>
+      </div>
+      <div class="conv">
+        <span class="note-k">This release's convention &mdash; recognise it</span>
+        <ul>
+          <li>The six event names, spelled exactly.</li>
+          <li>28&times;28 pixels per patch. A chosen number.</li>
+          <li>Per-model resolution ceilings &mdash; these have already changed between generations.</li>
+          <li>The Files API being beta, and unavailable on Bedrock and Vertex.</li>
+          <li>PDFs using <code>document</code> rather than <code>image</code>.</li>
+        </ul>
+      </div>
+    </div>
+
+    <p>Learn the right-hand column, because the exam names mechanisms in its options and you'll have to
+    recognise them in a lineup. But don't confuse it with the left. From the left column you can answer
+    a question nobody taught you &mdash; and every one of the right column's entries is a thing that
+    could be different next year without anything you understand becoming wrong.</p>
+
+    <p class="exit"><b>Last screen.</b> Recap, and a bug that only shows up on the request after the one
+    that caused it.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 9 · recap ---------- -->
+<section class="screen" data-title="Recap and the closing question">
+  <div class="wrap">
+    <span class="label">Recap</span>
+    <h2>What you're leaving with</h2>
+    <ol>
+      <li><strong>A stream is events, not an object.</strong> You assemble; you decide what happens if
+      it stops. Nobody is holding anything open for you.</li>
+      <li><strong>Tool input is invalid JSON until <code>content_block_stop</code>.</strong> Don't send
+      the courier until somebody says that's the whole address.</li>
+      <li><strong>Every <code>tool_use</code> needs a matching <code>tool_result</code> next turn</strong>
+      &mdash; failures included, carrying the error.</li>
+      <li><strong>Discard an interrupted turn.</strong> Saving it corrupts the next request, not this
+      one, which is why it's hard to find.</li>
+      <li><strong>Images cost patches</strong> &mdash; width over 28 times height over 28 &mdash; spent
+      before your prompt is read.</li>
+      <li><strong>Reuse decides delivery.</strong> Base64 for one-offs, <code>file_id</code> for
+      anything that recurs.</li>
+    </ol>
+
+    <div class="check">
+      <span class="note-k">Before Class 13</span>
+      <p>A team streams responses in an agent loop. Their handler is correct: it commits the assistant
+      turn only after <code>message_stop</code>, and discards partial turns on interruption. They are
+      still seeing intermittent failures about tool blocks, still correlated with poor network, and the
+      failing request still looks innocent on inspection.</p>
+      <p>Given that the assembly bug is already fixed, what else produces exactly this signature
+      &mdash; and how would you tell the two apart from the logs?</p>
+      <label class="label" for="c12c">Your answer</label>
+      <textarea class="commit" id="c12c" rows="4" placeholder="Two things to produce: a mechanism, and a way to discriminate. The reasoning is the diagnostic."></textarea>
+      <button class="btn" data-reveal="l1">Commit to an answer, then reveal</button>
+      <div class="answer" id="l1" hidden>
+        <p><strong>The break is on the other side of the pair.</strong> The assembly is fine, so the
+        <code>tool_use</code> blocks are complete &mdash; but the <em>tool execution</em> is being
+        interrupted. The stream completes, the turn commits correctly, the handler starts running the
+        tools, and then the client dies, times out, or is cancelled mid-execution. Now history holds a
+        well-formed <code>tool_use</code> that never got its <code>tool_result</code> written, and the
+        next request is rejected by the same invariant, from the opposite direction.</p>
+        <p>It correlates with the network for the same reason as before &mdash; whatever kills
+        connections also kills the process holding them &mdash; and the failing request looks innocent
+        for the same reason: it's carrying a defect committed one call earlier.</p>
+        <p><strong>How to tell them apart.</strong> Look at the <code>tool_use</code> block in the
+        rejected history. If its <code>input</code> is malformed or truncated, the stream assembly
+        broke. If its input is complete and well-formed and there's simply no <code>tool_result</code>
+        following it, assembly was fine and execution was cut. One log line recording the parsed input
+        at commit time separates the two permanently.</p>
+        <p style="margin-bottom:0"><strong>And the fix is the same shape as the first one.</strong>
+        Treat "tool ran" as a commitment that isn't final until its result is written. On recovery,
+        either finish the pair by writing a <code>tool_result</code> that reports the interruption as an
+        error, or discard back to the last complete pair. What you must not do is leave the turn
+        half-answered, because the invariant does not care why the partner is missing.</p>
+      </div>
+    </div>
+
+    <p style="color:var(--ink-soft);font-size:var(--t-small)">Class 13 &mdash; batch against realtime:
+    latency tolerance is the axis, and if nobody is waiting you're paying for speed you don't use.</p>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">Class 12 of 29</span>
+      <a class="btn btn-primary" href="CCDV-F_Class-13.html">Class 13: Who Is Waiting? &rarr;</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<script>
+(function () {
+  var screens = [].slice.call(document.querySelectorAll('.screen'));
+  var toc = document.getElementById('toc');
+  var barEl = document.getElementById('bar');
+  var cNow = document.getElementById('cNow');
+  var cAll = document.getElementById('cAll');
+  var barTitle = document.getElementById('barTitle');
+  var drawer = document.getElementById('drawer');
+  var i = 0;
+
+  cAll.textContent = screens.length;
+
+  screens.forEach(function (s, n) {
+    var li = document.createElement('li');
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = s.dataset.title || ('Screen ' + (n + 1));
+    b.addEventListener('click', function () { go(n); closeDrawer(); });
+    li.appendChild(b);
+    toc.appendChild(li);
+  });
+  var tocBtns = [].slice.call(toc.querySelectorAll('button'));
+
+  function go(n, keepScroll) {
+    i = Math.max(0, Math.min(screens.length - 1, n));
+    screens.forEach(function (s, k) { s.classList.toggle('on', k === i); });
+    tocBtns.forEach(function (b, k) { b.setAttribute('aria-current', k === i ? 'true' : 'false'); });
+    cNow.textContent = i + 1;
+    barEl.style.width = ((i + 1) / screens.length * 100) + '%';
+    barTitle.textContent = screens[i].dataset.title || '';
+    if (!keepScroll) window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+    if (location.hash !== '#s' + (i + 1)) history.replaceState(null, '', '#s' + (i + 1));
+    document.querySelectorAll('[data-next]').forEach(function (b) { b.disabled = (i === screens.length - 1); });
+    document.querySelectorAll('[data-prev]').forEach(function (b) { b.disabled = (i === 0); });
+  }
+
+  document.addEventListener('click', function (e) {
+    var n = e.target.closest('[data-next]');
+    var p = e.target.closest('[data-prev]');
+    var r = e.target.closest('[data-reveal]');
+    if (n) go(i + 1);
+    if (p) go(i - 1);
+    if (r) {
+      var box = document.getElementById(r.dataset.reveal);
+      if (box) {
+        // echo what the student committed, so the reveal is a comparison not a read
+        var chk = r.closest('.check');
+        var ta = chk && chk.querySelector('.commit');
+        if (ta && ta.value.trim()) {
+          var y = document.createElement('div');
+          y.className = 'yours';
+          var k = document.createElement('span');
+          k.className = 'note-k';
+          k.textContent = 'What you committed';
+          var pEl = document.createElement('p');
+          pEl.textContent = ta.value.trim();
+          y.appendChild(k); y.appendChild(pEl);
+          box.parentNode.insertBefore(y, box);
+          ta.readOnly = true;
+        }
+        box.hidden = false; r.disabled = true; box.setAttribute('tabindex', '-1'); box.focus();
+      }
+    }
+  });
+
+  function openDrawer() { drawer.setAttribute('open', ''); document.getElementById('main').setAttribute('inert', ''); tocBtns[i].focus(); }
+  function closeDrawer() { drawer.removeAttribute('open'); document.getElementById('main').removeAttribute('inert'); }
+  document.getElementById('tocBtn').addEventListener('click', openDrawer);
+  document.getElementById('tocClose').addEventListener('click', closeDrawer);
+  drawer.addEventListener('click', function (e) { if (e.target === drawer) closeDrawer(); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && drawer.hasAttribute('open')) return closeDrawer();
+    if (e.target.matches('input, textarea')) return;
+    if (e.key === 'ArrowRight') go(i + 1);
+    if (e.key === 'ArrowLeft') go(i - 1);
+  });
+
+  var start = parseInt((location.hash || '').replace('#s', ''), 10);
+  go(isNaN(start) ? 0 : start - 1, true);
+})();
+</script>
+</body>
+</html>

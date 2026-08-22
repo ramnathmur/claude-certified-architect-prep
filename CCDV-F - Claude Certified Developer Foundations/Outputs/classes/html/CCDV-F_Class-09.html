@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 9 — What the SDK Is Hiding · CCDV-F</title>
+<meta name="description" content="CCDV-F Class 9: the technical substrate - SDK versus REST, streaming, and the two different things called async.">
+<meta name="author" content="Ram">
+<style>
+@layer engine, skin, utilities;
+
+/* ============================== SKIN: "Lecture Hall" ============================== */
+@layer skin {
+  :root {
+    color-scheme: light dark;
+
+    /* -- color primitives (oklch) -- */
+    --paper:        oklch(0.977 0.004 250);
+    --paper-sunk:   oklch(0.947 0.006 250);
+    --ink:          oklch(0.24 0.018 255);
+    --ink-soft:     oklch(0.46 0.016 255);
+    --ink-faint:    oklch(0.62 0.012 255);
+    --rule:         oklch(0.87 0.008 255);
+    --accent:       oklch(0.50 0.13 250);
+    --accent-lift:  oklch(0.62 0.14 250);
+    --clay:         oklch(0.58 0.10 45);
+    --flag:         oklch(0.56 0.12 145);
+
+    /* -- derived tints -- */
+    --accent-wash:  color-mix(in oklch, var(--accent) 8%, var(--paper));
+    --accent-edge:  color-mix(in oklch, var(--accent) 32%, var(--paper));
+    --clay-wash:    color-mix(in oklch, var(--clay) 10%, var(--paper));
+    --flag-wash:    color-mix(in oklch, var(--flag) 10%, var(--paper));
+
+    /* -- type -- */
+    --face-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --face-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                 Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
+    --face-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+    --t-body:  clamp(1.0rem, 0.94rem + 0.30vw, 1.125rem);
+    --t-small: clamp(0.83rem, 0.80rem + 0.14vw, 0.90rem);
+    --t-lead:  clamp(1.13rem, 1.03rem + 0.48vw, 1.32rem);
+    --t-h2:    clamp(1.55rem, 1.28rem + 1.35vw, 2.35rem);
+    --t-h3:    clamp(1.08rem, 1.00rem + 0.38vw, 1.24rem);
+    --t-hero:  clamp(2.0rem, 1.45rem + 2.7vw, 3.4rem);
+    --measure: 64ch;
+    --lh: 1.68;
+
+    /* -- shape + space -- */
+    --r: 3px;
+    --hair: 1px;
+    --gap: clamp(1.1rem, 0.9rem + 1vw, 1.9rem);
+
+    /* -- motion -- */
+    --dur: 180ms;
+    --ease: cubic-bezier(.2,.6,.3,1);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:      oklch(0.185 0.014 260);
+      --paper-sunk: oklch(0.225 0.016 260);
+      --ink:        oklch(0.93 0.008 255);
+      --ink-soft:   oklch(0.76 0.012 255);
+      --ink-faint:  oklch(0.60 0.012 255);
+      --rule:       oklch(0.34 0.014 258);
+      --accent:     oklch(0.76 0.12 250);
+      --accent-lift:oklch(0.84 0.11 250);
+      --clay:       oklch(0.74 0.10 48);
+      --flag:       oklch(0.74 0.12 152);
+      --accent-wash: color-mix(in oklch, var(--accent) 14%, var(--paper));
+      --accent-edge: color-mix(in oklch, var(--accent) 40%, var(--paper));
+      --clay-wash:   color-mix(in oklch, var(--clay) 16%, var(--paper));
+      --flag-wash:   color-mix(in oklch, var(--flag) 16%, var(--paper));
+    }
+  }
+}
+
+/* ============================== ENGINE ============================== */
+@layer engine {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--face-body);
+    font-size: var(--t-body);
+    line-height: var(--lh);
+    font-synthesis-weight: none;
+  }
+
+  /* ---- skip link ---- */
+  .skip {
+    position: absolute; left: -9999px; top: 0; z-index: 100;
+    background: var(--accent); color: var(--paper);
+    padding: .7rem 1.1rem; border-radius: var(--r);
+  }
+  .skip:focus { left: .6rem; top: .6rem; }
+
+  /* ---- top bar ---- */
+  .bar {
+    position: sticky; top: 0; z-index: 40;
+    background: color-mix(in oklch, var(--paper) 88%, transparent);
+    backdrop-filter: blur(9px);
+    border-bottom: var(--hair) solid var(--rule);
+  }
+  .bar-in {
+    max-width: 78rem; margin: 0 auto;
+    padding: .6rem clamp(.9rem, 3vw, 2rem);
+    display: flex; align-items: center; gap: 1rem;
+  }
+  .brand {
+    font-family: var(--face-mono);
+    font-size: .68rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--ink-faint); white-space: nowrap;
+  }
+  .brand b { color: var(--accent); font-weight: 600; }
+  .bar-title {
+    font-family: var(--face-display);
+    font-size: .95rem; color: var(--ink-soft);
+    margin-left: auto; text-align: right;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .counter {
+    font-family: var(--face-mono); font-size: .72rem;
+    color: var(--ink-faint); white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .progress { height: 2px; background: var(--rule); }
+  .progress span {
+    display: block; height: 100%; width: 0;
+    background: var(--accent);
+    transition: width var(--dur) var(--ease);
+  }
+
+  .btn {
+    font: inherit; font-size: var(--t-small);
+    color: var(--ink); background: transparent;
+    border: var(--hair) solid var(--rule); border-radius: var(--r);
+    padding: .5rem .85rem; cursor: pointer;
+    min-height: 44px; display: inline-flex; align-items: center; gap: .5rem;
+    transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+  .btn:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-wash); }
+  .btn:disabled { opacity: .38; cursor: not-allowed; }
+  .btn-primary { border-color: var(--accent-edge); background: var(--accent-wash); color: var(--accent); font-weight: 600; }
+
+  :focus-visible { outline: 2px solid var(--accent-lift); outline-offset: 3px; }
+
+  /* ---- drawer ---- */
+  .drawer {
+    position: fixed; inset: 0; z-index: 60;
+    background: color-mix(in oklch, var(--ink) 42%, transparent);
+    display: none; padding: clamp(.8rem, 4vw, 3rem);
+  }
+  .drawer[open] { display: grid; place-items: start center; }
+  .drawer-panel {
+    background: var(--paper); border: var(--hair) solid var(--rule);
+    border-radius: var(--r); max-width: 34rem; width: 100%;
+    padding: clamp(1rem, 3vw, 1.7rem); box-shadow: 0 18px 50px -20px color-mix(in oklch, var(--ink) 45%, transparent);
+  }
+  .drawer h2 { font-size: var(--t-h3); margin: 0 0 .9rem; font-family: var(--face-display); }
+  .toc { list-style: none; margin: 0; padding: 0; counter-reset: t; }
+  .toc li { counter-increment: t; }
+  .toc button {
+    width: 100%; text-align: left; font: inherit; font-size: var(--t-small);
+    background: none; border: 0; border-top: var(--hair) solid var(--rule);
+    padding: .72rem .2rem; color: var(--ink); cursor: pointer;
+    display: flex; gap: .8rem; align-items: baseline; min-height: 44px;
+  }
+  .toc button::before {
+    content: counter(t, decimal-leading-zero);
+    font-family: var(--face-mono); font-size: .7rem; color: var(--ink-faint);
+  }
+  .toc button:hover { color: var(--accent); }
+  .toc button[aria-current="true"] { color: var(--accent); font-weight: 600; }
+
+  /* ---- screens ---- */
+  main { max-width: 78rem; margin: 0 auto; padding: 0 clamp(.9rem, 3vw, 2rem); }
+  .screen { display: none; padding: clamp(1.8rem, 5vw, 3.6rem) 0 1rem; }
+  .screen.on { display: block; animation: rise var(--dur) var(--ease); }
+  @keyframes rise { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+
+  .wrap { max-width: var(--measure); margin-inline: auto; }
+  .wrap-wide { max-width: 52rem; margin-inline: auto; }
+
+  .label {
+    font-family: var(--face-mono); font-size: .68rem;
+    letter-spacing: .13em; text-transform: uppercase; color: var(--accent);
+    padding-bottom: .45rem; border-bottom: var(--hair) solid var(--accent-edge);
+    display: inline-block; margin-bottom: 1.1rem;
+  }
+
+  h1 { font-family: var(--face-display); font-size: var(--t-hero); line-height: 1.06;
+       margin: 0 0 1.1rem; font-weight: 600; letter-spacing: -.015em; }
+  h2 { font-family: var(--face-display); font-size: var(--t-h2); line-height: 1.14;
+       margin: 0 0 1.1rem; font-weight: 600; letter-spacing: -.01em; }
+  h3 { font-family: var(--face-body); font-size: var(--t-h3); margin: 2rem 0 .6rem; font-weight: 650; }
+  p { margin: 0 0 1.05em; }
+  .lead { font-size: var(--t-lead); color: var(--ink-soft); line-height: 1.5; }
+  strong { font-weight: 650; }
+  em { font-style: italic; }
+  code { font-family: var(--face-mono); font-size: .88em;
+         background: var(--paper-sunk); padding: .12em .38em; border-radius: 2px; }
+
+  .entry, .exit {
+    font-size: var(--t-small); color: var(--ink-soft);
+    border-left: 2px solid var(--accent-edge);
+    padding: .1rem 0 .1rem .95rem; margin: 0 0 1.6rem;
+  }
+  .exit { border-left-color: color-mix(in oklch, var(--clay) 45%, var(--paper)); margin: 2rem 0 0; }
+  .exit b, .entry b { color: var(--ink); font-weight: 600; }
+
+  .pull {
+    font-family: var(--face-display); font-size: var(--t-lead);
+    line-height: 1.4; color: var(--ink);
+    border-top: var(--hair) solid var(--rule);
+    border-bottom: var(--hair) solid var(--rule);
+    padding: 1.1rem 0; margin: 1.8rem 0;
+  }
+
+  .note {
+    background: var(--paper-sunk); border-radius: var(--r);
+    padding: 1rem 1.15rem; margin: 1.5rem 0; font-size: var(--t-small);
+  }
+  .note.warn { background: var(--clay-wash); }
+  .note.good { background: var(--flag-wash); }
+  .note p:last-child { margin-bottom: 0; }
+  .note-k {
+    font-family: var(--face-mono); font-size: .66rem; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--ink-faint); display: block; margin-bottom: .4rem;
+  }
+
+  figure { margin: 2rem 0; }
+  figure svg { display: block; width: 100%; height: auto; }
+  figcaption {
+    font-size: var(--t-small); color: var(--ink-soft);
+    margin-top: .8rem; padding-top: .7rem; border-top: var(--hair) solid var(--rule);
+  }
+
+  .tbl-scroll { overflow-x: auto; margin: 1.6rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: var(--t-small); }
+  th, td { text-align: left; padding: .68rem .8rem; border-bottom: var(--hair) solid var(--rule);
+           vertical-align: top; }
+  th { font-family: var(--face-mono); font-size: .68rem; letter-spacing: .08em;
+       text-transform: uppercase; color: var(--ink-faint); font-weight: 500; }
+  tbody tr:hover { background: var(--paper-sunk); }
+
+  details { border-top: var(--hair) solid var(--rule); padding: .8rem 0; margin: 1.4rem 0; }
+  summary { cursor: pointer; font-size: var(--t-small); color: var(--accent);
+            font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+  summary::marker { color: var(--ink-faint); }
+
+  /* ---- checkpoint ---- */
+  .check { border: var(--hair) solid var(--accent-edge); border-radius: var(--r);
+           padding: 1.2rem 1.3rem; margin: 2rem 0; background: var(--accent-wash); }
+  .check .note-k { color: var(--accent); }
+  .check p { margin-bottom: .9rem; }
+  .answer { margin-top: 1rem; padding-top: 1rem; border-top: var(--hair) solid var(--accent-edge);
+            font-size: var(--t-small); }
+  .answer[hidden] { display: none; }
+
+  ul, ol { margin: 0 0 1.05em; padding-left: 1.3em; }
+  li { margin-bottom: .45em; }
+
+  /* ---- foot nav ---- */
+  .foot {
+    max-width: var(--measure); margin: 2.8rem auto 0;
+    border-top: var(--hair) solid var(--rule); padding: 1.2rem 0 3rem;
+    display: flex; gap: .8rem; align-items: center; justify-content: space-between;
+  }
+  .hint { font-size: .72rem; color: var(--ink-faint); font-family: var(--face-mono); }
+
+  @media (max-width: 640px) {
+    .bar-title { display: none; }
+    .hint { display: none; }
+    .bar-in { gap: .5rem; padding-inline: .75rem; }
+    .btn { padding: .5rem .62rem; }
+    .counter { margin-left: auto; flex: 0 0 auto; }
+  }
+  @media (max-width: 480px) {
+    /* the course link + contents button + counter is all that fits; the brand
+       repeats what the page title already says, so it goes first */
+    .brand { display: none; }
+  }
+
+  /* ---- floor: motion / contrast / forced-colors ---- */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+  @media (prefers-contrast: more) {
+    :root { --rule: var(--ink-soft); --ink-soft: var(--ink); }
+  }
+  @media (forced-colors: active) {
+    .btn, .drawer-panel, .check, figure svg { border: 1px solid ButtonText; }
+    .label, .brand b { color: LinkText; }
+    .progress span { background: Highlight; }
+  }
+
+  /* ---- print: flatten every screen ---- */
+  @media print {
+    .bar, .foot, .drawer, .skip, .hint { display: none !important; }
+    .screen { display: block !important; page-break-after: always; padding: 0 0 1.5rem; }
+    .answer[hidden] { display: block !important; }
+    figure, .check, table { break-inside: avoid; }
+    body { background: #fff; color: #111; }
+  }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the class</a>
+
+<header class="bar">
+  <div class="bar-in">
+    <span class="brand">CCDV&#8209;F&nbsp;· <b>Class 09</b></span>
+    <a class="btn" id="courseLink" href="index.html">&#8598;&nbsp;Course</a>
+    <button class="btn" id="tocBtn" aria-haspopup="dialog">Contents</button>
+    <span class="bar-title" id="barTitle">What the SDK Is Hiding</span>
+    <span class="counter"><span id="cNow">1</span>&#8202;/&#8202;<span id="cAll">10</span></span>
+  </div>
+  <div class="progress"><span id="bar"></span></div>
+</header>
+
+<div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="tocH">
+  <div class="drawer-panel">
+    <h2 id="tocH">Class 9 &mdash; contents</h2>
+    <ol class="toc" id="toc"></ol>
+    <p style="margin:1rem 0 0"><button class="btn" id="tocClose">Close</button></p>
+  </div>
+</div>
+
+<main id="main">
+<!-- ---------- 1 · cover ---------- -->
+<section class="screen on" data-title="The promise">
+  <div class="wrap">
+    <span class="label">Claude Certified Developer &middot; Foundations</span>
+    <h1>What the SDK Is Hiding</h1>
+    <p class="lead">Underneath every SDK call is an HTTP request to an endpoint with a key and a JSON
+    body. The SDK writes it for you. Everything it hides is still happening &mdash; and the things that
+    break are almost always in the part it hid.</p>
+
+    <div class="note">
+      <span class="note-k">What you leave holding</span>
+      <ol style="margin-bottom:0">
+        <li>SDK and raw REST reach the same API and the same model.</li>
+        <li>Streaming is the same HTTP connection, delivered in pieces.</li>
+        <li>"Async" means two completely different things, solving different problems.</li>
+        <li>Non-blocking concurrency is not the same as batch.</li>
+        <li>Batch trades up to 24 hours of latency for a lower per-token cost.</li>
+      </ol>
+    </div>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Begin &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 2 · SDK vs REST ---------- -->
+<section class="screen" data-title="SDK versus raw REST">
+  <div class="wrap">
+    <span class="label">01 &middot; The wrapper</span>
+    <h2>SDK versus raw REST</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll know exactly what you give up by calling
+    the endpoint directly, which is less than people assume.</p>
+
+    <p>At its core, Claude is reached over an HTTP REST API. Your code sends a request to an endpoint
+    with your API key and a JSON body, and reads a JSON response back. You can do that with any HTTP
+    client in any language.</p>
+    <p>More commonly you use an official SDK &mdash; Python and TypeScript among others &mdash; which is
+    a <strong>thin convenience layer over the same REST API</strong>.</p>
+  </div>
+
+  <div class="wrap-wide">
+  <figure>
+    <svg viewBox="0 0 760 220" role="img" aria-label="Both paths reach the same endpoint. Calling raw REST means assembling the request yourself. The SDK sits on top and handles authentication, request construction, retries and response parsing, then makes the identical HTTP call to the same API and the same model.">
+      <rect x="14" y="40" width="200" height="52" rx="3" fill="none" stroke="var(--rule)" stroke-width="1.4"/>
+      <text x="30" y="64" font-family="var(--face-body)" font-size="13" fill="var(--ink)">your code, raw REST</text>
+      <text x="30" y="82" font-family="var(--face-body)" font-size="11" fill="var(--ink-faint)">you assemble the request</text>
+
+      <rect x="14" y="120" width="200" height="52" rx="3" fill="var(--accent-wash)" stroke="var(--accent)" stroke-width="1.5"/>
+      <text x="30" y="144" font-family="var(--face-body)" font-size="13" fill="var(--ink)">your code, via the SDK</text>
+      <text x="30" y="162" font-family="var(--face-body)" font-size="11" fill="var(--accent)">less boilerplate to write</text>
+
+      <rect x="262" y="120" width="180" height="52" rx="3" fill="none" stroke="var(--accent)" stroke-width="1.4" stroke-dasharray="4 4"/>
+      <text x="276" y="141" font-family="var(--face-body)" font-size="11.5" fill="var(--ink-soft)">auth &middot; request construction</text>
+      <text x="276" y="159" font-family="var(--face-body)" font-size="11.5" fill="var(--ink-soft)">retries &middot; response parsing</text>
+
+      <path d="M214 66 L520 92" stroke="var(--ink-faint)" stroke-width="1.4" fill="none" marker-end="url(#i1)"/>
+      <path d="M214 146 L256 146" stroke="var(--accent)" stroke-width="1.4" fill="none" marker-end="url(#i2)"/>
+      <path d="M442 146 L520 118" stroke="var(--ink-faint)" stroke-width="1.4" fill="none" marker-end="url(#i1)"/>
+
+      <rect x="526" y="76" width="220" height="60" rx="3" fill="var(--paper-sunk)" stroke="var(--rule)" stroke-width="1.4"/>
+      <text x="544" y="102" font-family="var(--face-mono)" font-size="12" fill="var(--ink)">POST /v1/messages</text>
+      <text x="544" y="122" font-family="var(--face-body)" font-size="11.5" fill="var(--ink-faint)">the same API, the same model</text>
+      <text x="14" y="204" font-family="var(--face-body)" font-size="12.5" fill="var(--ink-soft)">The SDK saves you assembling requests by hand. It does not change what arrives.</text>
+      <defs>
+        <marker id="i1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--ink-faint)"/></marker>
+        <marker id="i2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--accent)"/></marker>
+      </defs>
+    </svg>
+    <figcaption><b>The SDK is convenience, not capability.</b> Which also means anything you can do
+    through it, you can do without it &mdash; useful when you are debugging, or working in a language
+    with no official SDK.</figcaption>
+  </figure>
+  </div>
+
+  <div class="wrap">
+    <p>Worth being precise, because Class 1 introduced a differently-named thing: this is the
+    <strong>Anthropic SDK</strong>, the ordinary client library. It has no loop and no opinions. The
+    <strong>Claude Agent SDK</strong> is a different product entirely &mdash; the whole agent loop, the
+    permission model, hooks. Same three letters, unrelated jobs.</p>
+    <p class="exit"><b>Next.</b> Three ways a response can arrive, and what each one is for.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 3 · sync and streaming ---------- -->
+<section class="screen" data-title="Synchronous and streaming">
+  <div class="wrap">
+    <span class="label">02 &middot; How it arrives</span>
+    <h2>Synchronous, and streaming</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll be able to pick between them on the only
+    question that decides it.</p>
+
+    <p>A <strong>synchronous</strong> request is the simplest pattern: send it, wait for the complete
+    response in one piece, act on it. Fine for short responses, and fine for backend jobs where nobody is
+    watching.</p>
+
+    <p><strong>Streaming</strong> sends the response in pieces as the model generates them. Output
+    appears immediately rather than after a blank-screen wait, and your code reassembles the pieces into
+    the final message. Claude does this over the same HTTP connection, using server-sent events.</p>
+
+    <p class="pull">Notice it's not a different endpoint or a different protocol. Same connection,
+    delivered incrementally.</p>
+
+    <p>So the question that decides it is simply: <strong>is anybody watching?</strong> Streaming buys
+    perceived responsiveness and nothing else &mdash; the total time to the last token is not shorter.
+    If no human is waiting on the output, you have added partial-state handling to your code and bought
+    nothing with it.</p>
+
+    <div class="note warn">
+      <span class="note-k">And it does add something to handle</span>
+      <p style="margin-bottom:0">A stream can be interrupted partway. Your reassembly code has to cope
+      with an incomplete message without corrupting whatever state it was building &mdash; which is a
+      real class of bug, and the reason streaming is a decision rather than a default. Class 12 does the
+      mechanics.</p>
+    </div>
+
+    <p class="exit"><b>Next.</b> The word "async," which means two different things that solve two
+    different problems.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 4 · async vs batch ---------- -->
+<section class="screen" data-title="Two things called async">
+  <div class="wrap">
+    <span class="label">03 &middot; The ambiguous word</span>
+    <h2>Two patterns, both called "async"</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll never conflate non-blocking concurrency
+    with batch processing again &mdash; and the exam tests exactly this distinction.</p>
+
+    <p>Two patterns address high-volume work. They solve <em>different problems</em>, and sharing a word
+    is the whole reason people reach for the wrong one.</p>
+  </div>
+
+  <div class="wrap-wide">
+  <figure>
+    <svg viewBox="0 0 760 260" role="img" aria-label="Two high-volume patterns compared. Non-blocking async keeps every request in real time but frees the application thread to do other work while waiting. The Message Batches API submits a large set of requests at once, returns an identifier, and completes within up to twenty-four hours at a lower per-token cost.">
+      <text x="14" y="26" font-family="var(--face-mono)" font-size="10" fill="var(--accent)" letter-spacing="1.3">NON-BLOCKING ASYNC</text>
+      <rect x="14" y="40" width="340" height="106" rx="3" fill="none" stroke="var(--accent)" stroke-width="1.5"/>
+      <g stroke="var(--accent)" stroke-width="1.3" fill="var(--accent-wash)">
+        <rect x="34" y="58" width="120" height="20"/><rect x="34" y="86" width="150" height="20"/>
+        <rect x="34" y="114" width="100" height="20"/>
+      </g>
+      <text x="200" y="73" font-family="var(--face-body)" font-size="11.5" fill="var(--ink-soft)">all in flight at once</text>
+      <text x="200" y="101" font-family="var(--face-body)" font-size="11.5" fill="var(--ink-soft)">each still returns</text>
+      <text x="200" y="119" font-family="var(--face-body)" font-size="11.5" fill="var(--ink-soft)">in real time</text>
+      <text x="14" y="172" font-family="var(--face-body)" font-size="12" fill="var(--ink)">Your thread is free while it waits.</text>
+      <text x="14" y="192" font-family="var(--face-body)" font-size="12" fill="var(--ink-faint)">Concurrency without blocking. Same price.</text>
+
+      <text x="406" y="26" font-family="var(--face-mono)" font-size="10" fill="var(--clay)" letter-spacing="1.3">MESSAGE BATCHES API</text>
+      <rect x="406" y="40" width="340" height="106" rx="3" fill="none" stroke="var(--clay)" stroke-width="1.5"/>
+      <rect x="426" y="58" width="150" height="76" rx="3" fill="var(--clay-wash)" stroke="var(--clay)" stroke-width="1.3"/>
+      <text x="440" y="84" font-family="var(--face-body)" font-size="11.5" fill="var(--ink)">one submission,</text>
+      <text x="440" y="102" font-family="var(--face-body)" font-size="11.5" fill="var(--ink)">many requests</text>
+      <text x="440" y="124" font-family="var(--face-mono)" font-size="10.5" fill="var(--clay)">&rarr; an identifier</text>
+      <text x="596" y="84" font-family="var(--face-body)" font-size="11.5" fill="var(--ink-soft)">you poll for</text>
+      <text x="596" y="102" font-family="var(--face-body)" font-size="11.5" fill="var(--ink-soft)">completion</text>
+      <text x="596" y="124" font-family="var(--face-mono)" font-size="10.5" fill="var(--clay)">up to 24h</text>
+      <text x="406" y="172" font-family="var(--face-body)" font-size="12" fill="var(--ink)">Latency traded for a lower per-token cost.</text>
+      <text x="406" y="192" font-family="var(--face-body)" font-size="12" fill="var(--ink-faint)">Nobody is waiting on any single result.</text>
+
+      <line x1="380" y1="14" x2="380" y2="210" stroke="var(--rule)" stroke-width="1.2"/>
+      <text x="14" y="236" font-family="var(--face-body)" font-size="12.5" fill="var(--ink)">One is about your <tspan font-style="italic">thread</tspan>. The other is about your <tspan font-style="italic">bill</tspan>. They are not alternatives to each other.</text>
+    </svg>
+    <figcaption><b>Sharing the word "async" is the entire source of the confusion.</b> Non-blocking
+    concurrency does not reduce cost, and batch does not help an application that needs an answer
+    now.</figcaption>
+  </figure>
+  </div>
+
+  <div class="wrap">
+    <h3>Non-blocking async</h3>
+    <p>The Python SDK exposes an async client (<code>AsyncAnthropic</code>) using non-blocking
+    async/await, so calls don't tie up your application thread. In the TypeScript SDK the standard client
+    is already Promise-based, so you await calls directly &mdash; <strong>there is no separate async
+    client class</strong>.</p>
+    <p>Either way the request still returns in real time. What you gain is that your application can do
+    other work while it waits. This is the right pattern when you need concurrency without blocking.</p>
+
+    <h3>The Message Batches API</h3>
+    <p>A separate pattern for bulk offline workloads. You submit a large set of requests in one call,
+    receive an identifier, and poll for completion. Jobs can take <strong>up to 24 hours</strong> and run
+    at a <strong>lower per-token cost</strong> in exchange for that latency.</p>
+    <p>It suits offline pipelines, evaluation runs, and bulk jobs where no user is waiting on each result
+    and cost matters more than turnaround.</p>
+
+    <div class="note good">
+      <span class="note-k">The discriminator</span>
+      <p style="margin-bottom:0">Ask <strong>who is waiting</strong>. If your application is waiting but
+      shouldn't block &mdash; async client. If <em>nobody</em> is waiting until tomorrow morning &mdash;
+      batch, and take the discount. This is one of the official sample questions on the exam, almost word
+      for word.</p>
+    </div>
+
+    <p class="exit"><b>Last screen.</b> Recap, and a choice with two plausible answers.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 5 · recap ---------- -->
+<section class="screen" data-title="Recap and the closing question">
+  <div class="wrap">
+    <span class="label">Recap</span>
+    <h2>What you're leaving with</h2>
+    <ol>
+      <li><strong>The SDK is a thin layer over REST.</strong> Same endpoint, same model, less
+      boilerplate.</li>
+      <li><strong>Anthropic SDK is not the Agent SDK.</strong> One is a client library; the other is a
+      whole agent loop.</li>
+      <li><strong>Streaming is the same connection</strong>, delivered in pieces, and buys perceived
+      responsiveness only.</li>
+      <li><strong>Non-blocking async frees your thread.</strong> Real-time responses, same price.</li>
+      <li><strong>Batch trades up to 24 hours for a lower per-token cost.</strong> Only where nobody is
+      waiting.</li>
+    </ol>
+
+    <div class="check">
+      <span class="note-k">Before Class 10</span>
+      <p>A service re-scores every item in a 400,000-row catalogue each night, writing results to a
+      warehouse table that a dashboard reads in the morning. The current implementation fires synchronous
+      calls in a loop and takes eleven hours. An engineer proposes switching to the async client so the
+      calls run concurrently.</p>
+      <p>Will that work? And is it the right answer?</p>
+      <button class="btn" data-reveal="i3">Commit to an answer, then reveal</button>
+      <div class="answer" id="i3" hidden>
+        <p><strong>It will work, and it is the wrong answer.</strong> Async concurrency genuinely fixes
+        the stated symptom &mdash; eleven hours is mostly the thread sitting idle waiting on responses,
+        and running them concurrently will collapse that dramatically.</p>
+        <p>But look at what the scenario actually says. The results are read <em>in the morning</em>.
+        Nobody is waiting on any individual score. That is the batch shape exactly, and batch buys the
+        same overnight completion at a <strong>lower per-token cost</strong> &mdash; which async does
+        not, because async changes your threading model and leaves your bill alone.</p>
+        <p style="margin-bottom:0">This is the trap worth recognising: the async proposal <em>solves a
+        real problem</em>, which is what makes it convincing. It just isn't the problem the constraint
+        points at. The exam's distractors are built exactly this way &mdash; legitimate techniques that
+        don't match the stated constraint. Here the constraint is "results not needed until morning," and
+        that word selects batch.</p>
+      </div>
+    </div>
+
+    <p style="color:var(--ink-soft);font-size:var(--t-small)">Class 10 &mdash; prompt engineering: the
+    model sees one flat text, so position is as load-bearing as wording.</p>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">Class 9 of 29</span>
+      <a class="btn btn-primary" href="CCDV-F_Class-10.html">Class 10: Stop Rewording It &rarr;</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<script>
+(function () {
+  var screens = [].slice.call(document.querySelectorAll('.screen'));
+  var toc = document.getElementById('toc');
+  var barEl = document.getElementById('bar');
+  var cNow = document.getElementById('cNow');
+  var cAll = document.getElementById('cAll');
+  var barTitle = document.getElementById('barTitle');
+  var drawer = document.getElementById('drawer');
+  var i = 0;
+
+  cAll.textContent = screens.length;
+
+  screens.forEach(function (s, n) {
+    var li = document.createElement('li');
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = s.dataset.title || ('Screen ' + (n + 1));
+    b.addEventListener('click', function () { go(n); closeDrawer(); });
+    li.appendChild(b);
+    toc.appendChild(li);
+  });
+  var tocBtns = [].slice.call(toc.querySelectorAll('button'));
+
+  function go(n, keepScroll) {
+    i = Math.max(0, Math.min(screens.length - 1, n));
+    screens.forEach(function (s, k) { s.classList.toggle('on', k === i); });
+    tocBtns.forEach(function (b, k) { b.setAttribute('aria-current', k === i ? 'true' : 'false'); });
+    cNow.textContent = i + 1;
+    barEl.style.width = ((i + 1) / screens.length * 100) + '%';
+    barTitle.textContent = screens[i].dataset.title || '';
+    if (!keepScroll) window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+    if (location.hash !== '#s' + (i + 1)) history.replaceState(null, '', '#s' + (i + 1));
+    document.querySelectorAll('[data-next]').forEach(function (b) { b.disabled = (i === screens.length - 1); });
+    document.querySelectorAll('[data-prev]').forEach(function (b) { b.disabled = (i === 0); });
+  }
+
+  document.addEventListener('click', function (e) {
+    var n = e.target.closest('[data-next]');
+    var p = e.target.closest('[data-prev]');
+    var r = e.target.closest('[data-reveal]');
+    if (n) go(i + 1);
+    if (p) go(i - 1);
+    if (r) {
+      var box = document.getElementById(r.dataset.reveal);
+      if (box) { box.hidden = false; r.disabled = true; box.setAttribute('tabindex', '-1'); box.focus(); }
+    }
+  });
+
+  function openDrawer() { drawer.setAttribute('open', ''); document.getElementById('main').setAttribute('inert', ''); tocBtns[i].focus(); }
+  function closeDrawer() { drawer.removeAttribute('open'); document.getElementById('main').removeAttribute('inert'); }
+  document.getElementById('tocBtn').addEventListener('click', openDrawer);
+  document.getElementById('tocClose').addEventListener('click', closeDrawer);
+  drawer.addEventListener('click', function (e) { if (e.target === drawer) closeDrawer(); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && drawer.hasAttribute('open')) return closeDrawer();
+    if (e.target.matches('input, textarea')) return;
+    if (e.key === 'ArrowRight') go(i + 1);
+    if (e.key === 'ArrowLeft') go(i - 1);
+  });
+
+  var start = parseInt((location.hash || '').replace('#s', ''), 10);
+  go(isNaN(start) ? 0 : start - 1, true);
+})();
+</script>
+</body>
+</html>

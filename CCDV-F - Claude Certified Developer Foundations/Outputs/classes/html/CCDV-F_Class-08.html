@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 8 — There Is No Best Model · CCDV-F</title>
+<meta name="description" content="CCDV-F Class 8: choosing a model - capability, latency and cost as one budget, and why defaulting to the most capable tier is the expensive mistake.">
+<meta name="author" content="Ram">
+<style>
+@layer engine, skin, utilities;
+
+/* ============================== SKIN: "Lecture Hall" ============================== */
+@layer skin {
+  :root {
+    color-scheme: light dark;
+
+    /* -- color primitives (oklch) -- */
+    --paper:        oklch(0.977 0.004 250);
+    --paper-sunk:   oklch(0.947 0.006 250);
+    --ink:          oklch(0.24 0.018 255);
+    --ink-soft:     oklch(0.46 0.016 255);
+    --ink-faint:    oklch(0.62 0.012 255);
+    --rule:         oklch(0.87 0.008 255);
+    --accent:       oklch(0.50 0.13 250);
+    --accent-lift:  oklch(0.62 0.14 250);
+    --clay:         oklch(0.58 0.10 45);
+    --flag:         oklch(0.56 0.12 145);
+
+    /* -- derived tints -- */
+    --accent-wash:  color-mix(in oklch, var(--accent) 8%, var(--paper));
+    --accent-edge:  color-mix(in oklch, var(--accent) 32%, var(--paper));
+    --clay-wash:    color-mix(in oklch, var(--clay) 10%, var(--paper));
+    --flag-wash:    color-mix(in oklch, var(--flag) 10%, var(--paper));
+
+    /* -- type -- */
+    --face-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --face-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                 Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
+    --face-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+    --t-body:  clamp(1.0rem, 0.94rem + 0.30vw, 1.125rem);
+    --t-small: clamp(0.83rem, 0.80rem + 0.14vw, 0.90rem);
+    --t-lead:  clamp(1.13rem, 1.03rem + 0.48vw, 1.32rem);
+    --t-h2:    clamp(1.55rem, 1.28rem + 1.35vw, 2.35rem);
+    --t-h3:    clamp(1.08rem, 1.00rem + 0.38vw, 1.24rem);
+    --t-hero:  clamp(2.0rem, 1.45rem + 2.7vw, 3.4rem);
+    --measure: 64ch;
+    --lh: 1.68;
+
+    /* -- shape + space -- */
+    --r: 3px;
+    --hair: 1px;
+    --gap: clamp(1.1rem, 0.9rem + 1vw, 1.9rem);
+
+    /* -- motion -- */
+    --dur: 180ms;
+    --ease: cubic-bezier(.2,.6,.3,1);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:      oklch(0.185 0.014 260);
+      --paper-sunk: oklch(0.225 0.016 260);
+      --ink:        oklch(0.93 0.008 255);
+      --ink-soft:   oklch(0.76 0.012 255);
+      --ink-faint:  oklch(0.60 0.012 255);
+      --rule:       oklch(0.34 0.014 258);
+      --accent:     oklch(0.76 0.12 250);
+      --accent-lift:oklch(0.84 0.11 250);
+      --clay:       oklch(0.74 0.10 48);
+      --flag:       oklch(0.74 0.12 152);
+      --accent-wash: color-mix(in oklch, var(--accent) 14%, var(--paper));
+      --accent-edge: color-mix(in oklch, var(--accent) 40%, var(--paper));
+      --clay-wash:   color-mix(in oklch, var(--clay) 16%, var(--paper));
+      --flag-wash:   color-mix(in oklch, var(--flag) 16%, var(--paper));
+    }
+  }
+}
+
+/* ============================== ENGINE ============================== */
+@layer engine {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--face-body);
+    font-size: var(--t-body);
+    line-height: var(--lh);
+    font-synthesis-weight: none;
+  }
+
+  /* ---- skip link ---- */
+  .skip {
+    position: absolute; left: -9999px; top: 0; z-index: 100;
+    background: var(--accent); color: var(--paper);
+    padding: .7rem 1.1rem; border-radius: var(--r);
+  }
+  .skip:focus { left: .6rem; top: .6rem; }
+
+  /* ---- top bar ---- */
+  .bar {
+    position: sticky; top: 0; z-index: 40;
+    background: color-mix(in oklch, var(--paper) 88%, transparent);
+    backdrop-filter: blur(9px);
+    border-bottom: var(--hair) solid var(--rule);
+  }
+  .bar-in {
+    max-width: 78rem; margin: 0 auto;
+    padding: .6rem clamp(.9rem, 3vw, 2rem);
+    display: flex; align-items: center; gap: 1rem;
+  }
+  .brand {
+    font-family: var(--face-mono);
+    font-size: .68rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--ink-faint); white-space: nowrap;
+  }
+  .brand b { color: var(--accent); font-weight: 600; }
+  .bar-title {
+    font-family: var(--face-display);
+    font-size: .95rem; color: var(--ink-soft);
+    margin-left: auto; text-align: right;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .counter {
+    font-family: var(--face-mono); font-size: .72rem;
+    color: var(--ink-faint); white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .progress { height: 2px; background: var(--rule); }
+  .progress span {
+    display: block; height: 100%; width: 0;
+    background: var(--accent);
+    transition: width var(--dur) var(--ease);
+  }
+
+  .btn {
+    font: inherit; font-size: var(--t-small);
+    color: var(--ink); background: transparent;
+    border: var(--hair) solid var(--rule); border-radius: var(--r);
+    padding: .5rem .85rem; cursor: pointer;
+    min-height: 44px; display: inline-flex; align-items: center; gap: .5rem;
+    transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+  .btn:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-wash); }
+  .btn:disabled { opacity: .38; cursor: not-allowed; }
+  .btn-primary { border-color: var(--accent-edge); background: var(--accent-wash); color: var(--accent); font-weight: 600; }
+
+  :focus-visible { outline: 2px solid var(--accent-lift); outline-offset: 3px; }
+
+  /* ---- drawer ---- */
+  .drawer {
+    position: fixed; inset: 0; z-index: 60;
+    background: color-mix(in oklch, var(--ink) 42%, transparent);
+    display: none; padding: clamp(.8rem, 4vw, 3rem);
+  }
+  .drawer[open] { display: grid; place-items: start center; }
+  .drawer-panel {
+    background: var(--paper); border: var(--hair) solid var(--rule);
+    border-radius: var(--r); max-width: 34rem; width: 100%;
+    padding: clamp(1rem, 3vw, 1.7rem); box-shadow: 0 18px 50px -20px color-mix(in oklch, var(--ink) 45%, transparent);
+  }
+  .drawer h2 { font-size: var(--t-h3); margin: 0 0 .9rem; font-family: var(--face-display); }
+  .toc { list-style: none; margin: 0; padding: 0; counter-reset: t; }
+  .toc li { counter-increment: t; }
+  .toc button {
+    width: 100%; text-align: left; font: inherit; font-size: var(--t-small);
+    background: none; border: 0; border-top: var(--hair) solid var(--rule);
+    padding: .72rem .2rem; color: var(--ink); cursor: pointer;
+    display: flex; gap: .8rem; align-items: baseline; min-height: 44px;
+  }
+  .toc button::before {
+    content: counter(t, decimal-leading-zero);
+    font-family: var(--face-mono); font-size: .7rem; color: var(--ink-faint);
+  }
+  .toc button:hover { color: var(--accent); }
+  .toc button[aria-current="true"] { color: var(--accent); font-weight: 600; }
+
+  /* ---- screens ---- */
+  main { max-width: 78rem; margin: 0 auto; padding: 0 clamp(.9rem, 3vw, 2rem); }
+  .screen { display: none; padding: clamp(1.8rem, 5vw, 3.6rem) 0 1rem; }
+  .screen.on { display: block; animation: rise var(--dur) var(--ease); }
+  @keyframes rise { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+
+  .wrap { max-width: var(--measure); margin-inline: auto; }
+  .wrap-wide { max-width: 52rem; margin-inline: auto; }
+
+  .label {
+    font-family: var(--face-mono); font-size: .68rem;
+    letter-spacing: .13em; text-transform: uppercase; color: var(--accent);
+    padding-bottom: .45rem; border-bottom: var(--hair) solid var(--accent-edge);
+    display: inline-block; margin-bottom: 1.1rem;
+  }
+
+  h1 { font-family: var(--face-display); font-size: var(--t-hero); line-height: 1.06;
+       margin: 0 0 1.1rem; font-weight: 600; letter-spacing: -.015em; }
+  h2 { font-family: var(--face-display); font-size: var(--t-h2); line-height: 1.14;
+       margin: 0 0 1.1rem; font-weight: 600; letter-spacing: -.01em; }
+  h3 { font-family: var(--face-body); font-size: var(--t-h3); margin: 2rem 0 .6rem; font-weight: 650; }
+  p { margin: 0 0 1.05em; }
+  .lead { font-size: var(--t-lead); color: var(--ink-soft); line-height: 1.5; }
+  strong { font-weight: 650; }
+  em { font-style: italic; }
+  code { font-family: var(--face-mono); font-size: .88em;
+         background: var(--paper-sunk); padding: .12em .38em; border-radius: 2px; }
+
+  .entry, .exit {
+    font-size: var(--t-small); color: var(--ink-soft);
+    border-left: 2px solid var(--accent-edge);
+    padding: .1rem 0 .1rem .95rem; margin: 0 0 1.6rem;
+  }
+  .exit { border-left-color: color-mix(in oklch, var(--clay) 45%, var(--paper)); margin: 2rem 0 0; }
+  .exit b, .entry b { color: var(--ink); font-weight: 600; }
+
+  .pull {
+    font-family: var(--face-display); font-size: var(--t-lead);
+    line-height: 1.4; color: var(--ink);
+    border-top: var(--hair) solid var(--rule);
+    border-bottom: var(--hair) solid var(--rule);
+    padding: 1.1rem 0; margin: 1.8rem 0;
+  }
+
+  .note {
+    background: var(--paper-sunk); border-radius: var(--r);
+    padding: 1rem 1.15rem; margin: 1.5rem 0; font-size: var(--t-small);
+  }
+  .note.warn { background: var(--clay-wash); }
+  .note.good { background: var(--flag-wash); }
+  .note p:last-child { margin-bottom: 0; }
+  .note-k {
+    font-family: var(--face-mono); font-size: .66rem; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--ink-faint); display: block; margin-bottom: .4rem;
+  }
+
+  figure { margin: 2rem 0; }
+  figure svg { display: block; width: 100%; height: auto; }
+  figcaption {
+    font-size: var(--t-small); color: var(--ink-soft);
+    margin-top: .8rem; padding-top: .7rem; border-top: var(--hair) solid var(--rule);
+  }
+
+  .tbl-scroll { overflow-x: auto; margin: 1.6rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: var(--t-small); }
+  th, td { text-align: left; padding: .68rem .8rem; border-bottom: var(--hair) solid var(--rule);
+           vertical-align: top; }
+  th { font-family: var(--face-mono); font-size: .68rem; letter-spacing: .08em;
+       text-transform: uppercase; color: var(--ink-faint); font-weight: 500; }
+  tbody tr:hover { background: var(--paper-sunk); }
+
+  details { border-top: var(--hair) solid var(--rule); padding: .8rem 0; margin: 1.4rem 0; }
+  summary { cursor: pointer; font-size: var(--t-small); color: var(--accent);
+            font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+  summary::marker { color: var(--ink-faint); }
+
+  /* ---- checkpoint ---- */
+  .check { border: var(--hair) solid var(--accent-edge); border-radius: var(--r);
+           padding: 1.2rem 1.3rem; margin: 2rem 0; background: var(--accent-wash); }
+  .check .note-k { color: var(--accent); }
+  .check p { margin-bottom: .9rem; }
+  .answer { margin-top: 1rem; padding-top: 1rem; border-top: var(--hair) solid var(--accent-edge);
+            font-size: var(--t-small); }
+  .answer[hidden] { display: none; }
+
+  ul, ol { margin: 0 0 1.05em; padding-left: 1.3em; }
+  li { margin-bottom: .45em; }
+
+  /* ---- foot nav ---- */
+  .foot {
+    max-width: var(--measure); margin: 2.8rem auto 0;
+    border-top: var(--hair) solid var(--rule); padding: 1.2rem 0 3rem;
+    display: flex; gap: .8rem; align-items: center; justify-content: space-between;
+  }
+  .hint { font-size: .72rem; color: var(--ink-faint); font-family: var(--face-mono); }
+
+  @media (max-width: 640px) {
+    .bar-title { display: none; }
+    .hint { display: none; }
+    .bar-in { gap: .5rem; padding-inline: .75rem; }
+    .btn { padding: .5rem .62rem; }
+    .counter { margin-left: auto; flex: 0 0 auto; }
+  }
+  @media (max-width: 480px) {
+    /* the course link + contents button + counter is all that fits; the brand
+       repeats what the page title already says, so it goes first */
+    .brand { display: none; }
+  }
+
+  /* ---- floor: motion / contrast / forced-colors ---- */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+  @media (prefers-contrast: more) {
+    :root { --rule: var(--ink-soft); --ink-soft: var(--ink); }
+  }
+  @media (forced-colors: active) {
+    .btn, .drawer-panel, .check, figure svg { border: 1px solid ButtonText; }
+    .label, .brand b { color: LinkText; }
+    .progress span { background: Highlight; }
+  }
+
+  /* ---- print: flatten every screen ---- */
+  @media print {
+    .bar, .foot, .drawer, .skip, .hint { display: none !important; }
+    .screen { display: block !important; page-break-after: always; padding: 0 0 1.5rem; }
+    .answer[hidden] { display: block !important; }
+    figure, .check, table { break-inside: avoid; }
+    body { background: #fff; color: #111; }
+  }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the class</a>
+
+<header class="bar">
+  <div class="bar-in">
+    <span class="brand">CCDV&#8209;F&nbsp;· <b>Class 08</b></span>
+    <a class="btn" id="courseLink" href="index.html">&#8598;&nbsp;Course</a>
+    <button class="btn" id="tocBtn" aria-haspopup="dialog">Contents</button>
+    <span class="bar-title" id="barTitle">There Is No Best Model</span>
+    <span class="counter"><span id="cNow">1</span>&#8202;/&#8202;<span id="cAll">10</span></span>
+  </div>
+  <div class="progress"><span id="bar"></span></div>
+</header>
+
+<div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="tocH">
+  <div class="drawer-panel">
+    <h2 id="tocH">Class 8 &mdash; contents</h2>
+    <ol class="toc" id="toc"></ol>
+    <p style="margin:1rem 0 0"><button class="btn" id="tocClose">Close</button></p>
+  </div>
+</div>
+
+<main id="main">
+<!-- ---------- 1 · cover ---------- -->
+<section class="screen on" data-title="The promise">
+  <div class="wrap">
+    <span class="label">Claude Certified Developer &middot; Foundations</span>
+    <h1>There Is No Best Model</h1>
+    <p class="lead">Only the right model for a task at a stated quality bar. Which sounds like a
+    platitude until you notice what it rules out &mdash; and that reaching for the most capable model by
+    default is the most common and most expensive model-selection mistake in production.</p>
+
+    <div class="note">
+      <span class="note-k">What you leave holding</span>
+      <ol style="margin-bottom:0">
+        <li>The same prompt runs on any tier, so model choice is a lever, not an architecture.</li>
+        <li>A more capable model is sometimes <em>cheaper and faster</em>. Work out why.</li>
+        <li>The cost of a wrong answer belongs in the arithmetic.</li>
+        <li>Start at Sonnet; move in either direction only on eval evidence.</li>
+        <li>You don't have to pick one model for everything.</li>
+      </ol>
+    </div>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Begin &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 2 · the family ---------- -->
+<section class="screen" data-title="The family, and why choice is cheap">
+  <div class="wrap">
+    <span class="label">01 &middot; Four tiers</span>
+    <h2>The family, and why the choice is cheap to change</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll know why this decision deserves less agony
+    than teams give it.</p>
+
+    <p>Claude is a family of models trading cost, latency and capability against each other.</p>
+  </div>
+
+  <div class="wrap-wide">
+  <figure>
+    <svg viewBox="0 0 760 240" role="img" aria-label="Four model tiers arranged along an axis of capability against cost and latency. Haiku is built for speed and cost efficiency on tasks inside its envelope. Sonnet is the balanced default for most production workloads. Opus handles demanding work above the Sonnet envelope. Fable is the most capable, for the most demanding reasoning, coding and agentic work. The same prompt runs on all four.">
+      <line x1="40" y1="176" x2="720" y2="176" stroke="var(--rule)" stroke-width="1.3"/>
+      <text x="40" y="204" font-family="var(--face-mono)" font-size="10" fill="var(--ink-faint)">SPEED &amp; COST EFFICIENCY</text>
+      <text x="720" y="204" font-family="var(--face-mono)" font-size="10" fill="var(--ink-faint)" text-anchor="end">CAPABILITY, COST, USUALLY LATENCY</text>
+
+      <g stroke="var(--rule)" stroke-width="1.3">
+        <rect x="40" y="112" width="150" height="52" rx="3" fill="var(--paper-sunk)"/>
+        <rect x="212" y="88" width="150" height="76" rx="3" fill="var(--accent-wash)"/>
+        <rect x="384" y="72" width="150" height="92" rx="3" fill="var(--paper-sunk)"/>
+        <rect x="556" y="52" width="164" height="112" rx="3" fill="var(--paper-sunk)"/>
+      </g>
+      <rect x="212" y="88" width="150" height="76" rx="3" fill="none" stroke="var(--accent)" stroke-width="1.8"/>
+
+      <g font-family="var(--face-display)" font-size="16" font-weight="600" fill="var(--ink)">
+        <text x="56" y="140">Haiku</text><text x="228" y="118">Sonnet</text>
+        <text x="400" y="102">Opus</text><text x="572" y="84">Fable</text>
+      </g>
+      <g font-family="var(--face-body)" font-size="11" fill="var(--ink-soft)">
+        <text x="56" y="158">tasks inside its envelope</text>
+        <text x="228" y="138">the balanced default for</text><text x="228" y="154">most production workloads</text>
+        <text x="400" y="122">demanding work above</text><text x="400" y="138">the Sonnet envelope</text>
+        <text x="572" y="104">the most demanding reasoning,</text><text x="572" y="120">coding and agentic work</text>
+      </g>
+      <text x="228" y="80" font-family="var(--face-mono)" font-size="10" fill="var(--accent)">START HERE</text>
+      <text x="40" y="34" font-family="var(--face-body)" font-size="12.5" fill="var(--ink)">The same prompt runs on all four. No rewrite, no migration, no new integration.</text>
+    </svg>
+    <figcaption><b>Model choice is a per-workload setting, not an architectural commitment.</b> Which is
+    why it should be decided by measurement and revisited cheaply, rather than agonised over once.</figcaption>
+  </figure>
+  </div>
+
+  <div class="wrap">
+    <p>Confirm the current lineup and model identifiers against the platform docs when you build. The
+    family is evolving, and the identifiers are exactly the kind of thing that moves &mdash; the
+    <em>shape</em> of the decision is what's stable.</p>
+    <p class="exit"><b>Next.</b> The trade itself, including the direction of it that surprises
+    people.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 3 · the trade ---------- -->
+<section class="screen" data-title="The trade, and the part that surprises people">
+  <div class="wrap">
+    <span class="label">02 &middot; The trade</span>
+    <h2>The trade &mdash; and the direction of it people miss</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll know why "bigger model" doesn't reliably
+    mean "slower and dearer."</p>
+
+    <p>The straightforward version first. Upgrading a tier buys quality at the price of higher per-token
+    cost and usually higher latency. Downgrading buys speed and lower cost at the risk of a quality
+    drop. Fine, and mostly true.</p>
+
+    <p class="pull">Now the part that catches people: a higher-tier model can process a request
+    <em>faster and cheaper</em> if it reaches a conclusion in fewer tokens than a lower-tier model
+    would.</p>
+
+    <p>Work through why that has to be possible. You are billed per token, not per request. A cheaper
+    model that flails &mdash; restating the problem, exploring a wrong branch, producing a longer and
+    hedgier answer &mdash; can burn more tokens than a capable model that goes straight to the point. At
+    a lower price per token, but more of them. And the tokens are also the latency, so it's slower on the
+    wall clock too.</p>
+
+    <p>So "cheap model" is a claim about <em>price per token</em>, and your bill is
+    <em>price &times; tokens</em>. Those come apart, and when they do the intuition inverts.</p>
+
+    <h3>And one term nobody puts in the spreadsheet</h3>
+    <p>The <strong>cost of a mistake</strong> belongs in the calculation. Saving a few dollars a day on a
+    lower tier is not a sound trade if the quality drop introduces errors carrying significant downstream
+    cost &mdash; a wrong extraction that reaches a ledger, a misroute that costs an hour of somebody's
+    afternoon, a bad summary a human then has to redo.</p>
+
+    <div class="note warn">
+      <span class="note-k">The most expensive mistake in production</span>
+      <p style="margin-bottom:0">Reaching for the most capable model <strong>by default</strong>. It
+      feels safe and it is the single most common and most expensive model-selection error. The
+      discipline is to make the trade-off measurable rather than settling it with an instinct about
+      risk.</p>
+    </div>
+
+    <p class="exit"><b>Next.</b> So what do you actually do, on a Tuesday, with a new workload?</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 4 · the default path + routing ---------- -->
+<section class="screen" data-title="The default path, and routing">
+  <div class="wrap">
+    <span class="label">03 &middot; Procedure</span>
+    <h2>The default path, and when to stop having one model</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll have a starting position and two moves,
+    each with a condition attached.</p>
+
+    <div class="note good">
+      <span class="note-k">The default</span>
+      <p><strong>Start with Sonnet.</strong></p>
+      <p><strong>Move up to Opus</strong> only when an eval shows Sonnet missing the quality bar on the
+      hardest cases your traffic actually contains &mdash; and the cost of a wrong answer is high.</p>
+      <p style="margin-bottom:0"><strong>Move down to Haiku</strong> only when an eval shows a cheaper
+      model holding the bar on the bulk of traffic, freeing budget and latency.</p>
+    </div>
+
+    <p>Notice both moves have the same instrument. In either direction, the eval is what promotes the
+    change &mdash; a model change gets shipped on a measured score against your own cases, not on a
+    benchmark, a release note, or somebody's afternoon of trying it.</p>
+
+    <p class="pull">The eval you built for quality is also the gate for a model decision. It's the same
+    instrument doing two jobs.</p>
+
+    <h3>You don't have to pick one model for everything</h3>
+    <p>A common production pattern is <strong>a default model with an override</strong>. Route the bulk
+    of traffic to a balanced default, and send specific request types to a larger or smaller model based
+    on a cheap signal read from the request &mdash; task type, input length, a difficulty
+    classification.</p>
+    <p>It's the same routing idea used for retrieval, applied to model choice: you pay for the more
+    capable model only on the requests that need it.</p>
+
+    <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>Route</th><th>When it earns its keep</th><th>What it costs</th></tr></thead>
+      <tbody>
+        <tr><td>One pinned model</td><td>Every request is the same shape at one quality bar</td><td>Nothing. Skip the router</td></tr>
+        <tr><td>Default plus override</td><td>Traffic is genuinely mixed &mdash; a long tail of hard requests among easy ones</td><td>A classification step, and a second model path to maintain</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p>The router is not free, and it is a real answer to a real shape of traffic. Where the traffic
+    doesn't have that shape, it's complexity bought for nothing.</p>
+
+    <p class="exit"><b>Last screen.</b> The recap, and a decision with a number attached.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 5 · recap ---------- -->
+<section class="screen" data-title="Recap and the closing question">
+  <div class="wrap">
+    <span class="label">Recap</span>
+    <h2>What you're leaving with</h2>
+    <ol>
+      <li><strong>The same prompt runs on any tier</strong>, so this is a setting you revisit, not an
+      architecture you commit to.</li>
+      <li><strong>Price per token is not your bill.</strong> A capable model that answers in fewer tokens
+      can be cheaper and faster than a cheap one that flails.</li>
+      <li><strong>The cost of a mistake is part of the arithmetic</strong>, and it is usually the term
+      nobody writes down.</li>
+      <li><strong>Start at Sonnet; move on eval evidence</strong>, in either direction. Defaulting to the
+      most capable model is the expensive mistake.</li>
+      <li><strong>Route only if the traffic is mixed.</strong> Uniform traffic, one pinned model, no
+      router.</li>
+    </ol>
+
+    <div class="check">
+      <span class="note-k">Before Class 9</span>
+      <p>A team runs document extraction on Haiku to keep costs down. It handles about 90% of documents
+      well. The other 10% are dense multi-column contracts, where it produces wrong values roughly a
+      third of the time. Those errors flow into a finance ledger and each one takes a person about
+      twenty minutes to find and correct.</p>
+      <p>Somebody proposes moving everything to Opus. Somebody else says the current setup is
+      "90% accurate, which is fine."</p>
+      <p>Both are wrong. What would you do, and what would you measure first?</p>
+      <button class="btn" data-reveal="h1">Commit to an answer, then reveal</button>
+      <div class="answer" id="h1" hidden>
+        <p><strong>Why "move everything to Opus" is wrong:</strong> it pays the higher per-token price on
+        the 90% that Haiku already handles. That's the default-to-the-most-capable mistake, bought
+        wholesale.</p>
+        <p><strong>Why "90% is fine" is wrong:</strong> it prices the errors at zero. A third of 10% is
+        about 3% of documents wrong, each costing twenty minutes of a person's time &mdash; and those are
+        landing in a ledger, so the downstream cost is real and recurring. That term belongs in the
+        comparison and was left out of it.</p>
+        <p><strong>What to do:</strong> this traffic is exactly the mixed shape that justifies a router.
+        Keep the cheap model as the default and override to a more capable tier on a cheap signal read
+        from the request &mdash; page count, column detection, document type. You pay the higher price on
+        roughly a tenth of the volume.</p>
+        <p style="margin-bottom:0"><strong>What to measure first:</strong> the eval, on the hard cases
+        specifically. You need to know that the upgrade actually fixes those contracts before you build
+        any routing &mdash; otherwise you've added a classification step and a second model path to
+        maintain in exchange for an assumption. And second, the real cost of the errors, so the
+        comparison has all its terms.</p>
+      </div>
+    </div>
+
+    <p style="color:var(--ink-soft);font-size:var(--t-small)">Class 9 &mdash; the technical substrate:
+    what the SDK is hiding, and the two different things people mean by "async."</p>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">Class 8 of 29</span>
+      <a class="btn btn-primary" href="CCDV-F_Class-09.html">Class 9: What the SDK Is Hiding &rarr;</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<script>
+(function () {
+  var screens = [].slice.call(document.querySelectorAll('.screen'));
+  var toc = document.getElementById('toc');
+  var barEl = document.getElementById('bar');
+  var cNow = document.getElementById('cNow');
+  var cAll = document.getElementById('cAll');
+  var barTitle = document.getElementById('barTitle');
+  var drawer = document.getElementById('drawer');
+  var i = 0;
+
+  cAll.textContent = screens.length;
+
+  screens.forEach(function (s, n) {
+    var li = document.createElement('li');
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = s.dataset.title || ('Screen ' + (n + 1));
+    b.addEventListener('click', function () { go(n); closeDrawer(); });
+    li.appendChild(b);
+    toc.appendChild(li);
+  });
+  var tocBtns = [].slice.call(toc.querySelectorAll('button'));
+
+  function go(n, keepScroll) {
+    i = Math.max(0, Math.min(screens.length - 1, n));
+    screens.forEach(function (s, k) { s.classList.toggle('on', k === i); });
+    tocBtns.forEach(function (b, k) { b.setAttribute('aria-current', k === i ? 'true' : 'false'); });
+    cNow.textContent = i + 1;
+    barEl.style.width = ((i + 1) / screens.length * 100) + '%';
+    barTitle.textContent = screens[i].dataset.title || '';
+    if (!keepScroll) window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+    if (location.hash !== '#s' + (i + 1)) history.replaceState(null, '', '#s' + (i + 1));
+    document.querySelectorAll('[data-next]').forEach(function (b) { b.disabled = (i === screens.length - 1); });
+    document.querySelectorAll('[data-prev]').forEach(function (b) { b.disabled = (i === 0); });
+  }
+
+  document.addEventListener('click', function (e) {
+    var n = e.target.closest('[data-next]');
+    var p = e.target.closest('[data-prev]');
+    var r = e.target.closest('[data-reveal]');
+    if (n) go(i + 1);
+    if (p) go(i - 1);
+    if (r) {
+      var box = document.getElementById(r.dataset.reveal);
+      if (box) { box.hidden = false; r.disabled = true; box.setAttribute('tabindex', '-1'); box.focus(); }
+    }
+  });
+
+  function openDrawer() { drawer.setAttribute('open', ''); document.getElementById('main').setAttribute('inert', ''); tocBtns[i].focus(); }
+  function closeDrawer() { drawer.removeAttribute('open'); document.getElementById('main').removeAttribute('inert'); }
+  document.getElementById('tocBtn').addEventListener('click', openDrawer);
+  document.getElementById('tocClose').addEventListener('click', closeDrawer);
+  drawer.addEventListener('click', function (e) { if (e.target === drawer) closeDrawer(); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && drawer.hasAttribute('open')) return closeDrawer();
+    if (e.target.matches('input, textarea')) return;
+    if (e.key === 'ArrowRight') go(i + 1);
+    if (e.key === 'ArrowLeft') go(i - 1);
+  });
+
+  var start = parseInt((location.hash || '').replace('#s', ''), 10);
+  go(isNaN(start) ? 0 : start - 1, true);
+})();
+</script>
+</body>
+</html>

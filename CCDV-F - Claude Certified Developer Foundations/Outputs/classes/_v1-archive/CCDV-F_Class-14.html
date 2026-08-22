@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 14 — Pay Once for the Part That Never Changes · CCDV-F</title>
+<meta name="description" content="CCDV-F Class 14: cost and token management - prompt caching as a property of ordering, and measuring context pressure before a request fails.">
+<meta name="author" content="Ram">
+<style>
+@layer engine, skin, utilities;
+
+/* ============================== SKIN: "Lecture Hall" ============================== */
+@layer skin {
+  :root {
+    color-scheme: light dark;
+
+    /* -- color primitives (oklch) -- */
+    --paper:        oklch(0.977 0.004 250);
+    --paper-sunk:   oklch(0.947 0.006 250);
+    --ink:          oklch(0.24 0.018 255);
+    --ink-soft:     oklch(0.46 0.016 255);
+    --ink-faint:    oklch(0.62 0.012 255);
+    --rule:         oklch(0.87 0.008 255);
+    --accent:       oklch(0.50 0.13 250);
+    --accent-lift:  oklch(0.62 0.14 250);
+    --clay:         oklch(0.58 0.10 45);
+    --flag:         oklch(0.56 0.12 145);
+
+    /* -- derived tints -- */
+    --accent-wash:  color-mix(in oklch, var(--accent) 8%, var(--paper));
+    --accent-edge:  color-mix(in oklch, var(--accent) 32%, var(--paper));
+    --clay-wash:    color-mix(in oklch, var(--clay) 10%, var(--paper));
+    --flag-wash:    color-mix(in oklch, var(--flag) 10%, var(--paper));
+
+    /* -- type -- */
+    --face-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --face-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                 Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
+    --face-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+    --t-body:  clamp(1.0rem, 0.94rem + 0.30vw, 1.125rem);
+    --t-small: clamp(0.83rem, 0.80rem + 0.14vw, 0.90rem);
+    --t-lead:  clamp(1.13rem, 1.03rem + 0.48vw, 1.32rem);
+    --t-h2:    clamp(1.55rem, 1.28rem + 1.35vw, 2.35rem);
+    --t-h3:    clamp(1.08rem, 1.00rem + 0.38vw, 1.24rem);
+    --t-hero:  clamp(2.0rem, 1.45rem + 2.7vw, 3.4rem);
+    --measure: 64ch;
+    --lh: 1.68;
+
+    /* -- shape + space -- */
+    --r: 3px;
+    --hair: 1px;
+    --gap: clamp(1.1rem, 0.9rem + 1vw, 1.9rem);
+
+    /* -- motion -- */
+    --dur: 180ms;
+    --ease: cubic-bezier(.2,.6,.3,1);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:      oklch(0.185 0.014 260);
+      --paper-sunk: oklch(0.225 0.016 260);
+      --ink:        oklch(0.93 0.008 255);
+      --ink-soft:   oklch(0.76 0.012 255);
+      --ink-faint:  oklch(0.60 0.012 255);
+      --rule:       oklch(0.34 0.014 258);
+      --accent:     oklch(0.76 0.12 250);
+      --accent-lift:oklch(0.84 0.11 250);
+      --clay:       oklch(0.74 0.10 48);
+      --flag:       oklch(0.74 0.12 152);
+      --accent-wash: color-mix(in oklch, var(--accent) 14%, var(--paper));
+      --accent-edge: color-mix(in oklch, var(--accent) 40%, var(--paper));
+      --clay-wash:   color-mix(in oklch, var(--clay) 16%, var(--paper));
+      --flag-wash:   color-mix(in oklch, var(--flag) 16%, var(--paper));
+    }
+  }
+}
+
+/* ============================== ENGINE ============================== */
+@layer engine {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--face-body);
+    font-size: var(--t-body);
+    line-height: var(--lh);
+    font-synthesis-weight: none;
+  }
+
+  /* ---- skip link ---- */
+  .skip {
+    position: absolute; left: -9999px; top: 0; z-index: 100;
+    background: var(--accent); color: var(--paper);
+    padding: .7rem 1.1rem; border-radius: var(--r);
+  }
+  .skip:focus { left: .6rem; top: .6rem; }
+
+  /* ---- top bar ---- */
+  .bar {
+    position: sticky; top: 0; z-index: 40;
+    background: color-mix(in oklch, var(--paper) 88%, transparent);
+    backdrop-filter: blur(9px);
+    border-bottom: var(--hair) solid var(--rule);
+  }
+  .bar-in {
+    max-width: 78rem; margin: 0 auto;
+    padding: .6rem clamp(.9rem, 3vw, 2rem);
+    display: flex; align-items: center; gap: 1rem;
+  }
+  .brand {
+    font-family: var(--face-mono);
+    font-size: .68rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--ink-faint); white-space: nowrap;
+  }
+  .brand b { color: var(--accent); font-weight: 600; }
+  .bar-title {
+    font-family: var(--face-display);
+    font-size: .95rem; color: var(--ink-soft);
+    margin-left: auto; text-align: right;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .counter {
+    font-family: var(--face-mono); font-size: .72rem;
+    color: var(--ink-faint); white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .progress { height: 2px; background: var(--rule); }
+  .progress span {
+    display: block; height: 100%; width: 0;
+    background: var(--accent);
+    transition: width var(--dur) var(--ease);
+  }
+
+  .btn {
+    font: inherit; font-size: var(--t-small);
+    color: var(--ink); background: transparent;
+    border: var(--hair) solid var(--rule); border-radius: var(--r);
+    padding: .5rem .85rem; cursor: pointer;
+    min-height: 44px; display: inline-flex; align-items: center; gap: .5rem;
+    transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+  .btn:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-wash); }
+  .btn:disabled { opacity: .38; cursor: not-allowed; }
+  .btn-primary { border-color: var(--accent-edge); background: var(--accent-wash); color: var(--accent); font-weight: 600; }
+
+  :focus-visible { outline: 2px solid var(--accent-lift); outline-offset: 3px; }
+
+  /* ---- drawer ---- */
+  .drawer {
+    position: fixed; inset: 0; z-index: 60;
+    background: color-mix(in oklch, var(--ink) 42%, transparent);
+    display: none; padding: clamp(.8rem, 4vw, 3rem);
+  }
+  .drawer[open] { display: grid; place-items: start center; }
+  .drawer-panel {
+    background: var(--paper); border: var(--hair) solid var(--rule);
+    border-radius: var(--r); max-width: 34rem; width: 100%;
+    padding: clamp(1rem, 3vw, 1.7rem); box-shadow: 0 18px 50px -20px color-mix(in oklch, var(--ink) 45%, transparent);
+  }
+  .drawer h2 { font-size: var(--t-h3); margin: 0 0 .9rem; font-family: var(--face-display); }
+  .toc { list-style: none; margin: 0; padding: 0; counter-reset: t; }
+  .toc li { counter-increment: t; }
+  .toc button {
+    width: 100%; text-align: left; font: inherit; font-size: var(--t-small);
+    background: none; border: 0; border-top: var(--hair) solid var(--rule);
+    padding: .72rem .2rem; color: var(--ink); cursor: pointer;
+    display: flex; gap: .8rem; align-items: baseline; min-height: 44px;
+  }
+  .toc button::before {
+    content: counter(t, decimal-leading-zero);
+    font-family: var(--face-mono); font-size: .7rem; color: var(--ink-faint);
+  }
+  .toc button:hover { color: var(--accent); }
+  .toc button[aria-current="true"] { color: var(--accent); font-weight: 600; }
+
+  /* ---- screens ---- */
+  main { max-width: 78rem; margin: 0 auto; padding: 0 clamp(.9rem, 3vw, 2rem); }
+  .screen { display: none; padding: clamp(1.8rem, 5vw, 3.6rem) 0 1rem; }
+  .screen.on { display: block; animation: rise var(--dur) var(--ease); }
+  @keyframes rise { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+
+  .wrap { max-width: var(--measure); margin-inline: auto; }
+  .wrap-wide { max-width: 52rem; margin-inline: auto; }
+
+  .label {
+    font-family: var(--face-mono); font-size: .68rem;
+    letter-spacing: .13em; text-transform: uppercase; color: var(--accent);
+    padding-bottom: .45rem; border-bottom: var(--hair) solid var(--accent-edge);
+    display: inline-block; margin-bottom: 1.1rem;
+  }
+
+  h1 { font-family: var(--face-display); font-size: var(--t-hero); line-height: 1.06;
+       margin: 0 0 1.1rem; font-weight: 600; letter-spacing: -.015em; }
+  h2 { font-family: var(--face-display); font-size: var(--t-h2); line-height: 1.14;
+       margin: 0 0 1.1rem; font-weight: 600; letter-spacing: -.01em; }
+  h3 { font-family: var(--face-body); font-size: var(--t-h3); margin: 2rem 0 .6rem; font-weight: 650; }
+  p { margin: 0 0 1.05em; }
+  .lead { font-size: var(--t-lead); color: var(--ink-soft); line-height: 1.5; }
+  strong { font-weight: 650; }
+  em { font-style: italic; }
+  code { font-family: var(--face-mono); font-size: .88em;
+         background: var(--paper-sunk); padding: .12em .38em; border-radius: 2px; }
+
+  .entry, .exit {
+    font-size: var(--t-small); color: var(--ink-soft);
+    border-left: 2px solid var(--accent-edge);
+    padding: .1rem 0 .1rem .95rem; margin: 0 0 1.6rem;
+  }
+  .exit { border-left-color: color-mix(in oklch, var(--clay) 45%, var(--paper)); margin: 2rem 0 0; }
+  .exit b, .entry b { color: var(--ink); font-weight: 600; }
+
+  .pull {
+    font-family: var(--face-display); font-size: var(--t-lead);
+    line-height: 1.4; color: var(--ink);
+    border-top: var(--hair) solid var(--rule);
+    border-bottom: var(--hair) solid var(--rule);
+    padding: 1.1rem 0; margin: 1.8rem 0;
+  }
+
+  .note {
+    background: var(--paper-sunk); border-radius: var(--r);
+    padding: 1rem 1.15rem; margin: 1.5rem 0; font-size: var(--t-small);
+  }
+  .note.warn { background: var(--clay-wash); }
+  .note.good { background: var(--flag-wash); }
+  .note p:last-child { margin-bottom: 0; }
+  .note-k {
+    font-family: var(--face-mono); font-size: .66rem; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--ink-faint); display: block; margin-bottom: .4rem;
+  }
+
+  figure { margin: 2rem 0; }
+  figure svg { display: block; width: 100%; height: auto; }
+  figcaption {
+    font-size: var(--t-small); color: var(--ink-soft);
+    margin-top: .8rem; padding-top: .7rem; border-top: var(--hair) solid var(--rule);
+  }
+
+  .tbl-scroll { overflow-x: auto; margin: 1.6rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: var(--t-small); }
+  th, td { text-align: left; padding: .68rem .8rem; border-bottom: var(--hair) solid var(--rule);
+           vertical-align: top; }
+  th { font-family: var(--face-mono); font-size: .68rem; letter-spacing: .08em;
+       text-transform: uppercase; color: var(--ink-faint); font-weight: 500; }
+  tbody tr:hover { background: var(--paper-sunk); }
+
+  details { border-top: var(--hair) solid var(--rule); padding: .8rem 0; margin: 1.4rem 0; }
+  summary { cursor: pointer; font-size: var(--t-small); color: var(--accent);
+            font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+  summary::marker { color: var(--ink-faint); }
+
+  /* ---- checkpoint ---- */
+  .check { border: var(--hair) solid var(--accent-edge); border-radius: var(--r);
+           padding: 1.2rem 1.3rem; margin: 2rem 0; background: var(--accent-wash); }
+  .check .note-k { color: var(--accent); }
+  .check p { margin-bottom: .9rem; }
+  .answer { margin-top: 1rem; padding-top: 1rem; border-top: var(--hair) solid var(--accent-edge);
+            font-size: var(--t-small); }
+  .answer[hidden] { display: none; }
+
+  ul, ol { margin: 0 0 1.05em; padding-left: 1.3em; }
+  li { margin-bottom: .45em; }
+
+  /* ---- foot nav ---- */
+  .foot {
+    max-width: var(--measure); margin: 2.8rem auto 0;
+    border-top: var(--hair) solid var(--rule); padding: 1.2rem 0 3rem;
+    display: flex; gap: .8rem; align-items: center; justify-content: space-between;
+  }
+  .hint { font-size: .72rem; color: var(--ink-faint); font-family: var(--face-mono); }
+
+  @media (max-width: 640px) {
+    .bar-title { display: none; }
+    .hint { display: none; }
+    .bar-in { gap: .5rem; padding-inline: .75rem; }
+    .btn { padding: .5rem .62rem; }
+    .counter { margin-left: auto; flex: 0 0 auto; }
+  }
+  @media (max-width: 480px) {
+    /* the course link + contents button + counter is all that fits; the brand
+       repeats what the page title already says, so it goes first */
+    .brand { display: none; }
+  }
+
+  /* ---- floor: motion / contrast / forced-colors ---- */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+  @media (prefers-contrast: more) {
+    :root { --rule: var(--ink-soft); --ink-soft: var(--ink); }
+  }
+  @media (forced-colors: active) {
+    .btn, .drawer-panel, .check, figure svg { border: 1px solid ButtonText; }
+    .label, .brand b { color: LinkText; }
+    .progress span { background: Highlight; }
+  }
+
+  /* ---- print: flatten every screen ---- */
+  @media print {
+    .bar, .foot, .drawer, .skip, .hint { display: none !important; }
+    .screen { display: block !important; page-break-after: always; padding: 0 0 1.5rem; }
+    .answer[hidden] { display: block !important; }
+    figure, .check, table { break-inside: avoid; }
+    body { background: #fff; color: #111; }
+  }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the class</a>
+
+<header class="bar">
+  <div class="bar-in">
+    <span class="brand">CCDV&#8209;F&nbsp;· <b>Class 14</b></span>
+    <a class="btn" id="courseLink" href="index.html">&#8598;&nbsp;Course</a>
+    <button class="btn" id="tocBtn" aria-haspopup="dialog">Contents</button>
+    <span class="bar-title" id="barTitle">Pay Once for the Part That Never Changes</span>
+    <span class="counter"><span id="cNow">1</span>&#8202;/&#8202;<span id="cAll">10</span></span>
+  </div>
+  <div class="progress"><span id="bar"></span></div>
+</header>
+
+<div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="tocH">
+  <div class="drawer-panel">
+    <h2 id="tocH">Class 14 &mdash; contents</h2>
+    <ol class="toc" id="toc"></ol>
+    <p style="margin:1rem 0 0"><button class="btn" id="tocClose">Close</button></p>
+  </div>
+</div>
+
+<main id="main">
+<!-- ---------- 1 · cover ---------- -->
+<section class="screen on" data-title="The promise">
+  <div class="wrap">
+    <span class="label">Claude Certified Developer &middot; Foundations</span>
+    <h1>Pay Once for the Part That Never Changes</h1>
+    <p class="lead">Your bill is tokens times price times turns. The four strategies in Class 11 attacked
+    what enters the window. Two API features attack what you pay for what's <em>already</em> there
+    &mdash; and one of them lets you measure the pressure before a request fails instead of after.</p>
+
+    <div class="note">
+      <span class="note-k">What you leave holding</span>
+      <ol style="margin-bottom:0">
+        <li>Caching reuses the processing done on a stable <em>prefix</em>. Prefix is the whole idea.</li>
+        <li>Mark a breakpoint with <code>cache_control</code>, type ephemeral. Up to four.</li>
+        <li>System prompt and tool schemas are the highest-leverage thing to cache.</li>
+        <li>One edit near the top of a request invalidates everything after it.</li>
+        <li><code>count_tokens</code> measures a request without running it.</li>
+      </ol>
+    </div>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Begin &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 2 · caching ---------- -->
+<section class="screen" data-title="Prompt caching, and why prefix is the word">
+  <div class="wrap">
+    <span class="label">01 &middot; Caching</span>
+    <h2>Prompt caching, and why "prefix" is the load-bearing word</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll know what caching can and cannot do, from
+    the mechanism rather than the marketing.</p>
+
+    <p>Prompt caching stores the processing work done on a <strong>stable prefix</strong> of your
+    request, so follow-up requests can reuse it instead of reprocessing the same tokens. The first
+    request writes the prefix to cache; subsequent requests that send identical content up to that point
+    pay a fraction of the original cost.</p>
+
+    <p>Now think about what "prefix" forces to be true. The reuse only works from the <em>start</em> of
+    the request up to your breakpoint. Change a single token near the top and everything after it is
+    different, so nothing downstream can be reused.</p>
+  </div>
+
+  <div class="wrap-wide">
+  <figure>
+    <svg viewBox="0 0 760 230" role="img" aria-label="Two request layouts. In the first, the stable system prompt and tool schemas sit at the top with the cache breakpoint after them and the changing conversation below, so the prefix is reused every turn. In the second, a changing element has been placed above the stable content, which invalidates the prefix and makes the cache useless.">
+      <text x="14" y="24" font-family="var(--face-mono)" font-size="10" fill="var(--flag)" letter-spacing="1.3">STABLE CONTENT FIRST &mdash; CACHE HITS</text>
+      <g stroke="var(--rule)" stroke-width="1.2">
+        <rect x="14" y="36" width="330" height="26" fill="var(--flag-wash)"/>
+        <rect x="14" y="64" width="330" height="26" fill="var(--flag-wash)"/>
+        <rect x="14" y="100" width="330" height="26" fill="var(--paper-sunk)"/>
+        <rect x="14" y="128" width="330" height="26" fill="var(--paper-sunk)"/>
+      </g>
+      <g font-family="var(--face-body)" font-size="11.5" fill="var(--ink)">
+        <text x="26" y="53">long system prompt</text><text x="26" y="81">tool schemas</text>
+        <text x="26" y="117">conversation so far</text><text x="26" y="145">this turn's message</text>
+      </g>
+      <line x1="14" y1="94" x2="344" y2="94" stroke="var(--flag)" stroke-width="2" stroke-dasharray="4 3"/>
+      <text x="14" y="176" font-family="var(--face-mono)" font-size="10" fill="var(--flag)">cache_control breakpoint</text>
+      <text x="14" y="196" font-family="var(--face-body)" font-size="11.5" fill="var(--ink-soft)">everything above is identical every turn</text>
+
+      <text x="416" y="24" font-family="var(--face-mono)" font-size="10" fill="var(--clay)" letter-spacing="1.3">SOMETHING CHANGING ON TOP &mdash; NO HITS</text>
+      <g stroke="var(--rule)" stroke-width="1.2">
+        <rect x="416" y="36" width="330" height="26" fill="var(--clay-wash)"/>
+        <rect x="416" y="64" width="330" height="26" fill="var(--paper-sunk)"/>
+        <rect x="416" y="92" width="330" height="26" fill="var(--paper-sunk)"/>
+        <rect x="416" y="128" width="330" height="26" fill="var(--paper-sunk)"/>
+      </g>
+      <g font-family="var(--face-body)" font-size="11.5" fill="var(--ink)">
+        <text x="428" y="53">today's date, a session id</text><text x="428" y="81">long system prompt</text>
+        <text x="428" y="109">tool schemas</text><text x="428" y="145">conversation so far</text>
+      </g>
+      <line x1="416" y1="122" x2="746" y2="122" stroke="var(--clay)" stroke-width="2" stroke-dasharray="4 3"/>
+      <text x="416" y="176" font-family="var(--face-mono)" font-size="10" fill="var(--clay)">breakpoint in the same place</text>
+      <text x="416" y="196" font-family="var(--face-body)" font-size="11.5" fill="var(--clay)">one changed line at the top invalidates all of it</text>
+      <line x1="380" y1="14" x2="380" y2="210" stroke="var(--rule)" stroke-width="1.2"/>
+      <text x="14" y="222" font-family="var(--face-body)" font-size="12.5" fill="var(--ink)">Same content, same breakpoint, opposite outcome &mdash; decided entirely by order.</text>
+    </svg>
+    <figcaption><b>Caching is a property of ordering, not of configuration.</b> Putting a timestamp or a
+    session id above your system prompt disables the cache completely while looking entirely
+    harmless.</figcaption>
+  </figure>
+  </div>
+
+  <div class="wrap">
+    <p>The strongest candidates are the parts of a request that rarely change across turns: a long
+    system prompt, a large tool-definition set, or a reference document you query repeatedly.</p>
+    <p>You enable it by marking a <strong>cache breakpoint</strong> &mdash; a <code>cache_control</code>
+    field of type <code>ephemeral</code> on the last block you want cached. You can place up to
+    <strong>four</strong> breakpoints.</p>
+
+    <p class="pull">For a multi-turn session with a stable system prompt and tool schemas, caching those
+    prefixes once and reusing them across turns is the highest-leverage cost reduction available.</p>
+
+    <p>Which is worth sitting with alongside Class 6. Those tokens were being re-sent and reprocessed on
+    every single turn anyway &mdash; caching doesn't stop them being sent, it stops you paying full price
+    to reprocess what hasn't changed.</p>
+
+    <p class="exit"><b>Next.</b> The other feature, which is about knowing rather than paying.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 3 · counting ---------- -->
+<section class="screen" data-title="Measuring before it fails">
+  <div class="wrap">
+    <span class="label">02 &middot; Token counting</span>
+    <h2>Measure the pressure before the request goes out</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll have the instrument that turns every
+    "measure it first" instruction in this course into something you can actually do.</p>
+
+    <p>The <code>count_tokens</code> endpoint takes the same request body as a messages call and returns
+    the token count <strong>without running inference</strong>.</p>
+
+    <p>Two uses, and they're different jobs:</p>
+    <ul>
+      <li><strong>In development</strong> &mdash; verify your context budget assumptions hold against
+      <em>real tool outputs</em>, not just test fixtures. This is the instrument for Class 11's
+      three-to-five-times problem. You don't have to guess whether production output will fit; you can
+      measure a real one.</li>
+      <li><strong>In production</strong> &mdash; gate requests that would exceed the window
+      <em>before</em> they error. Which turns Class 6's first edge from an incident into a branch in your
+      code.</li>
+    </ul>
+
+    <p class="pull">Every time this course has said "measure it," this is the thing that measures it. It
+    costs a call and no inference.</p>
+
+    <p>And notice what it makes possible that guessing doesn't: you can compare two prompt designs, or
+    the real cost of a tool schema set, or what a document actually adds, as numbers &mdash; before
+    committing to any of them.</p>
+
+    <p class="exit"><b>Last screen.</b> Recap, and a caching setup that returns no savings at all.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 4 · recap ---------- -->
+<section class="screen" data-title="Recap and the closing question">
+  <div class="wrap">
+    <span class="label">Recap</span>
+    <h2>What you're leaving with</h2>
+    <ol>
+      <li><strong>Cost is tokens &times; price &times; turns.</strong> Class 11 attacked the first term;
+      caching attacks what you pay for it.</li>
+      <li><strong>Caching reuses a stable prefix.</strong> Reuse runs from the start of the request to
+      your breakpoint, and no further.</li>
+      <li><strong>Order decides everything.</strong> One changing line above your stable content
+      invalidates the lot.</li>
+      <li><strong>System prompt plus tool schemas</strong> is the highest-leverage prefix in a multi-turn
+      session.</li>
+      <li><strong><code>count_tokens</code> measures without inferring.</strong> Gate on it in production;
+      validate assumptions with it in development.</li>
+    </ol>
+
+    <div class="check">
+      <span class="note-k">Before Class 15</span>
+      <p>A team enables prompt caching on a multi-turn support assistant. They set a
+      <code>cache_control</code> breakpoint after their 3,000-token system prompt and tool schemas.
+      Cache hit rate comes back at essentially zero, and the bill doesn't move.</p>
+      <p>Nothing is misconfigured &mdash; the breakpoint is exactly where it should be. What would you
+      look for?</p>
+      <button class="btn" data-reveal="n1">Commit to an answer, then reveal</button>
+      <div class="answer" id="n1" hidden>
+        <p><strong>Something above the breakpoint is changing every request.</strong> The breakpoint being
+        in the right place is necessary and not sufficient &mdash; what matters is that everything
+        <em>preceding</em> it is byte-identical each turn.</p>
+        <p>The usual culprits are small and look innocent: a timestamp or "today's date" injected at the
+        top of the system prompt, a session or user id interpolated into it, a greeting personalised with
+        the customer's name, or tool schemas generated in a non-deterministic order so the JSON differs
+        between runs. Any one of those makes the prefix new every time, and a new prefix has nothing to
+        hit.</p>
+        <p style="margin-bottom:0"><strong>The fix is ordering, not configuration.</strong> Move the
+        volatile content <em>below</em> the breakpoint &mdash; the date and the user id belong in the
+        turn, not in the system prompt &mdash; and make schema serialisation deterministic. And
+        <code>count_tokens</code> plus the usage figures on the response will tell you whether it worked
+        without waiting for a monthly bill.</p>
+      </div>
+    </div>
+
+    <p style="color:var(--ink-soft);font-size:var(--t-small)">Class 15 &mdash; tool implementation: a
+    tool description is a prompt, and tools are selected the same way skills are.</p>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">Class 14 of 29</span>
+      <a class="btn btn-primary" href="index.html">All classes &rarr;</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<script>
+(function () {
+  var screens = [].slice.call(document.querySelectorAll('.screen'));
+  var toc = document.getElementById('toc');
+  var barEl = document.getElementById('bar');
+  var cNow = document.getElementById('cNow');
+  var cAll = document.getElementById('cAll');
+  var barTitle = document.getElementById('barTitle');
+  var drawer = document.getElementById('drawer');
+  var i = 0;
+
+  cAll.textContent = screens.length;
+
+  screens.forEach(function (s, n) {
+    var li = document.createElement('li');
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = s.dataset.title || ('Screen ' + (n + 1));
+    b.addEventListener('click', function () { go(n); closeDrawer(); });
+    li.appendChild(b);
+    toc.appendChild(li);
+  });
+  var tocBtns = [].slice.call(toc.querySelectorAll('button'));
+
+  function go(n, keepScroll) {
+    i = Math.max(0, Math.min(screens.length - 1, n));
+    screens.forEach(function (s, k) { s.classList.toggle('on', k === i); });
+    tocBtns.forEach(function (b, k) { b.setAttribute('aria-current', k === i ? 'true' : 'false'); });
+    cNow.textContent = i + 1;
+    barEl.style.width = ((i + 1) / screens.length * 100) + '%';
+    barTitle.textContent = screens[i].dataset.title || '';
+    if (!keepScroll) window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+    if (location.hash !== '#s' + (i + 1)) history.replaceState(null, '', '#s' + (i + 1));
+    document.querySelectorAll('[data-next]').forEach(function (b) { b.disabled = (i === screens.length - 1); });
+    document.querySelectorAll('[data-prev]').forEach(function (b) { b.disabled = (i === 0); });
+  }
+
+  document.addEventListener('click', function (e) {
+    var n = e.target.closest('[data-next]');
+    var p = e.target.closest('[data-prev]');
+    var r = e.target.closest('[data-reveal]');
+    if (n) go(i + 1);
+    if (p) go(i - 1);
+    if (r) {
+      var box = document.getElementById(r.dataset.reveal);
+      if (box) { box.hidden = false; r.disabled = true; box.setAttribute('tabindex', '-1'); box.focus(); }
+    }
+  });
+
+  function openDrawer() { drawer.setAttribute('open', ''); document.getElementById('main').setAttribute('inert', ''); tocBtns[i].focus(); }
+  function closeDrawer() { drawer.removeAttribute('open'); document.getElementById('main').removeAttribute('inert'); }
+  document.getElementById('tocBtn').addEventListener('click', openDrawer);
+  document.getElementById('tocClose').addEventListener('click', closeDrawer);
+  drawer.addEventListener('click', function (e) { if (e.target === drawer) closeDrawer(); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && drawer.hasAttribute('open')) return closeDrawer();
+    if (e.target.matches('input, textarea')) return;
+    if (e.key === 'ArrowRight') go(i + 1);
+    if (e.key === 'ArrowLeft') go(i - 1);
+  });
+
+  var start = parseInt((location.hash || '').replace('#s', ''), 10);
+  go(isNaN(start) ? 0 : start - 1, true);
+})();
+</script>
+</body>
+</html>

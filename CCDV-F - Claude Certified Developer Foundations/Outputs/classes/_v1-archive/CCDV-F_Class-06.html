@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 6 — Why the Same Question Gives Two Answers · CCDV-F</title>
+<meta name="description" content="CCDV-F Class 6: tokens, the context window and its two edges, sampling, and what non-determinism does to testing.">
+<meta name="author" content="Ram">
+<style>
+@layer engine, skin, utilities;
+
+/* ============================== SKIN: "Lecture Hall" ============================== */
+@layer skin {
+  :root {
+    color-scheme: light dark;
+
+    /* -- color primitives (oklch) -- */
+    --paper:        oklch(0.977 0.004 250);
+    --paper-sunk:   oklch(0.947 0.006 250);
+    --ink:          oklch(0.24 0.018 255);
+    --ink-soft:     oklch(0.46 0.016 255);
+    --ink-faint:    oklch(0.62 0.012 255);
+    --rule:         oklch(0.87 0.008 255);
+    --accent:       oklch(0.50 0.13 250);
+    --accent-lift:  oklch(0.62 0.14 250);
+    --clay:         oklch(0.58 0.10 45);
+    --flag:         oklch(0.56 0.12 145);
+
+    /* -- derived tints -- */
+    --accent-wash:  color-mix(in oklch, var(--accent) 8%, var(--paper));
+    --accent-edge:  color-mix(in oklch, var(--accent) 32%, var(--paper));
+    --clay-wash:    color-mix(in oklch, var(--clay) 10%, var(--paper));
+    --flag-wash:    color-mix(in oklch, var(--flag) 10%, var(--paper));
+
+    /* -- type -- */
+    --face-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --face-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                 Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
+    --face-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+    --t-body:  clamp(1.0rem, 0.94rem + 0.30vw, 1.125rem);
+    --t-small: clamp(0.83rem, 0.80rem + 0.14vw, 0.90rem);
+    --t-lead:  clamp(1.13rem, 1.03rem + 0.48vw, 1.32rem);
+    --t-h2:    clamp(1.55rem, 1.28rem + 1.35vw, 2.35rem);
+    --t-h3:    clamp(1.08rem, 1.00rem + 0.38vw, 1.24rem);
+    --t-hero:  clamp(2.0rem, 1.45rem + 2.7vw, 3.4rem);
+    --measure: 64ch;
+    --lh: 1.68;
+
+    /* -- shape + space -- */
+    --r: 3px;
+    --hair: 1px;
+    --gap: clamp(1.1rem, 0.9rem + 1vw, 1.9rem);
+
+    /* -- motion -- */
+    --dur: 180ms;
+    --ease: cubic-bezier(.2,.6,.3,1);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:      oklch(0.185 0.014 260);
+      --paper-sunk: oklch(0.225 0.016 260);
+      --ink:        oklch(0.93 0.008 255);
+      --ink-soft:   oklch(0.76 0.012 255);
+      --ink-faint:  oklch(0.60 0.012 255);
+      --rule:       oklch(0.34 0.014 258);
+      --accent:     oklch(0.76 0.12 250);
+      --accent-lift:oklch(0.84 0.11 250);
+      --clay:       oklch(0.74 0.10 48);
+      --flag:       oklch(0.74 0.12 152);
+      --accent-wash: color-mix(in oklch, var(--accent) 14%, var(--paper));
+      --accent-edge: color-mix(in oklch, var(--accent) 40%, var(--paper));
+      --clay-wash:   color-mix(in oklch, var(--clay) 16%, var(--paper));
+      --flag-wash:   color-mix(in oklch, var(--flag) 16%, var(--paper));
+    }
+  }
+}
+
+/* ============================== ENGINE ============================== */
+@layer engine {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--face-body);
+    font-size: var(--t-body);
+    line-height: var(--lh);
+    font-synthesis-weight: none;
+  }
+
+  /* ---- skip link ---- */
+  .skip {
+    position: absolute; left: -9999px; top: 0; z-index: 100;
+    background: var(--accent); color: var(--paper);
+    padding: .7rem 1.1rem; border-radius: var(--r);
+  }
+  .skip:focus { left: .6rem; top: .6rem; }
+
+  /* ---- top bar ---- */
+  .bar {
+    position: sticky; top: 0; z-index: 40;
+    background: color-mix(in oklch, var(--paper) 88%, transparent);
+    backdrop-filter: blur(9px);
+    border-bottom: var(--hair) solid var(--rule);
+  }
+  .bar-in {
+    max-width: 78rem; margin: 0 auto;
+    padding: .6rem clamp(.9rem, 3vw, 2rem);
+    display: flex; align-items: center; gap: 1rem;
+  }
+  .brand {
+    font-family: var(--face-mono);
+    font-size: .68rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--ink-faint); white-space: nowrap;
+  }
+  .brand b { color: var(--accent); font-weight: 600; }
+  .bar-title {
+    font-family: var(--face-display);
+    font-size: .95rem; color: var(--ink-soft);
+    margin-left: auto; text-align: right;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .counter {
+    font-family: var(--face-mono); font-size: .72rem;
+    color: var(--ink-faint); white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .progress { height: 2px; background: var(--rule); }
+  .progress span {
+    display: block; height: 100%; width: 0;
+    background: var(--accent);
+    transition: width var(--dur) var(--ease);
+  }
+
+  .btn {
+    font: inherit; font-size: var(--t-small);
+    color: var(--ink); background: transparent;
+    border: var(--hair) solid var(--rule); border-radius: var(--r);
+    padding: .5rem .85rem; cursor: pointer;
+    min-height: 44px; display: inline-flex; align-items: center; gap: .5rem;
+    transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+  .btn:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-wash); }
+  .btn:disabled { opacity: .38; cursor: not-allowed; }
+  .btn-primary { border-color: var(--accent-edge); background: var(--accent-wash); color: var(--accent); font-weight: 600; }
+
+  :focus-visible { outline: 2px solid var(--accent-lift); outline-offset: 3px; }
+
+  /* ---- drawer ---- */
+  .drawer {
+    position: fixed; inset: 0; z-index: 60;
+    background: color-mix(in oklch, var(--ink) 42%, transparent);
+    display: none; padding: clamp(.8rem, 4vw, 3rem);
+  }
+  .drawer[open] { display: grid; place-items: start center; }
+  .drawer-panel {
+    background: var(--paper); border: var(--hair) solid var(--rule);
+    border-radius: var(--r); max-width: 34rem; width: 100%;
+    padding: clamp(1rem, 3vw, 1.7rem); box-shadow: 0 18px 50px -20px color-mix(in oklch, var(--ink) 45%, transparent);
+  }
+  .drawer h2 { font-size: var(--t-h3); margin: 0 0 .9rem; font-family: var(--face-display); }
+  .toc { list-style: none; margin: 0; padding: 0; counter-reset: t; }
+  .toc li { counter-increment: t; }
+  .toc button {
+    width: 100%; text-align: left; font: inherit; font-size: var(--t-small);
+    background: none; border: 0; border-top: var(--hair) solid var(--rule);
+    padding: .72rem .2rem; color: var(--ink); cursor: pointer;
+    display: flex; gap: .8rem; align-items: baseline; min-height: 44px;
+  }
+  .toc button::before {
+    content: counter(t, decimal-leading-zero);
+    font-family: var(--face-mono); font-size: .7rem; color: var(--ink-faint);
+  }
+  .toc button:hover { color: var(--accent); }
+  .toc button[aria-current="true"] { color: var(--accent); font-weight: 600; }
+
+  /* ---- screens ---- */
+  main { max-width: 78rem; margin: 0 auto; padding: 0 clamp(.9rem, 3vw, 2rem); }
+  .screen { display: none; padding: clamp(1.8rem, 5vw, 3.6rem) 0 1rem; }
+  .screen.on { display: block; animation: rise var(--dur) var(--ease); }
+  @keyframes rise { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+
+  .wrap { max-width: var(--measure); margin-inline: auto; }
+  .wrap-wide { max-width: 52rem; margin-inline: auto; }
+
+  .label {
+    font-family: var(--face-mono); font-size: .68rem;
+    letter-spacing: .13em; text-transform: uppercase; color: var(--accent);
+    padding-bottom: .45rem; border-bottom: var(--hair) solid var(--accent-edge);
+    display: inline-block; margin-bottom: 1.1rem;
+  }
+
+  h1 { font-family: var(--face-display); font-size: var(--t-hero); line-height: 1.06;
+       margin: 0 0 1.1rem; font-weight: 600; letter-spacing: -.015em; }
+  h2 { font-family: var(--face-display); font-size: var(--t-h2); line-height: 1.14;
+       margin: 0 0 1.1rem; font-weight: 600; letter-spacing: -.01em; }
+  h3 { font-family: var(--face-body); font-size: var(--t-h3); margin: 2rem 0 .6rem; font-weight: 650; }
+  p { margin: 0 0 1.05em; }
+  .lead { font-size: var(--t-lead); color: var(--ink-soft); line-height: 1.5; }
+  strong { font-weight: 650; }
+  em { font-style: italic; }
+  code { font-family: var(--face-mono); font-size: .88em;
+         background: var(--paper-sunk); padding: .12em .38em; border-radius: 2px; }
+
+  .entry, .exit {
+    font-size: var(--t-small); color: var(--ink-soft);
+    border-left: 2px solid var(--accent-edge);
+    padding: .1rem 0 .1rem .95rem; margin: 0 0 1.6rem;
+  }
+  .exit { border-left-color: color-mix(in oklch, var(--clay) 45%, var(--paper)); margin: 2rem 0 0; }
+  .exit b, .entry b { color: var(--ink); font-weight: 600; }
+
+  .pull {
+    font-family: var(--face-display); font-size: var(--t-lead);
+    line-height: 1.4; color: var(--ink);
+    border-top: var(--hair) solid var(--rule);
+    border-bottom: var(--hair) solid var(--rule);
+    padding: 1.1rem 0; margin: 1.8rem 0;
+  }
+
+  .note {
+    background: var(--paper-sunk); border-radius: var(--r);
+    padding: 1rem 1.15rem; margin: 1.5rem 0; font-size: var(--t-small);
+  }
+  .note.warn { background: var(--clay-wash); }
+  .note.good { background: var(--flag-wash); }
+  .note p:last-child { margin-bottom: 0; }
+  .note-k {
+    font-family: var(--face-mono); font-size: .66rem; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--ink-faint); display: block; margin-bottom: .4rem;
+  }
+
+  figure { margin: 2rem 0; }
+  figure svg { display: block; width: 100%; height: auto; }
+  figcaption {
+    font-size: var(--t-small); color: var(--ink-soft);
+    margin-top: .8rem; padding-top: .7rem; border-top: var(--hair) solid var(--rule);
+  }
+
+  .tbl-scroll { overflow-x: auto; margin: 1.6rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: var(--t-small); }
+  th, td { text-align: left; padding: .68rem .8rem; border-bottom: var(--hair) solid var(--rule);
+           vertical-align: top; }
+  th { font-family: var(--face-mono); font-size: .68rem; letter-spacing: .08em;
+       text-transform: uppercase; color: var(--ink-faint); font-weight: 500; }
+  tbody tr:hover { background: var(--paper-sunk); }
+
+  details { border-top: var(--hair) solid var(--rule); padding: .8rem 0; margin: 1.4rem 0; }
+  summary { cursor: pointer; font-size: var(--t-small); color: var(--accent);
+            font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+  summary::marker { color: var(--ink-faint); }
+
+  /* ---- checkpoint ---- */
+  .check { border: var(--hair) solid var(--accent-edge); border-radius: var(--r);
+           padding: 1.2rem 1.3rem; margin: 2rem 0; background: var(--accent-wash); }
+  .check .note-k { color: var(--accent); }
+  .check p { margin-bottom: .9rem; }
+  .answer { margin-top: 1rem; padding-top: 1rem; border-top: var(--hair) solid var(--accent-edge);
+            font-size: var(--t-small); }
+  .answer[hidden] { display: none; }
+
+  ul, ol { margin: 0 0 1.05em; padding-left: 1.3em; }
+  li { margin-bottom: .45em; }
+
+  /* ---- foot nav ---- */
+  .foot {
+    max-width: var(--measure); margin: 2.8rem auto 0;
+    border-top: var(--hair) solid var(--rule); padding: 1.2rem 0 3rem;
+    display: flex; gap: .8rem; align-items: center; justify-content: space-between;
+  }
+  .hint { font-size: .72rem; color: var(--ink-faint); font-family: var(--face-mono); }
+
+  @media (max-width: 640px) {
+    .bar-title { display: none; }
+    .hint { display: none; }
+    .bar-in { gap: .5rem; padding-inline: .75rem; }
+    .btn { padding: .5rem .62rem; }
+    .counter { margin-left: auto; flex: 0 0 auto; }
+  }
+  @media (max-width: 480px) {
+    /* the course link + contents button + counter is all that fits; the brand
+       repeats what the page title already says, so it goes first */
+    .brand { display: none; }
+  }
+
+  /* ---- floor: motion / contrast / forced-colors ---- */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+  @media (prefers-contrast: more) {
+    :root { --rule: var(--ink-soft); --ink-soft: var(--ink); }
+  }
+  @media (forced-colors: active) {
+    .btn, .drawer-panel, .check, figure svg { border: 1px solid ButtonText; }
+    .label, .brand b { color: LinkText; }
+    .progress span { background: Highlight; }
+  }
+
+  /* ---- print: flatten every screen ---- */
+  @media print {
+    .bar, .foot, .drawer, .skip, .hint { display: none !important; }
+    .screen { display: block !important; page-break-after: always; padding: 0 0 1.5rem; }
+    .answer[hidden] { display: block !important; }
+    figure, .check, table { break-inside: avoid; }
+    body { background: #fff; color: #111; }
+  }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the class</a>
+
+<header class="bar">
+  <div class="bar-in">
+    <span class="brand">CCDV&#8209;F&nbsp;· <b>Class 06</b></span>
+    <a class="btn" id="courseLink" href="index.html">&#8598;&nbsp;Course</a>
+    <button class="btn" id="tocBtn" aria-haspopup="dialog">Contents</button>
+    <span class="bar-title" id="barTitle">Why the Same Question Gives Two Answers</span>
+    <span class="counter"><span id="cNow">1</span>&#8202;/&#8202;<span id="cAll">10</span></span>
+  </div>
+  <div class="progress"><span id="bar"></span></div>
+</header>
+
+<div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="tocH">
+  <div class="drawer-panel">
+    <h2 id="tocH">Class 6 &mdash; contents</h2>
+    <ol class="toc" id="toc"></ol>
+    <p style="margin:1rem 0 0"><button class="btn" id="tocClose">Close</button></p>
+  </div>
+</div>
+
+<main id="main">
+<!-- ---------- 1 · cover ---------- -->
+<section class="screen on" data-title="The promise">
+  <div class="wrap">
+    <span class="label">Claude Certified Developer &middot; Foundations</span>
+    <h1>Why the Same Question Gives Two Answers</h1>
+    <p class="lead">The model does not pick the next word. It produces a probability distribution over
+    possible next words and then draws from it. Almost everything that feels strange about working with
+    this thing follows from that one sentence &mdash; including why your test suite keeps failing on
+    correct answers.</p>
+
+    <div class="note">
+      <span class="note-k">What you leave holding</span>
+      <ol style="margin-bottom:0">
+        <li>Tokens are the unit of input, output, cost and budget. Not words.</li>
+        <li>The window holds everything at once, and has two different edge behaviours.</li>
+        <li>Non-determinism is sampling working correctly, not the system failing.</li>
+        <li>So you assert on properties, never on exact text.</li>
+        <li>On the newest models, the sampling dials are gone &mdash; steer by prompting instead.</li>
+      </ol>
+    </div>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Begin &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 2 · tokens ---------- -->
+<section class="screen" data-title="Tokens are the unit of everything">
+  <div class="wrap">
+    <span class="label">01 &middot; The unit</span>
+    <h2>Tokens are the unit of everything</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll be counting in the same unit the API bills
+    in, which is not the unit you naturally think in.</p>
+
+    <p>Claude doesn't read characters, and it doesn't read words. It reads <strong>tokens</strong>. How
+    many characters go into a token depends on the tokenizer, and that differs between model
+    generations &mdash; so any "roughly four characters per token" rule of thumb is model-dependent and
+    worth confirming rather than assuming.</p>
+
+    <p>What matters more is what gets counted. Everything does:</p>
+    <ul>
+      <li>your prompt</li>
+      <li>the conversation history</li>
+      <li>the tool <em>definitions</em> &mdash; the schemas, whether or not any tool gets used</li>
+      <li>every tool result</li>
+      <li>and the response the model generates</li>
+    </ul>
+
+    <p class="pull">Tokens are the unit of pricing <em>and</em> the unit of budget. When you estimate
+    what a feature costs, or whether an input will fit, you are counting the same thing both times.</p>
+
+    <p>Which is why the habit worth building is thinking in tokens rather than in words or pages. It is
+    the unit the bill arrives in and the unit the window is measured in, and translating between two
+    units in your head is where estimates go wrong.</p>
+
+    <p class="exit"><b>Next.</b> That budget has a hard edge &mdash; and it behaves differently
+    depending on which side of generation you hit it from.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 3 · the window ---------- -->
+<section class="screen" data-title="The window, and its two edges">
+  <div class="wrap">
+    <span class="label">02 &middot; A fixed budget</span>
+    <h2>The window, and its two different edges</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll know the two ways a request can hit the
+    ceiling, and why only one of them looks like an error.</p>
+
+    <p>The context window is the total number of tokens the model can take in for a single request. It
+    holds everything at once: system prompt, the full conversation so far, injected documents, every
+    tool result, and the model's own output.</p>
+    <p>That last item is the one people forget, and it produces the second edge.</p>
+  </div>
+
+  <div class="wrap-wide">
+  <figure>
+    <svg viewBox="0 0 760 250" role="img" aria-label="Two ways of exceeding the context window. In the first, the input alone is already larger than the window, so the request is rejected with a validation error before generation begins. In the second, the input fits but generation reaches the ceiling, so the model stops and returns what it produced so far with a context-window-exceeded stop reason rather than an error.">
+      <line x1="470" y1="34" x2="470" y2="196" stroke="var(--clay)" stroke-width="1.6" stroke-dasharray="5 4"/>
+      <text x="478" y="46" font-family="var(--face-mono)" font-size="10.5" fill="var(--clay)">the ceiling</text>
+
+      <text x="14" y="30" font-family="var(--face-mono)" font-size="10" fill="var(--ink-faint)" letter-spacing="1.3">EDGE ONE &mdash; INPUT ALONE IS TOO BIG</text>
+      <rect x="14" y="46" width="520" height="34" fill="var(--clay-wash)" stroke="var(--clay)" stroke-width="1.4"/>
+      <text x="28" y="68" font-family="var(--face-body)" font-size="12" fill="var(--ink)">system prompt + history + documents + tool schemas</text>
+      <text x="548" y="68" font-family="var(--face-mono)" font-size="11" fill="var(--clay)">400 &mdash; rejected</text>
+      <text x="14" y="98" font-family="var(--face-body)" font-size="11.5" fill="var(--ink-soft)">Nothing is generated. You get a validation error before the model starts.</text>
+
+      <text x="14" y="136" font-family="var(--face-mono)" font-size="10" fill="var(--ink-faint)" letter-spacing="1.3">EDGE TWO &mdash; INPUT FITS, GENERATION DOESN'T</text>
+      <rect x="14" y="152" width="330" height="34" fill="var(--accent-wash)" stroke="var(--accent)" stroke-width="1.4"/>
+      <rect x="344" y="152" width="126" height="34" fill="var(--flag-wash)" stroke="var(--flag)" stroke-width="1.4"/>
+      <text x="28" y="174" font-family="var(--face-body)" font-size="12" fill="var(--ink)">the same input, but smaller</text>
+      <text x="356" y="174" font-family="var(--face-body)" font-size="12" fill="var(--ink)">output&hellip;</text>
+      <text x="484" y="174" font-family="var(--face-mono)" font-size="11" fill="var(--flag)">stops here</text>
+      <text x="14" y="216" font-family="var(--face-body)" font-size="11.5" fill="var(--ink-soft)">You get what was generated so far, with a <tspan font-family="var(--face-mono)" font-size="11">model_context_window_exceeded</tspan> stop reason.</text>
+      <text x="14" y="238" font-family="var(--face-body)" font-size="12.5" fill="var(--clay)">Not an error. A short answer that looks like a complete one unless you check.</text>
+    </svg>
+    <figcaption><b>Only one of the two edges announces itself.</b> The second returns a truncated answer
+    with a stop reason you have to read &mdash; which is why checking the stop reason belongs in your
+    parser, not in your debugging.</figcaption>
+  </figure>
+  </div>
+
+  <div class="wrap">
+    <p>Both edges point at the same discipline: a long-running session requires the application to trim
+    or summarise history <em>before</em> each call. That's Class 2's ladder, arriving here as a
+    mechanical consequence rather than an architectural preference.</p>
+
+    <div class="note warn">
+      <span class="note-k">And the reason it surprises people</span>
+      <p style="margin-bottom:0">In development the window rarely fills, because test inputs are short.
+      In production, longer inputs and more turns fill it faster. That gap between the two shapes is the
+      same gap that filled the window on session four.</p>
+    </div>
+
+    <p class="exit"><b>Next.</b> The mechanism behind the strangest property of the whole system.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 4 · sampling ---------- -->
+<section class="screen" data-title="Sampling: why the same prompt differs">
+  <div class="wrap">
+    <span class="label">03 &middot; Sampling</span>
+    <h2>Why the same prompt can give a different answer</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll be able to explain the variation
+    mechanically, rather than treating it as flakiness.</p>
+
+    <p>A language model does not pick one fixed next token. At each step it produces a
+    <strong>probability distribution</strong> over possible next tokens, and then samples from it.</p>
+    <p>Settings shape that distribution rather than replacing it. A lower temperature concentrates
+    probability on the most likely tokens and makes output more repeatable. A higher one spreads it out
+    and makes output more varied.</p>
+  </div>
+
+  <div class="wrap-wide">
+  <figure>
+    <svg viewBox="0 0 760 230" role="img" aria-label="At each step the model produces a probability distribution over candidate next tokens and draws one. A lower temperature concentrates the distribution on the likeliest candidates; a higher temperature flattens it so less likely candidates are drawn more often. The draw is a sample, so two identical prompts can take different paths.">
+      <text x="14" y="26" font-family="var(--face-mono)" font-size="10" fill="var(--ink-faint)" letter-spacing="1.3">LOWER TEMPERATURE &mdash; CONCENTRATED</text>
+      <g fill="var(--accent)">
+        <rect x="20" y="60" width="34" height="96"/><rect x="64" y="112" width="34" height="44"/>
+        <rect x="108" y="132" width="34" height="24"/><rect x="152" y="142" width="34" height="14"/>
+        <rect x="196" y="148" width="34" height="8"/><rect x="240" y="151" width="34" height="5"/>
+      </g>
+      <line x1="14" y1="156" x2="300" y2="156" stroke="var(--rule)" stroke-width="1.2"/>
+      <text x="14" y="180" font-family="var(--face-body)" font-size="11.5" fill="var(--ink-soft)">most draws land on the same token</text>
+      <text x="14" y="200" font-family="var(--face-body)" font-size="11.5" fill="var(--ink-faint)">more repeatable &mdash; not guaranteed identical</text>
+
+      <text x="420" y="26" font-family="var(--face-mono)" font-size="10" fill="var(--ink-faint)" letter-spacing="1.3">HIGHER TEMPERATURE &mdash; SPREAD</text>
+      <g fill="var(--clay)">
+        <rect x="426" y="96" width="34" height="60"/><rect x="470" y="106" width="34" height="50"/>
+        <rect x="514" y="114" width="34" height="42"/><rect x="558" y="120" width="34" height="36"/>
+        <rect x="602" y="126" width="34" height="30"/><rect x="646" y="132" width="34" height="24"/>
+      </g>
+      <line x1="420" y1="156" x2="706" y2="156" stroke="var(--rule)" stroke-width="1.2"/>
+      <text x="420" y="180" font-family="var(--face-body)" font-size="11.5" fill="var(--ink-soft)">draws spread across more candidates</text>
+      <text x="420" y="200" font-family="var(--face-body)" font-size="11.5" fill="var(--ink-faint)">more varied wording, same correctness</text>
+      <line x1="360" y1="14" x2="360" y2="210" stroke="var(--rule)" stroke-width="1.2"/>
+      <text x="14" y="224" font-family="var(--face-body)" font-size="12.5" fill="var(--ink)">Either way it is a draw, not a lookup. That is the whole of it.</text>
+    </svg>
+    <figcaption><b>Temperature reshapes the distribution; it never removes the draw.</b> Which is why
+    even temperature zero makes output <em>more repeatable</em> rather than identical.</figcaption>
+  </figure>
+  </div>
+
+  <div class="wrap">
+    <div class="note warn">
+      <span class="note-k">And on the newest models the dials are gone</span>
+      <p style="margin-bottom:0">The newest Claude models do not accept non-default sampling parameters.
+      Setting <code>temperature</code>, <code>top_p</code> or <code>top_k</code> returns a
+      <strong>400</strong>. Behaviour on those models is steered through <em>prompting</em> instead.
+      Confirm current parameter support in the API reference when you build &mdash; this is exactly the
+      kind of thing that moves between generations.</p>
+    </div>
+    <p class="exit"><b>Next.</b> What all of this does to the way you write a test.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 5 · non-determinism ---------- -->
+<section class="screen" data-title="What non-determinism does to testing">
+  <div class="wrap">
+    <span class="label">04 &middot; Consequences</span>
+    <h2>What this does to your tests</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll know which assertion to write and which one
+    guarantees a flaky suite.</p>
+
+    <p>Non-determinism is the direct consequence of sampling: identical inputs do not guarantee
+    identical outputs. And that changes what a test can meaningfully claim.</p>
+    <p>A test that asserts the exact text of a response will be inconsistent &mdash; not because the
+    model is wrong, but because the model can express the same correct answer many ways. The test isn't
+    detecting a defect. It's detecting a synonym.</p>
+
+    <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>Don't assert</th><th>Assert instead</th></tr></thead>
+      <tbody>
+        <tr><td>The response equals this exact string</td><td>The required field is present</td></tr>
+        <tr><td>The summary reads exactly like this</td><td>The value is in range</td></tr>
+        <tr><td>The wording matches the golden output</td><td>The structure parses</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p class="pull">Assert on the property that must hold, not on the text that happened to come
+    back.</p>
+
+    <p>And when the thing you actually care about is <em>meaning</em> rather than structure &mdash; is
+    this summary faithful, is this classification right &mdash; structure assertions can't reach it. That
+    is the job of an eval with a model-graded judge, which is Class 26.</p>
+
+    <div class="check">
+      <span class="note-k">Checkpoint</span>
+      <p>A colleague says your feature is "non-deterministic, so it can't really be tested." What's
+      wrong with that, in one sentence?</p>
+      <button class="btn" data-reveal="f1">Commit to an answer, then reveal</button>
+      <div class="answer" id="f1" hidden>
+        <p style="margin-bottom:0">It confuses <em>the output</em> being non-deterministic with
+        <em>the property you care about</em> being non-deterministic. "Returns valid JSON with a
+        currency field in ISO format" is either true or false on every single run &mdash; perfectly
+        testable. What isn't testable is a golden string, and that was never the thing that
+        mattered.</p>
+      </div>
+    </div>
+
+    <p class="exit"><b>Last screen.</b> The recap, and a question about a production incident with no
+    error in it.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 6 · recap ---------- -->
+<section class="screen" data-title="Recap and the closing question">
+  <div class="wrap">
+    <span class="label">Recap</span>
+    <h2>What you're leaving with</h2>
+    <p class="lead">One mechanism &mdash; a draw from a distribution, one token at a time &mdash; and
+    everything odd about the system falls out of it.</p>
+
+    <ol>
+      <li><strong>Tokens are the unit</strong> of input, output, cost and budget. Tool schemas count
+      even when no tool is called.</li>
+      <li><strong>Two edges.</strong> Input too big is rejected outright; input that fits but generates
+      too much comes back truncated with a stop reason and no error.</li>
+      <li><strong>Sampling is a draw</strong>, and temperature reshapes the distribution rather than
+      removing the draw.</li>
+      <li><strong>The newest models refuse the sampling dials</strong> with a 400. Steer by prompting.</li>
+      <li><strong>Assert on properties, never on text.</strong> For meaning, you need a judge.</li>
+    </ol>
+
+    <div class="check">
+      <span class="note-k">Before Class 7</span>
+      <p>A document-summarising endpoint has run fine for months. This week, support reports that
+      summaries of the <em>longest</em> documents "seem to stop halfway through a sentence." No errors in
+      the logs. No exceptions. The 4xx rate is unchanged. Latency is normal.</p>
+      <p>What's happening, and what one field would you look at first?</p>
+      <button class="btn" data-reveal="f2">Commit to an answer, then reveal</button>
+      <div class="answer" id="f2" hidden>
+        <p>They're hitting the <strong>second edge</strong>. The input fits, so nothing is rejected and
+        there is no 4xx to raise the rate &mdash; but the long documents leave so little headroom that
+        generation reaches the ceiling partway through the summary. The model stops and returns what it
+        had.</p>
+        <p style="margin-bottom:0"><strong>Look at the stop reason</strong> on those responses. A
+        truncated answer with <code>model_context_window_exceeded</code> is indistinguishable from a
+        complete one unless something reads that field &mdash; which is why checking it belongs in the
+        parser rather than in the investigation. And the fix is upstream: trim or summarise the input so
+        the output has room, rather than treating it as a generation problem.</p>
+      </div>
+    </div>
+
+    <p style="color:var(--ink-soft);font-size:var(--t-small)">Class 7 &mdash; reasoning modes and
+    prompting modes: thinking is tokens spent before answering, examples are tokens spent showing the
+    shape, and both are the same trade.</p>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">Class 6 of 29</span>
+      <a class="btn btn-primary" href="CCDV-F_Class-07.html">Class 7: Two Dials, and When Each One Pays &rarr;</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<script>
+(function () {
+  var screens = [].slice.call(document.querySelectorAll('.screen'));
+  var toc = document.getElementById('toc');
+  var barEl = document.getElementById('bar');
+  var cNow = document.getElementById('cNow');
+  var cAll = document.getElementById('cAll');
+  var barTitle = document.getElementById('barTitle');
+  var drawer = document.getElementById('drawer');
+  var i = 0;
+
+  cAll.textContent = screens.length;
+
+  screens.forEach(function (s, n) {
+    var li = document.createElement('li');
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = s.dataset.title || ('Screen ' + (n + 1));
+    b.addEventListener('click', function () { go(n); closeDrawer(); });
+    li.appendChild(b);
+    toc.appendChild(li);
+  });
+  var tocBtns = [].slice.call(toc.querySelectorAll('button'));
+
+  function go(n, keepScroll) {
+    i = Math.max(0, Math.min(screens.length - 1, n));
+    screens.forEach(function (s, k) { s.classList.toggle('on', k === i); });
+    tocBtns.forEach(function (b, k) { b.setAttribute('aria-current', k === i ? 'true' : 'false'); });
+    cNow.textContent = i + 1;
+    barEl.style.width = ((i + 1) / screens.length * 100) + '%';
+    barTitle.textContent = screens[i].dataset.title || '';
+    if (!keepScroll) window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+    if (location.hash !== '#s' + (i + 1)) history.replaceState(null, '', '#s' + (i + 1));
+    document.querySelectorAll('[data-next]').forEach(function (b) { b.disabled = (i === screens.length - 1); });
+    document.querySelectorAll('[data-prev]').forEach(function (b) { b.disabled = (i === 0); });
+  }
+
+  document.addEventListener('click', function (e) {
+    var n = e.target.closest('[data-next]');
+    var p = e.target.closest('[data-prev]');
+    var r = e.target.closest('[data-reveal]');
+    if (n) go(i + 1);
+    if (p) go(i - 1);
+    if (r) {
+      var box = document.getElementById(r.dataset.reveal);
+      if (box) { box.hidden = false; r.disabled = true; box.setAttribute('tabindex', '-1'); box.focus(); }
+    }
+  });
+
+  function openDrawer() { drawer.setAttribute('open', ''); document.getElementById('main').setAttribute('inert', ''); tocBtns[i].focus(); }
+  function closeDrawer() { drawer.removeAttribute('open'); document.getElementById('main').removeAttribute('inert'); }
+  document.getElementById('tocBtn').addEventListener('click', openDrawer);
+  document.getElementById('tocClose').addEventListener('click', closeDrawer);
+  drawer.addEventListener('click', function (e) { if (e.target === drawer) closeDrawer(); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && drawer.hasAttribute('open')) return closeDrawer();
+    if (e.target.matches('input, textarea')) return;
+    if (e.key === 'ArrowRight') go(i + 1);
+    if (e.key === 'ArrowLeft') go(i - 1);
+  });
+
+  var start = parseInt((location.hash || '').replace('#s', ''), 10);
+  go(isNaN(start) ? 0 : start - 1, true);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 12 — Nothing Is Holding an Object Open for You · CCDV-F</title>
+<meta name="description" content="CCDV-F Class 12: Messages API mechanics - streaming as an event series, never acting on partial blocks, and what images cost before they are read.">
+<meta name="author" content="Ram">
+<style>
+@layer engine, skin, utilities;
+
+/* ============================== SKIN: "Lecture Hall" ============================== */
+@layer skin {
+  :root {
+    color-scheme: light dark;
+
+    /* -- color primitives (oklch) -- */
+    --paper:        oklch(0.977 0.004 250);
+    --paper-sunk:   oklch(0.947 0.006 250);
+    --ink:          oklch(0.24 0.018 255);
+    --ink-soft:     oklch(0.46 0.016 255);
+    --ink-faint:    oklch(0.62 0.012 255);
+    --rule:         oklch(0.87 0.008 255);
+    --accent:       oklch(0.50 0.13 250);
+    --accent-lift:  oklch(0.62 0.14 250);
+    --clay:         oklch(0.58 0.10 45);
+    --flag:         oklch(0.56 0.12 145);
+
+    /* -- derived tints -- */
+    --accent-wash:  color-mix(in oklch, var(--accent) 8%, var(--paper));
+    --accent-edge:  color-mix(in oklch, var(--accent) 32%, var(--paper));
+    --clay-wash:    color-mix(in oklch, var(--clay) 10%, var(--paper));
+    --flag-wash:    color-mix(in oklch, var(--flag) 10%, var(--paper));
+
+    /* -- type -- */
+    --face-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --face-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                 Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
+    --face-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+    --t-body:  clamp(1.0rem, 0.94rem + 0.30vw, 1.125rem);
+    --t-small: clamp(0.83rem, 0.80rem + 0.14vw, 0.90rem);
+    --t-lead:  clamp(1.13rem, 1.03rem + 0.48vw, 1.32rem);
+    --t-h2:    clamp(1.55rem, 1.28rem + 1.35vw, 2.35rem);
+    --t-h3:    clamp(1.08rem, 1.00rem + 0.38vw, 1.24rem);
+    --t-hero:  clamp(2.0rem, 1.45rem + 2.7vw, 3.4rem);
+    --measure: 64ch;
+    --lh: 1.68;
+
+    /* -- shape + space -- */
+    --r: 3px;
+    --hair: 1px;
+    --gap: clamp(1.1rem, 0.9rem + 1vw, 1.9rem);
+
+    /* -- motion -- */
+    --dur: 180ms;
+    --ease: cubic-bezier(.2,.6,.3,1);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:      oklch(0.185 0.014 260);
+      --paper-sunk: oklch(0.225 0.016 260);
+      --ink:        oklch(0.93 0.008 255);
+      --ink-soft:   oklch(0.76 0.012 255);
+      --ink-faint:  oklch(0.60 0.012 255);
+      --rule:       oklch(0.34 0.014 258);
+      --accent:     oklch(0.76 0.12 250);
+      --accent-lift:oklch(0.84 0.11 250);
+      --clay:       oklch(0.74 0.10 48);
+      --flag:       oklch(0.74 0.12 152);
+      --accent-wash: color-mix(in oklch, var(--accent) 14%, var(--paper));
+      --accent-edge: color-mix(in oklch, var(--accent) 40%, var(--paper));
+      --clay-wash:   color-mix(in oklch, var(--clay) 16%, var(--paper));
+      --flag-wash:   color-mix(in oklch, var(--flag) 16%, var(--paper));
+    }
+  }
+}
+
+/* ============================== ENGINE ============================== */
+@layer engine {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--face-body);
+    font-size: var(--t-body);
+    line-height: var(--lh);
+    font-synthesis-weight: none;
+  }
+
+  /* ---- skip link ---- */
+  .skip {
+    position: absolute; left: -9999px; top: 0; z-index: 100;
+    background: var(--accent); color: var(--paper);
+    padding: .7rem 1.1rem; border-radius: var(--r);
+  }
+  .skip:focus { left: .6rem; top: .6rem; }
+
+  /* ---- top bar ---- */
+  .bar {
+    position: sticky; top: 0; z-index: 40;
+    background: color-mix(in oklch, var(--paper) 88%, transparent);
+    backdrop-filter: blur(9px);
+    border-bottom: var(--hair) solid var(--rule);
+  }
+  .bar-in {
+    max-width: 78rem; margin: 0 auto;
+    padding: .6rem clamp(.9rem, 3vw, 2rem);
+    display: flex; align-items: center; gap: 1rem;
+  }
+  .brand {
+    font-family: var(--face-mono);
+    font-size: .68rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--ink-faint); white-space: nowrap;
+  }
+  .brand b { color: var(--accent); font-weight: 600; }
+  .bar-title {
+    font-family: var(--face-display);
+    font-size: .95rem; color: var(--ink-soft);
+    margin-left: auto; text-align: right;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .counter {
+    font-family: var(--face-mono); font-size: .72rem;
+    color: var(--ink-faint); white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .progress { height: 2px; background: var(--rule); }
+  .progress span {
+    display: block; height: 100%; width: 0;
+    background: var(--accent);
+    transition: width var(--dur) var(--ease);
+  }
+
+  .btn {
+    font: inherit; font-size: var(--t-small);
+    color: var(--ink); background: transparent;
+    border: var(--hair) solid var(--rule); border-radius: var(--r);
+    padding: .5rem .85rem; cursor: pointer;
+    min-height: 44px; display: inline-flex; align-items: center; gap: .5rem;
+    transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+  .btn:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-wash); }
+  .btn:disabled { opacity: .38; cursor: not-allowed; }
+  .btn-primary { border-color: var(--accent-edge); background: var(--accent-wash); color: var(--accent); font-weight: 600; }
+
+  :focus-visible { outline: 2px solid var(--accent-lift); outline-offset: 3px; }
+
+  /* ---- drawer ---- */
+  .drawer {
+    position: fixed; inset: 0; z-index: 60;
+    background: color-mix(in oklch, var(--ink) 42%, transparent);
+    display: none; padding: clamp(.8rem, 4vw, 3rem);
+  }
+  .drawer[open] { display: grid; place-items: start center; }
+  .drawer-panel {
+    background: var(--paper); border: var(--hair) solid var(--rule);
+    border-radius: var(--r); max-width: 34rem; width: 100%;
+    padding: clamp(1rem, 3vw, 1.7rem); box-shadow: 0 18px 50px -20px color-mix(in oklch, var(--ink) 45%, transparent);
+  }
+  .drawer h2 { font-size: var(--t-h3); margin: 0 0 .9rem; font-family: var(--face-display); }
+  .toc { list-style: none; margin: 0; padding: 0; counter-reset: t; }
+  .toc li { counter-increment: t; }
+  .toc button {
+    width: 100%; text-align: left; font: inherit; font-size: var(--t-small);
+    background: none; border: 0; border-top: var(--hair) solid var(--rule);
+    padding: .72rem .2rem; color: var(--ink); cursor: pointer;
+    display: flex; gap: .8rem; align-items: baseline; min-height: 44px;
+  }
+  .toc button::before {
+    content: counter(t, decimal-leading-zero);
+    font-family: var(--face-mono); font-size: .7rem; color: var(--ink-faint);
+  }
+  .toc button:hover { color: var(--accent); }
+  .toc button[aria-current="true"] { color: var(--accent); font-weight: 600; }
+
+  /* ---- screens ---- */
+  main { max-width: 78rem; margin: 0 auto; padding: 0 clamp(.9rem, 3vw, 2rem); }
+  .screen { display: none; padding: clamp(1.8rem, 5vw, 3.6rem) 0 1rem; }
+  .screen.on { display: block; animation: rise var(--dur) var(--ease); }
+  @keyframes rise { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+
+  .wrap { max-width: var(--measure); margin-inline: auto; }
+  .wrap-wide { max-width: 52rem; margin-inline: auto; }
+
+  .label {
+    font-family: var(--face-mono); font-size: .68rem;
+    letter-spacing: .13em; text-transform: uppercase; color: var(--accent);
+    padding-bottom: .45rem; border-bottom: var(--hair) solid var(--accent-edge);
+    display: inline-block; margin-bottom: 1.1rem;
+  }
+
+  h1 { font-family: var(--face-display); font-size: var(--t-hero); line-height: 1.06;
+       margin: 0 0 1.1rem; font-weight: 600; letter-spacing: -.015em; }
+  h2 { font-family: var(--face-display); font-size: var(--t-h2); line-height: 1.14;
+       margin: 0 0 1.1rem; font-weight: 600; letter-spacing: -.01em; }
+  h3 { font-family: var(--face-body); font-size: var(--t-h3); margin: 2rem 0 .6rem; font-weight: 650; }
+  p { margin: 0 0 1.05em; }
+  .lead { font-size: var(--t-lead); color: var(--ink-soft); line-height: 1.5; }
+  strong { font-weight: 650; }
+  em { font-style: italic; }
+  code { font-family: var(--face-mono); font-size: .88em;
+         background: var(--paper-sunk); padding: .12em .38em; border-radius: 2px; }
+
+  .entry, .exit {
+    font-size: var(--t-small); color: var(--ink-soft);
+    border-left: 2px solid var(--accent-edge);
+    padding: .1rem 0 .1rem .95rem; margin: 0 0 1.6rem;
+  }
+  .exit { border-left-color: color-mix(in oklch, var(--clay) 45%, var(--paper)); margin: 2rem 0 0; }
+  .exit b, .entry b { color: var(--ink); font-weight: 600; }
+
+  .pull {
+    font-family: var(--face-display); font-size: var(--t-lead);
+    line-height: 1.4; color: var(--ink);
+    border-top: var(--hair) solid var(--rule);
+    border-bottom: var(--hair) solid var(--rule);
+    padding: 1.1rem 0; margin: 1.8rem 0;
+  }
+
+  .note {
+    background: var(--paper-sunk); border-radius: var(--r);
+    padding: 1rem 1.15rem; margin: 1.5rem 0; font-size: var(--t-small);
+  }
+  .note.warn { background: var(--clay-wash); }
+  .note.good { background: var(--flag-wash); }
+  .note p:last-child { margin-bottom: 0; }
+  .note-k {
+    font-family: var(--face-mono); font-size: .66rem; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--ink-faint); display: block; margin-bottom: .4rem;
+  }
+
+  figure { margin: 2rem 0; }
+  figure svg { display: block; width: 100%; height: auto; }
+  figcaption {
+    font-size: var(--t-small); color: var(--ink-soft);
+    margin-top: .8rem; padding-top: .7rem; border-top: var(--hair) solid var(--rule);
+  }
+
+  .tbl-scroll { overflow-x: auto; margin: 1.6rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: var(--t-small); }
+  th, td { text-align: left; padding: .68rem .8rem; border-bottom: var(--hair) solid var(--rule);
+           vertical-align: top; }
+  th { font-family: var(--face-mono); font-size: .68rem; letter-spacing: .08em;
+       text-transform: uppercase; color: var(--ink-faint); font-weight: 500; }
+  tbody tr:hover { background: var(--paper-sunk); }
+
+  details { border-top: var(--hair) solid var(--rule); padding: .8rem 0; margin: 1.4rem 0; }
+  summary { cursor: pointer; font-size: var(--t-small); color: var(--accent);
+            font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+  summary::marker { color: var(--ink-faint); }
+
+  /* ---- checkpoint ---- */
+  .check { border: var(--hair) solid var(--accent-edge); border-radius: var(--r);
+           padding: 1.2rem 1.3rem; margin: 2rem 0; background: var(--accent-wash); }
+  .check .note-k { color: var(--accent); }
+  .check p { margin-bottom: .9rem; }
+  .answer { margin-top: 1rem; padding-top: 1rem; border-top: var(--hair) solid var(--accent-edge);
+            font-size: var(--t-small); }
+  .answer[hidden] { display: none; }
+
+  ul, ol { margin: 0 0 1.05em; padding-left: 1.3em; }
+  li { margin-bottom: .45em; }
+
+  /* ---- foot nav ---- */
+  .foot {
+    max-width: var(--measure); margin: 2.8rem auto 0;
+    border-top: var(--hair) solid var(--rule); padding: 1.2rem 0 3rem;
+    display: flex; gap: .8rem; align-items: center; justify-content: space-between;
+  }
+  .hint { font-size: .72rem; color: var(--ink-faint); font-family: var(--face-mono); }
+
+  @media (max-width: 640px) {
+    .bar-title { display: none; }
+    .hint { display: none; }
+    .bar-in { gap: .5rem; padding-inline: .75rem; }
+    .btn { padding: .5rem .62rem; }
+    .counter { margin-left: auto; flex: 0 0 auto; }
+  }
+  @media (max-width: 480px) {
+    /* the course link + contents button + counter is all that fits; the brand
+       repeats what the page title already says, so it goes first */
+    .brand { display: none; }
+  }
+
+  /* ---- floor: motion / contrast / forced-colors ---- */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+  @media (prefers-contrast: more) {
+    :root { --rule: var(--ink-soft); --ink-soft: var(--ink); }
+  }
+  @media (forced-colors: active) {
+    .btn, .drawer-panel, .check, figure svg { border: 1px solid ButtonText; }
+    .label, .brand b { color: LinkText; }
+    .progress span { background: Highlight; }
+  }
+
+  /* ---- print: flatten every screen ---- */
+  @media print {
+    .bar, .foot, .drawer, .skip, .hint { display: none !important; }
+    .screen { display: block !important; page-break-after: always; padding: 0 0 1.5rem; }
+    .answer[hidden] { display: block !important; }
+    figure, .check, table { break-inside: avoid; }
+    body { background: #fff; color: #111; }
+  }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the class</a>
+
+<header class="bar">
+  <div class="bar-in">
+    <span class="brand">CCDV&#8209;F&nbsp;· <b>Class 12</b></span>
+    <a class="btn" id="courseLink" href="index.html">&#8598;&nbsp;Course</a>
+    <button class="btn" id="tocBtn" aria-haspopup="dialog">Contents</button>
+    <span class="bar-title" id="barTitle">Nothing Is Holding an Object Open for You</span>
+    <span class="counter"><span id="cNow">1</span>&#8202;/&#8202;<span id="cAll">10</span></span>
+  </div>
+  <div class="progress"><span id="bar"></span></div>
+</header>
+
+<div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="tocH">
+  <div class="drawer-panel">
+    <h2 id="tocH">Class 12 &mdash; contents</h2>
+    <ol class="toc" id="toc"></ol>
+    <p style="margin:1rem 0 0"><button class="btn" id="tocClose">Close</button></p>
+  </div>
+</div>
+
+<main id="main">
+<!-- ---------- 1 · cover ---------- -->
+<section class="screen on" data-title="The promise">
+  <div class="wrap">
+    <span class="label">Claude Certified Developer &middot; Foundations</span>
+    <h1>Nothing Is Holding an Object Open for You</h1>
+    <p class="lead">A streamed response is not a live thing you read from. It is a series of small
+    messages, each describing one change, and <em>you</em> are the one assembling them. Get that wrong
+    and you corrupt the next turn rather than the current one &mdash; which is why it's hard to
+    notice.</p>
+
+    <div class="note">
+      <span class="note-k">What you leave holding</span>
+      <ol style="margin-bottom:0">
+        <li>Six events, and what your handler does with each.</li>
+        <li>Never act on a partial block. Tool inputs are the ones that bite.</li>
+        <li>An interrupted stream must be thrown away, not saved.</li>
+        <li>Images cost context before Claude reads a character of your prompt.</li>
+        <li>Three ways to send an image, and the reuse question decides between them.</li>
+      </ol>
+    </div>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Begin &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 2 · what streaming changes ---------- -->
+<section class="screen" data-title="What streaming actually changes">
+  <div class="wrap">
+    <span class="label">01 &middot; Events, not an object</span>
+    <h2>What streaming actually changes</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll know exactly what job streaming hands to
+    your code &mdash; and it's a bigger one than "display it sooner."</p>
+
+    <p>In a non-streamed request the API hands you one complete message with every content block fully
+    formed. In a streamed request it sends a series of events describing the message <em>as it is being
+    built</em>. Your code listens and reassembles.</p>
+    <p>The message you end up with is identical to what a non-streamed call would have given you. The
+    difference is that you assembled it, and you decided what to do if the events stopped early.</p>
+
+    <p class="pull">It helps to know what is <em>not</em> happening: the model isn't holding a live
+    object open for you. Each event is its own small message describing a single change, and your
+    handler applies it to the partial state it's been building.</p>
+
+    <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>Event</th><th>What it signals</th><th>What your handler does</th></tr></thead>
+      <tbody>
+        <tr><td><code>message_start</code></td><td>A new message begins &mdash; the shell, empty content, initial usage</td><td>Set up an empty content array to collect blocks in</td></tr>
+        <tr><td><code>content_block_start</code></td><td>A block opens, with its type (text, <code>tool_use</code>, thinking) and index</td><td>Make a slot at that index. A <code>tool_use</code> block opens with a name and id but <strong>no input yet</strong></td></tr>
+        <tr><td><code>content_block_delta</code></td><td>An incremental piece of one block &mdash; a text fragment, a fragment of tool JSON, a thinking fragment</td><td>Append to the block at that index. <strong>Tool inputs arrive as partial JSON spread across deltas</strong></td></tr>
+        <tr><td><code>content_block_stop</code></td><td>That block is complete</td><td>Finalise it. For <code>tool_use</code>, this is the <em>first</em> moment the JSON is complete enough to parse</td></tr>
+        <tr><td><code>message_delta</code></td><td>Top-level changes &mdash; the <code>stop_reason</code> and final usage</td><td>Record the stop reason. It tells you whether the model finished or stopped for another reason</td></tr>
+        <tr><td><code>message_stop</code></td><td>The stream is complete</td><td>The assembled array is now the finished message. Treat it exactly like a non-streamed response</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p class="exit"><b>Next.</b> One rule falls out of that table, and it is the whole of getting
+    streaming right.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 3 · the rule ---------- -->
+<section class="screen" data-title="Never act on a partial block">
+  <div class="wrap">
+    <span class="label">02 &middot; The rule</span>
+    <h2>Don't act on a partial block</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll know which block corrupts state and why the
+    damage lands on the <em>next</em> request.</p>
+
+    <p>The <code>tool_use</code> block is the one to watch. Its input arrives as a partial JSON string
+    spread across many delta events, and that string is <strong>not valid JSON</strong> until
+    <code>content_block_stop</code> closes the block.</p>
+    <p>So code that parses the input or runs the tool before the block closes either chokes on malformed
+    JSON, or &mdash; worse &mdash; runs with half the arguments missing.</p>
+  </div>
+
+  <div class="wrap-wide">
+  <figure>
+    <svg viewBox="0 0 760 220" role="img" aria-label="A tool_use block opens with a name and id but no input. Its arguments arrive as fragments of a JSON string across several delta events, none of which is valid on its own. Only at content_block_stop is the accumulated string complete enough to parse and act on.">
+      <text x="14" y="26" font-family="var(--face-mono)" font-size="10" fill="var(--ink-faint)" letter-spacing="1.3">ONE TOOL_USE BLOCK, ARRIVING</text>
+      <g stroke="var(--rule)" stroke-width="1.2" fill="var(--paper-sunk)">
+        <rect x="14" y="44" width="118" height="40"/><rect x="140" y="44" width="118" height="40"/>
+        <rect x="266" y="44" width="118" height="40"/><rect x="392" y="44" width="118" height="40"/>
+      </g>
+      <rect x="518" y="44" width="150" height="40" fill="var(--flag-wash)" stroke="var(--flag)" stroke-width="1.6"/>
+      <g font-family="var(--face-mono)" font-size="10.5" fill="var(--ink-soft)">
+        <text x="26" y="60">block_start</text><text x="152" y="60">delta</text>
+        <text x="278" y="60">delta</text><text x="404" y="60">delta</text>
+      </g>
+      <text x="530" y="60" font-family="var(--face-mono)" font-size="10.5" fill="var(--flag)">block_stop</text>
+      <g font-family="var(--face-mono)" font-size="11" fill="var(--ink)">
+        <text x="26" y="76">name, id</text><text x="152" y="76">{"path":</text>
+        <text x="278" y="76">"src/ma</text><text x="404" y="76">in.py"}</text>
+      </g>
+      <text x="530" y="76" font-family="var(--face-body)" font-size="11.5" fill="var(--flag)">now parseable</text>
+
+      <line x1="14" y1="104" x2="510" y2="104" stroke="var(--clay)" stroke-width="1.6"/>
+      <text x="14" y="126" font-family="var(--face-body)" font-size="12.5" fill="var(--clay)">Parse or run anywhere in here and you get malformed JSON, or half the arguments.</text>
+      <line x1="518" y1="104" x2="668" y2="104" stroke="var(--flag)" stroke-width="1.6"/>
+      <text x="518" y="126" font-family="var(--face-body)" font-size="12.5" fill="var(--flag)">Act only here.</text>
+
+      <text x="14" y="170" font-family="var(--face-body)" font-size="12.5" fill="var(--ink)">And the same discipline for history: add the assistant turn only after <tspan font-family="var(--face-mono)" font-size="11.5">message_stop</tspan>.</text>
+      <text x="14" y="194" font-family="var(--face-body)" font-size="12.5" fill="var(--ink-soft)">A half-built tool_use block written into history will be rejected on the next request.</text>
+    </svg>
+    <figcaption><b>The failure lands one request later than the mistake.</b> A half-built
+    <code>tool_use</code> block saved to history breaks the <em>following</em> call through the tool
+    pairing rules, which is what makes it hard to trace back.</figcaption>
+  </figure>
+  </div>
+
+  <div class="wrap">
+    <p class="exit"><b>Next.</b> Streams do stop early, and the tempting thing to do about it is exactly
+    wrong.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 4 · interruption ---------- -->
+<section class="screen" data-title="When the stream stops early">
+  <div class="wrap">
+    <span class="label">03 &middot; Interruption</span>
+    <h2>When the stream stops early</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll know why keeping what you collected is the
+    damaging move.</p>
+
+    <p>A dropped connection, a timeout, a client disconnect &mdash; any of these can end the event
+    series before <code>message_stop</code> arrives. And the failure that really bites is treating
+    whatever you've collected as if it were complete.</p>
+
+    <p>The two cases are not equally bad, and it's worth being precise about which is which:</p>
+    <ul>
+      <li><strong>A partial text block shown to a user</strong> is a cosmetic glitch. Ugly, survivable.</li>
+      <li><strong>A partial <code>tool_use</code> block written into history</strong> is a structural
+      problem that corrupts the next turn.</li>
+    </ul>
+
+    <div class="note good">
+      <span class="note-k">Three habits</span>
+      <p><strong>Track completion on purpose.</strong> A turn is usable only once
+      <code>message_stop</code> has arrived. Until then, what you've accumulated is provisional.</p>
+      <p><strong>On an interruption, throw the partial turn away</strong> rather than saving it, then
+      retry the request. Committing a half-built turn is exactly what breaks the following one.</p>
+      <p style="margin-bottom:0"><strong>Check <code>stop_reason</code> before continuing a loop.</strong>
+      <code>tool_use</code> means your assembled calls are ready to run. Any other value means you're on
+      a different path, not the tool path.</p>
+    </div>
+
+    <p class="pull">Streaming buys perceived responsiveness and charges you partial-state handling. On a
+    backend job where nobody is watching, a non-streamed call removes the entire risk class for
+    free.</p>
+
+    <p class="exit"><b>Next.</b> The other end of the request &mdash; what it costs before Claude reads
+    a word.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 5 · images ---------- -->
+<section class="screen" data-title="Images cost before they are read">
+  <div class="wrap">
+    <span class="label">04 &middot; Multimodal input</span>
+    <h2>Images cost budget before anything is read</h2>
+    <p class="entry"><b>By the end of this screen</b> you'll be able to compute an image's context cost
+    and pick a delivery method on one question.</p>
+
+    <p>Claude views images in patches. Each 28&times;28-pixel block is one visual token, so an image
+    costs <code>&lceil;width/28&rceil; &times; &lceil;height/28&rceil;</code> visual tokens.</p>
+
+    <div class="note">
+      <span class="note-k">Run the arithmetic once and it sticks</span>
+      <p style="margin-bottom:0">A 1,000&times;1,000 image is 36&times;36 patches &mdash; about
+      <strong>1,296 visual tokens</strong>. At that rate <strong>ten high-resolution screenshots consume
+      as much context as a detailed system prompt</strong>, and they consume it before Claude has read a
+      character of your instructions.</p>
+    </div>
+
+    <p>Each model has a maximum native resolution &mdash; a long-edge limit and a visual-token limit
+    &mdash; and these differ by tier, with the newest models accepting substantially larger images.
+    Anything over either limit is downscaled first, so the formula runs on the <em>scaled</em>
+    dimensions. Confirm current per-tier limits when you build; they've changed between generations and
+    will again.</p>
+
+    <h3>Three ways to send one, and the question that decides</h3>
+    <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>Method</th><th>Overhead</th><th>Right when</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Inline base64</strong></td>
+            <td>The full encoded payload travels with <em>every</em> request</td>
+            <td>A one-off image, where an upload step would add complexity for no payoff</td></tr>
+        <tr><td><strong>URL reference</strong></td>
+            <td>No payload &mdash; but you take on a dependency that the URL is stable, public and reachable at request time</td>
+            <td>Already hosted at a stable public URL you control. Not for anything behind auth or signed with a short expiry</td></tr>
+        <tr><td><strong>Files API</strong></td>
+            <td>Upload once, get a <code>file_id</code>, and every later request carries the ID instead of the bytes</td>
+            <td>The same asset appears across multiple requests or turns. Beta, and <strong>not available on Bedrock or Vertex</strong></td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p>The question underneath all three is <strong>reuse</strong>. Send the same image twice and base64
+    has paid twice; the <code>file_id</code> carries no payload weight at all as history grows, which is
+    exactly the property you want in a multi-turn conversation.</p>
+
+    <p>PDFs work the same way with block type <code>document</code> instead of <code>image</code>. Same
+    source options, an optional <code>title</code> and <code>context</code>, no required name field.</p>
+
+    <p class="exit"><b>Last screen.</b> Recap, and a bug that only shows up on the request after the one
+    that caused it.</p>
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">&larr; &rarr; to move</span>
+      <button class="btn btn-primary" data-next>Next &rarr;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ---------- 6 · recap ---------- -->
+<section class="screen" data-title="Recap and the closing question">
+  <div class="wrap">
+    <span class="label">Recap</span>
+    <h2>What you're leaving with</h2>
+    <ol>
+      <li><strong>A stream is events, not an object.</strong> You assemble; you decide what happens if it
+      stops.</li>
+      <li><strong>Tool input is invalid JSON until <code>content_block_stop</code>.</strong> Act only
+      after it.</li>
+      <li><strong>Discard an interrupted turn.</strong> Saving it corrupts the next request, not this
+      one.</li>
+      <li><strong>Images cost patches</strong> &mdash; width over 28 times height over 28 &mdash; spent
+      before your prompt is read.</li>
+      <li><strong>Reuse decides delivery.</strong> Base64 for one-offs, <code>file_id</code> for anything
+      that recurs.</li>
+    </ol>
+
+    <div class="check">
+      <span class="note-k">Before Class 13</span>
+      <p>A team streams responses in an agent loop. Intermittently, a request fails with an error about
+      tool blocks &mdash; but the request that fails is always <em>fine on its own</em>, and re-running it
+      works. The failures correlate loosely with periods of poor network.</p>
+      <p>What's happening, and where is the bug actually located?</p>
+      <button class="btn" data-reveal="l1">Commit to an answer, then reveal</button>
+      <div class="answer" id="l1" hidden>
+        <p>A stream is being interrupted mid-<code>tool_use</code>, and the handler is <strong>saving
+        what it collected into conversation history anyway</strong>. That leaves a half-built
+        <code>tool_use</code> block in the turn, and the tool pairing rules reject it &mdash; on the
+        <em>next</em> request.</p>
+        <p><strong>Which is why the failing request looks innocent.</strong> The bug isn't in it. The bug
+        is in the previous turn's assembly, one call earlier, and re-running the failing request works
+        because the retry doesn't carry the corrupt history.</p>
+        <p style="margin-bottom:0"><strong>The fix:</strong> commit the assistant turn only after
+        <code>message_stop</code>. On interruption, discard the partial turn and retry the original
+        request. And the poor-network correlation is the clue that should have pointed here first
+        &mdash; intermittent, environmental, and nothing to do with the content of any prompt.</p>
+      </div>
+    </div>
+
+    <p style="color:var(--ink-soft);font-size:var(--t-small)">Class 13 &mdash; batch against realtime:
+    latency tolerance is the axis, and if nobody is waiting you're paying for speed you don't use.</p>
+
+    <div class="foot">
+      <button class="btn" data-prev>&larr; Back</button>
+      <span class="hint">Class 12 of 29</span>
+      <a class="btn btn-primary" href="CCDV-F_Class-13.html">Class 13: Who Is Waiting? &rarr;</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<script>
+(function () {
+  var screens = [].slice.call(document.querySelectorAll('.screen'));
+  var toc = document.getElementById('toc');
+  var barEl = document.getElementById('bar');
+  var cNow = document.getElementById('cNow');
+  var cAll = document.getElementById('cAll');
+  var barTitle = document.getElementById('barTitle');
+  var drawer = document.getElementById('drawer');
+  var i = 0;
+
+  cAll.textContent = screens.length;
+
+  screens.forEach(function (s, n) {
+    var li = document.createElement('li');
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = s.dataset.title || ('Screen ' + (n + 1));
+    b.addEventListener('click', function () { go(n); closeDrawer(); });
+    li.appendChild(b);
+    toc.appendChild(li);
+  });
+  var tocBtns = [].slice.call(toc.querySelectorAll('button'));
+
+  function go(n, keepScroll) {
+    i = Math.max(0, Math.min(screens.length - 1, n));
+    screens.forEach(function (s, k) { s.classList.toggle('on', k === i); });
+    tocBtns.forEach(function (b, k) { b.setAttribute('aria-current', k === i ? 'true' : 'false'); });
+    cNow.textContent = i + 1;
+    barEl.style.width = ((i + 1) / screens.length * 100) + '%';
+    barTitle.textContent = screens[i].dataset.title || '';
+    if (!keepScroll) window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+    if (location.hash !== '#s' + (i + 1)) history.replaceState(null, '', '#s' + (i + 1));
+    document.querySelectorAll('[data-next]').forEach(function (b) { b.disabled = (i === screens.length - 1); });
+    document.querySelectorAll('[data-prev]').forEach(function (b) { b.disabled = (i === 0); });
+  }
+
+  document.addEventListener('click', function (e) {
+    var n = e.target.closest('[data-next]');
+    var p = e.target.closest('[data-prev]');
+    var r = e.target.closest('[data-reveal]');
+    if (n) go(i + 1);
+    if (p) go(i - 1);
+    if (r) {
+      var box = document.getElementById(r.dataset.reveal);
+      if (box) { box.hidden = false; r.disabled = true; box.setAttribute('tabindex', '-1'); box.focus(); }
+    }
+  });
+
+  function openDrawer() { drawer.setAttribute('open', ''); document.getElementById('main').setAttribute('inert', ''); tocBtns[i].focus(); }
+  function closeDrawer() { drawer.removeAttribute('open'); document.getElementById('main').removeAttribute('inert'); }
+  document.getElementById('tocBtn').addEventListener('click', openDrawer);
+  document.getElementById('tocClose').addEventListener('click', closeDrawer);
+  drawer.addEventListener('click', function (e) { if (e.target === drawer) closeDrawer(); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && drawer.hasAttribute('open')) return closeDrawer();
+    if (e.target.matches('input, textarea')) return;
+    if (e.key === 'ArrowRight') go(i + 1);
+    if (e.key === 'ArrowLeft') go(i - 1);
+  });
+
+  var start = parseInt((location.hash || '').replace('#s', ''), 10);
+  go(isNaN(start) ? 0 : start - 1, true);
+})();
+</script>
+</body>
+</html>
