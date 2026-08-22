@@ -5,8 +5,9 @@
 **Now in:** Phase 1.
 **Target date:** none. This plan gates on evidence, not calendar.
 **Running alongside:** CCAR-P, kept warm — see "The parallel track".
-**Teaching plan:** `Outputs/CCDV-F_Syllabus_v1.md` — 29 classes across all 25 published skills, with
-per-class status. Class 1 delivered 2026-08-20. See "The teaching track" below.
+**Teaching plan:** `Outputs/regeneration/CCDV-F_Regeneration-Plan_v1.md` — 34 chapters across all 25
+published skills. Part I (chapters 1–5) delivered and gate-verified 2026-08-22. Supersedes the
+29-class syllabus this file pointed to before that date — see the superseded note ahead of Phase 2.
 
 ---
 
@@ -192,6 +193,14 @@ it turns the standing column above from my inference into his evidence.
 
 > **Gate 1.** The 25-skill self-assessment exists. Every blueprint lesson has a `notes/` file. Each of
 > the six carry-over objectives has a written decision rule stating its discriminator.
+
+> ⚠️ **Phases 2–4 superseded 2026-08-22.** The build-an-application, corpus, and mock-paper work below
+> is now executed through `Outputs/regeneration/CCDV-F_Regeneration-Plan_v1.md`'s 10-stage process
+> instead — its Stage 6 (author 34 chapters) replaces Phase 3's domain files, and its Stage 9
+> (diagnostic pre-test, three weighted mocks, RECALL/CONCEPT miss log) replaces Phase 4. Phase 2's own
+> reasoning (assisted building, one application not a portfolio) still holds and is unaffected. Left
+> below as the historical record of that reasoning — the checkboxes are not being tracked as the
+> active plan.
 
 ### Phase 2 — Build one application
 

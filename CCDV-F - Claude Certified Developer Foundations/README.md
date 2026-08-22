@@ -5,7 +5,10 @@ Preparation project for Anthropic's **Claude Certified Developer – Foundations
 
 **Status:** ⭐ **ACTIVE — this is Ram's next exam**, decided 2026-08-19.
 **Current phase:** **Phase 1.** Phase 0 closed 2026-08-19 — the official guide (v1.0, July 2026) is
-filed at `sources/CCDV-F_Official-Exam-Guide_v1.0.pdf` and fully reconciled.
+filed at `sources/CCDV-F_Official-Exam-Guide_v1.0.pdf` and fully reconciled. **Phases 2–4's build/
+corpus/mock-paper work now runs through `Outputs/regeneration/CCDV-F_Regeneration-Plan_v1.md` instead
+— see `ROADMAP.md` for how the two relate.** Part I of the regenerated material (chapters 1–5) is
+delivered and gate-verified as of 2026-08-22.
 **Pacing:** no target date. The plan gates on evidence, phase by phase.
 **Alongside:** CCAR-P is kept warm — its Integration and Responsible-AI lessons feed this exam and are
 front-loaded for that reason.

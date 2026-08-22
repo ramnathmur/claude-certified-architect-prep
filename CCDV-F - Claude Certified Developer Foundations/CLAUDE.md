@@ -49,7 +49,7 @@ project-scoped work.
 | What is Ram's current standing? | `prep with quiz/EXAM-LOG.md` |
 | What study material exists? | `BACKGROUND-MATERIAL-INDEX_v1.md` |
 | What happens next? | `ROADMAP.md` |
-| What is being taught, in what order, and how far has it got? | `Outputs/CCDV-F_Syllabus_v1.md` |
+| What is being taught, in what order, and how far has it got? | `Outputs/regeneration/CCDV-F_Regeneration-Plan_v1.md` |
 | What did previous generation runs learn the hard way? | `prep with quiz/GENERATION-INTELLIGENCE.md` |
 
 If any other file starts carrying scores or exam mechanics, delete it. The CCAR-F project lost a month

@@ -3,7 +3,13 @@
 **Exam:** Claude Certified Developer – Foundations
 **Source of the blueprint:** `../sources/CCDV-F_Official-Exam-Guide_v1.0.pdf`, v1.0 effective July
 2026, pages 5–9. Read directly from the PDF on 2026-08-20, not from a secondary summary.
-**Created:** 2026-08-20 · **Status:** live — Classes 1-14 delivered and published as HTML
+**Created:** 2026-08-20 · **Status:** ⚠️ **SUPERSEDED 2026-08-22** — see below
+
+> **This syllabus is no longer live.** The teaching material was regenerated from scratch, built blind
+> from only the corpus, the published weights, and the exam expectations, without reading this file or
+> the 14 classes it produced. Plan of record now:
+> `../Outputs/regeneration/CCDV-F_Regeneration-Plan_v1.md`. Kept here as a historical record, not as
+> the current teaching plan — do not build on it or resume Class 15 from where this left off.
 
 > Re-check against the guide quarterly. v1.0 is the initial publication and states it is "subject to
 > change without notice." If the blueprint moves, this syllabus moves with it.
