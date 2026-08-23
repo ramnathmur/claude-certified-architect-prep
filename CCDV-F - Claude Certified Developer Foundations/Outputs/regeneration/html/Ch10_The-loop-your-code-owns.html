@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 10 — The Loop Your Code Owns · CCDV-F</title>
+<meta name="description" content="Claude Certified Developer Foundations, Chapter 10: Claude only ever names which tool fits and with what arguments — running it, handling its failure, and returning the result is entirely your code's job.">
+<meta name="author" content="Ram">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: light dark;
+
+  --ink:    oklch(0.15 0.01 80);
+  --ink2:   oklch(0.30 0.015 75);
+  --ink3:   oklch(0.53 0.015 75);
+  --cream:  oklch(0.97 0.008 85);
+  --cream2: oklch(0.94 0.012 85);
+  --cream3: oklch(0.91 0.015 80);
+  --border: oklch(0.87 0.012 80);
+
+  --amber:       oklch(0.64 0.14 68);
+  --amber-light: oklch(0.93 0.035 80);
+  --amber-dark:  oklch(0.47 0.11 60);
+  --blue:        oklch(0.43 0.09 245);
+  --blue-light:  oklch(0.93 0.025 240);
+  --coral:       oklch(0.55 0.14 30);
+  --coral-light: oklch(0.94 0.025 35);
+  --purple:      oklch(0.38 0.14 300);
+  --purple-light:oklch(0.93 0.03 300);
+  --green:       oklch(0.50 0.10 150);
+  --green-light: oklch(0.94 0.025 145);
+
+  --surface-raised:  oklch(0.15 0.01 80);
+  --on-raised:       oklch(0.97 0.008 85);
+  --on-raised-muted: oklch(0.97 0.008 85 / 0.74);
+  --on-raised-dim:   oklch(0.97 0.008 85 / 0.6);
+  --on-raised-border:oklch(0.97 0.008 85 / 0.15);
+  --nav-bg:          oklch(0.97 0.008 85 / 0.96);
+
+  --font-serif: Georgia, 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+  --font-sans:  system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono:  ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+  --font-body-active: var(--font-sans);
+
+  --fs-body: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --fs-sm:   clamp(0.8125rem, 0.78rem + 0.15vw, 0.9375rem);
+  --fs-xs:   clamp(0.6875rem, 0.67rem + 0.1vw, 0.75rem);
+  --fs-h1:   clamp(2rem, 1.4rem + 3vw, 3.375rem);
+  --fs-h2:   clamp(1.5rem, 1.2rem + 1.5vw, 2.125rem);
+  --fs-h3:   clamp(1.25rem, 1.1rem + 0.75vw, 1.5rem);
+  --fs-pull: clamp(1.375rem, 1.15rem + 1.1vw, 1.625rem);
+  --lh-body: 1.7;
+  --lh-heading: 1.2;
+  --measure: 68ch;
+
+  --space-section: clamp(3rem, 2.5rem + 2.5vw, 4rem);
+  --space-block:   clamp(1.5rem, 1.25rem + 1.25vw, 2.5rem);
+  --space-inline:  clamp(1.25rem, 1rem + 1.25vw, 2rem);
+  --radius:    12px;
+  --radius-sm: 8px;
+  --shadow:    0 2px 16px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
+  --t-fast: 0.15s;
+  --t-med:  0.25s;
+}
+
+[data-theme="dark"] {
+  --ink:    oklch(0.90 0.008 85);
+  --ink2:   oklch(0.78 0.01 80);
+  --ink3:   oklch(0.58 0.01 75);
+  --cream:  oklch(0.15 0.012 75);
+  --cream2: oklch(0.19 0.012 75);
+  --cream3: oklch(0.23 0.015 75);
+  --border: oklch(0.32 0.01 75);
+  --shadow:    0 2px 16px rgba(0,0,0,0.3);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+  --amber:       oklch(0.72 0.13 68);
+  --amber-light: oklch(0.24 0.04 70);
+  --amber-dark:  oklch(0.78 0.10 65);
+  --blue:        oklch(0.70 0.09 245);
+  --blue-light:  oklch(0.24 0.035 245);
+  --coral:       oklch(0.68 0.13 30);
+  --coral-light: oklch(0.26 0.04 30);
+  --purple:      oklch(0.68 0.12 300);
+  --purple-light:oklch(0.25 0.04 300);
+  --green:       oklch(0.68 0.10 150);
+  --green-light: oklch(0.24 0.035 150);
+  --nav-bg: oklch(0.15 0.012 75 / 0.92);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink:    oklch(0.90 0.008 85);
+    --ink2:   oklch(0.78 0.01 80);
+    --ink3:   oklch(0.58 0.01 75);
+    --cream:  oklch(0.15 0.012 75);
+    --cream2: oklch(0.19 0.012 75);
+    --cream3: oklch(0.23 0.015 75);
+    --border: oklch(0.32 0.01 75);
+    --shadow:    0 2px 16px rgba(0,0,0,0.3);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+    --amber:       oklch(0.72 0.13 68);
+    --amber-light: oklch(0.24 0.04 70);
+    --amber-dark:  oklch(0.78 0.10 65);
+    --blue:        oklch(0.70 0.09 245);
+    --blue-light:  oklch(0.24 0.035 245);
+    --coral:       oklch(0.68 0.13 30);
+    --coral-light: oklch(0.26 0.04 30);
+    --purple:      oklch(0.68 0.12 300);
+    --purple-light:oklch(0.25 0.04 300);
+    --green:       oklch(0.68 0.10 150);
+    --green-light: oklch(0.24 0.035 150);
+    --nav-bg: oklch(0.15 0.012 75 / 0.92);
+  }
+}
+
+[data-font="serif"]  { --font-body-active: var(--font-serif); }
+[data-font="legible"]{ --font-body-active: 'Atkinson Hyperlegible', var(--font-sans); --lh-body: 1.85; letter-spacing: 0.01em; }
+
+* , *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 78px; }
+
+body {
+  margin: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-body-active);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
+
+.skip-link {
+  position: absolute; left: -9999px; top: 0; z-index: 200;
+  background: var(--ink); color: var(--cream);
+  padding: 0.7rem 1.1rem; border-radius: var(--radius-sm);
+}
+.skip-link:focus { left: 0.6rem; top: 0.6rem; }
+
+h1, h2, h3 { font-family: var(--font-serif); line-height: var(--lh-heading); font-weight: 400; color: var(--ink); }
+h2 { font-size: var(--fs-h2); margin: 0 0 1em; }
+h3 { font-size: var(--fs-h3); margin: var(--space-block) 0 0.75em; }
+p { margin: 0 0 1.1em; }
+code { font-family: var(--font-mono); font-size: 0.9em; background: var(--cream3); padding: 0.12em 0.4em; border-radius: 4px; }
+a { color: var(--amber-dark, var(--amber)); }
+[data-theme="dark"] a, :root:not([data-theme="light"]) a { color: var(--amber); }
+
+.nav {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--nav-bg);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-inner {
+  max-width: 1000px; margin: 0 auto;
+  padding: 0.7rem clamp(1rem, 3vw, 2.5rem);
+  display: flex; align-items: center; gap: 1.1rem;
+  flex-wrap: wrap;
+}
+.nav-brand {
+  font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3);
+  white-space: nowrap;
+}
+.nav-links { display: flex; gap: 0.9rem; flex-wrap: wrap; margin-right: auto; }
+.nav-link {
+  font-size: var(--fs-sm); color: var(--ink2); text-decoration: none;
+  padding: 0.2rem 0; border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+.nav-link.active { color: var(--amber-dark, var(--amber)); border-bottom-color: var(--amber); }
+[data-theme="dark"] .nav-link.active, :root:not([data-theme="light"]) .nav-link.active { color: var(--amber); }
+.nav-progress { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink3); white-space: nowrap; }
+.nav-btn {
+  font-family: var(--font-sans); font-size: 1rem; line-height: 1;
+  background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  width: 34px; height: 34px; cursor: pointer; color: var(--ink2);
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: border-color var(--t-fast);
+}
+.nav-btn:hover { border-color: var(--amber); }
+.nav-btn.font-toggle { font-family: var(--font-serif); font-size: 0.85rem; width: auto; padding: 0 0.6rem; }
+
+.chapter-nav {
+  max-width: 1000px; margin: 0 auto;
+  padding: 0.85rem clamp(1rem, 3vw, 2.5rem);
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  font-size: var(--fs-sm); color: var(--ink3);
+}
+.chapter-nav-link { color: var(--ink3); text-decoration: none; }
+.chapter-nav-link.disabled { cursor: default; opacity: 0.55; }
+.chapter-nav-link em { font-style: normal; font-size: var(--fs-xs); }
+.chapter-nav-current { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase; }
+
+.hero {
+  background: var(--cream);
+  padding: clamp(2rem, 4vw, 3.5rem) clamp(1rem, 3vw, 2.5rem) clamp(1.5rem, 3vw, 2.5rem);
+  border-bottom: 1px solid var(--border);
+}
+.hero-inner { max-width: 900px; margin: 0 auto; }
+.eyebrow {
+  display: flex; align-items: center; gap: 0.6rem;
+  font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber-dark, var(--amber));
+  margin-bottom: 0.9rem;
+}
+[data-theme="dark"] .eyebrow, :root:not([data-theme="light"]) .eyebrow { color: var(--amber); }
+.eyebrow .icon { font-size: 1.3rem; letter-spacing: 0; }
+.hero h1 { font-size: var(--fs-h1); margin: 0; max-width: 20ch; }
+
+main { max-width: 900px; margin: 0 auto; padding: 0 clamp(1rem, 3vw, 2.5rem); }
+section { padding: var(--space-section) 0 0; }
+section:last-of-type { padding-bottom: var(--space-section); }
+.measure { max-width: var(--measure); }
+
+.analogy, .callout-tip, .callout-warning, .callout-remember {
+  border-radius: var(--radius); padding: 22px 26px; margin: var(--space-block) 0;
+}
+.analogy      { background: var(--amber-light);  border-left: 3.5px solid var(--amber); }
+.callout-tip  { background: var(--amber-light);  border-left: 3.5px solid var(--amber); }
+.callout-warning { background: var(--coral-light); border-left: 3.5px solid var(--coral); }
+.callout-remember { background: var(--purple-light); border-left: 3.5px solid var(--purple); }
+.callout-def {
+  background: var(--blue-light); border-radius: var(--radius-sm);
+  padding: 18px 22px; margin: var(--space-block) 0;
+}
+.box-tag {
+  display: block; font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3);
+  margin-bottom: 8px;
+}
+.analogy .box-tag { color: var(--amber-dark, var(--amber)); }
+[data-theme="dark"] .analogy .box-tag, :root:not([data-theme="light"]) .analogy .box-tag { color: var(--amber); }
+.callout-remember .box-tag { color: var(--purple); }
+.callout-def .box-tag { color: var(--blue); }
+.callout-warning .box-tag { color: var(--coral); }
+.analogy p, .callout-tip p, .callout-def p, .callout-remember p, .callout-warning p { margin-bottom: 0.6em; }
+.analogy p:last-child, .callout-tip p:last-child, .callout-def p:last-child, .callout-remember p:last-child, .callout-warning p:last-child { margin-bottom: 0; }
+
+.takeaway, .worked {
+  background: var(--surface-raised); color: var(--on-raised);
+  border-radius: var(--radius); padding: 26px 28px; margin: var(--space-block) 0;
+}
+.takeaway .box-tag, .worked .box-tag { color: var(--on-raised-dim); }
+.takeaway p, .worked p { color: var(--on-raised-muted); margin-bottom: 0; }
+.takeaway strong, .worked strong { color: var(--on-raised); }
+.worked p { font-family: var(--font-mono); font-size: var(--fs-sm); line-height: 1.75; }
+
+.pullquote {
+  max-width: 640px; margin: var(--space-block) auto;
+  padding-left: 22px; border-left: 3px solid var(--amber);
+  font-family: var(--font-serif); font-size: var(--fs-pull); line-height: 1.45;
+  color: var(--ink2);
+}
+
+.xlink-grid { display: grid; gap: 12px; margin: var(--space-block) 0; }
+.xlink {
+  background: var(--cream2); border-radius: var(--radius-sm);
+  padding: 14px 18px; display: flex; gap: 12px; align-items: baseline;
+  font-size: var(--fs-sm);
+}
+.xlink b { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.05em; color: var(--ink3); white-space: nowrap; }
+.xlink span { color: var(--ink2); }
+a.xlink { text-decoration: none; }
+a.xlink:hover { box-shadow: var(--shadow); }
+
+.diagram { margin: var(--space-block) 0; text-align: center; }
+.diagram svg { max-width: 100%; height: auto; }
+.diagram-caption { font-size: var(--fs-xs); color: var(--ink3); margin-top: 0.6rem; font-family: var(--font-mono); }
+
+.mcq {
+  background: var(--green-light); border-radius: var(--radius);
+  padding: 22px 24px; margin: var(--space-block) 0;
+}
+.mcq-num {
+  font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--green); margin-bottom: 10px; display: flex; gap: 10px; align-items: center;
+}
+.mcq-tag { background: var(--cream); padding: 2px 8px; border-radius: 4px; color: var(--ink3); }
+.mcq-stem { font-size: var(--fs-body); margin-bottom: 1rem; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 0.4rem; }
+.mcq-opt {
+  font-family: var(--font-sans); font-size: var(--fs-sm); text-align: left;
+  background: var(--cream); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 11px 14px; cursor: pointer; color: var(--ink);
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+.mcq-opt:hover:not(:disabled) { border-color: var(--amber); }
+.mcq-opt:disabled { cursor: default; }
+.mcq-opt.mcq-selected { border-color: var(--amber); }
+.mcq-opt.mcq-correct { background: var(--green-light); border-color: var(--green); font-weight: 600; }
+.mcq-opt.mcq-incorrect { background: var(--coral-light); border-color: var(--coral); text-decoration: line-through; }
+.mcq-submit {
+  font-family: var(--font-sans); font-size: var(--fs-sm); font-weight: 600;
+  background: var(--ink); color: var(--cream); border: none; border-radius: var(--radius-sm);
+  padding: 9px 18px; cursor: pointer; margin-top: 4px;
+}
+.mcq-submit:disabled { opacity: 0.5; cursor: default; }
+.mcq-feedback { font-weight: 600; margin-top: 12px; }
+.mcq-feedback.right { color: var(--green); }
+.mcq-feedback.wrong { color: var(--coral); }
+.mcq-explain { margin-top: 10px; font-size: var(--fs-sm); color: var(--ink2); background: var(--cream); border-radius: var(--radius-sm); padding: 12px 16px; }
+
+.chapter-end {
+  background: var(--surface-raised); color: var(--on-raised);
+  border-radius: var(--radius); padding: 30px clamp(24px, 4vw, 40px);
+  margin: var(--space-section) 0; text-align: center;
+}
+.chapter-end p { color: var(--on-raised-muted); margin-bottom: 1.2rem; }
+.chapter-end .chapter-nav { padding: 0; color: var(--on-raised-dim); }
+.chapter-end .chapter-nav-link { color: var(--on-raised); }
+.chapter-end .chapter-nav-link.disabled { color: var(--on-raised-dim); }
+.chapter-end .chapter-nav-current { color: var(--on-raised-dim); }
+
+footer { text-align: center; padding: 2rem 1rem 3rem; font-size: var(--fs-xs); color: var(--ink3); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#hook">Skip to content</a>
+
+<nav class="nav" aria-label="Chapter navigation">
+  <div class="nav-inner">
+    <span class="nav-brand">CCDV-F &middot; Ch. 10</span>
+    <div class="nav-links">
+      <a class="nav-link" href="#hook">The Scrub Nurse</a>
+      <a class="nav-link" href="#trace">One Call, Traced</a>
+      <a class="nav-link" href="#rule">The Rule</a>
+      <a class="nav-link" href="#case-study">Case Study</a>
+      <a class="nav-link" href="#boundaries">Boundaries</a>
+      <a class="nav-link" href="#exam-cues">Exam Cues</a>
+      <a class="nav-link" href="#self-test">Self-Test</a>
+    </div>
+    <div class="nav-progress">Progress: <span id="depth-pct">0</span>%</div>
+    <button class="nav-btn theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark mode" title="Toggle dark mode">&#127769;</button>
+    <button class="nav-btn font-toggle" id="font-toggle" type="button" aria-label="Change reading font" title="Cycle reading font">Aa</button>
+  </div>
+</nav>
+
+<div class="chapter-nav">
+  <a class="chapter-nav-link" href="Ch09_Paying-once-for-what-does-not-change.html">&#9668; Chapter 9</a>
+  <span class="chapter-nav-current">Chapter 10 of 34</span>
+  <span class="chapter-nav-link disabled" aria-disabled="true">Chapter 11 <em>(coming soon)</em> &#9658;</span>
+</div>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="eyebrow"><span class="icon">&#9877;&#65039;</span> Chapter 10 of 34 &middot; Tool Use Loop</div>
+    <h1>The loop your code owns</h1>
+  </div>
+</header>
+
+<main>
+
+<section id="hook">
+  <h2>The surgeon never touches the tray</h2>
+  <div class="measure">
+    <div class="analogy">
+      <span class="box-tag">Hold this analogy</span>
+      <p>A surgeon says a word, &ldquo;scalpel,&rdquo; and a hand appears holding one. Checking the instrument tray, knowing which blade is sterilized and ready, handing the used one back for cleaning: all of that is the scrub nurse's job, running the whole time, unremarked on, in a different part of the room, while the surgeon only ever names what comes next.</p>
+    </div>
+    <p>A team building its first tool-integrated agent often assumes the surgeon does both jobs, that once Claude &ldquo;calls a tool,&rdquo; Claude has, in some sense, run it. Claude's actual part is narrower: it reads the tools your application registered, decides one fits the current step, and tells your application what to call and with what inputs. Whether that call happens at all, and what comes back from it, is entirely your code's responsibility, start to finish.</p>
+  </div>
+</section>
+
+<section id="trace">
+  <h2>One tool call, followed end to end</h2>
+  <div class="measure">
+    <p>Trace a single request through the whole loop.</p>
+
+    <div class="diagram">
+      <svg viewBox="0 0 640 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="d10-title d10-desc">
+        <title id="d10-title">One tool call traced between Claude and your code</title>
+        <desc id="d10-desc">A loop diagram: Claude sits on the left, your code sits on the right. A curved arrow above, labeled tool_use with name, arguments, and id, runs from Claude to your code. A curved arrow below, labeled tool_result with the same id, runs from your code back to Claude, forming a closed loop.</desc>
+        <defs>
+          <marker id="arr10" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#7a6a55"/></marker>
+          <linearGradient id="g10" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#f0e6d4"/><stop offset="100%" stop-color="#e7ad5c" stop-opacity="0.6"/></linearGradient>
+        </defs>
+
+        <rect x="40" y="115" width="150" height="70" rx="10" fill="url(#g10)"/>
+        <text x="115" y="155" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#3a2000">CLAUDE</text>
+
+        <rect x="450" y="115" width="150" height="70" rx="10" fill="url(#g10)"/>
+        <text x="525" y="155" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#3a2000">YOUR CODE</text>
+
+        <path d="M190,133 Q320,20 450,133" fill="none" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr10)"/>
+        <text x="320" y="42" text-anchor="middle" font-family="ui-monospace, monospace" font-size="11" fill="#7a6a55">tool_use</text>
+        <text x="320" y="59" text-anchor="middle" font-family="ui-monospace, monospace" font-size="11" fill="#7a6a55">(name + args + id)</text>
+
+        <path d="M450,167 Q320,280 190,167" fill="none" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr10)"/>
+        <text x="320" y="250" text-anchor="middle" font-family="ui-monospace, monospace" font-size="11" fill="#7a6a55">tool_result</text>
+        <text x="320" y="267" text-anchor="middle" font-family="ui-monospace, monospace" font-size="11" fill="#7a6a55">(same id)</text>
+      </svg>
+      <div class="diagram-caption">Figure 10.1 — one loop, two owners</div>
+    </div>
+
+    <h3>You define a schema</h3>
+    <p>A tool has a name, a description, and an input schema stated in JSON Schema. This is what Claude reads to decide whether and when the tool fits.</p>
+
+    <h3>You send a message</h3>
+    <p>The request includes the tools you registered alongside the conversation so far. Nothing about sending it differs from a request with no tools at all, except that the tools are now visible to the model as options.</p>
+
+    <h3>Claude returns a tool_use block</h3>
+    <p>If a registered tool fits what the conversation needs next, the response carries a block naming which tool, a unique ID for this specific call, and the input arguments Claude wants passed to it. This is Claude's entire contribution to the loop: a named request, nothing executed.</p>
+
+    <h3>Your code executes the tool</h3>
+    <p>Your application reads the tool name and arguments out of the block, calls the corresponding function, and captures whatever it returns, including any error. The API plays no part in that dispatch; your code carries it out on every call.</p>
+
+    <h3>Your code returns the result</h3>
+    <p>A <code>tool_result</code> block goes back in the next turn, carrying the same ID as the <code>tool_use</code> block it answers and the content your function produced.</p>
+
+    <h3>Claude continues</h3>
+    <p>With the result now visible, Claude produces its next turn, which might be a final answer or another tool call.</p>
+
+    <h3>Two more block types</h3>
+    <p>A text block carries Claude's own prose, and it can appear in the same turn as a <code>tool_use</code> block, a short comment sitting beside the call rather than replacing it. A thinking block carries Claude's internal reasoning and appears only when extended thinking is enabled.</p>
+
+    <div class="callout-def">
+      <span class="box-tag">The pairing invariant</span>
+      <p>The whole conversation is built from these blocks, and one invariant governs all of it: every <code>tool_use</code> block in an assistant turn must be answered by a <code>tool_result</code> block carrying the same ID, in the user turn that immediately follows. Miss the pairing, put the result in the wrong turn, or send the wrong ID, and the request fails validation before Claude sees any of it. No prompt wording changes this outcome. Your code either produces the correct sequence on every single request, or the request fails.</p>
+    </div>
+
+    <p>Reading the <code>tool_use</code> block, dispatching to the right function, and packaging what comes back into a <code>tool_result</code> is the harness's actual job, standing in for the scrub nurse. Naming it that way, rather than leaving it as an unlabelled part of &ldquo;the loop,&rdquo; is what makes the boundary in the next section visible instead of assumed.</p>
+  </div>
+</section>
+
+<section id="rule">
+  <h2>The rule the two roles enforce</h2>
+  <div class="measure">
+    <div class="takeaway">
+      <span class="box-tag">The decision</span>
+      <p>Claude owns exactly one decision inside this loop: which tool fits, and with what arguments. Your code owns everything physical: running the tool, handling its failure, returning its result in the shape the API requires. The boundary between those two ownership claims is precisely the <code>tool_use</code>/<code>tool_result</code> seam: the one place a request can be syntactically perfect and still wrong, a matched ID with the wrong content, a result silently dropped, a turn appended out of order.</p>
+    </div>
+  </div>
+</section>
+
+<section id="case-study">
+  <h2>The turn that looked safe to trim</h2>
+  <div class="measure">
+    <p>A team's early implementation appends only the <code>tool_use</code> block to conversation history when Claude returns a turn containing both a short text comment and a tool call, reasoning that the comment was incidental and only the call matters for continuing the loop. Later turns start behaving oddly: Claude asks about something it appeared to already have addressed, or repeats a caveat it seemingly already stated.</p>
+
+    <p>Claude's response, in that turn, was the full content array: the comment and the call together, as one thing Claude actually said. Discarding the comment while keeping the call deletes part of what happened, then asks Claude to reason as though it hadn't. Every follow-up turn depends on the history being a true record, and the fix is appending the entire content array exactly as returned, every time.</p>
+
+    <div class="callout-warning">
+      <span class="box-tag">Characteristic misuse</span>
+      <p>No part of an assistant turn is safe to discard on the assumption that only the tool call was doing anything.</p>
+    </div>
+  </div>
+</section>
+
+<section id="boundaries">
+  <h2>What this chapter has not decided</h2>
+  <div class="measure">
+    <p>Everything above assumes a tool worth calling was already registered and that Claude reached for the right one. Which tool that should be, how many to register, and how to word a tool's <code>description</code> field so the right one gets picked on a crowded board of options is a different problem, with its own failure modes, and it is the next chapter's subject entirely.</p>
+
+    <div class="xlink-grid">
+      <div class="xlink"><b>CH. 11</b><span>Which tool that should be, how many to register, and how to word a tool's <code>description</code> field so the right one gets picked on a crowded board of options.</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="exam-cues">
+  <h2>The tell</h2>
+  <div class="measure">
+    <div class="callout-remember">
+      <span class="box-tag">Remember this</span>
+      <p>A stem describing a validation error tied to a missing or mismatched result, a turn appended out of order, or content silently dropped from a turn is asking about this chapter's loop and its pairing invariant. A stem asking why Claude picked one tool over another belongs to the next chapter.</p>
+    </div>
+  </div>
+</section>
+
+<section id="self-test">
+  <h2>Self-test</h2>
+  <div class="measure">
+
+    <div class="mcq" data-qtype="single" data-correct="B">
+      <div class="mcq-num">Question 1 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">An assistant turn contains a <code>tool_use</code> block. The application's code executes the corresponding function and discards the returned error message rather than sending anything back, because the call &ldquo;technically&rdquo; failed and there is nothing to report.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. This is correct: a failed call has nothing useful to return.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. The next request will fail validation, because the <code>tool_use</code> block has no matching <code>tool_result</code> in the following turn.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. Claude will silently retry the same tool call on its own.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. The conversation will continue normally, since Claude does not track individual tool calls.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: B.</strong> Every <code>tool_use</code> block requires a matching <code>tool_result</code> in the immediately following turn regardless of whether the underlying call succeeded; an error result still has to be returned, typically flagged as such, rather than omitted. C and D both assume behavior the loop does not provide; Claude never acts on a call it was never given a result for.</div>
+    </div>
+
+    <div class="mcq" data-qtype="single" data-correct="B">
+      <div class="mcq-num">Question 2 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">An assistant turn contains a text block reading &ldquo;Let me check that for you&rdquo; followed by a <code>tool_use</code> block. The application appends only the <code>tool_use</code> block to history, judging the text as filler.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. This is safe, since only tool calls affect what happens next.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. This corrupts the history Claude relies on for later turns, because the full content array is what Claude actually produced.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. This is required, since the API rejects text blocks paired with tool_use blocks.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. This only matters if extended thinking is enabled.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: B.</strong> The text and the tool call are both part of the same turn Claude produced, and dropping either one leaves later turns reasoning from an incomplete record. C describes a restriction that does not exist; text and tool_use blocks coexist in one turn freely. D applies a rule specific to thinking blocks where it does not belong.</div>
+    </div>
+
+    <div class="mcq" data-qtype="single" data-correct="B">
+      <div class="mcq-num">Question 3 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">A developer says: &ldquo;Claude ran the database query and got the result back, then used it to answer the question.&rdquo; Which correction best states what actually happened?</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. This is accurate; Claude executed the query directly against the database.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Claude requested that a specific tool be called with specific arguments; the application executed the query and returned the result in a tool_result block, which Claude then used.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. The API executed the query on Claude's behalf, transparently to the application.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Claude only appears to request tools; in practice the application always runs a fixed, predetermined sequence regardless of what Claude names.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: B.</strong> Claude's role ends at naming the tool and its arguments; execution and returning the result are entirely the application's responsibility. A and C both assign execution to Claude or the API rather than the application's own code. D denies that Claude's choice of tool and arguments has any effect, which contradicts the loop's actual mechanism.</div>
+    </div>
+
+    <div class="mcq" data-qtype="single" data-correct="B">
+      <div class="mcq-num">Question 4 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">A single assistant turn contains two <code>tool_use</code> blocks with different IDs, because the two calls do not depend on each other's results. Which statement about the following turn is correct?</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. The user turn that follows only needs one <code>tool_result</code> block, since both calls came from the same turn.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. The user turn that follows needs two <code>tool_result</code> blocks, each carrying the ID matching its own <code>tool_use</code> block.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. The two tool calls must be split across two separate follow-up turns.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Only the first <code>tool_use</code> block requires a <code>tool_result</code>; the second is optional.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: B.</strong> Each <code>tool_use</code> block needs its own matching <code>tool_result</code>, identified by ID rather than by position, which is exactly what lets results arrive in any order when a single turn issues multiple independent calls. A halves a requirement that applies per block. C invents a restriction that does not apply to independent, parallel calls issued in one turn. D leaves one call permanently unanswered, which fails validation on the next request.</div>
+    </div>
+
+  </div>
+</section>
+
+</main>
+
+<div class="chapter-end">
+  <p>End of Chapter 10 — Tool Use Loop</p>
+  <div class="chapter-nav">
+    <a class="chapter-nav-link" href="Ch09_Paying-once-for-what-does-not-change.html">&#9668; Chapter 9</a>
+    <span class="chapter-nav-current">Chapter 10 of 34</span>
+    <span class="chapter-nav-link disabled" aria-disabled="true">Chapter 11 <em>(coming soon)</em> &#9658;</span>
+  </div>
+</div>
+
+<footer>CCDV-F Regeneration &middot; Chapter 10 of 34</footer>
+
+<script>
+var pct = document.getElementById('depth-pct');
+function onScroll() {
+  var h = document.documentElement;
+  var max = h.scrollHeight - h.clientHeight;
+  var p = max > 0 ? (h.scrollTop || document.body.scrollTop) / max : 0;
+  var v = Math.round(p * 100);
+  if (pct) pct.textContent = v;
+  var links = document.querySelectorAll('.nav-link[href^="#"]');
+  var cur = '';
+  document.querySelectorAll('section[id]').forEach(function (s) {
+    if (s.getBoundingClientRect().top <= 120) cur = s.id;
+  });
+  links.forEach(function (l) {
+    l.classList.toggle('active', l.getAttribute('href') === '#' + cur);
+  });
+}
+window.addEventListener('scroll', onScroll, { passive: true });
+window.addEventListener('resize', onScroll);
+document.addEventListener('DOMContentLoaded', onScroll);
+
+var toggle = document.getElementById('theme-toggle');
+var root = document.documentElement;
+var stored = localStorage.getItem('ccdv-theme');
+if (stored) root.setAttribute('data-theme', stored);
+function isDark() {
+  var attr = root.getAttribute('data-theme');
+  if (attr === 'dark') return true;
+  if (attr === 'light') return false;
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+function updateToggle() {
+  if (!toggle) return;
+  var dark = isDark();
+  toggle.innerHTML = dark ? '&#9728;&#65039;' : '&#127769;';
+  toggle.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+}
+updateToggle();
+if (toggle) {
+  toggle.addEventListener('click', function () {
+    var next = isDark() ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    localStorage.setItem('ccdv-theme', next);
+    updateToggle();
+  });
+}
+
+var fontToggle = document.getElementById('font-toggle');
+var fontModes = ['default', 'serif', 'legible'];
+var fontLabels = { default: 'Aa', serif: 'Aa (serif)', legible: 'Aa+ (legible)' };
+var storedFont = localStorage.getItem('ccdv-font');
+if (storedFont && storedFont !== 'default') root.setAttribute('data-font', storedFont);
+function updateFontToggle() {
+  if (!fontToggle) return;
+  var current = root.getAttribute('data-font') || 'default';
+  fontToggle.textContent = fontLabels[current];
+  fontToggle.setAttribute('aria-label', 'Reading font: ' + current + '. Click to change.');
+}
+updateFontToggle();
+if (fontToggle) {
+  fontToggle.addEventListener('click', function () {
+    var current = root.getAttribute('data-font') || 'default';
+    var next = fontModes[(fontModes.indexOf(current) + 1) % fontModes.length];
+    if (next === 'default') { root.removeAttribute('data-font'); }
+    else { root.setAttribute('data-font', next); }
+    localStorage.setItem('ccdv-font', next);
+    updateFontToggle();
+  });
+}
+
+document.querySelectorAll('.mcq').forEach(function (mcq) {
+  var qtype = mcq.dataset.qtype;
+  var correct = mcq.dataset.correct.split(',');
+  var options = Array.prototype.slice.call(mcq.querySelectorAll('.mcq-opt'));
+  var feedback = mcq.querySelector('.mcq-feedback');
+  var explain = mcq.querySelector('.mcq-explain');
+  var resolved = false;
+
+  if (qtype === 'single') {
+    options.forEach(function (opt) {
+      opt.addEventListener('click', function () {
+        if (resolved) return;
+        resolved = true;
+        var letter = opt.dataset.letter;
+        options.forEach(function (o) {
+          o.disabled = true;
+          if (correct.indexOf(o.dataset.letter) !== -1) o.classList.add('mcq-correct');
+          else if (o === opt) o.classList.add('mcq-incorrect');
+        });
+        var ok = letter === correct[0];
+        feedback.hidden = false;
+        feedback.textContent = ok ? 'Correct.' : 'Not quite.';
+        feedback.className = 'mcq-feedback ' + (ok ? 'right' : 'wrong');
+        explain.hidden = false;
+      });
+    });
+  } else {
+    var selected = [];
+    options.forEach(function (opt) {
+      opt.setAttribute('aria-pressed', 'false');
+      opt.addEventListener('click', function () {
+        if (resolved) return;
+        var letter = opt.dataset.letter;
+        var idx = selected.indexOf(letter);
+        if (idx === -1) { selected.push(letter); opt.setAttribute('aria-pressed', 'true'); opt.classList.add('mcq-selected'); }
+        else { selected.splice(idx, 1); opt.setAttribute('aria-pressed', 'false'); opt.classList.remove('mcq-selected'); }
+      });
+    });
+    var submit = mcq.querySelector('.mcq-submit');
+    if (submit) {
+      submit.addEventListener('click', function () {
+        if (resolved) return;
+        resolved = true;
+        var ok = selected.length === correct.length && selected.every(function (l) { return correct.indexOf(l) !== -1; });
+        options.forEach(function (o) {
+          o.disabled = true;
+          var letter = o.dataset.letter;
+          var was = selected.indexOf(letter) !== -1;
+          var isRight = correct.indexOf(letter) !== -1;
+          if (isRight) o.classList.add('mcq-correct');
+          else if (was) o.classList.add('mcq-incorrect');
+        });
+        submit.disabled = true;
+        feedback.hidden = false;
+        feedback.textContent = ok ? 'Correct — both required options selected.' : 'Not quite — multiple-response items are all-or-nothing on the real exam.';
+        feedback.className = 'mcq-feedback ' + (ok ? 'right' : 'wrong');
+        explain.hidden = false;
+      });
+    }
+  }
+});
+</script>
+</body>
+</html>

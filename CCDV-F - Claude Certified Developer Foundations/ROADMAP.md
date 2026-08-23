@@ -6,8 +6,17 @@
 **Target date:** none. This plan gates on evidence, not calendar.
 **Running alongside:** CCAR-P, kept warm — see "The parallel track".
 **Teaching plan:** `Outputs/regeneration/CCDV-F_Regeneration-Plan_v1.md` — 34 chapters across all 25
-published skills. Part I (chapters 1–5) delivered and gate-verified 2026-08-22. Supersedes the
-29-class syllabus this file pointed to before that date — see the superseded note ahead of Phase 2.
+published skills. Part I (chapters 1–5) delivered and gate-verified 2026-08-22, converted to HTML the
+same day and approved by Ram (`Outputs/regeneration/html/`, committed `718da8f`, pushed). Chapters
+6–10 authored 2026-08-22, gate-verification finished 2026-08-23: **all five confirmed PASS** — 6, 8, 9
+clean; 10 clean after resolving a disguised negation-tricolon recurrence; 7 clean after five rounds
+resolving two analogy-fidelity defects, with one final C14 finding (an unhedged transition sentence,
+substance independently confirmed sound) closed as a Ram-approved documented exception rather than a
+sixth round — see the exception note in `CCDV-F_Prose-Gate_v1.md` §3.3 and
+`Outputs/regeneration/CCDV-F_Resume-Prompt_v2.md` for the full history. **Converted to HTML and
+verified 2026-08-23** (`Outputs/regeneration/html/Ch06..10_*.html`) — awaiting Ram's review before
+committing. Supersedes the 29-class syllabus this file pointed to before that date — see the superseded
+note ahead of Phase 2.
 
 ---
 

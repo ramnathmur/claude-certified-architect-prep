@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 9 — Paying Once for What Does Not Change · CCDV-F</title>
+<meta name="description" content="Claude Certified Developer Foundations, Chapter 9: prompt caching only pays off when a stable prefix is identical, read again soon, and long enough to be worth writing in the first place.">
+<meta name="author" content="Ram">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: light dark;
+
+  --ink:    oklch(0.15 0.01 80);
+  --ink2:   oklch(0.30 0.015 75);
+  --ink3:   oklch(0.53 0.015 75);
+  --cream:  oklch(0.97 0.008 85);
+  --cream2: oklch(0.94 0.012 85);
+  --cream3: oklch(0.91 0.015 80);
+  --border: oklch(0.87 0.012 80);
+
+  --amber:       oklch(0.64 0.14 68);
+  --amber-light: oklch(0.93 0.035 80);
+  --amber-dark:  oklch(0.47 0.11 60);
+  --blue:        oklch(0.43 0.09 245);
+  --blue-light:  oklch(0.93 0.025 240);
+  --coral:       oklch(0.55 0.14 30);
+  --coral-light: oklch(0.94 0.025 35);
+  --purple:      oklch(0.38 0.14 300);
+  --purple-light:oklch(0.93 0.03 300);
+  --green:       oklch(0.50 0.10 150);
+  --green-light: oklch(0.94 0.025 145);
+
+  --surface-raised:  oklch(0.15 0.01 80);
+  --on-raised:       oklch(0.97 0.008 85);
+  --on-raised-muted: oklch(0.97 0.008 85 / 0.74);
+  --on-raised-dim:   oklch(0.97 0.008 85 / 0.6);
+  --on-raised-border:oklch(0.97 0.008 85 / 0.15);
+  --nav-bg:          oklch(0.97 0.008 85 / 0.96);
+
+  --font-serif: Georgia, 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+  --font-sans:  system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono:  ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+  --font-body-active: var(--font-sans);
+
+  --fs-body: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --fs-sm:   clamp(0.8125rem, 0.78rem + 0.15vw, 0.9375rem);
+  --fs-xs:   clamp(0.6875rem, 0.67rem + 0.1vw, 0.75rem);
+  --fs-h1:   clamp(2rem, 1.4rem + 3vw, 3.375rem);
+  --fs-h2:   clamp(1.5rem, 1.2rem + 1.5vw, 2.125rem);
+  --fs-h3:   clamp(1.25rem, 1.1rem + 0.75vw, 1.5rem);
+  --fs-pull: clamp(1.375rem, 1.15rem + 1.1vw, 1.625rem);
+  --lh-body: 1.7;
+  --lh-heading: 1.2;
+  --measure: 68ch;
+
+  --space-section: clamp(3rem, 2.5rem + 2.5vw, 4rem);
+  --space-block:   clamp(1.5rem, 1.25rem + 1.25vw, 2.5rem);
+  --space-inline:  clamp(1.25rem, 1rem + 1.25vw, 2rem);
+  --radius:    12px;
+  --radius-sm: 8px;
+  --shadow:    0 2px 16px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
+  --t-fast: 0.15s;
+  --t-med:  0.25s;
+}
+
+[data-theme="dark"] {
+  --ink:    oklch(0.90 0.008 85);
+  --ink2:   oklch(0.78 0.01 80);
+  --ink3:   oklch(0.58 0.01 75);
+  --cream:  oklch(0.15 0.012 75);
+  --cream2: oklch(0.19 0.012 75);
+  --cream3: oklch(0.23 0.015 75);
+  --border: oklch(0.32 0.01 75);
+  --shadow:    0 2px 16px rgba(0,0,0,0.3);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+  --amber:       oklch(0.72 0.13 68);
+  --amber-light: oklch(0.24 0.04 70);
+  --amber-dark:  oklch(0.78 0.10 65);
+  --blue:        oklch(0.70 0.09 245);
+  --blue-light:  oklch(0.24 0.035 245);
+  --coral:       oklch(0.68 0.13 30);
+  --coral-light: oklch(0.26 0.04 30);
+  --purple:      oklch(0.68 0.12 300);
+  --purple-light:oklch(0.25 0.04 300);
+  --green:       oklch(0.68 0.10 150);
+  --green-light: oklch(0.24 0.035 150);
+  --nav-bg: oklch(0.15 0.012 75 / 0.92);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink:    oklch(0.90 0.008 85);
+    --ink2:   oklch(0.78 0.01 80);
+    --ink3:   oklch(0.58 0.01 75);
+    --cream:  oklch(0.15 0.012 75);
+    --cream2: oklch(0.19 0.012 75);
+    --cream3: oklch(0.23 0.015 75);
+    --border: oklch(0.32 0.01 75);
+    --shadow:    0 2px 16px rgba(0,0,0,0.3);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+    --amber:       oklch(0.72 0.13 68);
+    --amber-light: oklch(0.24 0.04 70);
+    --amber-dark:  oklch(0.78 0.10 65);
+    --blue:        oklch(0.70 0.09 245);
+    --blue-light:  oklch(0.24 0.035 245);
+    --coral:       oklch(0.68 0.13 30);
+    --coral-light: oklch(0.26 0.04 30);
+    --purple:      oklch(0.68 0.12 300);
+    --purple-light:oklch(0.25 0.04 300);
+    --green:       oklch(0.68 0.10 150);
+    --green-light: oklch(0.24 0.035 150);
+    --nav-bg: oklch(0.15 0.012 75 / 0.92);
+  }
+}
+
+[data-font="serif"]  { --font-body-active: var(--font-serif); }
+[data-font="legible"]{ --font-body-active: 'Atkinson Hyperlegible', var(--font-sans); --lh-body: 1.85; letter-spacing: 0.01em; }
+
+* , *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 78px; }
+
+body {
+  margin: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-body-active);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
+
+.skip-link {
+  position: absolute; left: -9999px; top: 0; z-index: 200;
+  background: var(--ink); color: var(--cream);
+  padding: 0.7rem 1.1rem; border-radius: var(--radius-sm);
+}
+.skip-link:focus { left: 0.6rem; top: 0.6rem; }
+
+h1, h2, h3 { font-family: var(--font-serif); line-height: var(--lh-heading); font-weight: 400; color: var(--ink); }
+h2 { font-size: var(--fs-h2); margin: 0 0 1em; }
+h3 { font-size: var(--fs-h3); margin: var(--space-block) 0 0.75em; }
+p { margin: 0 0 1.1em; }
+code { font-family: var(--font-mono); font-size: 0.9em; background: var(--cream3); padding: 0.12em 0.4em; border-radius: 4px; }
+a { color: var(--amber-dark, var(--amber)); }
+[data-theme="dark"] a, :root:not([data-theme="light"]) a { color: var(--amber); }
+
+.nav {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--nav-bg);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-inner {
+  max-width: 1000px; margin: 0 auto;
+  padding: 0.7rem clamp(1rem, 3vw, 2.5rem);
+  display: flex; align-items: center; gap: 1.1rem;
+  flex-wrap: wrap;
+}
+.nav-brand {
+  font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3);
+  white-space: nowrap;
+}
+.nav-links { display: flex; gap: 0.9rem; flex-wrap: wrap; margin-right: auto; }
+.nav-link {
+  font-size: var(--fs-sm); color: var(--ink2); text-decoration: none;
+  padding: 0.2rem 0; border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+.nav-link.active { color: var(--amber-dark, var(--amber)); border-bottom-color: var(--amber); }
+[data-theme="dark"] .nav-link.active, :root:not([data-theme="light"]) .nav-link.active { color: var(--amber); }
+.nav-progress { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink3); white-space: nowrap; }
+.nav-btn {
+  font-family: var(--font-sans); font-size: 1rem; line-height: 1;
+  background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  width: 34px; height: 34px; cursor: pointer; color: var(--ink2);
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: border-color var(--t-fast);
+}
+.nav-btn:hover { border-color: var(--amber); }
+.nav-btn.font-toggle { font-family: var(--font-serif); font-size: 0.85rem; width: auto; padding: 0 0.6rem; }
+
+.chapter-nav {
+  max-width: 1000px; margin: 0 auto;
+  padding: 0.85rem clamp(1rem, 3vw, 2.5rem);
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  font-size: var(--fs-sm); color: var(--ink3);
+}
+.chapter-nav-link { color: var(--ink3); text-decoration: none; }
+.chapter-nav-link.disabled { cursor: default; opacity: 0.55; }
+.chapter-nav-link em { font-style: normal; font-size: var(--fs-xs); }
+.chapter-nav-current { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase; }
+
+.hero {
+  background: var(--cream);
+  padding: clamp(2rem, 4vw, 3.5rem) clamp(1rem, 3vw, 2.5rem) clamp(1.5rem, 3vw, 2.5rem);
+  border-bottom: 1px solid var(--border);
+}
+.hero-inner { max-width: 900px; margin: 0 auto; }
+.eyebrow {
+  display: flex; align-items: center; gap: 0.6rem;
+  font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber-dark, var(--amber));
+  margin-bottom: 0.9rem;
+}
+[data-theme="dark"] .eyebrow, :root:not([data-theme="light"]) .eyebrow { color: var(--amber); }
+.eyebrow .icon { font-size: 1.3rem; letter-spacing: 0; }
+.hero h1 { font-size: var(--fs-h1); margin: 0; max-width: 20ch; }
+
+main { max-width: 900px; margin: 0 auto; padding: 0 clamp(1rem, 3vw, 2.5rem); }
+section { padding: var(--space-section) 0 0; }
+section:last-of-type { padding-bottom: var(--space-section); }
+.measure { max-width: var(--measure); }
+
+.analogy, .callout-tip, .callout-warning, .callout-remember {
+  border-radius: var(--radius); padding: 22px 26px; margin: var(--space-block) 0;
+}
+.analogy      { background: var(--amber-light);  border-left: 3.5px solid var(--amber); }
+.callout-tip  { background: var(--amber-light);  border-left: 3.5px solid var(--amber); }
+.callout-warning { background: var(--coral-light); border-left: 3.5px solid var(--coral); }
+.callout-remember { background: var(--purple-light); border-left: 3.5px solid var(--purple); }
+.callout-def {
+  background: var(--blue-light); border-radius: var(--radius-sm);
+  padding: 18px 22px; margin: var(--space-block) 0;
+}
+.box-tag {
+  display: block; font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3);
+  margin-bottom: 8px;
+}
+.analogy .box-tag { color: var(--amber-dark, var(--amber)); }
+[data-theme="dark"] .analogy .box-tag, :root:not([data-theme="light"]) .analogy .box-tag { color: var(--amber); }
+.callout-remember .box-tag { color: var(--purple); }
+.callout-def .box-tag { color: var(--blue); }
+.callout-warning .box-tag { color: var(--coral); }
+.analogy p, .callout-tip p, .callout-def p, .callout-remember p, .callout-warning p { margin-bottom: 0.6em; }
+.analogy p:last-child, .callout-tip p:last-child, .callout-def p:last-child, .callout-remember p:last-child, .callout-warning p:last-child { margin-bottom: 0; }
+
+.takeaway, .worked {
+  background: var(--surface-raised); color: var(--on-raised);
+  border-radius: var(--radius); padding: 26px 28px; margin: var(--space-block) 0;
+}
+.takeaway .box-tag, .worked .box-tag { color: var(--on-raised-dim); }
+.takeaway p, .worked p { color: var(--on-raised-muted); margin-bottom: 0; }
+.takeaway strong, .worked strong { color: var(--on-raised); }
+.worked p { font-family: var(--font-mono); font-size: var(--fs-sm); line-height: 1.75; }
+
+.pullquote {
+  max-width: 640px; margin: var(--space-block) auto;
+  padding-left: 22px; border-left: 3px solid var(--amber);
+  font-family: var(--font-serif); font-size: var(--fs-pull); line-height: 1.45;
+  color: var(--ink2);
+}
+
+.xlink-grid { display: grid; gap: 12px; margin: var(--space-block) 0; }
+.xlink {
+  background: var(--cream2); border-radius: var(--radius-sm);
+  padding: 14px 18px; display: flex; gap: 12px; align-items: baseline;
+  font-size: var(--fs-sm);
+}
+.xlink b { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.05em; color: var(--ink3); white-space: nowrap; }
+.xlink span { color: var(--ink2); }
+a.xlink { text-decoration: none; }
+a.xlink:hover { box-shadow: var(--shadow); }
+
+.diagram { margin: var(--space-block) 0; text-align: center; }
+.diagram svg { max-width: 100%; height: auto; }
+.diagram-caption { font-size: var(--fs-xs); color: var(--ink3); margin-top: 0.6rem; font-family: var(--font-mono); }
+
+.mcq {
+  background: var(--green-light); border-radius: var(--radius);
+  padding: 22px 24px; margin: var(--space-block) 0;
+}
+.mcq-num {
+  font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--green); margin-bottom: 10px; display: flex; gap: 10px; align-items: center;
+}
+.mcq-tag { background: var(--cream); padding: 2px 8px; border-radius: 4px; color: var(--ink3); }
+.mcq-stem { font-size: var(--fs-body); margin-bottom: 1rem; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 0.4rem; }
+.mcq-opt {
+  font-family: var(--font-sans); font-size: var(--fs-sm); text-align: left;
+  background: var(--cream); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 11px 14px; cursor: pointer; color: var(--ink);
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+.mcq-opt:hover:not(:disabled) { border-color: var(--amber); }
+.mcq-opt:disabled { cursor: default; }
+.mcq-opt.mcq-selected { border-color: var(--amber); }
+.mcq-opt.mcq-correct { background: var(--green-light); border-color: var(--green); font-weight: 600; }
+.mcq-opt.mcq-incorrect { background: var(--coral-light); border-color: var(--coral); text-decoration: line-through; }
+.mcq-submit {
+  font-family: var(--font-sans); font-size: var(--fs-sm); font-weight: 600;
+  background: var(--ink); color: var(--cream); border: none; border-radius: var(--radius-sm);
+  padding: 9px 18px; cursor: pointer; margin-top: 4px;
+}
+.mcq-submit:disabled { opacity: 0.5; cursor: default; }
+.mcq-feedback { font-weight: 600; margin-top: 12px; }
+.mcq-feedback.right { color: var(--green); }
+.mcq-feedback.wrong { color: var(--coral); }
+.mcq-explain { margin-top: 10px; font-size: var(--fs-sm); color: var(--ink2); background: var(--cream); border-radius: var(--radius-sm); padding: 12px 16px; }
+
+.chapter-end {
+  background: var(--surface-raised); color: var(--on-raised);
+  border-radius: var(--radius); padding: 30px clamp(24px, 4vw, 40px);
+  margin: var(--space-section) 0; text-align: center;
+}
+.chapter-end p { color: var(--on-raised-muted); margin-bottom: 1.2rem; }
+.chapter-end .chapter-nav { padding: 0; color: var(--on-raised-dim); }
+.chapter-end .chapter-nav-link { color: var(--on-raised); }
+.chapter-end .chapter-nav-link.disabled { color: var(--on-raised-dim); }
+.chapter-end .chapter-nav-current { color: var(--on-raised-dim); }
+
+footer { text-align: center; padding: 2rem 1rem 3rem; font-size: var(--fs-xs); color: var(--ink3); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#hook">Skip to content</a>
+
+<nav class="nav" aria-label="Chapter navigation">
+  <div class="nav-inner">
+    <span class="nav-brand">CCDV-F &middot; Ch. 9</span>
+    <div class="nav-links">
+      <a class="nav-link" href="#hook">Budget Cut</a>
+      <a class="nav-link" href="#theatre">The Standing Set</a>
+      <a class="nav-link" href="#boundary">Placing the Boundary</a>
+      <a class="nav-link" href="#billing">Reading the Bill</a>
+      <a class="nav-link" href="#limits">What It Can't Do</a>
+      <a class="nav-link" href="#exam-cues">Exam Cues</a>
+      <a class="nav-link" href="#self-test">Self-Test</a>
+    </div>
+    <div class="nav-progress">Progress: <span id="depth-pct">0</span>%</div>
+    <button class="nav-btn theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark mode" title="Toggle dark mode">&#127769;</button>
+    <button class="nav-btn font-toggle" id="font-toggle" type="button" aria-label="Change reading font" title="Cycle reading font">Aa</button>
+  </div>
+</nav>
+
+<div class="chapter-nav">
+  <a class="chapter-nav-link" href="Ch08_Keeping-a-long-session-inside-the-budget.html">&#9668; Chapter 8</a>
+  <span class="chapter-nav-current">Chapter 9 of 34</span>
+  <a class="chapter-nav-link" href="Ch10_The-loop-your-code-owns.html">Chapter 10 &#9658;</a>
+</div>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="eyebrow"><span class="icon">&#127917;</span> Chapter 9 of 34 &middot; Prompt Caching</div>
+    <h1>Paying once for what does not change</h1>
+  </div>
+</header>
+
+<main>
+
+<section id="hook">
+  <h2>A budget cut with no matching drop in ticket volume</h2>
+  <div class="measure">
+    <p>Finance caps a support bot's monthly API spend at a fixed figure, effective the following billing cycle, with no corresponding reduction in ticket volume. The engineering team did not ask for the constraint and cannot negotiate the ticket count down. Every request the bot handles carries the same long system prompt and the same set of tool definitions, unchanged from the message before it and the message before that. Only the customer's own question is different, turn to turn.</p>
+    <p>That repetition is the whole opportunity. Most of what the model reads on every single call is identical to what it read on the last one, and paying full price to reprocess it every time is spending the budget on work already done.</p>
+  </div>
+</section>
+
+<section id="theatre">
+  <h2>A set left standing between performances</h2>
+  <div class="measure">
+    <div class="analogy">
+      <span class="box-tag">Hold this analogy</span>
+      <p>A theatre running the same production for a month does not strike the set and rebuild it before every show. The backdrop, the furniture, and the fixed pieces of the stage stay exactly where they were left, night after night, and only the specific beats of that night's blocking get attention before the curtain rises. Leaving the set standing only pays off because the same production runs again soon, and only because the set stays genuinely untouched. Move one flat between shows, and the crew spends the night rebuilding it.</p>
+    </div>
+    <p>Prompt caching is that arrangement applied to a request. The model does real work turning your prompt into the internal form it reasons over, and on an ordinary request that work is thrown away once the response is sent. Caching keeps it instead: the first request writes the processing done on a stretch of the prompt to a cache, and a later request that sends the identical content up to the same point reads that work back rather than redoing it. Whether this is worth doing at all rests on three properties, and all three have to hold.</p>
+
+    <div class="diagram">
+      <svg viewBox="0 0 640 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="d9-title d9-desc">
+        <title id="d9-title">The three conditions a cache must clear</title>
+        <desc id="d9-desc">Three boxes, IDENTICAL, READ AGAIN SOON, and LONG ENOUGH TO MATTER, each with an arrow pointing down into a single box labeled CACHE PAYS OFF, annotated all three, every time, to show a strict AND rather than an OR.</desc>
+        <defs>
+          <marker id="arr9" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#7a6a55"/></marker>
+          <linearGradient id="g9" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#f0e6d4"/><stop offset="100%" stop-color="#e7ad5c" stop-opacity="0.6"/></linearGradient>
+        </defs>
+
+        <rect x="30" y="25" width="180" height="55" rx="10" fill="none" stroke="#7a6a55" stroke-width="1.5"/>
+        <text x="120" y="57" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12.5" font-weight="700">IDENTICAL</text>
+
+        <rect x="230" y="25" width="180" height="55" rx="10" fill="none" stroke="#7a6a55" stroke-width="1.5"/>
+        <text x="320" y="57" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12.5" font-weight="700">READ AGAIN SOON</text>
+
+        <rect x="430" y="25" width="180" height="55" rx="10" fill="none" stroke="#7a6a55" stroke-width="1.5"/>
+        <text x="520" y="48" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12.5" font-weight="700">LONG ENOUGH TO</text>
+        <text x="520" y="64" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12.5" font-weight="700">MATTER</text>
+
+        <rect x="190" y="195" width="260" height="70" rx="10" fill="url(#g9)"/>
+        <text x="320" y="225" text-anchor="middle" font-family="system-ui, sans-serif" font-size="15" font-weight="700" fill="#3a2000">CACHE PAYS OFF</text>
+        <text x="320" y="248" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-style="italic" fill="#3a2000">all three, every time</text>
+
+        <line x1="120" y1="80" x2="280" y2="194" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr9)"/>
+        <line x1="320" y1="80" x2="320" y2="194" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr9)"/>
+        <line x1="520" y1="80" x2="360" y2="194" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr9)"/>
+      </svg>
+      <div class="diagram-caption">Figure 9.1 — three conditions, none optional</div>
+    </div>
+
+    <h3>The set has to be identical</h3>
+    <p>A cache is matched on an exact prefix. Anything different before the point marked as the boundary, even a single added word or a reordered sentence, means the whole prefix is treated as a new set: rebuilt from nothing, cached work included. This is why the technique fits a system prompt and a tool schema, which do not change turn to turn, and fails against anything meant to reflect the current moment, because content that changes every request never matches a previous one closely enough to read from cache.</p>
+
+    <h3>The show has to run again, and soon</h3>
+    <p>A cache write costs more than an ordinary request: a premium of roughly a quarter more for a five-minute hold, doubled for an hour-long one. It only earns that premium back if the same prefix is read again before the hold expires. A cached prefix reused several times a minute is a set reused every night. A prefix sent once and never again is a set built for a single, unrepeated performance, at a cost no read ever recovers.</p>
+
+    <h3>The set has to be worth building at all</h3>
+    <p>A cached prefix below a minimum length clears no threshold worth the write's premium. A short, stable prompt repeated often still earns little back, because there was little processing cost to save in the first place.</p>
+  </div>
+</section>
+
+<section id="boundary">
+  <h2>Where the boundary actually goes is a deliberate decision</h2>
+  <div class="measure">
+    <div class="callout-def">
+      <span class="box-tag">The mechanism</span>
+      <p>The boundary between the standing set and the night's specific performance is placed deliberately, before the first request goes out, by marking the last piece of content meant to be cached. The mechanism is a <code>cache_control</code> marker on that block, applied automatically as the conversation grows or set explicitly at a chosen point. Everything up to and including that mark is the set. Everything after it is the night's own performance, reprocessed every time because it is expected to be different every time.</p>
+    </div>
+    <p>Placing that boundary carries real consequences on both sides of it. Put the mark too early, ahead of content that actually varies, and the read never happens: the supposedly cached prefix keeps changing, so every request rewrites instead of reusing. Put it too late, past content that is genuinely stable, and stable material sits on the wrong side of the boundary, reprocessed at full price for no reason. This placement decision is what people mean by cache check-pointing: a choice made about a specific request shape, revisited whenever that shape changes.</p>
+    <div class="callout-warning">
+      <span class="box-tag">Characteristic misuse</span>
+      <p>Invalidation is what happens when the placement stops matching reality. A system prompt cached with yesterday's date embedded in it invalidates on every request the moment the date changes: a volatile detail was built into what was supposed to be fixed scenery. The fix is to move the date below the mark, into the part of the request that was always going to be rebuilt every time.</p>
+    </div>
+  </div>
+</section>
+
+<section id="billing">
+  <h2>Reading the bill after the show</h2>
+  <div class="measure">
+    <p>A response carries a usage figure alongside its content, and reading it is how a caching decision gets checked rather than assumed. The figure separates input tokens from output tokens, and within input tokens, separates what was written to cache, what was read from cache, and what was processed at the ordinary rate. A request that shows a large cache-read figure against a small ordinary-rate figure is a set genuinely being reused. A request that shows the same size cache write on every single call, with no corresponding reads, is a set being rebuilt every night at a premium, never reused. The placement has failed one of the three properties above, most often the &ldquo;identical&rdquo; one.</p>
+    <div class="callout-tip">
+      <span class="box-tag">Practical detail</span>
+      <p>That per-request figure is what cost modelling turns into a number a business recognizes. A cache read costs a small fraction of an ordinary input token; a cache write costs more than one. Multiplying each category by its own rate and summing across a day's or a month's traffic is the arithmetic that turns a technical decision about where a boundary sits into a monthly bill finance can compare against a budget. Checking that arithmetic before a request goes out, rather than after the invoice arrives, is available through a dedicated endpoint that returns a token count for a request body without running inference at all: the same measurement, taken in advance instead of read off a bill already spent.</p>
+    </div>
+  </div>
+</section>
+
+<section id="limits">
+  <h2>What caching cannot do</h2>
+  <div class="measure">
+    <p>Caching reduces what a stable prefix costs to reprocess. It has no opinion on which model reads that prefix, and it changes nothing about the tradeoffs a model choice carries; that decision belongs to a separate chapter entirely. Caching also cannot make volatile content cheap. The fix for a prompt that reprocesses in full every time is moving the volatile part to where it was always going to be reprocessed anyway, leaving only what is genuinely stable above the mark.</p>
+    <div class="xlink-grid">
+      <a class="xlink" href="Ch03_Two-dials-not-one.html"><b>CH. 3</b><span>Which model reads the cached prefix is a separate dial entirely: caching lowers what reprocessing costs, and has no opinion on which model is doing the reprocessing.</span></a>
+    </div>
+  </div>
+</section>
+
+<section id="exam-cues">
+  <h2>The tell</h2>
+  <div class="measure">
+    <div class="callout-remember">
+      <span class="box-tag">Remember this</span>
+      <p>A stem describing a system prompt, a tool schema, or reference material sent unchanged across many requests, with a cost or latency concern attached, is asking about a cache boundary and where it should sit. A stem where a cache stopped paying off with no code change is asking which of the three properties broke. A stem asking how to check spend before a request goes out is asking about token counting.</p>
+    </div>
+  </div>
+</section>
+
+<section id="self-test">
+  <h2>Self-test</h2>
+  <div class="measure">
+
+    <div class="mcq" data-qtype="single" data-correct="C">
+      <div class="mcq-num">Question 1 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">A team caches a long system prompt used on every request. Reviewing usage data, they find every request shows a full cache write and no cache reads at all, for weeks.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. The prefix is too short to clear the caching threshold.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. The cache's hold duration has expired between requests.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. Something in the cached prefix changes on every request, so the exact-prefix match never succeeds.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. The account needs a longer cache lifetime enabled.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: C.</strong> A write with never a matching read, sustained over weeks rather than an occasional gap, points at the prefix failing to match itself from one request to the next: some volatile detail sits above the boundary. A and D would still show occasional reads under normal traffic. B would show intermittent misses tied to request timing, differing from the sustained, total absence of reads described here.</div>
+    </div>
+
+    <div class="mcq" data-qtype="single" data-correct="B">
+      <div class="mcq-num">Question 2 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">A request body includes a system prompt with today's date embedded in it, followed by a cache boundary, followed by the user's message. The team wants to fix a caching setup that never produces a cache hit.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. Increase the cache's hold duration to a longer window.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Move the date below the cache boundary, into the part processed fresh on every request.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. Add a second cache boundary earlier in the system prompt.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Switch to a smaller model so the prefix is cheaper to reprocess.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: B.</strong> A date that changes daily sitting above the boundary breaks the exact-match requirement every day; moving it below the boundary leaves only genuinely stable content marked for caching. A longer hold does not help a prefix that changes daily regardless of hold length. C adds a boundary without removing the volatile content. D changes the per-token rate; it leaves the exact-match failure untouched.</div>
+    </div>
+
+    <div class="mcq" data-qtype="single" data-correct="B">
+      <div class="mcq-num">Question 3 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">A workload sends the same long reference document as part of its prompt, but only once, as a one-off request with no follow-up calls expected.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. Mark a cache boundary after the reference document, since it is long and stable.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Do not cache; a prefix sent once with no expected repeat never earns back the write's premium.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. Cache the user's own message instead, since it is the shortest part of the request.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Split the reference document into two shorter cache boundaries.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: B.</strong> Caching only pays off when the same prefix is read again before its hold expires; a single, non-repeating request pays the write premium with no read ever following it. A assumes stability alone justifies caching, but recurrence is the second required property and it is absent here. C and D leave the same absence of repetition unaddressed.</div>
+    </div>
+
+    <div class="mcq" data-qtype="single" data-correct="B">
+      <div class="mcq-num">Question 4 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">A team wants to verify, before sending a batch of requests, whether a prompt's size is likely to approach the model's context window.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. Send the request and read the usage block in the response afterward.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Use the token-counting endpoint to get a token count for the request body without running inference.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. Estimate token count from the character length of the prompt.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Reduce the effort level, which lowers how many tokens a request consumes.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: B.</strong> A dedicated counting endpoint returns the token count for a request body directly, before any generation happens, which is the only option here that checks size in advance rather than after the fact or by rough estimate. A only tells you after the call already ran. C is not a reliable substitute for an actual count. D affects generation; it leaves the size of the incoming request itself unchanged.</div>
+    </div>
+
+  </div>
+</section>
+
+</main>
+
+<div class="chapter-end">
+  <p>End of Chapter 9 — Prompt Caching</p>
+  <div class="chapter-nav">
+    <a class="chapter-nav-link" href="Ch08_Keeping-a-long-session-inside-the-budget.html">&#9668; Chapter 8</a>
+    <span class="chapter-nav-current">Chapter 9 of 34</span>
+    <a class="chapter-nav-link" href="Ch10_The-loop-your-code-owns.html">Chapter 10 &#9658;</a>
+  </div>
+</div>
+
+<footer>CCDV-F Regeneration &middot; Chapter 9 of 34</footer>
+
+<script>
+var pct = document.getElementById('depth-pct');
+function onScroll() {
+  var h = document.documentElement;
+  var max = h.scrollHeight - h.clientHeight;
+  var p = max > 0 ? (h.scrollTop || document.body.scrollTop) / max : 0;
+  var v = Math.round(p * 100);
+  if (pct) pct.textContent = v;
+  var links = document.querySelectorAll('.nav-link[href^="#"]');
+  var cur = '';
+  document.querySelectorAll('section[id]').forEach(function (s) {
+    if (s.getBoundingClientRect().top <= 120) cur = s.id;
+  });
+  links.forEach(function (l) {
+    l.classList.toggle('active', l.getAttribute('href') === '#' + cur);
+  });
+}
+window.addEventListener('scroll', onScroll, { passive: true });
+window.addEventListener('resize', onScroll);
+document.addEventListener('DOMContentLoaded', onScroll);
+
+var toggle = document.getElementById('theme-toggle');
+var root = document.documentElement;
+var stored = localStorage.getItem('ccdv-theme');
+if (stored) root.setAttribute('data-theme', stored);
+function isDark() {
+  var attr = root.getAttribute('data-theme');
+  if (attr === 'dark') return true;
+  if (attr === 'light') return false;
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+function updateToggle() {
+  if (!toggle) return;
+  var dark = isDark();
+  toggle.innerHTML = dark ? '&#9728;&#65039;' : '&#127769;';
+  toggle.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+}
+updateToggle();
+if (toggle) {
+  toggle.addEventListener('click', function () {
+    var next = isDark() ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    localStorage.setItem('ccdv-theme', next);
+    updateToggle();
+  });
+}
+
+var fontToggle = document.getElementById('font-toggle');
+var fontModes = ['default', 'serif', 'legible'];
+var fontLabels = { default: 'Aa', serif: 'Aa (serif)', legible: 'Aa+ (legible)' };
+var storedFont = localStorage.getItem('ccdv-font');
+if (storedFont && storedFont !== 'default') root.setAttribute('data-font', storedFont);
+function updateFontToggle() {
+  if (!fontToggle) return;
+  var current = root.getAttribute('data-font') || 'default';
+  fontToggle.textContent = fontLabels[current];
+  fontToggle.setAttribute('aria-label', 'Reading font: ' + current + '. Click to change.');
+}
+updateFontToggle();
+if (fontToggle) {
+  fontToggle.addEventListener('click', function () {
+    var current = root.getAttribute('data-font') || 'default';
+    var next = fontModes[(fontModes.indexOf(current) + 1) % fontModes.length];
+    if (next === 'default') { root.removeAttribute('data-font'); }
+    else { root.setAttribute('data-font', next); }
+    localStorage.setItem('ccdv-font', next);
+    updateFontToggle();
+  });
+}
+
+document.querySelectorAll('.mcq').forEach(function (mcq) {
+  var qtype = mcq.dataset.qtype;
+  var correct = mcq.dataset.correct.split(',');
+  var options = Array.prototype.slice.call(mcq.querySelectorAll('.mcq-opt'));
+  var feedback = mcq.querySelector('.mcq-feedback');
+  var explain = mcq.querySelector('.mcq-explain');
+  var resolved = false;
+
+  if (qtype === 'single') {
+    options.forEach(function (opt) {
+      opt.addEventListener('click', function () {
+        if (resolved) return;
+        resolved = true;
+        var letter = opt.dataset.letter;
+        options.forEach(function (o) {
+          o.disabled = true;
+          if (correct.indexOf(o.dataset.letter) !== -1) o.classList.add('mcq-correct');
+          else if (o === opt) o.classList.add('mcq-incorrect');
+        });
+        var ok = letter === correct[0];
+        feedback.hidden = false;
+        feedback.textContent = ok ? 'Correct.' : 'Not quite.';
+        feedback.className = 'mcq-feedback ' + (ok ? 'right' : 'wrong');
+        explain.hidden = false;
+      });
+    });
+  } else {
+    var selected = [];
+    options.forEach(function (opt) {
+      opt.setAttribute('aria-pressed', 'false');
+      opt.addEventListener('click', function () {
+        if (resolved) return;
+        var letter = opt.dataset.letter;
+        var idx = selected.indexOf(letter);
+        if (idx === -1) { selected.push(letter); opt.setAttribute('aria-pressed', 'true'); opt.classList.add('mcq-selected'); }
+        else { selected.splice(idx, 1); opt.setAttribute('aria-pressed', 'false'); opt.classList.remove('mcq-selected'); }
+      });
+    });
+    var submit = mcq.querySelector('.mcq-submit');
+    if (submit) {
+      submit.addEventListener('click', function () {
+        if (resolved) return;
+        resolved = true;
+        var ok = selected.length === correct.length && selected.every(function (l) { return correct.indexOf(l) !== -1; });
+        options.forEach(function (o) {
+          o.disabled = true;
+          var letter = o.dataset.letter;
+          var was = selected.indexOf(letter) !== -1;
+          var isRight = correct.indexOf(letter) !== -1;
+          if (isRight) o.classList.add('mcq-correct');
+          else if (was) o.classList.add('mcq-incorrect');
+        });
+        submit.disabled = true;
+        feedback.hidden = false;
+        feedback.textContent = ok ? 'Correct — both required options selected.' : 'Not quite — multiple-response items are all-or-nothing on the real exam.';
+        feedback.className = 'mcq-feedback ' + (ok ? 'right' : 'wrong');
+        explain.hidden = false;
+      });
+    }
+  }
+});
+</script>
+</body>
+</html>

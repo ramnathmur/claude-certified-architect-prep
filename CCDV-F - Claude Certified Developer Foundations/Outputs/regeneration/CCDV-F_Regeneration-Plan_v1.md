@@ -1,6 +1,6 @@
 # CCDV-F — Study Material Regeneration Plan
 
-**Created:** 2026-08-22 · **Status:** ✅ Part I (chapters 1–5) complete and gate-verified · **Awaiting Ram's review before Stage 5/6 continues on chapters 6–34**
+**Created:** 2026-08-22 · **Status:** ✅ Part I (chapters 1–5) complete, gate-verified, converted to HTML, and Ram-approved · ✅ Part II (chapters 6–10) gate-verified 2026-08-23 — all five PASS (7 carries one Ram-approved documented C14 exception; see §5 Stage 7 note and the gate document's own exception note) — not yet converted to HTML · **See `CCDV-F_Resume-Prompt_v2.md` for the full round-by-round history**
 **Supersedes:** `Outputs/CCDV-F_Syllabus_v1.md` (29 classes, 14 built).
 
 **Authoritative chapter list and budgets: `CCDV-F_Pedagogy-Design_v2.md` — 34 chapters, 79,500 words.**
@@ -26,6 +26,51 @@ Chapter briefs are built from the contract, never from the chapter one-liners.
 4. **The gate document itself had gaps**, closed mid-run: C14 wasn't in the file at all until this session (added 2026-08-22, formally documented with the specimen finding as rationale), and the verdict rule had no defined outcome for a single failure on 5 of the 14 checks (closed the same day).
 5. **The deepest defect found had nothing to do with prose style.** Chapter 1's worked numerical example was internally impossible — verified by solving the underlying system of equations, which returned a negative, physically-impossible rate. No amount of sentence-level polishing would have caught this; it required doing the chapter's own arithmetic by hand.
 Re-run `budget-check.py` after any budget edit; it verifies attribution consistency and the ±20% rule.
+
+## Part II — chapters 6–10, gate-verified 2026-08-23
+
+Authored 2026-08-22 in the same session as Part I's HTML conversion. Gate verification for chapters 6,
+8, 9 finished the same day — each PASS, no defects recorded. Chapters 7 and 10 needed further rounds
+that ran past that session's usage window; verification resumed and finished 2026-08-23.
+
+- **Chapter 10** — confirmed PASS after one further round this session. The one finding: a disguised,
+  single-clause negation-tricolon ("This step is easy to treat as automatic, and it is anything but"),
+  the same underlying rhetorical habit as two earlier rounds' canonical two-sentence hits, recurring in
+  a new sentence after the canonical form had already been suppressed. Fixed; the re-verify round
+  scanned the whole chapter fresh for the same shape in any disguise and found nothing further.
+- **Chapter 7** — confirmed PASS after five rounds this session (on top of an unspecified number of
+  rounds in the prior session that first flagged its C14 history). Every round found a genuinely new,
+  distinct issue — never a repeat of an already-fixed defect:
+  1. A C14 contradiction in the opening passport analogy — one rung implied "rejected instantly," the
+     other left implicitly "caught after submission," contradicting the chapter's own stated thesis
+     that both carry equally real, equally immediate guarantees. Fixed.
+  2. A C5 restatement (two sentences making the same point, the second adding nothing). Fixed.
+  3. A C13 fact-density gap in "What this chapter leaves for later" — pure scope-deferral prose, no
+     concrete anchor. Fixed by naming the `description` field.
+  4. A C13 fact-density gap in "The tell" — same shape, a different section. Fixed by naming
+     `strict: true` and `stop_reason`.
+  5. A second C14 defect: "Anthropic states the same limit about structured outputs specifically"
+     claimed an exact mapping with no companion sentence stating what the analogy does not carry.
+     Fixed by adding one.
+  6. A third C14 finding, on the sentence introducing the whole rungs analogy ("Claude's output
+     guarantees run along the same line") — an unhedged transition sentence tripping the same literal
+     clause, despite the reviewer's own fidelity table confirming zero contradicted rows across both of
+     the chapter's extended analogies. **Closed as a Ram-approved documented exception 2026-08-23
+     rather than a sixth round** — see the exception note added to `CCDV-F_Prose-Gate_v1.md` §3.3,
+     directly under C14's definition.
+
+**Converted to HTML 2026-08-23**, same session, one agent per chapter building against a fully
+pre-specified plan (section structure, box-type mapping, and a custom SVG diagram designed for each
+chapter before dispatch, rather than left to each agent's own judgment) so the five stayed consistent.
+Verified afterward: all five files' `<style>`/`<script>` blocks are byte-identical to the proven
+Part I template, the full Ch05→Ch10 prev/next chain resolves with no orphaned links (Ch10's own next
+link correctly shows the disabled "coming soon" state, matching how Ch05 behaved before Ch06 existed),
+content and diagrams match spec, and the self-test JS was confirmed firing correctly end-to-end.
+Three small issues found in the build agents' own self-checks were fixed directly: a wrong emoji
+codepoint on Ch08's eyebrow icon, a cross-reference on Ch09 left as plain text instead of a real link
+to the already-existing Ch03, and Ch05's own "chapter 6 coming soon" placeholder (now a real link).
+**Awaiting Ram's review before committing** — none of chapters 6–10 (markdown or HTML) are committed
+to git yet, matching how Part I was handled (build → verify → commit only on explicit request).
 
 > **The acceptance test, and the only bar that matters.** A student is dropped in cold. He studies
 > this material and **nothing else**. Then he sits CCDV-F: 53 items, 120 minutes, closed book,

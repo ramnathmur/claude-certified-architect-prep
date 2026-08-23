@@ -326,6 +326,20 @@ Run the `my-voice.md` master list. **FAIL on any hit** other than a literal tech
 
 **C14 — Analogy fidelity.** *Added 2026-08-22, after the specimen chapter in `CCDV-F_Specimen-Gated_v1.md` passed every check above while its own analogy inverted on its own stated discriminator — a subscription owned externally, mapped onto an MCP server the reader owns, under a discriminator the chapter itself named as "who owns the capability when it changes."* For each extended analogy in the chapter, build a two-column table: every analogue named, and the referent it is mapped onto. Then, for each row, search the chapter for a sentence that assigns the referent a property contradicting the analogue's stated property. **FAIL on any contradicted row.** Separately, **FAIL on any sentence claiming the mapping is exact, complete, or one-to-one** ("maps exactly", "the same X", "identical") **unless the chapter also states, in one sentence, what the analogy does not carry.** Zero tolerance — same tier as C3/C6/C11.
 
+**Ram-approved exception, 2026-08-23.** The unhedged-exact-mapping clause above does not require a
+hedge sentence on an analogy's own *introductory* transition ("X runs along the same line as Y", "the
+same pattern applies here") once that analogy's own fidelity table has been built and confirms zero
+contradicted rows. The clause exists to stop an analogy from claiming precision it doesn't have; once
+fidelity is independently verified, forcing a carve-out sentence onto the sentence that merely
+announces the analogy is redundant rather than protective. This does **not** relax the clause for a
+claim about one specific transferred property — a row still needs either a true, uncontradicted mapping
+or a stated carve-out — only for the sentence that opens the comparison. Precedent:
+`Ch07_When-asking-nicely-stops-working.md`, "Claude's output guarantees run along the same line"
+(opening the "Three rungs" section), flagged on gate round 5 of that chapter despite that same round's
+own two fidelity tables — covering every extended analogy in the chapter — finding zero contradicted
+rows in either. Closed by Ram rather than running a sixth round on a passage three consecutive rounds
+had already confirmed substantively sound.
+
 **Verdict rule.**
 - Any FAIL on **C3, C6, C11, or C14** → chapter FAILS outright. These are zero-tolerance; a single instance of any one is sufficient.
 - Two or more FAILs across the remaining ten checks (C1, C2, C4, C5, C7, C8, C9, C10, C12, C13) → chapter FAILS.

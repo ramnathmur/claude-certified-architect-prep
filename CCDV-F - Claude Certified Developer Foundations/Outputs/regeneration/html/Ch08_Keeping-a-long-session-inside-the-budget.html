@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 8 — Keeping a Long Session Inside the Budget · CCDV-F</title>
+<meta name="description" content="Claude Certified Developer Foundations, Chapter 8: a session can fail by running out of room, or by quietly drifting away from its own task while comfortably under budget — and the fix for each is different.">
+<meta name="author" content="Ram">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: light dark;
+
+  --ink:    oklch(0.15 0.01 80);
+  --ink2:   oklch(0.30 0.015 75);
+  --ink3:   oklch(0.53 0.015 75);
+  --cream:  oklch(0.97 0.008 85);
+  --cream2: oklch(0.94 0.012 85);
+  --cream3: oklch(0.91 0.015 80);
+  --border: oklch(0.87 0.012 80);
+
+  --amber:       oklch(0.64 0.14 68);
+  --amber-light: oklch(0.93 0.035 80);
+  --amber-dark:  oklch(0.47 0.11 60);
+  --blue:        oklch(0.43 0.09 245);
+  --blue-light:  oklch(0.93 0.025 240);
+  --coral:       oklch(0.55 0.14 30);
+  --coral-light: oklch(0.94 0.025 35);
+  --purple:      oklch(0.38 0.14 300);
+  --purple-light:oklch(0.93 0.03 300);
+  --green:       oklch(0.50 0.10 150);
+  --green-light: oklch(0.94 0.025 145);
+
+  --surface-raised:  oklch(0.15 0.01 80);
+  --on-raised:       oklch(0.97 0.008 85);
+  --on-raised-muted: oklch(0.97 0.008 85 / 0.74);
+  --on-raised-dim:   oklch(0.97 0.008 85 / 0.6);
+  --on-raised-border:oklch(0.97 0.008 85 / 0.15);
+  --nav-bg:          oklch(0.97 0.008 85 / 0.96);
+
+  --font-serif: Georgia, 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+  --font-sans:  system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono:  ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+  --font-body-active: var(--font-sans);
+
+  --fs-body: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --fs-sm:   clamp(0.8125rem, 0.78rem + 0.15vw, 0.9375rem);
+  --fs-xs:   clamp(0.6875rem, 0.67rem + 0.1vw, 0.75rem);
+  --fs-h1:   clamp(2rem, 1.4rem + 3vw, 3.375rem);
+  --fs-h2:   clamp(1.5rem, 1.2rem + 1.5vw, 2.125rem);
+  --fs-h3:   clamp(1.25rem, 1.1rem + 0.75vw, 1.5rem);
+  --fs-pull: clamp(1.375rem, 1.15rem + 1.1vw, 1.625rem);
+  --lh-body: 1.7;
+  --lh-heading: 1.2;
+  --measure: 68ch;
+
+  --space-section: clamp(3rem, 2.5rem + 2.5vw, 4rem);
+  --space-block:   clamp(1.5rem, 1.25rem + 1.25vw, 2.5rem);
+  --space-inline:  clamp(1.25rem, 1rem + 1.25vw, 2rem);
+  --radius:    12px;
+  --radius-sm: 8px;
+  --shadow:    0 2px 16px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
+  --t-fast: 0.15s;
+  --t-med:  0.25s;
+}
+
+[data-theme="dark"] {
+  --ink:    oklch(0.90 0.008 85);
+  --ink2:   oklch(0.78 0.01 80);
+  --ink3:   oklch(0.58 0.01 75);
+  --cream:  oklch(0.15 0.012 75);
+  --cream2: oklch(0.19 0.012 75);
+  --cream3: oklch(0.23 0.015 75);
+  --border: oklch(0.32 0.01 75);
+  --shadow:    0 2px 16px rgba(0,0,0,0.3);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+  --amber:       oklch(0.72 0.13 68);
+  --amber-light: oklch(0.24 0.04 70);
+  --amber-dark:  oklch(0.78 0.10 65);
+  --blue:        oklch(0.70 0.09 245);
+  --blue-light:  oklch(0.24 0.035 245);
+  --coral:       oklch(0.68 0.13 30);
+  --coral-light: oklch(0.26 0.04 30);
+  --purple:      oklch(0.68 0.12 300);
+  --purple-light:oklch(0.25 0.04 300);
+  --green:       oklch(0.68 0.10 150);
+  --green-light: oklch(0.24 0.035 150);
+  --nav-bg: oklch(0.15 0.012 75 / 0.92);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink:    oklch(0.90 0.008 85);
+    --ink2:   oklch(0.78 0.01 80);
+    --ink3:   oklch(0.58 0.01 75);
+    --cream:  oklch(0.15 0.012 75);
+    --cream2: oklch(0.19 0.012 75);
+    --cream3: oklch(0.23 0.015 75);
+    --border: oklch(0.32 0.01 75);
+    --shadow:    0 2px 16px rgba(0,0,0,0.3);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+    --amber:       oklch(0.72 0.13 68);
+    --amber-light: oklch(0.24 0.04 70);
+    --amber-dark:  oklch(0.78 0.10 65);
+    --blue:        oklch(0.70 0.09 245);
+    --blue-light:  oklch(0.24 0.035 245);
+    --coral:       oklch(0.68 0.13 30);
+    --coral-light: oklch(0.26 0.04 30);
+    --purple:      oklch(0.68 0.12 300);
+    --purple-light:oklch(0.25 0.04 300);
+    --green:       oklch(0.68 0.10 150);
+    --green-light: oklch(0.24 0.035 150);
+    --nav-bg: oklch(0.15 0.012 75 / 0.92);
+  }
+}
+
+[data-font="serif"]  { --font-body-active: var(--font-serif); }
+[data-font="legible"]{ --font-body-active: 'Atkinson Hyperlegible', var(--font-sans); --lh-body: 1.85; letter-spacing: 0.01em; }
+
+* , *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 78px; }
+
+body {
+  margin: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-body-active);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
+
+.skip-link {
+  position: absolute; left: -9999px; top: 0; z-index: 200;
+  background: var(--ink); color: var(--cream);
+  padding: 0.7rem 1.1rem; border-radius: var(--radius-sm);
+}
+.skip-link:focus { left: 0.6rem; top: 0.6rem; }
+
+h1, h2, h3 { font-family: var(--font-serif); line-height: var(--lh-heading); font-weight: 400; color: var(--ink); }
+h2 { font-size: var(--fs-h2); margin: 0 0 1em; }
+h3 { font-size: var(--fs-h3); margin: var(--space-block) 0 0.75em; }
+p { margin: 0 0 1.1em; }
+code { font-family: var(--font-mono); font-size: 0.9em; background: var(--cream3); padding: 0.12em 0.4em; border-radius: 4px; }
+a { color: var(--amber-dark, var(--amber)); }
+[data-theme="dark"] a, :root:not([data-theme="light"]) a { color: var(--amber); }
+
+.nav {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--nav-bg);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-inner {
+  max-width: 1000px; margin: 0 auto;
+  padding: 0.7rem clamp(1rem, 3vw, 2.5rem);
+  display: flex; align-items: center; gap: 1.1rem;
+  flex-wrap: wrap;
+}
+.nav-brand {
+  font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3);
+  white-space: nowrap;
+}
+.nav-links { display: flex; gap: 0.9rem; flex-wrap: wrap; margin-right: auto; }
+.nav-link {
+  font-size: var(--fs-sm); color: var(--ink2); text-decoration: none;
+  padding: 0.2rem 0; border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+.nav-link.active { color: var(--amber-dark, var(--amber)); border-bottom-color: var(--amber); }
+[data-theme="dark"] .nav-link.active, :root:not([data-theme="light"]) .nav-link.active { color: var(--amber); }
+.nav-progress { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink3); white-space: nowrap; }
+.nav-btn {
+  font-family: var(--font-sans); font-size: 1rem; line-height: 1;
+  background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  width: 34px; height: 34px; cursor: pointer; color: var(--ink2);
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: border-color var(--t-fast);
+}
+.nav-btn:hover { border-color: var(--amber); }
+.nav-btn.font-toggle { font-family: var(--font-serif); font-size: 0.85rem; width: auto; padding: 0 0.6rem; }
+
+.chapter-nav {
+  max-width: 1000px; margin: 0 auto;
+  padding: 0.85rem clamp(1rem, 3vw, 2.5rem);
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  font-size: var(--fs-sm); color: var(--ink3);
+}
+.chapter-nav-link { color: var(--ink3); text-decoration: none; }
+.chapter-nav-link.disabled { cursor: default; opacity: 0.55; }
+.chapter-nav-link em { font-style: normal; font-size: var(--fs-xs); }
+.chapter-nav-current { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase; }
+
+.hero {
+  background: var(--cream);
+  padding: clamp(2rem, 4vw, 3.5rem) clamp(1rem, 3vw, 2.5rem) clamp(1.5rem, 3vw, 2.5rem);
+  border-bottom: 1px solid var(--border);
+}
+.hero-inner { max-width: 900px; margin: 0 auto; }
+.eyebrow {
+  display: flex; align-items: center; gap: 0.6rem;
+  font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber-dark, var(--amber));
+  margin-bottom: 0.9rem;
+}
+[data-theme="dark"] .eyebrow, :root:not([data-theme="light"]) .eyebrow { color: var(--amber); }
+.eyebrow .icon { font-size: 1.3rem; letter-spacing: 0; }
+.hero h1 { font-size: var(--fs-h1); margin: 0; max-width: 20ch; }
+
+main { max-width: 900px; margin: 0 auto; padding: 0 clamp(1rem, 3vw, 2.5rem); }
+section { padding: var(--space-section) 0 0; }
+section:last-of-type { padding-bottom: var(--space-section); }
+.measure { max-width: var(--measure); }
+
+.analogy, .callout-tip, .callout-warning, .callout-remember {
+  border-radius: var(--radius); padding: 22px 26px; margin: var(--space-block) 0;
+}
+.analogy      { background: var(--amber-light);  border-left: 3.5px solid var(--amber); }
+.callout-tip  { background: var(--amber-light);  border-left: 3.5px solid var(--amber); }
+.callout-warning { background: var(--coral-light); border-left: 3.5px solid var(--coral); }
+.callout-remember { background: var(--purple-light); border-left: 3.5px solid var(--purple); }
+.callout-def {
+  background: var(--blue-light); border-radius: var(--radius-sm);
+  padding: 18px 22px; margin: var(--space-block) 0;
+}
+.box-tag {
+  display: block; font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3);
+  margin-bottom: 8px;
+}
+.analogy .box-tag { color: var(--amber-dark, var(--amber)); }
+[data-theme="dark"] .analogy .box-tag, :root:not([data-theme="light"]) .analogy .box-tag { color: var(--amber); }
+.callout-remember .box-tag { color: var(--purple); }
+.callout-def .box-tag { color: var(--blue); }
+.callout-warning .box-tag { color: var(--coral); }
+.analogy p, .callout-tip p, .callout-def p, .callout-remember p, .callout-warning p { margin-bottom: 0.6em; }
+.analogy p:last-child, .callout-tip p:last-child, .callout-def p:last-child, .callout-remember p:last-child, .callout-warning p:last-child { margin-bottom: 0; }
+
+.takeaway, .worked {
+  background: var(--surface-raised); color: var(--on-raised);
+  border-radius: var(--radius); padding: 26px 28px; margin: var(--space-block) 0;
+}
+.takeaway .box-tag, .worked .box-tag { color: var(--on-raised-dim); }
+.takeaway p, .worked p { color: var(--on-raised-muted); margin-bottom: 0; }
+.takeaway strong, .worked strong { color: var(--on-raised); }
+.worked p { font-family: var(--font-mono); font-size: var(--fs-sm); line-height: 1.75; }
+
+.pullquote {
+  max-width: 640px; margin: var(--space-block) auto;
+  padding-left: 22px; border-left: 3px solid var(--amber);
+  font-family: var(--font-serif); font-size: var(--fs-pull); line-height: 1.45;
+  color: var(--ink2);
+}
+
+.xlink-grid { display: grid; gap: 12px; margin: var(--space-block) 0; }
+.xlink {
+  background: var(--cream2); border-radius: var(--radius-sm);
+  padding: 14px 18px; display: flex; gap: 12px; align-items: baseline;
+  font-size: var(--fs-sm);
+}
+.xlink b { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.05em; color: var(--ink3); white-space: nowrap; }
+.xlink span { color: var(--ink2); }
+a.xlink { text-decoration: none; }
+a.xlink:hover { box-shadow: var(--shadow); }
+
+.diagram { margin: var(--space-block) 0; text-align: center; }
+.diagram svg { max-width: 100%; height: auto; }
+.diagram-caption { font-size: var(--fs-xs); color: var(--ink3); margin-top: 0.6rem; font-family: var(--font-mono); }
+
+.mcq {
+  background: var(--green-light); border-radius: var(--radius);
+  padding: 22px 24px; margin: var(--space-block) 0;
+}
+.mcq-num {
+  font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--green); margin-bottom: 10px; display: flex; gap: 10px; align-items: center;
+}
+.mcq-tag { background: var(--cream); padding: 2px 8px; border-radius: 4px; color: var(--ink3); }
+.mcq-stem { font-size: var(--fs-body); margin-bottom: 1rem; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 0.4rem; }
+.mcq-opt {
+  font-family: var(--font-sans); font-size: var(--fs-sm); text-align: left;
+  background: var(--cream); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 11px 14px; cursor: pointer; color: var(--ink);
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+.mcq-opt:hover:not(:disabled) { border-color: var(--amber); }
+.mcq-opt:disabled { cursor: default; }
+.mcq-opt.mcq-selected { border-color: var(--amber); }
+.mcq-opt.mcq-correct { background: var(--green-light); border-color: var(--green); font-weight: 600; }
+.mcq-opt.mcq-incorrect { background: var(--coral-light); border-color: var(--coral); text-decoration: line-through; }
+.mcq-submit {
+  font-family: var(--font-sans); font-size: var(--fs-sm); font-weight: 600;
+  background: var(--ink); color: var(--cream); border: none; border-radius: var(--radius-sm);
+  padding: 9px 18px; cursor: pointer; margin-top: 4px;
+}
+.mcq-submit:disabled { opacity: 0.5; cursor: default; }
+.mcq-feedback { font-weight: 600; margin-top: 12px; }
+.mcq-feedback.right { color: var(--green); }
+.mcq-feedback.wrong { color: var(--coral); }
+.mcq-explain { margin-top: 10px; font-size: var(--fs-sm); color: var(--ink2); background: var(--cream); border-radius: var(--radius-sm); padding: 12px 16px; }
+
+.chapter-end {
+  background: var(--surface-raised); color: var(--on-raised);
+  border-radius: var(--radius); padding: 30px clamp(24px, 4vw, 40px);
+  margin: var(--space-section) 0; text-align: center;
+}
+.chapter-end p { color: var(--on-raised-muted); margin-bottom: 1.2rem; }
+.chapter-end .chapter-nav { padding: 0; color: var(--on-raised-dim); }
+.chapter-end .chapter-nav-link { color: var(--on-raised); }
+.chapter-end .chapter-nav-link.disabled { color: var(--on-raised-dim); }
+.chapter-end .chapter-nav-current { color: var(--on-raised-dim); }
+
+footer { text-align: center; padding: 2rem 1rem 3rem; font-size: var(--fs-xs); color: var(--ink3); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#hook">Skip to content</a>
+
+<nav class="nav" aria-label="Chapter navigation">
+  <div class="nav-inner">
+    <span class="nav-brand">CCDV-F &middot; Ch. 8</span>
+    <div class="nav-links">
+      <a class="nav-link" href="#hook">Forty Turns</a>
+      <a class="nav-link" href="#pack">The Trek Pack</a>
+      <a class="nav-link" href="#failures">Bloat vs. Drift</a>
+      <a class="nav-link" href="#decision">The Decision</a>
+      <a class="nav-link" href="#boundaries">Boundaries</a>
+      <a class="nav-link" href="#exam-cues">Exam Cues</a>
+      <a class="nav-link" href="#self-test">Self-Test</a>
+    </div>
+    <div class="nav-progress">Progress: <span id="depth-pct">0</span>%</div>
+    <button class="nav-btn theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark mode" title="Toggle dark mode">&#127769;</button>
+    <button class="nav-btn font-toggle" id="font-toggle" type="button" aria-label="Change reading font" title="Cycle reading font">Aa</button>
+  </div>
+</nav>
+
+<div class="chapter-nav">
+  <a class="chapter-nav-link" href="Ch07_When-asking-nicely-stops-working.html">&#9668; Chapter 7</a>
+  <span class="chapter-nav-current">Chapter 8 of 34</span>
+  <a class="chapter-nav-link" href="Ch09_Paying-once-for-what-does-not-change.html">Chapter 9 &#9658;</a>
+</div>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="eyebrow"><span class="icon">&#127890;</span> Chapter 8 of 34 &middot; Context Management</div>
+    <h1>Keeping a long session inside the budget</h1>
+  </div>
+</header>
+
+<main>
+
+<section id="hook">
+  <h2>Forty clean turns, then thirty strange ones</h2>
+  <div class="measure">
+    <p>A coding agent completes forty turns of a long refactor cleanly. By turn seventy, in the same session, its answers have grown vague, and it re-asks a question the user already answered twenty turns earlier. Every measure chapter 1 established still reads clean here: no rejection before generation, no cutoff mid-generation, the window comfortably under its limit. What the window holds has simply stopped describing the task.</p>
+    <p>Chapter 1 already established that a session's context window is one fixed pot, refilled in full on every request, and that it fails in exactly two ways: rejected before generation, or cut off mid-generation. This chapter covers a third failure, one that shows up while the pot still fits and is already carrying the wrong thing.</p>
+  </div>
+</section>
+
+<section id="pack">
+  <h2>A pack for a long trek</h2>
+  <div class="measure">
+    <div class="analogy">
+      <span class="box-tag">Hold this analogy</span>
+      <p>A hiker planning a multi-day trek does not decide what to carry once, at the trailhead, and stop thinking about it. Weight gets managed the whole way, and different situations call for different moves: doubling back past a wrong turn and dropping the detour that led nowhere, mailing a bulky item home once a condensed note of it is all that is still useful, walking away from the whole pack and starting the next leg with a fresh one, or handing a side-errand to a companion who goes, does it, and reports back only the result.</p>
+    </div>
+    <p>A long agent session is the same kind of ongoing weight problem. Four instruments manage it, and each trades away a specific kind of continuity for the room it buys back.</p>
+
+    <div class="diagram">
+      <svg viewBox="0 0 640 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="d8-title d8-desc">
+        <title id="d8-title">Which instrument fits what's actually wrong</title>
+        <desc id="d8-desc">A branching diagram: one box asks what's actually wrong, with four arrows fanning down to four outcomes. A dead end leads to prune. Something worth keeping in a session too long leads to compact. Nothing left to reuse leads to clear. A self-contained sub-task leads to handoff.</desc>
+        <defs>
+          <marker id="arr8" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#7a6a55"/></marker>
+          <linearGradient id="g8" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#f0e6d4"/><stop offset="100%" stop-color="#e7ad5c" stop-opacity="0.6"/></linearGradient>
+        </defs>
+
+        <rect x="200" y="15" width="240" height="50" rx="10" fill="none" stroke="#7a6a55" stroke-width="1.5"/>
+        <text x="320" y="45" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13">What's actually wrong?</text>
+
+        <rect x="50" y="230" width="120" height="50" rx="8" fill="url(#g8)"/>
+        <text x="110" y="260" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#3a2000">PRUNE</text>
+
+        <rect x="190" y="230" width="120" height="50" rx="8" fill="url(#g8)"/>
+        <text x="250" y="260" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#3a2000">COMPACT</text>
+
+        <rect x="330" y="230" width="120" height="50" rx="8" fill="url(#g8)"/>
+        <text x="390" y="260" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#3a2000">CLEAR</text>
+
+        <rect x="470" y="230" width="120" height="50" rx="8" fill="url(#g8)"/>
+        <text x="530" y="260" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#3a2000">HANDOFF</text>
+
+        <line x1="320" y1="65" x2="110" y2="230" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr8)"/>
+        <line x1="320" y1="65" x2="250" y2="230" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr8)"/>
+        <line x1="320" y1="65" x2="390" y2="230" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr8)"/>
+        <line x1="320" y1="65" x2="530" y2="230" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr8)"/>
+
+        <text x="190" y="156" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#7a6a55">dead end</text>
+
+        <text x="277" y="149" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#7a6a55">worth keeping,</text>
+        <text x="277" y="161" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#7a6a55">too long</text>
+
+        <text x="363" y="149" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#7a6a55">nothing to</text>
+        <text x="363" y="161" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#7a6a55">reuse</text>
+
+        <text x="450" y="149" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#7a6a55">self-contained</text>
+        <text x="450" y="161" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#7a6a55">sub-task</text>
+      </svg>
+      <div class="diagram-caption">Figure 8.1 — four instruments, one question</div>
+    </div>
+
+    <h3>Pruning</h3>
+    <p>Pruning rewinds the session to an earlier point and drops everything after it. It is the right move once a path has stopped being useful: Claude went down a debugging tangent that led nowhere, or explored an approach that was abandoned. The turns after the rewind point are gone entirely, so anything Claude worked out during that stretch has to be worked out again if it turns out to matter later.</p>
+
+    <h3>Compaction</h3>
+    <p>Compaction replaces the accumulated history with a condensed summary that keeps the parts still needed and drops the rest. The summary costs a fraction of the tokens the original turns did, which is the entire point, but only what the summary captures survives. A summarizer told to &ldquo;summarize the conversation so far&rdquo; tends to keep the general shape of what happened and lose the specifics. The same instruction told to preserve every file path touched, every decision made at a branch point, and every error and how it was resolved keeps exactly the state a session actually depends on. What the summarizer was told to treat as worth keeping decides what survives, far more than the act of summarizing itself does.</p>
+
+    <h3>Clearing</h3>
+    <p>Clearing drops everything and starts over with an empty window. Nothing carries forward at all, which is correct the moment the next task has nothing to do with the last one and old context would only bias the new attempt. Clearing keeps nothing, worth keeping or not, so anything that has to survive a clear has to be written somewhere outside the session itself first, a project's own standing instructions file being the standard place.</p>
+
+    <h3>Handing a scoped task to a second window</h3>
+    <p>Handing a scoped task to a second window leaves the first three untouched. Instead of carrying an entire exploration inside the running session, a self-contained piece of it is handed to a separate window that has only the task description and what it needs to do the job, and that window works, then returns just its answer. The parent session carries only the conclusion; the exploration itself never enters it. What is lost is visibility into how that conclusion was reached: the intermediate steps live and die inside the second window, and if the reasoning behind the answer matters later, it is not there to inspect.</p>
+
+    <p>None of the four is free, and none is a default. A short, single-purpose session that never approaches its own limit does not need any of them; deciding what to prune, compact, or delegate carries its own cost, worth spending only where the budget is genuinely under pressure.</p>
+  </div>
+</section>
+
+<section id="failures">
+  <h2>Two failures with the same symptom and different causes</h2>
+  <div class="measure">
+    <p>&ldquo;The session got worse&rdquo; describes two different things happening inside the window, and treating them as one problem picks the wrong fix half the time.</p>
+
+    <h3>Bloat</h3>
+    <p>Bloat is a volume problem. The window is carrying more tokens than it needs to: tool results that were read once and never pruned, an early exploration nobody compacted, documents injected and never removed once their answer was extracted. The fix is as direct as the failure: remove what is no longer needed, on whichever of the first three instruments fits what is being removed.</p>
+
+    <h3>Drift</h3>
+    <p>Drift is a different kind of failure, and it can happen in a window that is nowhere near full. Drift is the window quietly ceasing to describe the actual task: the standing instructions have scrolled far enough back, relative to the newer turns, that they carry less weight in what Claude attends to; a decision made at turn twelve is still technically present at turn seventy but no longer functionally visible against everything piled on top of it. A session can drift while comfortably under its token limit, and a session can be bloated while still faithfully, if wastefully, describing the task.</p>
+
+    <div class="callout-warning">
+      <span class="box-tag">Characteristic misuse</span>
+      <p>Confusing the two means pruning a session that was never too big, when what it actually needed was compaction written to explicitly re-state the standing decisions the later turns have buried.</p>
+    </div>
+  </div>
+</section>
+
+<section id="decision">
+  <h2>Deciding which instrument earns its cost</h2>
+  <div class="measure">
+    <div class="takeaway">
+      <span class="box-tag">The decision</span>
+      <p>The choice follows directly from what is actually wrong. A path that turned out to be a dead end calls for pruning: nothing about it needs preserving, condensed or otherwise. A path that produced state worth keeping, in a session too long to keep carrying in full, calls for compaction, written to protect the specific facts later turns will depend on. A session with nothing left to reuse calls for clearing, with anything durable written somewhere outside the session first. A self-contained sub-task that would otherwise clutter the main line of work with exploration nobody needs to see again calls for a handoff to its own window.</p>
+    </div>
+    <p>A session that has drifted, rather than merely grown, needs compaction aimed specifically at the decisions and facts that have scrolled out of effective reach. A rewind would discard work still needed for the task ahead. A clear would discard everything indiscriminately, including the parts still doing useful work.</p>
+  </div>
+</section>
+
+<section id="boundaries">
+  <h2>Where the pack stops being the right picture</h2>
+  <div class="measure">
+    <p>A hiker's pack holds physical objects that do not interact with each other. A context window holds tokens that the model reads as one continuous stream, so what is carried affects how much room is left and how the model behaves on every turn it is present for: a crowded window can degrade a decision even before it degrades the room available for the next one. This chapter treats the window as a volume to be managed.</p>
+
+    <div class="xlink-grid">
+      <div class="xlink"><b>CH. 3</b><span>Which model is doing the managing, and what that model's own thinking or effort setting costs against the same window.</span></div>
+      <div class="xlink"><b>CH. 18</b><span>What a second window is called, once it has a name and a place in an agent's architecture rather than a mechanism derived from a fixed budget.</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="exam-cues">
+  <h2>The tell</h2>
+  <div class="measure">
+    <div class="callout-remember">
+      <span class="box-tag">Remember this</span>
+      <p>A stem describing a session that degrades gradually over many turns, without a hard rejection or a truncated response, is asking about this chapter's instruments. A stem where the session still technically fits but the model's answers have stopped reflecting an earlier instruction or decision is asking specifically about drift, and the fix it wants is a targeted summary rather than a rewind.</p>
+    </div>
+  </div>
+</section>
+
+<section id="self-test">
+  <h2>Self-test</h2>
+  <div class="measure">
+
+    <div class="mcq" data-qtype="single" data-correct="B">
+      <div class="mcq-num">Question 1 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">An agent session has run for sixty turns. Total token count is well under the model's context window limit. Starting around turn forty, the agent stops following a formatting instruction given at turn three, though the instruction is technically still present in the transcript.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. Prune the session back to turn three to restore the original instruction's visibility.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Compact the session with a summary that explicitly restates the turn-three instruction alongside anything since that depends on it.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. Clear the session and start over, since the instruction has clearly been lost.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Do nothing, since the total token count is still within budget.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: B.</strong> The window fits comfortably, so this is drift rather than bloat. The fix is a summary that puts the buried instruction back within effective reach. A rewind would discard forty turns of otherwise-useful work, a token-count check only detects volume problems and would miss this entirely, and clearing discards work still needed.</div>
+    </div>
+
+    <div class="mcq" data-qtype="single" data-correct="C">
+      <div class="mcq-num">Question 2 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">A session includes an unproductive fifteen-turn debugging detour that led nowhere before the correct fix was found on a fresh approach. The team wants that detour's tokens out of the window without touching anything before or after it.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. Compaction, with a summary written to omit the detour.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Clearing the session entirely.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. Pruning back to the point before the detour began, then continuing from there.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Handing the detour off to a second window after the fact.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: C.</strong> Pruning rewinds to a specific point and drops what came after, which is exactly what removing a bounded, already-concluded detour calls for. A keeps the detour's tokens present until a summarization pass removes them, at greater cost than a direct rewind. B discards useful turns outside the detour as well. D applies to work still ahead; this detour is already finished.</div>
+    </div>
+
+    <div class="mcq" data-qtype="single" data-correct="B">
+      <div class="mcq-num">Question 3 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">A task requires exploring several unrelated code paths to find where a bug originates, a process expected to take many tool calls and produce a lot of intermediate, disposable output. The main session is mid-way through an unrelated feature and should not carry that exploration.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. Prune the main session after the exploration finishes.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Hand the exploration to a second window scoped to just that task, and use only the answer it returns.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. Clear the main session before starting the exploration.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Compact the main session preemptively to make room.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: B.</strong> A self-contained, disposable exploration is exactly what a second, separately scoped window is for; the parent session never carries the intermediate steps at all. A and D both let the exploration's tokens enter the main session first. C discards the unrelated feature work already in progress, which the scenario does not call for.</div>
+    </div>
+
+    <div class="mcq" data-qtype="single" data-correct="B">
+      <div class="mcq-num">Question 4 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">Two sessions are compared. Session one is carrying twice the tokens of session two but is still answering every question correctly and referencing the standing instructions given at the start. Session two is well under its token limit but has stopped applying an instruction given early on.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. Both sessions have the same problem, since both are long-running.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Session one is bloated but not drifted; session two is drifted but not bloated.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. Session one is drifted; session two is bloated.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Neither session has a real problem, since neither has hit its context window limit.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: B.</strong> Volume and functional accuracy are independent. Session one carries more tokens but still faithfully reflects its instructions, which is bloat without drift. Session two carries few tokens but has lost track of an instruction, which is drift without bloat. C reverses the definitions. A and D both collapse a distinction the scenario is built to test.</div>
+    </div>
+
+  </div>
+</section>
+
+</main>
+
+<div class="chapter-end">
+  <p>End of Chapter 8 — Context Management</p>
+  <div class="chapter-nav">
+    <a class="chapter-nav-link" href="Ch07_When-asking-nicely-stops-working.html">&#9668; Chapter 7</a>
+    <span class="chapter-nav-current">Chapter 8 of 34</span>
+    <a class="chapter-nav-link" href="Ch09_Paying-once-for-what-does-not-change.html">Chapter 9 &#9658;</a>
+  </div>
+</div>
+
+<footer>CCDV-F Regeneration &middot; Chapter 8 of 34</footer>
+
+<script>
+var pct = document.getElementById('depth-pct');
+function onScroll() {
+  var h = document.documentElement;
+  var max = h.scrollHeight - h.clientHeight;
+  var p = max > 0 ? (h.scrollTop || document.body.scrollTop) / max : 0;
+  var v = Math.round(p * 100);
+  if (pct) pct.textContent = v;
+  var links = document.querySelectorAll('.nav-link[href^="#"]');
+  var cur = '';
+  document.querySelectorAll('section[id]').forEach(function (s) {
+    if (s.getBoundingClientRect().top <= 120) cur = s.id;
+  });
+  links.forEach(function (l) {
+    l.classList.toggle('active', l.getAttribute('href') === '#' + cur);
+  });
+}
+window.addEventListener('scroll', onScroll, { passive: true });
+window.addEventListener('resize', onScroll);
+document.addEventListener('DOMContentLoaded', onScroll);
+
+var toggle = document.getElementById('theme-toggle');
+var root = document.documentElement;
+var stored = localStorage.getItem('ccdv-theme');
+if (stored) root.setAttribute('data-theme', stored);
+function isDark() {
+  var attr = root.getAttribute('data-theme');
+  if (attr === 'dark') return true;
+  if (attr === 'light') return false;
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+function updateToggle() {
+  if (!toggle) return;
+  var dark = isDark();
+  toggle.innerHTML = dark ? '&#9728;&#65039;' : '&#127769;';
+  toggle.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+}
+updateToggle();
+if (toggle) {
+  toggle.addEventListener('click', function () {
+    var next = isDark() ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    localStorage.setItem('ccdv-theme', next);
+    updateToggle();
+  });
+}
+
+var fontToggle = document.getElementById('font-toggle');
+var fontModes = ['default', 'serif', 'legible'];
+var fontLabels = { default: 'Aa', serif: 'Aa (serif)', legible: 'Aa+ (legible)' };
+var storedFont = localStorage.getItem('ccdv-font');
+if (storedFont && storedFont !== 'default') root.setAttribute('data-font', storedFont);
+function updateFontToggle() {
+  if (!fontToggle) return;
+  var current = root.getAttribute('data-font') || 'default';
+  fontToggle.textContent = fontLabels[current];
+  fontToggle.setAttribute('aria-label', 'Reading font: ' + current + '. Click to change.');
+}
+updateFontToggle();
+if (fontToggle) {
+  fontToggle.addEventListener('click', function () {
+    var current = root.getAttribute('data-font') || 'default';
+    var next = fontModes[(fontModes.indexOf(current) + 1) % fontModes.length];
+    if (next === 'default') { root.removeAttribute('data-font'); }
+    else { root.setAttribute('data-font', next); }
+    localStorage.setItem('ccdv-font', next);
+    updateFontToggle();
+  });
+}
+
+document.querySelectorAll('.mcq').forEach(function (mcq) {
+  var qtype = mcq.dataset.qtype;
+  var correct = mcq.dataset.correct.split(',');
+  var options = Array.prototype.slice.call(mcq.querySelectorAll('.mcq-opt'));
+  var feedback = mcq.querySelector('.mcq-feedback');
+  var explain = mcq.querySelector('.mcq-explain');
+  var resolved = false;
+
+  if (qtype === 'single') {
+    options.forEach(function (opt) {
+      opt.addEventListener('click', function () {
+        if (resolved) return;
+        resolved = true;
+        var letter = opt.dataset.letter;
+        options.forEach(function (o) {
+          o.disabled = true;
+          if (correct.indexOf(o.dataset.letter) !== -1) o.classList.add('mcq-correct');
+          else if (o === opt) o.classList.add('mcq-incorrect');
+        });
+        var ok = letter === correct[0];
+        feedback.hidden = false;
+        feedback.textContent = ok ? 'Correct.' : 'Not quite.';
+        feedback.className = 'mcq-feedback ' + (ok ? 'right' : 'wrong');
+        explain.hidden = false;
+      });
+    });
+  } else {
+    var selected = [];
+    options.forEach(function (opt) {
+      opt.setAttribute('aria-pressed', 'false');
+      opt.addEventListener('click', function () {
+        if (resolved) return;
+        var letter = opt.dataset.letter;
+        var idx = selected.indexOf(letter);
+        if (idx === -1) { selected.push(letter); opt.setAttribute('aria-pressed', 'true'); opt.classList.add('mcq-selected'); }
+        else { selected.splice(idx, 1); opt.setAttribute('aria-pressed', 'false'); opt.classList.remove('mcq-selected'); }
+      });
+    });
+    var submit = mcq.querySelector('.mcq-submit');
+    if (submit) {
+      submit.addEventListener('click', function () {
+        if (resolved) return;
+        resolved = true;
+        var ok = selected.length === correct.length && selected.every(function (l) { return correct.indexOf(l) !== -1; });
+        options.forEach(function (o) {
+          o.disabled = true;
+          var letter = o.dataset.letter;
+          var was = selected.indexOf(letter) !== -1;
+          var isRight = correct.indexOf(letter) !== -1;
+          if (isRight) o.classList.add('mcq-correct');
+          else if (was) o.classList.add('mcq-incorrect');
+        });
+        submit.disabled = true;
+        feedback.hidden = false;
+        feedback.textContent = ok ? 'Correct — both required options selected.' : 'Not quite — multiple-response items are all-or-nothing on the real exam.';
+        feedback.className = 'mcq-feedback ' + (ok ? 'right' : 'wrong');
+        explain.hidden = false;
+      });
+    }
+  }
+});
+</script>
+</body>
+</html>
