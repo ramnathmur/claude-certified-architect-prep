@@ -1,0 +1,533 @@
+{
+  "label": "Structured Data Extraction",
+  "narrative": "You maintain an extraction pipeline for agricultural commodity trade documents — inspection certificates, phytosanitary declarations, weighbridge tickets, fumigation records — arriving as scans and mixed-quality PDFs. Extracted records are validated against JSON schemas and released to customs brokerage and settlement systems. Across this block the pipeline is under pressure to handle more volume with the same review team.",
+  "questions": [
+    {
+      "g": 46,
+      "block": 3,
+      "domain": "D4",
+      "stem": "The schema marks `fumigation_certificate_number` as required and non-nullable, because settlement needs it. Roughly one consignment in six ships without fumigation, and those documents genuinely carry no such number. Those records now hold plausible-looking numbers that match nothing in the fumigation registry. What is the correct schema change?",
+      "options": [
+        "Add a validation rule that rejects any certificate number failing a checksum test.",
+        "Retry extraction on those records with a prompt emphasising accuracy over completeness.",
+        "Keep the field required and route every affected record to a human for confirmation.",
+        "Make the field nullable so the model can return `null` when the document has no number."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "A required, non-nullable field pushes the model to fabricate values to satisfy the schema when the information is absent. Marking fields required only when the information is always available — and nullable otherwise — lets the model return `null` instead of hallucinating.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.5"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "A checksum catches some fabrications and misses any invention that happens to be well-formed. It also leaves the pressure to fabricate fully in place.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.5"
+        },
+        {
+          "option": 1,
+          "text": "No feedback can conjure data the document does not contain. Retrying burns tokens and, under a required field, increases the pressure toward fabrication.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.9"
+        },
+        {
+          "option": 2,
+          "text": "This spends review capacity confirming an absence the schema could express directly, and does nothing about the fabricated values already being produced.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.5"
+        }
+      ]
+    },
+    {
+      "g": 47,
+      "block": 3,
+      "domain": "D5",
+      "stem": "Overall extraction accuracy sits at 97%, and the team proposes auto-processing everything above the confidence threshold from next month. Phytosanitary declarations account for about 4% of volume, arrive in three languages, and nobody has measured their accuracy separately. What should happen before the change?",
+      "options": [
+        "Raise the confidence threshold until the aggregate accuracy figure reaches 99%.",
+        "Measure accuracy by document type and by field, confirming that every segment clears the bar.",
+        "Auto-process the high-confidence stream and watch the aggregate figure for any decline.",
+        "Route all phytosanitary declarations to human review and auto-process the remaining volume."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "An aggregate 97% can hide a 40% failure rate on one rare document type — overall metrics average away segment-level failures. Before reducing human review, validate accuracy by document type and by field, and require every segment to meet the bar independently.",
+        "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Moving the threshold changes how much is auto-processed without revealing how the rare segments behave. A masked 40% failure stays masked at any aggregate figure.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+        },
+        {
+          "option": 2,
+          "text": "A 4% segment failing badly barely moves a 97% aggregate, so the monitor would not fire. This is the masking problem used as the detection mechanism.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+        },
+        {
+          "option": 3,
+          "text": "This guesses which segment is weak instead of measuring. It may divert capacity to a segment that performs well while a different one fails unseen.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+        }
+      ]
+    },
+    {
+      "g": 48,
+      "block": 3,
+      "domain": "D4",
+      "stem": "Weighbridge tickets list individual bag weights and a stated net total. Reconciliation discovers, weeks after release and after settlement has already run, that the two sometimes disagree by several tonnes. What should the extraction produce so that the disagreement surfaces at extraction time instead?",
+      "options": [
+        "Both the stated total and a total re-derived from the line items, with a conflict flag.",
+        "A monthly reconciliation report comparing stated totals against summed line items.",
+        "A prompt instruction to double-check the arithmetic before returning the extracted record.",
+        "A confidence score on the total field, with low-confidence totals routed to review."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "The self-correction pattern is structural: extract the claimed value and an independently derived value, then flag disagreement with a boolean. `stated_total`, `calculated_total` and `conflict_detected` catch arithmetic drift on every record and produce a machine-readable signal at extraction time.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.10"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "A monthly report is the current situation with a shorter delay. Detection still happens after release rather than before it.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.10"
+        },
+        {
+          "option": 2,
+          "text": "\"Be careful with totals\" is a vague instruction with no detection mechanism. Nothing downstream can tell whether the check happened.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.10"
+        },
+        {
+          "option": 3,
+          "text": "Confidence expresses how sure the model is about what it read, not whether the numbers are internally consistent. A confidently misread total scores high.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+        }
+      ]
+    },
+    {
+      "g": 49,
+      "block": 3,
+      "domain": "D5",
+      "selectN": 2,
+      "stem": "High-confidence extractions are now processed without human review, and they account for roughly 80% of volume. The team wants to keep measuring the true error rate of that automated path without re-reviewing everything it emits. Which two properties should the audit sample have? Select two.",
+      "options": [
+        "It is drawn at random from the high-confidence stream, not only from flagged items.",
+        "It is stratified across document types and field categories rather than volume-weighted.",
+        "It is drawn from the lowest-confidence extractions, where errors are most likely to appear.",
+        "It is drawn from the most common document type, which represents most of the throughput.",
+        "It is replaced by a full re-review of every document once each quarter."
+      ],
+      "correct": [
+        0,
+        1
+      ],
+      "whyRight": {
+        "text": "Even high-confidence extractions need regular auditing of a random sample, stratified across document types and field categories rather than taken off the top of the review queue. That is what measures the true error rate of the automated path and detects novel error patterns before they compound.",
+        "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+      },
+      "whyWrong": [
+        {
+          "option": 2,
+          "text": "Reviewing only the lowest-confidence items leaves novel error patterns in the automated stream undetected — which is the stream the team just stopped reviewing.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+        },
+        {
+          "option": 3,
+          "text": "Sampling the most common type under-samples the rare, worst-performing segments, which are precisely the ones an aggregate figure already hides.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+        },
+        {
+          "option": 4,
+          "text": "A quarterly full re-review defeats the automation and does not scale. Calibration exists to make oversight targeted, not periodic and total.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+        }
+      ]
+    },
+    {
+      "g": 50,
+      "block": 3,
+      "domain": "D4",
+      "stem": "Validation fails on `container_seal_number` for 60 consignments, and the loop retries each of them three times before giving up. Investigation shows all 60 moved as break-bulk cargo, which uses no containers and therefore carries no seals at all. What is the right response?",
+      "options": [
+        "Raise the retry limit to ten so the model has more opportunities to locate the field.",
+        "Strengthen the retry feedback message to state precisely which field is missing.",
+        "Make the field nullable, accept the absence as a valid answer, and stop retrying.",
+        "Keep the field required and flag all 60 for manual entry by the operations team."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "Retry-with-feedback fixes only errors the model can correct from the provided context — format, structure, arithmetic. When information is genuinely absent from the source, retries burn tokens for nothing and the pressure to fill a required field invites fabrication. The fix is schema design.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.9"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Absent information stays absent. Ten attempts extract exactly as much as three from a document that never carried a seal number.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.9"
+        },
+        {
+          "option": 1,
+          "text": "No feedback can conjure missing data. The model already knows which field failed; what it lacks is a value that exists.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.9"
+        },
+        {
+          "option": 3,
+          "text": "Manual entry asks a human to supply a number that does not exist either. It converts a schema-design problem into recurring operational cost.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.5"
+        }
+      ]
+    },
+    {
+      "g": 51,
+      "block": 3,
+      "domain": "D5",
+      "stem": "An inspection certificate records moisture content at 12.4%. The fumigation record for the same lot, issued the same day by a different inspector, records 13.1%. Both documents are authentic, neither is obviously superseded, and settlement tolerances turn on this figure. What should the pipeline emit?",
+      "options": [
+        "The mean of the two readings, with a note recording that the sources disagreed.",
+        "The inspection certificate's figure, since moisture content is that document's primary purpose.",
+        "A validation failure that holds the lot until a human resolves the discrepancy.",
+        "Both values with their sources, explicitly annotated as a conflict for downstream reconciliation."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "When sources conflict, complete the analysis carrying both values, annotate the conflict with source attribution, and let the coordinator or a human reconcile. Resolving autonomously abandons a decision that sits above the pipeline's scope.",
+        "cite": "CCA-Prep_Domain-5_v2.md §5.10"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Averaging invents a third figure that appears on neither document, and quietly destroys the evidence that a discrepancy existed.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.10"
+        },
+        {
+          "option": 1,
+          "text": "Applying a heuristic to pick the more likely value is exactly the autonomous resolution the pattern forbids. Both documents are authentic.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.10"
+        },
+        {
+          "option": 2,
+          "text": "Blocking the pipeline before analysis completes is unnecessary. The correct behaviour is to finish, annotate, and pass the conflict onward.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.10"
+        }
+      ]
+    },
+    {
+      "g": 52,
+      "block": 3,
+      "domain": "D4",
+      "stem": "The pipeline validates every extracted record in code after the model returns it, on top of the `tool_use` schema that already constrains the shape. An engineer proposes deleting that validation layer as duplicated effort, noting that the schema already enforces types, required fields and enum membership. Which response is correct?",
+      "options": [
+        "Keep it: no JSON schema can express that a stated net weight equals the sum of its bag weights.",
+        "Delete it — the schema enforces the contract at generation time, so the second pass only adds latency.",
+        "Keep it, but only for fields the schema marks optional, where the model has the most latitude.",
+        "Replace both layers with a stricter schema encoding the cross-field rules as nested constraints."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "Tool use enforces structure at generation time, but code should still validate semantic and business rules no JSON schema can express — a cross-field sum, a date ordering — plus defence in depth for whatever consumes the record downstream. The schema constrains shape; the validator checks meaning.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.8"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "This is the named misconception. Structural enforcement at generation time says nothing about whether the values are right, and removing the layer removes the only check on business rules.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.8"
+        },
+        {
+          "option": 2,
+          "text": "Optionality is unrelated to semantic risk. A required, well-typed tonnage field can still be wrong, and cross-field rules span required fields by definition.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.8"
+        },
+        {
+          "option": 3,
+          "text": "No schema constraint can verify that numbers sum correctly or that one date precedes another. Tightening the schema cannot reach the class of rule the validator exists for.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.7"
+        }
+      ]
+    },
+    {
+      "g": 53,
+      "block": 3,
+      "domain": "D2",
+      "stem": "A `release_to_settlement` tool rejects a consignment because its inspection certificate expired 40 days ago and policy permits 30. The tool returns `\"Operation failed\"`. The agent retries six times over four minutes, then escalates to a human who reads the policy and declines the release. How should the tool respond instead?",
+      "options": [
+        "`isError: true` with `isRetryable: true`, so the agent can retry once the certificate is renewed.",
+        "`retriable: false` plus a plain explanation of the 30-day rule that the agent can relay.",
+        "Success with a `released: false` field, leaving the agent to inspect the outcome itself.",
+        "`isError: true` with a permission category, since the release was not authorised."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "A business-rule violation is not a tool failure — it is a valid answer that the action is disallowed. Returning `retriable: false` tells the agent that re-invoking cannot change the outcome, and a customer-friendly explanation lets it communicate the policy without paraphrasing internal jargon.",
+        "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Marking a policy denial retryable wastes attempts on an outcome that can never change while the certificate remains expired.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+        },
+        {
+          "option": 2,
+          "text": "Returning success with the failure buried in a field masks the outcome. The agent has to infer a denial from data shape rather than being told.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+        },
+        {
+          "option": 3,
+          "text": "Permission errors concern authentication and access rights. The caller was entitled to make this request; the request itself was outside policy.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+        }
+      ]
+    },
+    {
+      "g": 54,
+      "block": 3,
+      "domain": "D5",
+      "selectN": 3,
+      "stem": "A `PostToolUse` hook trims the OCR tool's output to plain text plus a page-confidence score. Since it shipped, context pressure has eased markedly — but the review queue can no longer show reviewers where on a page a disputed value was read from, and dispute handling has slowed. Which three statements are sound? Select three.",
+      "options": [
+        "The bounding-box data reviewers need is being discarded before it ever enters context.",
+        "Trimming should retain fields a downstream consumer requires, not only those the model reads.",
+        "The fix is to widen the hook's field list rather than remove the hook and restore full output.",
+        "Removing the hook is correct, since lost provenance matters more than context pressure.",
+        "Reviewers should re-run OCR on disputed pages to regenerate the coordinates on demand.",
+        "The hook should move to `PreToolUse` so that it can request only the fields required."
+      ],
+      "correct": [
+        0,
+        1,
+        2
+      ],
+      "whyRight": {
+        "text": "Trimming tool output before it accumulates in context is the right pattern, but the field list has to serve every consumer of that output, not just the model's immediate reasoning. Widening the list restores provenance while keeping the context saving the hook was introduced for.",
+        "cite": "CCA-Prep_Domain-5_v2.md §5.5"
+      },
+      "whyWrong": [
+        {
+          "option": 3,
+          "text": "This trades one problem for the other. Restoring 50-plus fields per page reinstates the context bloat, when keeping two more fields solves the review need.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.5"
+        },
+        {
+          "option": 4,
+          "text": "Re-running OCR duplicates work already done and may not reproduce the same read on a poor scan. The coordinates existed and were thrown away.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.5"
+        },
+        {
+          "option": 5,
+          "text": "`PreToolUse` fires before the tool runs and validates or blocks parameters; shaping what a tool returns is `PostToolUse` work, and moving the hook would not recover the discarded fields.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.7"
+        }
+      ]
+    },
+    {
+      "g": 55,
+      "block": 3,
+      "domain": "D4",
+      "stem": "A batch of 400 consignment documents returns 388 successes and 12 failures, all of them oversized multi-page scans that exceeded the context limit. Results arrived in a different order from submission, and the settlement deadline falls tomorrow. What is the correct recovery?",
+      "options": [
+        "Re-submit all 400 documents so that ordering can be matched reliably on the second pass.",
+        "Re-submit the 12 unchanged, since the failures may have been transient capacity issues.",
+        "Identify the 12 by `custom_id`, chunk the oversized scans, and re-submit only those.",
+        "Process the 12 synchronously without modification, bypassing the batch size constraints."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "`custom_id` is the join key that identifies exactly which items failed regardless of result ordering. Selective re-submission covers only the failures, and the cause — documents exceeding the context limit — is fixed by chunking before they are sent again.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Re-submitting everything pays again for 388 successes and may produce duplicate results downstream. Ordering is never guaranteed, which is what `custom_id` exists for.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+        },
+        {
+          "option": 1,
+          "text": "They failed for a stated reason — size. Re-submitting unchanged repeats the same failure at the same cost.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+        },
+        {
+          "option": 3,
+          "text": "The limit exceeded was the context window, not a batch constraint, so a synchronous call fails identically. Switching APIs does not shrink the document.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+        }
+      ]
+    },
+    {
+      "g": 56,
+      "block": 3,
+      "domain": "D5",
+      "stem": "Settlement disputes require showing which document a figure came from. Records currently carry the extracted values plus a list of the source filenames processed in that run, often twenty or more of them. Brokers cannot tell which file produced which field. What is absent from the record?",
+      "options": [
+        "A per-claim mapping tying each extracted value to its source document and location.",
+        "A run-level manifest listing every document processed, with a checksum for each.",
+        "A confidence score per field, so that brokers can judge which values to question.",
+        "Retention of the original scans, so that brokers can search them when a dispute arises."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "Attribution is lost when findings are compressed without preserving claim-to-source mappings. Each extracted value needs its own structured mapping to the source document and location, preserved through the pipeline rather than reconstructed afterwards.",
+        "cite": "CCA-Prep_Domain-5_v2.md §5.11"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "A run-level list is what already exists. A manifest with checksums proves which files were processed, not which one produced a given field.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.11"
+        },
+        {
+          "option": 2,
+          "text": "Confidence indicates how certain a value is, not where it came from. A broker disputing a figure needs the source, not a probability.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+        },
+        {
+          "option": 3,
+          "text": "Keeping the scans lets brokers search manually — the expensive re-derivation the mapping exists to avoid. The link should be preserved, not reconstructed.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.11"
+        }
+      ]
+    },
+    {
+      "g": 57,
+      "block": 3,
+      "domain": "D4",
+      "stem": "The `commodity_grade` field is an enum of the six grades in the current standard. Inspectors on older certificates sometimes wrote regional grade names that map to none of the six, and the model currently picks whichever of the six is closest without comment. Downstream pricing then applies the wrong band. What should the schema do?",
+      "options": [
+        "Widen the enum to include every regional grade name found anywhere in the archive.",
+        "Make the field a free-text string so that any written grade can be captured verbatim.",
+        "Keep the enum and add a validation rule that rejects records whose grade is uncertain.",
+        "Add an `\"unclear\"` member to the enum plus a companion detail field for the raw text."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "When the model cannot confidently pick a category, an honest `\"unclear\"` beats a confident wrong category. The corpus pairs this with a companion detail field, which preserves what the document actually said instead of forcing it into the nearest enum member.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.5"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Enumerating every historical regional name is open-ended and still fails on the next unseen one. The enum is meant to encode the current standard.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.5"
+        },
+        {
+          "option": 1,
+          "text": "Free text abandons the constraint entirely, so downstream systems lose the guarantee that a grade is one of six known values in the ordinary case.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.5"
+        },
+        {
+          "option": 2,
+          "text": "Rejection turns an expressible outcome into a pipeline failure. The record is extractable; the grade is simply not one of the six.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.5"
+        }
+      ]
+    },
+    {
+      "g": 58,
+      "block": 3,
+      "domain": "D2",
+      "stem": "Document type must be classified before any commodity-specific extraction tool runs, since the extraction tools differ by type. A prompt instruction achieves this roughly 90% of the time; the other 10% extract against the wrong schema and fail validation further downstream. What configuration guarantees the ordering?",
+      "options": [
+        "`tool_choice: {\"type\": \"any\"}` on every turn, so that some tool is always called.",
+        "`tool_choice: {\"type\": \"tool\", \"name\": \"classify_document\"}` on the first call, then `\"auto\"`.",
+        "`tool_choice: {\"type\": \"tool\", \"name\": \"classify_document\"}` held for the entire workflow.",
+        "`tool_choice: {\"type\": \"auto\"}` with the ordering restated at the top of the system prompt."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "Forcing a specific tool on the first request guarantees the classification step runs, then relaxing to `\"auto\"` lets the workflow continue into the extraction tools. This is the forced-first-step pattern, and it is deterministic where a prompt instruction is not.",
+        "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "`\"any\"` guarantees a tool call, not a particular one. The model may still open with an extraction tool, which is the failure being fixed.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+        },
+        {
+          "option": 2,
+          "text": "Leaving the forced choice in place for the whole workflow means the model can never call the extraction tools at all — it is pinned to the classifier forever.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+        },
+        {
+          "option": 3,
+          "text": "Restating the instruction more prominently is still probabilistic. That approach is already in place and already fails one time in ten.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+        }
+      ]
+    },
+    {
+      "g": 59,
+      "block": 3,
+      "domain": "D5",
+      "selectN": 2,
+      "stem": "A broker's clarification thread about one consignment has run to 74 turns and 62,000 tokens. It contains an agreed moisture tolerance, two amended quantities, and a great deal of scheduling chatter about vessel timings. Which two moves preserve what matters? Select two.",
+      "options": [
+        "Extract the tolerance and the amended quantities into a structured block kept outside summarisation.",
+        "Summarise the scheduling discussion while keeping the most recent exchanges verbatim.",
+        "Summarise the entire thread uniformly so that no part is weighted above another.",
+        "Retain only the most recent 20,000 tokens and discard everything before that point.",
+        "Raise the summarisation threshold so that compression begins later in the conversation."
+      ],
+      "correct": [
+        0,
+        1
+      ],
+      "whyRight": {
+        "text": "The hybrid approach: extract critical structured data — amounts, agreed figures, amended quantities — into a compact block preserved verbatim, summarise the lower-density general discussion, and keep recent exchanges intact for conversational coherence.",
+        "cite": "CCA-Prep_Domain-5_v2.md §5.3"
+      },
+      "whyWrong": [
+        {
+          "option": 2,
+          "text": "Uniform summarisation is what loses precision. \"The tolerance we agreed\" replaces the actual figure, and the amended quantities become \"quantities were revised\".",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.3"
+        },
+        {
+          "option": 3,
+          "text": "A recency window discards the tolerance and the amendments if they were agreed early in the thread — which, after 74 turns, is likely.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.3"
+        },
+        {
+          "option": 4,
+          "text": "Delaying compression postpones the loss without preventing it. The critical figures are still eventually summarised away.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.4"
+        }
+      ]
+    },
+    {
+      "g": 60,
+      "block": 3,
+      "domain": "D4",
+      "stem": "Semantic errors — a grade recorded against the wrong lot, a tonnage contradicting the weighbridge line — still reach downstream systems at roughly last year's rate, though JSON parse failures have sat at zero all year. A team lead proposes abandoning `tool_use` schemas, arguing that they plainly did not help. What is wrong with that reasoning?",
+      "options": [
+        "Nothing is wrong; an unchanged error rate is evidence that the schema approach failed.",
+        "The schemas should instead be tightened until they can express the cross-field constraints.",
+        "Schemas removed the syntax class entirely; abandoning them would add those failures back on top.",
+        "Semantic errors indicate the extraction model is too small for the documents in use."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "Strict schemas via tool use eliminate the entire syntax class — malformed JSON, wrong types, missing required fields — and do nothing for the semantic class. Reverting would reintroduce syntax errors on top of the semantic ones that remain, which is strictly worse.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.7"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "The measure is wrong. Schemas were never the mechanism for catching semantically wrong values, so holding them responsible for that rate misreads what they fixed.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.7"
+        },
+        {
+          "option": 1,
+          "text": "No schema constraint can verify that a grade belongs to a lot or that a tonnage matches another document. That is business-rule validation in code.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.8"
+        },
+        {
+          "option": 3,
+          "text": "Model capacity is not the distinction being drawn. A larger model still produces semantically wrong values that pass schema validation by definition.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.7"
+        }
+      ]
+    }
+  ]
+}

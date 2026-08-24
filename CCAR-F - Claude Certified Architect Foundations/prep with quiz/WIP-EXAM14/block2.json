@@ -1,0 +1,533 @@
+{
+  "label": "Developer Productivity with Claude",
+  "narrative": "You maintain developer-productivity tooling built on the Agent SDK for a hospital patient-flow platform — bed allocation, transfer requests, discharge scheduling — much of it written years ago by staff who have since left. The agent uses the built-in tools (Read, Write, Bash, Grep, Glob) and connects to internal MCP servers. Across this block the agent moves from first contact with unfamiliar code toward longer, more autonomous sessions.",
+  "questions": [
+    {
+      "g": 16,
+      "block": 1,
+      "domain": "D1",
+      "stem": "You ask the agent to add test coverage to the discharge-scheduling module, which currently has none and which nobody remaining fully understands. Two decomposition strategies are on the table: a predetermined sequence of steps fixed before any code is read, or subtasks generated from what each step uncovers. Which is appropriate here?",
+      "options": [
+        "The predetermined sequence, because a fixed pipeline produces reproducible results across runs.",
+        "Dynamic adaptive decomposition — map the structure, prioritise by risk, and adapt as dependencies surface.",
+        "A single comprehensive prompt covering discovery, prioritisation and test authoring together.",
+        "The predetermined sequence, with a manual review gate inserted after each of its steps."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "The scope is unknown up front, so each step depends on what the previous one revealed — the defining condition for dynamic adaptive decomposition. The corpus walks this exact task: map structure with Glob and Grep, find the untested modules, prioritise by risk, then adapt when an external dependency appears and needs a mock.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Fixed pipelines suit predictable structures where all steps are known in advance. Here the dependencies are unknown, so a script written before discovery cannot react to what discovery finds.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+        },
+        {
+          "option": 2,
+          "text": "One giant prompt covering everything produces attention dilution — deep on some areas, shallow on others. Decomposition exists to prevent this.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+        },
+        {
+          "option": 3,
+          "text": "Review gates control when a human intervenes; they do not give the plan the ability to change shape when an unanticipated dependency appears mid-task.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+        }
+      ]
+    },
+    {
+      "g": 17,
+      "block": 1,
+      "domain": "D2",
+      "stem": "A deprecated `assignBedByPriority` helper is being removed, and you need every location that calls it across a repository whose naming conventions drifted years ago. An engineer proposes running Glob over `**/assignBedByPriority*` and reports that it returned two files, both of them tests. What is wrong with that, and what should run instead?",
+      "options": [
+        "Nothing is wrong — Glob is the right tool and that pattern will match every calling file.",
+        "Glob is right but the pattern is too narrow; widening it to `**/*assignBed*` catches the renamed files.",
+        "Glob is too slow across a repository this size; Bash with `grep -r` is the practical alternative.",
+        "Glob matches file paths rather than file contents — Grep for the identifier finds the call sites."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "Glob is file-path pattern matching; Grep is content search. Call sites are file *content*, so Glob over the function name finds only files whose *names* contain it — almost certainly none of the callers. The corpus uses this exact contrast for locating references to a deprecated function.",
+        "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "The pattern matches paths, not code. A file called `orderService.ts` that calls the helper on line 40 is invisible to any path glob.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+        },
+        {
+          "option": 1,
+          "text": "Widening a path pattern widens the set of *filenames* considered. No path pattern can reach inside a file to find an identifier.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+        },
+        {
+          "option": 2,
+          "text": "Performance is not the defect, and reaching for Bash bypasses the tool designed for content search. Grep is the built-in for this job.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+        }
+      ]
+    },
+    {
+      "g": 18,
+      "block": 1,
+      "domain": "D3",
+      "stem": "The agent applies your transfer-request audit-logging convention in some sessions and ignores it in others, on the same repository and the same files. The instruction is definitely written down somewhere, and a colleague working on the same codebase sees it applied every single time. What is the first diagnostic step?",
+      "options": [
+        "Run `/memory` to list which memory files are actually loaded in each session.",
+        "Restate the convention at the top of every prompt so that it cannot be missed.",
+        "Move the convention into `.claude/rules/` with a glob covering the transfer-request files.",
+        "Copy the convention into `~/.claude/CLAUDE.md` so that it loads for every project you open."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "`/memory` shows which memory files are loaded in the current session, and it is the first diagnostic whenever Claude follows a rule sometimes but not always. Before changing where the instruction lives, establish whether the file holding it is actually being discovered.",
+        "cite": "CCA-Prep_Domain-3_v2.md §3.1"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "Repeating the instruction louder each session treats the symptom. It also abandons the configuration mechanism that is supposed to make the convention automatic.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.1"
+        },
+        {
+          "option": 2,
+          "text": "Path-scoped rules may well be the right destination, but choosing a destination before diagnosing which files load is a guess. Confirm what is loaded first.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.2"
+        },
+        {
+          "option": 3,
+          "text": "User-level config is not shared through version control, so this fixes your machine and leaves every teammate with the original inconsistency.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.1"
+        }
+      ]
+    },
+    {
+      "g": 19,
+      "block": 1,
+      "domain": "D1",
+      "stem": "Yesterday's named session mapped the bed-allocation call graph in depth, and that analysis is still largely valid. Overnight another team refactored three of the roughly forty files it examined. You need to continue the same investigation today without paying for the whole mapping again. What is the right way to resume?",
+      "options": [
+        "Start a fresh session and re-analyse the whole call graph so nothing rests on stale results.",
+        "Resume the named session and carry on, since the great majority of the analysis is unaffected.",
+        "Resume the named session and tell it exactly which three files changed, for targeted re-analysis.",
+        "Start a fresh session and inject a summary of yesterday's conclusions rather than resuming."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "When you resume after code has changed, name the changed files so the agent re-analyses just those rather than trusting stale tool results or re-exploring everything. Most of the prior context is still valid, which is what makes resumption the right base.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.16"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Re-analysing the entire call graph discards a large body of still-valid work. Full restarts are for when context has genuinely degraded, not when three files moved.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.16"
+        },
+        {
+          "option": 1,
+          "text": "Resuming without flagging the changes leaves the agent reasoning over stale tool results for exactly the files that changed — the specific failure this rule exists to prevent.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.16"
+        },
+        {
+          "option": 3,
+          "text": "Fresh-plus-summary is the correct choice when prior tool results are broadly stale. Here they are broadly current, so it throws away usable detail for no gain.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.16"
+        }
+      ]
+    },
+    {
+      "g": 20,
+      "block": 1,
+      "domain": "D2",
+      "stem": "The agent attempts to Edit a status constant in a 900-line scheduling file. The anchor text it selected appears in four places, and the edit fails with a non-unique-match error. The agent proposes retrying with a shorter anchor that it expects will be easier to locate. What should happen instead?",
+      "options": [
+        "Retry with a shorter, more generic anchor so that a match is easier to locate.",
+        "Read the file, modify the content programmatically, and Write the updated version back.",
+        "Use Bash with `sed` to force the replacement across all four occurrences at once.",
+        "Split the file into smaller modules first, so that each anchor becomes unique."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "Edit works by unique text matching, and its sanctioned fallback when no unique anchor exists is Read, modify, Write — a reliable full-file modification.",
+        "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "A shorter anchor is *more* likely to be non-unique, not less. This makes the failure more certain while appearing to address it.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+        },
+        {
+          "option": 2,
+          "text": "Forcing the replacement through `sed` bypasses the tools designed for the job and changes all four occurrences when only one was targeted.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+        },
+        {
+          "option": 3,
+          "text": "Restructuring a 900-line file to work around a failed edit is a large, risky change in service of a small one, and the constant may still repeat after the split.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+        }
+      ]
+    },
+    {
+      "g": 21,
+      "block": 1,
+      "domain": "D1",
+      "selectN": 2,
+      "stem": "The agent generates a bed-reassignment routine, reasons at length about edge cases in its own output, and concludes the approach is correct. Asked in the same conversation to check its work again, it confirms the result. Two subtle defects surface in human review a week later. Which two changes address the cause? Select two.",
+      "options": [
+        "Send the finished routine to a separate instance that never sees the generation reasoning.",
+        "Give that reviewing instance only the artefact and the review criteria, not the conversation.",
+        "Add \"review your own work thoroughly before finishing\" to the generation prompt.",
+        "Enable extended thinking on the generating instance so it considers more edge cases.",
+        "Ask the same conversation for a second review pass once the routine is complete."
+      ],
+      "correct": [
+        0,
+        1
+      ],
+      "whyRight": {
+        "text": "A model that generated code retains its generation reasoning and is anchored to its own decisions. True independence means a separate instance receiving only the artefact and the criteria — without the justifications the generator already talked itself into.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.13"
+      },
+      "whyWrong": [
+        {
+          "option": 2,
+          "text": "Self-review inside the same context inherits the same anchoring. The instance re-reads its own reasoning and confirms it.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.13"
+        },
+        {
+          "option": 3,
+          "text": "More reasoning by the same anchored instance is not independent scrutiny. Extended thinking deepens the existing line of thought rather than challenging it.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.17"
+        },
+        {
+          "option": 4,
+          "text": "A second pass in the same conversation still carries the full generation reasoning in context. Same-conversation second pass does not equal independent review.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.13"
+        }
+      ]
+    },
+    {
+      "g": 22,
+      "block": 1,
+      "domain": "D3",
+      "stem": "A `/trace-dependencies` skill walks the scheduling module's imports and returns several thousand lines of output into the conversation. After it runs, the agent has lost track of the refactor it was carrying out beforehand and begins proposing unrelated changes. Which frontmatter change fixes this?",
+      "options": [
+        "`context: fork`, so the skill runs in an isolated subagent context.",
+        "`allowed-tools: [Read, Grep]`, so the skill cannot write anything while it walks.",
+        "`argument-hint`, so the skill can be scoped to one package per invocation.",
+        "`description`, rewritten so the skill triggers only when dependency tracing is requested."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "`context: fork` runs a skill in an isolated subagent context so its output does not pollute the main conversation window. This is the corpus's named use case for exactly this symptom — a large-output skill causing the agent to lose the original task.",
+        "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "Scoping tools controls what the skill may do, not how much output it returns into the main context. A read-only skill can still flood the window.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+        },
+        {
+          "option": 2,
+          "text": "Narrowing the scope shrinks each run's output but leaves the pollution mechanism intact, and the task still needs the full dependency picture.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+        },
+        {
+          "option": 3,
+          "text": "The description governs when the skill is offered, not what happens to its output once it runs. The context loss occurs on the runs you intended.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+        }
+      ]
+    },
+    {
+      "g": 23,
+      "block": 1,
+      "domain": "D1",
+      "stem": "A colleague's in-house harness wraps the API and keeps calling until the response text no longer contains the word \"next\". It sometimes halts mid-task with tool calls still unexecuted, and sometimes keeps looping long after the work is finished. What should drive the loop instead?",
+      "options": [
+        "A maximum iteration count, so that a runaway loop always terminates within a fixed budget.",
+        "The presence of unexecuted tool calls in the harness's own pending queue.",
+        "A timeout measured from the first request, after which the harness returns what it has.",
+        "The `stop_reason` on each response — continue on `tool_use`, stop on `end_turn`."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "The orchestrator inspects `stop_reason` after each call to decide whether to continue: `tool_use` means execute the tool, append the result and call again; `end_turn` means Claude has finished. Loop control is driven by that field, not by text content or iteration count.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.1"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "An iteration cap is a safety backstop, not a termination condition. It cannot tell a finished task from an unfinished one — it stops both at the same number.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.1"
+        },
+        {
+          "option": 1,
+          "text": "The queue reflects what the harness has already parsed out of a response. The authoritative signal about whether Claude intends to continue is `stop_reason` on the response itself.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.1"
+        },
+        {
+          "option": 2,
+          "text": "A wall-clock timeout truncates slow work and lets fast runaway loops continue unchecked. It is orthogonal to whether the model has finished.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.1"
+        }
+      ]
+    },
+    {
+      "g": 24,
+      "block": 1,
+      "domain": "D3",
+      "stem": "Two tasks are queued: replacing the scheduling engine's persistence layer across roughly fifty files, where several designs are viable and the choice affects every caller, and fixing a null-dereference crash with a clear stack trace in a single file. Which pairing of modes is correct?",
+      "options": [
+        "Direct execution for both; switch the persistence work to planning mode if it turns out to be difficult.",
+        "Planning mode for both, since any change to a clinical system warrants a reviewed plan first.",
+        "Planning mode for the persistence replacement; direct execution for the null-dereference fix.",
+        "Direct execution for the persistence replacement; planning mode for the crash, which needs diagnosis."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "Planning mode suits large scope, architectural decisions and multiple viable approaches — a fifty-file persistence replacement is the corpus's own example class. A single-file fix with a clear stack trace has defined scope and a known approach, so direct execution applies.",
+        "cite": "CCA-Prep_Domain-3_v2.md §3.6"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Starting in direct execution and switching when it gets hard is named as a trap. Reactive switching is expensive because the premature work has to be unwound.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.6"
+        },
+        {
+          "option": 1,
+          "text": "Domain sensitivity is not the selection criterion. Planning mode is chosen on scope and design ambiguity; a clear single-file fix gains nothing from a plan.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.6"
+        },
+        {
+          "option": 3,
+          "text": "This inverts both. A stack trace has already done the diagnosis, and the fifty-file change is precisely where premature execution costs the most rework.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.6"
+        }
+      ]
+    },
+    {
+      "g": 25,
+      "block": 1,
+      "domain": "D1",
+      "stem": "An expensive analysis of the transfer-request state machine has just completed, having taken most of an afternoon. The team wants to evaluate two migration strategies against that analysis, and wants neither evaluation coloured by the other's reasoning or conclusions. What should they do?",
+      "options": [
+        "Use `fork_session` twice from the completed analysis, evaluating one strategy in each branch.",
+        "Evaluate both strategies sequentially in the current session, then compare the two write-ups.",
+        "Start two fresh sessions, each re-running the state-machine analysis before evaluating its strategy.",
+        "Evaluate the first strategy, then use `--resume` on the same session to evaluate the second."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "`fork_session` creates branches that inherit context up to the branch point and then diverge independently. That is exactly the requirement: one expensive shared baseline, two evaluations that cannot contaminate each other.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.16"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "The second evaluation is biased by the first's reasoning and conclusions, which sit in the same context. That is the contamination the team explicitly wants to avoid.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.16"
+        },
+        {
+          "option": 2,
+          "text": "Two brand-new sessions each have to redo the expensive shared analysis — the cost that forking exists to pay only once.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.16"
+        },
+        {
+          "option": 3,
+          "text": "Resuming continues the same conversation, so the second evaluation still inherits the first's reasoning. It is sequential evaluation with an extra step.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.16"
+        }
+      ]
+    },
+    {
+      "g": 26,
+      "block": 1,
+      "domain": "D2",
+      "selectN": 3,
+      "stem": "Six months ago the team replaced two frequently co-called tools with a composite `get_patient_with_transfers`, and it has worked well since. A new requirement needs patient records without any transfer history; another needs transfers for a whole ward rather than for a single patient. Which three statements are sound? Select three.",
+      "options": [
+        "The composite returns transfer history the patient-only requirement does not need, adding context cost.",
+        "Prompting the agent to bundle related calls into one turn saves the same round-trip without fixing the composition.",
+        "A composite hides the composition, so each new access pattern needs a new tool or an over-fetch.",
+        "Composite tools are always preferable to prompt-level bundling once a pairing is established.",
+        "The ward-level requirement is well served by calling the composite once for each patient on the ward.",
+        "Restoring the two original tools alongside the composite would reduce the agent's decision space."
+      ],
+      "correct": [
+        0,
+        1,
+        2
+      ],
+      "whyRight": {
+        "text": "The corpus prefers prompting the agent to bundle related tool requests into one turn over creating composite tools, because a composite hides the composition. That cost is invisible while the access pattern is stable and surfaces the moment a new pattern needs one half of the pair, or the pair at a different granularity.",
+        "cite": "CCA-Prep_Domain-2_v2.md §2.8"
+      },
+      "whyWrong": [
+        {
+          "option": 3,
+          "text": "This inverts the stated preference. Bundling is preferred precisely because the agent can naturally request multiple tools simultaneously without the composition being frozen into a tool.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.8"
+        },
+        {
+          "option": 4,
+          "text": "One call per patient turns a single ward-level need into many calls, each over-fetching. It is the round-trip cost the composite was built to remove, reintroduced at a larger scale.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.8"
+        },
+        {
+          "option": 5,
+          "text": "Adding tools enlarges the decision space rather than reducing it, and three overlapping tools over the same data is the near-miss-description situation that degrades selection.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+        }
+      ]
+    },
+    {
+      "g": 27,
+      "block": 1,
+      "domain": "D1",
+      "stem": "Adding audit hooks across the platform's 140 service files requires a discovery pass that enumerates every call site. On the last attempt the discovery output alone filled the context window before any implementation began, and the session had to be abandoned partway. What structure avoids this?",
+      "options": [
+        "Run `/compact` once discovery completes, then implement inside the compacted session.",
+        "Run discovery in an Explore subagent that returns a summary; implement in the main session.",
+        "Split the work across several sessions joined with `--continue`, one per service directory.",
+        "Move the discovery pass to a larger-context model and keep both phases in one session."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "Context isolation used deliberately: an Explore subagent absorbs the verbose discovery output and returns a concise summary, leaving the main session's context intact for design and implementation.",
+        "cite": "CCA-Prep_Domain-5_v2.md §5.6"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "`/compact` mid-task loses the precision the implementation phase needs. Compression is lossy exactly where the call-site detail matters.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.6"
+        },
+        {
+          "option": 2,
+          "text": "Multiple sessions stitched together add coordination overhead and consistency risk, and each session still has to carry its own discovery output.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.6"
+        },
+        {
+          "option": 3,
+          "text": "A bigger window postpones the problem and raises cost without changing the structure: verbose discovery still occupies the same context the implementation needs.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.5"
+        }
+      ]
+    },
+    {
+      "g": 28,
+      "block": 1,
+      "domain": "D3",
+      "stem": "Conventions differ by area: scheduling services use a repository pattern, the interoperability adapters use async pipelines, and test files follow a fixture naming scheme. Files from all three areas sit side by side in most directories rather than in separate trees. Where do these conventions belong?",
+      "options": [
+        "In the root `CLAUDE.md`, organised under a heading for each of the three areas.",
+        "In a separate `CLAUDE.md` inside each subdirectory that contains the relevant files.",
+        "In `.claude/rules/` files with glob patterns matching each area's file paths.",
+        "In one skill per area, invoked explicitly whenever work on that area begins."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "`.claude/rules/` files carry glob frontmatter and load only when Claude works on matching files. That is deterministic file-path matching, and it is what makes conventions correct regardless of which directory the work happens in — the decisive property when file types are interleaved.",
+        "cite": "CCA-Prep_Domain-3_v2.md §3.2"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Headings in one always-loaded file rely on the model inferring which section applies to the file in front of it, rather than on deterministic path matching.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.2"
+        },
+        {
+          "option": 1,
+          "text": "Per-directory files work poorly when the three file types are spread across the same directories — every directory would need all three conventions anyway.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.2"
+        },
+        {
+          "option": 3,
+          "text": "Skills are for workflow-specific guidance invoked on demand. These are conventions that must apply automatically whenever a matching file is touched.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.11"
+        }
+      ]
+    },
+    {
+      "g": 29,
+      "block": 1,
+      "domain": "D1",
+      "selectN": 2,
+      "stem": "Your onboarding agent is configured with `allowed_tools=[\"Read\", \"Grep\", \"Glob\"]` and a system prompt instructing it to delegate deep dives to specialist subagents. It never delegates — it attempts everything itself, and its sessions run long and stay shallow. Which two statements are correct? Select two.",
+      "options": [
+        "The configuration withholds `Task`, so the agent cannot spawn a subagent at all.",
+        "A system prompt cannot grant a capability that the tool configuration does not include.",
+        "Adding subagent descriptions to the system prompt would enable spawning once they are named.",
+        "Rewriting the delegation instruction more forcefully is the appropriate first fix here.",
+        "The agent needs `Write` access before it is permitted to create a subagent."
+      ],
+      "correct": [
+        0,
+        1
+      ],
+      "whyRight": {
+        "text": "A coordinator's `allowedTools` must include `Task` — without it the agent cannot spawn subagents regardless of what its prompt says. The prompt cannot grant a tool the configuration withholds.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.3"
+      },
+      "whyWrong": [
+        {
+          "option": 2,
+          "text": "Descriptions identify what a subagent type is for; they do not enable spawning. The `Task` tool does.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.3"
+        },
+        {
+          "option": 3,
+          "text": "Rewriting the instruction is the corpus's named wrong answer for this symptom. No wording reaches a capability that is absent from the configuration.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.3"
+        },
+        {
+          "option": 4,
+          "text": "`Write` governs file creation and has no bearing on delegation. Spawning is gated by `Task` alone.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.3"
+        }
+      ]
+    },
+    {
+      "g": 30,
+      "block": 1,
+      "domain": "D1",
+      "stem": "The agent holds a general `run_query` tool for the reporting database so that it can answer schema questions during exploration. It has started using that tool to run ad-hoc aggregate queries against live patient tables, which the compliance team has now flagged twice. What is the durable fix?",
+      "options": [
+        "Add a system-prompt rule forbidding queries against patient tables during exploration.",
+        "Block the patient table names at the query layer and reject any statement referencing them.",
+        "Remove `run_query` and have the agent ask a human whenever it needs schema information.",
+        "Replace `run_query` with a `describe_schema` tool that returns structure and cannot return rows."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "Replacing a generic tool with a constrained alternative enforces the boundary at the interface level. The agent's legitimate need is schema information, and a tool that can only return structure makes the misuse impossible rather than discouraged.",
+        "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Prompt instructions are probabilistic. For a boundary that must hold, the corpus is explicit that the fix belongs at the interface, not in the prompt.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.11"
+        },
+        {
+          "option": 1,
+          "text": "A denylist of table names is fragile and not future-proof — it needs updating for every new table, and the tool remains capable of arbitrary row access.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+        },
+        {
+          "option": 2,
+          "text": "Removing the capability entirely blocks a legitimate need and pushes a routine question onto a human. Least privilege means the minimum tools required, not fewer.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.11"
+        }
+      ]
+    }
+  ]
+}

@@ -229,36 +229,83 @@ def extract_data_object(html):
 
 
 def canonicalize_cite(c):
-    """Fold the citation variants the mock exams use into the CARD-SPEC grammar.
+    """Fold one citation onto the CARD-SPEC grammar. Returns a LIST, not a string.
 
-    The mocks were written by several generations of the exam generator and about 19%
-    of their citations drift from the canonical form. The importer joins cards to missed
-    questions on this string, so a variant that fails to normalize silently costs coverage.
-    Handles: trailing parentheticals, 'Key-Distinctions #N' without the _v1, section-sign
-    instead of hash for KD entries, and three-level section numbers (only two exist).
+    The importer joins cards to missed questions on this string, so a variant that fails
+    to normalize silently costs coverage -- and it fails silently, which is why the deck
+    shipped for weeks importing almost nothing. Eighteen papers written by several
+    generations of the generator use four spellings of a domain-section cite:
+
+        'Domain-1_v2 SECT1.1'            Exams 2-4      (already canonical)
+        'D1 SECT1.1'                     Exams 5-10
+        'CCA-Prep_Domain-1_v2.md SECT1.1'  Exams 11-18
+        'Key Distinction #6'             composite second cites, any generation
+
+    A list is returned because a sub-section cite emits its parent as well: cards are
+    written at parent-section granularity, so SECT3.7.2 must also offer SECT3.7 or a
+    question citing a sub-section joins nothing. The previous implementation REPLACED
+    the sub-section with its parent, which lost any card written at the finer grain.
+
+    Ported from Outputs/_packbuild/remap_deck.py, which solved this for the prep-pack
+    copy of the deck only. This is the canonical pipeline, so it belongs here.
     """
     c = normalize_text(c)
-    c = re.sub(r"\s*\([^)]*\)\s*$", "", c)                       # drop "(batch vs real-time table)"
-    c = re.sub(r"^Key-Distinctions(?:_v1)?\s*[#" + SECT + r"]\s*(\d+)$",
-               r"Key-Distinctions_v1 #\1", c)
-    m = re.match(r"^(Domain-[1-5]_v2)\s*" + SECT + r"\s*(\d+\.\d+)(?:\.\d+)*$", c)
-    if m:                                                         # 3.7.3 -> 3.7
-        c = "%s %s%s" % (m.group(1), SECT, m.group(2))
-    return c.strip()
+    c = re.sub(r"\s*\([^)]*\)\s*$", "", c).strip()               # drop "(batch vs real-time table)"
+    if not c:
+        return []
+
+    # Domain sections, in any of the three spellings
+    m = (re.match(r"^(?:CCA-Prep_)?Domain-([1-5])_v\d(?:\.md)?\s*" + SECT + r"?\s*([\d.]+)$", c, re.I)
+         or re.match(r"^D([1-5])\s*" + SECT + r"?\s*([\d.]+)$", c, re.I))
+    if m:
+        dom, sec = m.group(1), m.group(2).rstrip(".")
+        out = ["Domain-%s_v2 %s%s" % (dom, SECT, sec)]
+        bits = sec.split(".")
+        if len(bits) > 2:                                        # 3.7.2 -> also parent 3.7
+            out.append("Domain-%s_v2 %s%s.%s" % (dom, SECT, bits[0], bits[1]))
+        return out
+
+    m = re.match(r"^(?:Key[-\s]?Distinctions?(?:_v\d)?|KD)\s*[#" + SECT + r"]?\s*(\d+)$", c, re.I)
+    if m:
+        return ["Key-Distinctions_v1 #%s" % m.group(1)]
+
+    m = re.match(r"^(?:CCA-Prep_)?Exam-Mechanics_v\d(?:\.md)?\s*(.+)$", c, re.I)
+    if m:
+        return ["Exam-Mechanics_v2 %s" % m.group(1).strip()]
+
+    m = re.match(r"^Official[-\s]Guide\s*(p\.?\s*\d+)$", c, re.I)
+    if m:
+        return ["Official-Guide " + m.group(1).replace(" ", "").replace("p", "p.").replace("p..", "p.")]
+
+    return [c]
 
 
 def split_cite(raw):
     """'Key-Distinctions_v1 #5; Domain-1_v2 SECT1.1' -> both, canonicalized.
 
     Splits on ';' and on ' / ', which the older mock generations used interchangeably.
+    Order is preserved and duplicates are dropped, so the primary cite stays first.
     """
     if not raw:
         return []
     # Strip parentheticals before splitting: one mock writes "(tool bundling / composite
     # tools)", whose inner slash would otherwise be mistaken for a citation separator.
     raw = re.sub(r"\([^)]*\)", "", raw)
-    parts = re.split(r";|\s/\s", raw)
-    return [canonicalize_cite(p) for p in parts if p.strip()]
+    # One paper writes two sections of the same file as "Domain-1_v2 SECT1.15, SECT1.6".
+    # Splitting on ';' alone leaves that as a single unresolvable string, so a comma
+    # followed by a bare section sign is promoted to a separator and the file prefix is
+    # carried onto the continuation. Commas NOT followed by a section sign are left alone,
+    # because Exam-Mechanics cites legitimately contain them.
+    m = re.match(r"^(.*?)\s*(" + SECT + r"\s*[\d.]+)\s*,\s*(" + SECT + r"\s*[\d.]+.*)$", raw)
+    if m:
+        prefix = m.group(1).rstrip()
+        tail = re.sub(r"\s*,\s*(?=" + SECT + r")", "; %s " % prefix, m.group(3))
+        raw = "%s %s; %s %s" % (prefix, m.group(2), prefix, tail)
+    out = []
+    for p in re.split(r";|\s/\s", raw):
+        if p.strip():
+            out.extend(canonicalize_cite(p))
+    return list(dict.fromkeys(out))
 
 
 def cmd_extract_mocks(_args):

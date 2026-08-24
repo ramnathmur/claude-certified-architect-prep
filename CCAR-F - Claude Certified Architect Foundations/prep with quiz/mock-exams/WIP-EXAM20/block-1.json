@@ -1,0 +1,509 @@
+{
+  "block_index": 0,
+  "scenario_label": "Multi-Agent Research System",
+  "narrative": "A coordinator delegates grid-interconnection research requests for renewable-energy and battery-storage projects to a web-search subagent, a document-analysis subagent, a synthesis subagent, and a report-generation subagent, producing comprehensive cited reports for utility planning teams. Across the block, the same coordinator and subagents evolve from basic loop mechanics through tool design, context management, and report-quality safeguards.",
+  "questions": [
+    {
+      "g": 1,
+      "block": 0,
+      "domain": "D1",
+      "stem": "The coordinator's agentic loop reads each response's `stop_reason`, and when it equals `tool_use`, extracts and executes exactly one `tool_use` block before calling Claude again. In a research run needing three independent searches, logs show only the first `Task` call each round is ever executed, even though the response actually carried three `tool_use` blocks side by side. Investigations that should run in parallel instead complete one round at a time. What should the loop implementation do?",
+      "options": [
+        "Increase the per-round iteration cap so the loop gets more rounds to reach all three searches.",
+        "Instruct the coordinator's system prompt to request the three searches one at a time instead of together.",
+        "Extract and execute every `tool_use` block present in the response, then append all three results before the next call.",
+        "Replace the three separate `Task` calls with a single subagent that runs all three searches internally."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "The loop must extract and execute every `tool_use` block in a `stop_reason: tool_use` response, not just the first — that is what allows multiple `Task` calls issued in one response to actually run in parallel.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.1, §1.15"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Raising the iteration cap doesn't fix a loop that only executes one tool_use block per round; it just permits more slow, sequential rounds while the underlying execution gap remains.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.1"
+        },
+        {
+          "option": 1,
+          "text": "This abandons parallel execution entirely — exactly the design the corpus favors for independent research tasks — and treats an implementation gap in the loop as if it were a prompting problem.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.15"
+        },
+        {
+          "option": 3,
+          "text": "This misdiagnoses the fault as agent architecture rather than the loop's execution logic, and discards the least-privilege, parallel-task design the separate calls were built for.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.2, §1.15"
+        }
+      ]
+    },
+    {
+      "g": 2,
+      "block": 0,
+      "domain": "D1",
+      "stem": "A recent refactor consolidated the coordinator's tool configuration into a shared file alongside three subagent definitions. Since the merge, the coordinator investigates every request in a single long turn instead of delegating — its system prompt still names the web-search, document-analysis, and synthesis subagents individually, and none of the subagents' own tool restrictions changed. What should the team check first?",
+      "options": [
+        "Whether `Task` is still present in the coordinator's own `allowedTools` after the merge.",
+        "Whether the merge altered the wording of the three subagents' descriptions in the coordinator's system prompt.",
+        "Whether each subagent's own `allowed_tools` entry still lists its individually scoped tools after the merge.",
+        "Whether the file merge preserved the coordinator's system prompt word-for-word."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "The coordinator's own allowedTools must include `Task` or it cannot spawn subagents no matter what its prompt says or how the subagents themselves are configured; a config merge is exactly the kind of change that can silently drop one entry.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.3"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "The corpus's exam pattern explicitly rejects rewriting subagent descriptions as the fix — descriptions inform a delegation decision once spawning already works, they don't grant the capability to spawn.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.3"
+        },
+        {
+          "option": 2,
+          "text": "Subagent-level allowed_tools scope what a spawned subagent can do once invoked, not whether the coordinator can invoke it in the first place — this checks the wrong layer of the configuration.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.3"
+        },
+        {
+          "option": 3,
+          "text": "No corpus mechanism ties spawning capability to prompt wording fidelity, and the stem already states the prompt still names all three subagents — this checks something not implicated by the symptom.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.3"
+        }
+      ]
+    },
+    {
+      "g": 3,
+      "block": 0,
+      "domain": "D2",
+      "stem": "A teammate proposes two ways to give the web-search subagent visibility into which utility territories and study types currently have filings on record: expose it as an MCP resource, or add a `list_categories` tool the subagent can call each time. Call-count savings aside, what is the strongest reason to prefer the resource?",
+      "options": [
+        "Resources are cached automatically, so results never need to be recomputed once the server starts.",
+        "A resource is available as context the subagent already has, while a tool depends on the model remembering to call it.",
+        "Resources can return larger payloads than tools, so more categories can be exposed at once.",
+        "Tools require a `.mcp.json` entry while resources do not, so resources are simpler to configure."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "A resource gives the agent an immediate map of available data as context it already has, without depending on the model choosing to call a tool first — a list-everything-style tool adds an LLM call and relies on the agent thinking to use it, which call-count savings alone don't capture.",
+        "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "No corpus support for automatic caching as a property distinguishing resources from tools.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+        },
+        {
+          "option": 2,
+          "text": "No corpus support for a payload-size distinction between resources and tools — the documented advantage is how the data reaches the agent, not how much of it can be returned.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+        },
+        {
+          "option": 3,
+          "text": "Both tools and resources are exposed by the same configured MCP server; the corpus documents no separate configuration-file requirement that distinguishes one from the other.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+        }
+      ]
+    },
+    {
+      "g": 4,
+      "block": 0,
+      "domain": "D1",
+      "stem": "Asked to assess grid readiness for a new battery-storage interconnection request, the coordinator decomposes the work into three subtasks: transmission-capacity studies, interconnection-queue position, and equipment lead times. All three subagents complete successfully and the report reads as thorough, but it never addresses land-use permitting, which the requesting utility flags as the actual blocker. What is the most likely root cause?",
+      "options": [
+        "The document-analysis subagent skipped permitting documents because they were formatted differently from the other filings it processed.",
+        "The synthesis subagent dropped the permitting findings while merging results from the other three subagents.",
+        "The coordinator's task decomposition assigned three subtopics up front and never included land-use permitting as one of them.",
+        "The web-search subagent's queries were too narrow to surface land-use permitting sources within its assigned subtopic."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "When every subagent succeeds but coverage is wrong, the root cause is the coordinator's task decomposition being too narrow, not subagent performance — here permitting was never assigned as a subtopic at all.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.6"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "This blames subagent execution quality, but nothing in the stem shows a permitting subtask was ever assigned for a subagent to skip — the gap is upstream of execution.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.6"
+        },
+        {
+          "option": 1,
+          "text": "This blames synthesis for dropping findings that were never generated in the first place, since no subtopic ever pointed a subagent at permitting.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.6"
+        },
+        {
+          "option": 3,
+          "text": "This locates the fault inside one subagent's query quality, but the actual gap is a missing subtopic in the coordinator's upfront partition, not narrow execution within an assigned one.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.6"
+        }
+      ]
+    },
+    {
+      "g": 5,
+      "block": 0,
+      "domain": "D5",
+      "stem": "Synthesis receives a combined 90,000-token input assembled from all four subagents in a fixed order: search results first, document-analysis findings second, then two rounds of `verify_fact` confirmations. Reports consistently open with search headlines and close with the confirmed facts, but a transmission-capacity finding sitting in the document-analysis section, roughly a third of the way through, is missed in nine of the last ten runs even though it is the report's most decisive finding. What should the coordinator change?",
+      "options": [
+        "Place a key-findings summary at the start of the combined input and add explicit section headings throughout.",
+        "Summarize the entire combined input down to under 20,000 tokens before passing it to synthesis.",
+        "Rotate which subagent's output appears first in the combined input from run to run.",
+        "Route the combined input through a larger-context-window model so synthesis can process all 90,000 tokens at once."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "The stated mitigation is a key-findings summary at the start, for primacy, plus explicit section headings to help navigation — the corpus's fix for the lost-in-the-middle pattern.",
+        "cite": "CCA-Prep_Domain-5_v2.md §5.2"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "Summarizing to under 20,000 tokens is explicitly marked wrong — it may lose the critical information the report actually needs.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.2"
+        },
+        {
+          "option": 2,
+          "text": "Rotating which subagent appears first is explicitly marked wrong — it doesn't fix the underlying attention pattern, it just moves which content sits in the unreliable middle.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.2"
+        },
+        {
+          "option": 3,
+          "text": "This matches the debunked bigger-context misconception: the input is already well within a normal window at 90,000 tokens, and a larger window does not fix attention quality.",
+          "cite": "CCA-Prep_Key-Distinctions_v1.md #17"
+        }
+      ]
+    },
+    {
+      "g": 6,
+      "block": 0,
+      "domain": "D1",
+      "selectN": 2,
+      "stem": "The synthesis subagent's prompt currently receives only the research question and its own scoped `verify_fact` tool — none of the web-search or document-analysis subagents' findings are included. Its draft reports read as generic and undercite specific figures found earlier in the pipeline. Select two changes that correctly address this.",
+      "options": [
+        "Have the coordinator include the complete findings from the web-search and document-analysis subagents directly in the synthesis subagent's prompt.",
+        "Require the upstream subagents to output findings in a structured format that separates content from source metadata, so attribution survives into synthesis.",
+        "Give the synthesis subagent the same `search_registry` and `analyze_study` tools the upstream subagents hold, so it can pull in anything missing on its own.",
+        "Let the synthesis subagent request the coordinator's full conversation history so it can see everything the coordinator has seen so far."
+      ],
+      "correct": [0, 1],
+      "whyRight": {
+        "text": "Subagents have isolated context and see only what the coordinator explicitly includes in their prompt, so the coordinator must pass the upstream findings directly; those findings also need structured content/metadata separation so source attribution survives into synthesis rather than being lost as merged free text.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.2, §1.5"
+      },
+      "whyWrong": [
+        {
+          "option": 2,
+          "text": "Giving synthesis open-ended search and analysis tools breaks least-privilege scoping and invites the cross-specialization misuse the corpus warns against — a synthesis agent starting to do its own research instead of synthesizing what it's given.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.11"
+        },
+        {
+          "option": 3,
+          "text": "No mechanism in this architecture grants a subagent visibility into the coordinator's own conversation history; subagents only ever receive what the coordinator explicitly places in their prompt.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.2"
+        }
+      ]
+    },
+    {
+      "g": 7,
+      "block": 0,
+      "domain": "D2",
+      "stem": "Two tool-pairing patterns show up in the coordinator's logs. The document-analysis subagent calls `analyze_study` and then `extract_citations` on the same document in nearly every run, with no dependency between the two calls' inputs. The report-generation subagent's `render_report` call always follows `preview_report`, and only `preview_report`'s output supplies the token `render_report` requires. Which pairing is the better candidate for prompt-level bundling into a single turn?",
+      "options": [
+        "`preview_report` and `render_report`, since both are report-generation calls and merging them into one prompted turn removes an unnecessary round trip.",
+        "Neither pairing — both should be converted into composite tools so the agent never has to sequence them itself.",
+        "`analyze_study` and `extract_citations`, since the two calls are independent of each other and are already habitually issued together with nothing forcing them apart.",
+        "`preview_report` and `render_report`, since bundling removes the risk of the agent forgetting to call `render_report` after a preview."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "Prompt-level bundling is the corpus's preferred fix for two independent, habitually-paired calls with no dependency between them; `analyze_study`/`extract_citations` fits that shape cleanly.",
+        "cite": "CCA-Prep_Domain-2_v2.md §2.8"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "`render_report` requires the single-use token only `preview_report`'s result supplies, so the two calls cannot be issued in the same turn regardless of prompting — the split exists specifically to make skipping the preview architecturally impossible.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.4"
+        },
+        {
+          "option": 1,
+          "text": "The corpus states prompt-bundling, not composite conversion, as the preferred fix for the first pairing; for the second, the two-tool token-binding split is the correct design precisely because it enforces a guarantee a composite would not.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.8, §2.4"
+        },
+        {
+          "option": 3,
+          "text": "This repeats the first option's architectural error with a different justification — `render_report` cannot be called without a token that doesn't exist until `preview_report` has already returned, so there is no round trip to remove by bundling.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.4"
+        }
+      ]
+    },
+    {
+      "g": 8,
+      "block": 0,
+      "domain": "D5",
+      "stem": "By the fourth interconnection study in a run, synthesis has started attributing a contractor's internal revision notes to the study's actual capacity findings, blending the two together in its draft. Tracing the cause, `analyze_study` returns each study's full metadata block — revision history, contractor comments, filing timestamps — alongside the handful of figures synthesis actually needs, and none of it is filtered before entering context. How should the team address this?",
+      "options": [
+        "Add a system-prompt instruction telling the synthesis subagent to ignore fields outside the figures it needs.",
+        "Add a `PostToolUse` hook on `analyze_study` that trims each result to the relevant figures before it enters context.",
+        "Summarize the whole conversation more aggressively once several studies have been analyzed.",
+        "Move the pipeline to a model with a larger context window so the extra fields stop crowding out capacity findings."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "A `PostToolUse` hook filtering tool results to relevant fields before they accumulate in context is the corpus's stated fix for verbose per-call outputs bleeding irrelevant content into later reasoning.",
+        "cite": "CCA-Prep_Domain-5_v2.md §5.5"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "A prompt-level 'ignore irrelevant fields' instruction is explicitly rejected — the tokens are still consumed and the attention cost remains regardless of the instruction.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.5"
+        },
+        {
+          "option": 2,
+          "text": "More aggressive summarization is explicitly rejected as treating the symptom while verbose, unfiltered results keep arriving from every subsequent `analyze_study` call.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.5"
+        },
+        {
+          "option": 3,
+          "text": "A bigger context window is explicitly rejected — cost rises and the noise problem itself, including the blending seen here, remains untouched.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.5"
+        }
+      ]
+    },
+    {
+      "g": 9,
+      "block": 0,
+      "domain": "D1",
+      "stem": "When `search_registry` cannot reach the interconnection-queue database, the web-search subagent currently returns the string `search failed` to the coordinator, with no other detail. The coordinator cannot tell whether to retry with adjusted parameters, continue with partial results from other sources, or escalate, and in practice it always chooses to retry the exact same call. What should the subagent return instead?",
+      "options": [
+        "A structured payload naming the failure type, the query that was attempted, any partial results already gathered, and possible alternatives.",
+        "A boolean `retryable` flag alongside the same generic failure string, so the coordinator at least knows whether to try again.",
+        "The same generic failure string, plus an automatic retry inside the subagent every time before reporting anything to the coordinator.",
+        "Nothing — the coordinator should proceed to synthesis using only the sources that succeeded and note the registry as unavailable in a footnote."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "The required error payload is failure type, what was attempted, partial results, and alternatives, so the coordinator can make an intelligent recovery decision instead of defaulting to the same blind retry.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.9"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "A `retryable` boolean is a real improvement over a bare string, but the corpus frames it as worse than full structured context — failure type, attempted parameters, partial results, and alternatives together.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+        },
+        {
+          "option": 2,
+          "text": "Retrying automatically before ever surfacing the failure ignores the transient-versus-permanent distinction — a non-transient failure gains nothing from a blind retry, and the coordinator never gets visibility into what happened.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.9"
+        },
+        {
+          "option": 3,
+          "text": "Silently moving to synthesis without ever surfacing the failure withholds exactly the structured context the coordinator needs to decide whether continuing on partial results is the right call; the corpus requires reporting failures, not quietly absorbing them.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.9"
+        }
+      ]
+    },
+    {
+      "g": 10,
+      "block": 0,
+      "domain": "D2",
+      "stem": "The `verify_fact` tool's input schema declares a `scope` parameter as a free-text string, with three example values shown in its description block: `single-study`, `queue-wide`, and `utility-territory`. In practice the synthesis subagent sends values like `this study` and `the whole filing`, which match none of the three, and downstream handling silently treats them as `single-study`. What is the most effective fix?",
+      "options": [
+        "Add five more example values to the schema's description block so the model has a broader pattern to imitate.",
+        "Add a one-line description stating what `scope` means and constrain it to an enum of the three valid values.",
+        "Leave the schema as-is and add a system-prompt reminder to use one of the three listed scope values.",
+        "Rename the parameter from `scope` to `analysis_scope` so its purpose is clearer from the field name alone."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "A description stating what the field means, paired with an enum constraining it to valid values, addresses the field's meaning directly — the same specify-explicitly-rather-than-imply principle behind tool description quality generally.",
+        "cite": "CCA-Prep_Domain-2_v2.md §2.2"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "This is the confirmed miss pattern: piling on more example values gives the model a pattern to imitate but never states what the field actually means, so phrasing outside the examples keeps drifting.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.2"
+        },
+        {
+          "option": 2,
+          "text": "A system-prompt reminder is a probabilistic instruction layered on top of an unclear schema; it doesn't fix the signal the model reads when constructing the tool call itself.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.2"
+        },
+        {
+          "option": 3,
+          "text": "Renaming the field changes a label, not its defined meaning or accepted values — unconstrained free-text input remains free-text regardless of what it's called.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.2"
+        }
+      ]
+    },
+    {
+      "g": 11,
+      "block": 0,
+      "domain": "D3",
+      "stem": "The research team wants three things available to Claude Code sessions: a citation-format rule that must apply in every session regardless of task, a stricter sourcing-verification convention that should apply only when a session is editing files under the `synthesis/` directory, and a `/rebuild-report` workflow that assembles a final report on demand. Which configuration correctly matches each to its mechanism?",
+      "options": [
+        "Put all three in the root `CLAUDE.md`, since project-level configuration is loaded into every session automatically.",
+        "Put the citation rule and the sourcing convention in `CLAUDE.md`, and build the report workflow as a `.claude/rules/` entry scoped to the `synthesis/` path.",
+        "Build all three as skills, so each is invoked deliberately and none loads automatically into context the team doesn't want it in.",
+        "Put the citation rule in `CLAUDE.md`, scope the sourcing convention via `.claude/rules/` to the `synthesis/` path, and build the report workflow as a skill invoked with `/rebuild-report`."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "CLAUDE.md loads every session for universal standards, `.claude/rules/` loads only when working on matching file paths for path-scoped conventions, and skills are invoked on demand for workflow-specific guidance — each requirement matches a different mechanism.",
+        "cite": "CCA-Prep_Key-Distinctions_v1.md #3"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "CLAUDE.md loads every session universally; putting the path-scoped sourcing rule and the on-demand workflow there means both load in sessions that have no need for them.",
+          "cite": "CCA-Prep_Key-Distinctions_v1.md #3"
+        },
+        {
+          "option": 1,
+          "text": "The sourcing convention is placed in the wrong mechanism — CLAUDE.md loads always, not conditionally — and the report workflow needs on-demand invocation, which a rules glob does not provide; rules load automatically on a path match, not on a slash command.",
+          "cite": "CCA-Prep_Key-Distinctions_v1.md #3"
+        },
+        {
+          "option": 2,
+          "text": "Skills load only when explicitly invoked; a rule meant to apply in every session unconditionally is the wrong fit for a mechanism that requires deliberate invocation.",
+          "cite": "CCA-Prep_Key-Distinctions_v1.md #3"
+        }
+      ]
+    },
+    {
+      "g": 12,
+      "block": 0,
+      "domain": "D2",
+      "selectN": 2,
+      "stem": "The document-analysis subagent's `analyze_study` and `extract_citations` calls have been bundled into one turn via a prompt instruction for months, and round-trip counts have stayed low. A teammate proposes replacing the pair with a single composite `analyze_study_with_citations` tool, since the two are always called together now. Select two statements that correctly evaluate this proposal.",
+      "options": [
+        "The pair is already low-round-trip under prompt bundling, so the proposal doesn't fix a problem that is still present.",
+        "A composite tool would hide the two-step composition, making a future need for just one of the two calls harder to serve without over-fetching or a new tool.",
+        "Once a tool pairing is habitual and stable, a composite is always preferable to prompt-level bundling, so the proposal should be adopted.",
+        "The proposal should be rejected, but only because building and testing a new composite tool costs more engineering time than a prompt instruction."
+      ],
+      "correct": [0, 1],
+      "whyRight": {
+        "text": "Prompt-bundling already keeps round-trips low, so there is no remaining problem to solve, and a composite tool hides the composition — exactly why the corpus doesn't prefer it — which would make a future need for only one half of the pairing either over-fetch through the composite or require building a new tool.",
+        "cite": "CCA-Prep_Domain-2_v2.md §2.8"
+      },
+      "whyWrong": [
+        {
+          "option": 2,
+          "text": "This inverts the corpus's stated preference — prompt-level bundling, not automatic escalation to a composite tool, is preferred for a habitually-paired, dependency-free pair; habitual pairing alone does not make a composite the better design.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.8"
+        },
+        {
+          "option": 3,
+          "text": "The correct objection is architectural — a composite hides the composition and creates rigidity for future access patterns — not merely that building one costs more engineering time; a true-but-incomplete reason for the right conclusion still misses the corpus's actual stated concern.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.8"
+        }
+      ]
+    },
+    {
+      "g": 13,
+      "block": 0,
+      "domain": "D1",
+      "stem": "After a first refinement round, the coordinator re-delegated a targeted query on interconnection-queue position and re-invoked synthesis; that section is now solid. A teammate suggests running a third round anyway, just to be safe, with no specific gap identified this time. Every quality criterion the coordinator was given is already met. How should the coordinator proceed?",
+      "options": [
+        "Run the extra round, since more refinement passes can only improve a research report's quality.",
+        "Re-delegate to the web-search subagent specifically, since it has run the fewest queries so far.",
+        "Escalate the decision to a human reviewer, since the coordinator cannot judge report quality on its own.",
+        "Stop the refinement loop and finalize the report, since the defined quality criteria are already satisfied and no specific gap remains."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "The coordinator owns loop termination against defined quality criteria; once those are met and no specific gap remains, the refinement loop should stop rather than continue without a target.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.8"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "The corpus warns against looping indefinitely without a sufficiency criterion — 'more refinement can only help' treats the loop as open-ended when termination is tied to defined criteria being met.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.8"
+        },
+        {
+          "option": 1,
+          "text": "Re-delegation targets a specific identified gap with a targeted query; picking a subagent by call count rather than an actual coverage gap doesn't match the pattern, and no gap has been identified here.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.8"
+        },
+        {
+          "option": 2,
+          "text": "Nothing in the stem matches the corpus's escalation triggers — this is a routine loop-termination decision the coordinator is equipped to make against its own stated criteria, not a policy gap or high-stakes ambiguity.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.12"
+        }
+      ]
+    },
+    {
+      "g": 14,
+      "block": 0,
+      "domain": "D5",
+      "stem": "The document-analysis subagent finds a 2023 study estimating a 28-month average queue wait; the web-search subagent separately surfaces a 2026 industry post citing 42 months for the same queue. Synthesis flags this as a direct contradiction and asks the coordinator to reconcile which number is right. Neither subagent's output records when its source was published or collected. What is missing from the pipeline?",
+      "options": [
+        "A rule letting synthesis pick whichever figure comes from the more recently completed subagent run.",
+        "A general bibliography appended to the report listing both sources, so readers can judge which figure to trust.",
+        "A second synthesis pass that averages the two figures into a single blended estimate for the report.",
+        "A requirement that every structured finding carry its publication or collection date, so an apparent contradiction can be read as a trend over time instead."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "Without publication or collection dates, temporal differences get misinterpreted as contradictions; requiring dates on every structured output lets a genuine trend — 28 months in 2023 growing to 42 in 2026 — be read correctly instead of flagged as conflicting.",
+        "cite": "CCA-Prep_Domain-5_v2.md §5.11"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Picking a value by heuristic — here, run recency — is explicitly rejected; the coordinator or synthesis should annotate and preserve both values with attribution rather than select one arbitrarily.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.10"
+        },
+        {
+          "option": 1,
+          "text": "A general end-of-report bibliography is explicitly rejected — it doesn't restore per-claim traceability and does nothing to resolve whether the two figures actually disagree.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.11"
+        },
+        {
+          "option": 2,
+          "text": "No corpus mechanism sanctions averaging or blending conflicting figures into a new, unsourced number; the stated approach is preserving both values with attribution, not synthesizing a third one.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.10"
+        }
+      ]
+    },
+    {
+      "g": 15,
+      "block": 0,
+      "domain": "D1",
+      "stem": "Before publishing, the coordinator has the same synthesis subagent that wrote the draft report re-read its own output and confirm the capacity conclusions hold up. It reports high confidence. A human planner reviewing the same draft a week later finds a capacity figure that contradicts an earlier section within minutes. What most directly explains why the self-check missed it?",
+      "options": [
+        "The same subagent reviewing its own output shares the reasoning and assumptions that produced the error, so it has no independent vantage point to catch it.",
+        "The synthesis subagent's system prompt does not explicitly instruct it to check for internal contradictions between sections.",
+        "The synthesis subagent needed extended thinking enabled during the review pass to catch the contradiction.",
+        "The report should have been reviewed against a longer context window so both sections were visible at once."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "A self-check by the same instance that generated the output shares its reasoning and rationalizations — the corpus's exam pattern where non-obvious issues are only caught by a second, independent instance without access to the first's reasoning.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.17"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "Adding self-review instructions to the generation prompt is explicitly rejected as a fix — same instance, same confirmation bias, regardless of what the instructions say to look for.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.17"
+        },
+        {
+          "option": 2,
+          "text": "Extended thinking on the generation stage is explicitly rejected — it doesn't address the self-check limitation, which is about instance independence, not reasoning depth.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.17"
+        },
+        {
+          "option": 3,
+          "text": "The stem already establishes both sections were available to the same reviewing pass; a bigger context window doesn't address confirmation bias, which is the actual cause.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.17"
+        }
+      ]
+    }
+  ]
+}

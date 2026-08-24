@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Domain 3 — Claude Code Configuration & Workflows: Cheatsheet</title>
+<meta name="description" content="Exam reference for CLAUDE.md hierarchy, skills, path-specific rules, and CI/CD integration patterns."/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --ink: #1b2027;
+  --ink2: #3c434c;
+  --ink3: #6b7480;
+  --surface: #f2f4f6;
+  --surface2: #e7eaed;
+  --surface3: #dbdfe3;
+  --accent: #33566f;
+  --accent-light: #d8e3ea;
+  --accent-dark: #1f384a;
+  --teal: #2a7a6e;
+  --teal-light: #d4f0ec;
+  --coral: #c85a3a;
+  --coral-light: #fae8e2;
+  --purple: #5a3a8a;
+  --purple-light: #ece6f5;
+  --green: #3a7a4a;
+  --green-light: #e2f0e6;
+  --blue: #2a5a8a;
+  --blue-light: #ddeaf5;
+  --gray-light: #f0ece6;
+  --border: #cbd1d8;
+  --shadow: 0 1px 2px rgba(27,32,39,0.06);
+  --shadow-lg: 0 4px 16px rgba(27,32,39,0.10);
+  --radius: 6px;
+  --radius-sm: 4px;
+  --display: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --sans: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'JetBrains Mono', Consolas, 'Courier New', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.6;
+}
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+.skip-link {
+  position: absolute; left: -9999px; top: 0; z-index: 200;
+  background: var(--ink); color: var(--surface); padding: 8px 16px; border-radius: 0 0 6px 0;
+}
+.skip-link:focus { left: 0; }
+.doc-header {
+  padding: 44px 40px 32px;
+  border-bottom: 1px solid var(--border);
+}
+.doc-header-inner { max-width: 1040px; margin: 0 auto; }
+.doc-eyebrow {
+  font-family: var(--mono);
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 14px;
+}
+.doc-header h1 {
+  font-family: var(--display);
+  font-size: clamp(24px, 3.2vw, 34px);
+  font-weight: 600; line-height: 1.2;
+  color: var(--ink);
+  margin-bottom: 12px;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.doc-header h1 em { font-style: normal; color: var(--accent-dark); }
+.doc-sub {
+  font-size: 15px; font-weight: 400;
+  color: var(--ink2);
+  max-width: 680px; line-height: 1.55;
+  margin-bottom: 16px;
+}
+.doc-meta {
+  display: flex; gap: 18px; flex-wrap: wrap;
+  font-family: var(--mono);
+  font-size: 11px; color: var(--ink3);
+}
+.doc-meta span::before { content: '·'; margin-right: 18px; color: var(--border); }
+.doc-meta span:first-child::before { content: ''; margin: 0; }
+.nav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(242,244,246,0.97);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 40px;
+}
+.nav-inner {
+  max-width: 1040px; margin: 0 auto;
+  display: flex; gap: 0; overflow-x: auto; align-items: center;
+}
+.nav-link {
+  font-family: var(--mono);
+  font-size: 12px; font-weight: 500;
+  color: var(--ink3); text-decoration: none;
+  padding: 13px 16px; white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.nav-link:hover { color: var(--ink); border-color: var(--accent); }
+.nav-link.active { color: var(--ink); border-color: var(--accent); }
+.container { max-width: 1040px; margin: 0 auto; padding: 0 40px; }
+.section { padding: 48px 0; }
+.section + .section { border-top: 1px solid var(--border); }
+.section-label {
+  font-family: var(--mono);
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 10px;
+}
+.section-title {
+  font-family: var(--display);
+  font-size: clamp(20px, 2.6vw, 26px);
+  font-weight: 600; line-height: 1.25;
+  color: var(--ink); margin-bottom: 12px;
+  letter-spacing: -0.01em;
+}
+.section-intro {
+  font-size: 14.5px; font-weight: 400;
+  color: var(--ink2); max-width: 680px;
+  margin-bottom: 28px; line-height: 1.6;
+}
+[id] { scroll-margin-top: 56px; }
+.prose { max-width: 680px; }
+.prose p { margin-bottom: 14px; color: var(--ink2); font-size: 14.5px; }
+.prose p strong { color: var(--ink); font-weight: 600; }
+.prose h3 {
+  font-family: var(--display); font-size: 16px; font-weight: 600;
+  color: var(--ink); margin: 26px 0 10px;
+}
+.prose ul, .prose ol { padding-left: 20px; margin-bottom: 14px; color: var(--ink2); font-size: 14.5px; }
+.prose li { margin-bottom: 6px; }
+.prose a { color: var(--accent-dark); text-decoration-color: var(--accent); text-underline-offset: 3px; }
+.note-box {
+  margin: 18px 0; padding: 12px 14px;
+  background: var(--surface3);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: 13px; color: var(--ink2);
+  max-width: 680px;
+}
+.note-box strong { font-weight: 600; color: var(--ink); }
+.table-wrap { overflow-x: auto; margin: 22px 0; }
+.data-table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+  border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
+}
+.data-table caption {
+  caption-side: bottom; text-align: left;
+  font-size: 12px; color: var(--ink3); padding: 8px 4px;
+}
+.data-table thead th {
+  font-family: var(--mono);
+  font-size: 10.5px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ink3); text-align: left;
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  background: var(--surface3);
+}
+.data-table td { padding: 9px 14px; border-bottom: 1px solid var(--border); color: var(--ink2); vertical-align: top; }
+.data-table tbody tr:nth-child(even) { background: var(--surface2); }
+.data-table tbody tr:last-child td { border-bottom: none; }
+code {
+  font-family: var(--mono); font-size: 0.86em;
+  background: var(--surface2); border: 1px solid var(--border);
+  padding: 1px 5px; border-radius: 3px; color: var(--ink);
+}
+pre.code-block {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px 18px; margin: 20px 0;
+  overflow-x: auto; font-family: var(--mono);
+  font-size: 12.5px; line-height: 1.55; color: var(--ink2);
+}
+pre.code-block code { background: none; border: none; padding: 0; }
+.footer-strip {
+  background: var(--ink); color: rgba(242,244,246,0.55);
+  text-align: center; padding: 24px 40px; font-size: 12px; line-height: 1.5;
+  margin-top: 48px;
+}
+.footer-strip strong { color: rgba(242,244,246,0.85); }
+@media (max-width: 720px) {
+  .container, .doc-header { padding-left: 20px; padding-right: 20px; }
+  .nav { padding: 0 16px; }
+}
+@media print {
+  .nav, .skip-link { display: none; }
+  body { background: #fff; }
+}
+</style>
+</head>
+<body>
+
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="doc-header">
+  <div class="doc-header-inner">
+    <div class="doc-eyebrow">Exam Reference · Domain 3 · 20% Weight</div>
+    <h1>Claude Code Configuration & Workflows</h1>
+    <p class="doc-sub">Master CLAUDE.md hierarchy, path-specific rules, and CI/CD patterns. Configuration > invocation. Path prefix is the whole answer.</p>
+    <div class="doc-meta">
+      <span>Content: Cheatsheet</span>
+      <span>Pass cut: 720/1000</span>
+      <span>Study type: Lookup reference</span>
+    </div>
+  </div>
+</header>
+
+<nav class="nav" aria-label="Sections">
+  <div class="nav-inner">
+    <a class="nav-link active" href="#claude-hierarchy">CLAUDE.md</a>
+    <a class="nav-link" href="#skills">Skills</a>
+    <a class="nav-link" href="#path-rules">Path Rules</a>
+    <a class="nav-link" href="#plan-mode">Plan vs Direct</a>
+    <a class="nav-link" href="#ci-cd">CI/CD</a>
+    <a class="nav-link" href="#mnemonics">Mnemonics</a>
+  </div>
+</nav>
+
+<main id="main">
+
+<section class="section" id="claude-hierarchy">
+  <div class="container">
+    <div class="section-label">TS 3.1</div>
+    <h2 class="section-title">CLAUDE.md Hierarchy</h2>
+    <p class="section-intro">Three levels—memorise the paths verbatim.</p>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr><th>Level</th><th>Path</th><th>Scope</th><th>Version-Controlled?</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>User</strong></td><td><code>~/.claude/CLAUDE.md</code></td><td>Only you, on your machine</td><td><strong>No</strong></td></tr>
+          <tr><td><strong>Project</strong></td><td><code>.claude/CLAUDE.md</code> or root <code>CLAUDE.md</code></td><td>Everyone on the repo</td><td>Yes</td></tr>
+          <tr><td><strong>Directory</strong></td><td><code>&lt;subdir&gt;/CLAUDE.md</code></td><td>Only when working in that subdir</td><td>Yes</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note-box"><strong>THE Most-Tested 3.1 Trap:</strong> Developer A writes conventions to <code>~/.claude/CLAUDE.md</code>. Git never carried it. Developer B on the same repo gets inconsistent behaviour. <strong>Diagnostic instinct:</strong> Divergent behaviour between teammates → suspect user-level vs project-level config first.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="skills">
+  <div class="container">
+    <div class="section-label">TS 3.2</div>
+    <h2 class="section-title">Custom Slash Commands and Skills</h2>
+    <p class="section-intro">Skills are on-demand; CLAUDE.md is always loaded.</p>
+    <div class="table-wrap">
+      <table class="data-table">
+        <caption>Directory structure for skills and commands</caption>
+        <thead>
+          <tr><th>Type</th><th>Location</th><th>Shared?</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Project slash commands</strong></td><td><code>.claude/commands/</code></td><td>Yes</td></tr>
+          <tr><td><strong>Personal slash commands</strong></td><td><code>~/.claude/commands/</code></td><td>No</td></tr>
+          <tr><td><strong>Project skills</strong></td><td><code>.claude/skills/&lt;name&gt;/SKILL.md</code></td><td>Yes</td></tr>
+          <tr><td><strong>Personal skills</strong></td><td><code>~/.claude/skills/&lt;name&gt;/SKILL.md</code></td><td>No</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <h3>Skill Frontmatter Options</h3>
+      <ul>
+        <li><code>context: fork</code> — Runs in isolated sub-agent context; verbose output stays in fork; only summary returns to main conversation</li>
+        <li><code>allowed-tools</code> — Restricts which tools the skill can call; prevents destructive actions</li>
+        <li><code>argument-hint</code> — Prompts the developer for required parameters when invoked without arguments</li>
+      </ul>
+      <h3>THE Critical Distinction</h3>
+      <p><strong>Category error the exam tests:</strong> "Needs to happen every time" → CLAUDE.md (NOT a skill). Skills are opt-in. Invoked when needed → skill (NOT CLAUDE.md — would bloat every interaction).</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="path-rules">
+  <div class="container">
+    <div class="section-label">TS 3.3</div>
+    <h2 class="section-title">Path-Specific Rules</h2>
+    <p class="section-intro">Files in <code>.claude/rules/</code> with YAML frontmatter declaring a glob—loads only when editing matching files.</p>
+    <div class="table-wrap">
+      <table class="data-table">
+        <caption>Why path-rules beat directory-level CLAUDE.md</caption>
+        <thead>
+          <tr><th></th><th>Directory CLAUDE.md</th><th>Path-Specific Rules</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Scope</strong></td><td>One directory only</td><td>Anywhere the glob matches</td></tr>
+          <tr><td><strong>Spread across codebase</strong></td><td>Need one CLAUDE.md per directory</td><td>One rule file, globs everywhere</td></tr>
+          <tr><td><strong>Token cost</strong></td><td>Loaded whenever working in that directory</td><td>Loaded only on matching files</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p><strong>Signature phrase to recognise:</strong> <em>"pattern of files spread across the codebase"</em> → path-specific rules.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="plan-mode">
+  <div class="container">
+    <div class="section-label">TS 3.4</div>
+    <h2 class="section-title">Plan Mode vs Direct Execution</h2>
+    <p class="section-intro">Plan mode when decisions remain. Direct execution when the approach is known.</p>
+    <div class="prose">
+      <h3>Plan Mode When</h3>
+      <ul>
+        <li>Large-scale changes (affecting 45+ files, monolith restructure)</li>
+        <li>Multiple valid approaches exist (need to evaluate before committing)</li>
+        <li>Architectural decisions required</li>
+        <li>Multi-file modifications where changes interact</li>
+        <li>Unfamiliar codebase needs exploration before design</li>
+      </ul>
+      <h3>Direct Execution When</h3>
+      <ul>
+        <li>Well-understood, narrow scope (single-file bug fix, clear stack trace)</li>
+        <li>Mechanical changes (add a validation conditional)</li>
+        <li>The correct approach is already known</li>
+      </ul>
+      <p><strong>The dividing line:</strong> Are there decisions still to make, or just a known thing to do? Decisions → plan mode. Known thing → direct execution.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="ci-cd">
+  <div class="container">
+    <div class="section-label">TS 3.6</div>
+    <h2 class="section-title">CI/CD Integration</h2>
+    <p class="section-intro">Five failure patterns and their fixes.</p>
+    <div class="table-wrap">
+      <table class="data-table">
+        <caption>CI/CD failure patterns</caption>
+        <thead>
+          <tr><th>Symptom</th><th>Root Cause</th><th>Fix</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>CI job <strong>hangs indefinitely</strong></td><td>Claude Code waiting for interactive input</td><td>Add <code>-p</code> flag</td></tr>
+          <tr><td>PR comments need to be <strong>posted automatically</strong> as inline comments</td><td>Output is narrative prose, not structured data</td><td><code>--output-format json --json-schema</code></td></tr>
+          <tr><td><strong>Duplicate comments</strong> on every new commit</td><td>No context about what was already reviewed</td><td>Include prior findings + instruct "report only new or unaddressed issues"</td></tr>
+          <tr><td><strong>Review misses issues</strong> in code that wasn't changed</td><td>Running only the incremental diff</td><td>Still run full review; prior-findings context handles deduplication</td></tr>
+          <tr><td>CI generates <strong>duplicate tests</strong></td><td>Doesn't know what's already covered</td><td>Provide existing test files in context</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note-box"><strong>What blocks CI most on the exam:</strong> the <code>-p</code> flag. If you see "hangs" or "waiting for input"—that is the answer, always.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="mnemonics">
+  <div class="container">
+    <div class="section-label">Quick Reference</div>
+    <h2 class="section-title">One-Line Mnemonics</h2>
+    <div class="prose">
+      <ul>
+        <li><strong>Path prefix is the answer.</strong> <code>~/.claude/</code> = personal. <code>.claude/</code> = shared.</li>
+        <li><strong>Two devs, same repo, divergent behaviour:</strong> user-level config that was never committed.</li>
+        <li><strong>Pattern of files spread across the codebase</strong> → path-specific rules with globs.</li>
+        <li><strong>Skill vs CLAUDE.md:</strong> on-demand workflow vs always-loaded standard. Don't confuse.</li>
+        <li><strong>Personal customisation of a team skill:</strong> new name, <code>~/.claude/skills/</code>. Never edit the team skill.</li>
+        <li><strong><code>context: fork</code></strong> for noisy skills. <strong>Explore subagent</strong> for noisy investigations.</li>
+        <li><strong>Plan mode = decisions still to make.</strong> Direct execution = known thing to do.</li>
+        <li><strong>CI hangs after banner:</strong> <code>-p</code> flag. Always.</li>
+        <li><strong>Automated PR comments need machine-parseable output:</strong> <code>--output-format json --json-schema</code>.</li>
+        <li><strong>Same session reviewing its own code:</strong> motivated reasoning. Use a fresh session.</li>
+        <li><strong>Developers ignoring the review bot:</strong> incremental review context (prior findings + "only new issues").</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer-strip">
+  <strong>Domain 3: Claude Code Configuration & Workflows</strong><br/>
+  Exam weight 20% · Claude Certified Architect Prep · Study reference
+</footer>
+
+<script>
+(function () {
+  var links = document.querySelectorAll('.nav-link');
+  if (!links.length) return;
+  var map = {};
+  links.forEach(function (l) { map[l.getAttribute('href').slice(1)] = l; });
+  var obs = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) {
+        links.forEach(function (l) { l.classList.remove('active'); });
+        var l = map[e.target.id]; if (l) l.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -60% 0px' });
+  document.querySelectorAll('section[id]').forEach(function (s) { obs.observe(s); });
+})();
+</script>
+</body>
+</html>

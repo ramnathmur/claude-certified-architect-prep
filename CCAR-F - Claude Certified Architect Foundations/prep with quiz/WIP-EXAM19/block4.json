@@ -1,0 +1,514 @@
+{
+ "label": "Structured Data Extraction",
+ "narrative": "A grants pipeline extracts structured records from funding application packs — an application form, a budget spreadsheet export, supporting letters and an eligibility declaration — arriving together as one bundle. Records feed an assessment system, and a small panel reviews a portion before awards are confirmed. The questions below follow the pipeline through a year of tuning.",
+ "questions": [
+  {
+   "g": 46,
+   "block": 3,
+   "domain": "D4",
+   "stem": "Four extractors exist, one per document type, and the pipeline cannot tell which type a page carries until the model reads it. Because a structured record is mandatory, the team set `tool_choice` to `{\"type\": \"tool\", \"name\": \"extract_application\"}`. Records now arrive for every page and roughly 40% of them are budget pages and letters parsed as application forms. What is the correct setting?",
+   "options": [
+    "`{\"type\": \"any\"}`, which keeps the guarantee that a tool is called while returning the choice of extractor to the model.",
+    "Keep the forced tool and add a prompt instruction to leave fields blank when the page is not an application form.",
+    "`{\"type\": \"auto\"}`, so the model can decline to extract from pages it does not recognise.",
+    "Keep the forced tool and add a validation step that discards records whose fields are mostly empty."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "The requirement is that some structured record is produced, not that this particular extractor runs. Forcing one named tool is a stronger guarantee than the requirement asks for, and the surplus strength is what is causing the damage — budget pages have no choice but to come back as application forms. `any` is the rung that matches: a tool call is guaranteed, and which one stays with the model that can actually see the page.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "This asks the model to half-comply with a call it is being forced to make, producing empty application records for budget pages. The wrong extractor still runs, and now its output is deliberately hollow.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+    },
+    {
+     "option": 2,
+     "text": "`auto` gives up the guarantee entirely, so pages that should produce a record can come back as prose. It over-corrects from one rung too strong to one rung too weak.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+    },
+    {
+     "option": 3,
+     "text": "Discarding hollow records detects the wrong extractor after it has run and leaves the page with no record at all. It is the workaround sitting beside a parameter change that prevents the problem.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+    }
+   ]
+  },
+  {
+   "g": 47,
+   "block": 3,
+   "domain": "D5",
+   "stem": "A validation exercise puts field-level accuracy at 96% over 2,500 records, and the team proposes auto-confirming everything above the confidence cut-off. Asked for the number broken down, the exercise shows application forms and declarations in the mid-nineties and budget exports — 7% of volume — at 58%. What does that establish?",
+   "options": [
+    "The sample was unrepresentative and should be redrawn with budget exports over-weighted before any decision.",
+    "Confidence scoring is failing on budget exports, so the cut-off should be raised until their accuracy matches the rest.",
+    "The aggregate is sound and the budget figure is a small-sample artefact that will regress at full volume.",
+    "Aggregate accuracy hides per-type performance, so validation must be segmented by document type and field before any automation decision."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "A single headline number averages over populations that behave differently, and the average is dominated by the types making up most of the volume. Here 96% overall coexists with 58% on a real document type, so automating on the aggregate would confirm roughly two in five budget exports wrong. Segment by document type and field before automating anything.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "The sample did its job — it contained budget exports in proportion and the segmented figure surfaced the problem. Redrawing addresses a sampling defect that has not been demonstrated while the decision is still being made on an aggregate.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+    },
+    {
+     "option": 1,
+     "text": "This assumes the model is confident and wrong only on this type, which the data does not establish, and raising a global cut-off suppresses volume across every type to work around one. The finding is about how the metric was reported.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+    },
+    {
+     "option": 2,
+     "text": "7% of 2,500 records is around 175, which is ample to establish that a type performs far below the rest. Dismissing it as noise is how the masking trap survives review.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+    }
+   ]
+  },
+  {
+   "g": 48,
+   "block": 3,
+   "domain": "D4",
+   "stem": "The extraction schema marks all nine fields required, including `co_applicant_name` and `previous_award_reference`. Spot checks find plausible names and well-formed reference codes on applications that name no co-applicant and cite no previous award. What schema change addresses this?",
+   "options": [
+    "Add a per-field confidence score and discard values scoring below a tuned threshold.",
+    "Run a second extraction pass and keep only the fields both passes agree on.",
+    "Make fields that may legitimately be absent nullable, so the model can return null rather than inventing a value.",
+    "Keep every field required and add an instruction not to guess when information is absent."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "A required field is an instruction to produce a value, and the model satisfies it with a plausible one when the source contains nothing. Making genuinely optional fields nullable removes that pressure and lets the model report absence honestly. A null is recoverable downstream; a fabricated reference code that looks real is not, because nothing marks it as invented.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.5"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Confidence scores are poorly calibrated, and a fabricated value drawn from surrounding context can score high precisely because it fits. This filters some fabrications by chance while leaving the schema pressure that produces them untouched.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.5"
+    },
+    {
+     "option": 1,
+     "text": "A second pass under the same required-field schema is under the same pressure to invent, and two independently fabricated values drawn from the same context can agree. It doubles the cost for a check that does not test the thing that is wrong.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.5"
+    },
+    {
+     "option": 3,
+     "text": "The schema and the instruction now contradict each other: one demands a value for every field, the other says not to invent one. The schema constraint is the harder signal, so the fabrication continues while the prompt grows.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.5"
+    }
+   ]
+  },
+  {
+   "g": 49,
+   "block": 3,
+   "domain": "D5",
+   "stem": "The application form states a project start date of 1 April and a supporting letter from the host institution states 1 June. Both are legitimate parts of the pack, and the funding window makes the two dates lead to different eligibility outcomes. What should the extraction output do?",
+   "options": [
+    "Take the institution's date, since the host controls when the project can actually begin.",
+    "Take the application form's date, since it is the document the applicant signed.",
+    "Report the midpoint with a note that the sources disagree, so the assessor receives one usable date.",
+    "Carry both dates bound to their documents, with the date each document was completed, so a disagreement can be told from a later correction."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "Two credible sources disagreeing is information, and collapsing it to one value destroys it. Keeping both bound to their documents lets the assessor judge, and carrying the completion dates is what makes the judgement possible — a letter written later may be correcting the form rather than contradicting it, and without the dates that distinction is invisible.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.10"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "This is a plausible heuristic applied silently. It may often be right and it discards a credible source without recording that a choice was made, so nothing downstream can revisit it.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.10"
+    },
+    {
+     "option": 1,
+     "text": "Document precedence is another arbitrary tie-break, and it points the opposite way to the previous one — which is the tell that neither is grounded in the evidence.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.10"
+    },
+    {
+     "option": 2,
+     "text": "A midpoint is a date neither document states, entered into an eligibility decision as though it were evidenced. It resolves the disagreement by manufacturing a third answer with no provenance.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.10"
+    }
+   ]
+  },
+  {
+   "g": 50,
+   "block": 3,
+   "domain": "D4",
+   "selectN": 2,
+   "stem": "Records are produced through a tool call with a JSON schema, and a validation layer runs afterwards. The team is deciding what each layer should own. Select TWO checks that belong in the validation layer rather than the schema.",
+   "options": [
+    "The requested amount must not exceed the sum of the budget lines.",
+    "The project end date must fall after the project start date.",
+    "The requested amount must be a number with at most two decimal places.",
+    "The status field must be one of four permitted values."
+   ],
+   "correct": [
+    0,
+    1
+   ],
+   "whyRight": {
+    "text": "A schema describes fields individually — type, format, permitted values. It cannot express a relationship between two fields, so 'not more than the sum of the budget lines' and 'end after start' have to be computed. Those checks also produce the specific per-field error a retry loop can feed back, which a schema rejection does not.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.8"
+   },
+   "whyWrong": [
+    {
+     "option": 2,
+     "text": "A numeric type with a decimal-place constraint is exactly what a schema expresses, and it is checked at the boundary before any validation code runs. Duplicating it in the validation layer adds a second place to maintain the same rule.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.5"
+    },
+    {
+     "option": 3,
+     "text": "A controlled vocabulary is an enum, which belongs in the schema. Expressing it in validation code means the model never sees the permitted values while it is filling the field in.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.1"
+    }
+   ]
+  },
+  {
+   "g": 51,
+   "block": 3,
+   "domain": "D1",
+   "stem": "Applications the pipeline cannot safely complete should go to a human. The current rule sends anything the model reports low confidence on. The queue has filled with routine applications while two packs carrying a declaration format the pipeline has no extractor for went through untouched. What should trigger a handoff instead?",
+   "options": [
+    "The requested amount exceeding a fixed threshold, since larger awards carry the most exposure.",
+    "A second model reviewing each record and escalating whenever it disagrees with the first.",
+    "The number of pages in the bundle, since larger packs are likelier to contain something unusual.",
+    "Structural conditions: a document type with no extractor, a mandatory field absent from the pack, an eligibility rule with no matching procedure, or a validation conflict a retry did not resolve."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "Escalation should key on observable properties of the case rather than on the model's report of its own uncertainty, which is poorly calibrated in both directions — hence a queue of easy applications alongside unrecognised formats that went through. An unsupported document type, a missing mandatory field, an unmatched rule and an unresolved conflict are all facts about the pack that can be checked.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.12"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A monetary threshold measures the cost of being wrong, not whether the pipeline can handle the pack. It escalates every large routine application and lets every small unusual one through.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.12"
+    },
+    {
+     "option": 1,
+     "text": "A second model is a useful check and not an escalation criterion. Two models sharing a blind spot agree, and disagreement on immaterial differences would flood the queue with packs needing no human at all.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.12"
+    },
+    {
+     "option": 2,
+     "text": "Page count is a proxy for complexity in the same way turn count is — loosely, and with obvious counterexamples. A long pack of standard forms is easy; a short one with an unrecognised declaration is not.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.12"
+    }
+   ]
+  },
+  {
+   "g": 52,
+   "block": 3,
+   "domain": "D4",
+   "stem": "A single prompt asks the model to identify each document in the pack, pull the fields belonging to each, check the budget export against the amount requested on the form, and recommend an eligibility outcome. Output quality is poor and no failure can be traced to a particular part of the work. What is the correct restructuring?",
+   "options": [
+    "Keep one prompt and add examples showing complete packs alongside their finished records.",
+    "Split into four prompts run independently over the same pack, then merge their outputs.",
+    "Chain the work into stages — classify, extract, reconcile, recommend — each taking the previous stage's output as its input.",
+    "Keep one prompt and require the model to work through the four tasks in order, showing intermediate results."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "Four dependent tasks in one prompt compete for attention and produce failures nobody can localise. Chaining gives each stage a single job and a defined input, so reconciliation works from an extraction that has already been checked and any failure is attributable to the stage that produced it. The dependency between stages is real, which is what makes a chain the right shape.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.14"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Examples help a model reproduce a transformation it is misinterpreting. They do not relieve the load of doing four dependent jobs in one pass, and a whole-pack example is large enough to crowd the input further.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.14"
+    },
+    {
+     "option": 1,
+     "text": "Independent prompts discard the dependency: reconciliation needs the extraction's output and the recommendation needs the reconciliation. Three of the four would work from the raw pack rather than from what came before.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.14"
+    },
+    {
+     "option": 3,
+     "text": "Ordered intermediate results inside one call make the reasoning visible without giving any stage its own attention budget or its own validation point. The four tasks still share one pass.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.14"
+    }
+   ]
+  },
+  {
+   "g": 53,
+   "block": 3,
+   "domain": "D2",
+   "stem": "The extraction tool's input schema declares `funding_stream` as a free-text string, and it arrives with eleven spellings of the same three streams. A separate field, `panel_ref`, is populated inconsistently because nobody can tell from the schema what it should hold. What is the correct pair of changes?",
+   "options": [
+    "Change `funding_stream` to an integer code documented in the system prompt, and mark `panel_ref` required.",
+    "Constrain `funding_stream` to an enum of the three permitted values, and give every parameter a description stating what it holds and where in the pack it is found.",
+    "Leave both as strings and add a post-extraction normalisation step that maps spellings onto the three streams.",
+    "Constrain `funding_stream` to an enum, and add examples to the prompt showing how `panel_ref` has been filled in previously."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "Both changes put the contract where the model reads it. An enum makes the three streams the permitted values rather than a convention hoped for, and a per-parameter description tells the model what each field means at the moment it is filling it in — which is exactly what `panel_ref` is missing.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.1"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "An integer code moves the meaning out of the schema into a prompt table that drifts from it, and marking `panel_ref` required pressures the model to invent a value when the pack has none.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.1"
+    },
+    {
+     "option": 2,
+     "text": "Normalising afterwards cleans up eleven spellings and leaves the model free to produce a twelfth, which the mapping will not recognise. It also does nothing for `panel_ref`.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.1"
+    },
+    {
+     "option": 3,
+     "text": "The enum half is right. Examples of prior `panel_ref` values demonstrate a pattern without stating what the field means, so the model infers the rule from instances when a one-line description would give it directly.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.1"
+    }
+   ]
+  },
+  {
+   "g": 54,
+   "block": 3,
+   "domain": "D4",
+   "stem": "An overnight run submits 3,000 extraction requests as a batch. When the results arrive, 41 have failed and the team cannot tell which applications they belong to, because the reassembly step matches results to inputs by their position in the returned array. What discipline was missed?",
+   "options": [
+    "The failed requests should be re-submitted as a whole second batch, since identifying individual failures is not possible.",
+    "The batch should be submitted in smaller groups, so a failure affects a narrower range of positions.",
+    "Each request should carry a caller-supplied identifier that comes back with its result, so reassembly joins on that rather than on ordering.",
+    "The run should move to the synchronous API, where each response is returned against the request that produced it."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "Batch results are joined to their inputs by a caller-supplied identifier carried on each request and returned with each result. Relying on array position assumes an ordering the API does not promise, which is why 41 failures became 41 unattributable failures. With the identifier in place, selective re-submission of just the failed subset also becomes possible.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Re-submitting everything pays for 3,000 extractions to recover 41, and without an identifier the second batch's results are just as unattributable as the first.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+    },
+    {
+     "option": 1,
+     "text": "Smaller groups narrow the range of positions to search by hand and leave the join still resting on ordering. It reduces the size of the problem rather than removing it.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+    },
+    {
+     "option": 3,
+     "text": "Abandoning batch for an overnight run that is entirely latency-tolerant gives up the reason it was chosen, to work around a join discipline the batch API already supports.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+    }
+   ]
+  },
+  {
+   "g": 55,
+   "block": 3,
+   "domain": "D5",
+   "stem": "The panel view runs everything together as prose: the institution's supporting narrative, the budget lines with their amounts, and the four eligibility clauses in play. Panel members report they cannot check the arithmetic without transcribing it and keep scrolling back to find clause wording. What should change?",
+   "options": [
+    "Keep the prose and add a summary line stating the total requested and the clause numbers.",
+    "Render each content type in the form that suits it — the narrative as prose, the budget lines as a table, the clauses as a structured list.",
+    "Keep the prose and shorten it, since the difficulty comes from the volume rather than the form.",
+    "Render everything as a structured list, since one consistent format is easier to scan than three."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "Different content types are read differently. Amounts against line items are compared column-wise, which a table supports and prose obstructs; clause wording is looked up, which suits a structured list; a narrative reads as prose. Flattening all three into one form degrades the two that do not fit it, which is exactly the complaint.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.11"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A summary line gives the total without making the individual budget lines checkable, and clause numbers without wording still send the panel back into the prose to read them.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.11"
+    },
+    {
+     "option": 2,
+     "text": "Shortening a table's worth of amounts embedded in prose loses information rather than presenting it better. The difficulty is with the form, and less of the wrong form is still the wrong form.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.11"
+    },
+    {
+     "option": 3,
+     "text": "Uniformity is the problem in a different direction. A supporting narrative broken into list items loses its connective reasoning, so this fixes two content types by damaging the third.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.11"
+    }
+   ]
+  },
+  {
+   "g": 56,
+   "block": 3,
+   "domain": "D3",
+   "stem": "The repository's `CLAUDE.md` opens with four paragraphs on the funding programme's history, moves to the record-schema conventions, returns to background on how the panel works, and closes with the rule that every extractor change ships with a fixture. Engineers report the fixture rule is frequently not applied. What is the most likely problem?",
+   "options": [
+    "The file interleaves narrative background with operative instructions and puts a requirement last, so what must be followed is not distinguishable from what is context.",
+    "The requirement is stated once and needs repeating through the file to carry enough weight.",
+    "The file is too long, and cutting its total length will make every instruction more likely to be followed.",
+    "The fixture requirement should be repeated in each extractor's directory so it sits closer to the code."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "CLAUDE.md is read as instructions, and its organisation determines what is actually followed. Interleaving programme history with operative rules leaves no signal about which paragraphs are binding, and a requirement placed last competes with everything before it. Separating background from instructions and putting the operative rules where they are prominent is the corpus's guidance.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.11"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "Repetition adds bulk to a file whose problem is that instructions are indistinguishable from background, and it sets a convention where every important rule must be stated several times to count.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.11"
+    },
+    {
+     "option": 2,
+     "text": "Length is a symptom of the narrative content rather than the cause. A shorter file with the same interleaving buries the requirement just as effectively.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.11"
+    },
+    {
+     "option": 3,
+     "text": "Copying a repository-wide requirement into every extractor directory creates duplicates that drift apart and does nothing about the file where the problem is. The requirement is universal, so it belongs in one place.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.11"
+    }
+   ]
+  },
+  {
+   "g": 57,
+   "block": 3,
+   "domain": "D2",
+   "selectN": 2,
+   "stem": "A reconciliation subagent must compare the budget export against the amount requested on the form. It currently holds a `query_records` tool described as 'runs a query against the assessment database'. Review finds it has read records for other applicants and, once, an internal audit table. Select TWO changes that follow the corpus.",
+   "options": [
+    "Replace it with a tool that accepts only the application identifier the coordinator passes and returns that application's records.",
+    "State the application identifier and the amount requested in the prompt the coordinator passes when it spawns the subagent.",
+    "Keep `query_records` and add a system-prompt list of tables the subagent must not query.",
+    "Keep `query_records` and have the coordinator review each result before the subagent uses it."
+   ],
+   "correct": [
+    0,
+    1
+   ],
+   "whyRight": {
+    "text": "Least privilege and explicit context are the two rules governing subagent design. A tool that runs arbitrary queries grants the whole database when the job is one application, so the interface should express the narrower capability. And a subagent's context starts empty, so the identifier and the requested amount only exist for it if the coordinator writes them into the prompt.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+   },
+   "whyWrong": [
+    {
+     "option": 2,
+     "text": "A prompt denylist is a probabilistic control over a capability that remains fully present, and it can only name the tables someone anticipated. The audit table is exactly the case such a list misses.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+    },
+    {
+     "option": 3,
+     "text": "Review after retrieval means the other applicant's records have already been read before anyone objects, and it puts the coordinator in the loop on every call, which removes the point of delegating.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+    }
+   ]
+  },
+  {
+   "g": 58,
+   "block": 3,
+   "domain": "D4",
+   "stem": "Award dates reach the assessment system in four shapes — `2026-04-01`, `01/04/2026`, `1 Apr 2026` and `April 2026` — depending on which document the extractor read. Downstream comparison logic handles the first and mis-orders the rest. Where should the normalisation happen?",
+   "options": [
+    "In the extraction schema, by typing the field as an ISO date so the model emits one shape at the point it fills the field in.",
+    "In the comparison logic, by parsing all four shapes before ordering them.",
+    "In the prompt, by instructing the model to prefer ISO dates wherever the source allows.",
+    "In a post-extraction pass that rewrites whatever shape arrived into ISO before the record is stored."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "The schema is where the field's format is declared, and it is what the model reads while it is filling the field in. Typing the field as an ISO date makes one shape the only well-formed answer, so the four variants never enter the record. Every other option accepts the variation and then repairs it somewhere downstream.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.5"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "Teaching the comparison logic four formats leaves the record holding four, so every other consumer has to learn them too. It fixes one reader rather than the data.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.5"
+    },
+    {
+     "option": 2,
+     "text": "A prompt preference is a probabilistic control where the schema offers a declarative one, and 'wherever the source allows' hands the judgement back to the model on every field.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.5"
+    },
+    {
+     "option": 3,
+     "text": "A rewriting pass is closer — the record ends up consistent — but it repairs after the fact what the schema prevents outright, and it has to correctly guess whether `01/04/2026` is April or January.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.5"
+    }
+   ]
+  },
+  {
+   "g": 59,
+   "block": 3,
+   "domain": "D1",
+   "stem": "Budget exports of around 40 pages are handled by splitting them into five-page batches, extracting each batch on its own, and concatenating the results. Extraction inside a batch is accurate. Across the whole export, lines that continue over a batch boundary appear twice and the running subtotals no longer reconcile. What is missing?",
+   "options": [
+    "Larger batches, so fewer boundaries exist and fewer lines are split across them.",
+    "Overlapping batches, so every boundary line appears whole in at least one batch.",
+    "A cross-batch pass that reconciles boundary lines and validates the subtotals across the assembled set.",
+    "A single pass over the whole 40-page export, removing batching entirely."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "Batching solves attention dilution inside each batch and by construction cannot see anything spanning two of them. The duplicates and the broken subtotals are both cross-batch properties, so they need a pass whose input is the assembled set rather than any single batch. Batching plus an integration pass is the complete pattern.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Fewer boundaries means fewer occurrences of the same defect, not its absence, and larger batches reintroduce the attention dilution batching was adopted to fix.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+    },
+    {
+     "option": 1,
+     "text": "Overlap makes each boundary line appear whole somewhere and also makes it appear twice, which is the duplication already being reported. Without a reconciling pass nothing decides which copy to keep.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+    },
+    {
+     "option": 3,
+     "text": "A single pass over 40 pages returns the uneven-depth problem batching was introduced to solve. The answer is not to choose between per-item depth and whole-document consistency but to run passes for both.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+    }
+   ]
+  },
+  {
+   "g": 60,
+   "block": 3,
+   "domain": "D3",
+   "stem": "The team wants `/reprocess` to take an application reference and re-run the pipeline for it, so an assessor can type `/reprocess GR-2026-0481`. The command file currently hard-codes one reference for testing. How is the reference passed in?",
+   "options": [
+    "Through a `paths` entry in the command's frontmatter, which binds the command to the referenced application.",
+    "Through the `$ARGUMENTS` variable in the command file, which is substituted with whatever follows the command name.",
+    "Through an environment variable the assessor sets before invoking the command.",
+    "Commands cannot take parameters; a skill with an input schema is required for this."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "`$ARGUMENTS` is the substitution point in a custom command file: whatever the user types after the command name is placed there when the command runs. That is exactly the shape this needs — one reference, supplied at invocation, with no per-application file and nothing to set beforehand.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.4"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "`paths` scopes when something applies by matching file paths. It has no relationship to a value typed at invocation and cannot carry an application reference.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+    },
+    {
+     "option": 2,
+     "text": "An environment variable puts the parameter outside the invocation, so the assessor sets a value and then runs a command that looks parameterless. The substitution mechanism exists precisely to avoid that.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.4"
+    },
+    {
+     "option": 3,
+     "text": "Custom commands do take arguments. Reaching for a skill here adds structure to work around a facility the command file already has.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.4"
+    }
+   ]
+  }
+ ]
+}

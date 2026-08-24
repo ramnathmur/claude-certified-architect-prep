@@ -1,0 +1,292 @@
+{
+  "block_index": 1,
+  "scenario_label": "Developer Productivity with Claude",
+  "narrative": "A backend engineering team relies on an Agent SDK-based developer-tooling assistant — using built-in tools (Read, Write, Edit, Bash, Grep, Glob) alongside MCP servers — to investigate, test, and refactor a legacy multi-module service. The same codebase, subagents, and tool set recur across the block as the team maps dependencies, fixes tool-selection and editing failures, and compares refactor strategies.",
+  "questions": [
+    {
+      "g": 16,
+      "block": 1,
+      "domain": "D1",
+      "stem": "The developer-tooling assistant's custom harness decides whether to keep its tool-calling loop running by scanning each response's text for phrases like 'Done' or 'No further changes needed,' rather than inspecting the API response itself. During a `fulfillment` module investigation, the loop stopped early when Claude's intermediate text read 'Done searching the `auth/` subdirectory, moving to `billing/` next.' What should the harness check instead to decide whether to continue the loop?",
+      "options": [
+        "Increase the maximum iteration count so the loop gets more chances to reach the expected phrase.",
+        "Instruct Claude in the system prompt to always end its final message with the literal word `DONE`.",
+        "Check the API response's `stop_reason` value — continue on `tool_use`, stop on `end_turn`.",
+        "Add a `PostToolUse` hook that halts the loop after two consecutive turns with no new tool calls."
+      ],
+      "correct": 2,
+      "whyRight": {"text": "The agentic loop is driven by stop_reason, not by pattern-matching response text: tool_use means continue (execute the tool, append the result, call Claude again), end_turn means the response is finished. Ordinary narration like 'Done searching...' is not a structured signal, so parsing for it is unreliable in both directions.", "cite": "CCA-Prep_Domain-1_v2.md §1.1"},
+      "whyWrong": [
+        {"option": 0, "text": "More iterations doesn't fix the root cause — the loop still decides to stop by scanning for a phrase that ordinary narration can trigger early or never trigger at all.", "cite": "CCA-Prep_Domain-1_v2.md §1.1"},
+        {"option": 1, "text": "Prompt instructions are probabilistic; Claude may still phrase completion differently under load, and the harness would still be trusting text content instead of the structured field built for exactly this decision.", "cite": "CCA-Prep_Key-Distinctions_v1.md #5"},
+        {"option": 3, "text": "PostToolUse fires after a tool executes to transform or log its output — it has no role in deciding loop continuation, and 'no new tool calls for two turns' is not how the API signals completion.", "cite": "CCA-Prep_Domain-2_v2.md §2.7"}
+      ]
+    },
+    {
+      "g": 17,
+      "block": 1,
+      "domain": "D2",
+      "stem": "The team wants a new lint rule applied to every TypeScript test file in the `fulfillment` module, but the files sit next to the code they cover under inconsistent names — `*.test.ts` in some folders, `*.spec.ts` in others — rather than in one shared directory. Which built-in tool should the assistant use to enumerate every matching file by name?",
+      "options": [
+        "`Grep` for the word 'test' across the module's file contents.",
+        "`Read` every file under the `fulfillment` module and check its name once loaded.",
+        "`Glob` for `**/*.{test,spec}.ts` to enumerate the files by naming pattern.",
+        "`Bash` with a recursive directory listing, then manually inspect each result by eye."
+      ],
+      "correct": 2,
+      "whyRight": {"text": "Glob matches file paths by pattern, which is exactly what's needed to enumerate files by naming convention across scattered folders; content search is not required here.", "cite": "CCA-Prep_Domain-2_v2.md §2.9"},
+      "whyWrong": [
+        {"option": 0, "text": "Grepping for the literal word 'test' matches unrelated files that happen to mention testing and misses test files that don't contain that literal word — the target here is file names, not contents.", "cite": "CCA-Prep_Domain-2_v2.md §2.9"},
+        {"option": 1, "text": "Reading every file just to check its name burns context on files that were never relevant, which the corpus treats as the anti-pattern for this kind of enumeration task.", "cite": "CCA-Prep_Domain-2_v2.md §2.9"},
+        {"option": 3, "text": "Bash can list files, but it bypasses the built-in tool designed for path-pattern matching and trades a single Glob call for manual inspection of every result.", "cite": "CCA-Prep_Domain-2_v2.md §2.9"}
+      ]
+    },
+    {
+      "g": 18,
+      "block": 1,
+      "domain": "D2",
+      "stem": "A `repo-navigator` subagent carries sixteen tools — six built-ins plus ten MCP tools for issue tracking and CI status. It frequently calls the wrong one, once invoking a CI-status tool to find a function definition. A peer subagent scoped to four role-relevant tools selects correctly almost every time. What is the most effective fix?",
+      "options": [
+        "Add more detailed descriptions to all sixteen tools so Claude can better distinguish them.",
+        "Restrict the subagent's tool set to the handful of tools relevant to its role.",
+        "Give every subagent the full sixteen-tool catalog so each has maximum flexibility for edge cases.",
+        "Add a pre-routing classifier that predicts the correct tool before each Claude call."
+      ],
+      "correct": 1,
+      "whyRight": {"text": "Tool count itself degrades selection reliability — each extra tool is another candidate to discriminate between on every turn. Restricting each subagent to the handful of tools its role actually needs is the documented fix, matching the peer subagent that already selects correctly at a small tool count.", "cite": "CCA-Prep_Domain-2_v2.md §2.5"},
+      "whyWrong": [
+        {"option": 0, "text": "Better descriptions help, but tool count is the root cause here — the corpus rejects adding detail to every tool in an oversized set instead of shrinking the set.", "cite": "CCA-Prep_Domain-2_v2.md §2.5"},
+        {"option": 2, "text": "Giving every agent the full catalog 'for flexibility' is the documented anti-pattern — agents with tools outside their specialization tend to misuse them, exactly the failure observed here.", "cite": "CCA-Prep_Domain-2_v2.md §2.5"},
+        {"option": 3, "text": "A classifier adds infrastructure on top of an oversized tool set instead of fixing the decision space itself, echoing the corpus's general preference for fixing the underlying signal before adding a compensating layer.", "cite": "CCA-Prep_Domain-2_v2.md §2.2"}
+      ]
+    },
+    {
+      "g": 19,
+      "block": 1,
+      "domain": "D2",
+      "stem": "While updating the `fulfillment` module's retry handling, the assistant needs to change the timeout inside one specific `catch` block in `services/fulfillment/retryHandler.js`. It calls `Edit` with the anchor `retries += 1;`, but that line recurs in four other catch blocks with identical surrounding code, so `Edit` cannot tell which one to modify. What is the correct fallback for a reliable, targeted change?",
+      "options": [
+        "`Read` the full file, apply the change to the target block programmatically, then `Write` the file back.",
+        "Retry `Edit` using a shorter fragment of the same anchor text to broaden the match.",
+        "Use `Bash` with `sed` to force the replacement at every matching line in the file.",
+        "Split `retryHandler.js` into five smaller files so each anchor occurrence becomes unique."
+      ],
+      "correct": 0,
+      "whyRight": {"text": "When Edit's anchor isn't unique, the reliable fallback is to load the full file with Read, apply the change to the correct occurrence programmatically, and write the updated content back with Write.", "cite": "CCA-Prep_Domain-2_v2.md §2.9"},
+      "whyWrong": [
+        {"option": 1, "text": "A shorter anchor is more likely to match in even more places, not fewer — it makes the non-uniqueness problem worse, not better.", "cite": "CCA-Prep_Domain-2_v2.md §2.9"},
+        {"option": 2, "text": "Forcing the change with sed bypasses the tool built for targeted edits and would touch all five catch blocks instead of only the one that needs the new timeout.", "cite": "CCA-Prep_Domain-2_v2.md §2.9"},
+        {"option": 3, "text": "Restructuring the file to manufacture uniqueness is disproportionate to a single-line change and is not the sanctioned pattern — the corpus's fallback is Read plus Write, not a file split.", "cite": "CCA-Prep_Domain-2_v2.md §2.9"}
+      ]
+    },
+    {
+      "g": 20,
+      "block": 1,
+      "domain": "D1",
+      "stem": "Eleven days ago, in a named session, the assistant built a dependency map of the `notifications` module — event triggers, downstream consumers, retry queues. Since then, a teammate renamed two consumer classes and split a third into two files during an unrelated cleanup. The engineer wants to continue today without redoing the whole map or reasoning over now-stale results for those consumers. What is the best way to continue?",
+      "options": [
+        "Start a brand-new session and rebuild the entire `notifications` dependency map from scratch.",
+        "Resume the named session and explicitly state which classes were renamed and split, for targeted re-analysis.",
+        "Resume the named session and continue as-is, since the map was already built eleven days ago.",
+        "Start a new session and paste the full contents of the affected files into the first message."
+      ],
+      "correct": 1,
+      "whyRight": {"text": "Resuming keeps the still-valid parts of the map intact, and explicitly telling the agent which classes changed lets it perform targeted re-analysis of just those consumers instead of trusting stale results or redoing everything.", "cite": "CCA-Prep_Domain-1_v2.md §1.16"},
+      "whyWrong": [
+        {"option": 0, "text": "Rebuilding the whole map is wasteful when most of the eleven-day-old analysis — triggers, queues, the rest of the consumers — is still valid.", "cite": "CCA-Prep_Domain-1_v2.md §1.16"},
+        {"option": 2, "text": "Resuming without flagging the changes means the agent reasons over its saved results for the renamed and split classes as if they were still current.", "cite": "CCA-Prep_Domain-1_v2.md §1.16"},
+        {"option": 3, "text": "Pasting raw file contents into a fresh session discards the existing map entirely and gives no instruction to reconcile the new files against what was already known.", "cite": "CCA-Prep_Domain-1_v2.md §1.16"}
+      ]
+    },
+    {
+      "g": 21,
+      "block": 1,
+      "domain": "D2",
+      "selectN": 2,
+      "stem": "The assistant exposes separate `read_file_history` and `read_open_issues_for_file` tools. Telemetry shows engineers request file history alone in about 80% of investigations, and request both together only when they explicitly ask for 'full context' on a file, roughly 20% of the time. A teammate proposes a composite `get_file_context` tool that always returns both, citing the general principle that composite tools reduce round-trips. Select two considerations that argue against building the composite here.",
+      "options": [
+        "The two calls are only occasionally paired — most requests need just one data source — so a composite would force fetching both every time, including the 80% of requests that wanted only history.",
+        "When both are genuinely needed, prompting the assistant to bundle `read_file_history` and `read_open_issues_for_file` into one turn saves the same round-trip without hard-coding the pairing into a new tool.",
+        "A composite tool is the only way to guarantee both results return together in a single response when an engineer needs full context.",
+        "Building the composite now is justified because the pairing may become habitual as the workflow matures, even though it isn't habitual yet."
+      ],
+      "correct": [0, 1],
+      "whyRight": {"text": "The corpus's composite-tool trigger is agents frequently calling multiple tools in sequence for the same operation — a condition this pairing doesn't meet at 20% joint use. Forcing a composite would over-fetch on the 80% of single-purpose requests, and the corpus's own preferred mechanism for the cases that do need both is prompting the agent to bundle the calls into one turn, not building a new tool that hides the composition.", "cite": "CCA-Prep_Domain-2_v2.md §2.8"},
+      "whyWrong": [
+        {"option": 2, "text": "Prompt-bundling already returns both results together in one turn whenever both are actually needed, so a composite is not the only way to achieve that — this overstates the composite's necessity.", "cite": "CCA-Prep_Domain-2_v2.md §2.8"},
+        {"option": 3, "text": "Designing for a hypothetical future frequency rather than the observed 20% joint-use rate is speculative infrastructure built ahead of an actual need, not a fix proportionate to today's usage pattern.", "cite": "CCA-Prep_Exam-Mechanics_v2.md — Answer Pattern Heuristics"}
+      ]
+    },
+    {
+      "g": 22,
+      "block": 1,
+      "domain": "D1",
+      "stem": "An engineer wants the assistant to add integration tests across the legacy `notifications` module. Full scope is unknown up front: two submodules have zero tests, one has partial coverage, and mid-work the assistant discovers a submodule shares one mutable connection pool with an unrelated billing job, which changes the safe test order. A teammate proposes enumerating every file first and writing tests in a fixed, predetermined order. Which decomposition strategy actually fits this task?",
+      "options": [
+        "A fixed sequential pipeline, with the file order locked in before any exploration begins.",
+        "Dynamic adaptive decomposition: map the module's structure first, then adapt the plan as discoveries like the shared connection pool surface.",
+        "One large single-pass prompt covering every file in the module at once.",
+        "The same fixed pipeline, with an extra validation step inserted after each file."
+      ],
+      "correct": 1,
+      "whyRight": {"text": "Full scope is unknown up front and a mid-work discovery (the shared connection pool) changes the safe order — exactly the open-ended, discovery-dependent situation dynamic adaptive decomposition is for: map structure, prioritize, and adapt the plan as dependencies surface.", "cite": "CCA-Prep_Domain-1_v2.md §1.7"},
+      "whyWrong": [
+        {"option": 0, "text": "A fixed pipeline locks in the file order before the shared connection pool is even discovered, so it can't react to a finding that changes what order is actually safe.", "cite": "CCA-Prep_Domain-1_v2.md §1.7"},
+        {"option": 2, "text": "A single pass over every file at once causes attention dilution rather than solving the sequencing problem the connection pool discovery creates.", "cite": "CCA-Prep_Domain-1_v2.md §1.7"},
+        {"option": 3, "text": "Bolting a validation step onto a fixed pipeline still leaves the file order locked in advance — it patches around the rigidity instead of adapting the plan itself.", "cite": "CCA-Prep_Domain-1_v2.md §1.7"}
+      ]
+    },
+    {
+      "g": 23,
+      "block": 1,
+      "domain": "D3",
+      "stem": "The team's `/perf-profile` skill runs a synthetic load test against the `fulfillment` module and prints latency percentiles for every endpoint — often several hundred lines. After an engineer runs it mid-task to spot-check one slow endpoint, the assistant's later replies grow noticeably slower and drift from the refactor the engineer was actually doing. How should the skill be reconfigured to fix this without losing the full profiling output?",
+      "options": [
+        "Switch the session to a faster model for the rest of the task.",
+        "Add `context: fork` to the skill's frontmatter so the load test runs in an isolated subagent context.",
+        "Compress the latency output into a short summary before it enters the conversation.",
+        "Split `/perf-profile` into two separate skills, one per group of endpoints."
+      ],
+      "correct": 1,
+      "whyRight": {"text": "context: fork runs the skill's output-heavy work in an isolated subagent context, so the hundreds of lines of latency data never pollute the main conversation while the full output remains available from the fork.", "cite": "CCA-Prep_Domain-3_v2.md §3.3"},
+      "whyWrong": [
+        {"option": 0, "text": "A faster model doesn't address context pollution — the same volume of latency output still floods the main conversation window.", "cite": "CCA-Prep_Domain-3_v2.md §3.3"},
+        {"option": 2, "text": "Compressing to a summary loses exactly the full profiling detail the engineer needs to spot-check the slow endpoint, which the task requires keeping.", "cite": "CCA-Prep_Domain-3_v2.md §3.3"},
+        {"option": 3, "text": "Splitting the skill in two doesn't prevent either half's verbose output from still bleeding into the main session — it doesn't address context leakage at all.", "cite": "CCA-Prep_Domain-3_v2.md §3.3"}
+      ]
+    },
+    {
+      "g": 24,
+      "block": 1,
+      "domain": "D1",
+      "stem": "After the assistant finishes mapping how the `reporting` module reads data from six upstream services, the team wants to compare two fixes for its latency problem — precomputing daily aggregates on a schedule, versus adding a caching layer in front of the existing live queries — both starting from that same completed mapping. Which approach lets the team compare both without either evaluation's reasoning contaminating the other?",
+      "options": [
+        "Use `fork_session` to branch two independent explorations from the completed-mapping baseline.",
+        "Run both strategies sequentially in the same session, evaluating the first before starting the second.",
+        "Start two brand-new sessions and have each redo the full six-service mapping independently.",
+        "Resume the same named session twice from two separate terminal windows, one per strategy."
+      ],
+      "correct": 0,
+      "whyRight": {"text": "fork_session branches two independent explorations from a shared analysis baseline — both fixes can be evaluated starting from the same completed mapping without re-analyzing the six upstream services twice or letting one evaluation's reasoning bias the other.", "cite": "CCA-Prep_Domain-1_v2.md §1.16"},
+      "whyWrong": [
+        {"option": 1, "text": "Evaluating the second strategy in the same session after the first means it is biased by the first evaluation's reasoning and conclusions.", "cite": "CCA-Prep_Domain-1_v2.md §1.16"},
+        {"option": 2, "text": "Two brand-new sessions each have to redo the shared six-service mapping independently, discarding the expensive analysis that was just completed.", "cite": "CCA-Prep_Domain-1_v2.md §1.16"},
+        {"option": 3, "text": "Resuming the identical session state from two terminals doesn't create independent branches — it isn't the documented mechanism for isolating two divergent evaluations.", "cite": "CCA-Prep_Domain-1_v2.md §1.16"}
+      ]
+    },
+    {
+      "g": 25,
+      "block": 1,
+      "domain": "D2",
+      "stem": "An MCP server exposes `find_similar_logic`, an embeddings-based search that finds functionally similar code even when the wording differs, meant to help the assistant spot duplicate implementations. Its description is one line: `input: query string`. Despite genuine near-duplicate functions scattered across `services/`, the assistant keeps reaching for built-in `Grep` on exact-string queries and never calls `find_similar_logic` unprompted. What is the most effective way to fix the fallback?",
+      "options": [
+        "Remove `Grep` from the session's tool set so the assistant has no alternative.",
+        "Add a system-prompt rule instructing the assistant to always prefer MCP tools over built-in ones.",
+        "Rewrite `find_similar_logic`'s description to explain its embeddings-based matching and what exact-string `Grep` cannot find.",
+        "Add a `PreToolUse` hook that blocks `Grep` whenever the query is longer than three words."
+      ],
+      "correct": 2,
+      "whyRight": {"text": "Tool selection runs on descriptions. A one-line description gives the assistant no reason to prefer the MCP tool over the familiar built-in, so the fix is enhancing the description to spell out the capability Grep genuinely lacks.", "cite": "CCA-Prep_Domain-2_v2.md §2.6"},
+      "whyWrong": [
+        {"option": 0, "text": "Removing Grep breaks legitimate exact-string search cases; the root cause is an under-specified description, not the built-in tool's existence.", "cite": "CCA-Prep_Domain-2_v2.md §2.6"},
+        {"option": 1, "text": "A blunt 'always prefer MCP tools' rule is keyword-sensitive and can misroute cases where Grep genuinely is the right tool for an exact-string query.", "cite": "CCA-Prep_Domain-2_v2.md §2.6"},
+        {"option": 3, "text": "Blocking Grep by query length is a fabricated mechanism with no basis in how tool selection actually works, and it would misfire on legitimate long exact-string searches too.", "cite": "CCA-Prep_Domain-2_v2.md §2.7"}
+      ]
+    },
+    {
+      "g": 26,
+      "block": 1,
+      "domain": "D1",
+      "stem": "While generating discount-calculation helpers for the `billing` module, the assistant's reasoning trace considers a rounding edge case for negative refunds, judges its approach sufficient, and moves on. A human reviewer later catches an off-by-one-cent bug in exactly that edge case during PR review. The team wants to catch this class of self-dismissed issue before human review. Which approach most directly addresses the root cause of this self-check limitation?",
+      "options": [
+        "Add extended thinking to the generation step so the assistant reasons longer before finalizing the code.",
+        "Append a self-review instruction to the generation prompt asking it to double-check its own work.",
+        "Raise the required test-coverage percentage for discount-calculation helpers before merge.",
+        "Run a second, independent instance to review the generated code without access to the first instance's reasoning."
+      ],
+      "correct": 3,
+      "whyRight": {"text": "The same instance that generated the code retains its reasoning and is unlikely to challenge conclusions it already rationalized. A second independent instance without that reasoning context catches what the generator dismissed — mirroring human peer review.", "cite": "CCA-Prep_Domain-1_v2.md §1.17"},
+      "whyWrong": [
+        {"option": 0, "text": "Extended thinking during generation doesn't fix the self-check limitation — it is still the same instance reasoning its way to the same dismissed edge case.", "cite": "CCA-Prep_Domain-1_v2.md §1.17"},
+        {"option": 1, "text": "A self-review instruction in the same prompt still runs on the same instance with the same confirmation bias that already dismissed the edge case once.", "cite": "CCA-Prep_Domain-1_v2.md §1.17"},
+        {"option": 2, "text": "Raising the coverage bar doesn't guarantee a test targeting this specific rounding edge case gets written — it doesn't address why the edge case was dismissed in the first place.", "cite": "CCA-Prep_Domain-1_v2.md §1.17"}
+      ]
+    },
+    {
+      "g": 27,
+      "block": 1,
+      "domain": "D1",
+      "selectN": 2,
+      "stem": "A `codebase-mapper` subagent scans the `fulfillment` module for every external API call site. It completes 32 of the module's 40 files, then times out on the remaining 8 unusually large generated files. It currently returns only `{\"status\": \"failed\"}` to the coordinator, which can't decide whether to retry, skip, or proceed. Select two changes that would most effectively fix this.",
+      "options": [
+        "Return the 32 completed files' findings with a coverage annotation flagging the 8 unscanned files as an open gap.",
+        "Include the failure type (timeout), which 8 files were affected, and that retrying with a smaller per-file limit is a viable option.",
+        "Return `{\"status\": \"failed\"}` but mark it internally as a success so the coordinator's pipeline doesn't halt.",
+        "Discard the 32 completed files' findings, since the scan as a whole didn't finish, and report zero results."
+      ],
+      "correct": [0, 1],
+      "whyRight": {"text": "Structured error context — failure type, what was attempted, and viable alternatives — plus a coverage annotation of what is and isn't covered together give the coordinator what it needs to decide whether to retry, skip, or proceed with a known gap, instead of a bare failure flag.", "cite": "CCA-Prep_Domain-1_v2.md §1.9 and §1.10"},
+      "whyWrong": [
+        {"option": 2, "text": "Marking a real failure as a success to keep the pipeline moving masks the timeout entirely — the coordinator would proceed believing the scan is complete when 8 files were never covered.", "cite": "CCA-Prep_Domain-1_v2.md §1.9"},
+        {"option": 3, "text": "The 32 completed files are valid, usable findings; discarding them and reporting zero results throws away real coverage instead of annotating the gap that actually exists.", "cite": "CCA-Prep_Domain-1_v2.md §1.10"}
+      ]
+    },
+    {
+      "g": 28,
+      "block": 1,
+      "domain": "D3",
+      "stem": "Two items sit on the team's backlog: consolidating the monolithic `fulfillment` service into three independently deployable services, and fixing a null-pointer dereference in `calculateSurcharge` at the exact line a stack trace identifies. Which of the following most clearly calls for direct execution rather than planning mode?",
+      "options": [
+        "Consolidating the monolithic `fulfillment` service into three independently deployable services.",
+        "Adding a new carrier integration where the API offers three fundamentally different integration approaches.",
+        "Migrating the module's data-access layer across 45+ files to a new query builder.",
+        "Fixing the null-pointer dereference in `calculateSurcharge` at the line the stack trace identifies."
+      ],
+      "correct": 3,
+      "whyRight": {"text": "Scope is clear, the approach is defined, and the fix is a single-file bug with a clear stack trace — exactly the profile the corpus assigns to direct execution rather than planning mode.", "cite": "CCA-Prep_Domain-3_v2.md §3.6"},
+      "whyWrong": [
+        {"option": 0, "text": "Splitting a monolith into services touches dozens of files and forces service-boundary decisions — the corpus's own example of when planning mode is needed.", "cite": "CCA-Prep_Domain-3_v2.md §3.6"},
+        {"option": 1, "text": "Multiple valid integration approaches with real trade-offs is exactly the situation planning mode is for — deciding among approaches before committing to one.", "cite": "CCA-Prep_Domain-3_v2.md §3.6"},
+        {"option": 2, "text": "A 45+ file migration is large-scope, cross-cutting work that the corpus places under planning mode, not direct execution.", "cite": "CCA-Prep_Domain-3_v2.md §3.6"}
+      ]
+    },
+    {
+      "g": 29,
+      "block": 1,
+      "domain": "D1",
+      "stem": "Retry logic across the `fulfillment` module is the next mapping target. The assistant's investigation plan searches only `services/fulfillment/retry/`, and its report on that folder is accurate — every finding checks out. But it completely misses two other places retry logic lives: a shared `lib/http-client` wrapper and a scheduler cron module. What is the most likely root cause?",
+      "options": [
+        "The investigation's initial decomposition scoped the search to one folder instead of the full space where retry logic could live.",
+        "The `Grep` patterns used within `retry/` were too permissive, surfacing noise instead of precise matches.",
+        "The `lib/http-client` wrapper and scheduler module were not present in the repository at scan time.",
+        "The assistant's context window filled up before it could search additional folders."
+      ],
+      "correct": 0,
+      "whyRight": {"text": "Every finding inside the searched folder is correct, which rules out a subagent-quality problem — the coverage gap traces to the decomposition itself scoping the investigation to one folder instead of the full space retry logic occupies.", "cite": "CCA-Prep_Domain-1_v2.md §1.6"},
+      "whyWrong": [
+        {"option": 1, "text": "Overly permissive patterns would produce noisy or wrong results within the searched folder — but everything found in retry/ checked out, so precision inside scope isn't the problem.", "cite": "CCA-Prep_Domain-1_v2.md §1.6"},
+        {"option": 2, "text": "Nothing in the situation suggests the files are missing from the repository — the investigation simply never looked there, which points to scope, not absence.", "cite": "CCA-Prep_Domain-1_v2.md §1.6"},
+        {"option": 3, "text": "A narrow, single-folder search is not evidence of a filled context window; the described failure matches an under-scoped decomposition, not a capacity limit.", "cite": "CCA-Prep_Domain-1_v2.md §1.6"}
+      ]
+    },
+    {
+      "g": 30,
+      "block": 1,
+      "domain": "D1",
+      "stem": "Three independent legacy submodules — `billing`, `notifications`, `reporting` — need investigation before the team can propose a shared refactor plan. The assistant currently investigates them in three separate turns, starting each `Task` call only after the previous one's results return, and a full cycle takes about nine minutes. How should the three investigations be restructured to cut this latency?",
+      "options": [
+        "Merge all three submodules into a single `Task` call with one combined prompt covering all three.",
+        "Increase `max_tokens` so each `Task` call returns a longer, more complete report per submodule.",
+        "Keep the same sequential order but cache each result so a re-run is faster next time.",
+        "Issue all three submodules' `Task` calls together in a single coordinator response, since the investigations are independent."
+      ],
+      "correct": 3,
+      "whyRight": {"text": "Multiple Task calls issued together in one coordinator response execute in parallel; issuing them across separate turns runs them sequentially. Since the three submodule investigations are independent, parallel execution is the direct fix for the latency.", "cite": "CCA-Prep_Domain-1_v2.md §1.15"},
+      "whyWrong": [
+        {"option": 0, "text": "Combining three unrelated submodules into one prompt risks diluting attention across them instead of solving the sequencing problem that causes the latency.", "cite": "CCA-Prep_Domain-1_v2.md §1.7"},
+        {"option": 1, "text": "A longer max_tokens budget doesn't change whether the three calls run one after another — it doesn't touch the sequential-versus-parallel issue at all.", "cite": "CCA-Prep_Domain-1_v2.md §1.15"},
+        {"option": 2, "text": "Caching helps a second run, not the first-run latency the team is trying to cut, and it doesn't use the parallel execution the situation already supports.", "cite": "CCA-Prep_Domain-1_v2.md §1.15"}
+      ]
+    }
+  ]
+}

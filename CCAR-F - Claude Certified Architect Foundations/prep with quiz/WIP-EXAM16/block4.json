@@ -1,0 +1,538 @@
+{
+ "label": "Claude Code for Continuous Integration",
+ "narrative": "Claude Code runs inside the CI pipeline of an online grocery fulfilment platform — picking routes, substitution rules, slot capacity and chilled-chain compliance. It reviews every pull request, generates tests for changed modules, and posts its findings as inline comments. The team measures it on actionable feedback with few false positives. The questions below follow one release train through that pipeline.",
+ "questions": [
+  {
+   "g": 46,
+   "block": 3,
+   "domain": "D3",
+   "stem": "Each time an author pushes a follow-up commit the review re-runs and posts near-identical comments on code nobody touched, worded slightly differently every time; one pull request now carries 60 of them. A maintainer argues each run should start clean so the review stays objective. How should you evaluate that?",
+   "options": [
+    "Sound — a blank slate is the only way to keep each review independent of the ones before it.",
+    "Sound, provided duplicate comments are also removed by matching their text before anything is posted.",
+    "Unsound — feed the previous run's findings into the re-run prompt and instruct it to report only new or still-unresolved issues.",
+    "Unsound — restrict each re-run to the files touched by the latest commit and skip everything else."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "A blank-slate re-run re-litigates findings that were already settled, which is exactly what floods the pull request. Including the prior run's findings and asking for only new or unresolved issues keeps the reviewer consistent across runs and stops the duplicate comments at the source.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "This is the documented misconception. Independence between runs is not the goal — consistency is; a reviewer that forgets what it already said is not more objective, only noisier.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+    },
+    {
+     "option": 1,
+     "text": "Text matching is defeated by the very symptom described: the comments come back slightly reworded each time, so they are not textually identical and slip straight through.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+    },
+    {
+     "option": 3,
+     "text": "Narrowing to the latest diff drops issues arising from how changed code interacts with untouched code, and it still re-litigates settled findings inside the files it does look at.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+    }
+   ]
+  },
+  {
+   "g": 47,
+   "block": 3,
+   "domain": "D4",
+   "selectN": 2,
+   "stem": "Validation rejects roughly 40 findings a night because the required `suggested_fix` field comes back empty. Sampling shows these are findings where no mechanical fix exists — the reviewer is describing a design concern. Max retries was raised from 3 to 10 last week with no change. Select two correct actions.",
+   "options": [
+    "Make `suggested_fix` nullable, so a finding with no mechanical fix can legitimately return null.",
+    "Stop retrying these cases — no feedback can produce information that is not there to extract.",
+    "Raise max retries further, since ten attempts is still modest for a nightly job with spare capacity.",
+    "Strengthen the retry feedback message so the model understands that `suggested_fix` is mandatory.",
+    "Keep `suggested_fix` required for data quality and discard any finding that arrives without it."
+   ],
+   "correct": [
+    0,
+    1
+   ],
+   "whyRight": {
+    "text": "Retry-with-feedback fixes format, structural and arithmetic errors — things the model can re-derive from what it has. It cannot fix genuinely absent information, and a required non-nullable field under retry pressure pushes the model toward fabricating a fix that does not exist. Nullable field, accept the null, stop retrying.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.9"
+   },
+   "whyWrong": [
+    {
+     "option": 2,
+     "text": "Absent information stays absent at any retry count. Going from three attempts to ten already demonstrated that, and the tokens are spent either way.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.9"
+    },
+    {
+     "option": 3,
+     "text": "No wording of the feedback can conjure a mechanical fix for a design concern. Better feedback helps when the model got something wrong, not when there is nothing to get.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.9"
+    },
+    {
+     "option": 4,
+     "text": "Keeping it required either guarantees fabricated fixes or throws away 40 real findings a night. Both outcomes are worse than a null.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.5"
+    }
+   ]
+  },
+  {
+   "g": 48,
+   "block": 3,
+   "domain": "D1",
+   "stem": "The generation step writes a slot-capacity patch, reasons at length about its edge cases, and concludes the approach is sound. A `review your work carefully` step in the same session agrees. Two of the last four production defects were in code that passed both of those. What change addresses this?",
+   "options": [
+    "Enable extended thinking on the generation step so its edge-case reasoning goes deeper.",
+    "Add a checklist to the generation prompt naming the edge cases that must be considered before finishing.",
+    "Ask for a second review pass later in the same conversation, once the code has settled.",
+    "Send the artefact to a second, independent instance that never sees the generator's reasoning."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "An instance that generated code retains its own justifications and is anchored to them, so a self-check inside that context confirms rather than challenges. A fresh instance receiving only the artefact and the review criteria evaluates the code on its merits and catches what the generator rationalised away.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.17"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "More reasoning from the same anchored instance is not independent scrutiny. Extended thinking deepens the analysis that already reached the wrong conclusion.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.17"
+    },
+    {
+     "option": 1,
+     "text": "A checklist inside the generation prompt is still the same instance checking itself, with the same confirmation bias — and it can only cover edge cases somebody already thought of.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.17"
+    },
+    {
+     "option": 2,
+     "text": "A second pass in the same conversation carries the whole generation reasoning in context. The model re-reads its own justifications and agrees with them again.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.13"
+    }
+   ]
+  },
+  {
+   "g": 49,
+   "block": 3,
+   "domain": "D3",
+   "stem": "The substitution-rules module mishandles items whose replacement is itself out of stock in the same delivery slot. Three rounds of describing that bug in prose to the generator have produced three partial fixes, each breaking a different case that had previously worked. What is the fastest way to converge on a correct one?",
+   "options": [
+    "Describe the bug once more in far greater detail, naming every case that has broken so far.",
+    "Write a failing test carrying the exact input row and the expected output, and iterate until it passes.",
+    "Ask for a rewrite of the whole module so the accumulated partial fixes are discarded together.",
+    "Add the three broken cases to the suite after the next fix lands, to confirm that it worked."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "A specific failing test with example input and expected output is the fastest route through an edge case, because it is an objective, machine-checkable definition of done. Each iteration then gets a concrete failure to work from instead of a paraphrase of the symptom.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.7.2"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Prose descriptions of edge cases are interpreted inconsistently, which is why three rounds have produced three different partial fixes. A fourth description is the same instrument again.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.7.2"
+    },
+    {
+     "option": 2,
+     "text": "A rewrite with no machine-checkable definition of done reproduces the same ambiguity across a larger surface, and discards the parts of the three fixes that were correct.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.7.2"
+    },
+    {
+     "option": 3,
+     "text": "Writing tests after the fix is verification, not test-driven iteration. It confirms the fourth attempt afterwards without giving that attempt anything concrete to aim at.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.7.2"
+    }
+   ]
+  },
+  {
+   "g": 50,
+   "block": 3,
+   "domain": "D4",
+   "stem": "Measured false-positive rates by category: naming 54%, comment style 47%, chilled-chain safety checks 6%, concurrency 15%. Developers have started dismissing every comment the reviewer posts, safety findings included; two chilled-chain findings dismissed last month were later confirmed as real defects. Which action stops the trust bleed fastest?",
+   "options": [
+    "Display a confidence score beside each finding so developers can judge which ones to take seriously.",
+    "Reduce strictness uniformly across all four categories until the overall false-positive rate falls.",
+    "Switch off naming and comment-style findings for now, keeping the high-precision categories while their prompts are repaired.",
+    "Add few-shot examples across all four categories and re-measure the rates in a few weeks."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "Two categories are generating roughly half their findings as noise, and that noise is what makes developers dismiss everything — including the 6% category that catches chilled-chain breaches. Temporarily disabling the noisy categories stops the bleed immediately while their prompts are fixed.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.17"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Confidence scores leave every finding on the page. Developers who have already decided the tool is noise do not start reading it more carefully because a number was added.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.17"
+    },
+    {
+     "option": 1,
+     "text": "Uniform reduction damages the categories that are working. Safety findings at 6% false positives do not need loosening; they need to be seen.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.17"
+    },
+    {
+     "option": 3,
+     "text": "This is the right long-term repair on far too slow a clock. Trust keeps eroding across the weeks of measurement, and safety findings keep being dismissed meanwhile.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.17"
+    }
+   ]
+  },
+  {
+   "g": 51,
+   "block": 3,
+   "domain": "D5",
+   "selectN": 2,
+   "stem": "A `PostToolUse` hook trims the pick-route lookup down to four fields, and context use per run fell by roughly 40%. Since it shipped, the reviewer no longer flags routes that breach the chilled-chain window — the temperature-band field turned out to be among those the hook drops. Select two sound responses to this.",
+   "options": [
+    "Add the temperature-band field back to the set the hook retains.",
+    "Choose the retained fields from what downstream consumers actually use, rather than from what looks verbose.",
+    "Remove the `PostToolUse` hook, since trimming tool output has proved unsafe for this pipeline.",
+    "Instruct the model in the system prompt to request the dropped field whenever a route needs checking.",
+    "Replace the hook with more aggressive conversation summarisation to recover the same context saving."
+   ],
+   "correct": [
+    0,
+    1
+   ],
+   "whyRight": {
+    "text": "Trimming verbose tool output before it enters context is the right pattern and it worked — the defect is that the field list was chosen by looking at the payload rather than at what consumes it. Restoring the one field the reviewer depends on, and picking the retained set from actual downstream use, keeps the saving without the blind spot.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.5"
+   },
+   "whyWrong": [
+    {
+     "option": 2,
+     "text": "Removing the hook discards a real, documented benefit because one field was scoped wrongly. The verbose payload returns to context on every call and the original problem comes back.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.5"
+    },
+    {
+     "option": 3,
+     "text": "The hook removed the field before it reached context, so there is nothing for the model to notice or ask about. Prompting cannot recover data the pipeline discarded upstream.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.5"
+    },
+    {
+     "option": 4,
+     "text": "Summarising the conversation more aggressively treats a different problem. The verbose tool results keep arriving, and compression loses precision the review needs.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.5"
+    }
+   ]
+  },
+  {
+   "g": 52,
+   "block": 3,
+   "domain": "D3",
+   "stem": "Findings are emitted as markdown and parsed with a regular expression before being posted as inline comments. About one comment in fifteen lands on the wrong line, and a heading change last month broke posting outright. Each comment needs a file path, a line number, a severity and a suggested fix. What should the pipeline use?",
+   "options": [
+    "`--output-format json` together with `--json-schema`, so what comes out is structured and schema-valid.",
+    "An `Output Format` section in `CLAUDE.md` describing the fields every finding must contain.",
+    "A format instruction at the end of the review prompt specifying the exact markdown layout required.",
+    "A more tolerant parser able to recover the four fields from several different markdown layouts."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "The command-line interface can force JSON output and enforce a schema over it, which is what makes the result reliably parseable by the code that posts to the host's API. Four named fields per finding is precisely the case the schema flag exists for.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.9"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "Instructions in `CLAUDE.md` shape behaviour without guaranteeing it. The next phrasing drift breaks the parser again, exactly as the heading change did.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.9"
+    },
+    {
+     "option": 2,
+     "text": "Format compliance from a prompt instruction is variable by nature. The pipeline needs a guarantee, and a request is not one.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.9"
+    },
+    {
+     "option": 3,
+     "text": "A more forgiving parser accommodates unstructured output rather than removing it, and it will still mis-attribute line numbers when a layout it never anticipated appears.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.9"
+    }
+   ]
+  },
+  {
+   "g": 53,
+   "block": 3,
+   "domain": "D4",
+   "stem": "A weekly dependency audit has to be on the platform team's desk by 09:00 at the start of each week, and it runs over about 4,000 packages. Someone proposes submitting it as a batch at 02:00 that same morning, reasoning that batches usually finish inside an hour. What is the correct submission planning?",
+   "options": [
+    "02:00 is fine, since typical completion sits comfortably inside the seven-hour margin.",
+    "Submit at 02:00 but poll every ten minutes, falling back to synchronous calls if it has not finished by 07:00.",
+    "Do not use the batch path at all — any fixed deadline rules it out.",
+    "Submit no later than 09:00 the previous day, because the submission deadline is the downstream deadline minus the full 24-hour worst case."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "The batch processing window is up to 24 hours and there is no latency SLA, so submission windows are planned against the worst case rather than the typical one. Deadline minus 24 hours puts the latest safe submission at 09:00 the previous day.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Planning around \"usually an hour\" is the named mistake. There is no SLA, and the one batch that takes 23 hours misses the Monday deadline outright.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+    },
+    {
+     "option": 1,
+     "text": "Polling does not make a batch complete any sooner, and a 07:00 fallback means paying full synchronous price for the entire audit under time pressure — the discount is lost precisely when it was the point.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+    },
+    {
+     "option": 2,
+     "text": "This overstates the constraint. A weekly audit is a textbook batch workload; what rules batch out is work something is blocking on, such as a pre-merge check.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+    }
+   ]
+  },
+  {
+   "g": 54,
+   "block": 3,
+   "domain": "D1",
+   "stem": "The coordinator splits each review into three subtasks: correctness within changed files, test coverage of changed files, and style. Every subagent returns clean, thorough work. Two production incidents this quarter traced to interactions between a changed module and an untouched consumer of it, neither of them flagged by any of the three subtasks. What is the root cause?",
+   "options": [
+    "The correctness subagent's prompt is not strict enough about following data flow beyond the file it was given.",
+    "The coordinator's decomposition covers only changed files, so no subtask owns cross-file interactions at all.",
+    "The three subagents overlap on the changed files, so effort is duplicated and depth is lost everywhere.",
+    "The subagents cannot see one another's findings, so an interaction spanning two of them goes unnoticed."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "Every subagent succeeded at the task it was given, and the output still missed a whole class of defect. That is the signature of narrow decomposition: the coordinator partitioned the review into three views of the changed files and left the ground between changed and unchanged code unassigned.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.6"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "This pushes a coordinator-level gap onto a subagent that executed its brief correctly. Its brief was correctness within changed files, and it did that.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.6"
+    },
+    {
+     "option": 2,
+     "text": "Overlap wastes tokens without adding depth, but it is not what happened here — the symptom is uncovered ground, not duplicated ground.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.6"
+    },
+    {
+     "option": 3,
+     "text": "Subagents are not meant to see each other's findings; the coordinator aggregates. Sharing findings would not help when no subtask examined the interaction in the first place.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.2"
+    }
+   ]
+  },
+  {
+   "g": 55,
+   "block": 3,
+   "domain": "D4",
+   "selectN": 3,
+   "stem": "The generator proposes 10 test cases per pull request, and roughly 6 of them duplicate scenarios the existing suite already covers. Across last month's 40 pull requests the duplicate share never once fell below half, and the suite itself runs to 1,900 tests. Reviewers have stopped reading the list. Select three sound elements of the fix.",
+   "options": [
+    "Put the existing test files for the changed modules into the generation context.",
+    "Have the pipeline supply which behaviours are already covered instead of expecting the model to infer it.",
+    "Keep the request at 10 and let the reduction come from the model having the coverage information.",
+    "Cut the request from 10 test cases to 4, on the assumption that the most valuable ones come first.",
+    "Post-process the proposed list with keyword matching against the names of existing tests.",
+    "Ask the generator to avoid duplicating existing tests, without supplying the suite."
+   ],
+   "correct": [
+    0,
+    1,
+    2
+   ],
+   "whyRight": {
+    "text": "Claude can only avoid duplicating tests it knows about, so the fix is to put the existing suite for the changed modules into context — supplied by the pipeline, not inferred. With coverage known, the count can stay where it is: what changes is that the ten proposals are ten genuinely new scenarios.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.18"
+   },
+   "whyWrong": [
+    {
+     "option": 3,
+     "text": "Cutting the count assumes the generator ordered its proposals by value, which it never promised. It may well drop four novel cases and keep four duplicates.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.18"
+    },
+    {
+     "option": 4,
+     "text": "Keyword matching against test names is fragile and misses semantic duplicates — the same scenario tested under a different name slips straight through.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.18"
+    },
+    {
+     "option": 5,
+     "text": "An instruction to avoid duplicates without the suite in context asks the model to compare against something it cannot see.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.18"
+    }
+   ]
+  },
+  {
+   "g": 56,
+   "block": 3,
+   "domain": "D2",
+   "stem": "The coverage service is briefly unreachable during a nightly run, and its client returns an empty array — indistinguishable from a genuine zero-coverage result. The review then reports that the changed module has no tests at all, and the author spends a morning proving otherwise. What should the client return?",
+   "options": [
+    "An empty array, with a warning written to standard error so the run itself is not interrupted.",
+    "An empty array plus a `partial: true` marker the reviewer can take into account.",
+    "The previous night's cached result, so the review has something plausible to work from.",
+    "`isError: true` with an error category, so an access failure is never read as a real zero."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "An empty result means the query ran and matched nothing; a query that could not run is an error and must be signalled as one. Returning an empty list for a failed connection is the documented way an agent ends up stating something false — here, that a well-tested module has no tests.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "The agent never reads standard error. The wrong result still arrives in the tool result, and the review still concludes there are no tests.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+    },
+    {
+     "option": 1,
+     "text": "An advisory marker on a success-shaped payload leaves the agent free to treat it as a valid empty result. The distinction between \"no data\" and \"could not read\" has to be in the error signal, not a flag beside the data.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+    },
+    {
+     "option": 2,
+     "text": "Serving stale data as though it were current substitutes one false statement for another, and it hides the outage from everyone downstream.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+    }
+   ]
+  },
+  {
+   "g": 57,
+   "block": 3,
+   "domain": "D3",
+   "stem": "A review of one queueing function raised three issues: a lock-ordering bug, a retry policy whose correctness depends on how the locking is fixed, and a typo in a log string. A teammate wants all three sent one at a time, on the principle that each request then stays focused. What should you do?",
+   "options": [
+    "Send all three separately, one issue per message, since a focused request produces a focused fix.",
+    "Send all three together in one message, since batching feedback always produces a more coherent change.",
+    "Send the lock-ordering and retry issues together because they interact, and let the typo travel on its own.",
+    "Send the typo first as a warm-up, then the two concurrency issues one after the other."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "Interacting issues belong in one detailed message, because a retry fix designed without knowing the new locking design can contradict it. The typo interacts with nothing, so it is free to go separately or ride along — the split follows dependence, not count.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.7.4"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Fixing interdependent issues separately is how you get conflicting patches. The sequential locking fix and retry fix can contradict each other and force another round.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.7.4"
+    },
+    {
+     "option": 1,
+     "text": "\"Always\" is wrong in the other direction. Independent issues are better handled sequentially, where each iteration stays focused and easy to verify.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.7.4"
+    },
+    {
+     "option": 3,
+     "text": "Ordering by size does nothing about interdependence. The two concurrency issues still arrive separately, which is the arrangement that produces the conflicting patch.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.7.4"
+    }
+   ]
+  },
+  {
+   "g": 58,
+   "block": 3,
+   "domain": "D4",
+   "stem": "The tool schema for review findings is hand-maintained in one file and a validation class in the pipeline checks the same fields in another. Twice this quarter a new severity level was added to one and not the other, and findings were dropped silently. A code-review checklist item has been proposed. How should you evaluate it?",
+   "options": [
+    "Adequate — schema drift is a process failure, so a process control is the proportionate answer.",
+    "Inadequate — generate the tool's JSON Schema from the validation model, so a single definition drives both.",
+    "Inadequate — drop the code-side validation entirely, since the tool schema already enforces the contract.",
+    "Inadequate — move both definitions into `CLAUDE.md` so any session editing one can see the other."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "A typed validation model can generate the JSON Schema used in the tool definition, so the tool's contract and the code's validator come from one source and cannot drift apart. That removes the failure mode rather than asking humans to catch it.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.8"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A checklist is a process patch for an architecture problem. It works until the reviewer is busy, which is the same condition under which the drift happened twice already.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.8"
+    },
+    {
+     "option": 2,
+     "text": "Tool schemas enforce structure at generation time and cannot express business rules or cross-field logic. Code-side validation is defence in depth, not redundancy.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.8"
+    },
+    {
+     "option": 3,
+     "text": "Instruction files are context for the model, not a source of truth for a schema. Both definitions would still exist and still drift, now in a third location.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.8"
+    }
+   ]
+  },
+  {
+   "g": 59,
+   "block": 3,
+   "domain": "D1",
+   "selectN": 2,
+   "stem": "Two changes are proposed. First, route the generated patch to a separate critic agent that scores it against the review criteria. Second, give the test-writing subagent only the changed module and its interface, not the whole pull-request conversation. Which two of the following name these patterns correctly, in that order? Select two.",
+   "options": [
+    "Evaluator-optimizer for the first — a generator followed by an independent critic reviewing its output.",
+    "Context isolation for the second — a subagent receives only what the coordinator explicitly passes it.",
+    "Context isolation for the first, since the critic is deliberately kept apart from the generator.",
+    "Evaluator-optimizer for the second, since narrowing the input optimises what the subagent evaluates.",
+    "Coverage annotation for the second, since restricting an input requires marking what was left out."
+   ],
+   "correct": [
+    0,
+    1
+   ],
+   "whyRight": {
+    "text": "Evaluator-optimizer names the two-stage structure: a generator, then an independent critic or reviewer. Context isolation names what a subagent receives — only what the coordinator explicitly passes, which is exactly a module and its interface rather than the full conversation. Both involve independence, and they are independence of different things.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.18"
+   },
+   "whyWrong": [
+    {
+     "option": 2,
+     "text": "Context isolation is about the input a subagent gets, not about a generate-then-critique structure. Calling the critic stage isolation loses the two-stage shape that gives the pattern its name.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.18"
+    },
+    {
+     "option": 3,
+     "text": "Evaluator-optimizer requires a critic evaluating a generated artefact. Narrowing a subagent's input adds no evaluation stage at all — nothing is being scored.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.18"
+    },
+    {
+     "option": 4,
+     "text": "Coverage annotation is a synthesis behaviour: marking which conclusions are well supported and where data is missing. It has nothing to do with how much input a subagent is handed.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.18"
+    }
+   ]
+  },
+  {
+   "g": 60,
+   "block": 3,
+   "domain": "D5",
+   "stem": "Suggested fixes from the reviewer are accepted 96% of the time overall, measured across eleven finding types and about 300 fixes a week, and there is a proposal to apply the high-confidence ones automatically. Nobody has broken that figure down by type or by module. What should happen before any auto-apply?",
+   "options": [
+    "Break accuracy down by finding type and by module, and add stratified random sampling of the high-confidence stream.",
+    "Auto-apply everything above the confidence threshold and review the aggregate acceptance rate monthly.",
+    "Take the model's self-reported confidence as it stands, since 96% acceptance already validates it.",
+    "Review only the lowest-confidence findings by hand and let everything above that line through."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "An aggregate figure can hide a segment failing badly — 97% overall is compatible with 40% failure on one rare type. Validating accuracy per finding type and per module, and sampling the automated stream in a stratified way, is what makes reduced human review safe rather than merely cheaper.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "Monthly review of the same aggregate repeats the mistake on a slower clock. The number that hid the bad segment will keep hiding it.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+    },
+    {
+     "option": 2,
+     "text": "Self-reported confidence is uncalibrated until it is tuned against a labelled validation set. Acceptance rate is not that calibration, and it is measured on the findings developers bothered to read.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+    },
+    {
+     "option": 3,
+     "text": "Reviewing only the flagged-lowest stream leaves novel error patterns in the automated path undetected, which is exactly what stratified sampling of high-confidence output exists to catch.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+    }
+   ]
+  }
+ ]
+}

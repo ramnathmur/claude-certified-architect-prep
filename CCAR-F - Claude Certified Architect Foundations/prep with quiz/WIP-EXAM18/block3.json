@@ -1,0 +1,514 @@
+{
+ "label": "Claude Code for Continuous Integration",
+ "narrative": "The same repository runs Claude Code as an automated reviewer in its pipeline, and separately as a nightly analysis job. The team is midway through hardening both. The questions below follow that work.",
+ "questions": [
+  {
+   "g": 31,
+   "block": 2,
+   "domain": "D3",
+   "stem": "The project `CLAUDE.md` carries three long sections of file-type conventions — Terraform, SQL migrations and React components. Token usage per session has climbed, and engineers editing a React component are paying for the Terraform and SQL sections on every request. What is the correct restructuring?",
+   "options": [
+    "Split `CLAUDE.md` into three files and have engineers set an environment variable selecting which one loads.",
+    "Keep the sections in `CLAUDE.md` and add a preamble telling the model to ignore sections that do not apply to the current file.",
+    "Move all three into a single skill that the engineer invokes at the start of a session working on that file type.",
+    "Move each set of conventions into `.claude/rules/` with a glob matching its file type, so each loads only when a matching file is being edited."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "Root CLAUDE.md loads for every session regardless of what is being edited, which is why Terraform conventions are being paid for during React work. Path-scoped rules load only when a matching file is read, so each set of conventions costs nothing when it does not apply while still applying automatically when it does.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "This builds a manual selection mechanism to replace one that already selects automatically by file path, and it fails as soon as a session touches two file types.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+    },
+    {
+     "option": 1,
+     "text": "An instruction to ignore content does not stop it being sent. The tokens are spent when the request is assembled, so this adds a line to the cost rather than removing it.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+    },
+    {
+     "option": 2,
+     "text": "Conventions that must shape every edit should not depend on someone remembering to invoke them. A skill is the on-demand mechanism, and this content needs to be resident whenever a matching file is touched.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+    }
+   ]
+  },
+  {
+   "g": 32,
+   "block": 2,
+   "domain": "D4",
+   "stem": "The reviewer emits findings in four categories. Three are accurate; the performance category is wrong roughly 70% of the time. Developers have begun dismissing all four without reading them, and correctness findings are now being missed in review. What is the correct move while the performance prompt is being improved?",
+   "options": [
+    "Keep all four active and reduce the performance category's volume by surfacing only its highest-severity findings.",
+    "Keep all four active and label performance findings as low-confidence, so developers can weigh them appropriately.",
+    "Turn the performance category off until its prompt is fixed, so the three reliable categories are read again.",
+    "Keep all four active and add a note asking developers to read the correctness findings even if they skip the others."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "A high false-positive rate in one category destroys trust in the whole output, which is what the dismissal pattern shows — the cost is now being paid in missed correctness findings, not in wasted time on performance ones. Disabling the unreliable category while its prompt is improved restores the credibility of the rest immediately.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.17"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Severity filtering reduces the count of wrong findings without raising their accuracy, so a smaller stream of mostly-wrong performance findings keeps the credibility problem alive at lower volume.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.17"
+    },
+    {
+     "option": 1,
+     "text": "A label asks developers to do the filtering the system should have done, and they have already demonstrated they will not — they are dismissing everything rather than sorting it. The noise stays in the output either way.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.17"
+    },
+    {
+     "option": 3,
+     "text": "This asks developers to sustain a distinction the tool is failing to make. Trust is being lost because the output as a whole is unreliable, and a note does not change what the output contains.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.17"
+    }
+   ]
+  },
+  {
+   "g": 33,
+   "block": 2,
+   "domain": "D3",
+   "stem": "The team must migrate the pipeline off a deprecated test runner. The replacement is chosen and its basic invocation is documented, but the configuration mapping is unclear in three places, two custom reporters may have no equivalent at all, and roughly 40 spec files will need changing. How should Claude Code be used for this work?",
+   "options": [
+    "Plan mode to work out the configuration mapping and the reporter question, then direct execution to carry out the agreed migration.",
+    "Plan mode throughout, including the edits, so each of the 40 files is reviewed before it is written.",
+    "Direct execution from the start, since the replacement runner is already chosen and the work is mechanical.",
+    "Direct execution on the configuration first, switching to plan mode if the reporters turn out to have no equivalent."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "This splits cleanly into an open part and a mechanical part. The mapping and the reporters are genuine unknowns that are expensive to get wrong across 40 files, so they are settled in plan mode first. Once the approach is agreed the edits are repetitive application, which is what direct execution is for. Plan the strategy, then execute it.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.6"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "Extending planning across 40 mechanical edits adds review overhead to changes whose shape is no longer in question. Planning is for deciding the approach, not for gating its application.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.6"
+    },
+    {
+     "option": 2,
+     "text": "Choosing the runner is not the same as knowing the migration. The configuration mapping is unclear and three reporters may need replacing, so the work is not mechanical yet.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.6"
+    },
+    {
+     "option": 3,
+     "text": "The reporter uncertainty is stated in the requirements, not discovered mid-flight. Waiting for it to become a problem means finding out after configuration work already depends on an answer.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.6"
+    }
+   ]
+  },
+  {
+   "g": 34,
+   "block": 2,
+   "domain": "D1",
+   "stem": "The nightly job runs four analyses across the repository. On one run the dependency-graph analysis fails on a malformed lockfile, after the complexity, coverage and dead-code analyses have all completed and produced their sections. The orchestrator's current handler aborts the run and writes nothing at all. What should it do instead?",
+   "options": [
+    "Retry the whole run from the start, so the report is either complete or absent rather than partial.",
+    "Write the three completed analyses with an explicit note that the dependency-graph analysis failed and why, then decide whether that one is worth retrying on its own.",
+    "Write the three completed analyses and omit any mention of the fourth, so the report reads cleanly.",
+    "Write all four sections, marking the dependency-graph section as empty so the report's structure stays consistent."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "A failure in one branch should not discard three that succeeded. The orchestrator assesses the failure and chooses targeted recovery — publish what completed, record what did not and why, and retry only the failed analysis. That keeps the successful work and keeps the report honest about its own coverage.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.9"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Re-running everything throws away three completed analyses to retry one, and a lockfile that is malformed will still be malformed on the second attempt, so the run may produce nothing at all.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.9"
+    },
+    {
+     "option": 2,
+     "text": "A report that omits the failure presents three-quarters coverage as the whole picture. A reader has no way to know the dependency graph was never examined.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.10"
+    },
+    {
+     "option": 3,
+     "text": "An empty section reads as an analysis that ran and found nothing, which is a different and more damaging claim than an analysis that failed. Structural consistency is not worth a false statement about coverage.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.10"
+    }
+   ]
+  },
+  {
+   "g": 35,
+   "block": 2,
+   "domain": "D4",
+   "selectN": 2,
+   "stem": "An engineer wants to move three Claude workloads to the Message Batches API to cut cost: an interactive query tool a developer waits on, a pre-merge check that blocks the pipeline, and a monthly architecture report nobody reads until the following week. Select TWO properties of that API that constrain which of them can move.",
+   "options": [
+    "There is no latency guarantee, and a batch may take up to 24 hours to complete.",
+    "A batch request cannot execute tools and continue reasoning from their results within the same request.",
+    "Batch requests are limited to a smaller context window than synchronous requests.",
+    "Batch results are returned unordered and without any identifier linking them to their inputs."
+   ],
+   "correct": [
+    0,
+    1
+   ],
+   "whyRight": {
+    "text": "Two properties rule workloads out. The absence of a latency SLA means nothing blocking can use it — results often arrive quickly and the design has to survive the 24-hour case. And a batch request cannot run a multi-turn tool-calling loop within itself, so any workload that needs to call a tool and reason from the result mid-processing must stay synchronous.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+   },
+   "whyWrong": [
+    {
+     "option": 2,
+     "text": "Batch requests are not given a smaller context window. Inventing a capacity limit would rule out large-document workloads that are in fact among the best candidates for batching.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+    },
+    {
+     "option": 3,
+     "text": "Each request carries a caller-supplied identifier that is returned with its result, which is exactly what makes reassembly possible. Maintaining that join key is a discipline the corpus requires, not a limitation of the API.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+    }
+   ]
+  },
+  {
+   "g": 36,
+   "block": 2,
+   "domain": "D4",
+   "stem": "The reviewer attaches a confidence score to each finding, and the pipeline auto-resolves anything above 0.9 without human review. A sample audit finds that 0.9-confidence findings about naming are right 96% of the time, while 0.9-confidence findings about concurrency are right 71% of the time. What does the pipeline need before it can keep auto-resolving?",
+   "options": [
+    "Removal of the concurrency category from auto-resolution, leaving the uniform 0.9 threshold in place for the rest.",
+    "A single higher threshold of 0.95 applied uniformly, since the weaker type sets the safe operating point.",
+    "Calibration of the thresholds against a labelled set per finding type, so a cut-off reflects the accuracy that score actually predicts for that type.",
+    "A second confidence score from a separate prompt, auto-resolving only when both exceed 0.9."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "Raw confidence is not calibrated, and the audit shows the same 0.9 meaning two quite different things. Calibrating per finding type against labelled data turns the score into something whose threshold can be reasoned about — which is the prerequisite the corpus sets before confidence is allowed to drive an automated decision.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Excluding concurrency handles the one type the audit happened to examine and leaves every other type on an uncalibrated threshold. The next type with a similar gap is discovered the same way.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+    },
+    {
+     "option": 1,
+     "text": "A uniform threshold set by the weakest type sends large volumes of accurate naming findings to human review, paying reviewer capacity to compensate for a scale mismatch rather than measuring it.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+    },
+    {
+     "option": 3,
+     "text": "Two uncalibrated scores from the same model correlate, so agreement is weak evidence. It doubles the cost without establishing what either number predicts.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+    }
+   ]
+  },
+  {
+   "g": 37,
+   "block": 2,
+   "domain": "D3",
+   "stem": "The reviewer's summary block is specified in four paragraphs of prose describing what each section should contain and how findings should be ordered. Across runs the sections appear in different orders and the ordering rule is applied inconsistently. An engineer proposes rewriting the four paragraphs more precisely. What should be done instead?",
+   "options": [
+    "Rewrite the paragraphs with numbered rules and defined terms, removing the ambiguity from the prose.",
+    "Provide two or three worked examples pairing a set of findings with the exact summary block they should produce.",
+    "Add a validation step that reorders the sections after generation, so the prose no longer has to be precise.",
+    "Reduce the summary to a single section, so no ordering rule is needed."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "Four paragraphs of description have already been written and are still being read differently run to run. Concrete input-and-output examples remove the interpretation step rather than trying to narrow it — the model is shown the target instead of being told about it. The corpus's rule is examples first once prose has failed, not more prose.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.7"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "More precise prose is still prose, still interpreted. This is the fifth attempt at the intervention that has already failed four times.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.7"
+    },
+    {
+     "option": 2,
+     "text": "Post-processing enforces section order and cannot fix inconsistent application of the ordering rule inside each section. It also builds a repair step to avoid specifying the requirement properly.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.7"
+    },
+    {
+     "option": 3,
+     "text": "Collapsing the structure removes the requirement rather than meeting it, and the summary loses the organisation that made it usable in review.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.7"
+    }
+   ]
+  },
+  {
+   "g": 38,
+   "block": 2,
+   "domain": "D1",
+   "stem": "A generation step writes database migration scripts and a review step checks them against the schema before they are applied. Both currently run as consecutive turns in one session. Across roughly ninety migrations the review has never rejected a script, and two migrations that reached production had to be rolled back. What change makes the review meaningful?",
+   "options": [
+    "Instruct the review turn to assume the script is wrong until it has verified each statement against the schema.",
+    "Move the review to a stronger model while keeping it in the generation session.",
+    "Run the review turn twice in the same session and reject if either pass objects.",
+    "Run the review as a separate instance receiving the script and the schema but none of the generation conversation."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "A reviewer sharing the generation session has the reasoning that produced every line already in front of it, and that context makes rejection unlikely — it is evaluating an argument it just made. An independent instance sees the script and the schema and nothing else, so it judges the artefact rather than the intent behind it.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.17"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "An adversarial instruction is issued into the same contaminated context. The model still has its own justification for each statement available and is being asked to argue against itself.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.17"
+    },
+    {
+     "option": 1,
+     "text": "Capability is not the constraint; access to the generation rationale is. A stronger model in the same session inherits the same reasons to accept what was written.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.17"
+    },
+    {
+     "option": 2,
+     "text": "Two passes in one session share the same context and tend to reach the same conclusion. Repetition raises confidence in a correlated judgement rather than producing an independent one.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.17"
+    }
+   ]
+  },
+  {
+   "g": 39,
+   "block": 2,
+   "domain": "D4",
+   "stem": "The nightly job emits a coverage report through a tool call with a JSON schema. Every payload parses. Finance-side consumers report that `lines_covered` sometimes exceeds `lines_total`, and that the reported percentage does not always match the two counts. What is needed?",
+   "options": [
+    "A tighter schema constraining all three fields to non-negative numbers with the percentage bounded between 0 and 100.",
+    "Validation logic expressing the cross-field rules — covered never exceeds total, and the percentage is derived from the two — with the specific violation fed back for correction.",
+    "An instruction in the prompt reminding the model that covered lines cannot exceed total lines.",
+    "A schema requiring all three fields, so none can be omitted and left to be inferred downstream."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "These are semantic errors: every value is well-formed and correctly typed, and the relationships between them are wrong. A schema describes fields individually and cannot say that one must not exceed another or that a third is derived from both. Validation code expresses those rules, and its specific error message is what a retry can act on.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.8"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Range constraints on each field independently are all satisfied by the bad payloads — 900 covered of 800 total is two non-negative numbers, and a percentage between 0 and 100 can still disagree with them.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.7"
+    },
+    {
+     "option": 2,
+     "text": "A prompt reminder makes the model's own arithmetic the control, which is what is failing. Nothing checks the output, so a bad payload still reaches the consumer.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.8"
+    },
+    {
+     "option": 3,
+     "text": "All three fields are already present; none is being omitted. Requiredness governs presence and has no bearing on whether present values are consistent with each other.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.5"
+    }
+   ]
+  },
+  {
+   "g": 40,
+   "block": 2,
+   "domain": "D2",
+   "stem": "The nightly job always performs the same three steps against the artefact store: fetch the manifest, verify its checksum, then record the result. The agent sometimes records without verifying, and sometimes verifies a manifest it fetched two steps earlier. An engineer proposes bundling all three into one `process_artefact` tool. When is that the right call?",
+   "options": [
+    "When the three steps are always performed together in that order and the model has no legitimate reason to run them separately, bundling removes a sequencing decision it keeps getting wrong.",
+    "Never — bundling hides the individual steps from the model, so a failure in any one of them becomes harder to diagnose.",
+    "Only if the three steps are also exposed individually, so the model can choose the composite or the parts as it sees fit.",
+    "Only after a `PostToolUse` hook has been added to verify that the three steps ran in the right order."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "A composite tool is right when the steps are invariably performed together and the ordering is not a decision worth leaving to the model. Here that holds: three fixed steps, one order, no case for running them apart. Bundling them makes the sequence a property of the tool rather than something the model has to get right on every run.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.8"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "Diagnosability is a real consideration and is handled by the composite returning structured per-step results. Ruling bundling out entirely discards the mechanism the corpus recommends for exactly this pattern.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.8"
+    },
+    {
+     "option": 2,
+     "text": "Exposing both leaves the sequencing decision available, which is the decision being got wrong. It also widens the tool set, which works against selection reliability.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.8"
+    },
+    {
+     "option": 3,
+     "text": "A PostToolUse hook observes ordering after the fact and cannot prevent a record written without a verification. It detects the failure the composite tool makes impossible.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.7"
+    }
+   ]
+  },
+  {
+   "g": 41,
+   "block": 2,
+   "domain": "D3",
+   "stem": "The project `CLAUDE.md` has become hard to maintain: universal standards, the commit convention and the review checklist all sit in one file that several people edit. The team wants them in separate files while still loading together for every session. What supports this?",
+   "options": [
+    "An `@path` import in `CLAUDE.md` referencing each of the separate files, so they are pulled in as part of the same load.",
+    "Placing the separate files alongside `CLAUDE.md` in `.claude/`, where every file in the directory is loaded automatically.",
+    "A `.claude/rules/` file per topic with a glob matching every path, which reproduces always-on loading.",
+    "A skill per topic with `disable-model-invocation` set, so each is loaded at session start rather than on request."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "`@path` imports are the supported way to modularise CLAUDE.md. The entry file references the others and they are pulled in as part of the same load, so the content still arrives in every session while each topic lives in its own file with its own edit history.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.1"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "Loading is not a matter of dropping files into the directory and hoping they are picked up. CLAUDE.md is the entry point, and other files reach the context because it references them.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.1"
+    },
+    {
+     "option": 2,
+     "text": "A match-everything glob is a fragile way of writing what CLAUDE.md already does, and it repurposes the file-scoped mechanism to carry content that is not file-scoped at all.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+    },
+    {
+     "option": 3,
+     "text": "Skills load as invoked workflows, and disabling model invocation makes a skill less available rather than resident. It does not turn one into always-on context.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+    }
+   ]
+  },
+  {
+   "g": 42,
+   "block": 2,
+   "domain": "D3",
+   "selectN": 2,
+   "stem": "The same prompt against the same commit gives different verdicts on different runs — one run flags a naming violation the next ignores, and the pipeline's pass/fail parse sometimes fails outright because the summary wording changed. The team wants the CI review reproducible. Select TWO changes that address this.",
+   "options": [
+    "Invoke Claude Code from the repository root so the project configuration is in the loaded hierarchy on every run.",
+    "Request structured output and branch the pipeline on parsed fields rather than on the wording of the printed text.",
+    "Raise the runner timeout so slow runs are not cut short mid-review.",
+    "Pin the review to a single reviewer machine, so the environment is identical between runs."
+   ],
+   "correct": [
+    0,
+    1
+   ],
+   "whyRight": {
+    "text": "Two different sources of variation are in play. If the run is started outside the repository the project configuration never loads, so the conventions applied differ from a local run — invoking from the root fixes what the model is told. And branching on parsed structured fields rather than on rendered prose removes the pipeline's sensitivity to how a verdict happens to be phrased.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.9"
+   },
+   "whyWrong": [
+    {
+     "option": 2,
+     "text": "A longer timeout prevents truncation and does nothing about two completed runs disagreeing. It addresses a failure mode that is not the one described.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+    },
+    {
+     "option": 3,
+     "text": "Pinning to one machine makes the environment uniform and leaves both real causes in place, while removing the pipeline's ability to run anywhere. It is a constraint, not a fix.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+    }
+   ]
+  },
+  {
+   "g": 43,
+   "block": 2,
+   "domain": "D4",
+   "stem": "A summarisation step must return a JSON object, and roughly one call in twelve begins with a sentence of preamble before the object, which breaks the parser. Tool-based structured output is not available for this step. What is the most direct way to constrain the response?",
+   "options": [
+    "Lower the temperature so the model produces its most likely response, which is the bare object.",
+    "Add a system-prompt line stating that the response must contain no text outside the JSON object.",
+    "Strip everything before the first opening brace in post-processing.",
+    "Prefill the start of the assistant's response with the opening brace, so the model continues from inside the object."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "Prefilling seeds the beginning of the assistant's response, so the model resumes from a point that is already inside the JSON object and the preamble has nowhere to go. It constrains the shape at generation time rather than instructing towards it, which is what makes it the direct answer when a tool-call schema is not available.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.4"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Lower temperature narrows sampling around the model's existing tendencies, one of which is occasionally to introduce its answer. It makes the behaviour more consistent without deciding which behaviour.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.4"
+    },
+    {
+     "option": 1,
+     "text": "An instruction of this kind is presumably already implied and is being followed eleven times in twelve. Restating it moves the rate rather than removing the failure, which prefilling does structurally.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.4"
+    },
+    {
+     "option": 2,
+     "text": "Stripping before the first brace repairs the output after the fact and breaks whenever a preamble happens to contain a brace. It is the compensating cleanup rather than the constraint.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.4"
+    }
+   ]
+  },
+  {
+   "g": 44,
+   "block": 2,
+   "domain": "D1",
+   "stem": "Each CI review is currently invoked with `--resume` against a long-lived session, so the reviewer 'remembers the repository'. The reviews have begun citing helper functions that were deleted a fortnight ago and referring to a directory layout that changed in the same window. What should the pipeline do?",
+   "options": [
+    "Fork the long-lived session per run, so each review branches from the shared baseline without writing back to it.",
+    "Keep resuming and add an instruction telling the reviewer to re-read files before citing them.",
+    "Start each run in a fresh session and inject a short structured summary of any standing context the review needs.",
+    "Keep resuming and compact the long-lived session weekly to keep it from growing unbounded."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "A long-lived resumed session accumulates tool results describing a repository that keeps changing, and the agent reasons over them as though they were current — which is exactly the symptom. When prior results are broadly stale the corpus's answer is a fresh session with a structured summary injected: the conclusions carry forward, the outdated evidence does not.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.16"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A fork inherits everything up to the branch point, so each run starts from the same accumulated stale results. It isolates the runs from each other without removing what is making them wrong.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.16"
+    },
+    {
+     "option": 1,
+     "text": "The stale results remain in history and remain available to reason from, so an instruction to re-read competes with content the model already has. Resume-and-inform is the right pattern when a small, nameable set of files changed, which is not this case.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.16"
+    },
+    {
+     "option": 3,
+     "text": "Compaction bounds the size of the session and summarises stale content rather than discarding it, so outdated conclusions survive in condensed form. Growth is not the problem being described.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.16"
+    }
+   ]
+  },
+  {
+   "g": 45,
+   "block": 2,
+   "domain": "D1",
+   "stem": "The nightly job summarises each of 30 modules in a loop. Some summaries end mid-sentence, and the loop treats them as complete and moves on. Inspecting the responses, the truncated ones carry `stop_reason` of `max_tokens`. How should the loop handle this?",
+   "options": [
+    "Treat any value other than `end_turn` as unfinished and branch on which one it is — for `max_tokens`, continue the response or reduce what was requested, rather than accepting it as complete.",
+    "Treat `max_tokens` as equivalent to `end_turn`, since the model stopped producing output either way, and flag the summary for human review.",
+    "Set a higher output limit and treat any response that still truncates as a module too large to summarise.",
+    "Check whether the last character is a full stop and re-request the summary when it is not."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "`stop_reason` states why generation ended, and `max_tokens` means the response ran into the output limit rather than finishing. A loop that branches only on `tool_use` versus everything-else-is-done accepts truncated work as complete. The safe rule is that only `end_turn` means finished; every other value is a reason to look at what happened and act on it.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.1"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "This preserves the conflation that caused the bug and adds a human to catch it afterwards. The API already distinguishes the two cases, so a review queue is being built to recover a signal that is being discarded.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.1"
+    },
+    {
+     "option": 2,
+     "text": "Raising the limit reduces how often truncation occurs and leaves the loop unable to recognise it when it does. The second half declares a module unsummarisable on the basis of a limit rather than of its content.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.1"
+    },
+    {
+     "option": 3,
+     "text": "Inspecting the text for a terminal full stop is natural-language parsing standing in for a deterministic field. A summary can end mid-sentence after a full stop in an abbreviation, and a complete one can end without one.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.1"
+    }
+   ]
+  }
+ ]
+}

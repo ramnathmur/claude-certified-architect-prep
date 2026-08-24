@@ -1,0 +1,514 @@
+{
+ "label": "Code Generation with Claude Code",
+ "narrative": "A five-person team builds a scheduling service with Claude Code. The repository holds application code, a large integration-test suite, deployment manifests and a set of written house conventions. The questions below follow their second quarter of working this way.",
+ "questions": [
+  {
+   "g": 16,
+   "block": 1,
+   "domain": "D3",
+   "stem": "Two refinement problems land in the same week. In the first, the team knows exactly what a generated migration file should look like and Claude keeps producing a variant ordering. In the second, they are adding support for a scheduling standard none of them has worked with and cannot say what the implementation should contain. Which techniques fit, and on what basis?",
+   "options": [
+    "Concrete examples for the first and the interview pattern for the second — the axis is whether you can already state the target, not how large or how urgent the task is.",
+    "The interview pattern for both, since it is the more thorough technique and neither problem has yet been solved.",
+    "Concrete examples for both, since examples are the documented first response whenever output does not match intent.",
+    "The interview pattern for the first and concrete examples for the second — the axis is how much of the codebase each change touches."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "The techniques answer different questions. Examples are for when you know the exact transformation and the model keeps misinterpreting it, which is the migration case. The interview pattern is for an unfamiliar domain where the risk is not that the model misreads you but that you do not yet know what to specify, which is the scheduling-standard case. The selection axis is whether the target can already be stated.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.7"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "Thoroughness is not the criterion. Interviewing about a migration file whose correct form the team can already write out spends turns eliciting a specification that exists, and it does not remove the interpretation step that examples remove.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.7"
+    },
+    {
+     "option": 2,
+     "text": "Examples require someone able to author a correct one. For the scheduling standard nobody can, because working out what a correct output contains is the open question — so this asks the team to supply the thing they are missing.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.7"
+    },
+    {
+     "option": 3,
+     "text": "This pairs the techniques the wrong way round and names an axis the corpus does not use. Breadth of change is a plan-mode consideration; it does not determine whether to demonstrate or to interrogate.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.7"
+    }
+   ]
+  },
+  {
+   "g": 17,
+   "block": 1,
+   "domain": "D5",
+   "stem": "Two constraints are agreed in the opening minutes of a long session: one adapter keeps its public signature, and a particular date library is off limits. Around turn eighteen a change lands that alters the signature and imports the banned library. Neither constraint was removed from the conversation and the context limit is nowhere near. What is the effective mitigation?",
+   "options": [
+    "Instruct the model to weigh all parts of the conversation equally before acting.",
+    "Raise the model tier, since holding many constraints across a long conversation is a capability question.",
+    "Restate both constraints near the start of each request under an explicit heading, so their position is stable rather than buried mid-history.",
+    "Ask the model to list the active constraints before each change, so it re-reads them itself."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "Content in the middle of a long input is attended to less reliably than content at its edges. The constraints were not lost, they were positioned badly. The corpus's mitigation is structural — move what must be honoured to a stable, prominent position and mark it with an explicit header — rather than hoping the model weights a buried paragraph correctly.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.2"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Position effects are not something an instruction overrides. The corpus names prompt-based reminders as unreliable for exactly this failure.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.2"
+    },
+    {
+     "option": 1,
+     "text": "Nothing here exceeds any limit and the constraints are two short sentences. Treating a position effect as a capability shortfall buys a stronger model that reads the same badly-placed text.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.2"
+    },
+    {
+     "option": 3,
+     "text": "This is closer — it does surface the constraints — but it makes recall the model's job on every turn and adds a step that can itself be skipped. Placing them where they are reliably read is the structural version of the same idea.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.2"
+    }
+   ]
+  },
+  {
+   "g": 18,
+   "block": 1,
+   "domain": "D2",
+   "stem": "The agent holds a `run_command` tool described as 'runs a shell command in the repository root'. A weekly log review flags commands that touched the deployment manifests or reached the network, and an engineer reverts anything inappropriate. Two reverts last month were of commands that had already pushed a manifest change to the staging cluster. What is the correct change?",
+   "options": [
+    "Run the log review daily rather than weekly, so an inappropriate command is caught within hours.",
+    "Keep `run_command` and add a system-prompt section listing the command prefixes the agent must not use.",
+    "Replace it with a set of narrow tools — run the test suite, run the linter, run a named build target — that cannot express a deployment or a network call.",
+    "Keep `run_command` and require the agent to state its intent before each call, so the log review can be judged against the stated purpose."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "A tool that runs any shell command grants everything the shell can do, and the review is finding out afterwards. Narrow tools that express the operations the agent actually needs make a deployment push impossible rather than reversible — and the two commands that reached staging show the difference between the two, because a revert does not un-deploy.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A faster review shortens the window without closing it. A manifest change that reaches staging four hours after the command is in the same position as one that reaches it four days later.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+    },
+    {
+     "option": 1,
+     "text": "A prompt denylist is a probabilistic control over a capability that is still fully present, and it can only name the prefixes someone anticipated. The next unforeseen command shape is unaffected.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+    },
+    {
+     "option": 3,
+     "text": "Stated intent improves the review's evidence and changes nothing about what the tool can do. The command still executes before anyone reads the intent.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+    }
+   ]
+  },
+  {
+   "g": 19,
+   "block": 1,
+   "domain": "D3",
+   "stem": "A `/release-notes` command should reach the whole team on clone. Its author has it working; three colleagues who pulled the same branch see no such command, and `/memory` on their machines lists nothing by that name. The file sits at `~/.claude/commands/release-notes.md` and its frontmatter parses cleanly. What is the fix?",
+   "options": [
+    "Add a `paths` entry to the file's frontmatter so it activates in the repository's directories.",
+    "Move it into the repository as `.claude/commands/release-notes.md`, or as `.claude/skills/release-notes/SKILL.md`, so it is version-controlled and arrives with a clone.",
+    "Have each colleague run `/memory` after pulling, which registers commands added since their session started.",
+    "Ask each colleague to copy the file into their own `~/.claude/commands/` directory."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "`~/.claude/` is user scope: personal to a machine, outside the repository and never version-controlled, so nothing there travels with a pull. Anything the team should receive has to live in a project-scoped path inside the repository. Both project-scoped homes produce the same command; `.claude/skills/` is the canonical, fuller-featured one.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.5"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Path scoping controls when something applies, not who has it. A `paths` entry on a file that exists only in one engineer's home directory leaves every colleague without the file.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+    },
+    {
+     "option": 2,
+     "text": "`/memory` reports which configuration files are currently loaded. It is a diagnostic, not a loader, and it cannot surface a file that does not exist on the colleague's machine.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.1"
+    },
+    {
+     "option": 3,
+     "text": "Copying by hand gets today's team working and leaves the next joiner in the same position, with several copies that drift apart and no mechanism to keep them in step.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.5"
+    }
+   ]
+  },
+  {
+   "g": 20,
+   "block": 1,
+   "domain": "D5",
+   "selectN": 2,
+   "stem": "Two and a half hours into a session that has traced the booking flow across roughly sixty files, answers are getting vaguer and one referred to a helper renamed an hour earlier. The engineer has another two hours of work planned on the same area. Select TWO steps that fit.",
+   "options": [
+    "Write the accumulated findings to a scratchpad file first, so they survive whatever comes next.",
+    "Compact the conversation now rather than waiting until the context limit is reached.",
+    "Restart immediately and rebuild the understanding by re-exploring the same files.",
+    "Carry on and rely on the model to disregard the stale reference now that the rename has happened."
+   ],
+   "correct": [
+    0,
+    1
+   ],
+   "whyRight": {
+    "text": "Both steps treat context quality as something to manage before it fails. Persisting findings to a scratchpad makes the accumulated knowledge independent of the session, so any later restart is cheap. Compacting proactively during a long session, rather than as an emergency at the limit, is what leaves the remaining two hours working from a clean summary instead of a degraded transcript.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.12"
+   },
+   "whyWrong": [
+    {
+     "option": 2,
+     "text": "Restarting without persisting anything discards three hours of understanding and pays the exploration cost again. If a restart is needed, state is written out first and injected into the new session.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.12"
+    },
+    {
+     "option": 3,
+     "text": "The stale tool results are still in the conversation and still available to reason from. Expecting the model to route around content that is present and contradictory is what the observed symptom already disproves.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.12"
+    }
+   ]
+  },
+  {
+   "g": 21,
+   "block": 1,
+   "domain": "D1",
+   "stem": "An expensive trace of the booking flow has just finished. The team now wants to weigh two idempotency designs — a request-key table against a natural-key upsert — and needs each judged on its merits rather than against whichever was examined first. Both should begin from the completed trace. What mechanism fits?",
+   "options": [
+    "Evaluate them in one session, backoff first and the limiter afterwards, so the second can be judged against the first.",
+    "Start two fresh sessions and repeat the package analysis in each, so both evaluations rest on their own reading.",
+    "Fork the session at the point the analysis completed, so each design is explored in an independent branch from the same baseline.",
+    "Resume the analysis session twice, discarding the first evaluation's turns before beginning the second."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "Forking is built for this: two branches inherit the context up to the branch point and then diverge independently. The expensive analysis is done once and shared, and neither branch can see the other's reasoning, which is what makes the comparison fair.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.16"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Sequential evaluation lets the first design's reasoning shape the second, so the comparison is between a fresh assessment and one made in the shadow of the other.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.16"
+    },
+    {
+     "option": 1,
+     "text": "Two fresh sessions give independence and pay for the expensive analysis twice, and the two readings may differ, so the designs would be compared against subtly different baselines.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.16"
+    },
+    {
+     "option": 3,
+     "text": "Resuming and pruning turns is hand-rolled forking that depends on removing the first evaluation cleanly — which is what a fork does by construction and manual pruning does not.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.16"
+    }
+   ]
+  },
+  {
+   "g": 22,
+   "block": 1,
+   "domain": "D3",
+   "stem": "A generated scheduler module has four problems: it uses local time where the spec requires UTC, one helper duplicates an existing utility, the retry count is hard-coded, and the file name breaks the repository convention. Switching to UTC changes which helper is appropriate, and removing the duplicate helper changes where the retry count is configured. How should the feedback be delivered, and on what basis?",
+   "options": [
+    "In one message carrying all four, because three of them interact — the axis is whether fixing one changes another, not how serious or how mechanical each is.",
+    "In severity order, most serious first, so the important corrections are made while the context is freshest.",
+    "Grouped by kind, the two mechanical issues in one message and the two substantive ones in another, so each message has a consistent character.",
+    "One issue per message in the order they appear in the file, so each correction can be confirmed before the next is raised."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "The batching decision turns on whether the issues interact. Three of these are explicitly coupled — the time zone determines the helper, and the helper determines where the retry count lives — so a model told about them one at a time makes a choice for the first that it has to undo for the second. Presenting all the constraints together lets it design one change that satisfies them.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.7"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "Severity is a triage axis, not a batching axis. Ordering by importance still delivers coupled constraints one at a time, so the rework happens in a different order.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.7"
+    },
+    {
+     "option": 2,
+     "text": "Mechanical-versus-substantive is the wrong axis and it also splits the coupling: the duplicated helper lands in one message and the time-zone change in the other, so the helper decision is made before the fact that determines it is known.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.7"
+    },
+    {
+     "option": 3,
+     "text": "Sequential feedback fits independent issues. With coupled ones it produces rework at each step, because every fix is made without knowledge of the constraint arriving next, and file order has no relationship to the dependencies.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.7"
+    }
+   ]
+  },
+  {
+   "g": 23,
+   "block": 1,
+   "domain": "D4",
+   "stem": "A new triage step is being specified. It reads an incoming request and either points the engineer at existing documentation, which needs no tool, or opens a repository search to locate the relevant module. Both outcomes are legitimate and the split runs about even. Which `tool_choice` setting should the step be built with?",
+   "options": [
+    "`{\"type\": \"auto\"}`, which lets the model call the search when the request needs it and answer directly when it does not.",
+    "`{\"type\": \"any\"}`, so every request produces a tool call and the step's output shape stays uniform.",
+    "`{\"type\": \"tool\", \"name\": \"search_repo\"}`, so the step always has search results to reason from.",
+    "`{\"type\": \"any\"}` plus a no-op `answer_from_docs` tool for the requests that need no search."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "Nothing about this step makes a tool call mandatory — half its work is answering from documentation the model already has. `auto` is the rung that matches: the model decides per request whether a search is warranted. The stronger settings exist for when structured output or a tool call is required, and imposing one here buys uniformity by making half the requests do pointless work.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "Uniform output shape is not the requirement, and `any` would fire a search for every documentation pointer. It applies a guarantee to a step that has nothing mandatory to guarantee.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+    },
+    {
+     "option": 2,
+     "text": "Forcing the search tool makes every request a repository search, including the half that resolve to a documentation link. It is the strongest rung applied where no rung is needed.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+    },
+    {
+     "option": 3,
+     "text": "A no-op tool re-implements `auto` through a tool the model must remember to choose, adding a definition, a code path and a new failure mode to recover behaviour the parameter already provides.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+    }
+   ]
+  },
+  {
+   "g": 24,
+   "block": 1,
+   "domain": "D2",
+   "stem": "Before renaming a configuration key, the agent must find every place `poll_interval_ms` is read. It runs a path search for `**/*poll_interval*` and reports one file, whose name contains the key. The key is read in fourteen places. What went wrong, and what is the right approach?",
+   "options": [
+    "The pattern needs a leading wildcard to match files whose names merely contain the key, rather than beginning with it.",
+    "The search excluded files ignored by version control, and the readers sit in generated directories.",
+    "Configuration keys are not reliably findable by search; the configuration package should be read in full instead.",
+    "Path matching cannot look inside files. Search file contents for the identifier, then read only the files the results point at."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "The two search tools answer different questions. A path search matches file names against a pattern, which is why it returned the one file named after the key. Reads of a key are text inside files, so a content search is what finds them — and reading only the files those results point at keeps the investigation incremental rather than loading a package.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "The pattern already has a leading wildcard and already descends the tree. However it is written it is still comparing paths, so it cannot find a key inside a file whose name does not contain it.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+    },
+    {
+     "option": 1,
+     "text": "This invents an exclusion to explain the result. The readers are ordinary tracked source files; they were not returned because their paths do not contain the identifier.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+    },
+    {
+     "option": 2,
+     "text": "Content search finds configuration keys perfectly well. Reading a whole package to locate fourteen occurrences loads a large amount of irrelevant content and is the context-budget failure the corpus warns against.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+    }
+   ]
+  },
+  {
+   "g": 25,
+   "block": 1,
+   "domain": "D5",
+   "stem": "A design conversation is approaching the context limit. An engineer proposes trimming the oldest quarter of turns from each subsequent request, on the reasoning that recent turns already carry the current state. The trimmed range contains the agreed idempotency strategy and the list of endpoints excluded from it. What is wrong, and what should replace it?",
+   "options": [
+    "Nothing is wrong — the model reconstructs what it needs from the turns that remain, which is why recent context is sufficient.",
+    "The dropped turns should be moved into the system prompt, which keeps them available without counting toward the conversation length.",
+    "Dropping turns is acceptable as long as none of them contain tool results, since only tool results carry state the model cannot re-derive.",
+    "Each request carries the whole conversation, so a turn that is not sent does not exist for that request. Summarise the dropped range and hold the decisions that must not degrade verbatim."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "The API is stateless, so there is no server-side memory to fall back on — a turn that is not sent is simply absent. Cutting the oldest quarter takes the module boundary and the deprecation list with it. Summarising the dropped range carries the conclusions forward, and a verbatim block protects the specific decisions summarisation degrades worst.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.1"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "This assumes the model can reconstruct removed content from what remains. A boundary agreed in turn five and never restated is unavailable once turn five stops being sent.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.1"
+    },
+    {
+     "option": 1,
+     "text": "The system prompt is re-sent with every request and counts against the same budget, so this relocates content without saving anything, and fills a slot meant for persistent behavioural constraints with conversation history.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.1"
+    },
+    {
+     "option": 2,
+     "text": "Prose turns carry decisions, constraints and agreed approaches that are as unrecoverable as tool results. The distinction drawn here does not track what is safe to discard.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.3"
+    }
+   ]
+  },
+  {
+   "g": 26,
+   "block": 1,
+   "domain": "D1",
+   "stem": "'Trace every path that writes a booking' is handed to a subagent. A colleague objects that one investigation cannot be parallelised, so the delegation buys nothing. What is the stronger argument for delegating it anyway?",
+   "options": [
+    "Subagents can be given a cheaper model tier, so broad searches cost less when delegated.",
+    "Context isolation — the subagent absorbs the verbose search and file output, and only its conclusion returns to the main conversation.",
+    "Delegation checkpoints the main session, so a failed investigation can be retried without losing the conversation.",
+    "Subagents can access search tools the main session does not hold, so the investigation is more thorough."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "Parallelism is one benefit of subagents and not the main one here. A broad investigation generates a large volume of intermediate output, and running it in an isolated context keeps all of that out of the main conversation — which receives the finding rather than the search. That is worth doing with a single investigation and no concurrency at all.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.6"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Model tier is configurable per subagent and is not what makes delegation right. The argument would collapse the moment the subagent ran on the same tier.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.6"
+    },
+    {
+     "option": 2,
+     "text": "This describes a property of session management rather than the mechanism at work. The main conversation is protected here because the verbose output never enters it, not because anything can be rolled back.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.6"
+    },
+    {
+     "option": 3,
+     "text": "A subagent's tools are a subset chosen for it, not a superset unavailable to the main session. Delegation does not unlock capability that was otherwise out of reach.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.11"
+    }
+   ]
+  },
+  {
+   "g": 27,
+   "block": 1,
+   "domain": "D3",
+   "selectN": 2,
+   "stem": "The team is deciding where three pieces of guidance should live: a naming rule that must shape every edit anywhere in the repository, and a six-step incident-replay procedure run a few times a month on request. Select TWO statements that are correct.",
+   "options": [
+    "The naming rule belongs in the project `CLAUDE.md`, which loads automatically for every session.",
+    "The incident-replay procedure belongs in a skill, which loads when it is invoked rather than sitting in context permanently.",
+    "A skill with a `paths` entry would apply the naming rule automatically to every matching edit, making it equivalent to a rule.",
+    "Running `/memory` after adding either file is what registers it with the session."
+   ],
+   "correct": [
+    0,
+    1
+   ],
+   "whyRight": {
+    "text": "Both correct statements match the mechanism to when the content should be in context. A universal naming rule belongs in CLAUDE.md, which loads every session. A procedure run a few times a month is a task workflow and belongs in a skill, invoked on demand rather than resident. The distinction is when it loads, not what it says.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.2"
+   },
+   "whyWrong": [
+    {
+     "option": 2,
+     "text": "Both mechanisms can be scoped by path and they behave differently once scoped. A rule stays in context as background guidance whenever a matching file is read; a skill loads as a task-style workflow. A paths entry does not make them equivalent.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+    },
+    {
+     "option": 3,
+     "text": "`/memory` reports which configuration files are loaded. It is a diagnostic and it registers nothing — files load automatically based on where they sit in the hierarchy.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.1"
+    }
+   ]
+  },
+  {
+   "g": 28,
+   "block": 1,
+   "domain": "D5",
+   "stem": "Decisions taken weeks ago keep having to be re-argued: why the upsert was chosen, which retry library was rejected, what ruled out the second caching layer. Sessions start fresh each morning and those decisions live only in old transcripts nobody opens. What works?",
+   "options": [
+    "Keep one session alive indefinitely, re-summarising its history whenever it approaches the limit.",
+    "Ask the model at the start of each session to recall what was decided previously.",
+    "Move to a model with a larger context window so several weeks of work fit without any recall mechanism.",
+    "Persist each decision with its rationale to a durable store and retrieve the relevant ones into context when a related question arises."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "Recall across sessions has to come from outside the conversation, because the API keeps no state between them. Writing each decision and its rationale to a durable store and retrieving the relevant ones on demand scales without bound and puts the right decision in front of the model when it matters.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.7"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Repeated summarisation of a summary compounds loss at every pass, and the content it destroys first — the reasons a design was rejected — is exactly what needs to survive.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.7"
+    },
+    {
+     "option": 1,
+     "text": "A fresh session has no access to prior conversations, so asking it to recall them invites invention rather than retrieval.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.1"
+    },
+    {
+     "option": 2,
+     "text": "A larger window postpones the limit and creates no recall across separate sessions, since each new session starts empty however large it could grow.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.7"
+    }
+   ]
+  },
+  {
+   "g": 29,
+   "block": 1,
+   "domain": "D1",
+   "stem": "A quality sweep over 35 service modules runs as a single pass. The first several modules come back with specific, located findings and the rest with one or two general remarks. An engineer argues that naming the five required checks explicitly in the prompt removes any need for a multi-pass design. What is the flaw?",
+   "options": [
+    "Prompts are probabilistic, so the five checks would be applied to most modules but not all, leaving a small residual failure rate.",
+    "A prompt cannot allocate attention across a long input. Depth falls off because each module competes with 34 others in one pass, which is a property of the architecture rather than of the instruction.",
+    "A sharper prompt would work; multi-pass is preferred only because it parallelises more easily.",
+    "Listing the five checks per module would make the prompt too long to be effective."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "Requiring five checks does not change how attention is distributed over a 35-module input — the later modules still arrive after everything before them. Multi-pass fixes this structurally by giving each module a pass of its own, so its depth does not depend on its position. A better prompt raises the average and leaves the falloff intact.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A uniform small residual rate is not what is observed. The findings degrade with position, which points at attention allocation rather than ordinary instruction-following variance.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+    },
+    {
+     "option": 2,
+     "text": "This concedes the argument and defends multi-pass on operational grounds. Parallelism is a benefit, and the reason multi-pass is required here is that a single pass cannot deliver even depth at all.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+    },
+    {
+     "option": 3,
+     "text": "Prompt length is not the constraint; the five checks stated once apply to every module. This objects to a formatting choice rather than to the reasoning.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+    }
+   ]
+  },
+  {
+   "g": 30,
+   "block": 1,
+   "domain": "D2",
+   "stem": "A generated file declares the same four-line configuration block at the top of each of its six sections, byte for byte, and the third one must change. Widening the anchor pulls in more of the identical block and still matches six times; a replace-all would change all six. What is the correct next step?",
+   "options": [
+    "Read the file and write it back with the third block changed, since neither widening nor replace-all can isolate one of six identical occurrences.",
+    "Widen the anchor further, since a large enough surrounding window always resolves to one occurrence.",
+    "Apply replace-all and then revert the five blocks that should not have changed.",
+    "Regenerate the file from its template with the third block already correct."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "Widening the anchor and replace-all are the documented recoveries and both are exhausted here: the surrounding context is identical in all six places, so no window disambiguates, and only one of the six should change. This is the case the corpus reserves read-plus-write for — the last-resort fallback, used when the cheaper recoveries genuinely cannot pin the target rather than at the first sign of difficulty.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "The blocks are byte-for-byte identical, so a larger window contains more identical text and matches the same six places. Widening works when the surroundings differ, and here they do not.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+    },
+    {
+     "option": 2,
+     "text": "This makes five unwanted changes and then relies on a second pass to undo them, leaving the file briefly wrong and the reverts themselves subject to the same matching problem.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+    },
+    {
+     "option": 3,
+     "text": "Regenerating replaces the whole file to change four lines and assumes the template can express the difference between the third section and the other five, which is the same disambiguation problem moved upstream.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+    }
+   ]
+  }
+ ]
+}

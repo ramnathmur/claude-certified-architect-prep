@@ -1,0 +1,538 @@
+{
+  "label": "Developer Productivity with Claude",
+  "narrative": "You build developer-productivity tooling on the Agent SDK for a museum collections platform — accession records, conservation treatment logs, loan agreements and a digitisation pipeline — much of it inherited from a decade of short-lived grant projects. A coordinator delegates to specialist workers for exploration, scaffolding and cleanup, using the built-in tools and internal MCP servers. Across this block the tooling moves from delegation design toward longer autonomous runs.",
+  "questions": [
+    {
+      "g": 31,
+      "block": 2,
+      "domain": "D1",
+      "stem": "The coordinator's prompt reads: \"Step 1, list the files in the module. Step 2, open the first ten. Step 3, write one paragraph per file.\" Onboarding notes come back uniformly shallow, and when a module holds forty files the notes still describe exactly ten. What should change?",
+      "options": [
+        "Replace the numbered steps with the outcome wanted and explicit quality criteria, letting the coordinator decide how to proceed.",
+        "Add a fourth step telling the coordinator to widen the selection when a module exceeds ten files.",
+        "Increase the number of exploration workers so more files are covered on each run.",
+        "Move the numbered steps into each worker's prompt so they execute closer to the files."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "Coordinator prompts should state goals and quality criteria rather than procedure. A fixed script breaks the moment reality departs from the shape it assumed — a forty-file module producing exactly ten paragraphs is that failure in plain view. Goal-oriented prompts let the coordinator adapt its decomposition as it discovers what is there.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.4"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "Another step deepens the rigidity that caused the problem, and it only patches the one deviation someone happened to notice. The next unanticipated shape fails the same way.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.4"
+        },
+        {
+          "option": 2,
+          "text": "More workers executing a bad script produce more output from the same flawed procedure. Throughput was never the constraint.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.4"
+        },
+        {
+          "option": 3,
+          "text": "Relocating a script does not make it adaptive. It distributes the same rigidity and removes the coordinator's ability to adjust the plan at all.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.4"
+        }
+      ]
+    },
+    {
+      "g": 32,
+      "block": 2,
+      "domain": "D2",
+      "stem": "The cleanup worker has accumulated seventeen tools as successive grant projects added integrations — four that fetch records, three that write them, several near-duplicates for provenance lookups. It picks the wrong one often enough that its output is no longer trusted. The exploration worker, holding five role-scoped tools, selects correctly. What should change first?",
+      "options": [
+        "Rewrite all seventeen descriptions with sharper boundaries and a worked example for each.",
+        "Set `tool_choice` to `{\"type\": \"any\"}` so the worker is forced to commit to a tool call.",
+        "Cut the cleanup worker's tool set to the four or five its role actually requires.",
+        "Route every cleanup tool call through the coordinator, which selects the tool on the worker's behalf."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "Tool count itself degrades selection reliability by widening the decision space the model must discriminate across on every turn. The corpus uses these very numbers — eighteen instead of four to five — and the contrast with the five-tool exploration worker isolates count as the variable.",
+        "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Better descriptions help at the margin but leave seventeen candidates competing on every turn. With near-duplicates in the set, more overlap is exactly what careful writing cannot remove.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+        },
+        {
+          "option": 1,
+          "text": "`{\"type\": \"any\"}` guarantees that some tool is called, not that the right one is. The failure is selection among tools, not failure to call one.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+        },
+        {
+          "option": 3,
+          "text": "Routing every call through the coordinator adds a round trip to every action and centralises a decision that role-scoping solves structurally. It also abandons the separation of responsibilities that gave the worker a scope.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+        }
+      ]
+    },
+    {
+      "g": 33,
+      "block": 2,
+      "domain": "D1",
+      "stem": "Every incoming loan agreement goes through the same review: extract the parties and dates, check insurance clauses against a standard set, verify conservation requirements, then produce a fixed-format summary. The steps never vary and the museum's registrar needs identical structure each time. Roughly forty agreements arrive each month and no two describe the loan identically. Which decomposition strategy fits?",
+      "options": [
+        "Dynamic adaptive decomposition, generating each subtask from what the previous step uncovered.",
+        "A fixed sequential pipeline, with the steps defined in advance and run in the same order each time.",
+        "A single comprehensive prompt covering extraction, checking, verification and summary together.",
+        "One worker per agreement, deciding its own approach from the document it receives."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "A fixed sequential pipeline — prompt chaining — is for predictable task structures where all steps are known up front and stability and reproducibility are the goal. A review that always follows the same template is the corpus's own example of this case.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Dynamic decomposition is for open-ended investigation where the scope is unknown up front. Here the scope is fixed and identical every time, so adaptivity buys unnecessary complexity and costs reproducibility.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+        },
+        {
+          "option": 2,
+          "text": "One prompt covering four distinct aspects produces attention dilution — deep on some, shallow on others — which is what decomposition exists to prevent.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+        },
+        {
+          "option": 3,
+          "text": "Letting each run choose its own approach guarantees the structural variation the registrar specifically needs eliminated.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+        }
+      ]
+    },
+    {
+      "g": 34,
+      "block": 2,
+      "domain": "D2",
+      "selectN": 2,
+      "stem": "The coordinator spends several turns per task calling `search_accessions` with guessed department names, just to establish what collections the catalogue contains before it can ask anything useful. The catalogue publishes a stable structured index of departments, record counts and field schemas. Which two statements about the two primitives are correct? Select two.",
+      "options": [
+        "Exposing the index as an MCP resource gives the agent the map as readable context.",
+        "A resource is consulted without the model having to decide to invoke it, unlike a tool.",
+        "A `list_departments` tool is equivalent, provided the prompt reminds the agent to call it first.",
+        "Pasting the whole catalogue into the system prompt achieves the same result more simply.",
+        "Resources cannot express hierarchical data, so a schema index must be delivered as a tool."
+      ],
+      "correct": [
+        0,
+        1
+      ],
+      "whyRight": {
+        "text": "MCP resources expose content catalogs — issue summaries, documentation hierarchies, database schemas — giving the agent an immediate map of what exists without exploratory tool calls. The distinction that matters is that a resource is available as context, where a tool costs a model decision and a call.",
+        "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+      },
+      "whyWrong": [
+        {
+          "option": 2,
+          "text": "A tool the agent must remember to call first reintroduces the failure being fixed: it adds an LLM call and depends on the agent thinking to use it.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+        },
+        {
+          "option": 3,
+          "text": "A static dump bloats every prompt and goes stale as the catalogue changes. Resources are requested on demand, which is the point.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+        },
+        {
+          "option": 4,
+          "text": "Resources are read-only data of any shape, hierarchies included. Documentation hierarchies and database schemas are named examples.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+        }
+      ]
+    },
+    {
+      "g": 35,
+      "block": 2,
+      "domain": "D1",
+      "stem": "The exploration worker returns findings as running prose and separately lists the files it opened. When the coordinator assembles an onboarding brief, a reviewer spot-checking twelve statements finds four attributed to a file that does not contain them. Three briefs this quarter have come back for the same reason. What is the root cause and the fix?",
+      "options": [
+        "The worker opened too many files; restrict it to a shortlist the coordinator selects in advance.",
+        "The coordinator summarised too aggressively; have it pass worker output through unchanged.",
+        "The reviewer is checking statements the brief never claimed; add a confidence score to each.",
+        "Content and source were merged into free text, so attribution was lost — pass structured findings that separate content from source metadata."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "When context is passed between agents as merged free text, claim-to-source mappings are lost during aggregation. The fix is a structured format that separates content from its metadata — file path, location — so attribution survives the pipeline instead of being reconstructed at the end.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.5"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Narrowing the input reduces how many statements can be misattributed without fixing why any of them are. A shortlist of five files produces the same defect at smaller scale.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.5"
+        },
+        {
+          "option": 1,
+          "text": "Passing prose through unchanged preserves the same unattributed prose. The mapping was never captured, so there is nothing for restraint in summarising to protect.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.5"
+        },
+        {
+          "option": 2,
+          "text": "A confidence score expresses how sure the worker is, not where a statement came from. A confidently wrong attribution scores high.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.11"
+        }
+      ]
+    },
+    {
+      "g": 36,
+      "block": 2,
+      "domain": "D2",
+      "stem": "Asked to explain how conservation treatments reach the public catalogue, the agent begins by reading every file under the conservation module — 180 of them — before doing anything else. It exhausts most of its context on files unrelated to publication and its eventual answer is vague. What should it have done?",
+      "options": [
+        "Grep for the publication entry point, read what that finds, then follow imports outward from there.",
+        "Glob the module tree and read each match in order, stopping once the window is two-thirds full.",
+        "Read the module's own documentation first, then only the files that documentation references.",
+        "Read every file as before, but summarise each one immediately to keep the context small."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "Codebase understanding is built incrementally: Grep to find entry points, Read the files found, Grep again for usages, then follow imports and trace flows, repeating until the picture is complete. Reading everything upfront to \"get full context\" is the named anti-pattern.",
+        "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "Globbing the tree and reading each match is the same bulk-reading anti-pattern with a size cap bolted on. Discovery should be driven by content search, then targeted reads.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+        },
+        {
+          "option": 2,
+          "text": "Plausible, but it substitutes documentation for the code and inherits whatever the documentation omits or has let go stale — a real risk across a decade of short-lived projects.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+        },
+        {
+          "option": 3,
+          "text": "Summarising after reading still pays the full read cost for 180 files and still spends attention on the irrelevant ones. The saving has to come before the read, not after.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.5"
+        }
+      ]
+    },
+    {
+      "g": 37,
+      "block": 2,
+      "domain": "D3",
+      "stem": "The cleanup worker runs from a nightly scheduled job that must exit without a terminal and emit machine-readable output for the tracker. Today the job hangs until the runner's timeout, and on the occasions it is run by hand its output is prose. Which pair of changes fixes both faults?",
+      "options": [
+        "`--output-format json` alone, which also causes the process to exit once output is written.",
+        "`-p` alone, which prints structured output by default whenever no terminal is attached.",
+        "`-p` for non-interactive execution, plus `--output-format json` with `--json-schema` for parseable output.",
+        "A wrapper that terminates the process once output appears and parses whatever was printed."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "Two separate faults need two separate flags. `-p` processes the prompt, prints to stdout and exits — without it Claude Code waits for interactive input and the pipeline hangs. `--output-format json` with `--json-schema` is what makes the output reliably parseable.",
+        "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Output formatting does not imply non-interactive execution. The job would still wait for input it never receives.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+        },
+        {
+          "option": 1,
+          "text": "`-p` fixes the hang but says nothing about output shape. Prose would keep arriving, correctly and non-interactively.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.9"
+        },
+        {
+          "option": 3,
+          "text": "Killing a process on first output and parsing whatever appeared is a workaround for both faults that guarantees neither, and it truncates any output still being written.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+        }
+      ]
+    },
+    {
+      "g": 38,
+      "block": 2,
+      "domain": "D1",
+      "selectN": 3,
+      "stem": "A synthesis worker returns an onboarding brief covering three of the four subsystems the request named; the digitisation pipeline is missing entirely, and the exploration logs show it was never examined. The coordinator holds the draft and the request. Which three statements describe the correct architecture? Select three.",
+      "options": [
+        "The coordinator evaluates the draft against the request and identifies the missing coverage.",
+        "It re-delegates targeted exploration of the digitisation pipeline to the worker that owns that scope.",
+        "It then re-invokes synthesis with the enriched findings, repeating until coverage is sufficient.",
+        "The synthesis worker should be granted exploration tools so it can fill gaps in its own draft.",
+        "The brief should ship with a note that the digitisation pipeline needs further investigation.",
+        "The loop should continue until the coordinator's context is exhausted, which bounds it naturally."
+      ],
+      "correct": [
+        0,
+        1,
+        2
+      ],
+      "whyRight": {
+        "text": "Synthesis is not necessarily one-shot. The coordinator evaluates the output for gaps, re-delegates targeted queries at the specific gap, and re-invokes synthesis with the enriched findings, repeating until coverage is sufficient. Gap evaluation and loop termination belong to the coordinator, not the synthesis worker.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.8"
+      },
+      "whyWrong": [
+        {
+          "option": 3,
+          "text": "Giving synthesis its own exploration tools breaks separation of responsibilities and least-privilege scoping — a synthesis agent with search access starts investigating instead of synthesising.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.11"
+        },
+        {
+          "option": 4,
+          "text": "Coverage annotation is for gaps that cannot be recovered. Here the subsystem simply was not explored and re-delegation is available, so annotating is a substitute for doing the work.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.8"
+        },
+        {
+          "option": 5,
+          "text": "Looping until context runs out is not a sufficiency criterion. The coordinator needs defined quality criteria to know when coverage is adequate and stop.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.8"
+        }
+      ]
+    },
+    {
+      "g": 39,
+      "block": 2,
+      "domain": "D2",
+      "stem": "The provenance service drops a connection roughly once in fifty calls and succeeds immediately on retry. The scaffolding worker currently surfaces every one of these to the coordinator, which pauses the run, inspects the error and re-dispatches. Throughput has halved. The worker's own retry succeeds on the second attempt in every observed case. Where should this be handled?",
+      "options": [
+        "At the coordinator, but with an automatic retry rule so it re-dispatches without inspecting first.",
+        "Inside the worker, which retries transient failures locally and escalates only what it cannot resolve.",
+        "At the coordinator, which is the only component with the visibility to decide on any failure.",
+        "Inside the tool, which should return success with the failure recorded in an `isError` metadata field."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "Errors are handled at the right level: transient failures a component can resolve itself are retried locally, and only errors requiring a decision the coordinator alone can make are propagated — with partial results and what was attempted. A once-in-fifty connection drop that succeeds on retry is the clearest case of local recovery.",
+        "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "This keeps the round trip and its cost while removing the coordinator's judgement from it. The retry still crosses an agent boundary for a failure the worker could have absorbed.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+        },
+        {
+          "option": 2,
+          "text": "The coordinator decides on errors the worker cannot resolve. Routing resolvable ones there too is what halved throughput.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.9"
+        },
+        {
+          "option": 3,
+          "text": "Returning success with error metadata masks failures — explicitly forbidden, because nothing downstream can distinguish a real result from a hidden fault.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+        }
+      ]
+    },
+    {
+      "g": 40,
+      "block": 2,
+      "domain": "D1",
+      "stem": "The team now routes generated code to a second instance for review. To improve that review, the second instance is given the generator's full conversation — reasoning, rejected alternatives and all — on the argument that context makes a reviewer better informed. Defects still reach production at the previous rate. Why?",
+      "options": [
+        "The reviewing instance lacks explicit review criteria, which the generator's context does not supply.",
+        "Two instances of one model share the same training, so a second opinion adds nothing in principle.",
+        "Review quality depends on the reviewer being the more capable model, not on separate context.",
+        "Handing over the generator's reasoning reproduces its anchoring; independence requires the artefact alone."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "Independence means a fresh request containing only the artefact to review plus review criteria — not the generation conversation. Without the generator's justifications in context, the reviewer evaluates the code on its own merits; with them, it re-reads and confirms them.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.13"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Criteria genuinely help, and should be supplied. But adding them while keeping the generator's reasoning leaves the anchoring that is producing the result.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.13"
+        },
+        {
+          "option": 1,
+          "text": "Independent instances of the same model do catch each other's errors — that is the premise of the pattern. Shared training is not what defeats it here.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.17"
+        },
+        {
+          "option": 2,
+          "text": "Capability is a separate axis. A stronger reviewer handed the generator's rationalisations is still reading a case already argued.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.13"
+        }
+      ]
+    },
+    {
+      "g": 41,
+      "block": 2,
+      "domain": "D1",
+      "selectN": 2,
+      "stem": "Two exploration workers were dispatched to map how the catalogue reaches the public website. Both independently traced the same rendering layer in depth; neither touched the export scheduler or the image derivative service. Tokens were spent twice on one area and nothing on two others. Which two changes fix this? Select two.",
+      "options": [
+        "The coordinator explicitly partitions the space and assigns each worker a distinct area before dispatch.",
+        "Partitioning happens before delegation rather than as deduplication of overlapping results afterwards.",
+        "Each worker announces its area to the other at the start so they can divide the work between them.",
+        "The coordinator merges the two reports and re-dispatches whichever worker covered less ground.",
+        "A third worker is added, making full coverage more likely across the three areas."
+      ],
+      "correct": [
+        0,
+        1
+      ],
+      "whyRight": {
+        "text": "The coordinator must explicitly partition the research space before delegating, assigning distinct subtopics to each agent. That is what prevents duplication and missed coverage — and the corpus is specific that the fix is partitioning up front, not deduplication after.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.6"
+      },
+      "whyWrong": [
+        {
+          "option": 2,
+          "text": "Subagents never communicate directly; all inter-agent communication flows through the coordinator. Workers cannot negotiate scope between themselves.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.2"
+        },
+        {
+          "option": 3,
+          "text": "This is deduplication after the fact — the tokens are already spent twice, and re-dispatch is a second round to recover ground the first should have covered.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.6"
+        },
+        {
+          "option": 4,
+          "text": "More unpartitioned workers make collision more likely, not less. Three agents choosing their own scope can all converge on the same rendering layer.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.6"
+        }
+      ]
+    },
+    {
+      "g": 42,
+      "block": 2,
+      "domain": "D2",
+      "stem": "Telemetry shows the coordinator issues `get_accession` and then, in a later turn, `get_conservation_history` for the same object on almost every cleanup task. An engineer proposes a composite tool returning both. Another argues the pairing should stay two tools. Both tools are called on nearly every task, always in the same order. Which consideration decides it?",
+      "options": [
+        "Whether every future task needs both halves together, since a composite freezes the pairing into the interface.",
+        "Whether the two back ends respond within a similar time, since a composite is bounded by the slower one.",
+        "Whether the composite's description can be written clearly enough for the model to select it reliably.",
+        "Whether the coordinator's tool count is currently near the reliable four-to-five band."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "The corpus prefers prompting the agent to bundle related tool requests into one turn over creating a composite, because the agent can naturally request multiple tools simultaneously while a composite hides the composition. What that trade turns on is whether the pairing is genuinely permanent — a composite is cheap while every caller wants both and costly the moment one wants half.",
+        "cite": "CCA-Prep_Domain-2_v2.md §2.8"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "Latency is the same either way: bundled calls in one turn and a composite both wait on the slower back end. It does not distinguish the two designs.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.8"
+        },
+        {
+          "option": 2,
+          "text": "Description quality matters for any tool. It is not what separates a composite from bundling, and a clear description does nothing about a frozen composition.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.2"
+        },
+        {
+          "option": 3,
+          "text": "Tool count is a real constraint, but a composite that replaces two tools with one barely moves it — and count says nothing about whether combining these two is right.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+        }
+      ]
+    },
+    {
+      "g": 43,
+      "block": 2,
+      "domain": "D1",
+      "stem": "The team wants a name for what it has built: one coordinator observing every interaction, specialist workers that never address each other, and all results returning through the centre for aggregation and error decisions. A new engineer asks what the arrangement is called and why it is preferred here. Which answer is correct?",
+      "options": [
+        "Prompt chaining — each specialist's output feeds the next in a defined sequence.",
+        "The evaluator-optimizer pattern — a generator paired with an independent critic.",
+        "Hub-and-spoke — one coordinator, no direct worker-to-worker communication, giving visibility, uniform error handling and information control.",
+        "Dynamic adaptive decomposition — subtasks generated from what each step discovers."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "Hub-and-spoke is one coordinator orchestrating specialised subagents with no direct inter-agent communication. Its named benefits are exactly the properties described: visibility over all interactions, uniform error handling, control over what context each subagent receives, and separation of responsibilities.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.18"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Prompt chaining describes a fixed sequential pipeline where each step's output feeds the next. It says nothing about a central coordinator or how errors are handled.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.18"
+        },
+        {
+          "option": 1,
+          "text": "Evaluator-optimizer is a two-stage generator-and-critic arrangement. It describes a review relationship, not the orchestration topology being asked about.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.18"
+        },
+        {
+          "option": 3,
+          "text": "Dynamic adaptive decomposition names how subtasks are generated, not how agents are wired together. A hub-and-spoke system can decompose either adaptively or on a fixed plan.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+        }
+      ]
+    },
+    {
+      "g": 44,
+      "block": 2,
+      "domain": "D3",
+      "selectN": 2,
+      "stem": "A three-hour session has finished analysing the digitisation pipeline's dependency graph. The team now wants to compare two restructuring approaches — extracting a shared derivative service, or keeping derivation inline — with neither comparison influenced by the other's reasoning. Which two statements are correct? Select two.",
+      "options": [
+        "`fork_session` branches from the completed analysis, and both branches inherit context up to that point.",
+        "The branches then diverge independently, so neither evaluation sees the other's reasoning.",
+        "Running `/compact` between the two evaluations achieves the same isolation more cheaply.",
+        "Two fresh sessions give the same independence without needing to fork anything.",
+        "Evaluating both in the current session is equivalent, provided each is clearly separated in the prompt."
+      ],
+      "correct": [
+        0,
+        1
+      ],
+      "whyRight": {
+        "text": "`fork_session` creates branches that inherit context up to the branch point and then diverge independently — precisely the requirement of one expensive shared baseline and two evaluations that cannot contaminate each other.",
+        "cite": "CCA-Prep_Domain-3_v2.md §3.12"
+      },
+      "whyWrong": [
+        {
+          "option": 2,
+          "text": "`/compact` compresses context within one session; it does not create independent branches. The first evaluation's conclusions survive compaction and colour the second.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.12"
+        },
+        {
+          "option": 3,
+          "text": "Two fresh sessions are genuinely independent but each must redo the three-hour analysis — the cost forking exists to pay only once.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.16"
+        },
+        {
+          "option": 4,
+          "text": "Sequential evaluation in one session leaves the first evaluation's reasoning in context for the second. Clear separation in the prompt does not remove it.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.16"
+        }
+      ]
+    },
+    {
+      "g": 45,
+      "block": 2,
+      "domain": "D1",
+      "stem": "A reviewer proposes giving all three worker types the full tool catalogue, arguing that a worker blocked for want of a tool wastes a round trip and that the coordinator can always tell each one what to use. Each worker type currently holds between four and six tools. What is wrong with that reasoning?",
+      "options": [
+        "Nothing, provided each worker's prompt names the subset it is expected to use for its role.",
+        "Per-type tool restriction is the mechanism enforcing separation of responsibilities, and workers holding tools outside their specialisation tend to misuse them.",
+        "The catalogue would exceed the schema size the API accepts for a single request.",
+        "Workers would each need their own credentials for every back end, multiplying the secrets to manage."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "`allowed_tools` per subagent type is the mechanism for separation of responsibilities and least privilege — not an inconvenience to be worked around. Giving every agent the full catalogue \"for flexibility\" is named as an anti-pattern precisely because agents with tools outside their specialisation misuse them.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.3"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "A prompt naming the expected subset is probabilistic guidance over a configuration that permits everything. The restriction belongs in the configuration, where it binds.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.3"
+        },
+        {
+          "option": 2,
+          "text": "A size limit is not the objection, and a catalogue small enough to fit would be just as wrong for the reason that actually matters.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+        },
+        {
+          "option": 3,
+          "text": "Credential management is a real operational concern but incidental here. The design would still be wrong with a single shared credential.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.11"
+        }
+      ]
+    }
+  ]
+}

@@ -57,7 +57,8 @@ each build agent's own self-report) — see "What's done" below.
     just the source file. Its one new diagram (stdio private-copies vs. sockets shared-instance) was
     checked to confirm the word "launches" appears nowhere near the shared-server label: new content
     stays correct even where the untouched, deliberately-unfixed self-test stem does not.
-  - **Not committed** — commits happen only on explicit request, held all session.
+  - **Committed as `334382f`**, on explicit request, after this resume prompt was first drafted. Not
+    pushed — push happens only on explicit request too.
 
 ## What's open
 
@@ -167,36 +168,21 @@ conversion and commits both wait for explicit request.
 
 ## Git state
 
-Branch: `master`, 1 commit ahead of `origin/master` (`e5142c7`, unpushed — unchanged all session).
+Branch: `master`, in sync with `origin/master` at `334382f` — pushed on explicit request.
 
-Uncommitted, scoped to this folder:
+This session's work is committed as `334382f`. Only one file remains uncommitted, on purpose:
 ```
- M Outputs/regeneration/CCDV-F_Prose-Gate_v1.md
- M Outputs/regeneration/CCDV-F_Regeneration-Plan_v1.md
- M Outputs/regeneration/html/Ch10_The-loop-your-code-owns.html
- M ROADMAP.md
-?? Outputs/regeneration/CCDV-F_Calibration-Fixture_v1.md
-?? Outputs/regeneration/CCDV-F_Resume-Prompt_v1.md          (pre-existing, unrelated — see Gotchas)
-?? Outputs/regeneration/chapters/Ch11_Why-Claude-picked-the-wrong-tool.md
-?? Outputs/regeneration/chapters/Ch12_Streaming-without-corrupting-state.md
-?? Outputs/regeneration/chapters/Ch13_Four-ways-to-hand-Claude-a-capability.md
-?? Outputs/regeneration/chapters/Ch14_Build-once-connect-many.md
-?? Outputs/regeneration/html/Ch11_Why-Claude-picked-the-wrong-tool.html
-?? Outputs/regeneration/html/Ch12_Streaming-without-corrupting-state.html
-?? Outputs/regeneration/html/Ch13_Four-ways-to-hand-Claude-a-capability.html
-?? Outputs/regeneration/html/Ch14_Build-once-connect-many.html
-?? resume-prompt.md
+?? Outputs/regeneration/CCDV-F_Resume-Prompt_v1.md   (pre-existing, unrelated — see Gotchas; deliberately
+                                                        excluded from the commit, not overlooked)
 ```
-
-Nothing committed this session — commits happen only on explicit request, held throughout.
 
 Recent commits:
 ```
+334382f Close CCDV-F chapter 14, build HTML for chapters 11-14
 e5142c7 Add CCDV-F chapters 6-10: authored, gate-verified, built to HTML
 718da8f Add readable HTML for CCDV-F chapters 1-5
 411b7e6 Merge remote-tracking branch 'origin/master'
 14ce3ed Sync CCDV-F docs to the regeneration decision
-a9fbdf8 Add CCDV-F exam prep folder (was never tracked)
 ```
 
 No version-bump marker files (`package.json`, `pyproject.toml`, `VERSION`, `Cargo.toml`) exist in this

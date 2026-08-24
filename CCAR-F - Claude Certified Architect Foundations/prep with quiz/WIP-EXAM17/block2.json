@@ -1,0 +1,514 @@
+{
+ "label": "Multi-Agent Research System",
+ "narrative": "A research system answers analyst questions with a cited report. A coordinator decomposes the question and spawns three specialist subagents — web search, document analysis and synthesis — then assembles their returns. Each subagent runs in its own context and reports back to the coordinator. The questions below follow this system through its first months in production.",
+ "questions": [
+  {
+   "g": 16,
+   "block": 1,
+   "domain": "D1",
+   "stem": "Asked for a review of grid-scale energy storage, the system returns a report covering only lithium-ion chemistries. Every subagent completed successfully and each returned well-sourced material. The coordinator log shows the question was split into three assignments: 'lithium-ion cost trends', 'lithium-ion safety incidents' and 'lithium-ion supply chain'. What is the root cause?",
+   "options": [
+    "The web-search subagent's queries were too narrow, and its search tool description should be revised to encourage broader retrieval.",
+    "The synthesis subagent dropped non-lithium material during assembly because its prompt does not require balanced coverage across technologies.",
+    "Three subagents are too few for a survey question; spawning additional subagents would widen the coverage.",
+    "The coordinator's decomposition was too narrow — it partitioned within one technology rather than across the technology space, so no subagent was ever assigned the missing ground."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "Subagents research what they are assigned and nothing else. All three assignments named lithium-ion, so flow batteries, pumped hydro and compressed air were never anyone's job. The failure is located at the point where the question became subtasks, which is the coordinator's decomposition — trace a coverage gap to its origin rather than to the agent that surfaced it.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.6"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "The web-search subagent executed its assignment correctly and returned well-sourced lithium-ion material. Broadening its retrieval would have it return results outside its brief, which is not a fix but a different defect.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.6"
+    },
+    {
+     "option": 1,
+     "text": "The synthesis subagent cannot drop what it never received. Nothing about flow batteries or pumped hydro entered the pipeline at any stage, so no instruction about balance would change what it has to work with.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.6"
+    },
+    {
+     "option": 2,
+     "text": "More subagents receive more assignments drawn from the same decomposition. A fourth and fifth would be handed further lithium-ion slices and the report would grow without widening. Adding capacity does not repair a partitioning error.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.6"
+    }
+   ]
+  },
+  {
+   "g": 17,
+   "block": 1,
+   "domain": "D2",
+   "stem": "The document-analysis subagent has accumulated eighteen tools as capabilities were added — several parsers, three retrieval variants, a summariser, a translator, a citation formatter and others. Selection accuracy has fallen steadily as tools were added, and it now regularly picks a parser unsuited to the file in front of it. What is the correct architectural response?",
+   "options": [
+    "Order the tool definitions by historical usage frequency so the most-used tools appear first in the model's tool list.",
+    "Reduce the subagent to a focused set of roughly four or five tools, moving the rest to other specialists or behind a narrower interface.",
+    "Keep all eighteen tools and add a system-prompt section describing when each one applies.",
+    "Raise the model tier for this subagent so it can reason more reliably across a larger tool surface."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "Tool-selection reliability degrades as the number of available tools grows, and the corpus puts the workable range at roughly four to five per agent. Eighteen tools is a decision problem the model is being asked to solve on every call. Narrowing the set is the structural fix — distribute the remaining capability across specialists whose own tool sets stay small.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Ordering does not reduce the number of candidates the model must discriminate between. Eighteen options remain eighteen options, and the parser confusion is a similarity problem among the parsers rather than a visibility problem.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+    },
+    {
+     "option": 2,
+     "text": "This adds tokens describing a surface that is already too large. Prompt guidance competes with eighteen tool descriptions rather than replacing them, and it leaves every call carrying the same decision complexity.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+    },
+    {
+     "option": 3,
+     "text": "A stronger model raises the accuracy curve without changing its shape — selection still degrades with tool count. This is the compensating move: buy capability to survive an architecture rather than correct the architecture.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+    }
+   ]
+  },
+  {
+   "g": 18,
+   "block": 1,
+   "domain": "D1",
+   "stem": "The analyst's original question specifies a five-year window and a single-region scope. The coordinator's prompt to the web-search subagent reads: 'Search for recent material on grid storage costs.' Returns include global figures spanning a decade. A developer proposes fixing this by having the subagent read the coordinator's conversation history to recover the constraints. Why does that not work?",
+   "options": [
+    "Subagents run in isolated contexts and inherit nothing from the coordinator. Every constraint the subagent needs must appear explicitly in the prompt the coordinator passes it.",
+    "History access would work but is prohibitively expensive, since the coordinator's transcript would be re-sent on every subagent call.",
+    "Subagents can read the coordinator's history but only up to the point at which they were spawned, so constraints stated after spawning would still be missed.",
+    "The constraints would be visible but would carry less weight than the subagent's own system prompt, so they would be inconsistently applied."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "A subagent's context starts fresh. It does not receive the coordinator's conversation, the analyst's original wording, or any other subagent's output — the only thing that crosses the boundary is the prompt the coordinator writes. So a five-year single-region scope that lives only in the coordinator's history is invisible, and the fix is to state it in the assignment.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.5"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "This concedes the mechanism exists and objects on cost. It does not exist: there is no inheritance channel to price. Treating an unavailable capability as merely expensive leads to optimising something that was never going to run.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.5"
+    },
+    {
+     "option": 2,
+     "text": "There is no partial inheritance up to a branch point in ordinary subagent invocation — that describes forking a session, which is a different mechanism for a different purpose. A spawned subagent inherits none of the parent conversation.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.16"
+    },
+    {
+     "option": 3,
+     "text": "This frames an absent channel as a weighting problem. Nothing about the constraints reaches the subagent to be weighted, so no adjustment to their priority would change the returns.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.5"
+    }
+   ]
+  },
+  {
+   "g": 19,
+   "block": 1,
+   "domain": "D2",
+   "stem": "The document-analysis subagent needs to open documents the coordinator has identified. It currently holds a `fetch_url` tool described as 'retrieves the content at any URL'. Review finds it has occasionally fetched search-result pages and an internal admin endpoint that appeared in a document's footer. What is the correct change?",
+   "options": [
+    "Keep `fetch_url` and add a system-prompt instruction listing the URL patterns the subagent must not retrieve.",
+    "Keep `fetch_url` and add a PostToolUse hook that discards responses from disallowed hosts after retrieval.",
+    "Keep `fetch_url` but move it to the coordinator, which passes fetched content down to the subagent.",
+    "Replace it with a `load_document` tool that accepts a document identifier from the coordinator's manifest and refuses anything else."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "A tool that can retrieve any URL grants the subagent the whole web when its job is to open a known list of documents. Least privilege says the tool's interface should express the narrower capability: accepting an identifier from the manifest makes the out-of-scope fetches impossible rather than discouraged, and makes the tool's purpose legible to the model choosing it.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A denylist in the prompt is a probabilistic control over a capability that is still fully present, and it can only name the patterns someone anticipated. The admin endpoint reached from a footer is exactly the case a list of known-bad patterns misses.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+    },
+    {
+     "option": 1,
+     "text": "A PostToolUse hook runs after retrieval, so the internal endpoint has already been called before the response is discarded. It converts an access-control requirement into after-the-fact filtering.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.7"
+    },
+    {
+     "option": 2,
+     "text": "Relocating the tool moves the same unrestricted capability to a different agent and adds a coordinator round-trip to every document open. The coordinator now holds the over-broad tool, so nothing about the privilege boundary improved.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+    }
+   ]
+  },
+  {
+   "g": 20,
+   "block": 1,
+   "domain": "D1",
+   "selectN": 2,
+   "stem": "A developer is configuring the coordinator so it can spawn the three specialists, and wants the two independent retrieval subagents to run at the same time rather than one after the other. Select TWO statements that are correct.",
+   "options": [
+    "The coordinator's `allowedTools` must include the subagent-spawning tool, or it cannot invoke any subagent at all.",
+    "Issuing several subagent calls in a single coordinator response runs those subagents in parallel.",
+    "Subagents may exchange results directly with one another once the coordinator has spawned them, which removes a round-trip.",
+    "A subagent automatically receives the outputs of any subagent the coordinator spawned before it."
+   ],
+   "correct": [
+    0,
+    1
+   ],
+   "whyRight": {
+    "text": "Two independent facts govern this configuration. The spawning tool must be in the coordinator's `allowedTools` — it is a binary gate, and without it the coordinator has no mechanism to invoke a subagent regardless of how the subagents are defined. And parallelism comes from issuing multiple spawn calls within one coordinator response; independent retrieval work should be dispatched that way rather than serialised, which only adds latency.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.2"
+   },
+   "whyWrong": [
+    {
+     "option": 2,
+     "text": "Hub-and-spoke requires every exchange to pass through the coordinator. Direct subagent-to-subagent traffic breaks observability, bypasses the coordinator's error handling, and removes its control over what information flows where — the round-trip is the architecture, not overhead to be optimised away.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.2"
+    },
+    {
+     "option": 3,
+     "text": "There is no automatic propagation between subagents. Each runs in an isolated context, and anything one needs from another's output must be placed in its prompt by the coordinator.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.5"
+    }
+   ]
+  },
+  {
+   "g": 21,
+   "block": 1,
+   "domain": "D2",
+   "stem": "The synthesis subagent must return its findings as a structured record that the report builder parses. It has four extraction tools, one per source type, and the coordinator cannot tell in advance which type a given batch contains. Roughly one call in seven currently returns a prose paragraph instead of a tool call, and the parse fails. Which `tool_choice` setting is correct?",
+   "options": [
+    "`{\"type\": \"any\"}`, which guarantees a tool call while leaving the model free to select whichever of the four extraction tools fits the source.",
+    "`{\"type\": \"auto\"}`, together with a system-prompt line stating that a tool call is mandatory and prose replies are not acceptable.",
+    "`{\"type\": \"tool\", \"name\": \"extract_generic\"}`, forcing a single general-purpose extractor so the output shape never varies.",
+    "`{\"type\": \"auto\"}` with a validation step that re-prompts whenever the response parses as prose rather than a tool call."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "`any` guarantees the model calls a tool while leaving the choice of which tool to the model. That is exactly the requirement here: structured output is mandatory, but the correct extractor depends on a source type nobody knows in advance. The guarantee is a property of the request, so the one-in-seven prose replies stop occurring rather than being detected afterwards.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "`auto` permits the model to answer with text, which is what it is already doing. A prompt instruction lowers the rate of prose replies without removing the possibility, so a guarantee is being approximated by an instruction when the API offers the guarantee directly.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+    },
+    {
+     "option": 2,
+     "text": "Forcing one named tool guarantees structure but destroys the selection the four specialised extractors exist to make. It answers a different question — the one where you know which tool must run — and here nobody does.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+    },
+    {
+     "option": 3,
+     "text": "This is the compensating mechanism: detect the failure and retry rather than prevent it. It doubles latency on one call in seven and keeps a failure mode alive that a single parameter eliminates outright.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+    }
+   ]
+  },
+  {
+   "g": 22,
+   "block": 1,
+   "domain": "D3",
+   "stem": "Analysts run a repository-wide source-mapping routine before each research cycle. It produces several thousand lines of file listings and match output, and after running it the main session loses track of the analyst's original question and has to be reminded. The routine is defined as a skill. What should change?",
+   "options": [
+    "Move the routine from a skill into the project `CLAUDE.md`, so its guidance is loaded once at session start rather than mid-conversation.",
+    "Set `context: fork` in the skill's frontmatter so the routine's verbose output stays out of the main conversation and only its result returns.",
+    "Split the routine into three shorter skills so no single invocation produces as much output.",
+    "Instruct the skill to write its output to a file and tell the analyst to read it, so the main session never sees the listings."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "`context: fork` exists for precisely this shape: a skill whose intermediate output is voluminous and whose result is small. Forked, the listings and match output are produced and consumed outside the main conversation, and only the conclusion returns — so the analyst's question and the surrounding reasoning stay intact in the main context.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "CLAUDE.md holds always-on guidance, not task workflows, and moving a routine there would load it into every session while doing nothing about the output volume when it runs. It relocates the definition and leaves the pollution.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.11"
+    },
+    {
+     "option": 2,
+     "text": "Three invocations producing a third of the output each still deposit the same total into the main conversation. Splitting changes the granularity of the pollution, not its amount.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+    },
+    {
+     "option": 3,
+     "text": "This works around the isolation problem by putting a human in the loop and losing the result to the agent entirely. The forked-context mechanism gives the same isolation while still returning the routine's conclusion to the session that asked for it.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+    }
+   ]
+  },
+  {
+   "g": 23,
+   "block": 1,
+   "domain": "D5",
+   "stem": "The web-search subagent exhausts its retries against one of four source categories and its wrapper returns `{\"results\": [], \"status\": \"ok\"}`. The coordinator proceeds, and the final report presents three-category coverage as though it were complete. What should the subagent return instead?",
+   "options": [
+    "The same empty result with a warning written into the report text, so the analyst can see coverage was incomplete.",
+    "A structured error naming the failed category, the query attempted, the partial results already gathered, and whether a retry could help.",
+    "A hard failure that aborts the research run, so no partially covered report is ever produced.",
+    "An empty result with a lower confidence score attached, letting the coordinator weigh the finding accordingly."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "Reporting a failure as an empty success is the worst error-propagation anti-pattern, because it removes the coordinator's ability to recover — it cannot distinguish 'searched and found nothing' from 'could not search'. Structured error context restores that distinction and gives the coordinator what it needs to act: which category failed, what was tried, what was already gathered, and whether retrying is worthwhile.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.9"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A warning in the prose tells the human after the fact while the coordinator still believes the search succeeded. No targeted recovery, alternative source or coverage annotation can be triggered by text the coordinator did not treat as a failure signal.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.10"
+    },
+    {
+     "option": 2,
+     "text": "Aborting discards the successful work of the other subagents and the three categories already covered. The corpus wants the coordinator to assess the failure and choose targeted recovery or graceful degradation, not to treat any subagent failure as fatal.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.9"
+    },
+    {
+     "option": 3,
+     "text": "A confidence number on an empty result still asserts that the result is a result. The coordinator needs a categorical signal that the category was not covered, not a weighted version of a false claim.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.9"
+    }
+   ]
+  },
+  {
+   "g": 24,
+   "block": 1,
+   "domain": "D2",
+   "stem": "The synthesis subagent must confirm individual factual claims while drafting. Every check is currently routed back through the coordinator, which spawns a verification call and returns the answer. The instrumentation shows 85% of these checks are single-fact lookups against sources already in the manifest, and each one costs two extra hops. How should verification be reorganised?",
+   "options": [
+    "Cache verification results at the coordinator so repeated checks on the same claim skip the round-trip.",
+    "Batch the synthesis subagent's verification requests so several claims are confirmed per coordinator round-trip.",
+    "Give the synthesis subagent a narrowly scoped `verify_fact` tool that answers single-fact lookups against the manifest directly, leaving the coordinator to handle the remaining 15%.",
+    "Let the synthesis subagent call the document-analysis subagent directly for verification, since that subagent already holds the sources."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "A scoped cross-role tool is the corpus's answer to a high-frequency need that a round-trip is servicing badly. The 85% case is simple and well defined, so a narrow `verify_fact` on the agent that needs it removes two hops from the common path while the coordinator keeps the harder minority — and the tool stays narrow enough not to widen the subagent's privileges.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A cache only helps on repeats. These are checks on distinct claims within a draft, so the first — and usually only — lookup of each claim still pays both hops.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+    },
+    {
+     "option": 1,
+     "text": "Batching amortises the round-trip but forces the synthesis subagent to accumulate claims before it can confirm any, which serialises drafting against verification. It reduces the count of a cost that the common case does not need to pay at all.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+    },
+    {
+     "option": 3,
+     "text": "This is direct subagent-to-subagent communication, which hub-and-spoke prohibits regardless of the efficiency argument. It removes the coordinator's visibility into what was verified and against what.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.2"
+    }
+   ]
+  },
+  {
+   "g": 25,
+   "block": 1,
+   "domain": "D1",
+   "stem": "Reports read well but carry no citations: claims appear as bare assertions. The coordinator currently passes the document-analysis subagent's output to the synthesis subagent as a concatenated block of extracted passages. A reviewer proposes rewriting the synthesis subagent's prompt to require a citation after every claim. Why will that not work?",
+   "options": [
+    "The synthesis subagent receives passage text with no source identifiers attached, so it has nothing to cite — the loss happened when the coordinator passed content without structured metadata.",
+    "Citation formatting belongs to the report builder rather than the synthesis subagent, so the instruction would be applied at the wrong stage.",
+    "The synthesis subagent would cite, but its citations would be unverifiable because it cannot re-open the source documents to confirm them.",
+    "The instruction would work but would substantially increase synthesis latency, so a metadata-based approach is preferred on cost grounds."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "An agent can only cite sources it has been given. Concatenating passages strips the source URL, document name and date that a citation is made of, so the synthesis subagent is being asked to produce information it never received. The defect is in the context passed between agents, and the fix is structured metadata that keeps each passage bound to its origin — not a stronger instruction downstream.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.5"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "Moving the requirement downstream inherits the same missing data. The report builder receives the synthesis output, which was itself produced from passages with no attribution, so the mapping is already gone before it arrives.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.5"
+    },
+    {
+     "option": 2,
+     "text": "This assumes the subagent has identifiers it cannot verify. It has no identifiers at all, so the problem arises one step earlier than unverifiability — there is nothing to check.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.5"
+    },
+    {
+     "option": 3,
+     "text": "This treats an impossible instruction as a slow one. Latency is not what stops the synthesis subagent citing; the absence of source identifiers in its input is.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.5"
+    }
+   ]
+  },
+  {
+   "g": 26,
+   "block": 1,
+   "domain": "D2",
+   "stem": "The team standardises on a hosted search MCP server that every researcher should reach on clone. An engineer adds the server definition to `~/.claude.json` and commits nothing, and colleagues report the tools are unavailable. The definition also carries the API token inline. How should the server be declared?",
+   "options": [
+    "Keep the definition in `~/.claude.json` and add a setup script to the repository that writes the same block into each developer's file on first run.",
+    "Define the server in `.mcp.json` at the project root, referencing the token through environment-variable expansion rather than embedding it.",
+    "Define the server in `.mcp.json` at the project root with the token inline, and add `.mcp.json` to `.gitignore` so the credential is not committed.",
+    "Move the definition into the project `CLAUDE.md` so it is version-controlled alongside the other project instructions."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "The two defects are scope and secrets, and one file with one syntax fixes both. `.mcp.json` at the project root is the shared, version-controlled location, so the server arrives with a clone. Referencing the token through environment-variable expansion keeps the reference in the repository while the value stays on each developer's machine and out of git history.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "This builds distribution machinery to work around using the wrong file, and it would still write the inline token onto every machine. The shared location already exists and needs no bootstrap step.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+    },
+    {
+     "option": 2,
+     "text": "Ignoring the file defeats its purpose — an uncommitted `.mcp.json` reaches nobody on clone, which is the original complaint. It also trades a committed secret for a file every developer must be handed some other way.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+    },
+    {
+     "option": 3,
+     "text": "CLAUDE.md carries instructions to the model, not server configuration. MCP servers are declared in their own configuration files, and prose describing a server does not register one.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+    }
+   ]
+  },
+  {
+   "g": 27,
+   "block": 1,
+   "domain": "D5",
+   "selectN": 2,
+   "stem": "Two sources give different figures for the same metric: a regulator's dataset reports 18% and an industry association reports 26%. Both are credible. Select TWO things the synthesis output should do.",
+   "options": [
+    "Report both figures, each bound to its source, rather than resolving to a single number.",
+    "Carry the publication or collection date alongside each figure so a reader can tell a disagreement from a change over time.",
+    "Adopt the more recent of the two figures, since it reflects the most current state of the metric.",
+    "Report the midpoint of the two figures with a note that sources disagree, so the reader receives a single usable number."
+   ],
+   "correct": [
+    0,
+    1
+   ],
+   "whyRight": {
+    "text": "Conflicting credible sources are information, and collapsing them to one number destroys it. Preserving both with their attributions lets the consumer judge, and preserving the dates is what makes the judgement possible — two figures from different periods may not be a contradiction at all, but a metric that moved. Together they turn an apparent conflict into something a reader can interpret.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.10"
+   },
+   "whyWrong": [
+    {
+     "option": 2,
+     "text": "Recency is an arbitrary tie-break dressed as a rule. It silently discards a credible figure, and without dates in the output the reader cannot even see that a choice was made or on what basis.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.10"
+    },
+    {
+     "option": 3,
+     "text": "A midpoint is a number neither source reported, presented as though it were measured. Averaging two credible measurements manufactures a third value with no provenance at all.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.10"
+    }
+   ]
+  },
+  {
+   "g": 28,
+   "block": 1,
+   "domain": "D2",
+   "stem": "Analysts want the coordinator to know which document collections are available before it decomposes a question — roughly forty collections, each with a title, a coverage note and a date range, changing every few weeks. A developer proposes exposing a `list_collections` tool the coordinator calls at the start of every run. What does the MCP server offer that fits this better?",
+   "options": [
+    "A prompt, which the coordinator can invoke to have the server describe its collections in natural language.",
+    "A second MCP server dedicated to catalogue metadata, keeping it separate from the retrieval server's tools.",
+    "A tool with a cached response, so the forty collections are fetched once per session rather than once per question.",
+    "A resource, which exposes the catalogue as addressable content the client can read without spending a tool call on every run."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "MCP exposes three primitives and they answer different questions. Tools are actions the model chooses to perform; resources are content the client can read. A catalogue of forty collections is reference material the coordinator needs available, not an action it decides to take — so it belongs in a resource, which also keeps it current as the collections change without the coordinator having to remember to re-fetch.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Prompts are reusable interaction templates the server offers, not a store of content. Having the server narrate forty collections into the conversation each run costs tokens and produces prose where addressable data is wanted.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+    },
+    {
+     "option": 1,
+     "text": "Splitting servers relocates the same modelling error and adds a second configuration entry to maintain. The question is which primitive fits catalogue content, not which server should hold it.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+    },
+    {
+     "option": 2,
+     "text": "Caching a tool response reduces the call count while leaving reference material modelled as an action. It also adds an invalidation problem the corpus does not ask anyone to solve, since the collections change every few weeks.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+    }
+   ]
+  },
+  {
+   "g": 29,
+   "block": 1,
+   "domain": "D1",
+   "stem": "A new request type asks the system to investigate why a published figure differs across three regulatory filings. The scope is not knowable in advance: what the second filing shows determines which questions the third raises. The current coordinator runs a fixed four-stage pipeline for every request. What decomposition strategy fits?",
+   "options": [
+    "Keep the fixed pipeline and add a fifth stage that re-runs earlier stages when a discrepancy is found.",
+    "Keep the fixed pipeline but widen each stage's assignment so more ground is covered on the first pass.",
+    "Dynamic adaptive decomposition, where the coordinator plans the next assignments from what the previous ones returned.",
+    "Spawn one subagent per filing in parallel and have the coordinator reconcile their independent findings at the end."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "Fixed pipelines fit tasks whose stages are known before the work starts. This one is open-ended by construction — each finding determines the next question — so the decomposition has to be produced as the investigation proceeds. Match the pattern to the task's characteristics: adaptive planning for open-ended investigation, fixed sequences for structured processing.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A re-run stage bolts a loop onto a structure that still decides its stages in advance. It repeats predetermined work rather than choosing new work from what was found, which is the capability the task actually needs.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+    },
+    {
+     "option": 1,
+     "text": "Widening the assignments increases what the first pass covers without letting later work depend on it. The dependency between findings and next questions remains unexpressible in a fixed pipeline however broad its stages are.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+    },
+    {
+     "option": 3,
+     "text": "Parallel independent investigation is right when the subtasks do not inform each other. Here the second filing's contents determine what to ask of the third, so running them concurrently discards precisely the sequencing the task depends on.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.15"
+    }
+   ]
+  },
+  {
+   "g": 30,
+   "block": 1,
+   "domain": "D4",
+   "stem": "Before release, each report is checked for unsupported claims. The check currently runs as a final turn in the same session that drafted the report, and it passes almost everything; analysts later find unsupported claims it did not flag. What is the most effective change?",
+   "options": [
+    "Run the check in the same session but instruct the model to adopt a sceptical reviewer persona and assume claims are unsupported until shown otherwise.",
+    "Run the check twice in the same session and treat a claim as unsupported if either pass flags it.",
+    "Run the check in a separate instance that receives the report and the source manifest but none of the drafting conversation.",
+    "Move the check to a larger model in the same session, since detecting unsupported claims is the harder task."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "A session that drafted the report carries the reasoning that produced every claim, and that context makes it far less likely to challenge its own conclusions — the justification for each claim is already in the conversation. An independent instance sees only the artefact and the sources, so it evaluates what is actually on the page. Independence is the mechanism, and it requires a separate context rather than a different instruction.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.13"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A persona instruction does not remove the drafting context it is issued into. The model is still reading its own prior reasoning about why each claim was justified, and scepticism applied to a case it has already argued is weak scepticism.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.13"
+    },
+    {
+     "option": 1,
+     "text": "Two passes in the same session share the same contaminating context and tend to make the same omissions. Repetition raises confidence in a correlated result rather than producing an independent one.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.13"
+    },
+    {
+     "option": 3,
+     "text": "Model capability is not the limiting factor; access to the drafting rationale is. A stronger model in the same session inherits the same reasons to accept the claims it just produced.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.13"
+    }
+   ]
+  }
+ ]
+}

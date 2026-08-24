@@ -1,0 +1,533 @@
+{
+ "label": "Customer Support Resolution Agent",
+ "narrative": "You run a student-services resolution agent for a university with roughly 40,000 enrolments. It handles tuition-instalment disputes, enrolment changes, accommodation charges and withdrawal refunds through MCP tools (`get_student`, `lookup_enrolment`, `apply_fee_credit`, `escalate_to_adviser`), and is measured on first-contact resolution against an 80% target. The questions below follow one term of production behaviour on that agent.",
+ "questions": [
+  {
+   "g": 1,
+   "block": 0,
+   "domain": "D1",
+   "stem": "Escalations reach the adviser queue as a one-line note reading `escalate: student disputes accommodation charge`. The adviser who picks it up cannot see the chat transcript, so they re-ask for the student number, the disputed amount and what the agent already offered. Handling time after escalation averages eleven minutes. What should the escalation payload carry instead?",
+   "options": [
+    "Read access to the full chat transcript, so the adviser can scroll back and reconstruct the case themselves.",
+    "A self-contained structured summary: student ID, root-cause analysis, the disputed amount, actions already taken and a recommended action.",
+    "An instruction to escalate sooner, before much context accumulates, so there is less information available to lose.",
+    "A prompt rule telling the agent to write a longer free-text note describing everything it did before escalating."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "The human receiving an escalation has no access to the conversation transcript, so the handoff summary is everything they see and must be complete on its own. The named fields are exactly the ones the exam calls for: customer identifier, root-cause analysis, the amount at stake, and a recommended action, alongside the actions already taken and the reason for escalating.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.13"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Human agents lack transcript access by design, and handing over a raw transcript would force them to re-read an entire conversation to recover four facts. The point of a structured handoff is that the facts arrive already extracted.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.13"
+    },
+    {
+     "option": 2,
+     "text": "Escalating earlier does not fix information loss — it just loses less because less was gathered. It also degrades the autonomous resolution rate the agent is measured on.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.13"
+    },
+    {
+     "option": 3,
+     "text": "Free-text notes are the mechanism that is already failing. A longer note still leaves the adviser parsing prose for the student ID and amount rather than reading named fields.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.13"
+    }
+   ]
+  },
+  {
+   "g": 2,
+   "block": 0,
+   "domain": "D2",
+   "stem": "A withdrawal after the census date cannot be credited, and `apply_fee_credit` signals this by returning the bare string `operation failed`. Traces show the agent re-calling it four times, then escalating, on each of the roughly sixty late withdrawals that arrive per term. The refusal is a policy outcome that no retry can change. What is the correct tool-side fix?",
+   "options": [
+    "Return `isError: true` with `isRetryable: true`, so the agent's existing retry path handles the case consistently.",
+    "Return an empty result set instead of an error, so the agent simply reports that no credit is available.",
+    "Add a system-prompt rule stating the census-date policy so the agent stops calling the tool for late withdrawals.",
+    "Return it as a business-rule error with `retriable: false` plus a student-friendly explanation of the census-date rule."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "A policy refusal is not a tool failure — it is a valid answer that the requested action is disallowed. Marking it non-retryable tells the agent that re-invoking cannot change the outcome, and the customer-friendly explanation in the payload lets the agent communicate the policy without paraphrasing internal jargon.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Classifying a policy denial as retryable spends retry attempts on an outcome that can never change. Retryability is exactly the distinction the flag exists to communicate.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+    },
+    {
+     "option": 1,
+     "text": "An empty result set means the query ran and matched nothing. Using it for a policy denial tells the agent something false about the world and loses the explanation the student needs.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+    },
+    {
+     "option": 2,
+     "text": "A prompt rule is probabilistic, and the tool still returns an uninterpretable failure to every other caller. The error contract is what needs fixing.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+    }
+   ]
+  },
+  {
+   "g": 3,
+   "block": 0,
+   "domain": "D5",
+   "stem": "Two records come back from `get_student` for the name given over the phone — same surname, same first initial, different entry years. The agent takes the one with more recent activity and applies a credit to it. Reconciliation later shows the credit landed on the wrong record. What should the agent have done?",
+   "options": [
+    "Asked for one further identifier — student number, registered email or invoice reference — and matched on that before acting.",
+    "Escalated to an adviser at once, since a duplicate-name match is an ambiguity the agent cannot safely resolve.",
+    "Applied the credit to the more recently active record and flagged the case for overnight reconciliation review.",
+    "Taken the first record `get_student` returned, since result ordering already reflects the back end's relevance ranking."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "When a lookup returns several matching records, the agent asks for additional identifiers rather than choosing among them. One clarifying question resolves the ambiguity cleanly and keeps the case with the agent.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.8"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "This is over-escalation. Escalation is for policy gaps, explicit requests for a human, and cases the agent genuinely cannot progress — not for an ambiguity that one question would settle. Routing these to a human floods the queue with resolvable work.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.8"
+    },
+    {
+     "option": 2,
+     "text": "Recency is a heuristic, and heuristic selection among matches is precisely what misidentified the record. Flagging afterwards detects the error after the money has moved.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.8"
+    },
+    {
+     "option": 3,
+     "text": "Taking the first result is arbitrary selection under another name, carrying the same misidentification risk. Tool result ordering is not a relevance judgement about which human is being described.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.8"
+    }
+   ]
+  },
+  {
+   "g": 4,
+   "block": 0,
+   "domain": "D1",
+   "selectN": 2,
+   "stem": "One message contains three asks: a duplicate instalment charge, a bursary never applied, and a withdrawal from one module. The agent works them strictly in order, re-fetching the same student record before each, and spends 14 tool calls where a single-issue case of the same kind takes three. Select two changes that address this.",
+   "options": [
+    "Issue the three investigations as separate `Task` calls within a single coordinator response, passing the shared student context to each.",
+    "Have the coordinator decompose the message into three independent issues before delegating, so each subagent owns exactly one.",
+    "Raise the coordinator's tool-call budget so the repeated record fetches no longer approach its ceiling.",
+    "Ask the student to resend each issue as its own message so the agent handles one clean request at a time.",
+    "Emit the three `Task` calls across three consecutive turns so the coordinator can inspect each result before starting the next."
+   ],
+   "correct": [
+    0,
+    1
+   ],
+   "whyRight": {
+    "text": "Multiple Task calls emitted in a single coordinator response execute in parallel, which is the sanctioned handling for multi-issue requests — and the coordinator must partition the work explicitly before delegating so the three investigations do not overlap or re-fetch the same record. Together these remove both the serialisation and the redundant lookups.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.15, §1.6"
+   },
+   "whyWrong": [
+    {
+     "option": 2,
+     "text": "Raising the budget accommodates the waste rather than removing it. The redundant fetches are a decomposition problem, not a quota problem.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.15"
+    },
+    {
+     "option": 3,
+     "text": "This pushes the decomposition onto the student and lowers first-contact resolution. Handling a multi-issue request coherently is the system's job.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.15"
+    },
+    {
+     "option": 4,
+     "text": "Parallel spawning requires the Task calls to appear in one response. Issuing them across separate turns runs them sequentially — which is the behaviour already being complained about.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.15"
+    }
+   ]
+  },
+  {
+   "g": 5,
+   "block": 0,
+   "domain": "D4",
+   "stem": "First-contact resolution sits at 57% against the 80% target, and the sampled transcripts show one consistent pattern: routine instalment-date changes get escalated, while unusual fee-waiver appeals are attempted alone and decided wrongly. The system prompt says only `escalate complex cases`, and has said so since launch, with no examples attached. Which change addresses this?",
+   "options": [
+    "Have the agent rate its own confidence on each case and route anything below a tuned threshold to an adviser.",
+    "Train a separate classifier on last year's escalations to predict which cases advisers ended up handling.",
+    "Add explicit escalation criteria to the system prompt with few-shot examples of cases to resolve and cases to escalate.",
+    "Raise the escalation rate across the board so that fewer decisions are made autonomously at all."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "The failure is a decision boundary the prompt never draws: `complex` is doing all the work and the agent reads it backwards. Explicit criteria paired with worked examples on both sides of the line is the documented fix, because the examples show the boundary rather than naming it.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.15"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Self-rated confidence is uncalibrated and poorly correlated with actual difficulty. It adds routing infrastructure on top of an unclear boundary instead of drawing the boundary.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.15"
+    },
+    {
+     "option": 1,
+     "text": "A separate classifier is overkill for a prompt-level problem, and it needs training data that encodes the same wrong judgements the transcripts are full of.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.15"
+    },
+    {
+     "option": 3,
+     "text": "Escalating more trades one failure for another: the routine cases that are already over-escalated get worse, resolution falls further, and the adviser queue grows.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.15"
+    }
+   ]
+  },
+  {
+   "g": 6,
+   "block": 0,
+   "domain": "D2",
+   "stem": "`lookup_enrolment` and `get_student` each accept what looks like an eight-digit identifier, and each carries a one-line description. Routing logs show `get_student` called for module-registration questions in 38% of cases. A colleague proposes a small classifier in front of the tool layer, trained on three months of routing logs. What should you do first?",
+   "options": [
+    "Merge the two into a single `lookup_record` tool so there is no routing decision left to get wrong.",
+    "Build the classifier, since it removes the ambiguity without touching tools other teams already depend on.",
+    "Add a system-prompt rule naming which of the two tools handles which category of question.",
+    "Expand both descriptions with input formats, example queries, boundary cases, and when each should not be used."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "Tool descriptions are the primary input Claude uses to choose a tool, so when misrouting appears the descriptions are the first thing to check. Two one-line descriptions over identical-looking identifiers give the model nothing to discriminate on; formats, examples and explicit boundaries do.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.2"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Merging removes the routing decision by destroying the semantic precision that made two tools worth having. The exam names this as the wrong resolution for near-identical descriptions.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.2"
+    },
+    {
+     "option": 1,
+     "text": "A pre-routing classifier is a new layer compensating for a bad signal. Fix the signal first — the description is what the model actually reads when selecting.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.2"
+    },
+    {
+     "option": 2,
+     "text": "Prompt rules are probabilistic and sit apart from the selection surface. The description travels with the tool and applies on every turn without restatement.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.2"
+    }
+   ]
+  },
+  {
+   "g": 7,
+   "block": 0,
+   "domain": "D1",
+   "stem": "The billing back end times out on roughly one call in twenty. When it does, the subagent handling the case returns the string `lookup unavailable` to the coordinator and nothing more, whatever the underlying cause turned out to be. The coordinator cannot tell whether to retry, proceed on partial data, or escalate. What should the subagent return?",
+   "options": [
+    "Nothing at all until it succeeds — an internal retry loop that keeps calling, so the coordinator only ever sees successes.",
+    "Structured error context: the failure type, what was attempted, any partial results, and possible alternatives.",
+    "A success response carrying an empty result set, so the pipeline continues without special-case handling.",
+    "An immediate abort of the whole case, so no downstream step reasons over an incomplete picture."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "A subagent that cannot resolve a failure locally must escalate it with enough context for the coordinator to make an intelligent recovery decision — failure type, the parameters attempted, whatever was completed before the failure, and any alternatives worth trying. A generic status leaves the coordinator with only retry-or-abort.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.9"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Local retry with backoff is right for transient failures, but an unbounded loop that never surfaces anything removes the coordinator's decision entirely and hangs the case when the outage is not brief.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.9"
+    },
+    {
+     "option": 2,
+     "text": "This masks an access failure as a valid empty result. The coordinator then reports that the student has no billing history, which is a false statement produced by the masking.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.9"
+    },
+    {
+     "option": 3,
+     "text": "One subagent failure must never terminate the whole workflow. Partial results plus an annotated gap is the graceful path; aborting discards work that succeeded.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.9"
+    }
+   ]
+  },
+  {
+   "g": 8,
+   "block": 0,
+   "domain": "D5",
+   "stem": "A hardship arrangement agreed at turn 6 — four instalments of £310, the first due 12 October — appears at turn 40 as `a payment plan was discussed`, and the agent then quotes a different figure back to the student on the call. Raising the summarisation threshold only delays the loss. Where does the fix belong?",
+   "options": [
+    "In a persistent case-facts block, updated as facts appear and included in every prompt outside the summarised history.",
+    "In a revised summarisation prompt instructing the summariser to preserve every amount and date verbatim.",
+    "In an external datastore the agent queries whenever it needs to restate a figure agreed earlier in the session.",
+    "In a larger context window, so the early turns stay in full and never reach the summariser at all."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "Transactional facts — amounts, dates, identifiers, agreed terms — are extracted into a case-facts block that sits outside the summarised history and is included in every prompt. Because it is never summarised, the precision cannot be compressed away.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.4"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "This still depends on the summariser executing perfectly on every pass. The architecture should not require a perfect summariser to keep an agreed instalment amount exact.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.4"
+    },
+    {
+     "option": 2,
+     "text": "External storage with retrieval is overkill for facts that belong to the current session. The case-facts block keeps them in context at no retrieval cost.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.4"
+    },
+    {
+     "option": 3,
+     "text": "A bigger window postpones the compression rather than preventing it, and the same loss reappears in a longer session. It also raises cost on every turn.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.4"
+    }
+   ]
+  },
+  {
+   "g": 9,
+   "block": 0,
+   "domain": "D3",
+   "selectN": 2,
+   "stem": "The team maintains this agent in a repo where `/audit-refunds` routinely emits several thousand lines of exploration, after which the session loses the thread of its original task. They also want that command unable to modify anything in the working tree, since it is often invoked during a live incident. Select two frontmatter settings that address these.",
+   "options": [
+    "`context: fork`, so the exploration runs in an isolated subagent context and only a summary returns.",
+    "`allowed-tools: [Read, Grep]`, scoping what the command may do while it runs.",
+    "`argument-hint: \"<term>\"`, so the command prompts for the period it should audit.",
+    "A `description` field, so the command is listed clearly in the slash menu and invoked deliberately.",
+    "An entry in `.mcp.json` restricting which tools are available for the duration of the command."
+   ],
+   "correct": [
+    0,
+    1
+   ],
+   "whyRight": {
+    "text": "`context: fork` runs the skill in an isolated subagent context so large exploration output never pollutes the main conversation, and `allowed-tools` is the SKILL.md frontmatter key that scopes what the skill may do — the official guide's framing is that it restricts access during skill execution. The two settings answer the two complaints separately.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+   },
+   "whyWrong": [
+    {
+     "option": 2,
+     "text": "`argument-hint` prompts for the arguments a command expects. It neither isolates context nor constrains which tools run.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+    },
+    {
+     "option": 3,
+     "text": "`description` governs how the command appears in the slash menu. Deliberate invocation does nothing about output volume or write access once it is running.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+    },
+    {
+     "option": 4,
+     "text": "This is the documented misconception: tool scoping for a skill lives in its SKILL.md frontmatter, not in `.mcp.json`, `CLAUDE.md`, or a commands array.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+    }
+   ]
+  },
+  {
+   "g": 10,
+   "block": 0,
+   "domain": "D1",
+   "stem": "A coordinator was written to route billing questions to one subagent type and enrolment questions to another. In production it answers everything itself, competently, and has not spawned a subagent once in six weeks of traffic. Its system prompt describes both subagent types at length; its `allowed_tools` reads `[get_student, lookup_enrolment, apply_fee_credit]`. What is the root cause?",
+   "options": [
+    "The two subagent descriptions are too similar for the coordinator to tell the types apart when it routes.",
+    "The system prompt does not instruct the coordinator firmly enough to prefer delegating over answering directly.",
+    "`Task` is missing from the coordinator's `allowed_tools`, so it has no mechanism for spawning a subagent at all.",
+    "The subagent types were never registered, so the coordinator's delegation calls fall back silently to local handling."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "A coordinator spawns subagents through the Task tool, and that tool has to be present in its allowed_tools. Without it the coordinator physically cannot delegate, which is exactly the behaviour described — competent handling of everything, zero delegation.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.3"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Descriptions influence which subagent type gets chosen once delegation is possible. They do not enable spawning, and here nothing is being spawned at all.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.3"
+    },
+    {
+     "option": 1,
+     "text": "A prompt cannot grant a capability the configuration withholds. Rewriting the instruction more firmly leaves the coordinator with the same three tools and no way to delegate.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.3"
+    },
+    {
+     "option": 3,
+     "text": "No silent fallback of this kind is documented. The observable symptom is fully explained by the absent Task tool; inventing a registration step adds a mechanism that does not exist.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.3"
+    }
+   ]
+  },
+  {
+   "g": 11,
+   "block": 0,
+   "domain": "D2",
+   "stem": "Fee credits above £2,000 require finance sign-off. That instruction lives in the system prompt, and a term-end audit finds four credits above the line, totalling £11,400, applied without one. Nobody disputes that the agent usually complies. What makes compliance certain rather than usual?",
+   "options": [
+    "Few-shot examples in the prompt showing large credits being routed to finance instead of applied directly.",
+    "A `PreToolUse` hook that blocks `apply_fee_credit` above the threshold and routes the case to sign-off.",
+    "A `PostToolUse` hook that records every credit above the threshold so finance can review them daily.",
+    "A stronger restatement of the threshold, moved to the top of the system prompt where it is read first."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "Hooks are deterministic code that runs around a tool call and fires regardless of what the model decides. Blocking above a threshold and routing to escalation is the named PreToolUse use case, and it is what turns a probabilistic instruction into a guarantee.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.7"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Examples raise compliance probabilistically. Four breaches a term is the residual of a probabilistic control, and examples only shrink that residual.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.7"
+    },
+    {
+     "option": 2,
+     "text": "PostToolUse fires after the tool returns, so the credit has already been applied. This is detection, and the requirement is prevention.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.7"
+    },
+    {
+     "option": 3,
+     "text": "Position and emphasis do not change the mechanism. Prompt instructions remain probabilistic, which is why safety-critical enforcement belongs in a hook.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.7"
+    }
+   ]
+  },
+  {
+   "g": 12,
+   "block": 0,
+   "domain": "D4",
+   "stem": "The agent opens warm and specific. By turn 9 it produces generic reassurance and ignores the plain-language rule its system prompt sets out. The whole conversation is 3,100 tokens against a window two orders of magnitude larger, and the same prompt behaves correctly in fresh sessions and in short ones. What is the most likely explanation?",
+   "options": [
+    "The context window is near exhaustion, so the earliest instructions are being evicted to make room for new turns.",
+    "The system prompt applies to the first exchange only and stops being sent once a conversation is under way.",
+    "The plain-language rule contradicts another rule in the prompt, and the model resolves that conflict differently each turn.",
+    "Accumulated assistant turns dilute the system prompt's influence, and the model increasingly pattern-matches its own earlier replies."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "As assistant responses accumulate, the system prompt's share of the conversation shrinks relative to the model's own prior output, and the model starts pattern-matching what it has already said. The tell is that this happens at a token count nowhere near any limit and disappears in a fresh session.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.20"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "3,100 tokens is nowhere near exhaustion of any current window. Window pressure is the wrong diagnosis whenever the numbers are this small.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.20"
+    },
+    {
+     "option": 1,
+     "text": "This is false about how the API works: the system prompt is included in every request, not applied once at the start.",
+     "cite": "CCA-Prep_Key-Distinctions_v1.md #23"
+    },
+    {
+     "option": 2,
+     "text": "A genuine rule conflict would show from the first turn and would not correlate with conversation length. The degradation here is progressive, which points at accumulation.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.20"
+    }
+   ]
+  },
+  {
+   "g": 13,
+   "block": 0,
+   "domain": "D5",
+   "selectN": 3,
+   "stem": "A 90-minute session has reached 71,000 tokens and is still open. It holds a disability adjustment declared in the opening minutes, three exact instalment figures, a long stretch of general reassurance, and the last few exchanges settling the current request, which turns on one of those figures. Select three elements of the right context strategy.",
+   "options": [
+    "Extract the adjustment and the exact figures into a compact structured block, preserved word for word.",
+    "Summarise the stretch of general reassurance, which carries low information density.",
+    "Keep the most recent exchanges verbatim so the current turn stays coherent.",
+    "Summarise the whole history uniformly so that no part of the session is privileged over another.",
+    "Keep only the most recent 20,000 tokens and discard everything before them.",
+    "Move the entire history into semantic retrieval and pull exchanges back on demand."
+   ],
+   "correct": [
+    0,
+    1,
+    2
+   ],
+   "whyRight": {
+    "text": "The hybrid approach is the exam's answer for long conversations: extract critical structured data verbatim, compress the low-density discussion, and keep recent exchanges intact for conversational coherence. Each of the three does a job the other two cannot.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.3"
+   },
+   "whyWrong": [
+    {
+     "option": 3,
+     "text": "Uniform summarisation is what loses precision. A declared adjustment and three exact figures become vague references, which is a safety and billing problem rather than a stylistic one.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.3"
+    },
+    {
+     "option": 4,
+     "text": "A pure recency window drops whatever was said early — here, the disability adjustment declared at the start of the session.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.3"
+    },
+    {
+     "option": 5,
+     "text": "Semantic retrieval is the answer for recall across months of separate sessions, not for managing the context of one continuous conversation.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.7"
+    }
+   ]
+  },
+  {
+   "g": 14,
+   "block": 0,
+   "domain": "D3",
+   "stem": "The repo's `CLAUDE.md` has grown past 400 lines and now mixes naming standards that apply everywhere with a release checklist, a data-migration runbook and a long incident-review procedure. All of it loads in every session, so a change touching one module still carries the migration runbook. What should the team change?",
+   "options": [
+    "Move the whole file into `.claude/rules/` as several topic files, each carrying its own path globs.",
+    "Move everything, standards included, into skills, so nothing loads until it is explicitly invoked.",
+    "Keep the universal standards in `CLAUDE.md` and move the workflow procedures into skills invoked on demand.",
+    "Split the content across directory-level `CLAUDE.md` files so each part loads only within its own subtree."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "CLAUDE.md content loads in every session, so it should hold what always applies. Workflow-specific guidance — releases, migrations, incident reviews — belongs in skills, which are invoked when the workflow actually runs.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.11"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Rules files are path-scoped: they load when Claude touches files matching their globs. A release checklist has no natural file glob, so it would either never load or load arbitrarily.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.11"
+    },
+    {
+     "option": 1,
+     "text": "Universal standards would then need explicit invocation in every session, which is the one thing they must not need.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.11"
+    },
+    {
+     "option": 3,
+     "text": "Files in the hierarchy are concatenated into context rather than scoped by workflow, and the naming standards are supposed to apply everywhere in any case.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.1"
+    }
+   ]
+  },
+  {
+   "g": 15,
+   "block": 0,
+   "domain": "D1",
+   "stem": "A loop wrapping the agent occasionally hangs after a tool result comes back. The implementation decides whether to continue by scanning the response text for phrases such as `anything else` and `all set`, stopping when it finds one; the hang always follows a turn where the model was plainly mid-task. What should drive that decision instead?",
+   "options": [
+    "The `stop_reason` on each response: keep looping while it is `tool_use`, stop when it is `end_turn`.",
+    "A maximum-iteration counter, so the loop always terminates after a fixed number of passes whatever the model returns.",
+    "Whether the previous step's tool result has been acknowledged, determined by inspecting the message array before each call.",
+    "A closing sentinel string the model is instructed to emit once it considers the response finished."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "The orchestrator inspects stop_reason after every call: `tool_use` means execute the tool, append the result and call again; `end_turn` means the turn is finished and the loop exits. It is a structured field designed for exactly this control-flow decision.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.1"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "A counter is a runaway backstop, not a termination condition. It stops correct work part-way through on long tasks and does nothing about the hang when the model has genuinely finished.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.1"
+    },
+    {
+     "option": 2,
+     "text": "This reconstructs state the API already reports. Inferring completion from the message array is more fragile than reading the field that states it.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.1"
+    },
+    {
+     "option": 3,
+     "text": "A sentinel is natural-language parsing with extra steps — the same failure mode as scanning for `all set`, and it breaks whenever the model paraphrases.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.1"
+    }
+   ]
+  }
+ ]
+}

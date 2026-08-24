@@ -1,0 +1,292 @@
+{
+  "block_index": 3,
+  "scenario_label": "Claude Code for Continuous Integration",
+  "narrative": "A CI pipeline runs Claude Code non-interactively to review pull requests, generate tests, and post PR feedback, aiming for actionable findings with minimal false positives. The same review step, test-generation step, and their supporting tools and configuration recur and evolve across the block as the team tightens structured output, tool scoping, and re-run consistency.",
+  "questions": [
+    {
+      "g": 46,
+      "block": 3,
+      "domain": "D3",
+      "stem": "Finding counts across the last four sprints feed into a weekly summary, built today by a team member re-reading each review's narrative output and manually copying severity and file counts into a spreadsheet — a task that falls to whoever has time, and two recent summaries used inconsistent severity buckets. What should the review step produce instead?",
+      "options": [
+        "Instruct the review step's prompt to always state severity using one of four consistent labels.",
+        "Add an Output Format section to the project CLAUDE.md specifying the four severity labels and how they should appear.",
+        "Run the review step with `--output-format json` and a `--json-schema` typing severity as one of four enum values, and read that field directly instead of re-typing it by hand.",
+        "Keep the narrative output, but have whoever compiles the summary double-check each entry against the original PR before adding it to the spreadsheet."
+      ],
+      "correct": 2,
+      "whyRight": {"text": "`--output-format json` with a `--json-schema` forces schema-conformant output the summary can read directly — it eliminates the inconsistent hand-transcription (and the resulting bucket drift) at the source rather than asking a human to catch it downstream.", "cite": "CCA-Prep_Domain-3_v2.md §3.9"},
+      "whyWrong": [
+        {"option": 0, "text": "A prompt-level formatting instruction is compliance, not a guarantee — the same variability that produced inconsistent buckets before can still slip through wording changes.", "cite": "CCA-Prep_Domain-3_v2.md §3.9"},
+        {"option": 1, "text": "CLAUDE.md content is still prompt-level guidance loaded into context; the corpus rejects exactly this option for the same reason as a prompt instruction — it is not guaranteed consistent.", "cite": "CCA-Prep_Domain-3_v2.md §3.9"},
+        {"option": 3, "text": "Adding a human double-check treats the symptom — inconsistent buckets already produced — rather than the root cause, which is unstructured output that has to be interpreted by hand in the first place.", "cite": "CCA-Prep_Domain-3_v2.md §3.9"}
+      ]
+    },
+    {
+      "g": 47,
+      "block": 3,
+      "domain": "D3",
+      "stem": "The project's root `CLAUDE.md` instructs the review step to flag any function longer than 50 lines. A `CLAUDE.md` inside `legacy/` instructs it to skip length checks entirely there, since the legacy code predates the convention. Reviews inside `legacy/` still occasionally flag long functions, and a developer assumes the `legacy/` file should simply override the root instruction. What is the correct fix?",
+      "options": [
+        "Nothing needs to change — the legacy-directory file automatically overrides the root instruction for files in that directory, so the occasional flags are a bug elsewhere.",
+        "Edit the root instruction itself to explicitly exclude the legacy directory, since both files load together into context and an unedited contradiction leaves both instructions active rather than resolving automatically.",
+        "Delete the legacy directory's CLAUDE.md file, since directory-level files are only advisory and the root file is the actual source of truth.",
+        "Wait for Claude to infer which rule is more specific to the current file and apply only that one automatically."
+      ],
+      "correct": 1,
+      "whyRight": {"text": "CLAUDE.md files at every level concatenate into context rather than overriding one another; when two files genuinely conflict, both remain active until a human resolves the contradiction by editing the files, not by relying on one level to silently win.", "cite": "CCA-Prep_Domain-3_v2.md §3.1"},
+      "whyWrong": [
+        {"option": 0, "text": "This is the documented override misconception — there is no mechanism by which a lower-level file replaces a higher one; both load and the conflict persists until someone edits it.", "cite": "CCA-Prep_Domain-3_v2.md §3.1"},
+        {"option": 2, "text": "No level is 'merely advisory' — every discovered CLAUDE.md file, at every level, is concatenated into context and contributes its instructions.", "cite": "CCA-Prep_Domain-3_v2.md §3.1"},
+        {"option": 3, "text": "No automatic specificity-inference mechanism is documented; concatenation is the only stated mechanism, and resolving a genuine conflict requires editing the files.", "cite": "CCA-Prep_Domain-3_v2.md §3.1"}
+      ]
+    },
+    {
+      "g": 48,
+      "block": 3,
+      "domain": "D4",
+      "stem": "A drafting step turns each finding into PR comment text. Findings that are self-contained — most naming and style issues — can be worded directly from the finding data. Findings that reference a shared convention not restated in the finding itself need the step to call `lookup_related_file` and quote the relevant passage first. The split runs close to 60/40. Which `tool_choice` setting fits the drafting step?",
+      "options": [
+        "`{\"type\": \"tool\", \"name\": \"lookup_related_file\"}` on every call, so every comment is grounded in a quoted source.",
+        "`{\"type\": \"auto\"}`, letting the step call `lookup_related_file` only for findings that reference an unstated convention.",
+        "`{\"type\": \"any\"}`, so the step always calls some tool rather than answering directly.",
+        "`{\"type\": \"auto\"}`, plus a prompt instruction telling the step to call `lookup_related_file` for every finding regardless."
+      ],
+      "correct": 1,
+      "whyRight": {"text": "Roughly 60% of findings need no tool call at all; `auto` lets the model decide per finding, calling `lookup_related_file` only when a convention actually needs quoting.", "cite": "CCA-Prep_Domain-4_v2.md §4.6"},
+      "whyWrong": [
+        {"option": 0, "text": "Forcing the specific tool guarantees a call on every finding, including the self-contained 60% that need no lookup at all — a stronger guarantee than the requirement calls for.", "cite": "CCA-Prep_Domain-4_v2.md §4.6"},
+        {"option": 2, "text": "`any` guarantees the model calls some tool on every request — still wrong for the self-contained findings, which have nothing to look up.", "cite": "CCA-Prep_Domain-4_v2.md §4.6"},
+        {"option": 3, "text": "Layering a 'call it every time' instruction on top of `auto` reintroduces forced-every-call behavior through a probabilistic prompt instruction instead of matching the guarantee to what each finding actually needs.", "cite": "CCA-Prep_Domain-2_v2.md §2.5"}
+      ]
+    },
+    {
+      "g": 49,
+      "block": 3,
+      "domain": "D3",
+      "stem": "A `/audit-deps` skill scans the dependency tree for known-vulnerable package versions before the review step runs, printing several hundred lines of transitive-dependency detail into the conversation. Afterward, the review step's comments start reasoning about unrelated dependency chains instead of the diff in front of it. Which SKILL.md frontmatter change fixes this?",
+      "options": [
+        "Add `context: fork` so the dependency scan runs in an isolated subagent context and only a summary returns to the main session.",
+        "Switch the skill to a faster model so it completes before the review step begins.",
+        "Restrict the skill's tool access to read-only operations.",
+        "Compress the scan's output into a short summary before it is appended to the conversation."
+      ],
+      "correct": 0,
+      "whyRight": {"text": "`context: fork` runs the scan in an isolated subagent context so its verbose output never enters the main session — the review step that follows sees only what actually matters to it.", "cite": "CCA-Prep_Domain-3_v2.md §3.3"},
+      "whyWrong": [
+        {"option": 1, "text": "A faster model changes how quickly the scan finishes, not whether its hundreds of lines pollute the main session's context — this does not fix context pollution.", "cite": "CCA-Prep_Domain-3_v2.md §3.3"},
+        {"option": 2, "text": "`allowed-tools` scopes which tools the skill may call; it has no bearing on whether the skill's own output stays isolated from the main conversation.", "cite": "CCA-Prep_Domain-3_v2.md §3.3"},
+        {"option": 3, "text": "Compressing the output before it joins the conversation loses the analysis capability the scan exists to provide, and still runs in the main session.", "cite": "CCA-Prep_Domain-3_v2.md §3.3"}
+      ]
+    },
+    {
+      "g": 50,
+      "block": 3,
+      "domain": "D3",
+      "stem": "Each time an author pushes a follow-up commit, the review step re-runs from scratch and re-posts several comments that are nearly identical to ones already sitting, unresolved, on the same lines from the previous run. Authors have started ignoring the newest comments on the assumption they are repeats. What should the re-run prompt include?",
+      "options": [
+        "Nothing different — re-running from a blank slate each time keeps the review objective and unbiased by earlier passes.",
+        "A lower similarity threshold so the PR platform merges near-duplicate comments after they are posted.",
+        "Only the diff since the previous run, with no reference to what the previous run already found.",
+        "The prior run's findings, with an instruction to report only new or still-unaddressed issues."
+      ],
+      "correct": 3,
+      "whyRight": {"text": "Feeding the previous run's findings into the re-run prompt, with an instruction to report only new or unresolved issues, keeps the reviewer consistent across runs and stops it from re-litigating settled findings.", "cite": "CCA-Prep_Domain-3_v2.md §3.8"},
+      "whyWrong": [
+        {"option": 0, "text": "A blank-slate re-run is exactly the documented misconception — it re-litigates old findings and floods the PR with near-duplicates instead of staying consistent with what was already reported.", "cite": "CCA-Prep_Domain-3_v2.md §3.8"},
+        {"option": 1, "text": "This patches the symptom after posting rather than preventing the duplicate comment from being generated in the first place.", "cite": "CCA-Prep_Domain-3_v2.md §3.8"},
+        {"option": 2, "text": "Narrowing to the new diff alone doesn't tell the step which issues on unchanged surrounding code were already reported, so it can still re-derive and re-post them.", "cite": "CCA-Prep_Domain-3_v2.md §3.8"}
+      ]
+    },
+    {
+      "g": 51,
+      "block": 3,
+      "domain": "D2",
+      "selectN": 2,
+      "stem": "Before approving a PR that removes a helper function, the review step must confirm every call site was updated. The function, `formatDate`, is wrapped by a utility module as `getFormattedDate` and re-exported from the package's index file. Searching only for the literal string `formatDate` finds the definition and a few direct callers but misses every caller that imports the wrapper. Select TWO statements that are correct.",
+      "options": [
+        "Every caller that imports the wrapper name was invisible to a search for the original function's literal name, since that string never appears in those files.",
+        "The correct approach is to first identify every exported name for the function — both the original and the wrapper — then search for each name separately across the codebase.",
+        "`Glob` for a name-based pattern would have found every caller, since Glob matches any file that uses the function anywhere in its content.",
+        "Since the wrapper obscures the true call count, the safest fix is to read every file in the repository rather than search for either name."
+      ],
+      "correct": [0, 1],
+      "whyRight": {"text": "When a function is re-exported under a different name, a content search for only the original name misses every caller that uses the wrapper's name — the documented fix is to first collect every exported alias, then search for each one.", "cite": "CCA-Prep_Domain-2_v2.md §2.9"},
+      "whyWrong": [
+        {"option": 2, "text": "`Glob` matches file paths and names by pattern, not file contents — it cannot find files based on what they call inside their code at all, regardless of the pattern used.", "cite": "CCA-Prep_Domain-2_v2.md §2.9"},
+        {"option": 3, "text": "Reading every file upfront to compensate for an unclear call count is the documented anti-pattern — it burns context on irrelevant files instead of driving discovery with targeted, content-based search.", "cite": "CCA-Prep_Domain-2_v2.md §2.9"}
+      ]
+    },
+    {
+      "g": 52,
+      "block": 3,
+      "domain": "D3",
+      "stem": "The review step must always close its comment with a one-line overall risk rating, on every pull request regardless of which files it touches. A developer notices the closing line is missing from about a third of recent reviews and proposes adding a new `.claude/rules/review-format.md` file, glob-scoped to the changed files, so the rule 'reliably loads.' What is the correct response?",
+      "options": [
+        "Put the rule in the project's root CLAUDE.md instead — it applies to every review regardless of which files changed, and CLAUDE.md loads unconditionally every session, unlike a glob-triggered rules file.",
+        "Create the `.claude/rules/review-format.md` file as proposed, scoped broadly enough to match the widest practical range of changed-file types.",
+        "Add the instruction to the CI job's prompt for that one run only, so it no longer depends on any file being discovered.",
+        "Create a review-summary skill that the reviewer must explicitly invoke to add the risk rating."
+      ],
+      "correct": 0,
+      "whyRight": {"text": "A convention that applies always, with no file-path dimension, belongs in the root CLAUDE.md — it loads unconditionally every session. `.claude/rules/` is reserved for conventions scoped to file type or directory; a review-output requirement isn't conditional on any glob at all.", "cite": "CCA-Prep_Domain-3_v2.md §3.2"},
+      "whyWrong": [
+        {"option": 1, "text": "This reaches for the path-scoped mechanism for a requirement that has no path dimension — any PR whose changed files fall outside the chosen glob still loses the rule, since rules load only when Claude works on matching files.", "cite": "CCA-Prep_Domain-3_v2.md §3.2"},
+        {"option": 2, "text": "Repeating the instruction in the prompt for one run is the 'louder instruction' pattern the corpus explicitly treats as a symptom-level fix, not a diagnosis of why the line was missing a third of the time.", "cite": "CCA-Prep_Domain-3_v2.md §3.1"},
+        {"option": 3, "text": "Skills are invoked on demand; a rating that must appear on every review automatically cannot depend on someone remembering to invoke a separate command.", "cite": "CCA-Prep_Domain-3_v2.md §3.2"}
+      ]
+    },
+    {
+      "g": 53,
+      "block": 3,
+      "domain": "D4",
+      "stem": "Roughly a third of PRs come back with no findings at all. A closing step recommends what happens next for each one: a plain-text merge recommendation when clean, or a call to its only defined tool, `estimate_fix_effort`, to attach a time estimate when findings exist. The team sets `tool_choice` to `{\"type\": \"any\"}` so 'the output is always structured.' What is wrong with that choice?",
+      "options": [
+        "Nothing — guaranteed structure is always worth the cost of an extra tool call, whatever the PR contains.",
+        "This does not actually guarantee a tool call every time; only naming a specific tool would provide that guarantee.",
+        "It forces a coverage-estimate call onto the clean third of PRs, which have nothing to estimate — `{\"type\": \"auto\"}` fits, since only some runs need a tool call at all.",
+        "This should be replaced with `{\"type\": \"tool\", \"name\": \"estimate_fix_effort\"}` to make the guarantee explicit."
+      ],
+      "correct": 2,
+      "whyRight": {"text": "`auto` lets the model decide per PR — calling `estimate_fix_effort` when findings exist and answering in plain text when the PR is clean, rather than forcing a pointless call on the third of runs with nothing to estimate.", "cite": "CCA-Prep_Domain-4_v2.md §4.6"},
+      "whyWrong": [
+        {"option": 0, "text": "The guarantee `any` buys — a tool call on every run — is not needed on clean PRs, which is exactly the requirement the setting should be matched against rather than defaulted to.", "cite": "CCA-Prep_Domain-4_v2.md §4.6"},
+        {"option": 1, "text": "This misstates the documented behavior: `{\"type\": \"any\"}` does guarantee the model calls some tool on every request — with only one tool defined here, that means the estimate call fires every time, findings or not.", "cite": "CCA-Prep_Domain-4_v2.md §4.6"},
+        {"option": 3, "text": "Forcing the named tool is an even stronger guarantee than `any`, and forces the same pointless call onto the clean third of PRs that the question already flags as the problem.", "cite": "CCA-Prep_Domain-4_v2.md §4.6"}
+      ]
+    },
+    {
+      "g": 54,
+      "block": 3,
+      "domain": "D3",
+      "stem": "An investigation from three weeks ago traced how a specific false-positive pattern moves through five review-step modules. Since then, all five modules were rewritten in an unrelated refactor, and only the general shape of the original finding is still relevant. The plan is to `--resume` that investigation today and continue from where it stopped. What is the better approach?",
+      "options": [
+        "`--resume` is correct here, since the investigation's conclusions do not expire with time.",
+        "Branching the old investigation with a session-fork would let it be compared against the rewritten modules.",
+        "Compacting the old session first would make room, then it could be resumed as planned.",
+        "Start a new session with a short summary of the general finding — the module contents the old session read no longer reflect what is on disk."
+      ],
+      "correct": 3,
+      "whyRight": {"text": "The old session's tool results — the five modules it read — are now stale, since every one was rewritten since. This is exactly the case the corpus reserves a fresh start for: better to restart with a short summary of prior findings than resume with outdated tool data in context.", "cite": "CCA-Prep_Domain-3_v2.md §3.12"},
+      "whyWrong": [
+        {"option": 0, "text": "The risk named is stale tool results, not conclusion expiry — resuming re-enters a session whose file contents in context no longer match what is on disk.", "cite": "CCA-Prep_Domain-3_v2.md §3.12"},
+        {"option": 1, "text": "`fork_session` branches a session to compare independent approaches from a shared, still-valid starting point — it is not the documented mechanism for recovering from broadly stale tool results.", "cite": "CCA-Prep_Domain-3_v2.md §3.12"},
+        {"option": 2, "text": "`/compact` manages token budget within a session and risks losing exact details in the process — it does not address that the session's file contents are now out of date.", "cite": "CCA-Prep_Domain-3_v2.md §3.12"}
+      ]
+    },
+    {
+      "g": 55,
+      "block": 3,
+      "domain": "D3",
+      "stem": "To cut cost, a weekly dependency-license audit is moving to the Message Batches API. Its prompt defines a `flag_license` tool so findings arrive as structured data, and each request is a single self-contained document with no follow-up needed. An engineer objects that batch requests 'can't define tools at all.' Is that objection correct?",
+      "options": [
+        "Yes — the Batch API only accepts plain-text prompts, so `flag_license` must be dropped before submission.",
+        "No, but only if parallel tool use is also disabled, since batches otherwise reject parallel tool calls.",
+        "No — batch requests support tool definitions and multi-turn histories; what batch cannot do is execute a tool and continue processing within the same request, which this single-shot audit never needs.",
+        "No, but only for requests defining fewer than roughly fifteen tools, since larger tool sets are rejected by the batch endpoint."
+      ],
+      "correct": 2,
+      "whyRight": {"text": "Batch requests can include tool definitions and full multi-turn histories — the same params as a synchronous call. What batch cannot do is pause mid-request for the client to execute a tool and feed the result back within that same request; a single self-contained document with one tool never needs that.", "cite": "CCA-Prep_Domain-4_v2.md §4.11"},
+      "whyWrong": [
+        {"option": 0, "text": "This is the outdated claim the corpus explicitly corrects — batch requests can define tools; older material claiming otherwise is wrong.", "cite": "CCA-Prep_Domain-4_v2.md §4.11"},
+        {"option": 1, "text": "No such coupling is documented — `disable_parallel_tool_use` is a real, separate parameter that can combine with any `tool_choice` value, not a precondition for batch requests to define tools at all.", "cite": "CCA-Prep_Domain-4_v2.md §4.11"},
+        {"option": 3, "text": "No tool-count cap on batch requests is documented anywhere in the corpus; this is a fabricated limit.", "cite": "CCA-Prep_Domain-4_v2.md §4.11"}
+      ]
+    },
+    {
+      "g": 56,
+      "block": 3,
+      "domain": "D4",
+      "stem": "Generated code merges after passing its own 'double-check your work before finishing' step, but production bugs traced back to that code keep recurring. The generating session's transcript shows the double-check step re-reading its own reasoning and confirming the original approach each time. What change would most directly fix this?",
+      "options": [
+        "Send the generated code to a second, independent Claude instance that receives only the code and review criteria — not the generation session's reasoning — for review.",
+        "Add a stronger instruction to the generating session's prompt: \"review your own code thoroughly and skeptically before finishing.\"",
+        "Enable extended thinking on the generating session so its double-check step reasons longer before confirming.",
+        "Ask for a second review pass in the same conversation, immediately after the first."
+      ],
+      "correct": 0,
+      "whyRight": {"text": "True independence requires a second instance that never sees the generator's reasoning — only the artifact and review criteria. Without the generator's own justifications in context, it evaluates the code on its own merits instead of confirming decisions it is anchored to.", "cite": "CCA-Prep_Domain-4_v2.md §4.13"},
+      "whyWrong": [
+        {"option": 1, "text": "A stronger self-review instruction still runs inside the same context that produced the bug — the same blind spots that missed it the first time tend to survive a same-session re-check.", "cite": "CCA-Prep_Domain-4_v2.md §4.13"},
+        {"option": 2, "text": "More reasoning by the same anchored instance is not independent scrutiny — extended thinking does not remove the session's attachment to its own prior decisions.", "cite": "CCA-Prep_Domain-4_v2.md §4.13"},
+        {"option": 3, "text": "A second pass in the same conversation still carries the full generation reasoning in context; the model re-reads its own justifications and tends to confirm them rather than question them.", "cite": "CCA-Prep_Domain-4_v2.md §4.13"}
+      ]
+    },
+    {
+      "g": 57,
+      "block": 3,
+      "domain": "D2",
+      "selectN": 2,
+      "stem": "Coverage on a PR falls below the required threshold — a policy limit, not a malfunction — and the `merge_gate` tool that should block auto-merge for that reason instead returns a bare `{\"isError\": true}` with no other detail. The calling step retries the call three times, then escalates the PR to a human as though the tool itself were broken. Select TWO changes that fix this.",
+      "options": [
+        "Return `retriable: false` alongside an explanation of which threshold was missed, so the step stops retrying and reports the policy outcome directly.",
+        "Classify the response as a transient error, since retrying gives the coverage number a chance to change.",
+        "Stop treating a policy block as a failure at all — it is a valid, structured outcome the step should read and act on directly rather than retry or escalate blindly.",
+        "Escalate to a human immediately on the first failure signal, without retrying, so no policy block is ever missed."
+      ],
+      "correct": [0, 2],
+      "whyRight": {"text": "A business-rule outcome like a coverage-policy block is not a tool malfunction — it is a valid answer that the action is disallowed. It should carry `retriable: false` plus an explanation so the calling step reports the policy outcome directly instead of retrying or escalating.", "cite": "CCA-Prep_Domain-2_v2.md §2.3"},
+      "whyWrong": [
+        {"option": 1, "text": "Retrying a business-rule denial wastes attempts on an outcome that cannot change within the same PR state — the coverage number will not shift because the call was repeated.", "cite": "CCA-Prep_Domain-2_v2.md §2.3"},
+        {"option": 3, "text": "Escalating every policy block to a human still treats it as something only a person can resolve, when a structured explanation would let the agent communicate the outcome itself.", "cite": "CCA-Prep_Domain-2_v2.md §2.3"}
+      ]
+    },
+    {
+      "g": 58,
+      "block": 3,
+      "domain": "D3",
+      "stem": "Three unrelated problems turn up in a generated test file: an assertion checks the wrong error message, a test for empty input is missing, and a fixture file carries a mismatched date format. None of the three affects how the others should be fixed. How should this feedback be delivered to converge fastest?",
+      "options": [
+        "All three in a single detailed message, since presenting every issue together always produces the most coherent fix.",
+        "One issue at a time, sequentially — each fix stays focused and easy to verify since none of the three depend on each other.",
+        "All three, plus a request to also check for any other similar problems nearby.",
+        "The two most likely to recur first, deferring the fixture date-format issue to a separate pass."
+      ],
+      "correct": 1,
+      "whyRight": {"text": "When fixes don't interact, one-at-a-time iteration keeps each step focused and easy to verify — none of these three problems constrain how the others get fixed.", "cite": "CCA-Prep_Domain-3_v2.md §3.7.4"},
+      "whyWrong": [
+        {"option": 0, "text": "Bundling into one message is the documented approach for interacting fixes, where fixing them separately risks conflicting patches — that risk does not exist among three unrelated problems.", "cite": "CCA-Prep_Domain-3_v2.md §3.7.4"},
+        {"option": 2, "text": "An open-ended request to find more problems isn't grounded in either documented pattern and adds unscoped work beyond the three known issues.", "cite": "CCA-Prep_Domain-3_v2.md §3.7.4"},
+        {"option": 3, "text": "The corpus's discriminator for batching feedback is whether issues interact, not how likely each is to recur — prioritizing by recurrence risk ignores the actual axis that determines sequencing.", "cite": "CCA-Prep_Domain-3_v2.md §3.7.4"}
+      ]
+    },
+    {
+      "g": 59,
+      "block": 3,
+      "domain": "D3",
+      "stem": "Generated boundary tests for a discount calculation pass locally but miss one case: a discount that brings the price to exactly zero. Three rounds of asking Claude to 'handle edge cases more thoroughly' have produced three different, still-incomplete fixes. What is the fastest way to converge on the missing case?",
+      "options": [
+        "Repeat the instruction with stronger emphasis: handle ALL edge cases, especially zero.",
+        "After the next generation attempt, write additional tests to verify whether the zero-price case is now covered.",
+        "Add several more generic boundary-value examples to the prompt for broader coverage.",
+        "Provide the specific failing input — a price and discount that reduce it to exactly zero — together with the expected output, and iterate until that concrete case passes."
+      ],
+      "correct": 3,
+      "whyRight": {"text": "A concrete failing test case, with example input and expected output, is the fastest way to fix a specific edge case — it anchors the next iteration to the exact gap instead of relying on prose to convey it.", "cite": "CCA-Prep_Domain-3_v2.md §3.7.2"},
+      "whyWrong": [
+        {"option": 0, "text": "Re-describing the bug more emphatically is the rejected approach — prose descriptions of edge cases are interpreted inconsistently, which is exactly what produced three different partial fixes already.", "cite": "CCA-Prep_Domain-3_v2.md §3.7.2"},
+        {"option": 1, "text": "Writing tests after generation to check the result is verification, not test-driven iteration — it confirms whether the gap closed but does nothing to anchor the next attempt on the specific missing case.", "cite": "CCA-Prep_Domain-3_v2.md §3.7.2"},
+        {"option": 2, "text": "Generic additional examples don't target the one known gap — the fastest fix is the concrete failing case itself, not broader coverage around it.", "cite": "CCA-Prep_Domain-3_v2.md §3.7.2"}
+      ]
+    },
+    {
+      "g": 60,
+      "block": 3,
+      "domain": "D4",
+      "stem": "Most changed functions get new test code directly from a test-generation step, with no tool call involved. For functions tagged `safety-critical` — roughly one in five — the step must also call `register_coverage_entry` to log the new test in a compliance tracker. The team configures the step with `{\"type\": \"tool\", \"name\": \"register_coverage_entry\"}` on every run so tracking is 'never missed.' What is wrong with this setting?",
+      "options": [
+        "Nothing — forcing the specific tool is the only way to guarantee the compliance tracker is ever updated.",
+        "This should be replaced with a setting that guarantees some tool is always called, just not this specific one.",
+        "The setting is correct, but it should only apply on alternating runs to reduce token cost.",
+        "It forces a `register_coverage_entry` call on every run, including the four in five with no safety-critical function to log — `{\"type\": \"auto\"}` lets the step call it only when a safety-critical function is actually present."
+      ],
+      "correct": 3,
+      "whyRight": {"text": "Forcing the named tool guarantees that call on every run, but only one in five runs has anything to register. `auto` lets the step decide per run, calling `register_coverage_entry` only when a safety-critical function is actually present.", "cite": "CCA-Prep_Domain-4_v2.md §4.6"},
+      "whyWrong": [
+        {"option": 0, "text": "The claim overstates the requirement — `auto` still lets the model call the tool when a safety-critical function is present; the forced guarantee is not the only way to get correct tracking, only the most over-specified one.", "cite": "CCA-Prep_Domain-4_v2.md §4.6"},
+        {"option": 1, "text": "`any` still guarantees a tool call on every run — with only this one tool available, that is functionally the same over-specification as forcing it by name, just one notch weaker.", "cite": "CCA-Prep_Domain-4_v2.md §4.6"},
+        {"option": 2, "text": "Alternating runs is not a documented tool_choice mechanism and does not address the actual problem — it would skip logging on safety-critical functions that happen to land on an off run.", "cite": "CCA-Prep_Domain-4_v2.md §4.6"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Domain 1 — Agentic Architecture & Orchestration: Cheatsheet</title>
+<meta name="description" content="Exam reference for agentic loops, multi-agent orchestration, and workflow enforcement patterns."/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --ink: #1b2027;
+  --ink2: #3c434c;
+  --ink3: #6b7480;
+  --surface: #f2f4f6;
+  --surface2: #e7eaed;
+  --surface3: #dbdfe3;
+  --accent: #33566f;
+  --accent-light: #d8e3ea;
+  --accent-dark: #1f384a;
+  --teal: #2a7a6e;
+  --teal-light: #d4f0ec;
+  --coral: #c85a3a;
+  --coral-light: #fae8e2;
+  --purple: #5a3a8a;
+  --purple-light: #ece6f5;
+  --green: #3a7a4a;
+  --green-light: #e2f0e6;
+  --blue: #2a5a8a;
+  --blue-light: #ddeaf5;
+  --gray-light: #f0ece6;
+  --border: #cbd1d8;
+  --shadow: 0 1px 2px rgba(27,32,39,0.06);
+  --shadow-lg: 0 4px 16px rgba(27,32,39,0.10);
+  --radius: 6px;
+  --radius-sm: 4px;
+  --display: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --sans: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'JetBrains Mono', Consolas, 'Courier New', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.6;
+}
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+.skip-link {
+  position: absolute; left: -9999px; top: 0; z-index: 200;
+  background: var(--ink); color: var(--surface); padding: 8px 16px; border-radius: 0 0 6px 0;
+}
+.skip-link:focus { left: 0; }
+.doc-header {
+  padding: 44px 40px 32px;
+  border-bottom: 1px solid var(--border);
+}
+.doc-header-inner { max-width: 1040px; margin: 0 auto; }
+.doc-eyebrow {
+  font-family: var(--mono);
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 14px;
+}
+.doc-header h1 {
+  font-family: var(--display);
+  font-size: clamp(24px, 3.2vw, 34px);
+  font-weight: 600; line-height: 1.2;
+  color: var(--ink);
+  margin-bottom: 12px;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.doc-header h1 em { font-style: normal; color: var(--accent-dark); }
+.doc-sub {
+  font-size: 15px; font-weight: 400;
+  color: var(--ink2);
+  max-width: 680px; line-height: 1.55;
+  margin-bottom: 16px;
+}
+.doc-meta {
+  display: flex; gap: 18px; flex-wrap: wrap;
+  font-family: var(--mono);
+  font-size: 11px; color: var(--ink3);
+}
+.doc-meta span::before { content: '·'; margin-right: 18px; color: var(--border); }
+.doc-meta span:first-child::before { content: ''; margin: 0; }
+.nav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(242,244,246,0.97);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 40px;
+}
+.nav-inner {
+  max-width: 1040px; margin: 0 auto;
+  display: flex; gap: 0; overflow-x: auto; align-items: center;
+}
+.nav-link {
+  font-family: var(--mono);
+  font-size: 12px; font-weight: 500;
+  color: var(--ink3); text-decoration: none;
+  padding: 13px 16px; white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.nav-link:hover { color: var(--ink); border-color: var(--accent); }
+.nav-link.active { color: var(--ink); border-color: var(--accent); }
+.container { max-width: 1040px; margin: 0 auto; padding: 0 40px; }
+.section { padding: 48px 0; }
+.section + .section { border-top: 1px solid var(--border); }
+.section-label {
+  font-family: var(--mono);
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 10px;
+}
+.section-title {
+  font-family: var(--display);
+  font-size: clamp(20px, 2.6vw, 26px);
+  font-weight: 600; line-height: 1.25;
+  color: var(--ink); margin-bottom: 12px;
+  letter-spacing: -0.01em;
+}
+.section-intro {
+  font-size: 14.5px; font-weight: 400;
+  color: var(--ink2); max-width: 680px;
+  margin-bottom: 28px; line-height: 1.6;
+}
+[id] { scroll-margin-top: 56px; }
+.prose { max-width: 680px; }
+.prose p { margin-bottom: 14px; color: var(--ink2); font-size: 14.5px; }
+.prose p strong { color: var(--ink); font-weight: 600; }
+.prose h3 {
+  font-family: var(--display); font-size: 16px; font-weight: 600;
+  color: var(--ink); margin: 26px 0 10px;
+}
+.prose ul, .prose ol { padding-left: 20px; margin-bottom: 14px; color: var(--ink2); font-size: 14.5px; }
+.prose li { margin-bottom: 6px; }
+.prose a { color: var(--accent-dark); text-decoration-color: var(--accent); text-underline-offset: 3px; }
+.note-box {
+  margin: 18px 0; padding: 12px 14px;
+  background: var(--surface3);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: 13px; color: var(--ink2);
+  max-width: 680px;
+}
+.note-box strong { font-weight: 600; color: var(--ink); }
+.table-wrap { overflow-x: auto; margin: 22px 0; }
+.data-table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+  border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
+}
+.data-table caption {
+  caption-side: bottom; text-align: left;
+  font-size: 12px; color: var(--ink3); padding: 8px 4px;
+}
+.data-table thead th {
+  font-family: var(--mono);
+  font-size: 10.5px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ink3); text-align: left;
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  background: var(--surface3);
+}
+.data-table td { padding: 9px 14px; border-bottom: 1px solid var(--border); color: var(--ink2); vertical-align: top; }
+.data-table tbody tr:nth-child(even) { background: var(--surface2); }
+.data-table tbody tr:last-child td { border-bottom: none; }
+code {
+  font-family: var(--mono); font-size: 0.86em;
+  background: var(--surface2); border: 1px solid var(--border);
+  padding: 1px 5px; border-radius: 3px; color: var(--ink);
+}
+pre.code-block {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px 18px; margin: 20px 0;
+  overflow-x: auto; font-family: var(--mono);
+  font-size: 12.5px; line-height: 1.55; color: var(--ink2);
+}
+pre.code-block code { background: none; border: none; padding: 0; }
+.footer-strip {
+  background: var(--ink); color: rgba(242,244,246,0.55);
+  text-align: center; padding: 24px 40px; font-size: 12px; line-height: 1.5;
+  margin-top: 48px;
+}
+.footer-strip strong { color: rgba(242,244,246,0.85); }
+@media (max-width: 720px) {
+  .container, .doc-header { padding-left: 20px; padding-right: 20px; }
+  .nav { padding: 0 16px; }
+}
+@media print {
+  .nav, .skip-link { display: none; }
+  body { background: #fff; }
+}
+</style>
+</head>
+<body>
+
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="doc-header">
+  <div class="doc-header-inner">
+    <div class="doc-eyebrow">Exam Reference · Domain 1 · 27% Weight</div>
+    <h1>Agentic Architecture & Orchestration</h1>
+    <p class="doc-sub">Master the three global rules that decide most questions: deterministic over probabilistic for high-stakes workflows, trace failures to their origin, and fix at the proportionate level.</p>
+    <div class="doc-meta">
+      <span>Content: Cheatsheet</span>
+      <span>Pass cut: 720/1000</span>
+      <span>Study type: Lookup reference</span>
+    </div>
+  </div>
+</header>
+
+<nav class="nav" aria-label="Sections">
+  <div class="nav-inner">
+    <a class="nav-link active" href="#global-rules">Global Rules</a>
+    <a class="nav-link" href="#agentic-loops">Agentic Loops</a>
+    <a class="nav-link" href="#multi-agent">Multi-Agent</a>
+    <a class="nav-link" href="#subagent-context">Subagent Context</a>
+    <a class="nav-link" href="#workflow-enforcement">Enforcement</a>
+    <a class="nav-link" href="#task-decomposition">Decomposition</a>
+    <a class="nav-link" href="#error-handling">Error Handling</a>
+    <a class="nav-link" href="#mnemonics">Mnemonics</a>
+  </div>
+</nav>
+
+<main id="main">
+
+<section class="section" id="global-rules">
+  <div class="container">
+    <div class="section-label">Foundation</div>
+    <h2 class="section-title">The Three Global Rules</h2>
+    <p class="section-intro">These rules decide the majority of exam questions. Internalise them before test day.</p>
+    <div class="prose">
+      <ol>
+        <li><strong>Deterministic > probabilistic when stakes are real.</strong> Financial / security / compliance / safety = hooks or programmatic gates. Style / tone / formatting = prompts.</li>
+        <li><strong>Trace failures to their origin.</strong> Scope problems = upstream (decomposition / partitioning / context-passing). Quality problems = subagent prompts / tools. Don't blame the agent that faithfully executed a bad brief.</li>
+        <li><strong>Proportionate fixes.</strong> Single agent beats multi-agent when single suffices. Prompts beat hooks when stakes are low. Don't over-engineer.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="agentic-loops">
+  <div class="container">
+    <div class="section-label">TS 1.1</div>
+    <h2 class="section-title">Agentic Loops</h2>
+    <p class="section-intro">Loop lifecycle and termination signals.</p>
+    <div class="prose">
+      <h3>Lifecycle</h3>
+      <p>send → inspect <code>stop_reason</code> → if <code>tool_use</code>, execute tools, append <code>tool_result</code> blocks as <code>role: "user"</code>, loop → if <code>end_turn</code>, done.</p>
+      <h3>The Critical Rule</h3>
+      <p><code>stop_reason</code> is the <strong>ONLY</strong> authoritative termination signal.</p>
+      <h3>Three Anti-Patterns (All Wrong)</h3>
+      <ul>
+        <li>Parsing natural language for "I'm done" phrases</li>
+        <li>Iteration cap as the <em>primary</em> stopping mechanism (caps are safety nets, not termination)</li>
+        <li>Checking <code>content[0].type == "text"</code> — tool_use responses can begin with a text block</li>
+      </ul>
+      <h3>Tool Result Shape</h3>
+    </div>
+    <div class="table-wrap">
+      <pre class="code-block"><code>{"role": "user", "content": [
+  {"type": "tool_result", "tool_use_id": "&lt;id&gt;", "content": "...", "is_error": False}
+]}</code></pre>
+    </div>
+    <div class="prose">
+      <p>Parallel tool_uses → one tool_result per id, all in one user turn.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="multi-agent">
+  <div class="container">
+    <div class="section-label">TS 1.2</div>
+    <h2 class="section-title">Multi-Agent Orchestration</h2>
+    <p class="section-intro">Hub-and-spoke topology and the isolation principle.</p>
+    <div class="prose">
+      <h3>Topology</h3>
+      <p><strong>Hub-and-spoke only.</strong> Coordinator at centre; subagents are spokes; ALL communication routes through the coordinator. Subagents NEVER talk to each other.</p>
+      <h3>The Isolation Principle</h3>
+      <ul>
+        <li>Subagents do NOT inherit coordinator history</li>
+        <li>Subagents do NOT share memory across invocations</li>
+        <li>Every byte they need must be in their prompt</li>
+      </ul>
+      <h3>Coordinator's 7 Responsibilities</h3>
+      <p>Decompose → select → partition scope → pass context → aggregate → iteratively refine → route for observability.</p>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <caption>Failure tracing guide</caption>
+        <thead>
+          <tr><th>Symptom</th><th>Root Cause</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Missing topics in output</td><td>Decomposition too narrow</td></tr>
+          <tr><td>Duplicated work / redundant sources</td><td>Scope partitioning sloppy</td></tr>
+          <tr><td>Shallow on every topic</td><td>Subagent prompts or tool budgets</td></tr>
+          <tr><td>Missing source attribution</td><td>Context-passing destroyed metadata</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="subagent-context">
+  <div class="container">
+    <div class="section-label">TS 1.3</div>
+    <h2 class="section-title">Subagent Invocation & Context Passing</h2>
+    <p class="section-intro">The Task tool is the only mechanism to spawn subagents.</p>
+    <div class="prose">
+      <h3>Critical Requirement</h3>
+      <p><code>allowedTools</code> must include <code>"Task"</code> or the coordinator physically cannot delegate.</p>
+      <h3>AgentDefinition Fields</h3>
+      <ul>
+        <li><code>description</code> (used for selection — write like a function docstring)</li>
+        <li><code>prompt</code></li>
+        <li><code>tools</code> (subset of coordinator's)</li>
+        <li><code>model</code> (optionally)</li>
+      </ul>
+      <h3>Context-Passing Rules</h3>
+      <ul>
+        <li>Pass <strong>complete findings</strong>, not pointers</li>
+        <li>Pass <strong>structured metadata</strong> (claim + source_url + snippet), not collapsed prose</li>
+        <li>Write <strong>goal-oriented</strong> coordinator prompts, NOT procedural step-by-step</li>
+      </ul>
+      <h3>Parallel Spawning</h3>
+      <p>Emit multiple <code>Task</code> tool_uses in a <em>single</em> coordinator response → executes concurrently. Sequential = separate turns = triple latency. Only safe when subagents are independent.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="workflow-enforcement">
+  <div class="container">
+    <div class="section-label">TS 1.4</div>
+    <h2 class="section-title">Workflow Enforcement & Handoff</h2>
+    <p class="section-intro">The enforcement spectrum and the decision rule.</p>
+    <div class="prose">
+      <h3>Enforcement Spectrum</h3>
+    </div>
+    <div class="table-wrap">
+      <pre class="code-block"><code>PROBABILISTIC ──────────────────────────► DETERMINISTIC
+prompt rules → few-shot → routing → hooks / prerequisite gates
+~95-99%        ~98%      ~98%       100%</code></pre>
+    </div>
+    <div class="prose">
+      <h3>The Decision Rule (Memorise Verbatim)</h3>
+      <p><strong>If a single failure causes financial loss, security breach, regulatory violation, or safety harm → programmatic enforcement (hooks).</strong></p>
+      <p><strong>If a single failure causes only a bad-but-recoverable UX → prompts.</strong></p>
+      <h3>Canonical Exam Scenarios → All Answer = Hooks</h3>
+      <p>Refund verification, trade limits, compliance checks, manager approvals, age/permission gates, audit logging.</p>
+      <h3>Human Handoff Payload (Self-Contained)</h3>
+      <ul>
+        <li>Customer ID</li>
+        <li>Conversation summary (2-3 sentences)</li>
+        <li><strong>Root cause analysis</strong> ← exam frequently tests this as missing</li>
+        <li>Action taken so far</li>
+        <li><strong>Recommended action</strong> (incl. refund amount) ← exam frequently tests this as missing</li>
+        <li>Compliance / urgency flags</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="task-decomposition">
+  <div class="container">
+    <div class="section-label">TS 1.6</div>
+    <h2 class="section-title">Task Decomposition Strategies</h2>
+    <p class="section-intro">Four canonical patterns for different workflow structures.</p>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr><th>Pattern</th><th>When</th><th>Signal Phrase</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Fixed Sequential Pipeline</strong></td><td>Stable structure, each step consumes prior step's output</td><td>"Every email follows the same flow"</td></tr>
+          <tr><td><strong>Dynamic Decomposition (typed subagents)</strong></td><td>Varying requests, role-typed subagents (search/doc/synth)</td><td>"Same types invoked, scope varies per query"</td></tr>
+          <tr><td><strong>Orchestrator–Worker</strong></td><td>Uniform workers differentiated only by prompt-supplied scope</td><td>"N research workers, each handling a different sub-topic"</td></tr>
+          <tr><td><strong>Evaluator–Optimiser</strong></td><td>Explicit checkable quality criteria, first-pass often inadequate</td><td>"Iterate until coverage / citations / format pass"</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p><strong>Key discriminator:</strong> typed roles → dynamic decomposition; uniform clones → orchestrator–worker.</p>
+      <p><strong>Over-engineering trap:</strong> if a single-agent loop works, the exam's preferred answer is to <em>not</em> refactor to multi-agent. Multi-agent adds latency, cost, and failure surface — warranted only when single-agent genuinely cannot do the job.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="error-handling">
+  <div class="container">
+    <div class="section-label">TS 1.7</div>
+    <h2 class="section-title">Error Handling, Retries, Observability</h2>
+    <div class="table-wrap">
+      <table class="data-table">
+        <caption>Three error categories</caption>
+        <thead>
+          <tr><th>Type</th><th>Examples</th><th>Response</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Transient</strong></td><td>429, 503, network blip</td><td>Retry with exponential backoff + <strong>jitter</strong>, capped</td></tr>
+          <tr><td><strong>Permanent</strong></td><td>400, 401, 403, 404, malformed input</td><td>Don't retry — feed back to model or escalate</td></tr>
+          <tr><td><strong>Logical</strong></td><td>Tool returned empty / irrelevant results</td><td>Feed back to model with context, model changes strategy</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <h3>Idempotency</h3>
+      <p>Generate a UUID / hash of <code>{operation + customer + amount}</code> on the <strong>first</strong> attempt, pass it on every retry, server-side dedup. Without this, a transient retry can double-charge.</p>
+      <h3>Observability Minimum Bar</h3>
+      <ul>
+        <li>Trace ID per run, span IDs per loop iteration and tool call</li>
+        <li>Structured logging of stop_reason, tool calls, hook decisions, token usage</li>
+        <li>Per-subagent cost & latency telemetry (multi-agent costs compound)</li>
+        <li>Replay capability via stored history</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="mnemonics">
+  <div class="container">
+    <div class="section-label">Quick Reference</div>
+    <h2 class="section-title">One-Line Mnemonics</h2>
+    <div class="prose">
+      <ul>
+        <li><strong>Loop termination:</strong> <code>stop_reason</code> or it's wrong.</li>
+        <li><strong>Subagent state:</strong> nothing carries over. The prompt is the universe.</li>
+        <li><strong>High stakes:</strong> hooks, every time, no matter how strong the prompt wording.</li>
+        <li><strong>Missing topics:</strong> blame the coordinator's decomposition.</li>
+        <li><strong>Duplicate work:</strong> blame the coordinator's partitioning.</li>
+        <li><strong>Missing citations:</strong> blame the context-passing format.</li>
+        <li><strong>Won't delegate:</strong> check <code>allowedTools</code> for <code>"Task"</code>.</li>
+        <li><strong>Prior state in audit:</strong> PreToolUse only.</li>
+        <li><strong>Heterogeneous tool outputs:</strong> PostToolUse normaliser.</li>
+        <li><strong>Double-charged customer:</strong> idempotency key.</li>
+        <li><strong>Hanging agent:</strong> timeout + fallback, not prompt instruction.</li>
+        <li><strong>Evaluator–optimiser:</strong> dies when criteria aren't objectively checkable.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer-strip">
+  <strong>Domain 1: Agentic Architecture & Orchestration</strong><br/>
+  Exam weight 27% · Claude Certified Architect Prep · Study reference
+</footer>
+
+<script>
+(function () {
+  var links = document.querySelectorAll('.nav-link');
+  if (!links.length) return;
+  var map = {};
+  links.forEach(function (l) { map[l.getAttribute('href').slice(1)] = l; });
+  var obs = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) {
+        links.forEach(function (l) { l.classList.remove('active'); });
+        var l = map[e.target.id]; if (l) l.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -60% 0px' });
+  document.querySelectorAll('section[id]').forEach(function (s) { obs.observe(s); });
+})();
+</script>
+</body>
+</html>

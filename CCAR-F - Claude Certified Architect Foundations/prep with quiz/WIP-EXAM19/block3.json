@@ -1,0 +1,514 @@
+{
+ "label": "Claude Code for Continuous Integration",
+ "narrative": "The scheduling service runs Claude Code in two pipeline roles: a pre-merge reviewer on every pull request, and a compliance step that emits a signed attestation before a build is promoted. Around 80 pull requests a week pass through. The questions below follow the team hardening both roles.",
+ "questions": [
+  {
+   "g": 31,
+   "block": 2,
+   "domain": "D3",
+   "stem": "The repository root `CLAUDE.md` says commit messages use the imperative mood. A `CLAUDE.md` inside `services/` says they must carry a ticket reference. An engineer working in `services/` assumes the nearer file replaces the root one and drops the imperative mood. What actually happens when both files are in scope?",
+   "options": [
+    "The nearer file wins, so only the ticket-reference rule applies while working in `services/`.",
+    "Neither applies until the conflict is resolved, since two files claiming the same subject cancel out.",
+    "The root file wins, since rules defined higher in the hierarchy take priority over narrower ones.",
+    "Both load and are concatenated, so both rules are in context and a genuine contradiction between them has to be edited out rather than left to precedence."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "Files in the hierarchy are concatenated as they load, from the root down to the working directory — they do not override one another. Here the two rules are complementary rather than contradictory, so both apply and the engineer should be writing imperative messages that also carry a ticket reference. Where two files genuinely contradict, no precedence rule resolves it and the contradiction has to be removed.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.1"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "This is the override model, and it is the specific misconception the corpus corrects. Assuming the nearer file replaces the root one is what led the engineer to drop a rule that is still loaded and still in effect.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.1"
+    },
+    {
+     "option": 1,
+     "text": "Nothing cancels. Both files load and their contents both reach the context, which is why an unresolved contradiction is a problem to fix in the files rather than a state the system arbitrates.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.1"
+    },
+    {
+     "option": 2,
+     "text": "This inverts the override model and is wrong for the same reason — there is no priority ordering between levels, because there is no overriding. Both are simply present.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.1"
+    }
+   ]
+  },
+  {
+   "g": 32,
+   "block": 2,
+   "domain": "D4",
+   "stem": "The compliance step must emit a signed attestation, and exactly one tool does that — `sign_attestation`, whose output the promotion gate reads. A second tool, `draft_attestation`, exists for previewing wording during development. Runs occasionally call the draft tool instead, or return a prose summary, and the promotion gate then finds nothing to read. Which `tool_choice` setting is correct?",
+   "options": [
+    "`{\"type\": \"auto\"}` with `draft_attestation` removed from the compliance step's tool list.",
+    "`{\"type\": \"any\"}`, which guarantees a tool call and leaves the model to choose between the two attestation tools.",
+    "`{\"type\": \"auto\"}` with a system-prompt rule that `sign_attestation` must be the final call of the run.",
+    "`{\"type\": \"tool\", \"name\": \"sign_attestation\"}`, which forces a call to that specific tool on every run."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "The requirement here is stronger than 'some tool must be called': one named tool produces the artefact the promotion gate consumes, and any other outcome fails the step. Forcing that specific tool is the rung that matches the requirement — it removes the prose replies and the wrong-tool calls together.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Removing the draft tool sacrifices a capability the team uses during development, and `auto` still permits a text-only reply, so the prose failures continue. It gives something up and does not deliver the guarantee.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+    },
+    {
+     "option": 1,
+     "text": "`any` guarantees a tool call and leaves the choice to the model, so it removes the prose replies and keeps the wrong-tool failures — the half that produces a well-formed artefact of the wrong kind. It is a real guarantee that is weaker than the requirement.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+    },
+    {
+     "option": 2,
+     "text": "A prompt rule is a probabilistic control standing in for an available deterministic one, and `auto` continues to allow a text response. The step keeps failing at a lower rate.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+    }
+   ]
+  },
+  {
+   "g": 33,
+   "block": 2,
+   "domain": "D3",
+   "stem": "The repository ships a `/review-pr` skill at `.claude/skills/review-pr/SKILL.md`. One engineer has their own `/review-pr` skill at `~/.claude/skills/review-pr/SKILL.md` with different checks. On their machine the pipeline's local dry-run produces different findings from CI. What explains it?",
+   "options": [
+    "The two skills are merged, so their machine runs the union of both check sets.",
+    "Their personal skill takes precedence over the project one of the same name, so locally they run their checks and CI runs the repository's.",
+    "The project-scoped skill takes precedence everywhere, so the difference must have another cause.",
+    "Two skills cannot share a name, so neither loads on their machine and the dry-run falls back to a default review."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "When a personal skill and a project skill share a name, the personal one wins on that machine. CI has no personal scope, so it runs the repository's version — which is exactly the divergence described. The fix is to rename the personal skill or drop it, not to change the pipeline.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.5"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Skills of the same name do not merge their contents. One resolves and the other does not, which is why the two environments produce different findings rather than a superset.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.5"
+    },
+    {
+     "option": 2,
+     "text": "This has the precedence backwards. If project scope won everywhere the two environments would agree, and the observation to explain is that they do not.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.5"
+    },
+    {
+     "option": 3,
+     "text": "A name collision resolves by precedence rather than by disabling both. The engineer's dry-run is running a review, not falling back to nothing.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.5"
+    }
+   ]
+  },
+  {
+   "g": 34,
+   "block": 2,
+   "domain": "D1",
+   "stem": "The pre-merge reviewer runs four checks. On one pull request the licence check fails because the licence service is unreachable, after the correctness, test-coverage and style checks have completed with findings. The current handler abandons the run and posts nothing. What should it do?",
+   "options": [
+    "Retry the whole review once the service recovers, so the comment is complete or absent rather than partial.",
+    "Post the three completed check results and omit the licence check, so the comment reads cleanly.",
+    "Post all four sections with the licence section shown as passing, since no violation was detected.",
+    "Post the three completed results with an explicit note that the licence check did not run and why, then decide whether that one is worth retrying alone."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "A failure in one check should not discard three that succeeded, and it must not be hidden either. Publishing the completed findings with a coverage annotation naming the check that did not run is graceful degradation: the developer gets the real findings and an accurate statement of what was and was not examined.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.10"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Re-running everything throws away three completed checks to retry one, and if the service stays down the pull request receives nothing rather than the findings already produced.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.9"
+    },
+    {
+     "option": 1,
+     "text": "Omitting the gap presents partial coverage as complete. A reader reasonably concludes the licence check ran and passed, which is the misreading an annotation exists to prevent.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.10"
+    },
+    {
+     "option": 2,
+     "text": "Reporting an unrun check as passing is silent suppression, and it is the most damaging option because it turns an outage into a false compliance signal on the record.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.9"
+    }
+   ]
+  },
+  {
+   "g": 35,
+   "block": 2,
+   "domain": "D4",
+   "selectN": 2,
+   "stem": "Findings come back through a tool call whose schema types every field and forbids properties it does not declare. The pipeline still rejects some payloads downstream. Select TWO defect classes that pass the schema and need separate validation.",
+   "options": [
+    "A finding whose `line` value falls outside the range of the file it names.",
+    "A finding whose `severity` field says low while its explanation describes data loss.",
+    "A response whose JSON is cut off mid-object and cannot be parsed.",
+    "A response carrying a `confidence` property the schema does not define."
+   ],
+   "correct": [
+    0,
+    1
+   ],
+   "whyRight": {
+    "text": "A schema constrains shape and type, not meaning. Both correct options are well-formed against any reasonable schema and wrong on the facts: an integer line number that does not exist in that file, and a severity value contradicting its own prose. Catching these needs validation logic that knows about the file and reads both fields together, plus a feedback loop.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.7"
+   },
+   "whyWrong": [
+    {
+     "option": 2,
+     "text": "Truncated, unparseable JSON is a syntax failure, and producing output through a tool call with a schema is what eliminates that class. It is the problem the mechanism already solves.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.7"
+    },
+    {
+     "option": 3,
+     "text": "An undefined property is a structural violation the schema rejects, and the stem states undefined properties are disallowed. Like truncation, it is caught at the boundary rather than surviving into the pipeline.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.5"
+    }
+   ]
+  },
+  {
+   "g": 36,
+   "block": 2,
+   "domain": "D4",
+   "stem": "A validator confirms that each finding's `line` sits inside a changed hunk of the file it names, and about 7% do not. The current retry re-sends the original prompt verbatim, and the second attempt fails at roughly the same rate. What should the retry carry?",
+   "options": [
+    "A higher temperature, so the second attempt explores a different response rather than reproducing the first.",
+    "The specific failure — which finding, which line it gave, and the hunk ranges that were valid for that file.",
+    "An added instruction to be careful with line numbers, appended to the original prompt.",
+    "The same prompt against a stronger model, since line-accurate attribution is the harder part of the task."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "A retry that sends the same input draws from the same distribution, which is what the unchanged 7% shows. The loop becomes self-correcting only when the model can see what specifically went wrong — naming the finding, the offending line and the valid ranges turns the retry into a correction task rather than a repetition.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.9"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "More variance produces a different wrong answer as readily as a right one. Sampling differently is not feedback, and the model still has no information about which constraint it violated.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.9"
+    },
+    {
+     "option": 2,
+     "text": "A general exhortation is not error feedback. It identifies neither the failing finding nor the valid range, so there is nothing concrete to correct and the same share fails again.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.9"
+    },
+    {
+     "option": 3,
+     "text": "Escalating the model treats a feedback-loop defect as a capability shortfall. The retry is still blind, so a stronger model repeats the same uninformed attempt at some other rate.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.9"
+    }
+   ]
+  },
+  {
+   "g": 37,
+   "block": 2,
+   "domain": "D3",
+   "stem": "The pipeline definition must move from one CI provider to another. The replacement's syntax is documented, but the secrets model differs in ways nobody has mapped, two custom steps may have no equivalent, and about 25 workflow files change. How should Claude Code be used?",
+   "options": [
+    "Direct execution throughout, relying on version control to revert if a secrets decision proves wrong.",
+    "Plan mode throughout, including the edits, so all 25 files are reviewed before they are written.",
+    "Plan mode to settle the secrets model and the two custom steps, then direct execution to carry out the agreed migration.",
+    "Direct execution on the syntax conversion first, moving to plan mode if the custom steps turn out to have no equivalent."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "This splits into an open part and a mechanical part. The secrets model and the two custom steps are genuine unknowns that are expensive to get wrong across 25 files, so they are settled first. Once the approach is agreed the conversions are repetitive application, which is what direct execution is for.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.6"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Version control makes a bad decision reversible, not cheap — the rework across 25 files is the cost, and deciding first is what avoids it.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.6"
+    },
+    {
+     "option": 1,
+     "text": "Extending planning across 25 mechanical conversions adds review overhead to changes whose shape is no longer in question. Planning decides the approach; it does not gate its application.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.6"
+    },
+    {
+     "option": 3,
+     "text": "The custom-step uncertainty is stated in the requirements rather than discovered mid-flight. Waiting for it to become a problem means finding out after syntax work already depends on an answer.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.6"
+    }
+   ]
+  },
+  {
+   "g": 38,
+   "block": 2,
+   "domain": "D1",
+   "stem": "The pipeline orchestrator spawns one subagent per check. An engineer proposes letting the coverage subagent send its per-file numbers straight to the correctness subagent, which could then weight its findings, rather than both reporting up and the orchestrator passing the numbers down. What is the objection?",
+   "options": [
+    "The coverage numbers would arrive without the orchestrator's formatting, so the correctness subagent could not parse them.",
+    "Both subagents would need each other's tool definitions, widening two tool sets past the reliable range.",
+    "A direct channel removes the orchestrator's visibility of what passed between them, its consistent handling of a failure in either, and its control over what each receives.",
+    "There is no objection, provided the orchestrator is copied on whatever the two subagents exchange."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "Hub-and-spoke routes every exchange through the coordinator, and the reasons are structural rather than stylistic: the coordinator is where failures are handled uniformly, where the flow of information is controlled, and where the run can be observed. A direct channel removes all three, and the corpus rejects it regardless of the efficiency gained.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.2"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Formatting is solvable and is not what the constraint protects. Framing the rule as a serialisation detail invites someone to agree a payload shape and proceed.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.2"
+    },
+    {
+     "option": 1,
+     "text": "Passing a result does not require holding the other agent's tools. This objects on a mechanism that is not implicated and would evaporate if both tool sets happened to be small.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.2"
+    },
+    {
+     "option": 3,
+     "text": "Copying the orchestrator restores a log and not control. It still cannot intervene, cannot handle a failure in the exchange, and cannot decide what the receiving subagent should have been given.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.2"
+    }
+   ]
+  },
+  {
+   "g": 39,
+   "block": 2,
+   "domain": "D4",
+   "stem": "The reviewer flags pull requests for 'inadequate test coverage'. Two engineers auditing the same week's flags disagreed with the reviewer on about a third of them and with each other on a similar share. The instruction reads: 'Flag anything where testing looks thin.' What is the correct revision?",
+   "options": [
+    "Ask the reviewer to attach a confidence score and surface only flags above a tuned threshold.",
+    "Instruct the reviewer to reason step by step about each pull request before deciding, so the judgement becomes more deliberate.",
+    "Instruct the reviewer to reason step by step about each pull request before deciding, so its judgement becomes more deliberate.",
+    "Ask for a stricter standard rather than a thin-looking one, since the disagreement suggests the bar is too low."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "'Thin' has no actionable interpretation, so the model invents a bar each time and the bar moves — which is why the engineers disagree with each other as much as with the reviewer. Naming the conditions that qualify, and stating that everything else is skipped, replaces a judgement call with a decision rule and makes the output reproducible.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.16"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A confidence score on an undefined criterion is a number attached to a guess. Self-reported confidence is poorly calibrated, and the model has no stable definition of the thing it is being confident about.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.16"
+    },
+    {
+     "option": 2,
+     "text": "Step-by-step reasoning improves multi-step derivations. It does not supply a missing definition — the model would reason carefully towards whichever reading of 'thin' it settled on this time.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.2"
+    },
+    {
+     "option": 3,
+     "text": "Swapping one vague adjective for another moves an undefined dial. The engineers do not disagree about where the threshold sits; they disagree about what the category is.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.16"
+    }
+   ]
+  },
+  {
+   "g": 40,
+   "block": 2,
+   "domain": "D3",
+   "stem": "The repository holds a set of conventions that apply only to the 30 workflow files under `.github/workflows/`, and a commit-message convention that applies to everything. Both currently sit in the project `CLAUDE.md`, and per-session token usage has climbed. What is the correct restructuring?",
+   "options": [
+    "Move the workflow conventions into `.claude/rules/` with a glob on the workflow path, leaving the commit convention in `CLAUDE.md`.",
+    "Move both into `.claude/rules/`, the commit convention with a glob matching every path.",
+    "Move the workflow conventions into a skill that engineers invoke when they open a workflow file.",
+    "Keep both in `CLAUDE.md` and add a line telling the model to skip the workflow section when editing anything else."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "The two differ on when they should be in context. A commit convention applies to every session and belongs in CLAUDE.md. Conventions tied to one file type belong in `.claude/rules/` with a glob, so they cost nothing when editing anything else while still applying automatically whenever a workflow file is read.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "A match-everything glob is a more fragile way of writing what CLAUDE.md does directly, and it gains nothing — the commit convention is loaded either way.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+    },
+    {
+     "option": 2,
+     "text": "Conventions that must shape every workflow edit should not depend on someone remembering to invoke them. A skill is the on-demand mechanism, and this content needs to be resident whenever a matching file is touched.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+    },
+    {
+     "option": 3,
+     "text": "An instruction to skip content does not stop it being sent. The tokens are spent when the request is assembled, so this adds a line to the cost rather than removing it.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+    }
+   ]
+  },
+  {
+   "g": 41,
+   "block": 2,
+   "domain": "D1",
+   "stem": "The pre-merge reviewer is configured with the same tool set as the team's development agent, which includes writing files and pushing branches. It has never used them. A reviewer argues that leaving them costs nothing since the prompt only ever asks for a review. How should the reviewer’s tool set be decided?",
+   "options": [
+    "The reviewer should hold only the tools its role needs — a tool it does not have is one it cannot be induced to use, which an instruction cannot guarantee.",
+    "Unused tools slow the pipeline, because each definition is sent with every request and increases latency.",
+    "Write access is fine provided a branch-protection rule blocks the push at the remote.",
+    "The tools should stay so the reviewer can apply trivial fixes itself and save a round-trip."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "Least privilege scopes tools to the role rather than to what has happened so far. A review agent that can write and push can be induced to do so by a crafted diff or an unusual instruction, and the prompt is the only thing currently preventing it. Removing the tools makes the outcome impossible instead of unlikely.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.11"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "Definition size is a marginal cost and not the reason the corpus scopes tools. Arguing on latency would evaporate the moment the definitions were made shorter.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.11"
+    },
+    {
+     "option": 2,
+     "text": "A remote protection rule catches the push after the agent has decided to make it, and it does not cover local writes at all. It is a backstop rather than the boundary.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.11"
+    },
+    {
+     "option": 3,
+     "text": "This argues for widening the role rather than scoping it. A reviewer that also edits the code it is reviewing loses the independence that makes the review worth running.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.17"
+    }
+   ]
+  },
+  {
+   "g": 42,
+   "block": 2,
+   "domain": "D3",
+   "selectN": 2,
+   "stem": "The pipeline's first attempt at running the reviewer produced no output and was killed by the runner's fifteen-minute timeout, and a later attempt applied none of the repository's conventions. Select TWO changes that address these two failures.",
+   "options": [
+    "Pass the `-p` (`--print`) flag, which is the documented way to run Claude Code non-interactively.",
+    "Invoke from the repository root so the project configuration is in the loaded hierarchy.",
+    "Raise the runner timeout so a long review is not cut short.",
+    "Pass every convention as prompt text on each invocation, so nothing depends on configuration loading."
+   ],
+   "correct": [
+    0,
+    1
+   ],
+   "whyRight": {
+    "text": "Two distinct failures with two distinct fixes. Without `-p` the CLI starts an interactive session and waits for input a runner never sends, which is the silent hang. And configuration loads from the hierarchy around the working directory, so a run started outside the clone picks up nothing from it — invoking from the root puts the project conventions in scope.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+   },
+   "whyWrong": [
+    {
+     "option": 2,
+     "text": "A longer timeout lets an interactive session wait for input for longer. It postpones the symptom of the wrong invocation mode without addressing it, and the job still never completes.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+    },
+    {
+     "option": 3,
+     "text": "This duplicates a file that already exists and will drift from it immediately. The conventions are not failing to load because configuration is unreliable; they are failing because the run is anchored outside the repository.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.1"
+    }
+   ]
+  },
+  {
+   "g": 43,
+   "block": 2,
+   "domain": "D4",
+   "stem": "Pull requests touching more than a dozen files come back uneven: the first files get located, specific findings and the last get a line each, and a defect spanning a changed interface and its callers in another file went unreported twice last month. The review runs as one pass over the diff. What architecture fixes this?",
+   "options": [
+    "One pass on a model with a much larger context window, so the whole diff sits comfortably in budget.",
+    "One pass with an instruction to give every file equal attention and to check for cross-file effects.",
+    "A per-file pass giving each file dedicated attention, followed by a cross-file pass over the collected findings and the changed interfaces.",
+    "Per-file passes only, since each file is now examined thoroughly on its own."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "Two failures are visible and the architecture has to answer both. Uneven depth is attention dilution across a long input, which per-file passes fix by giving each file its own pass. Caller-and-interface defects are cross-file by nature and invisible to any single-file pass, so a dedicated integration pass over the collected findings is required as well.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.12"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A larger window addresses whether the diff fits, not how evenly it is attended to. The diff already fits and the depth still tails off.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.12"
+    },
+    {
+     "option": 1,
+     "text": "Attention allocation is not something an instruction reallocates. The corpus treats this as a property of processing many items in one pass.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.12"
+    },
+    {
+     "option": 3,
+     "text": "Per-file passes alone leave exactly the described defects unfound, because no pass ever sees the changed interface and its callers together. Dropping the integration pass removes the half of the fix that addresses the harder half of the problem.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.12"
+    }
+   ]
+  },
+  {
+   "g": 44,
+   "block": 2,
+   "domain": "D1",
+   "stem": "The reviewer has run the same four checks in the same order for five months. None consumes another's findings. An engineer proposes replacing the sequence with a coordinator that reads the diff and decides which checks are worth running. Should the team adopt it?",
+   "options": [
+    "No — the scope is fully known in advance and the checks are independent, which is what a fixed sequential pipeline is for.",
+    "No — an adaptive coordinator cannot produce the structured output the pipeline parses.",
+    "Yes — it would skip checks that cannot apply to a given diff, cutting cost per review.",
+    "Yes — adaptive decomposition is the more capable pattern and leaves room to add checks later."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "Decomposition strategy follows task characteristics. Every check is known before the run starts, the set is stable, and no check's result changes what the next should do — a fixed pipeline expresses that exactly, runs predictably and is cheap to reason about. Adaptive decomposition earns its complexity when the scope is genuinely unknown at the outset.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "The conclusion is right and the reason is invented. An adaptive coordinator can produce structured output perfectly well; it is simply the wrong pattern for a task whose stages are all known in advance.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+    },
+    {
+     "option": 2,
+     "text": "Conditional skipping is a filter over a fixed step list, which a pipeline can already express without a coordinator deciding anything. The saving is real and does not require changing the decomposition pattern.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+    },
+    {
+     "option": 3,
+     "text": "Sophistication is not the selection criterion; fit is. Choosing the adaptive pattern because it is more capable is the specific error the corpus warns against, and adding a fifth known check to a fixed pipeline is not difficult.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+    }
+   ]
+  },
+  {
+   "g": 45,
+   "block": 2,
+   "domain": "D2",
+   "stem": "Promotion always fetches the build manifest, verifies its signature, then records the promotion — in that order, every time. Logs show a promotion recorded with no verification between them, and another where the signature checked was from a manifest fetched two steps earlier. An engineer proposes folding all three into one `promote_build` tool. Is that right?",
+   "options": [
+    "Only if the three steps also stay available individually, so the agent can choose the composite or the parts.",
+    "No — bundling hides the individual steps, so a failure in any one becomes harder to diagnose.",
+    "Only after a post-execution check confirms the three ran in the right order.",
+    "Yes — the three are always performed together in that order and the agent has no legitimate reason to run them apart, so bundling removes a sequencing decision it keeps getting wrong."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "A composite tool is right when the steps are invariably performed together and the ordering is not a decision worth leaving to the model. That holds here: three fixed steps, one order, no case for running them apart. Bundling makes the sequence a property of the tool rather than something the model has to get right on every promotion.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.8"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Exposing both leaves the sequencing decision available, which is the decision being got wrong. It also widens the tool set, which works against selection reliability.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.8"
+    },
+    {
+     "option": 1,
+     "text": "Diagnosability is a real consideration and is handled by the composite returning structured per-step results. Ruling bundling out entirely discards the mechanism the corpus recommends for this pattern.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.8"
+    },
+    {
+     "option": 2,
+     "text": "A post-execution check observes the ordering after the fact and cannot prevent a promotion recorded without a verification. It detects what the composite tool makes impossible.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.8"
+    }
+   ]
+  }
+ ]
+}

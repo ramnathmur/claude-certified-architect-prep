@@ -1,0 +1,538 @@
+{
+  "label": "Claude Code for Continuous Integration",
+  "narrative": "Claude Code runs inside the CI/CD pipeline for a telecom service-provisioning platform — order capture, circuit activation, billing handoff. It performs automated review on pull requests, generates test cases, and posts feedback to authors. Across this block the pipeline is already live, and the questions concern making its output trustworthy enough that engineers act on it.",
+  "questions": [
+    {
+      "g": 31,
+      "block": 2,
+      "domain": "D3",
+      "stem": "The provisioning repository's review job was added last week, and every run hangs until the runner's 30-minute timeout kills it. No output is ever written to the job log. The command in the workflow file reads `claude \"Review this diff for regressions\"`. What is missing?",
+      "options": [
+        "The `-p` flag, which processes the prompt, prints to stdout and exits.",
+        "The `--batch` flag, which tells Claude Code that it is running unattended.",
+        "A `CLAUDE_HEADLESS=true` environment variable set on the job.",
+        "A redirect of `stdin` from `/dev/null` so the process cannot block waiting on input."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "`-p` (or `--print`) is the documented non-interactive mode: it processes the prompt, prints to stdout and exits. Without it Claude Code waits for interactive input, which in a pipeline means hanging until the runner kills the job.",
+        "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "`--batch` does not exist. It is one of the corpus's named trap options for this question.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+        },
+        {
+          "option": 2,
+          "text": "`CLAUDE_HEADLESS` is not a real environment variable, and no variable substitutes for the print flag.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+        },
+        {
+          "option": 3,
+          "text": "Redirecting stdin is a Unix workaround that may stop the hang by starving the prompt, but it is not the documented approach and produces no usable output.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+        }
+      ]
+    },
+    {
+      "g": 32,
+      "block": 2,
+      "domain": "D4",
+      "stem": "Six weeks of review data: style findings run at 54% false positive, documentation at 47%, security at 7%, performance at 16%. Engineers have begun dismissing every comment the job posts, security findings included, and two genuine vulnerabilities were closed unread last sprint. What should the team do?",
+      "options": [
+        "Display a confidence score beside each finding so that engineers can triage them themselves.",
+        "Reduce strictness uniformly across all four categories until the overall false-positive rate falls.",
+        "Temporarily disable the style and documentation categories while their prompts are improved.",
+        "Add few-shot examples across all four categories and let the rate improve over the coming weeks."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "High-false-positive categories cause engineers to dismiss everything, including accurate findings in high-precision categories. Surgically disabling the noisy categories stops the trust bleed immediately while the prompts behind them are fixed.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.17"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Confidence scores still surface every finding. The volume of noise — and the dismissal habit it created — is unchanged.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.17"
+        },
+        {
+          "option": 1,
+          "text": "Uniform reduction damages the security and performance categories, which are already precise, in order to quieten two that are not.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.17"
+        },
+        {
+          "option": 3,
+          "text": "This is the right repair on the wrong timescale. Trust continues eroding across the weeks it takes, and by then engineers ignore the job entirely.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.17"
+        }
+      ]
+    },
+    {
+      "g": 33,
+      "block": 2,
+      "domain": "D3",
+      "stem": "Findings currently arrive as prose in the job log, and a script scrapes them with regular expressions to post inline pull-request comments. The scraper has broken three times this quarter whenever phrasing shifted. Each comment needs a file path, a line number, a severity and a suggested fix. What should replace the scraper?",
+      "options": [
+        "An \"Output Format\" section added to the repository's `CLAUDE.md` specifying the four fields.",
+        "A run using `--output-format json` with `--json-schema`, so the output is machine-parseable.",
+        "A prompt-level format specification with one worked example of a correctly shaped finding.",
+        "A scraper rewritten to match on keywords rather than full patterns, tolerating phrasing drift."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "`--output-format json` with `--json-schema` enforces the schema and guarantees well-formed output that downstream tools can parse — precisely the case where findings must be turned into structured GitHub API calls carrying path, line, severity and fix.",
+        "cite": "CCA-Prep_Domain-3_v2.md §3.9"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "`CLAUDE.md` guidance is not a guarantee of consistent output shape. It influences behaviour; it does not enforce a contract a parser can rely on.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.9"
+        },
+        {
+          "option": 2,
+          "text": "Format instructions in the prompt produce variable compliance. That variability is what the scraper is already failing on.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.9"
+        },
+        {
+          "option": 3,
+          "text": "A more forgiving scraper is still parsing free text. It trades one class of brittleness for another rather than removing the ambiguity at the source.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.9"
+        }
+      ]
+    },
+    {
+      "g": 34,
+      "block": 2,
+      "domain": "D3",
+      "stem": "Each time an author pushes a follow-up commit, the review job re-posts near-identical comments on code that has not changed, with slightly different wording every run. Some threads now run to dozens of comments and authors have started resolving them unread. What should the re-run prompt include?",
+      "options": [
+        "An instruction to comment only on lines present in the latest commit's diff.",
+        "A raised severity threshold, so that fewer findings are posted on any given run.",
+        "An instruction to start from a blank slate each run so the review stays objective.",
+        "The previous run's findings, with an instruction to report only new or still-unaddressed issues."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "Feeding the prior run's findings into the re-run prompt keeps the reviewer consistent across runs and stops it re-litigating settled findings. The instruction to report only new or unresolved issues is what prevents duplicate inline comments on unchanged code.",
+        "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Restricting to the latest diff suppresses duplicates by also suppressing legitimate findings on code the new commit interacts with but does not touch.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+        },
+        {
+          "option": 1,
+          "text": "A higher threshold reduces the number of comments without addressing why the same comment reappears. The duplicates that clear the bar still duplicate.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+        },
+        {
+          "option": 2,
+          "text": "Blank-slate re-runs are the cause, not the cure. Objectivity is not improved by discarding what the reviewer already concluded — it produces exactly this flood.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+        }
+      ]
+    },
+    {
+      "g": 35,
+      "block": 2,
+      "domain": "D4",
+      "selectN": 2,
+      "stem": "A pull request touching eighteen files receives a detailed review on four of them, cursory notes on the rest, and one pattern flagged in one file yet explicitly approved in another. Re-running the job produces a different four files. Which two changes address the cause? Select two.",
+      "options": [
+        "Run a per-file pass that reviews each file individually for issues local to it.",
+        "Run a separate integration pass examining cross-file relationships and data flows.",
+        "Move the job to a model with a larger context window so all eighteen files fit comfortably.",
+        "Instruct the reviewer to spend equal effort on every file present in the diff.",
+        "Reject pull requests above ten files so that reviews stay within a reliable size."
+      ],
+      "correct": [
+        0,
+        1
+      ],
+      "whyRight": {
+        "text": "The symptoms — depth on some files, shallowness on others, contradictory verdicts on the same pattern — are attention dilution from processing many items at once. The fix is focused passes: one per-file pass for local issues, then a separate integration pass for cross-file concerns.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.12"
+      },
+      "whyWrong": [
+        {
+          "option": 2,
+          "text": "A larger context window does not fix attention quality. The corpus names this as the trap: the dilution exists regardless of window size.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.12"
+        },
+        {
+          "option": 3,
+          "text": "Instructing the model to distribute effort evenly does not change how attention behaves across a large single pass. It restates the desired outcome.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.12"
+        },
+        {
+          "option": 4,
+          "text": "Capping pull-request size is a process constraint imposed to work around a solvable architectural problem, and large changes will still legitimately occur.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+        }
+      ]
+    },
+    {
+      "g": 36,
+      "block": 2,
+      "domain": "D3",
+      "stem": "A weekly dependency-audit job runs on the Message Batches API, and its report must reach the platform lead 30 hours after submission. The schedule is being fixed now. The team is planning around batches that have so far always completed within about an hour. What submission window does the SLA actually permit?",
+      "options": [
+        "Six hours — the batch must be submitted at least 24 hours before the deadline.",
+        "Twenty-nine hours, leaving an hour of headroom over the typical completion time.",
+        "Thirty hours, since batch results are returned as soon as processing finishes.",
+        "Twenty-four hours, because the processing window and the deadline are the same figure."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "The Batch API has a processing window of up to 24 hours and no latency SLA, so planning must absorb the worst case: submission deadline equals downstream deadline minus 24 hours. With 30 hours available, the usable submission window is six hours.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "This plans around the typical case. There is no SLA, so the single batch that takes 23 hours blows the deadline — the exact failure the worst-case rule prevents.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+        },
+        {
+          "option": 2,
+          "text": "Results do return when processing finishes, but you cannot schedule against a completion time that carries no guarantee. The budget must assume the full window.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+        },
+        {
+          "option": 3,
+          "text": "Confusing the two figures. Twenty-four hours is what must be subtracted from the deadline, not the window that remains after subtracting it.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+        }
+      ]
+    },
+    {
+      "g": 37,
+      "block": 2,
+      "domain": "D2",
+      "stem": "The pipeline's remediation step can apply mechanical fixes automatically. Twice now it has rewritten more than 200 files in a single run after a shared formatting rule changed, and both runs reached the default branch. Policy states that any change touching over 50 files requires human approval. Where does that rule belong?",
+      "options": [
+        "In the review prompt, as an instruction to stop and ask before any large-scale rewrite.",
+        "In a `PostToolUse` hook that reverts the change once the file count is exceeded.",
+        "In a `PreToolUse` hook that blocks the operation above the threshold and routes it for approval.",
+        "In the tool's own description, stating that it must not be used on more than 50 files."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "`PreToolUse` fires before the tool executes and can validate or block. Threshold enforcement — blocking operations above a defined size and routing them to escalation — is its primary use case, and it is deterministic: it fires regardless of how the model behaves.",
+        "cite": "CCA-Prep_Domain-2_v2.md §2.7"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Prompt instructions are probabilistic. For safety-critical enforcement the corpus is explicit that hooks, not prompts, carry the rule.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.7"
+        },
+        {
+          "option": 1,
+          "text": "`PostToolUse` fires after the tool has run, so the 200 files are already rewritten. Reverting is messier and less certain than never executing.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.7"
+        },
+        {
+          "option": 3,
+          "text": "A description shapes tool selection, not tool authorisation. Nothing enforces a limit expressed only as guidance in the description text.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.2"
+        }
+      ]
+    },
+    {
+      "g": 38,
+      "block": 2,
+      "domain": "D3",
+      "stem": "Generated tests for the circuit-activation service compile and pass, but they ignore the team's fixture conventions, assert on internals rather than on behaviour, and duplicate scenarios the existing suite already covers. Roughly half of each generated batch is discarded in review. What supplies the missing context to the CI-invoked run?",
+      "options": [
+        "A longer prompt describing the conventions in prose at the point of invocation.",
+        "`CLAUDE.md` for the standards, plus the existing test files in context to avoid duplicates.",
+        "A post-generation filter that discards any test whose assertions overlap an existing one.",
+        "A `.claude/rules/` file scoped by glob to the generated-test output directory."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "`CLAUDE.md` is the mechanism for giving CI-invoked Claude project context — testing standards, fixture conventions, review criteria. Supplying the existing test files in context is separately named as what stops generation from proposing scenarios the suite already covers.",
+        "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Restating conventions in every invocation duplicates what project configuration exists to hold, and still gives the run no visibility of the existing suite.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+        },
+        {
+          "option": 2,
+          "text": "Filtering afterwards discards work already paid for and misses semantically equivalent duplicates that do not overlap textually.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.18"
+        },
+        {
+          "option": 3,
+          "text": "Path-scoped rules load when Claude works on matching files. They address conventions, not the duplicate-scenario half of the problem, which needs the existing tests in context.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.2"
+        }
+      ]
+    },
+    {
+      "g": 39,
+      "block": 2,
+      "domain": "D4",
+      "stem": "Review comments vary in shape from run to run: sometimes a bare observation, sometimes a fix, sometimes a paragraph of surrounding context. The prompt already specifies the required format across three sentences, and tightening that wording twice has changed nothing. What is the effective next move?",
+      "options": [
+        "Restate the format requirements more explicitly, enumerating each required element in turn.",
+        "Lower the temperature so that output varies less between runs.",
+        "Add ten examples covering the full range of finding types the job encounters.",
+        "Add three or four examples showing the exact required shape: issue, location, concrete fix."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "When instructions are already failing, refining them further is not the lever. Three to four few-shot examples showing the exact required format — identified issue, location in code, concrete fix — is the corpus's answer for inconsistent review output despite explicit instructions.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.1"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "The instructions are already explicit and already failing. More explicit prose is the approach that has not worked.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.1"
+        },
+        {
+          "option": 1,
+          "text": "Temperature controls randomness, not adherence to a specific output shape. It is the corpus's named wrong answer for suppressing an unwanted response pattern.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.4"
+        },
+        {
+          "option": 2,
+          "text": "Ten examples of clear cases add token overhead without targeting the problem. Examples should be few and aimed at where output actually goes wrong.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.1"
+        }
+      ]
+    },
+    {
+      "g": 40,
+      "block": 2,
+      "domain": "D3",
+      "selectN": 3,
+      "stem": "A review of the activation module raised three issues: a race in the retry path, a lock-ordering defect that the retry path depends on, and a misspelled log string. You are feeding these back for fixes and want to avoid a second round of rework. Which three statements are sound? Select three.",
+      "options": [
+        "The race and the lock-ordering defect belong in one message, because their fixes interact.",
+        "Fixing the retry race without the new locking design in view can produce a conflicting patch.",
+        "The log-string typo is independent and can be sent separately or alongside without risk.",
+        "Every issue should be sent one at a time so that each iteration stays focused and verifiable.",
+        "All three belong in one message purely because they were found in the same review pass.",
+        "Interdependent issues should be ordered by severity and then fixed strictly in that sequence."
+      ],
+      "correct": [
+        0,
+        1,
+        2
+      ],
+      "whyRight": {
+        "text": "Interacting issues go in one detailed message so Claude can design a single coherent change; independent ones can iterate separately. Fixing the retry path without knowing the new locking design is the specific way separate fixes to interacting problems collide.",
+        "cite": "CCA-Prep_Domain-3_v2.md §3.7.4"
+      },
+      "whyWrong": [
+        {
+          "option": 3,
+          "text": "Strict one-at-a-time is wrong for interdependent issues — the sequential locking fix and retry fix can contradict each other and force another round.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.7.4"
+        },
+        {
+          "option": 4,
+          "text": "Shared provenance is not the criterion. Whether fixes interact is what decides batching, and the typo interacts with nothing.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.7.4"
+        },
+        {
+          "option": 5,
+          "text": "Severity ordering still fixes interacting defects one at a time, which is the pattern that produces conflicting patches. They need designing together, not sequencing.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.7.4"
+        }
+      ]
+    },
+    {
+      "g": 41,
+      "block": 2,
+      "domain": "D4",
+      "stem": "The prompt instructs the reviewer to \"check that comments are accurate.\" It now flags every comment that is merely terse or slightly out of date — around sixty per pull request — burying the handful that actively describe the wrong behaviour. How should the criterion be rewritten?",
+      "options": [
+        "Flag a comment only where the behaviour it claims contradicts what the code actually does.",
+        "Flag comments that have not been updated since the code beneath them last changed.",
+        "Rate each comment's accuracy on a four-point scale and report only the lowest band.",
+        "Check comment accuracy only in files the pull request modifies, ignoring the rest."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "When vague instructions produce inconsistent output, move from abstract to concrete. The corpus uses this exact pair: \"check that comments are accurate\" replaced by \"flag comments only when the behaviour they claim contradicts the code's actual behaviour\" — an explicit, testable criterion.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.16"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "Staleness is a proxy, not the property that matters. A comment untouched for two years can be perfectly accurate; one edited yesterday can be wrong.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.16"
+        },
+        {
+          "option": 2,
+          "text": "A rating scale without defined criteria simply relocates the vagueness into the scale. The model still has no testable definition of what accurate means.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.16"
+        },
+        {
+          "option": 3,
+          "text": "Narrowing the scope reduces the volume of noise without improving precision. The same wrong comments are flagged, just fewer of them.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.16"
+        }
+      ]
+    },
+    {
+      "g": 42,
+      "block": 2,
+      "domain": "D3",
+      "stem": "The pipeline generates a migration script and then, in the same session, asks for a review of that script. Reviews come back clean; defects surface later in staging, three times this quarter. A colleague suggests adding \"be more critical\" to the review step's prompt. What is the actual problem?",
+      "options": [
+        "The review step runs before the migration script has been written to disk.",
+        "Review criteria are absent, so the step has nothing concrete to evaluate against.",
+        "The session that generated the script retains its reasoning and reviews its own work poorly.",
+        "Migration scripts need schema context that the pipeline supplies to neither step."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "The same session that generated code is less effective at reviewing its own changes: it retains its reasoning context and is less likely to challenge its own decisions. The fix is an independent instance, and no instruction to be more critical substitutes for that.",
+        "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Nothing in the stem indicates a sequencing fault, and a review of a non-existent file would fail loudly rather than return clean.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+        },
+        {
+          "option": 1,
+          "text": "Explicit criteria genuinely improve review quality, but they do not remove the anchoring. The same session applies them to reasoning it already endorsed.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.13"
+        },
+        {
+          "option": 3,
+          "text": "Missing schema context would degrade generation as well as review. The signal here is specifically that self-review passes and independent staging does not.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.13"
+        }
+      ]
+    },
+    {
+      "g": 43,
+      "block": 2,
+      "domain": "D2",
+      "selectN": 2,
+      "stem": "The triage step must always return a structured verdict, but roughly one run in twelve comes back as a paragraph of prose instead of a tool call, and the downstream parser fails on it. Three verdict tools are defined, one per severity band. Which two statements are correct? Select two.",
+      "options": [
+        "Setting `tool_choice` to `{\"type\": \"any\"}` guarantees a tool call rather than conversational text.",
+        "With three tools defined, `{\"type\": \"any\"}` still lets the model pick the best-fitting one.",
+        "`{\"type\": \"auto\"}` plus a firm prompt instruction gives the same guarantee more flexibly.",
+        "`{\"type\": \"tool\", \"name\": ...}` is required whenever more than one tool could apply.",
+        "Prose responses indicate the tool schemas are invalid and are being silently rejected."
+      ],
+      "correct": [
+        0,
+        1
+      ],
+      "whyRight": {
+        "text": "`{\"type\": \"any\"}` guarantees the model calls some tool and never returns conversational text; where several extraction or verdict tools exist, it still selects the best-fitting one. That combination is exactly what this situation needs.",
+        "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+      },
+      "whyWrong": [
+        {
+          "option": 2,
+          "text": "`auto` permits a text response by design, and the prompt instruction is probabilistic. That pairing is the current configuration and the current failure.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+        },
+        {
+          "option": 3,
+          "text": "Forcing one named tool is for guaranteeing a specific first step. Here any of the three may be correct depending on severity, so pinning one would be wrong.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+        },
+        {
+          "option": 4,
+          "text": "An invalid schema produces an error, not a fluent paragraph. Prose output is the documented behaviour of `auto` when the model judges text sufficient.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+        }
+      ]
+    },
+    {
+      "g": 44,
+      "block": 2,
+      "domain": "D4",
+      "stem": "Engineers dismiss roughly a third of all findings, but the team cannot tell which kinds are noise and which are being waved through unfairly. Dismissals are currently recorded as a timestamp and a username, with no reference to what was flagged. What change makes the pattern analysable?",
+      "options": [
+        "Require a free-text reason on every dismissal so the team can read back through them.",
+        "Add a `detected_pattern` field to each finding and group dismissal rates by that field.",
+        "Record which reviewer dismissed each finding so individual thresholds can be compared.",
+        "Sample ten dismissed findings a week and review them manually for recurring themes."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "A `detected_pattern` field identifies which construct triggered each finding, so dismissals can be grouped by pattern to reveal which ones drive false positives. That turns an undifferentiated dismissal rate into a diagnosis.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.9"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Free-text reasons are unstructured and do not aggregate. The team ends up with a third as many prose notes as findings and no way to rank causes.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.9"
+        },
+        {
+          "option": 2,
+          "text": "Reviewer identity explains who dismissed, not what kind of finding is noisy. The same noisy pattern would show up across every reviewer.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.9"
+        },
+        {
+          "option": 3,
+          "text": "Manual sampling is slow, small and subject to the same categorisation problem — the themes still have to be invented by hand rather than emerging from a field.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+        }
+      ]
+    },
+    {
+      "g": 45,
+      "block": 2,
+      "domain": "D3",
+      "selectN": 2,
+      "stem": "A number-porting script mishandles rows where the donor-carrier field is null. Three rounds of describing the defect in prose have produced three partial fixes, each of which broke something that previously worked. The failure reproduces reliably on a local sample. Which two moves converge fastest? Select two.",
+      "options": [
+        "Supply a concrete failing case: a sample row containing nulls and the exact expected output.",
+        "Iterate by feeding back the specific test failures until the suite runs green.",
+        "Describe the null-handling requirement more emphatically, covering every field that can be null.",
+        "Ask for a rewrite of the whole script, given that three attempts have now failed.",
+        "Write the tests after the fix lands, to verify that the behaviour is finally correct."
+      ],
+      "correct": [
+        0,
+        1
+      ],
+      "whyRight": {
+        "text": "Providing a specific failing test case with example input and expected output is named as the fastest way to fix an edge case such as nulls in a migration script, and test-driven iteration then feeds concrete failures back until everything is green.",
+        "cite": "CCA-Prep_Domain-3_v2.md §3.7.2"
+      },
+      "whyWrong": [
+        {
+          "option": 2,
+          "text": "Prose descriptions of edge cases are interpreted inconsistently — three rounds of exactly this have already failed. Emphasis is not the missing ingredient.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.7.2"
+        },
+        {
+          "option": 3,
+          "text": "A full rewrite discards working behaviour and re-runs the same underspecified brief. Nothing has been added that would make attempt four differ from attempt three.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.7.2"
+        },
+        {
+          "option": 4,
+          "text": "Tests written after the fact are verification, not test-driven iteration. Writing them first is what anchors each iteration to a concrete failure signal.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.7.2"
+        }
+      ]
+    }
+  ]
+}

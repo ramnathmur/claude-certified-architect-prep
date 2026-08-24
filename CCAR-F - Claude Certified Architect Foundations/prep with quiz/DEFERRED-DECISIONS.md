@@ -14,13 +14,28 @@
 2. 2–3 mocks are scored via results-JSON (exact per-question data).
 **Then:** compare practice-test accuracy vs mock accuracy per domain. A consistent gap (mocks ≥10 points easier or harder) is the evidence a calibration layer would need — bring the gap data to a revision session.
 
-## DD-2: Hard-timed exam mode — DEFERRED
+## DD-2: Hard-timed exam mode — CLOSED, NOT NEEDED (2026-08-11)
 
 **Decision:** the generated HTML captures timing passively (per-question + total) but imposes no countdown and never withholds feedback.
 **Why deferred:** Ram's explicit design call (2026-07-06) — this is a learning tool; per-question rationales are the point. Realism lives in style/coverage/structure.
 **Reopen when:** Ram asks for a dress-rehearsal mode (e.g., final week before the sitting). The results-JSON timing data collected meanwhile will show whether pace is even a risk (budget: 2 min/question).
 **Checked against a separate suggestion 2026-07-09** (confidence-capture UI — "knew it" / "guessing" click, per the `MCQ-Quiz-Builder_Blueprint_v3.md` 2×2 confidence matrix, raised via the `academy/` project's migration audit): this is not actually a DD-2 collision on the letter of the decision — DD-2 is specifically about a countdown that withholds feedback; a self-rated confidence click does neither. The overlap is only in spirit (does self-rating add evaluative pressure?), and it's a soft one. Not implemented — it wasn't the audit's primary recommendation, and no one has asked for it directly. Worth reconsidering together with DD-4 if DD-4 ships, since option-level trap tracking and confidence self-rating are complementary signals, not a package deal.
 **Partially honored elsewhere 2026-08-10:** the drill app (see DD-3) grades every card on a three-way scale — Missed / Guessed it / Knew it — which is the confidence-capture idea in its simplest form, and it drives scheduling directly (a guessed card returns tomorrow regardless of its box). This does not settle the question for the mock exams, where the 2×2 matrix would still be a new UI on a different artifact. DD-2 itself is unchanged: no countdown, no withheld feedback, in either tool.
+
+**CLOSED 2026-08-11 — trigger fired, reviewed, decided against.** The reopen condition ("final week before the sitting") became true today: the exam is booked for 2026-08-18, seven days out. Raised to Ram by a `/sync-up` audit and closed on his call, on the evidence the deferral itself said to collect.
+
+**The pace data the deferral was waiting for says pace is not a risk.** The budget is 7,200 seconds for 60 questions. Recent sittings, from the results-JSON `total_seconds` field in `DASHBOARD-DATA.jsonl`:
+
+| Exam | Seconds | vs 7,200 budget |
+|---|---|---|
+| Exam 8 | 2,121 | 29% |
+| Exam 9 | 2,529 | 35% |
+| Exam 10 | 2,357 | 33% |
+| Exam 11 | 2,418 | 34% |
+
+Four consecutive sittings at roughly a third of the allowed time, none above 35%. A countdown would measure a constraint that is not binding, and building one this close to the exam would compete with actually sitting the three unattempted papers — which is the scarce activity. (Exams 4, 6 and 7 show much larger figures — 44,148 / 15,625 / 19,489 seconds — but those were multi-session sittings where the timer ran across breaks, so they measure elapsed wall-clock, not pace.)
+
+**Reopen only if:** Ram sits a paper under genuine timed conditions and finishes above ~5,500 seconds, or a future exam-format change materially lengthens the questions. Neither is in view.
 
 ## DD-3: Spaced repetition of missed questions — SUPERSEDED (2026-08-10)
 

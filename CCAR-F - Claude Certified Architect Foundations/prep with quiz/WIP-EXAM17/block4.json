@@ -1,0 +1,514 @@
+{
+ "label": "Structured Data Extraction",
+ "narrative": "An extraction pipeline turns supplier documents — invoices, credit notes, delivery advices and statements — into structured records for a finance system. Documents arrive in daily batches of a few thousand, extraction runs through tool-call schemas, and a small review team checks a sample before records are posted. The questions below follow this pipeline through a year of tuning.",
+ "questions": [
+  {
+   "g": 46,
+   "block": 3,
+   "domain": "D4",
+   "stem": "Extracted invoices carry a `line_items` array and a `total`. Every record parses cleanly against the schema, but reconciliation finds that on about 4% of invoices the `total` does not equal the sum of the line items — the model has copied a figure from a subtotal or a carried-forward balance. What catches this before posting?",
+   "options": [
+    "Mark `total` as a required field so the model cannot omit it and must read it deliberately.",
+    "A validation step that recomputes the line-item sum and compares it to the extracted total, returning the discrepancy to the model for correction.",
+    "A stricter JSON schema that constrains `total` to a decimal with two places and a positive value.",
+    "An instruction in the extraction prompt telling the model to double-check that totals are consistent before responding."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "This is a semantic error: the value is well-formed, correctly typed and in the right field, and simply wrong. No schema expresses a cross-field relationship like 'total must equal the sum of line items', so the check has to be computed and then fed back — telling the model the sum came to one figure while it reported another gives it the specific information it needs to correct itself.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.10"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "The field is already being populated on every record; nothing is missing. Requiredness governs presence, not correctness, so it has no bearing on a value that is present and wrong.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.5"
+    },
+    {
+     "option": 2,
+     "text": "Type and range constraints reject malformed or implausible values. A subtotal copied from elsewhere on the invoice is a well-formed positive two-decimal number, so it passes every constraint of this kind.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.7"
+    },
+    {
+     "option": 3,
+     "text": "An instruction to check makes the model's own arithmetic the control, which is the thing failing on 4% of documents. A deterministic recomputation outside the model is available and does not depend on the model noticing its own error.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.10"
+    }
+   ]
+  },
+  {
+   "g": 47,
+   "block": 3,
+   "domain": "D5",
+   "stem": "A validation exercise reports 97% field-level accuracy across a 2,000-document sample, and the team proposes auto-posting every extraction above the confidence cut-off. A reviewer asks for the figure broken down. It emerges that invoices and credit notes score in the high nineties, while delivery advices — 6% of volume — score 61%. What does this show?",
+   "options": [
+    "Aggregate accuracy hides per-type performance, so validation must be segmented by document type and field before any automation decision.",
+    "The sample was not representative and should be re-drawn with delivery advices proportionally over-weighted before any decision is taken.",
+    "The aggregate is sound and the delivery-advice figure is a small-sample artefact that will regress towards the mean at full volume.",
+    "Confidence scoring is failing on delivery advices, so the cut-off should be raised until their accuracy matches the other types."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "A single headline number averages over populations that behave differently, and the average is dominated by the types that make up most of the volume. Here 97% overall coexists with 61% on a real document type — automating on the aggregate would post roughly two in five delivery advices wrong. The corpus's rule is to validate by document type and field segment before automating anything.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "The sample did its job — it contained delivery advices in proportion and the segmented figure surfaced the problem. Re-drawing addresses a sampling defect that has not been demonstrated, while the automation decision is still being made on an aggregate.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+    },
+    {
+     "option": 2,
+     "text": "6% of a 2,000-document sample is around 120 documents, which is ample to establish that a type performs far below the rest. Dismissing it as noise is how the masking trap survives review.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+    },
+    {
+     "option": 3,
+     "text": "This assumes the model is confident and wrong only on this type, which the data does not establish, and raising a global cut-off suppresses volume across every type to work around one. The finding is about how the metric was reported, not about where the threshold sits.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+    }
+   ]
+  },
+  {
+   "g": 48,
+   "block": 3,
+   "domain": "D4",
+   "stem": "A separate assistant helps the finance team query the pipeline. Some turns are answered from the conversation itself — 'what did we agree the tolerance was?' — and some need a tool call against the records. It currently runs with `tool_choice` set to `{\"type\": \"any\"}`, and users report it now runs a pointless lookup before answering questions that needed no data at all. What is the correct setting?",
+   "options": [
+    "Keep `{\"type\": \"any\"}` and add a no-op `answer_directly` tool the model can call when no data is needed.",
+    "`{\"type\": \"tool\", \"name\": \"query_records\"}`, so the behaviour is at least consistent across every turn.",
+    "`{\"type\": \"auto\"}`, which lets the model call a tool when the turn needs data and answer directly when it does not.",
+    "Keep `{\"type\": \"any\"}` and add a prompt instruction telling the model not to call tools for conversational questions."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "`auto` is the default for a reason: it lets the model decide per turn whether a tool is warranted. This assistant genuinely has two kinds of turn, and only some of them need data, so a guaranteed tool call is the wrong requirement here. The guarantees are for when structured output is mandatory — imposed on a mixed conversational workload they produce exactly the pointless calls described.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A no-op tool re-implements `auto` through a tool the model must remember to choose, adding a definition, a code path and a new failure mode to recover behaviour the parameter already provides.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+    },
+    {
+     "option": 1,
+     "text": "Forcing one named tool makes every turn a records query, including the ones with nothing to query. It is more consistent and consistently wrong on the conversational half of the workload.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+    },
+    {
+     "option": 3,
+     "text": "This instructs the model not to do what the parameter is forcing it to do. `any` guarantees a tool call at the request level, so the instruction is fighting the setting rather than changing it.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+    }
+   ]
+  },
+  {
+   "g": 49,
+   "block": 3,
+   "domain": "D5",
+   "stem": "Reviewer capacity covers about 3% of daily volume. The current policy sends the 3% with the lowest confidence scores to review and posts everything else. Two months in, a supplier changes its statement layout and a field is silently mis-extracted with high confidence for six weeks before anyone notices. What should the sampling policy include?",
+   "options": [
+    "Stratified random sampling that draws a share from the high-confidence population as well as the low-confidence one.",
+    "A second model pass over the high-confidence population, flagging any record where the two passes disagree.",
+    "A rule sending every record from a supplier whose document layout has changed to review until accuracy is re-established.",
+    "A lower confidence cut-off, so more records fall into the reviewed band and the layout change is caught sooner."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "Reviewing only the low-confidence tail means the automated population is never inspected, so any error mode that arrives with high confidence is invisible by construction — which is exactly what six weeks of confident mis-extraction demonstrates. Stratified random sampling puts a slice of the high-confidence population in front of a reviewer, which is the only way a novel error pattern there gets detected.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "Two passes of the same model on the same document tend to make the same mistake, particularly a layout misreading, so agreement is weak evidence. It also spends a full second pass over the entire automated population rather than a sample.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+    },
+    {
+     "option": 2,
+     "text": "This requires knowing the layout changed, and nobody knew for six weeks. It is a sound reaction to a detected event and does nothing about detection, which is what failed.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+    },
+    {
+     "option": 3,
+     "text": "Moving the cut-off enlarges the low-confidence band while leaving the high-confidence band unexamined. The mis-extractions in question scored high, so they stay above any threshold that keeps automation worthwhile.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+    }
+   ]
+  },
+  {
+   "g": 50,
+   "block": 3,
+   "domain": "D3",
+   "selectN": 2,
+   "stem": "The team is refining the extraction prompt for a supplier whose credit notes are handled inconsistently: sometimes the credit is recorded as a negative amount, sometimes as a positive amount with a type flag. The prompt already describes the intended handling in three paragraphs. Select TWO techniques most likely to resolve this.",
+   "options": [
+    "Supply two or three concrete input-and-output pairs showing a credit note and the exact record it should produce.",
+    "Build a small set of previously mishandled documents with their correct records, and iterate the prompt until it produces them.",
+    "Rewrite the three paragraphs more precisely, defining the sign convention in unambiguous language.",
+    "Have the model attach a confidence score to the sign decision and route low-confidence records to review."
+   ],
+   "correct": [
+    0,
+    1
+   ],
+   "whyRight": {
+    "text": "Three paragraphs of description already exist and are being read two different ways, so the answer to inconsistent interpretation is to stop describing and start demonstrating. Concrete input-output pairs remove the interpretation step; a fixed set of previously failing documents with their correct records turns refinement into a test-driven loop where each prompt change is measured rather than guessed.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.7"
+   },
+   "whyWrong": [
+    {
+     "option": 2,
+     "text": "More precise prose is still prose, and still interpreted. The corpus is explicit that when descriptions have already failed to produce consistency, examples come before another attempt at wording.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.7"
+    },
+    {
+     "option": 3,
+     "text": "Confidence routing sends the problem to a human rather than resolving the ambiguity, and self-reported confidence is poorly calibrated on exactly this kind of consistent-but-wrong convention error. It manages the symptom at review cost.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+    }
+   ]
+  },
+  {
+   "g": 51,
+   "block": 3,
+   "domain": "D1",
+   "stem": "Statements arriving as 60-page documents are processed by splitting them into six-page batches, extracting each batch independently, and concatenating the records. Within a batch the extraction is accurate. Across the document, transactions that continue across a batch boundary are duplicated, and running balances no longer reconcile end to end. What is missing?",
+   "options": [
+    "A cross-batch integration pass that reconciles boundary transactions and validates the running balance across the assembled record set.",
+    "Larger batches, so fewer boundaries exist and fewer transactions are split across them.",
+    "Overlapping batches, so each boundary transaction appears whole in at least one batch.",
+    "A single-pass extraction over the whole 60-page document, removing batching entirely."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "Batching solves attention dilution inside each batch and by construction cannot see anything that spans two of them. The duplicates and the broken running balance are both cross-batch properties, so they need a pass whose input is the assembled set rather than any single batch. Batching plus an integration pass is the complete pattern; batching alone is half of it.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "Fewer boundaries means fewer occurrences of the same defect, not its absence, and larger batches reintroduce the attention dilution that batching was adopted to fix. It trades one failure back for a reduction in the other.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+    },
+    {
+     "option": 2,
+     "text": "Overlap makes each boundary transaction appear whole somewhere, and also makes it appear twice — which is the duplication already being reported. Without a reconciling pass there is still nothing that decides which copy to keep, and the running balance remains unchecked.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+    },
+    {
+     "option": 3,
+     "text": "A single pass over 60 pages returns the uneven-depth problem that batching was introduced to solve. The corpus's answer is not to choose between per-item depth and whole-document consistency but to run passes for both.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+    }
+   ]
+  },
+  {
+   "g": 52,
+   "block": 3,
+   "domain": "D5",
+   "stem": "Confidence scores are used to route records. Analysis of a labelled set shows that records scoring 0.90 on `invoice_date` are correct about 94% of the time, while records scoring 0.90 on `net_amount` are correct about 82% of the time. The current policy applies one 0.85 threshold to every field. What should change?",
+   "options": [
+    "Keep the single threshold and raise it to 0.92, since the weaker field determines the safe operating point.",
+    "Stop using confidence for routing, since these figures show the scores carry no useful signal.",
+    "Have the model re-score each record a second time and average the two scores to reduce noise.",
+    "Calibrate thresholds per field against the labelled set, so each field's cut-off reflects the accuracy that score actually predicts for it."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "Raw confidence scores are not calibrated, and this data shows the same number meaning materially different things on different fields. The scores do carry signal — they are simply on different scales per field. Calibrating each field's threshold against labelled data converts an uncalibrated number into a usable decision boundary, which is the prerequisite the corpus sets before confidence drives routing.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "One threshold set by the weakest field sends large volumes of correctly extracted dates to review, paying reviewer capacity to compensate for a scale mismatch rather than correcting it.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+    },
+    {
+     "option": 1,
+     "text": "The figures show miscalibration, not absence of signal — 0.90 still predicts high accuracy on both fields, just different accuracies. Discarding the signal loses a usable input the labelled set is enough to fix.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+    },
+    {
+     "option": 2,
+     "text": "Averaging two uncalibrated scores produces a smoother uncalibrated score. The problem is what the number maps to, not how noisy it is, and a second pass does not supply the mapping.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+    }
+   ]
+  },
+  {
+   "g": 53,
+   "block": 3,
+   "domain": "D2",
+   "stem": "An agent maintaining the extraction rules must change one occurrence of the string `tolerance = 0.02` in a configuration module. Edit reports that the target text is not unique — the string appears four times in the file. What is the correct next step?",
+   "options": [
+    "Read the whole file and write it back with the single occurrence changed.",
+    "Widen the match to include surrounding lines until it identifies the one occurrence, or use a replace-all when every occurrence should change.",
+    "Split the file so each occurrence lives in its own module, making every future match unique.",
+    "Apply the change with a shell command using a line-number-anchored substitution."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "A non-unique match is a normal, expected Edit outcome with a documented recovery: widen the anchor with enough surrounding context to pin down the intended occurrence, or set replace-all when the change genuinely applies to all of them. Both stay within Edit and cost almost nothing. Read plus Write is the last-resort fallback for when neither can disambiguate, not the standard response.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "This escalates on the first obstacle. Read plus Write loads the entire file into context and rewrites all of it to change one line, spending far more context than widening the anchor would, and the corpus reserves it for genuinely ambiguous cases.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+    },
+    {
+     "option": 2,
+     "text": "Restructuring source files to make a text search easier is a large change driven by a tool message. It alters the codebase to avoid learning the recovery path for an ordinary condition.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+    },
+    {
+     "option": 3,
+     "text": "Dropping to a shell substitution abandons the purpose-built editing tool for one that cannot verify what it matched, and line-anchored edits break the moment the file shifts by a line.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+    }
+   ]
+  },
+  {
+   "g": 54,
+   "block": 3,
+   "domain": "D3",
+   "stem": "A first draft of a new extraction module has four problems: the field order does not match the finance system's import format, one helper duplicates an existing utility, error handling swallows parse failures, and the module name does not follow the repository convention. Fixing the field order changes which helper is needed, and removing the duplicate helper changes where errors surface. How should the feedback be delivered?",
+   "options": [
+    "Two messages: the naming and duplication issues first as mechanical fixes, then the field order and error handling.",
+    "Four separate messages in dependency order, confirming each fix before raising the next.",
+    "One message carrying all four items, so the model can see the interactions before deciding on any single change.",
+    "One message with the field order only, since the other three follow from it once it is settled."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "The batching decision turns on whether the issues interact. Here three of the four are explicitly coupled — field order determines the helper, and the helper determines where errors surface — so a model told about them one at a time will make a choice for the first that it has to undo for the second. Presenting all constraints together lets it design one change that satisfies them all.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.7"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "The split puts the duplicated helper in the first message and the field order in the second, which reverses their dependency — the helper decision cannot be made correctly before the field order is known.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.7"
+    },
+    {
+     "option": 1,
+     "text": "Sequential feedback fits independent issues. With coupled ones it produces rework at each step, because every fix is made without knowledge of the constraint arriving next.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.7"
+    },
+    {
+     "option": 3,
+     "text": "Only the naming issue is genuinely independent, and it would be left unfixed. Assuming the other two resolve themselves from the field order leaves the swallowed parse failures to be discovered later.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.7"
+    }
+   ]
+  },
+  {
+   "g": 55,
+   "block": 3,
+   "domain": "D4",
+   "stem": "Records are produced through a tool call with a JSON schema and then checked by hand-written validators. An engineer proposes replacing the validators with typed models carrying field validators — enforcing that `net + tax == gross`, and that `due_date` is not earlier than `issue_date`. A colleague objects that the schema already validates the payload. Who is right?",
+   "options": [
+    "The colleague — the schema already rejects malformed payloads, so typed models duplicate a check that has already run.",
+    "The engineer — but only because typed models are faster than hand-written validators, not because they check anything new.",
+    "The colleague — cross-field rules belong in the extraction prompt as instructions rather than in a validation layer.",
+    "The engineer — the schema constrains types and structure, while cross-field rules like a sum matching or a date ordering can only be expressed in validation code."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "A JSON schema says what shape and type each field has. It cannot say that one field must equal the sum of two others, or that one date must not precede another, because those are relationships between fields rather than properties of any single one. Typed models with field validators encode exactly those rules and produce the specific, per-field error messages a retry loop can feed back to the model.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.8"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "This treats structural validation as complete validation. The schema has already passed every record where net, tax and gross are all well-formed decimals that happen not to add up — that record is exactly what the typed model is there to catch.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.8"
+    },
+    {
+     "option": 1,
+     "text": "The conclusion is right for the wrong reason. Performance is beside the point; typed models are worth adopting because they express constraints the schema cannot, and because their errors are specific enough to drive a correction.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.8"
+    },
+    {
+     "option": 2,
+     "text": "Prompt instructions make correctness the model's responsibility with no independent check. Cross-field rules stated in a prompt are followed most of the time, which is what a validation layer exists not to rely on.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.8"
+    }
+   ]
+  },
+  {
+   "g": 56,
+   "block": 3,
+   "domain": "D1",
+   "stem": "The daily batch contains four independent document types, each with its own extractor, and no type's output is an input to any other. The coordinator currently dispatches them one type at a time, waiting for each to complete. End-to-end time is roughly the sum of the four. What is the correct change?",
+   "options": [
+    "Merge the four extractors into one that handles all document types, removing three dispatch round-trips.",
+    "Keep the sequence but order the types so the largest runs first, improving the completion profile.",
+    "Dispatch all four extractors in a single coordinator response so they run in parallel, and assemble the results when they return.",
+    "Keep the sequence and raise the per-type concurrency inside each extractor instead."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "Independent subtasks should be dispatched together rather than serialised — issuing several spawn calls in a single coordinator response runs them concurrently, and wall-clock becomes the slowest type rather than the sum of all four. Nothing here creates a dependency between the types, so the sequencing is pure latency with no purpose.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.15"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Consolidating four specialised extractors into one trades their focus for a single component handling every document type, and it still processes the four workloads one after another inside itself. The round-trips were never the dominant cost.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.15"
+    },
+    {
+     "option": 1,
+     "text": "Reordering a sequence still takes the sum of its parts. It may change when partial results appear but does not remove the serialisation, which is the whole of the cost.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.15"
+    },
+    {
+     "option": 3,
+     "text": "Internal concurrency speeds up each type while the four still run back to back. It optimises inside the serialisation instead of removing it, and leaves three extractors idle at any moment.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.15"
+    }
+   ]
+  },
+  {
+   "g": 57,
+   "block": 3,
+   "domain": "D4",
+   "selectN": 2,
+   "stem": "The retry loop re-submits failed extractions with the validation error attached. Select TWO failure types where a retry can be expected to succeed.",
+   "options": [
+    "A record where the supplier reference was placed in the customer reference field and vice versa.",
+    "A record whose date was returned as `03/04/2026` where the schema requires an ISO date.",
+    "A record whose `purchase_order` field is null because the document does not carry a purchase order anywhere.",
+    "A record missing a delivery address because the scanned page containing it is illegible."
+   ],
+   "correct": [
+    0,
+    1
+   ],
+   "whyRight": {
+    "text": "Retries fix problems where the information is present and the rendering or placement is wrong. Two transposed fields and a date in the wrong format are both recoverable — the model has everything it needs and simply has to be told what was wrong. Feeding back the specific validation error is what turns the second attempt into a correction rather than a repeat.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.9"
+   },
+   "whyWrong": [
+    {
+     "option": 2,
+     "text": "A purchase order that does not appear on the document cannot be produced by re-reading it. The null is the correct answer, and pressing for a value invites a plausible fabrication instead of an honest absence.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.9"
+    },
+    {
+     "option": 3,
+     "text": "An illegible page contains no recoverable text, so no number of retries changes what is available to extract. This case needs a different route — re-scanning or human handling — not another attempt at the same input.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.9"
+    }
+   ]
+  },
+  {
+   "g": 58,
+   "block": 3,
+   "domain": "D3",
+   "stem": "The team must onboard a new document type — customs declarations — and nobody on the team has worked with them. They know roughly what the finance system needs but not which fields matter, how the type behaves at edge cases, or what usually goes wrong. How should they work with Claude Code on the extraction design?",
+   "options": [
+    "Generate several candidate designs and pick whichever produces the most fields.",
+    "Write three concrete input-and-output examples and iterate the prompt until it reproduces them.",
+    "Describe the goal in as much detail as possible and ask for a complete design in one pass.",
+    "Use the interview pattern: have Claude ask about the domain, the downstream use and the edge cases before proposing a design."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "The interview pattern is for unfamiliar domains, where the risk is not that the model misreads your intent but that you do not yet know what to specify. Having Claude ask the questions surfaces the considerations the team would otherwise omit — which is precisely their situation, since they cannot yet say which fields matter or how the type behaves at the edges.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.7"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Field count is not a quality measure — it rewards a design that extracts more, including fields nobody needs, while saying nothing about whether the ones that matter are handled correctly.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.7"
+    },
+    {
+     "option": 1,
+     "text": "Examples are the right technique when you know the exact transformation and the model keeps misinterpreting it. Here the team cannot author correct examples yet, because working out what a correct output contains is the open question.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.7"
+    },
+    {
+     "option": 2,
+     "text": "A detailed description of a domain the authors do not understand carries their gaps into the specification, and a one-pass design built on it inherits every omission without surfacing any of them.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.7"
+    }
+   ]
+  },
+  {
+   "g": 59,
+   "block": 3,
+   "domain": "D5",
+   "stem": "The nightly run processes around 3,000 documents in one long session. Twice this month it has failed near document 2,400 — once on an out-of-memory kill, once on a network fault — and both times the rerun started again from document 1. What should the pipeline do so a failure does not cost the completed work?",
+   "options": [
+    "Wrap the run in a retry that restarts the whole session automatically on failure, so no human has to notice and relaunch it.",
+    "Persist a structured state manifest as it goes — documents completed, records produced, documents failed and why — so a rerun resumes from the manifest instead of from the beginning.",
+    "Split the nightly run into thirty sessions of a hundred documents, so any single failure costs at most a hundred documents of work.",
+    "Raise the memory limit and add network retry logic, so the two observed failure causes stop occurring."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "The cost here is not that the run failed but that nothing recorded what it had already achieved. A structured state manifest written as work completes turns any interruption into a resumable checkpoint — the rerun reads what is already done and continues, and the record of which documents failed and why survives the crash rather than dying with the session.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.12"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Automatic restart removes the human delay and repeats the same 2,400 documents unattended. It makes the waste faster and less visible rather than preventing it.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.12"
+    },
+    {
+     "option": 2,
+     "text": "Smaller sessions bound the loss, which helps, but without persisted state the pipeline still cannot tell which of the thirty completed on a partial night. It reduces the blast radius while leaving recovery a guess.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.12"
+    },
+    {
+     "option": 3,
+     "text": "This addresses the two causes already seen and leaves the third unhandled. A run with no checkpoint loses everything to whatever fails next, so durability should not depend on having enumerated the failure modes.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.12"
+    }
+   ]
+  },
+  {
+   "g": 60,
+   "block": 3,
+   "domain": "D1",
+   "stem": "A supplier begins sending a document type the pipeline has no extractor for. The dispatcher currently routes it to the invoice extractor, which returns a well-formed record with several fields wrong. The finance system accepts it. What should the dispatcher do instead?",
+   "options": [
+    "Extract it with the invoice extractor and add a validation rule rejecting records whose field values look implausible.",
+    "Route it to the invoice extractor but mark every field with a low confidence score so downstream review is more likely to catch it.",
+    "Route it to whichever extractor scores the document's layout most similar to its own training examples.",
+    "Refuse the document, return a structured result naming the unrecognised type, and route it for human handling rather than producing a record."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "The pipeline has no capability for this type, and the damaging part is that its output is well-formed enough to be accepted. Naming the gap explicitly and routing the document to a human is the honest handling: it produces no false record, and it surfaces a missing capability instead of absorbing it as silent data corruption.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.10"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Plausibility rules catch the subset of errors that look wrong. A misread field carrying a plausible value from an unfamiliar layout passes, and the pipeline is still asserting a record it has no basis to produce.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.7"
+    },
+    {
+     "option": 1,
+     "text": "This produces the same wrong record and hopes review catches it. Confidence scores are poorly calibrated and reviewers see a sample, so most of these records still post — the gap is coverage, not scoring.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+    },
+    {
+     "option": 2,
+     "text": "Nearest-match routing guarantees some extractor is always chosen, including for types none of them handles. It makes the wrong-extractor outcome systematic rather than accidental.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.10"
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,533 @@
+{
+  "label": "Multi-Agent Research System",
+  "narrative": "A coordinator agent delegates to four specialised subagents: one runs literature and trial-registry searches, one reads full-text papers, one synthesises findings, and one drafts a cited evidence brief for a clinical review panel. Across this block the system is already in production — what follows are the failures that only surface once several agents are running together.",
+  "questions": [
+    {
+      "g": 1,
+      "block": 0,
+      "domain": "D1",
+      "stem": "A brief on non-pharmacological management of chronic pain comes back covering physiotherapy in depth and nothing else. The panel expected psychological, procedural and device-based approaches as well. The run logs show four subagents dispatched, fourteen searches executed, and every result accurate and well-sourced for the query it was given. Where does the failure sit?",
+      "options": [
+        "The search subagent's queries were too narrow in their keyword coverage for the request.",
+        "The synthesis subagent failed to detect that entire categories of evidence were missing.",
+        "The coordinator partitioned the research space too narrowly before it delegated anything.",
+        "The full-text subagent screened out non-physiotherapy papers during its relevance filtering."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "Task decomposition is the coordinator's most critical responsibility. When every subagent executes correctly but the output misses whole areas, the fault is upstream of all of them: the coordinator assigned the wrong ground. The corpus's canonical form of this is a request about creative industries decomposed into visual-art subtasks only.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.6"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "The stem rules this out — each subagent returned accurate results for the queries it was given. Query quality inside an assignment is a different failure from an assignment that never covered the ground.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.6"
+        },
+        {
+          "option": 1,
+          "text": "Gap detection is real and belongs to the coordinator's refinement loop, not the synthesis subagent. Even a perfect gap flag cannot recover evidence that was never searched for.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.8"
+        },
+        {
+          "option": 3,
+          "text": "Screening operates within the scope handed down to it. A filter that correctly rejects out-of-scope papers is behaving properly when the scope itself was drawn too tightly.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.6"
+        }
+      ]
+    },
+    {
+      "g": 2,
+      "block": 0,
+      "domain": "D1",
+      "stem": "The coordinator's prompt reads: \"Step 1, search the trial registry. Step 2, open the first eight results. Step 3, summarise each in 120 words.\" The briefs come back uniformly shallow, and when a registry search surfaces nothing useful the run still produces eight summaries of marginal trials rather than widening its search. What should change?",
+      "options": [
+        "Replace the numbered steps with the brief's goal and explicit quality criteria, letting the coordinator decide how to decompose.",
+        "Add a fourth step instructing the coordinator to discard marginal trials before summarising them.",
+        "Increase the number of search subagents so more registries are covered on every run.",
+        "Move the numbered steps into each subagent's system prompt rather than the coordinator's."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "Coordinator prompts should state research goals and quality criteria, not step-by-step procedure. A procedural script locks the system into behaviour that breaks the moment reality deviates from it — which is exactly what producing eight summaries of marginal trials demonstrates. Goal-oriented prompts let the coordinator adapt as findings emerge.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.4"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "Adding a step deepens the rigidity that caused the problem. Each new step is another instruction that assumes the previous step's results took a predictable shape.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.4"
+        },
+        {
+          "option": 2,
+          "text": "More agents executing a bad script produce more output from the same flawed procedure. The script is the defect, not the throughput.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.4"
+        },
+        {
+          "option": 3,
+          "text": "Relocating a procedural script does not make it adaptive; it distributes the same rigidity one level down and removes the coordinator's ability to adjust the plan at all.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.4"
+        }
+      ]
+    },
+    {
+      "g": 3,
+      "block": 0,
+      "domain": "D2",
+      "stem": "Two tools are available to the search subagent: `search_trial_registry` (\"Finds studies\") and `search_publication_index` (\"Finds published research\"). Both accept a free-text query string and both return title-and-abstract records. Logs from the past fortnight show registry lookups being routed to the publication index on roughly 40% of calls. What is the first thing to fix?",
+      "options": [
+        "Add a routing layer that inspects each query and pre-selects the tool before the call is made.",
+        "Merge both into a single `search_evidence` tool that queries both back-ends internally.",
+        "Add few-shot examples to the subagent prompt showing eight correctly routed queries.",
+        "Expand both descriptions with accepted inputs, example queries, and when each is preferred over the other."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "Tool descriptions are the primary input Claude uses to select a tool. Two near-identical one-line descriptions over similar input types give the model nothing to discriminate on. When misrouting occurs, check descriptions first — before adding classifiers or examples.",
+        "cite": "CCA-Prep_Domain-2_v2.md §2.2"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "A pre-routing classifier adds infrastructure that bypasses the model's own language understanding while leaving the underspecified descriptions in place. It treats the symptom.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.2"
+        },
+        {
+          "option": 1,
+          "text": "Consolidating into one tool loses the semantic precision that lets the model target the right back-end, and pushes the same routing decision inside the tool where the model cannot reason about it.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.2"
+        },
+        {
+          "option": 2,
+          "text": "Examples add token overhead without fixing the root cause. They can help at the margins for genuinely ambiguous cases, but here the descriptions themselves carry no distinguishing information.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.1"
+        }
+      ]
+    },
+    {
+      "g": 4,
+      "block": 0,
+      "domain": "D1",
+      "stem": "A panel request covers three independent questions: current first-line therapy, adverse-event rates, and cost-effectiveness. The coordinator issues one `Task` call, waits for it to return, then issues the next, and a full brief now takes about eleven minutes. All three questions need the same baseline patient-population context. Which approach uses the architecture correctly?",
+      "options": [
+        "Chain the three calls so each subagent receives the preceding subagent's findings as its input.",
+        "Emit all three `Task` calls in a single coordinator response, each carrying the shared population context.",
+        "Merge the three questions into one `Task` call so a single subagent sees the whole request at once.",
+        "Spawn the three calls across three separate coordinator turns to keep each subagent's context small."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "Multiple `Task` calls emitted in a single coordinator response execute in parallel. The three questions are independent, so there is nothing to gain from serialising them — and the shared population context is passed explicitly into each subagent prompt, since subagents inherit nothing automatically.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.15"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Chaining creates a dependency that does not exist. Adverse-event rates do not depend on the cost-effectiveness finding, so sequencing them only adds latency and lets one slow branch block the others.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.15"
+        },
+        {
+          "option": 2,
+          "text": "Collapsing three distinct questions into one subagent forfeits the separation of responsibilities that makes each investigation focused, and reintroduces the attention dilution that decomposition exists to avoid.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.6"
+        },
+        {
+          "option": 3,
+          "text": "Issuing `Task` calls across separate turns is precisely what makes them run sequentially. Parallelism requires them in one response — this option keeps the current behaviour and merely renames it.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.15"
+        }
+      ]
+    },
+    {
+      "g": 5,
+      "block": 0,
+      "domain": "D5",
+      "stem": "The brief's conflict section reports: \"One source states prevalence at 8%, another at 13% — contradiction.\" On inspection the two figures come from national surveys five years apart, and both are correct for their own period. Three such false conflicts appeared last month, and the panel has begun distrusting every conflict the system flags. What is the underlying problem?",
+      "options": [
+        "Subagent outputs carry no publication or collection date, so ordinary temporal change reads as disagreement.",
+        "The synthesis subagent should reconcile numeric differences internally instead of surfacing them to the panel.",
+        "Conflict detection belongs in the report subagent, which is the only component holding the full brief.",
+        "The two sources should have been ranked by credibility so the stronger figure could be reported alone."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "Without publication or data-collection dates in the structured output, temporal differences get misinterpreted as contradictions. The corpus's example is exactly this shape: a 2023 source saying 10% and a 2024 source saying 15% describe growth, not disagreement.",
+        "cite": "CCA-Prep_Domain-5_v2.md §5.11"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "Silently reconciling conflicts is the opposite of the required behaviour. Genuine conflicts must be preserved with attribution and passed up for a human or the coordinator to reconcile.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.10"
+        },
+        {
+          "option": 2,
+          "text": "Relocating the check does not supply the missing dates. Whichever component compares the two figures will draw the same false conclusion from undated inputs.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.11"
+        },
+        {
+          "option": 3,
+          "text": "Both sources are credible and both are accurate for their period; discarding one destroys real information. Ranking is not the mechanism for resolving an apparent conflict that dates would dissolve.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.10"
+        }
+      ]
+    },
+    {
+      "g": 6,
+      "block": 0,
+      "domain": "D1",
+      "selectN": 2,
+      "stem": "The full-text subagent times out on a publisher endpoint after retrying twice, having already parsed nine of the fourteen papers assigned to it. It returns `{\"status\": \"failed\"}` to the coordinator, which logs that string and abandons the entire run, discarding the nine parsed papers with it. Which two changes follow the structured error-propagation pattern? Select two.",
+      "options": [
+        "Return the failure type, the endpoint attempted, the nine parsed papers, and a suggested alternative source.",
+        "Have the coordinator treat any subagent failure as fatal, so no partial brief can reach the panel.",
+        "Let the subagent resolve transient timeouts locally and escalate only what it cannot resolve itself.",
+        "Have the subagent report success with an empty result set so the run continues without interruption.",
+        "Move all error handling into the report subagent, which assembles the final output for the panel."
+      ],
+      "correct": [
+        0,
+        2
+      ],
+      "whyRight": {
+        "text": "A failing subagent must return structured error context — failure type, what was attempted, partial results, and potential alternatives — so the coordinator can decide between retry, reroute, partial continuation and escalation. Transient failures should be handled at the subagent level first; only unresolvable errors propagate upward, and never as a bare status.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.9"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "Terminating the whole workflow for one subagent failure is explicitly forbidden. Nine parsed papers are real progress, and graceful degradation with coverage annotation is the sanctioned response.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.9"
+        },
+        {
+          "option": 3,
+          "text": "Reporting success while masking a failure is the worst available option: it converts an access failure into a false finding that no downstream component can detect.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+        },
+        {
+          "option": 4,
+          "text": "The report subagent sits at the end of the pipeline and has neither the failure context nor the authority to retry or reroute. Recovery decisions belong to the coordinator.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.9"
+        }
+      ]
+    },
+    {
+      "g": 7,
+      "block": 0,
+      "domain": "D1",
+      "stem": "The synthesis subagent returns a draft covering adult populations thoroughly and saying nothing about the paediatric subgroup the request named. Reviewing the run shows the searches that executed never targeted that subgroup, and the registry does hold paediatric trials for this indication. The coordinator now holds the draft. What should the architecture do at this point?",
+      "options": [
+        "Ship the draft with a note that paediatric evidence requires further research before the panel meets.",
+        "Grant the synthesis subagent search access so it can fill gaps it identifies in its own draft.",
+        "Have the coordinator evaluate the draft, re-delegate targeted paediatric queries, then re-invoke synthesis.",
+        "Re-run the pipeline from the beginning with the paediatric subgroup added to the original brief."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "The coordinator owns gap evaluation and loop termination. On finding a gap it re-delegates targeted queries to the search and analysis subagents, then re-invokes synthesis with the enriched findings, repeating until coverage is sufficient. Synthesis is not necessarily one-shot.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.8"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Coverage annotation is for gaps that cannot be recovered — sources genuinely unreachable. It is not a substitute for the refinement loop when re-delegation is available and the subgroup was simply never searched.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.8"
+        },
+        {
+          "option": 1,
+          "text": "Giving synthesis its own search capability breaks separation of responsibilities and least-privilege tooling. A synthesis agent with search access starts conducting open-ended research instead of synthesising.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.11"
+        },
+        {
+          "option": 3,
+          "text": "A full re-run discards the adult evidence already gathered correctly and pays for it again. Targeted re-delegation adds only the missing ground.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.8"
+        }
+      ]
+    },
+    {
+      "g": 8,
+      "block": 0,
+      "domain": "D2",
+      "stem": "The search subagent has accumulated nineteen tools as new evidence sources were integrated over two years. It now selects the wrong source tool on roughly one call in four. The document subagent, holding five tools, almost never misroutes. Both run the same model on similarly structured prompts. What should change first?",
+      "options": [
+        "Rewrite all nineteen descriptions with sharper boundaries and a worked example for each tool.",
+        "Cut the search subagent's tool set to the four or five sources its role actually requires.",
+        "Set `tool_choice` to `{\"type\": \"any\"}` so the subagent is forced to commit to a tool call.",
+        "Split the nineteen tools across two search subagents that the coordinator invokes in turn."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "Tool count itself degrades selection reliability by expanding the decision space the model must discriminate across on every turn. The corpus uses these very numbers — 18 tools versus 4–5 — and the contrast with the five-tool document subagent isolates count as the variable. Reduce the decision space first.",
+        "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Better descriptions help, but they do not remove the underlying problem: nineteen candidates on every turn means more overlap and more near-miss descriptions no matter how carefully each is written.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+        },
+        {
+          "option": 2,
+          "text": "`{\"type\": \"any\"}` guarantees that some tool is called; it does nothing to make the right one more likely. The failure here is selection among tools, not failure to call one.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+        },
+        {
+          "option": 3,
+          "text": "Splitting nineteen tools in half still leaves roughly ten per agent — above the reliable band — and the split is arbitrary rather than aligned to a role, which is what scoping is supposed to follow.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+        }
+      ]
+    },
+    {
+      "g": 9,
+      "block": 0,
+      "domain": "D1",
+      "stem": "The synthesis subagent's draft ignores three high-quality trials the search subagent surfaced earlier in the same run. The coordinator's own conversation history contains all three, complete with abstracts and effect sizes. The synthesis subagent's prompt instructs it to \"synthesise all findings gathered so far\" and says nothing further. What explains the omission?",
+      "options": [
+        "The synthesis subagent's context window filled before it reached the trial records in its input.",
+        "The phrase \"all findings gathered so far\" is too abstract for the model to act on reliably.",
+        "The search subagent returned the three trials after synthesis had already been invoked.",
+        "Subagents do not inherit the coordinator's history, so the trials were never in the synthesis prompt."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "Subagents have isolated context: they see only what the coordinator explicitly includes in their prompt, not the coordinator's conversation history. An instruction to synthesise \"all findings\" cannot reach data the subagent never received. The coordinator must pass prior subagent results into the synthesis prompt.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.2"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "A full context window would truncate or degrade across the input generally, not omit exactly the three records that live outside the prompt. Nothing in the stem indicates a size problem.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.2"
+        },
+        {
+          "option": 1,
+          "text": "Instruction vagueness is a real failure mode, but no rewording helps here — the referenced findings are absent from the subagent's context entirely.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.2"
+        },
+        {
+          "option": 2,
+          "text": "The stem places the search results earlier in the same run. A timing race would be a different defect, and it would not be fixed by anything in the synthesis prompt.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.2"
+        }
+      ]
+    },
+    {
+      "g": 10,
+      "block": 0,
+      "domain": "D5",
+      "stem": "Combined subagent output reaching the synthesis step runs to roughly 80,000 tokens per brief. Sampling of recent drafts shows they reliably reflect the opening sections and the closing conclusions, while findings positioned in the middle of that input are omitted or garbled. Which change addresses the cause?",
+      "options": [
+        "Rotate which subagent's output is placed first on each run so no agent sits in the middle every time.",
+        "Compress the combined input below 20,000 tokens before it reaches the synthesis step.",
+        "Lead with a key-findings summary and add explicit section headings throughout the input.",
+        "Insert an intermediate summarisation agent between the subagents and the synthesis step."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "This is the lost-in-the-middle pattern: reliable processing at the beginning and end of long input, degraded attention in the middle. The mitigation is to put critical information in the most reliably processed position and add section headings that help the model navigate mid-input content.",
+        "cite": "CCA-Prep_Domain-5_v2.md §5.2"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Rotation moves which findings get lost without changing how many do. The attention pattern is a property of position in long input, not of which agent produced the text.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.2"
+        },
+        {
+          "option": 1,
+          "text": "Aggressive compression to a quarter of the size risks discarding critical information outright — trading a retrieval problem for a data-loss problem.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.2"
+        },
+        {
+          "option": 3,
+          "text": "An intermediate agent adds latency and another point of failure. Where the volume itself is the issue, the sanctioned fix is having upstream agents emit structured key facts rather than verbose content.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.2"
+        }
+      ]
+    },
+    {
+      "g": 11,
+      "block": 0,
+      "domain": "D1",
+      "selectN": 3,
+      "stem": "While drafting, the synthesis subagent needs to confirm single facts — a dosage figure, a sample size — dozens of times per brief. Routing each check through the coordinator adds a full round-trip and is now the slowest part of the run, so the team proposes giving it broad search access. Which three statements are correct? Select three.",
+      "options": [
+        "A narrowly scoped `verify_fact` tool serves the high-frequency need without granting open research capability.",
+        "Broad search access invites the synthesis subagent to conduct open-ended research instead of synthesising.",
+        "Complex research questions should still route back through the coordinator to the research subagents.",
+        "Per-subagent tool restrictions exist mainly to reduce the token cost of the tool definitions.",
+        "Every subagent should hold the full catalogue so any agent can recover from another agent's failure.",
+        "Routing all fact checks through the coordinator is correct regardless of how frequent they are."
+      ],
+      "correct": [
+        0,
+        1,
+        2
+      ],
+      "whyRight": {
+        "text": "Strict role scoping has one sanctioned exception: a high-frequency need that would otherwise force constant coordinator round-trips justifies a narrowly scoped cross-role tool, while complex cases still route through the coordinator. Broad access produces exactly the cross-specialisation misuse the scoping exists to prevent.",
+        "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+      },
+      "whyWrong": [
+        {
+          "option": 3,
+          "text": "Tool restrictions are the mechanism for separation of responsibilities and least privilege. Token cost of definitions is incidental; the reason is behavioural containment.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.11"
+        },
+        {
+          "option": 4,
+          "text": "Giving every agent the full catalogue \"for flexibility\" is named as an anti-pattern — agents with tools outside their specialisation tend to misuse them.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+        },
+        {
+          "option": 5,
+          "text": "Correct scoping, wrong conclusion. The round-trip overhead on a high-frequency need is exactly the situation scoped cross-role tools exist to relieve.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+        }
+      ]
+    },
+    {
+      "g": 12,
+      "block": 0,
+      "domain": "D2",
+      "stem": "A registry query for trials in a rare indication legitimately returns no matches, which is itself a useful finding for the brief. The tool reports that outcome as `isError: true`. The coordinator responds by retrying the identical query twice and then escalating the whole run as blocked. What is the correct signal for this outcome?",
+      "options": [
+        "Success with an empty result set, so the coordinator can record \"no trials found\" as a genuine finding.",
+        "`isError: true` with `isRetryable: false`, so the coordinator stops retrying immediately.",
+        "`isError: true` with a business-rule category, since no data was returned to the caller.",
+        "Success with a warning field set, so the coordinator can judge whether the absence matters."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "An empty result is a successful query with no matches — not an error. Signalling it as success with an empty result set lets the agent confidently report \"no trials found\". Conflating the two makes the agent retry or escalate a query that worked perfectly.",
+        "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "This stops the retry loop but keeps the false premise that something failed. The coordinator still cannot distinguish \"the registry has no such trials\" from \"the registry could not be reached\".",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+        },
+        {
+          "option": 2,
+          "text": "Business-rule errors describe an action the policy disallows, such as a refund outside its window. A query returning zero rows violates no rule — it answers the question.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+        },
+        {
+          "option": 3,
+          "text": "The result is unremarkable, not anomalous. Dressing a valid empty answer as a warning invites the same over-reaction in a quieter form.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+        }
+      ]
+    },
+    {
+      "g": 13,
+      "block": 0,
+      "domain": "D1",
+      "stem": "Of the five evidence categories the brief requires, two came back empty because their sources were unreachable for the whole run and the retry budget is exhausted. The synthesis subagent holds usable material for the other three categories, and the review panel sits in an hour. What should it produce?",
+      "options": [
+        "An error to the coordinator, on the grounds that two required inputs are missing.",
+        "A complete synthesis over the three available categories, annotated to mark where evidence is absent.",
+        "A synthesis over the three categories, presented without reference to the two that are missing.",
+        "A held draft, pending the coordinator retrying the unreachable sources until they respond."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "Graceful degradation: complete the synthesis on available data, annotate coverage to mark which conclusions are well-supported and where gaps exist, and propagate that uncertainty upward. The panel gets usable analysis and an honest account of its limits.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.10"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Returning an error because input is incomplete discards three categories of correctly gathered evidence and leaves the panel with nothing.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.10"
+        },
+        {
+          "option": 2,
+          "text": "Proceeding without noting the gaps is the more dangerous failure: the panel reads a partial brief as a complete one, with no signal that two categories were never covered.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.10"
+        },
+        {
+          "option": 3,
+          "text": "The sources were unreachable for the entire run, so this is an unrecoverable gap rather than a transient one — and blocking indefinitely against a fixed deadline guarantees no output at all.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.9"
+        }
+      ]
+    },
+    {
+      "g": 14,
+      "block": 0,
+      "domain": "D5",
+      "selectN": 2,
+      "stem": "A six-hour brief run crashes with the search and document subagents complete and synthesis half-finished. Restarting re-executes everything from the beginning, including the ninety searches that already succeeded, and the team has now lost two afternoons this way. Which two changes let the coordinator resume from where it stopped? Select two.",
+      "options": [
+        "Each subagent exports its status, findings, coverage and gaps to a known location as it works.",
+        "The coordinator reads a manifest of subagent states on restart and injects completed findings into prompts.",
+        "Each subagent holds its findings in its own context window until the coordinator asks for them.",
+        "The coordinator relies on the conversation history surviving the crash and continues from that point.",
+        "The run is split into six one-hour runs so that any single crash destroys proportionally less work."
+      ],
+      "correct": [
+        0,
+        1
+      ],
+      "whyRight": {
+        "text": "Structured state persistence: each agent exports its state to a known location, and the coordinator loads a manifest on resume, injecting persisted findings into agent prompts and continuing from the checkpoint rather than re-running the full investigation.",
+        "cite": "CCA-Prep_Domain-5_v2.md §5.12"
+      },
+      "whyWrong": [
+        {
+          "option": 2,
+          "text": "Findings held only in a subagent's context window fill that window and survive nothing. A crash destroys them exactly as it destroys everything else in memory.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.12"
+        },
+        {
+          "option": 3,
+          "text": "The API is stateless and an interrupted session's context is gone. There is no conversation history to rely on after the process dies.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.1"
+        },
+        {
+          "option": 4,
+          "text": "Chopping the run into smaller pieces reduces the blast radius without creating any resume capability — each piece still restarts from zero, and the work is not checkpointed.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.12"
+        }
+      ]
+    },
+    {
+      "g": 15,
+      "block": 0,
+      "domain": "D2",
+      "stem": "Your evidence sources are exposed to the agent as an MCP resource listing every available registry, its coverage window and its field schema. A teammate reviewing the design argues this should have been a `list_sources` tool instead, since the agent could then request only the registries it needs. Which statement correctly distinguishes the two?",
+      "options": [
+        "A tool is read on demand as context, whereas a resource has to be invoked by the model.",
+        "Resources and tools are interchangeable here; the choice affects only how the server is documented.",
+        "A resource can accept parameters and filter its output, which a tool is unable to do.",
+        "A resource is read as context without the model choosing to call it; a tool requires the model to invoke it."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "Resources expose content catalogs the agent reads as context, giving it an immediate map of what data exists. A tool adds an LLM call and depends on the agent remembering to invoke it first — which is the failure mode a catalog is meant to remove.",
+        "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "This states the distinction backwards. Tools are the primitive the model invokes; resources are read-only data made available to it.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+        },
+        {
+          "option": 1,
+          "text": "The two primitives behave differently at runtime: one is available as context, the other costs a model decision and a call. That difference is the whole reason to prefer a resource for a catalog.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+        },
+        {
+          "option": 2,
+          "text": "Parameterised, filtered access describes a tool, not a resource. Resources are read-only data exposed for the agent to consult.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+        }
+      ]
+    }
+  ]
+}

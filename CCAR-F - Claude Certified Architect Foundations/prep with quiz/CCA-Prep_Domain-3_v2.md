@@ -42,7 +42,17 @@ Project overview: @README.md
 Rules for `@path`:
 - `@` immediately before the path (no space); relative and absolute paths supported
 - Relative paths resolve relative to the file containing the import
-- Maximum import nesting depth is **5**
+- Maximum import nesting depth is **5** per the community study guide — see the currency note below
+
+> **⚠ Currency note — import depth is contested, do not key a question on it** (added 2026-08-11)
+>
+> - **This corpus / `source/guide_en.md` line 589:** "Maximum import nesting depth is 5."
+> - **Current product docs (verbatim):** "Imported files can recursively import other files, with a maximum depth of **four hops**." Source: https://code.claude.com/docs/en/memory (re-retrieved 2026-08-11; already recorded in `CURRENT-DOCS-DELTA_v1.md` §"D4 — CLAUDE.md hierarchy semantics" on 2026-08-09).
+> - **Official Exam Guide v1.0:** silent. Task Statement 3.1 names "the `@import` syntax for referencing external files" and the Appendix names "`@import` patterns"; neither states any depth number. Verified against `source/CCA-F-Official-Exam-Guide_v1.0_text.txt`.
+>
+> **Generator rule:** treat this the same way as a `[CONFLICT-RISK]` delta item. Never write a question whose correct answer turns on the digit, and never write a distractor that is wrong only because it says 4 instead of 5. Exam 4 Q22 did key on it (see `EXAM-LOG.md` line 332) and should not be repeated.
+>
+> **Learner posture:** if a question does turn on it, answer **5**, because the paper is scored against its own guide. What is stable and testable here is the syntax: `@` immediately before the path with no space, relative and absolute paths both work, and a relative path resolves against the file containing the import rather than the working directory.
 
 Use `@import` to selectively include only the standards files relevant to each package — e.g., each package's CLAUDE.md imports the standards files its maintainers know apply to that package, instead of every package loading one giant global file.
 

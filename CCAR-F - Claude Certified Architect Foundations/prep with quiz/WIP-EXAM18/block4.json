@@ -1,0 +1,514 @@
+{
+ "label": "Structured Data Extraction",
+ "narrative": "A second pipeline extracts structured records from insurance claim packs — a claim form, an adjuster's narrative, repair quotes and correspondence, arriving together as one multi-page bundle. Records feed a claims system, and a small team reviews a portion before payment is authorised. The questions below follow this pipeline as it is tuned.",
+ "questions": [
+  {
+   "g": 46,
+   "block": 3,
+   "domain": "D4",
+   "stem": "One prompt currently asks the model to identify each document in the bundle, extract the fields belonging to each, reconcile the repair quotes against the adjuster's narrative, and produce a settlement recommendation. Output quality is poor and the failures are hard to attribute to any one part. What is the correct restructuring?",
+   "options": [
+    "Keep the single prompt and require the model to work through the four tasks in order, showing its intermediate results.",
+    "Chain the work into stages — classify, extract, reconcile, recommend — with each stage taking the previous stage's output as its input.",
+    "Keep the single prompt and add examples showing complete bundles alongside their finished records.",
+    "Split into four prompts run independently over the same bundle, then merge the four outputs."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "Four dependent tasks in one prompt compete for attention and produce failures nobody can localise. Chaining gives each stage a single job and a defined input, so the reconciliation works from an extraction that has already been validated and any failure is attributable to the stage that produced it. The dependency between the stages is real, which is what makes a chain rather than four parallel prompts the right shape.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.14"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Asking for ordered intermediate results inside one call makes the reasoning visible without giving any stage its own attention budget or its own validation point. The four tasks still share one pass.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.14"
+    },
+    {
+     "option": 2,
+     "text": "Examples help a model reproduce a transformation it is misinterpreting. They do not relieve the load of doing four dependent jobs in one pass, and a whole-bundle example is large enough to crowd the input further.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.14"
+    },
+    {
+     "option": 3,
+     "text": "Independent prompts discard the dependency: reconciliation needs the extraction's output, and a recommendation needs the reconciliation. Running them in parallel means three of the four work from the raw bundle rather than from what came before.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.14"
+    }
+   ]
+  },
+  {
+   "g": 47,
+   "block": 3,
+   "domain": "D5",
+   "stem": "Two reviewers can check about 120 records a day against a daily volume of roughly 1,400. The current policy gives each reviewer an equal share drawn at random across the whole day's output. Errors are still reaching the claims system, and post-hoc analysis shows most of them sat in records the model handled with visible uncertainty. How should the capacity be directed?",
+   "options": [
+    "Keep the even random draw but double it by adding a third reviewer, so more of the day's volume is seen.",
+    "Direct most of the capacity at the highest-uncertainty records, where a reviewer's judgement changes the outcome, while keeping a smaller random draw across the rest.",
+    "Direct all capacity at the highest-uncertainty records, since reviewing anything the model handled confidently is wasted effort.",
+    "Direct the capacity at the highest-value claims by settlement amount, since those carry the largest financial exposure."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "Limited review capacity should go where human judgement adds most, and an even random draw spends most of it confirming records the model handled well. Concentrating on the uncertain ones matches effort to value. The smaller random draw across the rest is what keeps a novel error pattern in the confident population detectable, so the concentration does not create a blind spot.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "More reviewers on the same even policy raise coverage from roughly 9% to 13% while still spreading effort across records that mostly do not need it. It buys capacity rather than directing it.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+    },
+    {
+     "option": 2,
+     "text": "Reviewing only the uncertain records leaves the automated population entirely unexamined, which is how a confident systematic error runs undetected. The corpus keeps a stratified sample of the high-confidence set for exactly that reason.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+    },
+    {
+     "option": 3,
+     "text": "Settlement value measures the cost of an error, not its likelihood, and the analysis located the errors in the uncertain records rather than the large ones. Value is a reasonable tiebreak within the uncertain set, not a replacement for uncertainty.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+    }
+   ]
+  },
+  {
+   "g": 48,
+   "block": 3,
+   "domain": "D1",
+   "stem": "A summarisation agent condenses each claim pack into a paragraph for the reviewer. The paragraphs read well and reviewers cannot tell which document any statement came from, so they open the whole bundle anyway. The agent receives the extracted content as one concatenated block. What is the fix?",
+   "options": [
+    "Instruct the summarisation agent to mention the source document whenever it makes a statement.",
+    "Have the reviewer's interface link the summary to the bundle so any statement can be traced by opening the pack.",
+    "Pass the content as structured items, each bound to its source document and page, and require the summary to carry those bindings through.",
+    "Have the summarisation agent produce one paragraph per source document rather than one per claim."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "Attribution is lost at the point the content is concatenated, before the summarising agent sees anything — it cannot name a source it was never given. Passing structured items that keep each piece of content bound to its origin, and requiring the summary to preserve those bindings, is what makes traceable output possible at all.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.5"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "The agent has no source information to mention. Instructing it to cite what it does not hold invites it to guess which document a statement came from, which is worse than the current silence.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.5"
+    },
+    {
+     "option": 1,
+     "text": "Linking the summary to the whole bundle returns the reviewer to the situation they are already in — opening the pack and searching it. Per-statement attribution is what saves the work.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.5"
+    },
+    {
+     "option": 3,
+     "text": "Splitting by document recovers coarse attribution and gives up the cross-document reconciliation that makes the summary useful. It also still discards the page-level binding within each document.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.5"
+    }
+   ]
+  },
+  {
+   "g": 49,
+   "block": 3,
+   "domain": "D4",
+   "stem": "A settlement figure must be derived: sum the approved repair quotes, subtract the policy excess, apply the depreciation percentage for the item's age band, then cap at the policy limit. The model returns figures that are plausible and frequently wrong, with no way to see where the derivation went astray. What should the prompt require?",
+   "options": [
+    "That the model produce three independent derivations and return the figure that appears most often.",
+    "That the model state its confidence in the final figure so low-confidence derivations can be routed to a reviewer.",
+    "That the model work through the calculation step by step, showing each intermediate figure before stating the final one.",
+    "That the model return only the final figure, so intermediate reasoning cannot introduce errors of its own."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "A four-step derivation with a dependency at every step is the case for explicit step-by-step reasoning. Showing each intermediate figure improves the arithmetic itself and makes the result auditable — a wrong answer can be traced to the step that produced it, which is precisely what a bare figure denies anyone.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.2"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Three opaque derivations can agree on the same wrong figure, particularly when they share a misreading of the depreciation band. It triples the cost for a vote among correlated attempts.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.2"
+    },
+    {
+     "option": 1,
+     "text": "A confidence score on an opaque figure routes some errors to a reviewer who still cannot see the derivation. It manages the symptom and leaves the reasoning as unimprovable as before.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.2"
+    },
+    {
+     "option": 3,
+     "text": "This suppresses the reasoning rather than the errors. The derivation still happens; it simply becomes invisible, which removes both the accuracy benefit and any hope of diagnosis.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.2"
+    }
+   ]
+  },
+  {
+   "g": 50,
+   "block": 3,
+   "domain": "D2",
+   "selectN": 2,
+   "stem": "The extraction tool's input schema is being revised. `claim_type` is currently a free-text string and arrives with a dozen spellings of the same four categories, and reviewers cannot tell what `adjuster_ref` is meant to hold. Select TWO schema changes that follow the corpus.",
+   "options": [
+    "Constrain `claim_type` to an enum of the four permitted values, so the controlled vocabulary is expressed in the schema rather than hoped for.",
+    "Give every parameter its own description stating what it holds and where in the pack it is found.",
+    "Change `claim_type` to an integer code, with the mapping documented in the system prompt.",
+    "Mark every parameter required, so the model cannot omit one and leave a consumer guessing."
+   ],
+   "correct": [
+    0,
+    1
+   ],
+   "whyRight": {
+    "text": "Both changes put the contract in the schema, which is the only part of it the model reliably sees. An enum makes the four categories the permitted values rather than a convention the model may or may not follow, and a per-parameter description tells the model what each field means at the point it is filling it in — which is what `adjuster_ref` is currently missing.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.1"
+   },
+   "whyWrong": [
+    {
+     "option": 2,
+     "text": "An integer code moves the meaning out of the schema and into a prompt table that can drift from it. The model now has to remember a mapping instead of choosing among named values, and every consumer needs the table too.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.1"
+    },
+    {
+     "option": 3,
+     "text": "Marking everything required pressures the model to supply values for fields the pack does not contain, producing plausible fabrications. Fields that may legitimately be absent should be nullable.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.5"
+    }
+   ]
+  },
+  {
+   "g": 51,
+   "block": 3,
+   "domain": "D1",
+   "stem": "The pipeline should hand a claim to a human when it cannot safely proceed. The current rule escalates whenever the model reports low confidence, and the escalation queue is full of straightforward claims while several genuinely unusual ones were processed automatically. What should trigger escalation instead?",
+   "options": [
+    "Structural conditions: a document type the pipeline has no extractor for, a mandatory field absent from the pack, a policy rule with no matching procedure, or a validation conflict that a retry did not resolve.",
+    "The number of pages in the bundle, since larger packs are more likely to contain something the pipeline cannot handle.",
+    "The extracted settlement figure exceeding a fixed monetary threshold, since exposure is what makes human judgement worthwhile.",
+    "A second model reviewing each record and escalating whenever it disagrees with the first."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "Escalation should key on observable properties of the case rather than on the model's report of its own uncertainty, which is poorly calibrated in both directions — hence a queue of easy claims alongside unusual ones that went through. An unsupported document type, a missing mandatory field, an unmatched policy rule and an unresolved conflict are all facts about the claim that can be checked.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.12"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "Page count is a proxy for complexity in the same way turn count is — loosely, and with obvious counterexamples. A long pack of standard forms is easy; a short one with an unsupported document type is not.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.12"
+    },
+    {
+     "option": 2,
+     "text": "A monetary threshold measures the cost of being wrong, not whether the pipeline can handle the claim. It escalates every large routine claim and lets every small unusual one through.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.12"
+    },
+    {
+     "option": 3,
+     "text": "A second model is a useful check and is not an escalation criterion. Two models sharing a blind spot agree, and disagreement on stylistic differences would flood the queue with records that need no human at all.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.12"
+    }
+   ]
+  },
+  {
+   "g": 52,
+   "block": 3,
+   "domain": "D5",
+   "stem": "The reviewer-facing output presents everything as flowing prose: the adjuster's account, the list of quoted repair items with amounts, and the three policy clauses that bear on the claim. Reviewers say the quotes are hard to check and they keep re-reading to find the clause wording. What should change?",
+   "options": [
+    "Keep the prose and add a summary line at the top stating the total quoted amount and the clause numbers.",
+    "Render everything as a structured list, since consistent formatting is easier to scan than mixed forms.",
+    "Render each content type in the form that suits it — the narrative as prose, the quoted items and amounts as a table, the policy clauses as a structured list.",
+    "Keep the prose and shorten it, since the difficulty comes from the volume rather than the form."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "Different content types are read differently. Amounts against line items are compared column-wise, which is what a table supports and prose actively obstructs; clause wording is looked up, which suits a structured list; a narrative reads as prose. Flattening all three into one form degrades the two that do not fit it, which is exactly the complaint.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.11"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A summary line gives the total without making the individual quoted items checkable, and clause numbers without wording still send the reviewer back into the prose to read them.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.11"
+    },
+    {
+     "option": 1,
+     "text": "Uniformity is the problem in a different direction. A narrative account broken into list items loses its connective reasoning, so this fixes two content types by damaging the third.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.11"
+    },
+    {
+     "option": 3,
+     "text": "Shortening a table's worth of amounts embedded in prose loses information rather than presenting it better. The reviewers' difficulty is with the form, and less of the wrong form is still the wrong form.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.11"
+    }
+   ]
+  },
+  {
+   "g": 53,
+   "block": 3,
+   "domain": "D2",
+   "stem": "A repair quote occasionally arrives as a scanned image the parser cannot read. Today the parser tool raises, the extraction subagent catches it and returns a record with the quote fields blank, and the coordinator posts the claim with a lower settlement. Where should this failure be handled?",
+   "options": [
+    "In the parser tool, which should return its best guess from the surrounding text rather than raising at all.",
+    "At the coordinator, which needs a structured unreadable-document error from the subagent so it can decide between re-scanning, routing to a human, or proceeding with an annotated gap.",
+    "In the extraction subagent, which should retry the parse with different settings until it succeeds or the retry budget is exhausted.",
+    "In the claims system, which should reject any record whose quote fields are blank and return it to the pipeline."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "The subagent is currently absorbing a failure and returning a record that looks complete, so the one component able to choose between the available recoveries never learns anything went wrong. Handling belongs where the recovery options are known — the coordinator can re-scan, route to a human, or annotate the gap, and it needs a structured error naming the unreadable document to do any of them.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A tool inferring quote amounts from surrounding text manufactures financial data from context. That is a worse outcome than a reported failure, because nothing downstream marks the figure as invented.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+    },
+    {
+     "option": 2,
+     "text": "Retrying a parse against an image the parser cannot read repeats a call that will fail identically. It also keeps the failure inside the subagent, so the coordinator still ends up with a silently incomplete record.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+    },
+    {
+     "option": 3,
+     "text": "Detecting the gap at the far end of the pipeline discards the context needed to act on it — which document, which page, why. It also depends on the consuming system implementing a check for the pipeline's failures.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+    }
+   ]
+  },
+  {
+   "g": 54,
+   "block": 3,
+   "domain": "D4",
+   "stem": "A claim pack states a repair total in the narrative that does not match the sum of the attached quotes, and the pack gives no indication which is authoritative. The pipeline runs unattended overnight. How should the extraction step handle the discrepancy?",
+   "options": [
+    "Record both figures with their sources, state explicitly which one it used and why, and flag the record for review.",
+    "Stop and ask which figure to use, holding the record until an answer arrives the next morning.",
+    "Use the sum of the quotes without comment, since the itemised figures are the more granular evidence.",
+    "Average the two figures, since neither source has been established as authoritative."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "An unattended pipeline cannot stop for a question, so the right behaviour is to proceed on a stated assumption rather than either guessing silently or blocking. Recording both figures with their sources, naming the one used and the reason, and flagging the record gives a reviewer everything needed to confirm or overturn the choice in seconds.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.19"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "Blocking an overnight batch on a question nobody is awake to answer stalls the run for a discrepancy that is recoverable in the morning either way. Asking is right when someone is there to ask.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.19"
+    },
+    {
+     "option": 2,
+     "text": "The choice may well be right and it is made silently, so no reviewer learns the narrative disagreed. A defensible assumption stated is useful; the same assumption hidden is indistinguishable from not having noticed.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.19"
+    },
+    {
+     "option": 3,
+     "text": "An average is a figure neither source reported, entered into a claims system as though it were evidenced. It resolves the disagreement by manufacturing a third answer with no provenance.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.10"
+    }
+   ]
+  },
+  {
+   "g": 55,
+   "block": 3,
+   "domain": "D5",
+   "stem": "The harder claims are handled in a multi-turn session with a reviewer, and history is summarised every few turns to control length. Towards the end of these sessions the agent begins restating the policy number with a transposed digit and rounding the excess to the nearest ten pounds. What should be done?",
+   "options": [
+    "Move to a longer context window so the history does not need summarising at all.",
+    "Summarise less often, so fewer passes are made over the same content.",
+    "Instruct the summariser to preserve all numbers exactly when it rewrites the history.",
+    "Hold the policy number, the excess, the claim reference and the key dates verbatim in a persistent facts block that sits outside the summarised history."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "Repeated summarisation degrades precisely the content type it handles worst — exact identifiers, amounts and dates — and each pass compounds the previous one's loss. Keeping those values verbatim in a persistent block outside the summarised text means they are never rewritten, so the summarisation can continue to do its job on the prose without touching the transactional facts.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.4"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A larger window delays the need to summarise and leaves the identifiers buried deep in a long history, where position effects make them harder to retrieve accurately.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.4"
+    },
+    {
+     "option": 1,
+     "text": "Fewer passes slow the degradation without stopping it, and a long session still accumulates enough passes to transpose a digit. It buys time rather than protecting the values.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.4"
+    },
+    {
+     "option": 2,
+     "text": "An instruction to preserve numbers is a probabilistic control applied on every pass, and it is the pass itself that introduces the risk. Removing the values from the rewritten text is stronger than asking for them to be rewritten faithfully.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.4"
+    }
+   ]
+  },
+  {
+   "g": 56,
+   "block": 3,
+   "domain": "D2",
+   "stem": "An engineer must find every place the settlement calculation is invoked. A search for `calculateSettlement` returns its definition and two call sites, but the team knows it is used far more widely — most callers go through thin wrapper functions in a helpers module. What is the right approach?",
+   "options": [
+    "Search for the wrapper names as well, tracing outward one layer at a time from the definition until no new callers appear.",
+    "Read every file in the claims package, since a search cannot follow calls through an indirection layer.",
+    "Search for a distinctive string in the calculation's output format, since callers will handle that format.",
+    "Use a path-pattern search for files whose names suggest settlement handling, then read those."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "Content search finds the identifier it is given, so an indirection layer hides callers behind a different name. The documented approach is to trace outward incrementally: find the wrappers that call the function, then find what calls the wrappers, repeating until the search stops returning anything new. Each pass is cheap and the set closes.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "Reading a whole package to find call sites loads a large volume of irrelevant content and is the context-budget failure the corpus warns against. Search does follow indirection perfectly well when it is run once per layer.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+    },
+    {
+     "option": 2,
+     "text": "Callers of a wrapper need not touch the output format at all, and any that do would be found by an incomplete and accidental criterion. It substitutes a proxy for the call graph.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+    },
+    {
+     "option": 3,
+     "text": "Path-pattern matching finds files named after settlement handling, and a caller in an unrelated module with an unrelated filename is exactly the case being missed.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+    }
+   ]
+  },
+  {
+   "g": 57,
+   "block": 3,
+   "domain": "D5",
+   "selectN": 2,
+   "stem": "The claim form gives a date of loss of 12 March and the adjuster's narrative gives 14 March. Both documents are part of the same pack, both are legitimate sources, and the policy's waiting period makes the two dates lead to different settlement outcomes. Select TWO things the extraction output should do.",
+   "options": [
+    "Carry both dates, each bound to the document it came from, rather than resolving to one.",
+    "Record the date each document was completed, so a reviewer can tell a genuine disagreement from a later correction.",
+    "Take the adjuster's date, since the adjuster inspected the loss and the claimant did not.",
+    "Take the claim form's date, since it is the primary document in the pack."
+   ],
+   "correct": [
+    0,
+    1
+   ],
+   "whyRight": {
+    "text": "Two credible sources disagreeing is information, and picking one destroys it. Keeping both bound to their documents lets the reviewer see the conflict, and recording when each document was completed is what makes it interpretable — an adjuster's later narrative may be correcting the form rather than contradicting it, and without the dates that distinction is invisible.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.10"
+   },
+   "whyWrong": [
+    {
+     "option": 2,
+     "text": "This is a plausible heuristic applied silently. It may often be right and it discards a credible source without recording that a choice was made, so nothing downstream can revisit it.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.10"
+    },
+    {
+     "option": 3,
+     "text": "Document precedence is another arbitrary tie-break, and it points the opposite way to the previous one — which is the tell that neither is grounded in the evidence. The conflict should be surfaced, not resolved by rank.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.10"
+    }
+   ]
+  },
+  {
+   "g": 58,
+   "block": 3,
+   "domain": "D3",
+   "stem": "The pipeline repository's `CLAUDE.md` opens with three paragraphs on the project's history, then covers the schema conventions, then returns to background on the claims domain, then states the testing requirement. Engineers report Claude frequently misses the testing requirement. What is the most likely problem?",
+   "options": [
+    "The requirement is stated once and needs to be stated several times through the file to carry sufficient weight.",
+    "The file is too long, and reducing its total length will make every instruction more likely to be followed.",
+    "The testing requirement should be repeated in each subdirectory's own `CLAUDE.md` so it is closer to the code.",
+    "The file mixes narrative background with operative instructions and buries a requirement at the end, so what must be followed is not distinguishable from what is merely context."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "CLAUDE.md is read as instructions, and its organisation determines what is actually followed. Interleaving project history with operative rules leaves the model no signal about which paragraphs are binding, and a requirement placed last competes with everything before it. Separating background from instructions and putting the operative rules where they are prominent is the corpus's guidance.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.11"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Repetition adds bulk to a file whose problem is that instructions are indistinguishable from background. It also sets a convention where every important rule must be stated several times to count.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.11"
+    },
+    {
+     "option": 1,
+     "text": "Length is a symptom of the narrative content rather than the cause, and a shorter file with the same interleaving would bury the requirement just as effectively. Cutting words without separating kinds of content does not fix which are followed.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.11"
+    },
+    {
+     "option": 2,
+     "text": "Copying a project-wide requirement into every subdirectory creates duplicates that drift apart and does nothing about the file where the problem actually is. The requirement is universal, so it belongs in one place.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.11"
+    }
+   ]
+  },
+  {
+   "g": 59,
+   "block": 3,
+   "domain": "D1",
+   "stem": "Claims the pipeline cannot complete are handed to a specialist with a note reading `manual review required: extraction incomplete`. Specialists have no access to the pipeline's working context, so they open the pack and start over, averaging nineteen minutes per handoff. What should the handoff carry?",
+   "options": [
+    "A link to the pipeline's run log, so the specialist can see everything the pipeline did.",
+    "A self-contained payload: the claim reference, which fields were extracted and which were not, the reason the pipeline stopped, what it had already established, and a recommended next action.",
+    "The full extracted record with the unresolved fields left blank, so the specialist can see the shape of what is missing.",
+    "A shorter note plus a service-level target, so handoffs are picked up faster and the queue does not build."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "The person receiving a handoff has none of the pipeline's context, so the payload is the whole of what they see and it must stand alone. Naming the claim, what was and was not extracted, why the pipeline stopped, what it had already established and what it recommends means the specialist starts from the pipeline's position rather than from the raw pack.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.13"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A run log makes the specialist reconstruct the state from a trace, which is slower than reading a summary and demands they interpret the pipeline's internals. Handoffs deliver conclusions, not evidence to be re-derived.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.13"
+    },
+    {
+     "option": 2,
+     "text": "Blank fields show what is missing and not why, what was attempted, or what the pipeline had already established. The specialist can see the shape of the gap and still has to rebuild everything around it.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.13"
+    },
+    {
+     "option": 3,
+     "text": "A response-time target changes how quickly the nineteen minutes start. The handoff still contains nothing, so the work of reconstructing the case is unchanged.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.13"
+    }
+   ]
+  },
+  {
+   "g": 60,
+   "block": 3,
+   "domain": "D4",
+   "stem": "Three rules must hold on every extraction call: monetary values are returned in minor units, dates in ISO format, and a field absent from the pack is returned as null rather than inferred. They are currently appended to each per-document user message, and compliance is inconsistent across a long run. Where do they belong?",
+   "options": [
+    "In a validation layer only, so the constraints are enforced after generation rather than requested before it.",
+    "In the tool's JSON schema description, since that is what the model reads when filling in the fields.",
+    "Repeated at both the start and end of each user message, so they are positioned where attention is strongest.",
+    "In the system prompt, since they are persistent behavioural constraints that apply to every call rather than instructions about one document."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "The system prompt is where constraints that hold across every call belong. Attaching them to each per-document message mixes standing behaviour with the specifics of one document, and makes their weight depend on where they land in a growing message — which is why compliance drifts over a long run.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.3"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Validation should exist and is not a substitute for stating the requirement. Catching every call after the fact and retrying is expensive when the constraint could simply have been in effect from the start.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.3"
+    },
+    {
+     "option": 1,
+     "text": "Schema descriptions are the right home for what a field holds, and minor units and ISO dates are partly expressible there. The null-rather-than-infer rule is a behavioural constraint about how to respond to absent information, which a field description cannot carry.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.3"
+    },
+    {
+     "option": 2,
+     "text": "Duplicating the rules at both ends of every message doubles their token cost on every call and keeps them tied to individual documents. Position tuning is a workaround for having put standing constraints in the wrong place.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.3"
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,514 @@
+{
+ "label": "Customer Support Resolution Agent",
+ "narrative": "You operate a subscription-billing support agent that resolves account, refund and plan-change requests without a human in most cases. It reaches the billing platform through MCP tools (`find_account`, `read_invoice`, `issue_credit`, `change_plan`, `handoff_to_specialist`) and is measured on first-contact resolution against a 78% target. The questions below follow one quarter of production behaviour on that agent.",
+ "questions": [
+  {
+   "g": 1,
+   "block": 0,
+   "domain": "D5",
+   "stem": "Escalation volume is running at 31% against a 22% target. The current trigger fires when a sentiment classifier scores the customer's message below a negative threshold, and a review of last month's escalations finds that most of them were routine plan changes from irritated customers, while three genuine policy gaps stayed with the agent for nine turns because the customers stayed polite throughout. What should the escalation trigger key on instead?",
+   "options": [
+    "Raise the sentiment threshold so only strongly negative messages escalate, and add a second classifier pass to reduce false positives on mildly irritated customers.",
+    "Have the agent emit a self-reported confidence score each turn and escalate whenever it drops below a tuned cutoff.",
+    "Structural signals: an explicit request for a human, a request with no matching procedure, a required action outside the agent's permitted range, and repeated failure to resolve.",
+    "Turn count, escalating any conversation that passes six turns without a resolution event being recorded."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "Escalation must key on structural properties of the case, not on the customer's emotional state. An explicit human request, an absent procedure, an action outside the agent's authority, and repeated failed resolution attempts are all observable facts about the request itself. The two failure directions in the log are exactly what the corpus predicts: emotional customers with easy cases escalate needlessly, and calm customers with genuine policy gaps do not escalate at all.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.8"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Tuning the threshold keeps the same broken signal. Customer mood does not correlate with case complexity in either direction, so no threshold separates the routine plan changes from the policy gaps — the three missed cases carried no negative sentiment to detect at any cutoff.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.8"
+    },
+    {
+     "option": 1,
+     "text": "Self-reported LLM confidence is poorly calibrated and is the specific unreliable proxy the corpus names. Models are frequently confident on hard cases and hesitant on easy ones, so a confidence cutoff reproduces the same mis-sorting through a different mechanism.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.8"
+    },
+    {
+     "option": 3,
+     "text": "Turn count is a complexity proxy, not a complexity measure. A long conversation can be a chatty customer working through a simple change, and a policy gap can be visible on turn two. It escalates on elapsed effort rather than on whether the agent can actually resolve the case.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.8"
+    }
+   ]
+  },
+  {
+   "g": 2,
+   "block": 0,
+   "domain": "D1",
+   "stem": "Policy caps agent-issued credits at £200; anything above that requires specialist approval. A hook was added to enforce this, and the audit trail now shows fourteen credits above the cap in the last month — each one logged by the hook, each one already applied to the customer's account. The hook is registered on the PostToolUse event for `issue_credit`. What is wrong?",
+   "options": [
+    "The hook is matching on the wrong tool name, so it fires for every tool call rather than only for `issue_credit`, and the cap check never evaluates against the right argument.",
+    "PostToolUse hooks are advisory only and cannot return a blocking decision; the enforcement has to be expressed as a permission rule instead.",
+    "PostToolUse runs after the tool executes, so by the time the hook evaluates the amount the credit has already been applied. Blocking requires PreToolUse, which runs before execution.",
+    "The hook is correct but runs asynchronously, so a race between the hook and the tool call lets some credits through; adding a synchronous wait resolves it."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "The two hook events differ by when they fire relative to execution. PostToolUse fires after the tool has run and is the right place to normalise or reshape a result. PreToolUse fires before execution and is the only one of the two that can stop an action from happening. The audit trail is the tell: every violation was both logged and applied, which is precisely what a post-execution hook produces.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.7"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A matcher fault would produce hook firings on unrelated tools or no firings at all. Here the hook fires on exactly the right calls and records exactly the right amounts — the detection is working. The defect is that detection happens too late to matter.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.7"
+    },
+    {
+     "option": 1,
+     "text": "This misstates the mechanism. Hooks are the deterministic enforcement path in the corpus, not an advisory layer, and PreToolUse hooks do block. Reaching for a different subsystem leaves the actual error — wrong event, wrong side of execution — in place.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.7"
+    },
+    {
+     "option": 3,
+     "text": "There is no race to fix. PostToolUse is defined to run after the tool call completes, so the ordering observed here is the documented behaviour rather than a timing defect. Serialising an after-the-fact check still leaves it after the fact.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.7"
+    }
+   ]
+  },
+  {
+   "g": 3,
+   "block": 0,
+   "domain": "D2",
+   "stem": "`issue_credit` rejects requests that breach the refund policy by returning `{\"isError\": true, \"message\": \"Operation failed\"}`. Logs show the agent retrying these calls three times with identical arguments before giving up, adding roughly forty seconds to affected conversations. The rejections are correct — the requests genuinely breach policy. What should the tool return instead?",
+   "options": [
+    "The same message with a shorter retry budget, so the wasted attempts cost less time while the agent's existing recovery logic is left unchanged.",
+    "A success response carrying a zero-value credit, so the agent stops retrying and can move on to offering the customer an alternative.",
+    "An HTTP-style status code in the message body, letting the agent map 4xx to permanent failure and 5xx to transient failure.",
+    "A structured error carrying an explicit category, an `isRetryable` flag set to false, and a description naming the policy rule that was breached."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "Business-rule errors are a distinct category from transient failures: the same request will be refused every time, because the refusal is the correct outcome. The agent can only act on that if the response says so. A category, a false `isRetryable` flag and a human-readable reason give it what it needs to stop retrying and take the alternative path — offering a different remedy or escalating.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Capping the retries reduces the cost of the wrong behaviour without correcting it. The agent still cannot tell a policy refusal from a timeout, so it still retries something that can never succeed, and it still has no signal telling it what alternative to take.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+    },
+    {
+     "option": 1,
+     "text": "Reporting a refusal as a success is the silent-suppression anti-pattern. The agent would believe a credit was issued, the conversation would proceed on a false premise, and the reason for the refusal would never reach either the agent or the audit trail.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+    },
+    {
+     "option": 2,
+     "text": "Status codes carry transport semantics, not business semantics. A policy breach is not a malformed request, and mapping it onto a 4xx tells the agent the call was wrong rather than that the action is not permitted. The corpus asks for an explicit error category, not an inferred one.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+    }
+   ]
+  },
+  {
+   "g": 4,
+   "block": 0,
+   "domain": "D5",
+   "stem": "A customer gives only a first name and a partial postcode. `find_account` returns two records that both match: one has been active for six years with no recent activity, the other was opened last month and has an open invoice. The requested action is a plan downgrade. How should the agent proceed?",
+   "options": [
+    "Act on the recently active record, since an open invoice indicates the account the customer is currently transacting on.",
+    "Ask the customer for an additional identifier — the account number, the full postcode, or the email on the account — before taking any action.",
+    "Apply the downgrade to both records and reconcile afterwards, since a downgrade is reversible and leaving the customer waiting damages first-contact resolution.",
+    "Escalate to a specialist immediately, since any ambiguous identity match is outside the agent's authority to resolve."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "Multiple-match disambiguation has one safe response: ask for another identifier. Any heuristic that picks between candidate records risks acting on the wrong person's account and disclosing one customer's details to another. The cost of one extra turn is trivial against a privacy breach, and the customer can almost always supply the missing identifier immediately.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.8"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Recency is exactly the heuristic the corpus rules out. It reads plausible and is wrong often enough to matter — the long-standing account may simply pay by direct debit and generate no recent events. Confidence in a guess does not make it a match.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.8"
+    },
+    {
+     "option": 2,
+     "text": "Acting on both guarantees an unauthorised change to one account. Reversibility is not the test; the agent would still have modified a record belonging to someone who never contacted it, and the reconciliation step assumes a later detection that may not happen.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.8"
+    },
+    {
+     "option": 3,
+     "text": "Escalation is disproportionate here and would push a question the customer can answer in one turn onto a specialist queue. The corpus reserves escalation for cases the agent cannot resolve, not for cases where it simply needs one more field.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.8"
+    }
+   ]
+  },
+  {
+   "g": 5,
+   "block": 0,
+   "domain": "D1",
+   "selectN": 2,
+   "stem": "A regulatory rule requires that identity verification completes before any plan change is applied, with no exceptions. The system prompt already instructs the agent to call `find_account` and confirm two identifiers before `change_plan`, and an audit of 900 conversations finds 34 plan changes applied without a completed verification step. Select TWO changes that make the requirement deterministic rather than probable.",
+   "options": [
+    "A PreToolUse hook on `change_plan` that inspects session state and blocks the call when verification has not been recorded.",
+    "A stronger, more emphatic system-prompt instruction stating that verification is mandatory and must never be skipped.",
+    "A programmatic prerequisite gate in the tool layer that refuses `change_plan` until the verification precondition is satisfied.",
+    "A set of few-shot examples in the prompt showing conversations where the agent verifies identity before every plan change."
+   ],
+   "correct": [
+    0,
+    2
+   ],
+   "whyRight": {
+    "text": "Both correct options move the requirement out of the model's judgement and into code that runs on every call. A PreToolUse hook evaluates before execution and can refuse; a prerequisite gate in the tool layer refuses until the precondition holds. Either one takes the failure rate to zero by construction, which is what a regulatory 'no exceptions' requirement means. The 34 failures out of 900 are the signature of a probabilistic control being asked to deliver a guarantee.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.14"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "The prompt already carries this instruction and it already fails at roughly 4%. A more emphatic version moves that number down, not to zero — prompts steer behaviour and cannot enforce it. For financial, security and compliance steps the corpus is explicit that only programmatic enforcement qualifies.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.14"
+    },
+    {
+     "option": 3,
+     "text": "Few-shot examples improve consistency on ambiguous cases but remain a probabilistic influence on the model. They shift the distribution of behaviour; they cannot make a step physically impossible to skip, which is the requirement here.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.1"
+    }
+   ]
+  },
+  {
+   "g": 6,
+   "block": 0,
+   "domain": "D2",
+   "stem": "Requests phrased as 'send me a copy of last month's bill' are routed to `read_invoice` about 60% of the time and to `find_account` the rest. The two descriptions read: `read_invoice` — 'reads account data', and `find_account` — 'retrieves account information'. What is the correct first fix?",
+   "options": [
+    "Add three or four few-shot examples to the system prompt showing billing-document requests being routed to `read_invoice`.",
+    "Rewrite both descriptions so each states what the tool returns and when to prefer it — `read_invoice` for a specific issued invoice by period, `find_account` for locating an account record from customer identifiers.",
+    "Introduce a lightweight routing classifier ahead of the agent that maps request phrasings to the correct tool before the model sees them.",
+    "Merge the two tools into a single `account_lookup` tool with a `mode` parameter, removing the selection decision entirely."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "The tool description is the model's only view of what a tool does and when to prefer it — it is the API contract. Here the two descriptions are near-synonyms that name no distinguishing feature, so a coin-flip is the expected outcome rather than a surprise. Making each description state its return value and its selection criterion addresses the cause directly and costs one edit.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.2"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Examples paper over descriptions that do not differentiate the tools. They add tokens to every request and only cover the phrasings demonstrated, leaving the underlying ambiguity to reassert itself on the next variant. Fix the contract before compensating for it.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.2"
+    },
+    {
+     "option": 2,
+     "text": "A classifier is an infrastructure layer added to work around a two-line text problem. It bypasses the model's language understanding, introduces a component that itself needs training and maintenance, and is disproportionate as a first response.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.2"
+    },
+    {
+     "option": 3,
+     "text": "Consolidation is a defensible long-term architecture but it is a larger change than the problem warrants, and it relocates the same decision into a `mode` argument the model must still choose correctly. The corpus favours the low-effort, high-leverage first step.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.2"
+    }
+   ]
+  },
+  {
+   "g": 7,
+   "block": 0,
+   "domain": "D1",
+   "stem": "The agent sometimes stops mid-task: it tells the customer 'Let me pull up your last invoice' and then returns that sentence as the final reply, with no invoice. The loop is written to finish when `response.content[0].type == \"text\"`. Which correction fixes it?",
+   "options": [
+    "Instruct the model in the system prompt to place tool calls before any explanatory text, so the first content block is always a `tool_use` block when work remains.",
+    "Check every block in `content` and continue the loop if any block has type `tool_use`, treating a text-only response as completion.",
+    "Branch on `stop_reason`: continue while it is `tool_use`, terminate when it is `end_turn`.",
+    "Add a safety cap of ten iterations and continue looping until either the cap is reached or the model produces no new content."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "`stop_reason` is the field the API provides for exactly this decision, and it is unambiguous: `tool_use` means Claude wants to call a tool and the loop continues, `end_turn` means the turn is finished. The observed symptom is the classic form of this bug — Claude returned explanatory text alongside a `tool_use` block, and a check on the first block's type read the text and concluded the work was done.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.1"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "This tries to make the model's output shape fit a fragile check rather than replacing the check. Block ordering is not a guarantee the API offers, so the loop would still break the first time a response arrives in a different order.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.1"
+    },
+    {
+     "option": 1,
+     "text": "Scanning all blocks removes the position bug and would work more often, but it still infers control flow from content when the API publishes an explicit signal for it. The corpus is specific that `stop_reason` is the authoritative field, not the best available proxy.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.1"
+    },
+    {
+     "option": 3,
+     "text": "An iteration cap is a runaway-loop safety net, not a completion signal. It addresses the opposite failure from the one observed here, and as a primary control it either truncates work that needed more turns or burns turns after the task is finished.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.1"
+    }
+   ]
+  },
+  {
+   "g": 8,
+   "block": 0,
+   "domain": "D4",
+   "stem": "A quality-review prompt asks the model to flag conversations where the agent 'handled the refund badly'. Two reviewers reading the same flagged set disagree with the model on roughly a third of items, and with each other on a similar share. The instruction currently reads: 'Be conservative and only flag clear problems.' What is the correct revision?",
+   "options": [
+    "Ask the model to attach a confidence score to each flag and surface only those above a tuned threshold.",
+    "Replace the vague instruction with explicit categorical criteria — flag when a credit exceeded policy, when a required verification step was missing, when the stated remedy contradicted the policy quoted, and skip everything else.",
+    "Instruct the model to reason step by step about each conversation before deciding, so its judgement becomes more deliberate.",
+    "Ask the model to be stricter rather than conservative, since the disagreement suggests the current bar is set too low."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "'Badly' and 'conservative' have no actionable interpretation, so the model invents a bar each time and the bar moves — which is why the reviewers disagree with each other as much as with the model. Naming the categories that qualify, and stating that everything else is skipped, replaces a judgement call with a decision rule and makes the output reproducible.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.16"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A confidence score on an undefined criterion is a number attached to a guess. Self-reported confidence is poorly calibrated to begin with, and here the model does not have a stable definition of the thing it is being confident about. Criteria come first; routing on confidence is only meaningful afterwards.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.16"
+    },
+    {
+     "option": 2,
+     "text": "Step-by-step reasoning improves multi-step derivations. It does not supply a missing definition — the model would reason carefully towards whichever interpretation of 'badly' it settled on this time, and the reviewers would still disagree.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.2"
+    },
+    {
+     "option": 3,
+     "text": "Swapping one vague adjective for another vague adjective changes the direction of an undefined dial. The reviewers do not disagree about where the threshold sits; they disagree about what the category is.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.16"
+    }
+   ]
+  },
+  {
+   "g": 9,
+   "block": 0,
+   "domain": "D3",
+   "stem": "The support-tooling repository holds three things that need to reach Claude Code. First, a coding standard every session must follow regardless of what is being edited. Second, a set of conventions that apply only when editing the roughly 90 handler files spread across 40 directories. Third, a seven-step refund-audit procedure the team runs a few times a week on request. Where does each belong?",
+   "options": [
+    "Standard in the project `CLAUDE.md`; handler conventions in `.claude/rules/` with a glob for the handler paths; refund audit as a skill under `.claude/skills/`.",
+    "All three in the project `CLAUDE.md`, with the handler conventions and the audit procedure under clearly labelled headings so the model can find them.",
+    "Standard in the project `CLAUDE.md`; handler conventions as a `CLAUDE.md` in each directory containing handlers; refund audit in `.claude/rules/`.",
+    "Standard in `.claude/rules/` with a glob matching everything; handler conventions as a skill scoped to the handler paths; refund audit in the project `CLAUDE.md`."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "The three differ on when they should load. A universal standard belongs in CLAUDE.md, which loads for every session. Conventions that apply only to matching files belong in `.claude/rules/` with a glob, so they cost nothing when editing anything else and cover all 40 directories from one file. An on-demand procedure belongs in a skill, invoked when the task calls for it rather than sitting in context permanently.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.2"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "Putting everything in CLAUDE.md loads the handler conventions and the seven-step audit into every session, including sessions that touch neither. Headings organise the file for a human reader; they do not make the content conditional, and the token cost is paid on every request.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.11"
+    },
+    {
+     "option": 2,
+     "text": "Directory-level CLAUDE.md files would mean creating and maintaining 40 of them for one convention set, and the audit procedure is a task workflow rather than background guidance, so `.claude/rules/` is the wrong home for it. Both halves invert the correct mechanism.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.2"
+    },
+    {
+     "option": 3,
+     "text": "This reverses all three. A rule with a match-everything glob is a more fragile way of writing CLAUDE.md; a skill loads on demand rather than shaping every matching edit; and a procedure parked in CLAUDE.md is always-on context for something needed a few times a week.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.2"
+    }
+   ]
+  },
+  {
+   "g": 10,
+   "block": 0,
+   "domain": "D4",
+   "stem": "Post-conversation summaries are written to the ticketing system by a second model call. The instruction runs to eleven lines specifying section order, heading wording, date format and length, and the summaries still vary: some open with the resolution, some with the complaint, and dates appear in three formats. What is the most effective next step?",
+   "options": [
+    "Supply two or three worked examples showing a full input conversation and the exact summary it should produce.",
+    "Expand the instruction with a twelfth line restating the section order and giving the date format as an explicit pattern.",
+    "Move the eleven lines into the system prompt rather than the user turn, so they carry more weight in the model's attention.",
+    "Lower the temperature on the summarisation call so the model's formatting choices become more deterministic."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "Detailed prose instructions are already present and are still being interpreted differently run to run. That is the situation few-shot examples exist for: an example shows the exact target rather than describing it, and removes the interpretation step entirely. Two or three worked pairs covering the shapes the summaries actually take will fix the ordering and the date format together.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.1"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "Eleven lines of specification have not produced consistency, so a twelfth is more of the intervention that is failing. When detailed instructions already exist and output still varies, adding instruction volume is the documented wrong turn.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.1"
+    },
+    {
+     "option": 2,
+     "text": "Relocating the same text changes its position, not its precision. The system prompt is the right home for persistent behavioural constraints, but the constraint here is being read and interpreted inconsistently wherever it sits.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.3"
+    },
+    {
+     "option": 3,
+     "text": "Lower temperature narrows sampling around whatever interpretation the model has formed; it does not tell the model which of the three date formats was wanted. It would make the inconsistency more repeatable rather than removing it.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.1"
+    }
+   ]
+  },
+  {
+   "g": 11,
+   "block": 0,
+   "domain": "D2",
+   "stem": "A developer is writing the loop by hand. After `find_account` returns, they append a user-role message reading 'The find_account tool returned: account 88213, status active, plan Standard' and send the conversation back. On multi-tool turns the model sometimes re-requests a lookup it has already been given, and sometimes attributes one account's status to another. What is the protocol error?",
+   "options": [
+    "The narration is too terse; it should include the full tool response rather than a summarised form so the model has the complete record.",
+    "The results should be appended as an assistant-role message, since they continue the assistant's turn rather than starting a new user turn.",
+    "The results should be written into the system prompt for the next request, so they persist across turns rather than being re-sent each time.",
+    "Each result must be returned as a `tool_result` content block carrying the `tool_use_id` of the call it answers, so results and calls are explicitly paired."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "Tool results re-enter the conversation as `tool_result` content blocks, each carrying the `tool_use_id` of the `tool_use` block it answers. That identifier is what pairs a result to its call. Narrating results as prose discards the correlation, which is why a turn with several calls in flight produces exactly the two symptoms described — a call that looks unanswered gets repeated, and a result gets matched to the wrong call.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.1"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Completeness is not the problem. A fuller narration is still prose with no link to a specific `tool_use` block, so a multi-call turn remains ambiguous no matter how much detail each paragraph carries.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.1"
+    },
+    {
+     "option": 1,
+     "text": "`tool_result` blocks are carried in a user-role message, so the role here is already right. Changing the role while keeping prose content leaves the missing `tool_use_id` correlation exactly where it was.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.1"
+    },
+    {
+     "option": 2,
+     "text": "The system prompt carries persistent behavioural constraints, not per-call results. Writing turn-specific data there would grow it without bound and still fails to associate any result with the call that produced it.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.1"
+    }
+   ]
+  },
+  {
+   "g": 12,
+   "block": 0,
+   "domain": "D5",
+   "selectN": 2,
+   "stem": "Conversations that run past twelve turns start to go wrong: the agent restates the disputed amount as a rounded figure, and occasionally offers a remedy it had already ruled out. History is currently compacted by re-summarising the whole conversation every four turns, and each `read_invoice` result enters history in full with all 40-plus fields. Select TWO changes that address this.",
+   "options": [
+    "Maintain a persistent case-facts block holding the exact amounts, dates and identifiers verbatim, carried forward outside the summarised history.",
+    "Trim each `read_invoice` result to the fields the conversation actually needs before it enters the conversation history.",
+    "Truncate the conversation to the most recent six turns on every request, dropping older turns entirely.",
+    "Move the agent to a model with a larger context window so the full history and all tool results fit without compaction."
+   ],
+   "correct": [
+    0,
+    1
+   ],
+   "whyRight": {
+    "text": "Two distinct mechanisms are damaging this conversation and each correct option addresses one. Repeated summarisation degrades exactly the content type it handles worst — numbers, dates and identifiers — which a verbatim case-facts block protects by keeping those values outside the summarised text. Separately, untrimmed 40-field tool results consume the budget that forced aggressive compaction in the first place; trimming them at the boundary reduces the pressure at source.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.4"
+   },
+   "whyWrong": [
+    {
+     "option": 2,
+     "text": "Hard truncation drops turns wholesale, taking the ruled-out remedy and the original dispute with them. The corpus treats selective truncation as a break in conversational coherence rather than a context strategy — the point is to carry conclusions forward, not to delete them.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.3"
+    },
+    {
+     "option": 3,
+     "text": "A larger window delays the budget pressure without fixing either mechanism. The summarisation pass would still round the amounts each time it ran, and the verbose tool results would still accumulate — now further apart in a longer context, where position effects make them harder to retrieve.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.3"
+    }
+   ]
+  },
+  {
+   "g": 13,
+   "block": 0,
+   "domain": "D2",
+   "stem": "`find_account` returns `{\"matches\": [], \"status\": \"ok\"}` when a search runs correctly and matches nobody, and the same empty array with `{\"status\": \"ok\"}` when the account service is unreachable and the lookup never ran. The agent retries both cases three times, then tells the customer no account exists. What must change?",
+   "options": [
+    "The tool must distinguish the two outcomes: a successful search with no matches is a valid result, while an unreachable service is a retryable error with its own category.",
+    "The agent should retry any empty result five times rather than three, so a transient outage has longer to recover before the customer is told anything.",
+    "The agent should never tell a customer that no account exists, and should escalate every empty result to a specialist instead.",
+    "The tool should return a null matches field rather than an empty array when the service is unreachable, letting the agent branch on null."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "A search that ran and found nothing is an answer; a search that never ran is a failure. Collapsing both into an empty array with an ok status makes them indistinguishable, so the agent retries the answer and reports the failure as fact. Separating them — valid empty result on one side, categorised retryable error on the other — is what lets the agent stop retrying the first and recover from the second.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "More retries make the genuine no-match case slower without making either case distinguishable. The customer is still told no account exists when the service was simply down, which is the damaging half of the behaviour.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+    },
+    {
+     "option": 2,
+     "text": "This escalates every genuine no-match — a common, correctly-handled outcome — to work around a signal the tool is failing to send. It buries specialists in cases the agent can resolve and still never learns which empty results were outages.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+    },
+    {
+     "option": 3,
+     "text": "A null in place of an empty array is a sentinel the agent must be taught to read, and it still reports `status: ok` for a call that failed. The corpus asks for an explicit error category and a retryable flag, not a second meaning overloaded onto the result field.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+    }
+   ]
+  },
+  {
+   "g": 14,
+   "block": 0,
+   "domain": "D1",
+   "stem": "To stop the agent replying with text when a tool call was expected, a developer sets `tool_choice` to `{\"type\": \"any\"}` for every request in the loop. Conversations now run until the iteration cap and end without a closing message to the customer. What explains this?",
+   "options": [
+    "`any` forces a tool call on every turn, so the agent can never produce the final text response that ends the turn, and the loop runs until the cap stops it.",
+    "`any` disables parallel tool calling, so multi-step turns are serialised into more iterations than the cap allows.",
+    "`any` selects a tool at random when several are eligible, so the loop repeatedly calls tools that do not advance the task.",
+    "`any` is not a valid setting for a multi-turn loop and is silently ignored, leaving the original text-instead-of-tool-call behaviour in place."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "`{\"type\": \"any\"}` guarantees the model calls some tool on that request. Applied to every iteration, it removes the model's ability to signal that it has finished, because finishing means returning text with `stop_reason` of `end_turn` — which `any` has made impossible. The loop then terminates only when the safety cap fires, and the customer never receives a closing reply.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "Parallel tool use is governed by `disable_parallel_tool_use`, which is a separate setting and can be combined with any `tool_choice` value. Serialisation would change how many calls fit in a turn, not remove the agent's ability to finish.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+    },
+    {
+     "option": 2,
+     "text": "`any` requires a tool call but leaves the choice of tool to the model on the merits, exactly as `auto` does. Forcing one specific tool is the separate `{\"type\": \"tool\", \"name\": ...}` form. Nothing here selects at random.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+    },
+    {
+     "option": 3,
+     "text": "`any` is a valid setting and it is being honoured — that is precisely why the behaviour changed. The symptom is not the old behaviour persisting; it is a new failure introduced by applying a guarantee where it was not wanted.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+    }
+   ]
+  },
+  {
+   "g": 15,
+   "block": 0,
+   "domain": "D3",
+   "stem": "One engineer built a `/refund-audit` command that the whole support-tooling team should get on clone. It works for its author and for nobody else, even after colleagues pull the latest commit on the same branch. The file sits at `~/.claude/commands/refund-audit.md`. What is the fix?",
+   "options": [
+    "Have each colleague run `/memory` after pulling, so the command file is registered in their session.",
+    "Rename the file to `refund_audit.md`, since command names are resolved from the filename and hyphens are not matched.",
+    "Add a `paths` entry to the file's frontmatter so it activates for the repository's directories rather than only for its author.",
+    "Move the file into the repository at `.claude/commands/refund-audit.md`, or as `.claude/skills/refund-audit/SKILL.md`, so it is version-controlled and arrives with a clone."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "`~/.claude/` is user scope: personal, outside the repository, and never version-controlled, so nothing there travels with a pull. Anything the team should receive on clone has to live in a project-scoped path inside the repository. Both project-scoped homes produce the same `/refund-audit` command; `.claude/skills/` is the canonical, fuller-featured of the two.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.5"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "`/memory` is a diagnostic that reports which configuration files are currently loaded. It does not register or activate anything, and it cannot make a file that exists only on one machine visible on another.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.1"
+    },
+    {
+     "option": 1,
+     "text": "Hyphenated command filenames work; the author's own working copy proves the name resolves. The distinguishing fact is not the filename but the directory it sits in.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.4"
+    },
+    {
+     "option": 2,
+     "text": "Path scoping controls when something applies, not who has it. A `paths` entry on a file that exists only in one engineer's home directory still leaves every colleague without the file.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+    }
+   ]
+  }
+ ]
+}

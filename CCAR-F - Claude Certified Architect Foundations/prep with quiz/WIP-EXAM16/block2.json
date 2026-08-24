@@ -1,0 +1,533 @@
+{
+ "label": "Multi-Agent Research System",
+ "narrative": "You maintain a multi-agent research system for a fisheries science unit. A coordinator delegates to a web-search subagent, a document-analysis subagent working over survey reports and quota filings, a synthesis subagent and a report-generation subagent; the output is a cited stock-assessment briefing that goes to regulators. The questions below follow one assessment cycle through that system.",
+ "questions": [
+  {
+   "g": 16,
+   "block": 1,
+   "domain": "D1",
+   "stem": "The coordinator's prompt is a numbered script: search four named databases, open the first ten hits from each, summarise every hit in 120 words, pass the summaries on. The briefings come back uniform and shallow, and one of them missed a fishery closure that happened mid-survey and changed the picture entirely. What should change?",
+   "options": [
+    "Add further steps to the script so it covers closures, gear changes and seasonal amendments explicitly.",
+    "Increase the number of search subagents so more of each database is covered inside the same procedure.",
+    "Replace the script with research goals and quality criteria, leaving the coordinator to decide decomposition as findings emerge.",
+    "Move the script into the search subagent's prompt, freeing the coordinator to reason about the results it gets back."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "Coordinator prompts should state research goals and quality criteria rather than step-by-step procedure. A goal-oriented prompt lets subagents adapt their approach to what they find — which is the only way a mid-survey closure nobody anticipated gets picked up at all.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.4"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "More steps deepen the rigidity that caused the problem. The script will still break on the next situation nobody wrote a step for.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.4"
+    },
+    {
+     "option": 1,
+     "text": "More agents executing a bad script produce more shallow output, not better coverage. The script is the defect.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.4"
+    },
+    {
+     "option": 3,
+     "text": "Relocating a procedural script keeps it procedural — the search subagent is now the one locked into a fixed sequence it cannot deviate from.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.4"
+    }
+   ]
+  },
+  {
+   "g": 17,
+   "block": 1,
+   "domain": "D5",
+   "stem": "The final briefing states that recruitment has fallen 18% since the previous assessment, with nothing attached to say where that came from. Two upstream agents each saw the figure in a different filing. The report agent lists every document consulted in a bibliography at the end. What does the pipeline need?",
+   "options": [
+    "Structured claim-to-source mappings emitted by each subagent and preserved through synthesis, carrying `source_name` and `publication_date`, so every claim keeps its origin.",
+    "A bibliography at the end of each subagent's output as well, so sources are recorded at every stage of the pipeline.",
+    "A closing pass in which the report agent re-searches the sources and finds a citation for each claim it has written.",
+    "An instruction to the synthesis subagent to remember to cite a source for any numeric claim it carries forward."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "Attribution is lost during summarisation when findings are compressed without preserving the mapping from claim to source. Requiring subagents to emit structured claim-to-source records — with document name, location and publication date — and requiring synthesis to merge rather than flatten them is what lets the finished report attribute each individual sentence.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.11"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "A bibliography at any stage tells you which documents were read, not which one produced this claim. The traceability that matters is per claim.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.11"
+    },
+    {
+     "option": 2,
+     "text": "Re-deriving attributions at the end is expensive and error-prone, and it can attach a claim to a source that merely repeats it. The mapping should be preserved through the pipeline, not reconstructed.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.11"
+    },
+    {
+     "option": 3,
+     "text": "The synthesis subagent cannot cite metadata it never received in structured form. Instructing it to remember does not put the source in its input.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.5"
+    }
+   ]
+  },
+  {
+   "g": 18,
+   "block": 1,
+   "domain": "D2",
+   "selectN": 2,
+   "stem": "The synthesis subagent carries 19 tools, three of them search tools and two document loaders it has no legitimate use for. It picks wrongly on a noticeable share of turns and has started running open-ended searches of its own instead of synthesising what it was given. It does need frequent single-fact confirmations. Select two changes.",
+   "options": [
+    "Cut its tool set to the four or five relevant to its role, so the decision space it discriminates over shrinks.",
+    "Give it a narrowly scoped `verify_fact` tool for simple lookups, with complex questions still routed through the coordinator.",
+    "Keep all 19 tools and write a longer, more precise description for each of them.",
+    "Give it full `web_search` access so its fact checks never have to leave the agent at all.",
+    "Set `tool_choice` to `{\"type\": \"any\"}` so it always calls a tool instead of answering from memory."
+   ],
+   "correct": [
+    0,
+    1
+   ],
+   "whyRight": {
+    "text": "Tool count itself degrades selection reliability — the guide's own numbers are 18 tools against 4–5 — so restricting the set to the agent's role is the root-cause fix. The high-frequency fact-checking need is the sanctioned exception: a narrowly scoped cross-role tool, with complex cases still going through the coordinator, avoids constant round-trips without handing over open-ended research capability.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+   },
+   "whyWrong": [
+    {
+     "option": 2,
+     "text": "Better descriptions help, but the decision space is the root cause. Nineteen candidates with near-miss descriptions stay hard to discriminate however well each one is written.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+    },
+    {
+     "option": 3,
+     "text": "This is the cross-specialisation misuse already happening. Full search access is what turns a synthesis agent into an ad-hoc researcher.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+    },
+    {
+     "option": 4,
+     "text": "Forcing a tool call guarantees that some tool runs, not that the right one does. With 19 candidates it can still pick wrongly, every turn.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+    }
+   ]
+  },
+  {
+   "g": 19,
+   "block": 1,
+   "domain": "D1",
+   "stem": "Inputs reach the synthesis subagent as one concatenated block of prose. By the time the briefing is written, page numbers and survey years have disappeared, and two figures from different years end up merged into a single sentence. The coordinator still holds both figures, correctly separated and dated, in its own history. What is the fix?",
+   "options": [
+    "Instruct the synthesis subagent to preserve any dates and page numbers it notices in the text it is given.",
+    "Give the synthesis subagent the coordinator's full conversation history so that nothing can be lost in transit.",
+    "Have the synthesis subagent request the missing metadata directly from the document-analysis subagent when it needs it.",
+    "Pass findings in a structured format that separates content from its metadata — source, document name, page number, date."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "Context passed between agents should use a structured format that keeps content and metadata in separate fields. Merged free text is where the claim-to-source mapping dies; once it is gone, no downstream instruction can recover it.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.5"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "It cannot preserve what arrived already merged. The instruction asks the agent to notice metadata that is no longer distinguishable from the prose around it.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.5"
+    },
+    {
+     "option": 1,
+     "text": "Dumping the whole coordinator history breaks context isolation and floods the agent with material irrelevant to synthesis. The defect is the format of what is passed, not the volume.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.2"
+    },
+    {
+     "option": 2,
+     "text": "Subagents do not communicate with each other. All inter-agent traffic flows through the coordinator, which is what gives it visibility and control.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.2"
+    }
+   ]
+  },
+  {
+   "g": 20,
+   "block": 1,
+   "domain": "D4",
+   "stem": "Given the request `summarise what we know about the northern stock`, the synthesis subagent replies with five questions: which stock unit, which years, whether to include recreational catch, which assessment model, and what length. Analysts abandon the request rather than answer, and roughly a third of requests now end this way. What should it do instead?",
+   "options": [
+    "Ask all five questions in a single compound message so the analyst can answer them together rather than in sequence.",
+    "Proceed on stated reasonable assumptions — naming the stock unit, year range and inclusions it chose — and invite correction.",
+    "Apply sensible defaults for all five and produce the summary without saying which choices were made.",
+    "Return nothing and hand the request back to the coordinator so it can gather the missing parameters first."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "Four or more clarifying questions drive abandonment; the documented behaviour is to proceed on explicitly stated assumptions and invite correction. The guidance applies inside multi-agent systems too — a synthesis agent should not block awaiting clarification on every gap.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.19"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Bundling the questions into one message still demands the same effort from the analyst. Compounding them does not reduce the abandonment it causes.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.19"
+    },
+    {
+     "option": 2,
+     "text": "Hidden defaults leave the reader unaware of what was assumed, so a wrong assumption goes unchallenged and the summary is quietly about the wrong thing.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.19"
+    },
+    {
+     "option": 3,
+     "text": "Handing the request back is the same blocking behaviour relocated one level up. The coordinator has no more information about the analyst's intent than the synthesis agent does.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.19"
+    }
+   ]
+  },
+  {
+   "g": 21,
+   "block": 1,
+   "domain": "D5",
+   "stem": "Synthesis receives 78,000 tokens per run, assembled from four subagents in a fixed order. It uses the opening summaries and the closing conclusions well, but omits a gear-selectivity finding sitting around the 40,000-token mark that the analysts consider decisive. The finding is present, correctly worded, and sits under its own heading. Where should the fix be applied?",
+   "options": [
+    "Place a key-findings summary at the very start and add explicit section headings throughout the input.",
+    "Compress the whole input below 20,000 tokens so that nothing sits in a weakly attended position.",
+    "Rotate which subagent's output appears first on each run, so no one agent is always in the middle.",
+    "Insert an intermediate summarisation agent between the research subagents and synthesis."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "This is lost-in-the-middle: content at the beginning and end of a long input is processed reliably, the middle is not. The mitigations are positional — put the critical material where attention is strongest, and add headings so the model can navigate the rest.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.2"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "Compressing to a quarter of the size risks discarding critical information — including, quite possibly, the very finding that is being missed.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.2"
+    },
+    {
+     "option": 2,
+     "text": "Rotation moves which agent's output lands in the weak position. It does not change the attention pattern, so something decisive still ends up there.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.2"
+    },
+    {
+     "option": 3,
+     "text": "An extra summarisation stage adds latency and another point of failure, and it can drop the same finding one step earlier. The documented root-cause fix is upstream structure, not another layer.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.2"
+    }
+   ]
+  },
+  {
+   "g": 22,
+   "block": 1,
+   "domain": "D2",
+   "stem": "A maintained community MCP server already covers the unit's reference-manager integration and works well. A second server is now needed to expose an internal quota-allocation model whose rules no external product implements. A colleague argues that building anything custom repeats the mistake of reinventing standards, citing the reference-manager decision as precedent. How should you evaluate this?",
+   "options": [
+    "Agree — extend the community server's `tools` with the quota rules so the unit maintains only one integration.",
+    "Agree — the quota model can be expressed as MCP `prompts` on the existing server rather than as a second server.",
+    "Disagree — a workflow unique to this team is exactly what custom servers are for; the earlier case was a standard integration.",
+    "Disagree — but only because community servers cannot expose `resources`, so an internal catalogue always needs custom code."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "The rule cuts both ways. Standard integrations — issue trackers, source hosts, chat — should use existing community servers rather than being rebuilt. Custom servers are for unique, team-specific workflows no existing server covers, which is precisely what an internal allocation model is.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Grafting proprietary rules onto someone else's maintained integration is the worst of both: the unit now owns a fork of a standard server and gets the maintenance burden it was avoiding.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+    },
+    {
+     "option": 1,
+     "text": "Prompts are one of the three MCP primitives, but they are reusable prompt templates. An allocation model with real rules is an action, and actions are tools on a server.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+    },
+    {
+     "option": 3,
+     "text": "The conclusion is right for the wrong reason, and the reason is invented — community servers expose resources routinely. An answer resting on a fabricated limitation fails even when it lands on the correct side.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+    }
+   ]
+  },
+  {
+   "g": 23,
+   "block": 1,
+   "domain": "D1",
+   "stem": "Synthesis returns a briefing that covers biology and catch history in real depth but says nothing at all about management measures, which the coordinator's own quality criteria require. The search and document subagents are idle and available. Nothing failed, no tool errored, and every subagent reported completion. What should the coordinator do?",
+   "options": [
+    "Grant the synthesis subagent search access so it can fill its own gaps without another delegation round.",
+    "Re-delegate targeted queries on management measures, then re-invoke synthesis with the enriched findings.",
+    "Ship the briefing with a note recording that management measures merit further research.",
+    "Re-invoke synthesis over the same findings, instructing it to cover management measures this time."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "Synthesis is not one-shot. The coordinator evaluates the output for gaps, re-delegates targeted queries aimed at those specific gaps, and re-invokes synthesis with the enriched findings — repeating until coverage meets its criteria. Gap evaluation and loop termination are the coordinator's job.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.8"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "This breaks separation of responsibilities and least-privilege tooling. A synthesis agent with search access stops synthesising and starts researching.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.8"
+    },
+    {
+     "option": 2,
+     "text": "Coverage annotation is for gaps that cannot be recovered — sources that timed out, data that does not exist. It is not a substitute for a refinement loop that is available and idle.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.8"
+    },
+    {
+     "option": 3,
+     "text": "The findings do not contain the material. Re-running synthesis over the same inputs either produces the same gap or invites the model to fill it from nothing.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.8"
+    }
+   ]
+  },
+  {
+   "g": 24,
+   "block": 1,
+   "domain": "D5",
+   "selectN": 3,
+   "stem": "A four-hour run dies eight minutes from the end, after the search and document passes have both completed and synthesis is part-written. Restarting repeats every search and every document pass from the beginning, at full cost. The team wants a restart to resume instead. Select three elements of the right design.",
+   "options": [
+    "Each subagent exports structured state — status, findings, coverage and gaps — to a known location such as `agent-state/` as it works.",
+    "The coordinator maintains a `manifest.json` recording each subagent's status, and reads it on resume.",
+    "On resume the coordinator injects the persisted findings into the subagent prompts and continues from the checkpoint.",
+    "Each subagent holds its findings in its own context window until the coordinator asks for them.",
+    "The run restarts from the beginning after any failure, since partial state cannot be trusted to be consistent.",
+    "Recovery relies on the conversation history surviving the crash and being replayed on the next call."
+   ],
+   "correct": [
+    0,
+    1,
+    2
+   ],
+   "whyRight": {
+    "text": "Crash recovery in a multi-agent system is built from three pieces: per-agent structured state exported to a known location, a coordinator manifest recording who has finished, and a resume path that injects the persisted findings back into agent prompts. Together they turn a four-hour loss into an eight-minute one.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.12"
+   },
+   "whyWrong": [
+    {
+     "option": 3,
+     "text": "Findings held only in an agent's context window fill that window and vanish entirely when the process dies. Nothing survives to resume from.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.12"
+    },
+    {
+     "option": 4,
+     "text": "Restarting from scratch after every failure discards hours of completed work that could have been persisted for the cost of writing a file.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.12"
+    },
+    {
+     "option": 5,
+     "text": "The API is stateless and holds no session state of its own. An interrupted run's context exists only in the client that died with it.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.1"
+    }
+   ]
+  },
+  {
+   "g": 25,
+   "block": 1,
+   "domain": "D3",
+   "stem": "Three researchers get consistent adherence to the unit's citation-format convention from Claude Code. A fourth, newly joined, does not. All four work in the same cloned repo on the same branch, and the convention is written down somewhere, since three of them follow it without being reminded. What is the first diagnostic step?",
+   "options": [
+    "Restate the convention at the top of every prompt until the new joiner's sessions comply with it.",
+    "Add a directory-level `CLAUDE.md` inside the citation module so the rule loads whenever those files are touched.",
+    "Compare the four machines' Claude Code versions, since instruction handling has changed between releases.",
+    "Run `/memory` on the new joiner's machine to list which memory files actually load — the rule is most likely in the others' user-level file."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "Whenever a rule is followed on some machines and not others, the first move is to establish which memory files are actually loaded. `/memory` shows exactly that, and the classic cause is a convention living in the original developers' user-level file, which is never shared through version control.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.1"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Repeating the instruction per prompt treats the symptom and has to be redone by every person who joins next.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.1"
+    },
+    {
+     "option": 1,
+     "text": "This applies a fix before the cause is established. It may well be the wrong level, and it does nothing if the rule is already sitting in a user-level file on three machines.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.1"
+    },
+    {
+     "option": 2,
+     "text": "A version difference is invented here. The observable asymmetry — same repo, different machines, different behaviour — points straight at per-user configuration.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.1"
+    }
+   ]
+  },
+  {
+   "g": 26,
+   "block": 1,
+   "domain": "D4",
+   "stem": "One task has the document subagent compare five survey series across three metrics and rank the stocks; it gets the arithmetic wrong on roughly a fifth of runs, usually by transposing two of the series. Another task, rendering a species name in the local vernacular, is always right. What distinguishes them?",
+   "options": [
+    "The first is multi-step comparison across items and benefits from an explicit step-by-step reasoning cue; the second is single-step.",
+    "The first produces a longer response, and longer responses accumulate more error, so capping the output length would fix it.",
+    "The first needs a lower temperature, since ranking is deterministic while a translation tolerates variation.",
+    "The first needs few-shot examples of correct rankings; a reasoning cue only helps with output format."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "Reasoning cues improve accuracy on multi-step reasoning: multi-step arithmetic, multi-stage analysis, comparison across N items, step-wise transformation. Ranking five series on three metrics is all of those. A single-step task such as translating a phrase gains nothing from the cue.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.2"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "Length is a correlate, not the mechanism. Shortening the output would remove the reasoning that the comparison actually requires.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.2"
+    },
+    {
+     "option": 2,
+     "text": "Temperature governs randomness in sampling, not how many reasoning steps the model takes. It is the wrong dial for an arithmetic error across items.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.2"
+    },
+    {
+     "option": 3,
+     "text": "Few-shot examples earn their place on format consistency and ambiguous selection. The failure here is multi-step reasoning, which is what the cue targets.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.1"
+    }
+   ]
+  },
+  {
+   "g": 27,
+   "block": 1,
+   "domain": "D1",
+   "stem": "Of the five source categories the coordinator asked for, three returned and two timed out. Enough arrived for a defensible briefing on those three. As written, the synthesis subagent returns an error whenever its inputs are incomplete, so nothing is produced at all. What should it do?",
+   "options": [
+    "Return the error, since a briefing built on three of five categories could mislead the regulators who read it.",
+    "Complete the synthesis on what arrived and annotate coverage — which conclusions are well supported, and where the gaps are.",
+    "Retry the two failed categories itself until they respond or a retry limit is reached, then synthesise.",
+    "Complete the synthesis and present it normally, leaving the coordinator to notice which categories are missing."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "Graceful degradation: complete the synthesis using available data, annotate which conclusions are well supported and where data is missing, and propagate that uncertainty upward. The reader gets both the analysis and an honest map of its limits.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.10"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Refusing to synthesise discards three categories of completed work and leaves the regulators with nothing at all, which serves them worse than an annotated briefing.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.10"
+    },
+    {
+     "option": 2,
+     "text": "Deciding whether to retry an upstream failure is the coordinator's call, made with the error context the failing subagent returned. A synthesis agent retrying other agents' sources breaks the hub.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.9"
+    },
+    {
+     "option": 3,
+     "text": "Proceeding without noting the gaps hides the uncertainty. The output then looks as complete as one built on all five categories.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.10"
+    }
+   ]
+  },
+  {
+   "g": 28,
+   "block": 1,
+   "domain": "D5",
+   "selectN": 2,
+   "stem": "A government survey reports 40% growth in one stock; an industry analysis reports 12%. Both are credible, both were published within the last six months, and their methods differ substantially. The document subagent has to hand something to the coordinator. Select two things its output should do.",
+   "options": [
+    "Carry both values, each attributed to the source that reported it.",
+    "Mark the disagreement explicitly as a conflict, for the coordinator to reconcile.",
+    "Adopt the government figure, on the basis that official statistics outrank industry analyses.",
+    "Average the two into one figure and record the spread in a footnote.",
+    "Stop and ask the coordinator which figure to use before completing the rest of the analysis."
+   ],
+   "correct": [
+    0,
+    1
+   ],
+   "whyRight": {
+    "text": "When sources conflict, the agent completes its analysis carrying both values with attribution and annotates the conflict explicitly, leaving reconciliation to the coordinator or a human. Preserving both values and flagging the disagreement are two halves of one behaviour.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.10"
+   },
+   "whyWrong": [
+    {
+     "option": 2,
+     "text": "Picking a winner by credibility heuristic is a decision above the subagent's scope, and it hides from the coordinator that any disagreement existed.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.10"
+    },
+    {
+     "option": 3,
+     "text": "An average is a number neither source reported. It manufactures a false consensus and destroys both original figures in the process.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.10"
+    },
+    {
+     "option": 4,
+     "text": "Blocking the pipeline to ask is unnecessary — the analysis can be completed in full and the conflict annotated for later reconciliation.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.10"
+    }
+   ]
+  },
+  {
+   "g": 29,
+   "block": 1,
+   "domain": "D2",
+   "stem": "Three searches on different subtopics are dispatched in a single turn. The orchestrator appends the three results in whatever order they finish and carries nothing back from the originating request. The agent then attributes one result's contents to a different query, and the briefing repeats that mix-up downstream. What was omitted?",
+   "options": [
+    "A sequence number on each result, so submission order can be restored before the results are appended.",
+    "A timestamp on each result, so the agent can work out which of the three calls it answers.",
+    "A separate turn per search, since one turn cannot carry three tool results reliably.",
+    "The `tool_use` block's `id` on each `tool_result`, which is what matches a result to the call that produced it."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "Each `tool_use` block carries an `id`, and the corresponding `tool_result` must carry it back. That identifier is the correlation mechanism — without it the agent has three unlabelled payloads and has to guess which query each one answers.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.1"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Ordering is not the correlation mechanism, and restoring submission order still leaves the results unlabelled if a call is dropped or retried.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.1"
+    },
+    {
+     "option": 1,
+     "text": "A timestamp records when a result arrived, not which request it belongs to. Two searches finishing in the same second are as ambiguous as before.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.1"
+    },
+    {
+     "option": 2,
+     "text": "Multiple tool calls in one turn are supported and are the right pattern for independent searches. Serialising them costs latency and leaves the identifier still missing.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.1"
+    }
+   ]
+  },
+  {
+   "g": 30,
+   "block": 1,
+   "domain": "D3",
+   "stem": "A long investigation session is approaching its window limit. It holds precise quota figures, three survey years, and a list of documents already ruled out; the next phase depends on those exact values. Someone proposes running `/compact` and carrying straight on in the same session rather than starting over. How should you evaluate that?",
+   "options": [
+    "Sound — `/compact` is designed to compress context while preserving the essential information, which is exactly this situation.",
+    "Sound, provided `/compact` is instructed to keep every numeric value verbatim as it compresses.",
+    "Risky — `/compact` can lose exact numeric values, dates and specific details, which is precisely what the next phase needs.",
+    "Risky — `/compact` discards the earliest turns first, so the quota figures gathered at the start would be the ones lost."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "Compaction compresses context while preserving essential information, but its documented risk is that exact numeric values, dates and specific details can be lost in the summarisation. When the next phase depends on those precise values, that risk is the whole problem.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.12"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "This states the intent and ignores the documented caveat. Compaction is a reasonable tool in general and the wrong one at a point where precision is what matters.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.12"
+    },
+    {
+     "option": 1,
+     "text": "The risk is inherent to summarising, not an instruction gap. Guaranteeing precision by asking the summariser nicely is the same bargain that already failed elsewhere.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.12"
+    },
+    {
+     "option": 3,
+     "text": "The conclusion is right but the mechanism is invented. Compaction summarises rather than evicting oldest-first, so the risk falls on precision anywhere in the history, not on the earliest turns specifically.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.12"
+    }
+   ]
+  }
+ ]
+}

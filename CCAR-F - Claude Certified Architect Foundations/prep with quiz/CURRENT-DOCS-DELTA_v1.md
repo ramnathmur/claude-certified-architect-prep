@@ -1,8 +1,9 @@
 # Current-Docs Delta — Corpus vs Live Anthropic Documentation
 
-**Version:** 1.1 | 2026-08-09 (v1.0: 2026-07-06)
+**Version:** 1.2 | 2026-08-14 (v1.1: 2026-08-09; v1.0: 2026-07-06)
 **Purpose:** The corpus was distilled from a study-guide snapshot. Anthropic's product documentation has moved since. This file records every verified divergence so that (a) Ram studies the current truth, and (b) the mock-exam generator avoids writing questions whose correct answer depends on a fact that changed after the exam was authored.
-**Verification:** every D-entry below was checked against live docs on 2026-07-06 by an independent validation agent, and **re-verified 2026-08-09** (sources cited per entry). The E-entries are new in v1.1 and come from a direct diff of the official Exam Guide PDF.
+**Verification:** D1–D8 were checked against live docs on 2026-07-06 by an independent validation agent, and **re-verified 2026-08-09** (sources cited per entry). D9 is new in v1.2 and was verified against live docs on **2026-08-14**. The E-entries are new in v1.1 and come from a direct diff of the official Exam Guide PDF.
+**Changelog v1.1→v1.2:** added **D9** — the subagent-spawning tool was renamed `Task` → `Agent` in Claude Code v2.1.63, tagged [CONFLICT-RISK] because the exam guide and the current product now use different names for the same tool. Found by cross-checking the community study site `claudecertificationguide.com` (mirrored 2026-08-14 at `Outputs/ccg-mirror/`) against this file, then verified against Anthropic's own SDK subagents documentation. **No D1–D8 entry was re-verified in this pass** — the 2026-09-08 re-verification deadline below still stands unchanged.
 **Changelog v1.0→v1.1:** the *primary source itself changed*. Anthropic republished the official Exam Guide as **v1.0 (Effective July 2026, exam code CCAR-F)**, superseding the cached v0.2. New section "Exam-Guide Version Delta" (E1–E6) records what changed in the guide. All eight D-entries re-verified against live docs; D1 escalated in severity, D7's open caveat resolved, D2–D6 and D8 unchanged. **Filename deliberately kept at `_v1`** — six files reference this path (Corpus-Index, Exam-Mechanics, CLAUDE.md, orchestration prompts); a rename to `_v2` is a follow-up that must update all inbound references together.
 
 ---
@@ -86,7 +87,7 @@ Anthropic's certification program expanded from one exam to four (announced on A
 
 ---
 
-# Part 2 — Live-Docs Deltas (D1–D8, re-verified 2026-08-09)
+# Part 2 — Live-Docs Deltas (D1–D8 re-verified 2026-08-09; D9 added 2026-08-14)
 
 ## D1 — `allowed-tools` semantics **[CONFLICT-RISK — official exam framing wins] — SEVERITY ESCALATED**
 
@@ -144,13 +145,22 @@ Anthropic's certification program expanded from one exam to four (announced on A
 - Confirmed current: `-p` / `--print`; `--output-format` (`text` | `json` | `stream-json`); `--json-schema` (print mode only, returns validated JSON matching a schema); `--resume` / `-r`; `--continue` / `-c`; `--fork-session` (new session ID when resuming — matches the guide's `fork_session` mention).
 - **Source:** https://code.claude.com/docs/en/cli-reference (retrieved 2026-08-09)
 
+## D9 — The subagent-spawning tool is renamed `Task` → `Agent` **[CONFLICT-RISK — official exam framing wins]** — NEW in v1.2
+
+- **Corpus/guide framing:** subagents are spawned by including `"Task"` in the coordinator's `allowedTools`. `CCA-Prep_Domain-1_v2.md` §1.2 ("Spawning Subagents: The `Task` Tool") names `Task` four times and never mentions `Agent`. The official Exam Guide task statement 1.3 uses the same name.
+- **Current docs:** the tool is now `Agent`. Anthropic's SDK subagents page states it directly: *"The tool name was renamed from `Task` to `Agent` in Claude Code v2.1.63. Current SDK releases emit `Agent` in `tool_use` blocks but still use `Task` in the `system:init` tools list and in `result.permission_denials[].tool_name`. Checking both values in `block.name` ensures compatibility across SDK versions."* The same page's worked examples all pass `"Agent"` in `allowedTools`: *"Claude invokes subagents through the `Agent` tool, so include `Agent` in `allowedTools` to auto-approve subagent invocations without a permission prompt."*
+- **Precision worth keeping:** this is **not** a clean alias. The name that appears depends on the surface — `Agent` in `tool_use` blocks, `Task` still in `system:init` and in permission-denial records. "Task still works as an alias" is the community shorthand; the docs describe a split, and the corpus should carry the split, not the shorthand.
+- **Source:** https://code.claude.com/docs/en/agent-sdk/subagents (retrieved 2026-08-14). Independently surfaced by the community study site `claudecertificationguide.com` lesson 1.3, which reported the rename and the v2.1.63 version but not the `system:init` / `permission_denials` nuance — the delta was found via that site and then verified against the official docs, which are the citation of record here.
+- **Exam posture:** **[CONFLICT-RISK].** The architectural fact the exam tests is unchanged and remains the scored point: the coordinator's `allowedTools` must include the subagent-spawning tool, or it physically cannot spawn subagents — a binary gate, not a soft preference. But the *name* now differs between the exam guide and current product, so a question whose key turns on `Task` versus `Agent` could be decided by which source the candidate read. **Never make the tool's name the deciding line of a scored question.** Where a stem or option must name it, use the official guide's `Task`, consistent with the D1 and D4 precedent that official framing wins.
+- **Corpus edit status:** not applied to `CCA-Prep_Domain-1_v2.md`. Under the generator rule this delta is recorded here and consumed at generation time; rewriting §1.2 to say `Agent` would move the corpus away from the exam guide it is authored against. Flag for Ram only if a future guide revision adopts the new name.
+
 ---
 
 ## Maintenance
 
-Re-verify this file whenever (a) a mock exam is generated more than 30 days after `Last verified`, or (b) any Anthropic docs-changelog announcement touches skills, MCP, memory, batches, or stop reasons. Add new deltas with the same [SAFE]/[CONFLICT-RISK] tag and source line.
+Re-verify this file whenever (a) a mock exam is generated more than 30 days after the `Last full verification pass` date below, or (b) any Anthropic docs-changelog announcement touches skills, MCP, memory, batches, or stop reasons. Add new deltas with the same [SAFE]/[CONFLICT-RISK] tag and source line.
 
 **Additional trigger added in v1.1:** re-check the **Exam Guide PDF asset itself** on the Partner Academy certification page, not just the docs. The v0.2 → v1.0 republication happened two days after the cached download and would have been invisible to a docs-only check. Compare the printed version marker and the §18 Document Control table.
 
-**Last verified: 2026-08-09**
+**Last full verification pass: 2026-08-09** (D1–D8 + E1–E7). D9 was added and verified 2026-08-14, but that was a single-entry addition, not a pass over the file — **the deadline below is deliberately NOT extended by it.**
 **Next re-verification due:** before any exam generated after **2026-09-08** (30-day docs-currency rule).

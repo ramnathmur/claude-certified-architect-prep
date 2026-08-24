@@ -1,0 +1,1330 @@
+{
+ "questions": [
+  {
+   "domain": "D1",
+   "section": "1.1",
+   "stem": "Your document-extraction agent runs an API loop over scanned invoices with three extraction tools. The orchestrator exits the loop when the assistant's text contains the phrase \"Extraction complete\" or after 10 iterations, whichever comes first, and 8% of documents come back with their JSON truncated mid-object. Which changes bring loop control in line with the agentic-loop pattern? (Select 3.)",
+   "options": [
+    "Keep scanning the assistant's text for a completion phrase, since the model reliably states when it has finished extracting.",
+    "Branch on `stop_reason == \"tool_use\"`: extract the tool_use content blocks, execute each tool, append the `tool_result` blocks to messages, and call Claude again.",
+    "Keep the 10-iteration cap as the primary stop condition so a malformed invoice cannot spin the loop forever.",
+    "Treat `stop_reason == \"end_turn\"` as the loop's terminating condition and return the final text to the caller.",
+    "Handle `stop_reason == \"max_tokens\"` explicitly as a truncation case that may need to be continued, rather than accepting the response as final.",
+    "Treat `stop_reason == \"stop_sequence\"` as an error condition and abort the extraction for that document."
+   ],
+   "correct": [
+    1,
+    3,
+    4
+   ],
+   "whyRight": {
+    "text": "The agentic loop is driven by `stop_reason` after each call, and each ticked option restores one of its three documented branches. Option 1 rebuilds the continuation branch — on `tool_use` the orchestrator extracts the tool_use blocks, executes each tool, appends `tool_result` blocks, and loops back to send another message. Option 3 supplies the only legitimate terminating condition: `end_turn` means Claude finished its response, so the loop stops and returns output to the user. Option 4 addresses the observed 8% truncation directly — `max_tokens` means the response hit the token limit and must be handled gracefully because it may need to be continued, which is precisely the symptom of JSON cut off mid-object being swallowed as a finished result.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.1"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "The corpus states the stop test explicitly as checking `stop_reason` — not text content. A completion phrase is model-generated prose, so the loop terminates on a string the model may emit early, late, or never, and it will also fire on a truncated response that happens to contain the phrase before being cut off.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.1"
+    },
+    {
+     "option": 2,
+     "text": "Iteration count is named alongside text content as the wrong thing to stop on. A fixed cap of 10 kills legitimate multi-tool runs mid-work on complex documents while doing nothing to detect that the last response was truncated — it answers \"how long have we run\" instead of \"what did Claude ask for next\".",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.1"
+    },
+    {
+     "option": 5,
+     "text": "`stop_sequence` means a custom stop sequence was hit, and its handling is application-defined behavior — not a failure. Aborting the document treats a configured, intentional stop as an error, and it is the wrong target anyway: the truncation symptom belongs to `max_tokens`.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.1"
+    }
+   ]
+  },
+  {
+   "domain": "D1",
+   "section": "1.3",
+   "stem": "Your customer-support system defines a coordinator plus three subagent types with `AgentDefinition`. The coordinator's configuration is `allowed_tools=[\"get_customer\", \"lookup_order\", \"process_refund\"]` and its system prompt already reads \"Delegate refund cases to the refunds specialist,\" yet across 100 production traces it handled every case itself and spawned zero subagents. A reviewer also notes that all three subagent definitions carry that identical tool list, described in the PR as \"for flexibility.\" Which two configuration changes are correct? (Select 2.)",
+   "options": [
+    "Add `\"Task\"` to the coordinator's `allowed_tools` — without that tool the coordinator has no mechanism to spawn a subagent at all.",
+    "Rewrite the coordinator's system prompt with stronger delegation language and a worked example of handing a refund to the specialist.",
+    "Give each subagent type its own `system_prompt` and a narrowly scoped `allowed_tools` whitelist matched to its defined job.",
+    "Add the three subagent descriptions into the coordinator's system prompt so it knows which specialists exist and can spawn them.",
+    "Remove `process_refund` from the coordinator's `allowed_tools` so that refund cases can only be resolved by delegating.",
+    "Keep the shared full tool list on all three subagent types so any specialist can pick up any case when another is unavailable."
+   ],
+   "correct": [
+    0,
+    2
+   ],
+   "whyRight": {
+    "text": "These two options fix the two distinct configuration defects in the trace. Option 0 addresses the zero-spawn symptom at its actual cause: the coordinator's `allowedTools` must include `\"Task\"`, because `Task` is the tool that spawns subagents, and a coordinator without it cannot delegate no matter what its prompt says. Option 2 addresses the \"for flexibility\" tool list: `AgentDefinition` shapes each subagent through its description, system prompt, and tool restrictions, and per-type tool restrictions ARE the mechanism for separation of responsibilities and least privilege — giving every subagent type the full tool set is named as the wrong instinct.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.3"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "This is the named trap for exactly this symptom: the prompt cannot grant a tool the configuration withholds. The coordinator already has delegation language in its system prompt and still spawned nothing, which is the evidence that the gap is in `allowed_tools`, not in the wording.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.3"
+    },
+    {
+     "option": 3,
+     "text": "Descriptions do not enable spawning — the `Task` tool does. Putting subagent descriptions in the coordinator's system prompt tells it what the specialists are for, which is useful only once it already has the capability to invoke them.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.3"
+    },
+    {
+     "option": 4,
+     "text": "Removing a tool takes capability away without adding the one that is missing. A coordinator stripped of `process_refund` but still lacking `\"Task\"` cannot delegate either — it simply fails the refund case instead of handling it, because spawning depends on the `Task` tool being present, not on other tools being absent.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.3"
+    },
+    {
+     "option": 5,
+     "text": "This is the \"full tool set for flexibility\" position the corpus marks wrong outright. Tool restrictions per subagent type are the enforcement mechanism for least privilege and separation of responsibilities; a shared full list dissolves the boundaries the subagent types exist to create.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.3"
+    }
+   ]
+  },
+  {
+   "domain": "D1",
+   "section": "1.5",
+   "stem": "A research run shipped a 12-page report, and a spot check of 40 citations found 9 pointing at the wrong source and 6 with no source at all. Findings currently reach the synthesis subagent as merged prose such as \"AI-generated music revenue grew 300% in 2024 (Music Industry Annual Report).\" Two search subagents also returned different growth figures for the same metric — 300% and 180% — and the pipeline silently kept the first one it saw. Which changes are correct? (Select 3.)",
+   "options": [
+    "Add a line to the synthesis subagent's system prompt instructing it to always cite the source for every claim it writes.",
+    "Pass findings between agents in a structured format that separates `content` from `metadata` such as source URL, document name, page number, and retrieved date.",
+    "Have the report agent re-search the web to locate a supporting source for each unattributed claim before the report ships.",
+    "Include the complete findings from the web-search and document-analysis subagents directly in the synthesis subagent's prompt.",
+    "When two sources report conflicting statistics, preserve both values with their attributions and annotate the conflict for the coordinator to resolve.",
+    "Have the coordinator resolve conflicting statistics by keeping the figure from the more recently retrieved source."
+   ],
+   "correct": [
+    1,
+    3,
+    4
+   ],
+   "whyRight": {
+    "text": "Each ticked option fixes a separate failure visible in the evidence. Option 1 is the root-cause fix for wrong and missing citations: content and metadata were merged into free text, so the claim-to-source mapping was destroyed during aggregation, and the remedy is a structured format that carries source URL, document name, and page number alongside the content. Option 3 covers the input side of the same rule — complete findings from prior agents must be included directly in the subagent's prompt, since the synthesis agent has isolated context and can only attribute what it actually received. Option 4 addresses the 300%-vs-180% discrepancy: on conflicting statistics both values are preserved with attribution and the conflict is annotated, leaving the decision to the coordinator rather than being silently resolved in the pipeline.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.5"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "This is the named wrong fix: the synthesis agent cannot cite metadata it never received in structured form. Instructing it to \"remember to cite sources\" changes its intent, not its inputs, so it will keep inventing or approximating attributions from merged prose.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.5"
+    },
+    {
+     "option": 2,
+     "text": "Re-searching the web to back-fill sources is called out as duplicated work that may attribute claims to the wrong sources — it finds a plausible document that supports the sentence rather than recovering the document the claim actually came from, which is how the 9 wrong citations get manufactured rather than fixed.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.5"
+    },
+    {
+     "option": 5,
+     "text": "Picking a winner by recency is still arbitrarily picking one. The rule is to preserve both values with attribution and annotate the conflict; retrieval date is metadata about when a source was fetched, not evidence about which figure is correct.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.5"
+    }
+   ]
+  },
+  {
+   "domain": "D1",
+   "section": "1.7",
+   "stem": "Your review agent runs one prompt over each pull request against a fixed house checklist. On a 14-file PR it left six detailed comments on the first three files and one-line comments on the remaining eleven, approved in `payments/refund.ts` the same nullable-cast pattern it had flagged in `orders/create.ts`, and missed a type mismatch that spanned two files. The same team has separately asked the agent to \"add comprehensive tests to the legacy billing module,\" where nobody knows up front which parts lack coverage. Which changes are correct? (Select 3.)",
+   "options": [
+    "Split the PR review into a per-file pass that finds local issues, followed by a separate integration pass that analyzes relationships for inconsistent types and circular dependencies.",
+    "Keep the single-pass review but expand the prompt with per-file instructions and a longer checklist so no file gets skimmed.",
+    "Handle the legacy-test work with dynamic adaptive decomposition: map the structure first, prioritize the highest-risk untested module, and adapt the plan as dependencies surface.",
+    "Define the legacy-test work as a predetermined pipeline — enumerate files, write tests, run the suite, report coverage — so the run is reproducible.",
+    "Keep the review workflow itself as a fixed sequential pipeline (prompt chaining), since every PR runs the same checklist and reproducibility matters.",
+    "Run the same single-pass review twice over the PR and merge the two outputs, so a second look catches what the first pass skimmed."
+   ],
+   "correct": [
+    0,
+    2,
+    4
+   ],
+   "whyRight": {
+    "text": "The stem contains two workflows with two different correct decomposition patterns, and one ticked option covers the structure of each plus one the review's pattern choice. Option 0 is the documented multi-pass fix for PRs with 10+ files: pass 1 per-file for local issues, pass 2 for relationships and cross-file issues such as inconsistent types and circular dependencies — which is exactly the two-file type mismatch that got missed. Option 4 keeps that review pipeline in the right family: task structure is predictable and the same template runs every time, which is the stated condition for a fixed sequential pipeline / prompt chaining. Option 2 selects the opposite pattern for the opposite task — the legacy-test scope is unknown up front, so dynamic adaptive decomposition applies, following the named sequence of mapping the structure first, identifying high-impact areas, and letting the prioritized plan adapt as dependencies are discovered.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "A longer single prompt intensifies the exact failure mode described: a single pass over 14 files produces attention dilution, inconsistent comments across files, and missed bugs from cognitive overload. The uneven comment depth and the pattern flagged in one file but approved in another are the textbook symptoms, and more instructions inside the same pass do not partition the attention.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+    },
+    {
+     "option": 3,
+     "text": "A fixed pipeline with predetermined steps is the named wrong answer for an open-ended task like adding comprehensive tests to a legacy codebase — the full scope is unknown up front, so a fixed script cannot react to discoveries such as an unexpected external-API dependency that needs a mock before tests can be written.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+    },
+    {
+     "option": 5,
+     "text": "Repetition does not change the shape of the pass. The corpus locates the failure in one undifferentiated pass spread across 14 files, and its fix is splitting by scope — per-file then integration — not running the same diluted pass again, which dilutes attention identically the second time.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+    }
+   ]
+  },
+  {
+   "domain": "D1",
+   "section": "1.9",
+   "stem": "The coordinator log for one research run reads: subagent-2 returned `{\"status\": \"failed\"}` after the patent database timed out at 30s; subagent-3 returned `{\"status\": \"failed\"}` after its query string was rejected as malformed; subagent-4 reported \"0 results\" from industry reports. The coordinator then aborted the entire run and returned nothing to the user. Which changes are correct? (Select 3.)",
+   "options": [
+    "Have a failing subagent return a structured error payload naming the failure type, what was attempted, any partial results, and potential alternatives.",
+    "Retry subagent-3's malformed query with exponential backoff, on the same path used for any other failed call.",
+    "Treat subagent-4's \"0 results\" as a valid finding rather than as a failure.",
+    "Have each subagent catch its own exceptions and return a success status with an empty result list, so the coordinator's aggregation never breaks.",
+    "Let the coordinator continue the run with the surviving subagents' results instead of terminating the whole workflow because one subagent failed.",
+    "Standardize on one retry policy — three attempts with backoff for every failure — so recovery behaves uniformly across all subagents."
+   ],
+   "correct": [
+    0,
+    2,
+    4
+   ],
+   "whyRight": {
+    "text": "Each ticked option corrects a distinct defect the log exposes. Option 0 replaces the bare `{\"status\": \"failed\"}` with the required error payload — failure type (timeout versus syntax error versus access denied), what was attempted including query string and parameters, partial results completed before the failure, and potential alternatives — which is the information the coordinator needs to choose between retry, reroute, continue with partial results, or escalate. Option 2 corrects the specific trap in the log: \"0 results\" is not a failure but a valid, informative response, distinct from a timeout. Option 4 removes the abort: terminating the entire workflow for one subagent failure is listed under the \"Never\" rules, and the coordinator's job is an intelligent recovery decision rather than a global stop.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.9"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "A malformed query string is a permanent error, and the rule for permanent errors — syntax, auth — is do not retry; log and continue. Backing off and re-sending the same malformed query re-fails deterministically and burns the retry budget; the patent-database timeout is the transient case where retrying with same or modified parameters is appropriate.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.9"
+    },
+    {
+     "option": 3,
+     "text": "Catching an error and silently returning success is explicitly listed under \"Never.\" It converts an access failure into what looks like a genuine empty finding, which destroys precisely the distinction the coordinator must make between a timeout that needs a recovery decision and a real \"0 results\" that is a finding.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.9"
+    },
+    {
+     "option": 5,
+     "text": "One uniform policy collapses the error taxonomy the section is built on. Transient failures are retried with same or modified parameters, permanent failures are not retried at all, and valid empty results are accepted as findings — a blanket three-attempts rule retries malformed queries pointlessly and can turn a legitimate empty result into an apparent fault.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.9"
+    }
+   ]
+  },
+  {
+   "domain": "D1",
+   "section": "1.11",
+   "stem": "In your extraction pipeline the document-analysis agent has `fetch_url` in its tool list, and traces show it issuing ad-hoc search-engine queries and pulling arbitrary HTML pages into its analysis on 12% of runs. Separately, the field-validation agent's checks break down as 85% simple value lookups and 15% complex multi-source research, and the team has proposed giving it full web-search access so it can cover both. Which changes are correct? (Select 3.)",
+   "options": [
+    "Add an instruction to the document-analysis agent's prompt forbidding it from using `fetch_url` for search.",
+    "Replace `fetch_url` with a `load_document` tool that validates the URL points to a document format, fixing the problem at the interface level.",
+    "Grant the field-validation agent full web-search access so it can resolve all of its checks without a round trip to the coordinator.",
+    "Give the field-validation agent a limited `verify_fact` tool for the 85% of simple checks and route the 15% of complex verification through the coordinator.",
+    "Scope every subagent's tool list to the minimum set its defined role actually requires.",
+    "Queue all verification to the end of the pipeline and run it in a single batch once extraction has completed."
+   ],
+   "correct": [
+    1,
+    3,
+    4
+   ],
+   "whyRight": {
+    "text": "All three ticked options are separate applications of least-privilege tooling. Option 1 is the documented root-cause fix for a document-analysis agent that drifts into ad-hoc web search: replacing `fetch_url` with a `load_document` tool that validates the URL points to a document format removes the capability at the interface level, which is deterministic rather than probabilistic. Option 3 is the documented split for the 85/15 verification profile — a limited `verify_fact` tool covers the simple checks in place, while complex verification is routed through the coordinator so the agent never needs general research capability. Option 4 states the governing principle each subagent should have only the tools it needs for its defined scope, which is what makes both specific fixes correct rather than arbitrary.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.11"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A prompt instruction not to use `fetch_url` for search is named as the wrong fix because it is probabilistic, not deterministic — the capability is still in the agent's hands, so the behavior recurs at some rate. The corrective belongs at the tool interface, where a document-format check makes the misuse impossible rather than discouraged.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.11"
+    },
+    {
+     "option": 2,
+     "text": "Full web-search access for the verification agent is the explicit wrong answer — it breaks separation of responsibilities by handing a narrow-scope agent a general research capability, which is the same failure the `fetch_url` drift demonstrates elsewhere in the pipeline.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.11"
+    },
+    {
+     "option": 5,
+     "text": "Batching all verification to the end is called out as blocking, because later steps may need earlier verified facts. It also does nothing about the tool-scope problem the stem describes — it reschedules the work rather than deciding which agent is allowed to do it.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.11"
+    }
+   ]
+  },
+  {
+   "domain": "D1",
+   "section": "1.13",
+   "stem": "Your support agent currently escalates by calling `escalate_to_human` with a single free-text note such as \"Customer unhappy, wants refund.\" QA sampled 50 escalated chats: in 41 of them the human agent re-asked the customer for the order number, and in 33 they re-asked what had already been offered. Average handle time after escalation is 9 minutes. Which changes fix this? (Select 2.)",
+   "options": [
+    "Give human agents read access to the raw conversation transcript so that nothing is lost in summarization.",
+    "Replace the free-text note with a structured handoff summary carrying the customer ID, a root-cause analysis, the refund amount, and a recommended action.",
+    "Have the human agent re-run `get_customer` and `lookup_order` at the start of each escalated chat to rebuild context reliably.",
+    "Include in that handoff summary the actions the agent already took — identity verified, order confirmed, replacement offered and declined — plus the escalation reason.",
+    "Escalate earlier in the conversation, so less context accumulates and there is less to hand over.",
+    "Attach the complete tool-call log to the escalation so the human can reconstruct the sequence of events themselves."
+   ],
+   "correct": [
+    1,
+    3
+   ],
+   "whyRight": {
+    "text": "Both ticked options build the same required artifact from two independently named halves of its payload. Option 1 carries the core fields the exam names for a structured handoff — customer ID, root-cause analysis, refund amount, and recommended action — which is the direct fix for humans re-asking for the order number, since the identifiers arrive with the escalation instead of being re-elicited. Option 3 adds the other required half: the actions already taken and the escalation reason, which is what stops the human from re-asking what was already offered and declined. Together they make the summary self-contained, which the section requires because the human agent does not have access to the conversation transcript — the summary is everything they see.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.13"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Human agents lack transcript access by design, and the corpus rejects this fix on a second ground as well: a raw transcript forces the human to re-read the entire conversation, which trades one form of slow handoff for another instead of delivering compiled conclusions.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.13"
+    },
+    {
+     "option": 2,
+     "text": "Having the human re-run the AI agent's tools is listed as the wrong fix — it is duplicated work and slower resolution. It also rebuilds only the retrievable facts; the reasoning, the root cause, and the offer the customer already declined are not recoverable by re-calling `get_customer` and `lookup_order`.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.13"
+    },
+    {
+     "option": 4,
+     "text": "Escalating earlier does not fix the information loss — a thinner conversation handed over in the same free-text form still arrives without customer ID, root cause, or recommended action — and it degrades the autonomous resolution rate by pushing cases to humans that the agent could have closed.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.13"
+    },
+    {
+     "option": 5,
+     "text": "A full tool-call log is the transcript problem wearing different clothes: it is raw material the human must reconstruct meaning from, whereas the required artifact is a compiled summary that already states the root cause, the amount, and the recommended action.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.13"
+    }
+   ]
+  },
+  {
+   "domain": "D1",
+   "section": "1.16",
+   "stem": "A named session `investigation-auth-bug` completed a full codebase analysis yesterday afternoon, and overnight three files were refactored. This morning the team wants to continue that same investigation, and separately wants to evaluate two competing refactoring strategies starting from the same completed analysis, without either evaluation biasing the other. Which changes are correct? (Select 2.)",
+   "options": [
+    "Resume the named session with `claude --resume investigation-auth-bug` and continue as before, since the saved context already contains the codebase analysis.",
+    "Resume the named session and explicitly tell it which three files changed, so it performs targeted re-analysis of just those files.",
+    "Evaluate both refactoring strategies sequentially inside the resumed session and compare the two write-ups at the end.",
+    "Use `fork_session` to create two branches from the shared analysis baseline, each exploring one refactoring strategy independently.",
+    "Start two brand-new sessions, one per strategy, so neither inherits any prior reasoning at all.",
+    "Discard the session and start fresh with an injected structured summary of yesterday's conclusions, since any file change makes the prior tool results stale."
+   ],
+   "correct": [
+    1,
+    3
+   ],
+   "whyRight": {
+    "text": "The stem contains two separate session-management decisions and each ticked option answers one. Option 1 is the documented handling for resuming after code modifications: resume the named session and tell the agent exactly which files changed, so it re-analyzes just those rather than trusting stale results or re-exploring the whole codebase — most of yesterday's context is still valid, which is the condition under which `--resume` is the right choice. Option 3 answers the comparison requirement: `fork_session` produces divergent branches that both inherit context up to the branch point and then proceed independently, which is exactly the pattern for comparing two approaches from one shared, expensive codebase analysis without re-analyzing twice and without the two explorations contaminating each other.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.16"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Resuming and continuing as-is is the named wrong move here: the agent reasons over stale tool results for the three changed files as if they were current. Resumption is correct only once paired with telling it which files changed.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.16"
+    },
+    {
+     "option": 2,
+     "text": "Running both strategies sequentially in one session means the second evaluation is biased by the first's reasoning and conclusions — which is precisely the contamination the team said it wants to avoid, and the reason `fork_session` exists.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.16"
+    },
+    {
+     "option": 4,
+     "text": "Two brand-new sessions force each one to redo the shared baseline analysis, paying for the expensive codebase investigation twice. The point of forking is to inherit that baseline once and diverge from it.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.16"
+    },
+    {
+     "option": 5,
+     "text": "Fresh-plus-summary is the right choice only when prior tool results are stale — files changed significantly, long time elapsed, context degraded. Three changed files after one night is a targeted-re-analysis case, not a wholesale-staleness case, so discarding the session throws away context that is still valid.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.16"
+    }
+   ]
+  },
+  {
+   "domain": "D2",
+   "section": "2.3",
+   "stem": "Your customer support agent handles refunds and order lookups. Production logs show `process_refund` returning `{\"isError\": true, \"description\": \"Operation failed\"}` on an order purchased 47 days ago, after which the agent re-invokes the identical call four times before dumping the case into the human escalation queue. A second pattern in the same logs: `search_orders` returns `isError: true` for customers who have simply never placed an order, and the agent apologises for a system problem instead of answering the question. Which changes to these tools' error contract fix both behaviours? (Select 3.)",
+   "options": [
+    "Return the refund rejection with `retriable: false` plus a customer-friendly explanation in the payload, e.g. \"Refunds are available within 30 days of purchase; this order is outside that window.\"",
+    "Tag the refund rejection with `errorCategory: \"business\"` so the agent treats it as a valid policy outcome rather than a failure to work around.",
+    "Reclassify the refund rejection as transient with `isRetryable: true` so the pipeline's existing retry-with-backoff path handles it consistently.",
+    "Have `search_orders` return `{\"results\": [], \"isError\": false}` when the query executed successfully and matched nothing.",
+    "Have `search_orders` return an empty result list whenever it cannot reach the orders database, so the agent always receives a well-formed response.",
+    "Keep the generic `\"Operation failed\"` payload and add a system-prompt line telling the agent never to retry refund failures."
+   ],
+   "correct": [
+    0,
+    1,
+    3
+   ],
+   "whyRight": {
+    "text": "Each tick repairs a different part of the contract and stands on its own. A is the corpus's literal prescription for a business-rule violation: `retriable: false` signals that re-invoking cannot change the outcome, and the customer-friendly explanation lets the agent communicate the policy without paraphrasing internal jargon — exactly the ✅ response to the 30-day-window refund scenario. B adds the classification from the four-category error table, where a business error is non-retryable and the correct agent response is to explain the policy outcome and never retry; the category is what tells the agent this is a valid answer that the action is disallowed, not a tool failure. D fixes the second symptom independently: a query that ran and returned zero matches is a successful query, so the signal is success with an empty result set (`isError` absent or false), which lets the agent confidently report \"no orders found\" instead of retrying or escalating a query that worked fine.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+   },
+   "whyWrong": [
+    {
+     "option": 2,
+     "text": "This is the explicit ❌ in the refund scenario: classifying a policy denial as transient with `isRetryable: true` wastes retry attempts on an outcome that can never change. The four-category table puts business errors in the non-retryable column precisely because no amount of re-invocation moves a policy limit.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+    },
+    {
+     "option": 4,
+     "text": "This is the named failure mode in the empty-results-vs-access-failures table: returning an empty list when the database connection failed makes the agent tell the customer \"you have no orders\" — a false statement caused by masking an access failure. A query that could not run must return `isError: true` with a category.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+    },
+    {
+     "option": 5,
+     "text": "A generic `\"Operation failed\"` is the corpus's ❌ because the agent cannot distinguish a policy denial from a transient outage, so it retries or escalates incorrectly; bolting a prompt rule on top leaves the payload just as ambiguous. The fix is structuring the error, not instructing the model around an unstructured one.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+    }
+   ]
+  },
+  {
+   "domain": "D2",
+   "section": "2.5",
+   "stem": "In your multi-agent research system, one subagent has been handed the full 18-tool catalog and calls the wrong tool on a large share of its turns, while a peer agent scoped to 5 role-relevant tools selects correctly against the same sources. Separately, the synthesis agent — which holds no research tools of its own — pings the coordinator to confirm an individual fact roughly every other paragraph while drafting its report, and each confirmation costs a full coordinator round trip. Which two changes follow the guide's tool-distribution guidance? (Select 2.)",
+   "options": [
+    "Restrict the 18-tool subagent to the 4–5 tools its role actually requires.",
+    "Keep all 18 tools available and rewrite every description with sharper input formats and boundary cases.",
+    "Give the synthesis agent a `verify_fact` tool scoped to simple lookups, while complex research questions still route back through the coordinator.",
+    "Grant the synthesis agent full `web_search` access so it can resolve any fact without a round trip.",
+    "Give every agent the complete tool catalog for flexibility and manage specialisation through each agent's prompt instead.",
+    "Keep routing every fact check through the coordinator, since strict role scoping admits no exceptions."
+   ],
+   "correct": [
+    0,
+    2
+   ],
+   "whyRight": {
+    "text": "A and C are separately defensible against two different rules in the same section. A is the ✅ answer to the guide's own 18-versus-4–5 scenario: tool count itself degrades selection reliability by enlarging the decision space the model must discriminate across on every turn, so reducing the subagent to the tools its role needs attacks the root cause. C is the sanctioned exception to strict role scoping — a high-frequency need that would otherwise force constant coordinator round trips gets a narrowly scoped cross-role tool, with `verify_fact` limited to simple lookups while complex research still goes back through the coordinator to the research agents. Neither depends on the other: the first is about decision-space size, the second about round-trip overhead on a high-frequency need.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "Descriptions do help, but this is the corpus's ❌ for the 18-tool scenario: tool count is the root cause, so the decision space must be reduced first. Better descriptions on 18 overlapping candidates still leaves 18 near-miss discriminations per turn.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+    },
+    {
+     "option": 3,
+     "text": "Full `web_search` on the synthesis agent is the named cross-specialisation misuse: it starts doing open-ended research instead of synthesising. The scoped `verify_fact` tool exists precisely so the high-frequency need is served without handing over a general research capability.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+    },
+    {
+     "option": 4,
+     "text": "Giving every agent the full catalog \"for flexibility\" is an explicit ❌ — agents with tools outside their specialisation tend to misuse them, the guide's own example being a synthesis agent attempting web searches. Prompt-level specialisation is probabilistic where least privilege is structural.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+    },
+    {
+     "option": 5,
+     "text": "The corpus marks this as correct scoping but the wrong call here: the round-trip overhead on a high-frequency need is exactly what scoped cross-role tools exist to avoid. Role scoping does have one sanctioned exception, and this situation is it.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+    }
+   ]
+  },
+  {
+   "domain": "D2",
+   "section": "2.6",
+   "stem": "Your team wires Claude Code to a project tracker and to GitHub over MCP, and three things surfaced this sprint. Each developer added the GitHub server in their own `~/.claude.json` with a personal token pasted in, and the six machines have drifted to four different tool sets. Session transcripts show the agent spending 6–8 turns calling `search_issues` with guessed keywords purely to discover which issues exist before it can do anything useful. A ticket also proposes building a Jira MCP server in-house \"so we control it.\" Which three responses match the guide? (Select 3.)",
+   "options": [
+    "Declare the GitHub server in `.mcp.json` at the project root using `${GITHUB_TOKEN}` substitution, and document the variable in the README.",
+    "Commit `.mcp.json` with a placeholder token that each developer replaces locally after cloning.",
+    "Expose an issue-summary catalog as an MCP resource, so the agent reads a map of available data and then makes targeted tool calls.",
+    "Add a `list_everything` tool and instruct the agent to call it before any issue search.",
+    "Adopt an existing community Jira MCP server and reserve custom server work for workflows no existing server covers.",
+    "Load the current issue database into the system prompt at session start so the agent always knows what exists."
+   ],
+   "correct": [
+    0,
+    2,
+    4
+   ],
+   "whyRight": {
+    "text": "Each tick answers one of the three symptoms and is defensible alone. A is the corpus's exam pattern for a shared server with per-developer credentials: `.mcp.json` is the project-wide, version-controlled scope, and `${VAR_NAME}` substitution keeps the config in the repo while the token stays in the environment — which also ends the drift caused by six user-scope installs. C is the resources-as-content-catalogs answer: resources expose issue summaries, doc hierarchies and schemas as an immediate map of what data exists without exploratory tool calls, which is what collapses the 6–8 guessed `search_issues` turns. E is the community-versus-custom rule: standard integrations like Jira, GitHub and Slack should use existing community MCP servers, with custom build effort reserved for unique, team-specific workflows.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "Committing a placeholder token is the flagged security risk in the same exam pattern; the sanctioned mechanism is `${GITHUB_TOKEN}` environment-variable substitution, which lets the project config be version-controlled while credentials stay out of the repo entirely.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+    },
+    {
+     "option": 3,
+     "text": "This is the ❌ against the resource answer: a tool adds an LLM call and relies on the agent remembering to invoke it first, whereas a resource provides the map as readable context requested on demand. It re-creates the discovery problem one turn later.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+    },
+    {
+     "option": 5,
+     "text": "Pasting the full issue database into the system prompt is the corpus's other ❌ here — resources are requested on demand, while a static dump bloats context and goes stale as issues change.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+    }
+   ]
+  },
+  {
+   "domain": "D2",
+   "section": "2.9",
+   "stem": "You are renaming `calculateTax` across a TypeScript repo in a code-generation session. Grep for `calculateTax` returns 12 hits, you update all 12, and CI still fails: `utils/tax.ts` wraps the function and re-exports it as `getTax`, `index.ts` re-exports that in turn, and several packages import only the wrapper name. On the one file you edited by hand, `Edit` returned an error because your anchor snippet appears three times in that file. Which two moves does the guide sanction? (Select 2.)",
+   "options": [
+    "Identify every exported name first — the original plus each wrapper and re-export alias — then Grep for each name to collect all call sites.",
+    "Grep only for `calculateTax` but widen the search to every file extension, since the wrapper resolves to the same underlying function.",
+    "When Edit has no unique anchor, Read the full file, modify the content, then Write the updated version back.",
+    "Retry Edit with a shorter, more generic anchor string so a match is easier to find.",
+    "Run the replacement through Bash with `sed` to bypass the uniqueness constraint.",
+    "Glob `**/calculateTax*` to enumerate every file that involves the function before editing."
+   ],
+   "correct": [
+    0,
+    2
+   ],
+   "whyRight": {
+    "text": "A and C solve two unrelated failures in the stem, each on its own merits. A is the wrapper-module strategy verbatim: when a function is re-exported or wrapped, searching only the original name misses every consumer importing the alias, so you first identify all exported names (`calculateTax`, `getTax`) and then search for each one across the codebase — which is the only way the packages importing the wrapper get found. C is the sanctioned fallback for Edit's uniqueness constraint: Edit works by unique text matching and fails when the anchor appears more than once, and the reliable recovery is Read the full file, modify the content programmatically, then Write the updated version.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "The miss here is the name, not the file extension — the corpus's ❌ is grepping only for `calculateTax` and concluding those are all the callers, because every consumer that imports the `getTax` wrapper is invisible to that search no matter how many extensions it covers.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+    },
+    {
+     "option": 3,
+     "text": "Explicitly ❌: shorter anchors are more likely to be non-unique, not less, so this makes the exact failure that just occurred more probable rather than resolving it.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+    },
+    {
+     "option": 4,
+     "text": "Forcing the replacement with `sed` bypasses the tool designed for the job; the exam's sanctioned fallback when Edit cannot find a unique anchor is Read + Write, not a shell workaround.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+    },
+    {
+     "option": 5,
+     "text": "Glob matches file paths, not file contents — `**/calculateTax*` finds only files named after the function, which is the corpus's ❌ for locating references. Content search is Grep's job.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+    }
+   ]
+  },
+  {
+   "domain": "D2",
+   "section": "2.7",
+   "stem": "Your structured-extraction pipeline draws on three retrieval tools: one returns Unix epoch timestamps, one ISO 8601 strings, and one a vendor-specific numeric status code — and two of the three are third-party services your team cannot modify. In the same pipeline, an archive step ran against 4,300 records last Thursday before anyone noticed, although the runbook requires human approval for anything above 50 records. Which two measures does the guide support? (Select 2.)",
+   "options": [
+    "A `PostToolUse` hook that intercepts each tool's output and normalizes the date and status formats centrally.",
+    "A `PreToolUse` hook that blocks any operation exceeding the 50-record threshold and routes it to escalation.",
+    "A `normalize_data` tool the agent is instructed to call after every retrieval.",
+    "Patching the one tool you own and maintaining local wrappers around the two third-party tools.",
+    "Documenting the three formats and the 50-record ceiling in the system prompt so the agent handles both."
+   ],
+   "correct": [
+    0,
+    1
+   ],
+   "whyRight": {
+    "text": "A and B are the two named primary use cases for the two hook types, and each answers a separate symptom. A is the PostToolUse case exactly as the corpus frames it — multiple tools returning different formats (Unix timestamps, ISO 8601 dates, numeric status codes) from sources you cannot modify are normalized centrally by intercepting output after the tool returns. B is the PreToolUse case: block operations above a defined threshold, the guide's own example being bulk deletion affecting more than 50 records, and route them to escalation. B also carries the section's core distinction on its own — hooks are deterministic code that fires regardless of LLM behaviour, which is what safety-critical enforcement requires.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.7"
+   },
+   "whyWrong": [
+    {
+     "option": 2,
+     "text": "Listed as ❌ against the PostToolUse answer: a `normalize_data` tool the agent must call after every retrieval adds LLM call overhead and depends on the agent remembering, where the hook runs deterministically around every tool call.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.7"
+    },
+    {
+     "option": 3,
+     "text": "Modifying the tools you control plus wrapping the third-party ones is the ❌ of fragmented maintenance — the normalization logic ends up split across several codebases instead of intercepted centrally at one point.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.7"
+    },
+    {
+     "option": 4,
+     "text": "Documenting formats in the system prompt relies on LLM interpretation, and the section's stated distinction is that hooks are deterministic while system prompt instructions are probabilistic — unacceptable for the safety-critical 50-record limit that has already been breached once.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.7"
+    }
+   ]
+  },
+  {
+   "domain": "D3",
+   "section": "3.1",
+   "stem": "A nine-developer platform team shares one repository. Code generated for the three original developers consistently includes comprehensive error handling; code generated for the four who joined this quarter does not, and one of them posted in the team channel: \"I've asked for error handling in three separate prompts and it still ships bare try/except.\" The repo contains a checked-in `.claude/CLAUDE.md` of 42 lines that never mentions error handling, and each original developer also maintains a `~/.claude/CLAUDE.md`. Which actions correctly diagnose and fix the inconsistency? (Select 3.)",
+   "options": [
+    "Add a directory-level `CLAUDE.md` under `src/` that overrides the project-level file for code in that directory.",
+    "Run `/memory` on a new joiner's machine to list which memory files are actually loaded, confirming the error-handling instruction is absent from the loaded set.",
+    "Have each new joiner restate the error-handling requirement at the top of every prompt until the behavior becomes consistent.",
+    "Recognize that the standard currently lives in the original developers' `~/.claude/CLAUDE.md`, which is not shared through version control.",
+    "Convert the project `CLAUDE.md` into `@import` references so the error-handling standard loads at the correct precedence level.",
+    "Move the error-handling instruction into the project-level `.claude/CLAUDE.md` so it is version-controlled and reaches every teammate."
+   ],
+   "correct": [
+    1,
+    3,
+    5
+   ],
+   "whyRight": {
+    "text": "This is the corpus's canonical three-developers-versus-the-fourth scenario, and each ticked option carries a separate part of it. Option 3 is the root cause: user-level config at `~/.claude/CLAUDE.md` applies only to that developer and is explicitly NOT shared via version control, which is exactly why the three originals get error handling and the four new joiners do not. Option 5 is the documented fix: move the instruction to project-level config, which is checked into version control and therefore available to all team members. Option 1 is the documented diagnosis workflow, defensible on its own merits even before the root cause is known: `/memory` shows which memory files are loaded in the current session, so running it on the new teammate's machine makes the missing project instruction visibly absent from the loaded set.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.1"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "This encodes the corpus's flagged misconception that lower levels override higher levels. The hierarchy is a concatenated load order from root down to the working directory — every discovered file contributes its instructions, and there is no documented override-precedence mechanism between CLAUDE.md levels. Beyond the wrong mental model, a directory-scoped file also fails to address the actual gap, which is that nothing in the repo states the standard at all.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.1"
+    },
+    {
+     "option": 2,
+     "text": "This is the explicitly rejected response to inconsistent behavior — repeating the instruction louder in the prompt each session treats the symptom, not the root cause. The corpus's first diagnostic step for \"Claude follows rule X sometimes but not always\" is checking whether the file holding rule X is in the loaded set, not manual restatement by each developer on every turn.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.1"
+    },
+    {
+     "option": 4,
+     "text": "`@import` is a modularity mechanism for keeping CLAUDE.md content in separate files, with `@` immediately before the path and relative paths resolving against the importing file. It carries no precedence semantics — the phrase \"loads at the correct precedence level\" invents a mechanism the docs do not describe. Restructuring the project file into imports also does nothing about a standard that exists only in personal user-level config the new joiners never receive.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.1"
+    }
+   ]
+  },
+  {
+   "domain": "D3",
+   "section": "3.3",
+   "stem": "In your multi-agent research pipeline, a `/survey-sources` skill fans out across 40+ documents per run; afterwards the lead session has lost the original research question and starts re-deriving it from its own notes. A security reviewer separately flags that the same skill can invoke Bash and Edit even though it only ever reads and greps. Its SKILL.md frontmatter currently carries `description:` and `argument-hint:` and nothing else. Which frontmatter changes address these two problems? (Select 2.)",
+   "options": [
+    "Declare the skill's permitted tools in `.mcp.json` so the restriction applies to every skill in the project.",
+    "Switch the skill to a faster model so the survey finishes before the main context window fills.",
+    "Add `context: fork` so the skill runs in an isolated subagent context and its exploration output does not pollute the main session.",
+    "Have the skill compress its findings into a three-line summary before returning, so less text enters the main window.",
+    "Set `allowed-tools: [Read, Grep]` in the skill's SKILL.md frontmatter to scope the tool access available during its execution.",
+    "Add a \"skill permissions\" section to the project `CLAUDE.md` listing which tools each skill may use."
+   ],
+   "correct": [
+    2,
+    4
+   ],
+   "whyRight": {
+    "text": "The stem contains two independent defects and each ticked option fixes exactly one of them. Option 2 fixes the context pollution: `context: fork` runs the skill in an isolated subagent context, which is the documented answer whenever a skill generates large output or exploration context and the main session loses track of the original task. Option 4 fixes the over-broad tool access: `allowed-tools` is the SKILL.md frontmatter key that scopes what a skill may do, and the exam framing is that it restricts tool access during skill execution (the current-docs framing calls it a permission pre-grant, but both framings agree this is the key you reach for, and scoping it minimally to `[Read, Grep]` is right under either reading).",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "This is the named misconception about where skill tool scoping lives. Tool scoping for a skill is configured in SKILL.md frontmatter, not in `.mcp.json`, `CLAUDE.md`, or a `config.json` commands array. The project-wide framing also contradicts the per-skill nature of the control.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+    },
+    {
+     "option": 1,
+     "text": "Model speed is the explicitly rejected fix for context pollution in the `/analyze-codebase` scenario — a faster model does not stop the skill's exploration output from filling the main conversation window. It also leaves the tool-access finding entirely untouched.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+    },
+    {
+     "option": 3,
+     "text": "Compressing results into a short summary is listed as an incorrect fix because it loses analysis capability while the exploration still runs in the main context. `context: fork` achieves the isolation without that sacrifice — the skill runs in a subagent and results are summarized back from there.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+    },
+    {
+     "option": 5,
+     "text": "Same misconception as option 0, in its `CLAUDE.md` variant. Tool scoping is not configured in `CLAUDE.md`; it lives in SKILL.md frontmatter via `allowed-tools`. `CLAUDE.md` is for standards and project context that load in every session, not per-skill capability control.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+    }
+   ]
+  },
+  {
+   "domain": "D3",
+   "section": "3.6",
+   "stem": "Three tasks are queued for your code-generation workstream: swapping the internal HTTP client library across 45+ files, restructuring a monolith into separate services touching dozens of modules, and implementing `normalizeInvoice()` against an input/output contract already signed off in an interface doc. The tech lead's standing instruction to the team is: \"Start executing everything, and flip into planning mode whenever Claude gets stuck.\" Which judgments about mode selection are correct? (Select 2.)",
+   "options": [
+    "The tech lead's reactive-switch instruction is sound, because it avoids planning overhead on tasks that turn out to be simple.",
+    "Both the library swap and the monolith restructure should begin in planning mode, before any file is edited.",
+    "The monolith restructure is the one task where direct execution is acceptable, because the target architecture is already named.",
+    "Planning mode should be skipped for the library swap because it is limited to Read/Grep/Glob and cannot perform the 45 edits.",
+    "`normalizeInvoice()` should go straight to direct execution.",
+    "`normalizeInvoice()` also warrants planning mode, since Claude writes the implementation in the same session either way."
+   ],
+   "correct": [
+    1,
+    4
+   ],
+   "whyRight": {
+    "text": "Each ticked option covers a different half of the mode-selection table and stands on its own. Option 1 pairs the two large-scope tasks: a library migration affecting 45+ files and restructuring a monolith into microservices across dozens of files are both listed as planning-mode situations, because the scope is large, multiple approaches exist, and premature execution causes expensive rework. Option 4 covers the opposite case independently: implementing a function with a well-defined input/output spec is listed as direct execution, since the scope is clear and the approach is already defined by the signed-off contract.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.6"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "This is the named exam trap. \"Start in direct execution and switch to planning when it gets hard\" is wrong — reactive switching is expensive, and the correct posture is to plan upfront when the task demands it. The rationale offered (avoiding overhead) is precisely the reasoning the corpus rejects.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.6"
+    },
+    {
+     "option": 2,
+     "text": "Restructuring a monolith into microservices across dozens of files is listed in the scenario table as a planning-mode task, not a direct-execution one. Knowing the destination architecture does not make the change routine; the file count and the number of viable decompositions are what trigger planning mode.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.6"
+    },
+    {
+     "option": 3,
+     "text": "The premise is true — planning mode explores with Read/Grep/Glob only and produces no side effects — but the conclusion inverts the documented workflow. The combined approach is planning mode for investigation and design, then user approval of the plan, then direct execution to implement. Read-only exploration is the point of the first phase, not a reason to skip it.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.6"
+    },
+    {
+     "option": 5,
+     "text": "A function with a well-defined input/output spec is the table's canonical direct-execution case. Planning mode is for large scope, architectural decisions, or multiple possible approaches — none of which apply once the contract is signed off, so the extra plan-and-approve round buys nothing.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.6"
+    }
+   ]
+  },
+  {
+   "domain": "D3",
+   "section": "3.7",
+   "stem": "Your extraction pipeline turns scanned remittance advices into normalized JSON rows. The transformation is described in prose in the prompt, and roughly one run in three returns a differently-shaped object. A review of the parser then filed three defects at once — a field-offset bug, a rounding bug whose behavior depends on how the offsets are resolved, and a misspelled log string — and the developer's habit is to re-describe each defect in prose, one message at a time. Which refinements match the documented iterative-refinement techniques here? (Select 3.)",
+   "options": [
+    "Add 2–3 concrete input→output example pairs to the extraction prompt to anchor the transformation.",
+    "Keep the prose description but expand it with more precise adjectives about the required output shape.",
+    "Report all three defects strictly one per message, so each iteration stays focused and easy to verify.",
+    "Send the field-offset and rounding defects together in one detailed message, because the two fixes interact.",
+    "Leave the example pairs out, since supplying samples makes the model copy them rather than generalize to unseen remittance layouts.",
+    "Supply a failing test case — a sample input row plus the exact expected output — and iterate until it passes."
+   ],
+   "correct": [
+    0,
+    3,
+    5
+   ],
+   "whyRight": {
+    "text": "Three distinct techniques from the iterative-refinement set, each addressing a different symptom in the stem. Option 0 fixes the inconsistent output shape: when a prose-described transformation produces a differently-shaped output on each run, 2–3 concrete input/output example pairs are the documented remedy, because examples unambiguously show format and decision logic. Option 3 fixes the batching error: interacting or interdependent issues belong in one detailed message, since fixing retry-style dependent behavior without knowing the new offset design produces a conflicting patch — and the rounding bug is stated to depend on offset resolution. Option 5 fixes the defect-reporting method independently: providing a specific failing test case with example input and expected output is the fastest way to fix an edge case, giving every iteration a concrete, machine-checkable failure signal instead of prose.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.7"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "Lengthening the prose description with more adjectives is the explicitly rejected move — it remains ambiguous. Natural-language descriptions of a transformation are what get interpreted inconsistently in the first place; adding words does not remove the ambiguity that concrete example pairs remove.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.7.3"
+    },
+    {
+     "option": 2,
+     "text": "This encodes the flagged misconception that you should always report one issue per message so Claude can focus. Sequential handling is correct only for independent issues; here the rounding bug depends on the offset behavior, and separate fixes to interacting problems can contradict each other and force another round. Only the unrelated log-string typo is a genuine candidate for separate handling.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.7.4"
+    },
+    {
+     "option": 4,
+     "text": "This is the named misconception about examples. Well-chosen examples demonstrate the pattern and the model applies it to novel inputs rather than repeating the samples — generalization is the documented behavior, not copying, so \"unseen remittance layouts\" is an argument for example pairs, not against them.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.7.3"
+    }
+   ]
+  },
+  {
+   "domain": "D3",
+   "section": "3.8",
+   "stem": "Your PR-review job invokes Claude Code from a CI step that currently runs `claude \"Review this diff for security issues\"`; the step emits no output and is killed at the 60-minute job timeout on every run. Once that is resolved, authors report that each follow-up commit produces near-duplicate inline comments on lines nobody touched, and that about 40% of the generated test suggestions duplicate scenarios the existing suite already covers. Which changes are correct? (Select 3.)",
+   "options": [
+    "Set `CLAUDE_HEADLESS=true` in the workflow environment so the CLI skips the interactive prompt.",
+    "Feed the previous run's findings into the re-run prompt and instruct Claude to report only new or still-unresolved issues.",
+    "Add `-p` (`--print`) to the invocation so Claude processes the prompt, writes to stdout, and exits.",
+    "Start every re-run from a blank slate so the review stays objective across commits.",
+    "Redirect `stdin < /dev/null` in the workflow step so the CLI cannot block waiting for input.",
+    "Put the existing test files in context when generating tests, so it stops proposing scenarios the suite already covers."
+   ],
+   "correct": [
+    1,
+    2,
+    5
+   ],
+   "whyRight": {
+    "text": "Three separate symptoms, three separate documented fixes. Option 2 resolves the hang: without `-p`, Claude Code waits for interactive input and the pipeline hangs, whereas `-p` (or `--print`) processes the prompt, prints to stdout, and exits — the documented way to run in CI/CD. Option 1 resolves the duplicate inline comments: when a review re-runs after new commits, include the prior review's findings in the prompt and instruct Claude to report only new or still-unaddressed issues, which keeps the reviewer consistent and prevents duplicate comments on unchanged code. Option 5 resolves the redundant test suggestions on its own merits: putting existing test files in context when generating tests avoids suggesting duplicate scenarios already covered by the suite.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "`CLAUDE_HEADLESS=true` is listed among the trap options to reject — it does not exist. Non-interactive execution is achieved with the `-p` / `--print` flag, not through an invented environment variable.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+    },
+    {
+     "option": 3,
+     "text": "This is the named misconception about re-runs. A blank-slate re-run re-litigates previously settled findings and floods the PR with duplicates — exactly the symptom in the stem. Prior findings in context are what keep the reviewer consistent across runs.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+    },
+    {
+     "option": 4,
+     "text": "`stdin < /dev/null` is explicitly listed as a Unix workaround rather than the documented approach. It is the trap that punishes candidates who reason from general shell habits instead of the documented non-interactive mode, which is `-p` / `--print`.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+    }
+   ]
+  },
+  {
+   "domain": "D3",
+   "section": "3.12",
+   "stem": "A research session burned 70 minutes and most of its context window on discovery — 180 file reads and 40 searches — before implementation had even started, and the lead's instinct is to run `/compact` and carry on. Separately, a teammate reopened yesterday's session with `--resume` and Claude confidently quoted a config value that three commits have since changed. Which actions are correct for these two situations? (Select 2.)",
+   "options": [
+    "Run `/compact` before implementation begins, so the discovery detail is compressed but preserved.",
+    "Use `fork_session` to branch the discovery session so the implementation fork inherits the full context.",
+    "Route discovery through an Explore subagent, so the verbose output stays isolated and only a summary returns to the main session.",
+    "Start a new session with a short written summary of yesterday's findings rather than resuming, because the prior session's tool results are stale.",
+    "Resume again with `--resume` and instruct Claude to re-read the changed config file, since a resumed session retains its saved context.",
+    "Run `/memory` to confirm which memory files are loaded, since stale tool results indicate a memory-discovery problem."
+   ],
+   "correct": [
+    2,
+    3
+   ],
+   "whyRight": {
+    "text": "The two ticked options answer the two situations independently. Option 2 handles the discovery phase filling the context window before implementation: the documented fix is an Explore subagent, which isolates the verbose discovery output and returns a summary to the main session, leaving the implementation phase its full working context. Option 3 handles the stale resume: the documented trigger for starting a NEW session instead of resuming is exactly that tool results are stale because files changed since — and the prescribed replacement is restarting with a short summary of prior findings rather than resuming with old tool data.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.12"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "`/compact` mid-task is the explicitly rejected option for the discovery-fills-context scenario. Compaction compresses context while preserving essential information, but exact numeric values, dates, and specific details can be lost in summarization — and the implementation phase needs the full precision that discovery produced.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.12"
+    },
+    {
+     "option": 1,
+     "text": "`fork_session` is real, but it solves a different problem: it branches the current session so both forks inherit context up to the branch point and then diverge, which is useful for comparing approaches. Because both forks inherit the same context, forking relieves neither the context-window pressure nor the staleness of the tool results already in that context.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.12"
+    },
+    {
+     "option": 4,
+     "text": "`--resume` does restore a previous session's saved context, but that saved context is precisely the problem here — it carries stale tool results from before the three commits. The documented judgment is that when tool results are stale, it is better to restart with a short summary of prior findings than to resume with old tool data.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.12"
+    },
+    {
+     "option": 5,
+     "text": "`/memory` verifies which memory files are loaded and diagnoses inconsistent behavior across sessions — an instruction-discovery problem. Nothing in this stem points at a missing CLAUDE.md; the config value went stale because files changed on disk after the session's tool results were captured, which `/memory` does not inspect.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.12"
+    }
+   ]
+  },
+  {
+   "domain": "D4",
+   "section": "4.11",
+   "stem": "Your CI pipeline runs three Claude jobs: a pre-merge PR check that holds the merge queue open until it returns, an overnight tech-debt report that must be on the lead's desk by 08:00, and a weekly security audit nobody opens until Monday. Finance has asked you to move all three to the Message Batches API for the 50% discount. Ops pulls last month's numbers: one 4,000-request batch returned in 11 minutes, another took 23h07m. Which decisions are correct for this pipeline? (Select 3.)",
+   "options": [
+    "Keep the pre-merge PR check on the synchronous API — the developer and the merge queue are blocked on it, and batch carries no latency SLA.",
+    "Move the pre-merge check to batch as well and poll every 30 seconds, since the observed median completion is minutes, not hours.",
+    "Move the overnight tech-debt report and the weekly security audit to batch — both are latency-tolerant and capture the 50% discount.",
+    "Set each batch's submission deadline at the downstream deadline minus 24 hours, so the 08:00 report is submitted no later than 08:00 the previous day.",
+    "Strip the `tools` block from batched requests, because the Batch API cannot process tool definitions.",
+    "Match each returned result to its PR by position in the results array, since batch results are returned in submission order."
+   ],
+   "correct": [
+    0,
+    2,
+    3
+   ],
+   "whyRight": {
+    "text": "The three ticks are the three separate decisions the batch-strategy section forces. Option 1 applies the batch-vs-synchronous rule at the blocking end: a pre-merge PR check is listed explicitly as synchronous work because a developer is waiting and up to 24h is unacceptable. Option 3 applies the same rule at the tolerant end: the overnight tech-debt report and the weekly security audit are both named batch workloads — non-blocking, needed by morning or not urgent, and worth the 50% discount. Option 4 is the SLA-planning arithmetic: plan submission windows against the 24-hour worst case, so submission deadline = downstream deadline − 24h, which is exactly what the 23h07m batch in the evidence proves you cannot ignore. Each stands on its own: one is a routing decision for a blocking job, one a routing decision for tolerant jobs, one a scheduling calculation that holds even after routing is correct.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "This is the named misconception — treating batch as a 50%-cheaper synchronous API with a delay that you can outrun by polling faster. There is no latency SLA, so the observed 11-minute median is not a guarantee; the 23h07m batch in the same evidence is the case that would hold the merge queue open all day. Polling frequency does not change when the batch completes.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+    },
+    {
+     "option": 4,
+     "text": "Factually false and flagged as outdated in the corpus. Batch requests use the same params as a regular Messages API call, including `tools` and multi-turn histories; what batches cannot do is pause mid-request for your client to execute a tool and return a `tool_result`. Removing tools solves a limitation that does not exist.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+    },
+    {
+     "option": 5,
+     "text": "Batch results can arrive in any order — there is no guaranteed correspondence between submission order and result order. Joining by position silently mis-joins data. The join key is a meaningful, unique `custom_id` assigned to every request.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+    }
+   ]
+  },
+  {
+   "domain": "D4",
+   "section": "4.5",
+   "stem": "Your document-extraction tool defines all 22 fields as `required` with non-nullable types. QA samples 300 receipts and finds `vendor_tax_id` populated on 18% of documents where no tax ID appears anywhere on the page, and `document_category` (enum: `invoice`, `receipt`, `contract`) confidently assigned on 9% of documents that are none of the three. Every one of those responses passed schema validation. Which schema changes address what QA found? (Select 2.)",
+   "options": [
+    "Tighten the schema with a stricter regex `pattern` on `vendor_tax_id` so invalid identifiers are rejected at generation time.",
+    "Make `vendor_tax_id` nullable (`\"type\": [\"string\", \"null\"]`) and drop it from `required`, so the model can return `null` when no tax ID is present.",
+    "Keep every field `required` so downstream consumers always receive a structurally complete record.",
+    "Add `\"unclear\"` to the `document_category` enum with a companion `detail` field, so the model can decline the three categories instead of guessing one.",
+    "Attach a `field_confidence` float to every field and have the pipeline discard any value scoring below 0.5.",
+    "Move the date and currency normalization rules out of the prompt and encode them in the JSON schema instead."
+   ],
+   "correct": [
+    1,
+    3
+   ],
+   "whyRight": {
+    "text": "Each tick fixes one of the two symptoms, and each is defensible alone. Option 2 addresses the 18% fabricated tax IDs: a required, non-nullable field pushes the model to fabricate a value to satisfy the schema when the data is missing, and nullable fields let it return `null` instead of hallucinating — mark fields required only when the information is always available in the source. Option 4 addresses the 9% mis-binning: when the model cannot confidently pick a category, adding `\"unclear\"` to the enum is the documented design, because an honest `\"unclear\"` beats a confident wrong category, and the companion `detail` field captures what the document actually is.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.5"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A tighter schema constraint cannot detect a well-formed but invented value. Schema compliance is not content correctness — a fabricated tax ID that matches the regex passes validation exactly as the current ones do. Tightening the schema when the failure is semantic is the flagged wrong move.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.7"
+    },
+    {
+     "option": 2,
+     "text": "This is the corpus's explicit ❌ — 'make every field required so the output is always complete' delivers completeness by fabrication, not by extraction. It is the cause of the 18% figure in the evidence, not a remedy for it.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.5"
+    },
+    {
+     "option": 4,
+     "text": "Per-field confidence is a real schema design in the corpus, but it is the answer to a different situation (you want a confidence score per field), and the discard-below-0.5 threshold is not part of it. It leaves the required non-nullable field in place, so the model still emits a fabricated value; you have only labelled the fabrication instead of preventing it. The prescribed fix for absent information is nullability.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.5"
+    },
+    {
+     "option": 5,
+     "text": "This inverts the documented division of labour: format normalization rules belong in the prompt alongside the strict output schema — the schema constrains the shape, the prompt governs how messy inputs map into it. It also addresses inconsistent date and currency formatting, which is not either symptom QA reported.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.5"
+    }
+   ]
+  },
+  {
+   "domain": "D4",
+   "section": "4.13",
+   "stem": "Your code-generation service appends 'Now review your work carefully before finishing' as a final turn in the same conversation that produced the code. 91% of generated PRs clear that self-review, yet 14 bugs reached production last quarter, and in every post-mortem the self-review had explicitly declared the buggy path verified. You are rebuilding the verification stage, and its output will drive a PR-comment bot: last quarter that bot posted every finding it received, and developers report the noise is why they stopped reading. Which changes fit the documented verification-stage design? (Select 2.)",
+   "options": [
+    "Strengthen the generator's prompt to 'review your own code thoroughly, line by line, before finishing.'",
+    "Send only the finished artifact plus the review criteria to a second Claude instance that never sees the generation conversation.",
+    "Enable extended thinking on the generator so it reasons longer before declaring the code complete.",
+    "Have the reviewing instance self-report a confidence value alongside each finding, so high-confidence findings auto-comment and low-confidence ones route to a human.",
+    "Ask for a second review pass later in the same conversation, after several intervening turns have separated it from the generation."
+   ],
+   "correct": [
+    1,
+    3
+   ],
+   "whyRight": {
+    "text": "The stem contains two separate problems and the corpus answers each in §4.13. Option 2 fixes the detection failure: a model that generated the code retains the reasoning context from generation and is anchored to its own decisions, so independence requires a fresh request containing only the artifact and the review criteria — not the generation conversation. That is precisely what the 91%-pass-but-14-bugs evidence describes. Option 4 fixes the delivery failure, and stands on its own: the corpus prescribes that in verification passes the reviewing model self-reports confidence alongside each finding so downstream routing can be calibrated — high-confidence findings auto-comment, low-confidence findings route to human review. That is the documented remedy for a bot that posts every finding indiscriminately, and it holds whether or not the reviewer is a separate instance.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.13"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "This is the listed ❌ — adding 'review your own code thoroughly before finishing' to the generator's prompt. Self-review inside the same context inherits the same anchoring that produced the bug; more emphatic wording does not remove the generator's own justifications from context.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.13"
+    },
+    {
+     "option": 2,
+     "text": "Also a listed ❌. More reasoning by the same anchored instance is not independent scrutiny — extended thinking deepens the generator's own line of reasoning rather than replacing the context that caused the blind spot.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.13"
+    },
+    {
+     "option": 4,
+     "text": "This is the section's headline misconception: a second pass in the same conversation still carries the full generation reasoning in context, so the model re-reads its own justifications and confirms them. Intervening turns do not remove that context. Same-conversation second pass is not an independent review.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.13"
+    }
+   ]
+  },
+  {
+   "domain": "D4",
+   "section": "4.20",
+   "stem": "Your support assistant runs on a 2,600-token system prompt written as prose rules covering tone, persona, and a required clarifying-question step. Transcript audits show that by turn 12 the assistant has stopped asking clarifying questions and gives generic advice, and 4 of every 5 replies after turn 8 open with 'Absolutely!' — while total conversation length is only 3,100 tokens. Which statements and fixes apply here? (Select 3.)",
+   "options": [
+    "The conversation has overflowed the model's context window; trim or summarize the history so the system prompt fits again.",
+    "Replace the verbose prose rules in the system prompt with few-shot examples demonstrating the required behavior.",
+    "Inject a reminder message restating the rules every 4–5 turns for the life of the conversation.",
+    "The root cause is that accumulated assistant responses dilute the system prompt's influence relative to the growing body of assistant-generated content.",
+    "Prefill a partial assistant message with a direct opening to suppress the 'Absolutely!' pattern.",
+    "The system prompt only takes effect on the first turn, so it must be restated as the first user message of each new exchange."
+   ],
+   "correct": [
+    1,
+    3,
+    4
+   ],
+   "whyRight": {
+    "text": "Option 4 is the diagnosis the evidence forces: at 3,100 total tokens nothing has overflowed, and the corpus names this exact situation — persona degradation by turn 7 in a 2,500-token conversation — with accumulated assistant responses diluting system prompt influence as the root cause, the model increasingly pattern-matching its own prior outputs. Option 2 is the prescribed fix for this specific shape of failure: a long system prompt of abstract rules that fails after 10–15 turns is fixed by replacing verbose rules with few-shot examples that demonstrate the behavior. Option 5 is the separately listed fix for the second symptom — prefilling a partial assistant response is the drift fix indexed to suppressing a specific response pattern, and 'Absolutely!' is exactly that class of filler opener. Diagnosis, structural fix, and pattern-specific fix each stand alone.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.20"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "The corpus rules this out by name: in the equivalent scenario the root cause is explicitly not context window overflow. The stem's 3,100-token conversation is the tell — the numbers are supplied so the candidate can reject this reading rather than assume it.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.20"
+    },
+    {
+     "option": 2,
+     "text": "Periodic reminder injection every 4–5 turns is the listed ❌ for the long-abstract-system-prompt case — it addresses symptoms, not the root cause. The corpus does list reminder messages at conversation breakpoints as a fix for persistent constraint drift, but for a verbose rule-based prompt failing after ~12 turns the prescribed fix is few-shot replacement, which is what makes this option the neighbouring-concept trap.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.20"
+    },
+    {
+     "option": 5,
+     "text": "'The system prompt only applies once' is named alongside context-window overflow as a wrong root cause. Moving behavioral constraints into a user message also forfeits the system prompt's authority — persistent tone, persona, and behavioral rules belong in the system prompt, and the first user message loses authority mid-conversation.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.3"
+    }
+   ]
+  },
+  {
+   "domain": "D4",
+   "section": "4.19",
+   "stem": "In your research system a coordinator fans out subagents and a synthesis agent merges their findings. On 22% of runs the synthesis agent halts and returns five clarifying questions to the coordinator instead of producing a synthesis. The user-facing front end shows the same habit: when the assistant opens with a batch of questions in response to a request like 'can you help with the report?', 38% of sessions are abandoned. Which changes fit the documented clarification strategy? (Select 2.)",
+   "options": [
+    "Bundle the five clarifying questions into a single compound message so the user or coordinator answers only once.",
+    "Have the synthesis agent state its assumptions about the gaps explicitly and produce the synthesis, rather than blocking while it waits for the coordinator.",
+    "Apply sensible defaults for the missing details silently, so the flow is never interrupted.",
+    "Have the user-facing assistant proceed on stated reasonable assumptions surfaced in the response, inviting the user to correct them.",
+    "Cut the list to the four highest-value clarifying questions, keeping the count at the threshold the abandonment data points to.",
+    "Add explicit escalation criteria with few-shot examples showing when to hand off and when to resolve autonomously."
+   ],
+   "correct": [
+    1,
+    3
+   ],
+   "whyRight": {
+    "text": "Option 4 is the core prescription for vague requests — state assumptions explicitly and proceed, inviting corrections — and the 38% abandonment figure is the documented cost of the alternative. Option 2 is the same rule applied to the multi-agent side, which the corpus states explicitly: this applies both to user-facing assistants and to multi-agent systems, and a synthesis agent should not block awaiting coordinator clarification on all gaps. Each is independently defensible because they address two different halves of the evidence — the 22% of halted synthesis runs and the 38% of abandoned user sessions — under one shared rule.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.19"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Listed ❌: asking all the questions in one compound message still demands effort from the user. Repackaging the interrogation does not remove it — the abandonment is driven by being asked to supply the answers, not by the number of messages.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.19"
+    },
+    {
+     "option": 2,
+     "text": "Listed ❌: hidden defaults leave the user unaware of what was assumed. The correct pattern is the opposite of hidden — assumptions are stated explicitly so they can be corrected.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.19"
+    },
+    {
+     "option": 4,
+     "text": "The guidance is not to ask 4+ clarifying questions, so trimming five to four lands on the wrong side of the line rather than under it. It also keeps the fundamentally wrong posture of blocking for input instead of proceeding on stated assumptions.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.19"
+    },
+    {
+     "option": 5,
+     "text": "True of a neighbouring concept and wrong here. Explicit escalation criteria with few-shot examples is the fix for miscalibrated escalation — an agent escalating simple cases and handling complex ones autonomously. The failure in this stem is blocking on vagueness, not choosing badly between escalate and resolve.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.15"
+    }
+   ]
+  },
+  {
+   "domain": "D4",
+   "section": "4.9",
+   "stem": "Your extraction pipeline validates each response with Pydantic and retries up to 3 times, feeding the error text back. Across 500 invoices, 62 documents failed once on a date rendered '3rd Mar 24' and passed on the first retry; 40 documents exhausted all 3 retries on `purchase_order_number`, and manual inspection confirms those 40 never carried a PO number. Retry token spend is now 3.1x first-pass spend. Which changes are correct? (Select 3.)",
+   "options": [
+    "Raise `max_retries` from 3 to 10 so the stubborn documents get more chances to converge.",
+    "Keep the retry-with-feedback loop in place for the date-format class — those are exactly the failures retry can fix.",
+    "Make `purchase_order_number` nullable, accept `null` for those 40 documents, and stop retrying them.",
+    "Keep the field `required` for data quality and let the model supply its best guess so the record is never incomplete.",
+    "Ensure every retry request carries three things: the original document, the previous failed extraction, and the specific validation error.",
+    "Rewrite the retry feedback into a more emphatic instruction so the model takes the missing field seriously."
+   ],
+   "correct": [
+    1,
+    2,
+    4
+   ],
+   "whyRight": {
+    "text": "The evidence splits into two failure classes and the keyed set treats each correctly plus fixes the loop's construction. Option 3 handles the 40: the information is genuinely absent from the source, so no number of retries can extract what isn't there — retrying burns tokens for nothing and pressure to fill a required field pushes the model into fabrication; the correct design is a nullable field with 'not found' treated as a legitimate answer. Option 2 protects the 62: format errors such as a date in the wrong format are named as a case where retry will help, so the fix for the absent-data class must not be applied indiscriminately to a class the loop is already resolving on the first retry. Option 5 is the loop's own required construction — the retry request contains the original document, the previous failed extraction, and the specific validation error, not just 'try again' — and it holds independently of either class.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.9"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Listed ❌ for exactly this scenario: increasing max retries from 3 to 10 does nothing because absent information stays absent. It multiplies the token waste the stem already flags at 3.1x.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.9"
+    },
+    {
+     "option": 3,
+     "text": "Listed ❌: keeping the field required 'for data quality' guarantees fabricated values. A required, non-nullable field pushes the model to invent a value to satisfy the schema when the data is missing — the record becomes complete and wrong.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.9"
+    },
+    {
+     "option": 5,
+     "text": "Listed ❌: strengthening the retry feedback message cannot conjure missing data. The specific-error rule is about naming the concrete validation failure, not about emphasis — and it only helps for errors the model can correct from the provided context.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.9"
+    }
+   ]
+  },
+  {
+   "domain": "D5",
+   "section": "5.2",
+   "stem": "Your research coordinator concatenates the output of four subagents into a single 90,000-token synthesis prompt. Across the last 20 reports, findings drawn from the first ~14K tokens and the last ~9K tokens are cited accurately, but 11 of the 12 findings sitting in the middle ~60K never reached the final report. A reviewer wrote: \"The regulatory-risk paragraph it never mentioned was sitting right in the middle of what you fed it.\" Which changes address this failure? (Select 3.)",
+   "options": [
+    "Place a key-findings summary at the very start of the synthesis input so the most critical material occupies the position the model processes most reliably.",
+    "Add explicit section headings throughout the combined input so the model can navigate mid-input content.",
+    "Change the upstream subagents to return structured data - key facts, quotes, relevance scores - instead of full page content and reasoning traces.",
+    "Rotate which subagent's output appears first on each run so no single subagent's findings are consistently buried.",
+    "Compress the entire 90K input to under 20K tokens before handing it to the synthesis agent.",
+    "Insert an intermediate summarization agent between the subagents and the synthesis agent."
+   ],
+   "correct": [
+    0,
+    1,
+    2
+   ],
+   "whyRight": {
+    "text": "Each tick is a separately listed mitigation for the lost-in-the-middle attention pattern, and each is defensible on its own. Option 0 exploits primacy: moving the key findings into the beginning position puts the critical material where the model reliably processes it. Option 1 attacks navigation directly - explicit section headings throughout help the model work through mid-input content instead of skimming it. Option 2 fixes the root cause upstream: having subagents emit key facts, quotes, and relevance scores instead of verbose content and reasoning traces shrinks the buried middle rather than merely re-ordering it, which the corpus prefers precisely because it acts at the source.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.2"
+   },
+   "whyWrong": [
+    {
+     "option": 3,
+     "text": "Rotation changes which agent's findings land in the dead zone, not whether a dead zone exists. The corpus rejects alternating agent order explicitly because it does not fix the fundamental attention pattern - some 60K slice is still in the middle on every run.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.2"
+    },
+    {
+     "option": 4,
+     "text": "Blanket compression to under 20K is the rejected option in the corpus scenario: squeezing the whole input that hard risks losing exactly the critical findings you are trying to surface. Repositioning and restructuring preserve the information; aggressive summarization discards it.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.2"
+    },
+    {
+     "option": 5,
+     "text": "An intermediate summarization agent is named as the wrong answer for the 155K-token variant of this problem: it adds latency and another potential point of failure while leaving the upstream agents still emitting verbose content. Fix the output format at the source instead.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.2"
+    }
+   ]
+  },
+  {
+   "domain": "D5",
+   "section": "5.3",
+   "stem": "A support conversation covering three linked order problems has run 40 minutes and reached 78K tokens. It contains an order ID, a $89.99 amount, an agreed 15% goodwill discount, and two delivery dates, interleaved with long stretches of troubleshooting chatter. Your app summarizes everything older than turn 20. QA transcripts now show the agent telling the customer \"promotional pricing was discussed earlier\" instead of quoting the 15%. Which elements belong in the replacement context strategy? (Select 3.)",
+   "options": [
+    "Extract the precise transactional values - order ID, amount, agreed discount percentage, dates - into a compact structured block that is carried verbatim in every request.",
+    "Summarize the lower-information-density general discussion turns rather than carrying them verbatim.",
+    "Keep the most recent exchanges verbatim so the current turn stays conversationally coherent.",
+    "Summarize the entire history uniformly, including the amounts, so one mechanism governs all context reduction.",
+    "Keep only the most recent 20K tokens of the conversation and drop everything older.",
+    "Raise the summarization threshold from turn 20 to turn 60 so compression starts much later in the session."
+   ],
+   "correct": [
+    0,
+    1,
+    2
+   ],
+   "whyRight": {
+    "text": "The keyed set is the three legs of the hybrid approach, and each stands alone. Option 0 preserves precision where precision is the failure: amounts, IDs, dates and the agreed discount are extracted into a compact structured block that is never summarized, which is what stops \"15%\" from decaying into \"promotional pricing.\" Option 1 is the compression leg - general chatter is genuinely low-information-density and is the right material to compress. Option 2 keeps recent exchanges verbatim so the model can answer the current turn coherently rather than reasoning from a summary of what just happened.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.3"
+   },
+   "whyWrong": [
+    {
+     "option": 3,
+     "text": "Uniform summarization of everything is the rejected option: precision is exactly what summarization loses, which is how \"the 15% discount I mentioned\" becomes \"promotional pricing was discussed.\" Consistency of mechanism is not worth the loss of the transactional values.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.3"
+    },
+    {
+     "option": 4,
+     "text": "A pure recency window discards anything stated early - and in this transcript the order ID and the agreed discount were established early. The corpus rejects keeping only the most recent slice for exactly this reason.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.3"
+    },
+    {
+     "option": 5,
+     "text": "Raising the threshold only delays the damage: the facts still get compressed once the conversation passes the new threshold. The corpus rejects increasing the summarization threshold as a fix and prescribes a facts block that sits outside summarization altogether.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.4"
+    }
+   ]
+  },
+  {
+   "domain": "D5",
+   "section": "5.9",
+   "stem": "Your extraction pipeline processes about 40,000 documents a month at 97% aggregate field accuracy. The team proposes auto-processing everything the model self-rates above 0.85 confidence, which would cut the human review queue by 80%. A spot check of 200 rare-format freight invoices - roughly 2% of monthly volume - found 40% of line-item totals wrong, several of them above the 0.85 threshold. Which measures should be in place before human review is reduced? (Select 3.)",
+   "options": [
+    "Break accuracy down by document type and by field, and require every segment to independently meet the bar before it is auto-processed.",
+    "Calibrate the confidence thresholds against a labeled validation set rather than trusting raw self-reported scores.",
+    "Regularly audit a random sample stratified across document types and field categories, including extractions that already passed at high confidence.",
+    "Route a fixed 10% of monthly volume to human review, drawn uniformly at random across all documents.",
+    "Concentrate reviewer capacity exclusively on the lowest-confidence extractions, since that is where errors are densest.",
+    "Have the model emit one confidence score per document instead of per field, so the routing rule stays simple."
+   ],
+   "correct": [
+    0,
+    1,
+    2
+   ],
+   "whyRight": {
+    "text": "Each tick answers a distinct part of the failure. Option 0 addresses the aggregate-accuracy masking trap head-on - a 97% overall number is exactly the kind of average that hides a 40% failure rate on one rare document type, so accuracy must be validated per type and per field with every segment clearing the bar independently. Option 1 addresses the threshold itself: raw self-reported confidence is unreliable until it is tuned against a labeled validation set, so 0.85 means nothing yet. Option 2 addresses ongoing measurement: stratified random sampling of the automated high-confidence stream is what measures its true error rate and surfaces novel error patterns before they compound.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+   },
+   "whyWrong": [
+    {
+     "option": 3,
+     "text": "A flat unstratified 10% sample is the rejected routing design: it spends reviewer capacity on easy, high-volume segments and undersamples the problem segments. At 2% of volume, the freight invoices would contribute a handful of documents to that sample.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+    },
+    {
+     "option": 4,
+     "text": "Reviewing only the lowest-confidence flags and skipping any audit of the high-confidence stream is explicitly rejected: novel error patterns in the automated path go undetected. The 0.85-and-above freight invoice errors are precisely the ones this policy would never see.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+    },
+    {
+     "option": 5,
+     "text": "This inverts the requirement. The corpus specifies field-level confidence - a score per extracted field, not one score per document - so that a single unreliable field can be routed for review without holding up the rest.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+    }
+   ]
+  },
+  {
+   "domain": "D5",
+   "section": "5.6",
+   "stem": "You are adding error-handling wrappers across a 120-file service. Phase 1 is discovery: enumerate every call site. Last run it exhausted the context window at 340 of an estimated 400 call sites, before any implementation started. A teammate's earlier attempt spawned an implementation subagent that spent its first 20 minutes rediscovering call sites the coordinator had already catalogued, because it had none of the discovery output. Which two moves fix these? (Select 2.)",
+   "options": [
+    "Run Phase 1 in an Explore subagent so the verbose discovery output stays in that subagent's context and only a concise summary returns to the main conversation.",
+    "When a subagent handles a later phase, have the coordinator explicitly include the discovery results it needs in the subagent's prompt.",
+    "Run `/compact` in the main session when the context fills mid-discovery and continue from there.",
+    "Split the phases across multiple sessions resumed with `--continue`, one session per phase.",
+    "Rely on the subagent inheriting the coordinator's conversation history so the discovery results are available to it automatically."
+   ],
+   "correct": [
+    0,
+    1
+   ],
+   "whyRight": {
+    "text": "The two ticks are the two halves of context isolation, one used as a feature and one respected as a constraint. Option 0 uses isolation deliberately: the Explore subagent absorbs hundreds of verbose call-site results in its own context and hands back a summary, so the main session's window survives into design and implementation. Option 1 respects isolation as a constraint: a subagent receives only what the coordinator passes it, so the needed discovery results must be written into its prompt - that is exactly why the teammate's implementation subagent re-ran discovery.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.6"
+   },
+   "whyWrong": [
+    {
+     "option": 2,
+     "text": "`/compact` mid-task is the rejected option here: it loses the precision the implementation phase depends on, and the specific call-site details are the thing you cannot afford to blur.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.6"
+    },
+    {
+     "option": 3,
+     "text": "Multiple sessions stitched together with `--continue` is rejected for coordination overhead and consistency risk - the wrappers can drift between sessions. Subagent isolation achieves the context saving without splitting the work across sessions.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.6"
+    },
+    {
+     "option": 4,
+     "text": "This states the misconception that caused the teammate's failure. Subagents do not inherit the coordinator's history; they receive only what is explicitly passed, which is why the implementation subagent had to rediscover the call sites.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.6"
+    }
+   ]
+  },
+  {
+   "domain": "D5",
+   "section": "5.12",
+   "stem": "A nightly automated migration job runs a multi-step refactor across a monorepo. Last night the CI runner killed it at the 4-hour limit with two of three agents already finished; this morning's rerun started from step one and repeated roughly 3 hours of completed work. The run log also shows that late in a long session the agent stopped naming the specific handler classes it had catalogued two hours earlier and began writing about \"typical patterns in repositories like this.\" Which two changes address these symptoms? (Select 2.)",
+   "options": [
+    "Have each agent export structured state - status, findings, coverage, gaps - to a known location, and have the coordinator load a manifest on resume and inject persisted findings into agent prompts.",
+    "Write intermediate findings and key discoveries to a scratchpad file and re-read it at the start of each continuation.",
+    "Rely on the interrupted session's conversation history being restored when the job restarts the next night.",
+    "Accept the full rerun after each failure and raise the CI time limit so a complete pass fits inside one run.",
+    "Have each agent hold all of its findings in its own context window and report them only once the whole run finishes."
+   ],
+   "correct": [
+    0,
+    1
+   ],
+   "whyRight": {
+    "text": "Two symptoms, two independently defensible fixes. Option 0 handles the crash: structured state exports plus a manifest the coordinator reads on resume let the job restart from the checkpoint and inject the two finished agents' findings rather than re-running three hours of completed work. Option 1 handles the second symptom on its own merits - writing intermediate state to a scratchpad and re-reading it at each continuation is the corpus remedy for context degradation, the failure where the model drifts from the specific classes it discovered into generic \"typical patterns\" language.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.12"
+   },
+   "whyWrong": [
+    {
+     "option": 2,
+     "text": "The API is stateless and an interrupted session's context is gone - there is no server-side session to restore. This is the explicitly rejected reliance in the crash-recovery pattern.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.12"
+    },
+    {
+     "option": 3,
+     "text": "Re-running the entire investigation after every failure is the rejected response: it wastes hours of work that could have been persisted, and a larger time budget does nothing about the degradation symptom in the same log.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.12"
+    },
+    {
+     "option": 4,
+     "text": "Keeping everything in each agent's own context is rejected on both counts - the window fills, and nothing survives a crash. It is the arrangement that produced this morning's rerun.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.12"
+    }
+   ]
+  }
+ ],
+ "perDomain": [
+  {
+   "domain": "D1",
+   "count": 8
+  },
+  {
+   "domain": "D2",
+   "count": 5
+  },
+  {
+   "domain": "D3",
+   "count": 6
+  },
+  {
+   "domain": "D4",
+   "count": 6
+  },
+  {
+   "domain": "D5",
+   "count": 5
+  }
+ ],
+ "onePager": {
+  "domains": [
+   {
+    "code": "D1",
+    "name": "Agentic Architecture & Orchestration",
+    "weight": "27%",
+    "gist": "Loop control, coordinator delegation, decomposition, handoff, sessions"
+   },
+   {
+    "code": "D2",
+    "name": "Tool Design & MCP Integration",
+    "weight": "18%",
+    "gist": "Descriptions, structured errors, tool_choice, MCP, built-ins"
+   },
+   {
+    "code": "D3",
+    "name": "Claude Code Configuration & Workflows",
+    "weight": "20%",
+    "gist": "CLAUDE.md, rules, skills, plan mode, CI"
+   },
+   {
+    "code": "D4",
+    "name": "Prompt Engineering & Structured Output",
+    "weight": "20%",
+    "gist": "Few-shot, schemas, validation, retries, batch strategy"
+   },
+   {
+    "code": "D5",
+    "name": "Context Management & Reliability",
+    "weight": "15%",
+    "gist": "Statelessness, compression, provenance, escalation signals, confidence calibration"
+   }
+  ],
+  "rules": [
+   "Loop terminates on stop_reason - never on text content or an iteration count.",
+   "Coordinator spawns subagents because \"Task\" is in allowedTools - never because the prompt tells it to delegate.",
+   "Correct subagent output plus missing topics means the coordinator decomposed too narrowly - never blame subagent quality.",
+   "Plan mode for wide scope, many files, or several viable approaches - never start direct and switch when it gets hard.",
+   "Misrouting is fixed by rewriting tool names and descriptions - never by adding a classifier, router, or bigger model.",
+   "Each agent carries 4-5 role-scoped tools - never the full catalogue \"for flexibility\".",
+   "Schema-valid JSON is guaranteed by tool_use plus tool_choice - never by asking the prompt for valid JSON.",
+   "Force a named tool only on the mandatory first step, then relax to auto - never leave tool_choice forced every turn.",
+   "Fields that may be absent are nullable and null is a valid answer - never required \"for data quality\", never a raised retry limit; absent information stays absent.",
+   "Few-shot targets the 4-6 ambiguous cases - never 10-15 clear ones, never more prose when the instructions are already failing.",
+   "Policy denial returns retriable:false plus a customer-friendly explanation - never a generic \"operation failed\" the agent retries.",
+   "Review runs in a second instance with no access to the generator's reasoning - never a second pass in the same conversation.",
+   "Prefer prompting the agent to bundle related tool calls into one turn over a composite tool that hides the composition.",
+   "Amounts, IDs and dates live in a case-facts block outside the summarized history - never inside what the summarizer compresses.",
+   "Long inputs lose the middle: key findings first, section headings throughout, upstream agents returning structured facts rather than raw text.",
+   "CLAUDE.md levels concatenate root-down and accumulate - never assume a lower level overrides a higher one.",
+   "context: fork isolates a verbose skill in a subagent so its output never pollutes the main session.",
+   "CI runs claude -p with --output-format json and --json-schema; --batch and CLAUDE_HEADLESS do not exist.",
+   "Anything a human or pipeline blocks on stays synchronous; batch allows tools and multi-turn history but cannot pause mid-request for a tool_result."
+  ],
+  "distinctions": [
+   "Grep vs Glob - Grep searches inside file contents, Glob matches file names and paths.",
+   "Edit vs Read+Write - Edit needs a unique anchor; when non-unique, fall back to Read+Write, never a shorter anchor or sed.",
+   "tool_choice \"any\" vs a named tool - \"any\" guarantees some tool call, named guarantees that specific tool, auto guarantees nothing.",
+   "Syntax vs semantic errors - schemas eliminate malformed JSON entirely and do nothing about totals that do not sum.",
+   "Empty result vs access failure - zero matches is a success with isError false; a timeout or dead connection is isError true.",
+   ".claude/rules/ vs CLAUDE.md vs Skills - glob-path-scoped, always loaded, invoked on demand for a workflow.",
+   "Fixed pipeline vs dynamic adaptive decomposition - predictable repeatable template vs scope discovered step by step.",
+   "--resume vs fork_session vs fresh session with injected summary - continue, branch to compare two approaches, restart when tool results are stale.",
+   "Interacting vs independent issues - interacting fixes go in one message, independent ones iterate sequentially.",
+   "Behavioral drift vs context overflow - degradation at 2,500 tokens and turn 7 is accumulated assistant turns diluting the system prompt, not window pressure."
+  ],
+  "escalation": [
+   "Escalate on structural signals: policy silent or ambiguous, repeated failures, no progress after reasonable attempts, high-stakes ambiguity, financial threshold breach.",
+   "Never escalate on sentiment analysis or the model's own self-rated confidence - mood and uncalibrated self-assessment do not track case complexity.",
+   "Calibrated confidence is different: field-level scores tuned on a labeled validation set route low-confidence extractions to review, with stratified sampling - a 97% aggregate hides 40% failure on a rare document type.",
+   "Explicit request for a manager escalates immediately, with no solve-it-first attempt; first expression of anger is not that request - acknowledge, offer a resolution, escalate when reiterated.",
+   "Several matching customer records means ask for another identifier - never take the most recent or the first result.",
+   "Handoff payload, because the human never sees the transcript: customer ID, issue summary, order ID, root cause, amount, actions already taken, recommended action, escalation reason.",
+   "Subagent errors escalate with structured context - failure type, what was attempted, partial results, alternatives - never a bare failure flag, never silent success, never kill the whole workflow.",
+   "Hard rules live in code: PreToolUse hooks for thresholds and bulk operations, programmatic preconditions for sequencing, two-tool token binding for mandatory preview. Prompts guide; hooks enforce."
+  ],
+  "examMechanics": [
+   "60 questions, 120 minutes, in four blocks of roughly 15 around 4 of 6 official scenarios drawn at random.",
+   "Scaled 100-1000, pass 720 - about 42 of 60 raw on the approximation formula; real scaling is psychometric. No partial credit; per-domain percentages informational.",
+   "No wrong-answer penalty: never leave an item blank, guess and move rather than stall.",
+   "The guide names multiple-response items once, unelaborated - all 12 official samples are single-answer, four options; any such item states how many to select.",
+   "The qualifier decides it: \"most effectively\", \"most likely root cause\", \"first step\" - several options are true, only one answers the qualifier.",
+   "Spend the marginal minute on the D1 item - it carries the most scored content of any domain.",
+   "An option that adds infrastructure - classifier, larger model, extra agent, post-processor - while a description, schema, or hook fix is on the list is almost always the distractor."
+  ],
+  "outOfScope": "Fine-tuning, auth/billing, OAuth and key rotation, MCP server hosting, Claude's internals, Constitutional AI and RLHF, embeddings and vector DB internals, computer use, vision, streaming, rate limits and cost math, cloud-specific config, benchmarks, prompt-caching internals, tokenization."
+ },
+ "onePagerCorrections": [
+  "FACTUAL ERROR - pass threshold. Draft: \"Scaled 100-1000, pass 720 - about 41 of 60 raw.\" Corrected: \"about 42 of 60 raw on the approximation formula; real scaling is psychometric.\" Verified arithmetic against the generator's own formula (prep with quiz/CLAUDE.md, Step 5 item 3): round((41/60)*900+100) = 715, which FAILS; 42/60 = 730, which passes. The stated threshold correct/60 >= 620/900 = 68.89% solves to 41.33, so the minimum is 42. Exam-Mechanics 'Scoring Context' also requires the approximation caveat, which the draft dropped.",
+  "OVERSTATEMENT - multiple-response items. Draft: \"Multiple-response items exist and each states how many to select - all-or-nothing, so count your selections against the number asked.\" Corrected: \"The guide names multiple-response items once, unelaborated - all 12 official samples are single-answer, four options; any such item states how many to select.\" Exam-Mechanics Format table (v1.0) carries an explicit caveat: the phrase appears exactly once in the whole guide with no elaboration and every official sample is still single-answer. The draft states as settled fact what the corpus flags as a single unelaborated mention. Separately, 'all-or-nothing' per item appears nowhere - the corpus asserts 'no partial credit' at the exam level only.",
+  "OVERSTATEMENT - composite tools. Draft: \"Prompt the agent to bundle related tool calls into one turn - never build a composite tool that hides the composition.\" Corrected: \"Prefer prompting the agent to bundle related tool calls into one turn over a composite tool that hides the composition.\" D2 section 2.8 opens with 'consider creating composite tools' and labels the composite option 'Not preferred' - a ranking, not a prohibition. The draft's 'never' would make a candidate reject a composite-tool option that could be correct in a differently-framed stem.",
+  "CONTRADICTS THE CORPUS - confidence. Draft: \"Never escalate on sentiment analysis or model self-rated confidence - mood and self-assessment do not track case complexity.\" Corrected: added 'uncalibrated' and a companion line. D5 section 5.8 rejects raw self-rated confidence, but D5 section 5.9 (official task 5.5) builds an entire human-review routing workflow ON field-level confidence calibrated against a labeled validation set. As drafted, the line would push a candidate to eliminate the correct answer on a Scenario 6 confidence-routing question. Now split into two lines: 'uncalibrated self-assessment' for escalation, plus the calibrated-routing rule.",
+  "CHECKED, NOT AN ERROR - batch tool use. \"batch allows tools and multi-turn history but cannot pause mid-request for a tool_result\" is correct per D4 section 4.11's verified accuracy note (platform docs, 2026-07-06) and the Exam-Mechanics Technologies list ('no multi-turn tool calling within a request'). Note that D3 section 3.10 still carries the older 'No multi-turn tool calling' framing - the sheet follows the verified one, which is right.",
+  "WASTED SPACE - duplicate rule. rules[3] (\"Mandatory sequence or preview is enforced by hook, precondition, or a constrained tool - never by prompt instruction\") is the generic form of escalation[6], which already names PreToolUse hooks, programmatic preconditions, and two-tool token binding specifically. Cut the generic one; the slot now carries plan mode vs direct execution (D3 section 3.6, including the 'start direct and switch when it gets hard' trap), which no line covered despite 'plan mode' being in the D3 gist.",
+  "WASTED SPACE - duplicate rule. rules[8] and rules[9] state the same D4 fabrication rule twice (nullable fields vs. accepting null and not raising retries - both trace to sections 4.5 and 4.9 and both end on fabrication). Merged into one line. Freed slot now carries few-shot targeting (D4 section 4.1: 4-6 examples aimed at the ambiguous cases, never 10-15 clear ones) - promised by the D4 gist, delivered by no line.",
+  "WASTED SPACE - restates the table. examMechanics[5] \"D1 is 27% of scored content and D5 only 15%\" repeats two numbers printed in the domains block directly above it. Condensed to the actionable half only: 'Spend the marginal minute on the D1 item - it carries the most scored content of any domain.'",
+  "WASTED SPACE - biggest single offender. outOfScope enumerated all 16 exclusions in 75 words, the sheet's worst value-per-word. Under a two-minute clock it functions as an elimination cue, not a recitation, so it does not need the official wording. Condensed to 35 words covering the same 16 items. The 40 freed words funded the D3 and D5 additions below.",
+  "WASTED SPACE - internal repeat. escalation[0] listed 'explicit request for a human' among the structural signals, then escalation[2] restated it in full with the anger-vs-request nuance. Dropped from the list; the dedicated line owns it.",
+  "COVERAGE GAP FILLED - D3 was under-weighted. D3 is 20% of the exam (12 questions) and the draft gave it two lines, both about config files, while the gist advertised 'skills, plan mode, CI'. Added three rules: plan mode (section 3.6), 'context: fork' isolating a verbose skill (section 3.3), and CI invocation via 'claude -p' with '--output-format json' and '--json-schema' plus the non-existent '--batch' and 'CLAUDE_HEADLESS' distractors (sections 3.8-3.9).",
+  "COVERAGE GAP FILLED - D5. Lost-in-the-middle (D5 section 5.2) was absent entirely despite being the standard Multi-Agent Research trap: key findings first, section headings throughout, upstream agents returning structured facts. Added as a rule. Calibrated confidence, stratified sampling, and the aggregate-masking trap (section 5.9, official task 5.5, primary for Scenario 6) were also absent - added to escalation.",
+  "WORD COUNT. The draft's self-reported 948 is accurate - I counted 948 across all string values (rules 298, distinctions 191, escalation 169, examMechanics 150, outOfScope 75, domains 65). Under 1000, so no cuts were forced. The corrected sheet lands at 993 (rules 355, distinctions 189, escalation 199, examMechanics 150, outOfScope 35) - the six new lines were paid for entirely by the condensed outOfScope block, the two merged rules, and the trimmed weight restatement. If it ever needs to go lower, cut in this order: examMechanics[2] (no-wrong-answer-penalty is advice most candidates already apply), then distinctions[6] (fixed vs adaptive decomposition, the least trap-like of the ten), then the domain gists."
+ ]
+}

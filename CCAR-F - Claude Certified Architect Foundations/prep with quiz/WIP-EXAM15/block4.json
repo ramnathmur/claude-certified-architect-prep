@@ -1,0 +1,533 @@
+{
+  "label": "Structured Data Extraction",
+  "narrative": "You maintain an extraction pipeline for pharmaceutical manufacturing records — executed batch records, deviation reports, equipment cleaning logs and certificates of analysis — arriving as scanned paper, signed PDFs and exports from three plant systems. Extracted records are validated against JSON schemas and released to quality review and batch release. Across this block the pipeline is under pressure to handle more volume without weakening the audit trail.",
+  "questions": [
+    {
+      "g": 46,
+      "block": 3,
+      "domain": "D4",
+      "stem": "Extraction currently asks in the prompt for JSON matching a documented schema. Most outputs parse cleanly, but some arrive wrapped in a markdown fence and a few carry a preamble sentence before the object. An engineer proposes adding a JSON repair library. What removes the problem at its source?",
+      "options": [
+        "A stricter prompt instruction forbidding code fences and preamble text explicitly.",
+        "Define a tool whose input schema is the desired structure, and read the values from the `tool_use` block.",
+        "A post-processing step that strips fences and leading prose before the parse is attempted.",
+        "A lower temperature, which reduces the model's tendency to add conversational framing."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "Defining a tool whose input schema is your desired output structure and reading the `tool_use` block is the most reliable way to get schema-compliant output — it eliminates the whole syntax-error class, including prose preambles and markdown fences, which prompt-based JSON requests never guarantee against.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Asking nicely in the prompt is the mechanism already failing. Compliance stays probabilistic however the instruction is worded.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+        },
+        {
+          "option": 2,
+          "text": "Stripping wrappers treats the symptom and must anticipate every variant. Tool use removes the problem rather than cleaning up after it.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+        },
+        {
+          "option": 3,
+          "text": "Temperature controls randomness, not adherence to an output contract. A low-temperature model can wrap its JSON just as consistently.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.4"
+        }
+      ]
+    },
+    {
+      "g": 47,
+      "block": 3,
+      "domain": "D4",
+      "stem": "Two requirements arrive together: every response in this reviewer session must stay in a formal, regulator-facing register, and this particular batch summary must come in under 200 words. An engineer puts both into the system prompt. The reviewer will process about forty more batches in the same session. What is wrong with that?",
+      "options": [
+        "Nothing — the system prompt is the right home for any instruction that shapes the output.",
+        "Both belong in the user message, since the system prompt is only consumed on the first turn.",
+        "Both belong in the system prompt, but the word limit must be expressed as a token count.",
+        "The register is a persistent behavioural constraint and belongs there; the per-batch word limit is a one-off that belongs in the request."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "The system prompt is the correct location for behavioural rules that apply for the entire conversation — tone, persona, standing format requirements. A limit that applies to one batch is not a standing rule, and putting it there means it silently governs every later batch as well.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.3"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Scope is the distinction. Session-wide constraints and single-request instructions have different homes precisely because one should persist and the other should not.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.3"
+        },
+        {
+          "option": 1,
+          "text": "The system prompt is sent with every request and applies throughout. Moving a persistent register requirement into a user message loses authority as the conversation grows.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.3"
+        },
+        {
+          "option": 2,
+          "text": "The unit is not the issue. A token-count version of the same one-off limit would still wrongly persist across every subsequent batch.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.3"
+        }
+      ]
+    },
+    {
+      "g": 48,
+      "block": 3,
+      "domain": "D4",
+      "stem": "The prompt instructs the extractor to \"flag anything unusual in the deviation narrative.\" It now flags every narrative containing an unfamiliar abbreviation or a long sentence — around forty per batch — burying the handful describing an unrecorded process departure. How should the criterion be rewritten?",
+      "options": [
+        "Flag a narrative only where it describes a process step taken outside the approved parameters.",
+        "Flag narratives whose length exceeds the median for that deviation category by a set margin.",
+        "Rate each narrative's unusualness from one to five and surface only the top band.",
+        "Flag narratives only in batches that already carry an open quality investigation."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "When vague instructions produce inconsistent output, move from abstract to concrete: replace intent with an explicit, testable criterion. \"Unusual\" is unbounded; \"a process step outside approved parameters\" is checkable against the batch record and matches what the reviewers actually need.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.16"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "Length is a proxy with no relationship to the property that matters. A one-line narrative can record a serious departure and a long one can be routine.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.16"
+        },
+        {
+          "option": 2,
+          "text": "A rating scale without defined criteria relocates the vagueness into the scale. The model still has no testable definition of unusual.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.16"
+        },
+        {
+          "option": 3,
+          "text": "Narrowing the scope reduces the volume of noise without improving precision, and it suppresses exactly the first signal on a batch not yet under investigation.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.16"
+        }
+      ]
+    },
+    {
+      "g": 49,
+      "block": 3,
+      "domain": "D4",
+      "selectN": 2,
+      "stem": "A single pass over a 40-page executed batch record produces detailed extraction for the first few process steps, thin coverage of the middle, a missed out-of-range yield figure, and one in-process check flagged in one step yet accepted in another. Which two changes address the cause? Select two.",
+      "options": [
+        "Run a per-step pass that extracts and checks each process step individually.",
+        "Run a separate integration pass over relationships that span steps, such as cumulative yield.",
+        "Move the extraction to a model with a larger context window so the record fits comfortably.",
+        "Instruct the extractor to give equal attention to every page of the record.",
+        "Split records above 20 pages into separate documents before they enter the pipeline."
+      ],
+      "correct": [
+        0,
+        1
+      ],
+      "whyRight": {
+        "text": "Uneven depth, a missed obvious defect and contradictory verdicts on the same pattern are attention dilution from processing many items at once. The fix is focused passes: a per-item pass for local issues, then a separate pass for the cross-item relationships a per-item pass cannot see.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.12"
+      },
+      "whyWrong": [
+        {
+          "option": 2,
+          "text": "Larger context does not fix attention quality — the corpus names this as the trap. The dilution exists regardless of whether the document fits.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.12"
+        },
+        {
+          "option": 3,
+          "text": "Instructing the model to distribute attention evenly restates the desired outcome without changing how a single long pass behaves.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.12"
+        },
+        {
+          "option": 4,
+          "text": "Splitting the source document destroys the cross-step relationships that batch release depends on, and a 40-page executed record is a single controlled document.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+        }
+      ]
+    },
+    {
+      "g": 50,
+      "block": 3,
+      "domain": "D4",
+      "stem": "Validation rejects a certificate of analysis because `assay_result` came back as \"98.7 %w/w\" where the schema wants a number and a separate unit field. The pipeline retries with the instruction \"try again, the output was invalid.\" Two of three attempts fail the same way. What should the retry carry instead?",
+      "options": [
+        "A raised retry ceiling, so the loop has more attempts before it gives up on the document.",
+        "A second model call that reformats the previous output rather than re-reading the source.",
+        "The original document, the previous extraction, and the specific validation error naming the field and expectation.",
+        "A stricter schema that rejects any string containing a unit symbol anywhere in the value."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "The retry request carries three things: the original document, the previous failed extraction, and the specific validation error — \"`assay_result` must be numeric; unit belongs in `assay_unit`\" — not just \"try again.\" Format errors are exactly the class retry-with-feedback fixes, provided the feedback is specific.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.9"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "More attempts at the same uninformative feedback reproduce the same failure. The ceiling is not what is limiting convergence.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.9"
+        },
+        {
+          "option": 1,
+          "text": "Reformatting without the source cannot recover information the first pass misread, and it adds a step where a specific error message would have sufficed.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.9"
+        },
+        {
+          "option": 3,
+          "text": "A schema can reject the shape but cannot tell the model what to do instead. This produces the same failure with a cleaner error and no path to a correct value.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.7"
+        }
+      ]
+    },
+    {
+      "g": 51,
+      "block": 3,
+      "domain": "D5",
+      "stem": "Reviewer capacity covers about 20% of daily volume. The team wants that capacity aimed where it does the most good. Extractions currently carry a single confidence figure per document, self-reported by the model and never checked against anything. Extraction volume is roughly 1,800 documents a day across four record types. What should the routing be built on?",
+      "options": [
+        "The existing per-document figure, with the threshold raised until the queue matches capacity.",
+        "Field-level confidence, calibrated against a labelled validation set, routing low-confidence and contradictory-source extractions to review.",
+        "Document age, so the oldest unreviewed extractions are always cleared first.",
+        "A fixed random 20% of all documents, which keeps the sample representative of daily volume."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "The design is field-level confidence rather than one score per document, calibrated against a labelled validation set because raw self-reported confidence is unreliable until checked against ground truth, then routing low-confidence and ambiguous or contradictory-source extractions to human review while validated segments process automatically.",
+        "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "An uncalibrated self-reported figure is unreliable at any threshold, and one score per document hides which field is actually doubtful.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+        },
+        {
+          "option": 2,
+          "text": "Age is unrelated to error likelihood. A first-in-first-out queue spends scarce capacity on whatever happens to be oldest.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+        },
+        {
+          "option": 3,
+          "text": "An unstratified fixed sample wastes capacity on easy segments and undersamples the problem ones — the specific failure stratification exists to prevent.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+        }
+      ]
+    },
+    {
+      "g": 52,
+      "block": 3,
+      "domain": "D4",
+      "stem": "An operator works through a batch queue conversationally. The system prompt sets a formal, regulator-facing register and requires every uncertain field to be named. Both hold early. By turn fifteen the replies are chatty and uncertainties go unmentioned, though the session is only about 3,000 tokens. What is the root cause?",
+      "options": [
+        "The context window is filling, so the earliest instructions are being displaced.",
+        "The system prompt applies only to the first exchange and must be resent to persist.",
+        "The operator's informal phrasing is being echoed, which no system prompt can override.",
+        "Accumulated assistant responses dilute the system prompt's influence as the conversation grows."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "As assistant responses accumulate, system-prompt influence dilutes relative to the growing body of model-generated content, and the model increasingly pattern-matches its own prior output. The corpus's example is a persona assistant drifting by turn seven inside 2,500 tokens — token count is explicitly not the cause.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.20"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Three thousand tokens is nowhere near any context limit. The corpus uses a similar figure precisely to rule this explanation out.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.20"
+        },
+        {
+          "option": 1,
+          "text": "The system prompt is sent with every request and applies throughout. Its authority weakens relatively, but it is never dropped.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.1"
+        },
+        {
+          "option": 2,
+          "text": "Mirroring the user's register is a real effect, but the drift here includes omitting uncertainty flags, which no amount of operator informality requests.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.20"
+        }
+      ]
+    },
+    {
+      "g": 53,
+      "block": 3,
+      "domain": "D4",
+      "stem": "Every extraction summary returned to the review interface opens with a variation of \"Certainly — I've reviewed the batch record and here is what I found.\" Reviewers processing 200 a day want the content to start immediately. The opener costs about fifteen words before any finding appears. Which technique removes the opener most reliably?",
+      "options": [
+        "Prefill the start of the assistant message with a direct opening, so the model continues from it.",
+        "Lower the temperature so the model varies its phrasing less between documents.",
+        "Add a system-prompt instruction listing the opening phrases that must never be used.",
+        "Strip the leading sentence in the review interface before the summary is displayed."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "Prefilling — including the beginning of the assistant message in the call so Claude continues from it rather than generating from scratch — is the corpus's named technique for suppressing filler openings such as \"Certainly!\"",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.4"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "Temperature controls randomness, not the presence of a specific phrase. A low-temperature model produces the same opener more consistently.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.4"
+        },
+        {
+          "option": 2,
+          "text": "A denylist of phrases is less reliable than seeding the response, and the model simply finds a variation the list did not anticipate.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.4"
+        },
+        {
+          "option": 3,
+          "text": "Post-processing is a fragile workaround: it has to recognise every variant, and it will eventually cut a first sentence that carried real content.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.4"
+        }
+      ]
+    },
+    {
+      "g": 54,
+      "block": 3,
+      "domain": "D5",
+      "selectN": 3,
+      "stem": "A regulator asks the pipeline to demonstrate, for one released batch, where each critical parameter came from. Records currently hold the extracted values plus a list of the documents processed for that batch. Nobody can show which document produced which value. Which three changes fix this? Select three.",
+      "options": [
+        "Emit a structured mapping per value carrying its source document and location within it.",
+        "Require every extraction output to carry the document's issue or collection date.",
+        "Require downstream aggregation to preserve and merge those mappings rather than flattening them.",
+        "Add a bibliography of all documents consulted to the end of each batch summary.",
+        "Re-derive the attributions on demand by re-searching the source documents when asked.",
+        "Record a single overall confidence score per batch as the audit-trail signal."
+      ],
+      "correct": [
+        0,
+        1,
+        2
+      ],
+      "whyRight": {
+        "text": "Provenance must survive synthesis: subagents emit structured claim-to-source mappings with source name and location, publication or collection dates travel with them so temporal differences are not misread, and downstream steps preserve and merge the mappings rather than compressing them away.",
+        "cite": "CCA-Prep_Domain-5_v2.md §5.11"
+      },
+      "whyWrong": [
+        {
+          "option": 3,
+          "text": "A bibliography at the end is what already exists in effect — individual values remain untraceable to specific documents.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.11"
+        },
+        {
+          "option": 4,
+          "text": "Re-deriving attribution by searching again is expensive and error-prone; the mapping should be preserved through the pipeline, not reconstructed after the fact.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.11"
+        },
+        {
+          "option": 5,
+          "text": "A batch-level confidence score says how sure the model was, not where a value came from. It answers a different question than the regulator asked.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+        }
+      ]
+    },
+    {
+      "g": 55,
+      "block": 3,
+      "domain": "D4",
+      "stem": "A revised extraction prompt is ready for an archive of 9,000 historical batch records. Submitting the whole archive to the Message Batches API and iterating on the results has cost two full cycles already, each discovered a day later. What should happen before the next full submission?",
+      "options": [
+        "Split the archive into nine batches of 1,000 so a defect is discovered after a ninth of the cost.",
+        "Submit the full archive again with a stricter schema, so defects surface as validation failures.",
+        "Run the prompt synchronously over a small representative sample and refine until it passes validation.",
+        "Submit the full archive and correct the failures individually as they are identified afterwards."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "Sample-first iteration: validate the prompt on a small synchronous sample for fast feedback, refine prompt and schema until the sample passes, and only then submit the volume. This maximises first-pass success and avoids paying — and waiting up to 24 hours — to discover a defect replicated across thousands of requests.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Smaller batches reduce the cost of each discovery but keep the slow feedback loop. A synchronous sample gives the answer in minutes rather than a day.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+        },
+        {
+          "option": 1,
+          "text": "A stricter schema catches shape violations, not whether the prompt extracts the right values. It also spends another full batch to find out.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.7"
+        },
+        {
+          "option": 3,
+          "text": "Correcting individually across 9,000 records converts a prompt defect into indefinite manual work, which is what iterating before submission avoids.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+        }
+      ]
+    },
+    {
+      "g": 56,
+      "block": 3,
+      "domain": "D5",
+      "stem": "As review conversations pass fifty turns, both latency and per-turn cost climb steadily, although the model's replies are no longer than they were at turn five and the review interface has not changed. Token usage per request has roughly tripled between turn five and turn fifty. What explains the increase?",
+      "options": [
+        "The model produces progressively more internal reasoning as the conversation accumulates.",
+        "Every request carries the complete conversation history, so each turn sends more tokens than the last.",
+        "The service's conversation store slows down as the stored transcript grows.",
+        "Longer sessions are routed to a larger model in order to maintain answer quality."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "The API is stateless, so every request must include the entire conversation history in the `messages` array. More turns means more tokens per request, which is directly more cost and more latency — the corpus's named explanation for exactly this pattern.",
+        "cite": "CCA-Prep_Domain-5_v2.md §5.1"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "The stem rules this out: replies are the same length at turn fifty as at turn five. Output volume is not what is growing.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.1"
+        },
+        {
+          "option": 2,
+          "text": "Named as a wrong answer — database behaviour is not what makes a long conversation slower. The growth is in what each request carries.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.1"
+        },
+        {
+          "option": 3,
+          "text": "Nothing routes by conversation length, and the interface is unchanged. This invents a mechanism to explain an effect statelessness already accounts for.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.1"
+        }
+      ]
+    },
+    {
+      "g": 57,
+      "block": 3,
+      "domain": "D4",
+      "stem": "A synthesis step has stalled. Two of its five input categories are ambiguous, and it has queued a clarification request to the coordinator for each before producing anything at all. Throughput across the pipeline has dropped while it waits. The coordinator has not responded to either clarification request. What should it do?",
+      "options": [
+        "Continue waiting — synthesising on unverified assumptions is worse than delivering nothing.",
+        "Escalate both ambiguities to a human reviewer and hold until a ruling comes back.",
+        "Drop the two ambiguous categories and synthesise from the three that are unambiguous.",
+        "Proceed on stated assumptions for the two, marking them explicitly so they can be corrected."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "State assumptions explicitly and proceed, inviting correction. The corpus applies this to multi-agent systems as well as user-facing assistants: a synthesis agent should not block awaiting coordinator clarification on every gap.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.19"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Blocking produces nothing at all, which is strictly worse than a result whose assumptions are labelled and therefore checkable.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.19"
+        },
+        {
+          "option": 1,
+          "text": "Escalation is for policy gaps and unresolvable ambiguity. Routine input ambiguity that a stated assumption covers does not warrant a human decision.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.8"
+        },
+        {
+          "option": 2,
+          "text": "Silently dropping two of five categories produces a partial result presented as complete — the failure that coverage annotation exists to prevent.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.10"
+        }
+      ]
+    },
+    {
+      "g": 58,
+      "block": 3,
+      "domain": "D4",
+      "selectN": 2,
+      "stem": "A single prompt asks the model to extract every deviation from a batch record, classify each by criticality, and draft a quality-review memo. Deviations from later sections are frequently missed, and the criticality ratings sometimes contradict the memo's own narrative. Which two changes address this? Select two.",
+      "options": [
+        "Break the work into sequential focused prompts, each taking the previous step's output as input.",
+        "Extract deviations first, then classify only what extraction produced, then draft from the classifications.",
+        "Keep one prompt but instruct the model to work through the record section by section.",
+        "Raise the output token limit so the memo is not truncated before the later sections are covered.",
+        "Ask for the memo first, so the narrative anchors the extraction and classification that follow."
+      ],
+      "correct": [
+        0,
+        1
+      ],
+      "whyRight": {
+        "text": "Prompt chaining breaks a complex task into sequential focused prompts where each step's output feeds the next, producing more focused and consistent output at every stage. It also removes the contradiction directly: a memo drafted from the classifications cannot disagree with them.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.14"
+      },
+      "whyWrong": [
+        {
+          "option": 2,
+          "text": "An instruction to be systematic does not change that three distinct tasks share one pass and one attention budget. The dilution is structural.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.12"
+        },
+        {
+          "option": 3,
+          "text": "Nothing indicates truncation — the ratings contradict the narrative, which is an internal inconsistency rather than a missing tail.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.12"
+        },
+        {
+          "option": 4,
+          "text": "Drafting the memo first inverts the dependency, so the narrative is written before the deviations it is meant to describe are known.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.14"
+        }
+      ]
+    },
+    {
+      "g": 59,
+      "block": 3,
+      "domain": "D4",
+      "stem": "Asked to propose validation checks for a new deviation-report schema, the assistant returns twelve. Seven duplicate checks the quality system already performs at intake, and reviewers now skim the list rather than reading it. The quality system's intake checks are documented and stable. What most effectively removes the duplication?",
+      "options": [
+        "Supply the existing intake checks in context so the assistant can propose only what is not covered.",
+        "Ask for five checks instead of twelve, on the assumption the most valuable are proposed first.",
+        "Post-process the twelve, dropping any whose description shares keywords with an existing check.",
+        "Ask the assistant to review its own list for duplicates before returning it."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "The model can only avoid duplicating what it knows exists. Including the existing checks in context is the corpus's answer to a generator proposing items already covered — the same pattern as supplying existing test files so generated tests avoid duplicate scenarios.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.18"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "Reducing the count assumes a priority ordering that was never established. Five proposals drawn from the same blind spot can still be five duplicates.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.18"
+        },
+        {
+          "option": 2,
+          "text": "Keyword matching is fragile and misses semantic duplicates — the same check phrased differently survives the filter.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.18"
+        },
+        {
+          "option": 3,
+          "text": "Self-review cannot detect duplication against a list the model has never seen. The missing input is the existing checks, not more scrutiny.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.13"
+        }
+      ]
+    },
+    {
+      "g": 60,
+      "block": 3,
+      "domain": "D4",
+      "stem": "Two noisy finding categories were switched off a month ago and their prompts have since been rewritten. Reviewer engagement with the four remaining categories has recovered to its former level. The team wants the two back. The two categories accounted for about a third of all findings before they were switched off. What should govern the decision?",
+      "options": [
+        "Re-enable both now — engagement has recovered and the prompts are materially different.",
+        "Re-enable them permanently off by default, surfacing them only when a reviewer asks.",
+        "Measure each rewritten category's false-positive rate against labelled examples before re-enabling it.",
+        "Re-enable one at a time and watch overall engagement, treating any fall as the signal to stop."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "The categories were disabled because their false-positive rate destroyed trust across the whole tool. Re-enabling is justified by evidence that the rate has actually fallen, measured per category against labelled examples — the same per-segment discipline that keeps an aggregate figure from hiding a bad segment.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.17"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "A rewritten prompt is a hypothesis, not a result. Recovered engagement measures the four categories still running, not the two that were off.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.17"
+        },
+        {
+          "option": 1,
+          "text": "A category nobody sees by default contributes nothing while still costing maintenance. If it is accurate it should run; if it is not, it should stay off.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.17"
+        },
+        {
+          "option": 3,
+          "text": "Overall engagement is a lagging aggregate that moves only after trust has already been damaged again — the same masking problem, used as the detector.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+        }
+      ]
+    }
+  ]
+}

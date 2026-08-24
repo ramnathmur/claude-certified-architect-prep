@@ -1,0 +1,514 @@
+{
+ "label": "Developer Productivity with Claude",
+ "narrative": "The same team extends Claude Code beyond editing: an issue tracker and a design-system server are connected over MCP, and a coordinator agent fans work out to specialists for large investigations. The questions below follow that setup as it is put under load.",
+ "questions": [
+  {
+   "g": 16,
+   "block": 1,
+   "domain": "D2",
+   "stem": "An MCP server exposes `find_issue`, described as 'issue search'. Asked to check whether a bug has already been reported, the agent almost always runs a Grep across the repository instead and reports what it finds in code comments. The MCP server is connected and its tool is available. What is the likely cause?",
+   "options": [
+    "The MCP tool's description is too sparse to compete with the detailed built-in tool descriptions, so the model reaches for the tool it understands better.",
+    "MCP tools are ranked below built-in tools when both could apply, so a built-in wins whenever one is plausible.",
+    "The server is connected but its tools are not in the agent's allowed set, so the call would fail and is silently skipped.",
+    "`Grep` returns faster, and the model prefers lower-latency tools when both can answer the question."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "A model selects the tool whose description best matches the task, and 'issue search' says almost nothing — not what it searches, not what it returns, not when to prefer it. The built-in tools carry detailed descriptions, so they win the comparison. Expanding the MCP description to state its capability and output is what makes it competitive.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "There is no built-in-first ranking. Selection is driven by how well each description matches the request, which is why improving the description changes the outcome.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+    },
+    {
+     "option": 2,
+     "text": "A tool outside the allowed set produces a permission outcome, not a silent substitution. The observed behaviour is a choice between two available tools, not a blocked call.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+    },
+    {
+     "option": 3,
+     "text": "Tool selection is not latency-ranked, and the model has no reliable knowledge of how long a given tool will take. This attributes an optimisation to the model that it is not performing.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+    }
+   ]
+  },
+  {
+   "g": 17,
+   "block": 1,
+   "domain": "D1",
+   "stem": "A coordinator must answer three questions before a design review: which components use a deprecated token, which tests cover the checkout flow, and what the issue tracker holds against this milestone. None of the three depends on either of the others. The coordinator currently spawns one specialist, waits, spawns the next, and so on. What should change?",
+   "options": [
+    "Collapse the three into one specialist with all the tools, removing two spawn round-trips.",
+    "Keep the sequence but have each specialist pass its findings to the next, so later work benefits from earlier context.",
+    "Issue all three spawn calls in a single coordinator response so the specialists run concurrently, and assemble the returns when they complete.",
+    "Keep the sequence and start with the fastest question, so the coordinator has something to report sooner."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "Independent subtasks should be dispatched together. Several spawn calls in one coordinator response run concurrently, so the wait becomes the slowest question rather than the sum of all three. Nothing here creates an ordering constraint, so the current serialisation is pure latency.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.15"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "One specialist holding every tool processes the three questions one after another inside itself and widens its tool surface, which degrades selection. The round-trips were never the dominant cost.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+    },
+    {
+     "option": 1,
+     "text": "Chaining manufactures a dependency the task does not have, keeps the total time as the sum of the parts, and lets one specialist's framing colour the next. It also routes information between subagents rather than through the coordinator.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.2"
+    },
+    {
+     "option": 3,
+     "text": "Reordering changes when partial results appear and leaves the total as the sum of the three. It optimises the ordering of a serialisation instead of removing it.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.15"
+    }
+   ]
+  },
+  {
+   "g": 18,
+   "block": 1,
+   "domain": "D2",
+   "stem": "Asked how a checkout total is calculated, the agent reads all 34 files in the checkout package before answering. The answer is correct, the main context is nearly full afterwards, and the follow-up question performs noticeably worse. What is the correct investigation strategy?",
+   "options": [
+    "Read the package's entry point first, then follow imports outward only as far as the question requires.",
+    "`Grep` for the calculation's entry point, then Read only the files that trace shows are on the path.",
+    "Read all 34 files as before but summarise each one immediately, keeping only the summaries in context.",
+    "Delegate the same read-everything approach to a subagent, so the main context is unaffected."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "Incremental investigation is the documented pattern: search to locate the relevant entry points, then read only what the trace requires. It answers the question with a fraction of the content, which is why the follow-up still has room to work in. Loading a whole package before knowing what is relevant is the context-budget failure the corpus names directly.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Following imports from an entry point is better than reading everything and still starts from a guess about where to begin. Searching for the calculation locates the entry point rather than assuming it.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+    },
+    {
+     "option": 2,
+     "text": "The full content still passes through the context to be summarised, so the cost is paid and a lossy summary is what remains. It adds a step without avoiding the load.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+    },
+    {
+     "option": 3,
+     "text": "Delegation protects the main context and is worth doing for genuinely broad investigations, but it does not make an indiscriminate strategy correct — the subagent now exhausts its own context reading 33 irrelevant files.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.6"
+    }
+   ]
+  },
+  {
+   "g": 19,
+   "block": 1,
+   "domain": "D1",
+   "stem": "A coordinator is asked to prepare a migration plan for a shared authentication module. It splits the work into 'update the login handler', 'update the session handler' and 'update the token refresh handler'. The resulting plan says nothing about the four services that call the module, and the migration breaks two of them. Where is the defect?",
+   "options": [
+    "In the specialists, which should have investigated beyond their assignments once they saw a shared module.",
+    "In the assembly step, which should have cross-referenced the three returns to detect the missing consumer analysis.",
+    "In the number of specialists, since four callers would need four more assignments to be covered.",
+    "In the coordinator's decomposition, which partitioned inside the module and never assigned anyone the consumers of it."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "The three assignments carve up the module's internals, so the four calling services were never anyone's responsibility. Specialists cover what they are given, and no amount of diligence within an assignment reaches outside it. A coverage gap traces back to the point where the task became subtasks.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.6"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A specialist that wanders outside its assignment produces unpredictable overlap and gaps of a different kind. The corpus locates this failure in the partitioning, not in the discipline of the agents executing it.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.6"
+    },
+    {
+     "option": 1,
+     "text": "Assembly can only reconcile what it receives, and nothing about the calling services was produced by any specialist. A cross-check over three internal analyses cannot surface a fourth topic that was never investigated.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.6"
+    },
+    {
+     "option": 2,
+     "text": "Adding specialists to a decomposition that only names internals hands out more internal slices. Capacity is not what is missing; a dimension of the problem is.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.6"
+    }
+   ]
+  },
+  {
+   "g": 20,
+   "block": 1,
+   "domain": "D1",
+   "selectN": 2,
+   "stem": "A specialist is being defined to audit dependency licences against the team's approved list. It needs to read manifests and search the repository, must not modify anything, and will be spawned by the coordinator once per release. The approved list and the manifest locations are both known to the coordinator. Select TWO configuration choices that follow the corpus.",
+   "options": [
+    "Give it a read-only tool set — read and search tools only — rather than the full set with an instruction not to write.",
+    "State the licence policy and the manifest locations in the prompt the coordinator passes it, since it inherits neither from the coordinator.",
+    "Give it the full tool set so it can fix any violation it finds without a second round-trip.",
+    "Have it write its findings directly into the issue tracker so the coordinator is not a bottleneck."
+   ],
+   "correct": [
+    0,
+    1
+   ],
+   "whyRight": {
+    "text": "Least privilege and explicit context are the two rules governing subagent definition. A tool a specialist does not hold is a tool it cannot misuse, which is stronger than an instruction not to use one. And a subagent's context starts empty, so the policy and the manifest locations only exist for it if the coordinator writes them into the prompt.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.11"
+   },
+   "whyWrong": [
+    {
+     "option": 2,
+     "text": "Granting write access so an auditor can also remediate turns a read-only role into one that can change the repository, and it does so to save a round-trip. The corpus scopes tools to the role rather than to the convenience.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.11"
+    },
+    {
+     "option": 3,
+     "text": "Writing findings out to an external system routes results around the coordinator, which loses visibility of what the specialist concluded and cannot handle its errors consistently. Returns flow back through the coordinator.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.2"
+    }
+   ]
+  },
+  {
+   "g": 21,
+   "block": 1,
+   "domain": "D2",
+   "stem": "After rewriting the design-system server's tool descriptions to be precise and distinct, `get_component_spec` is still bypassed roughly a third of the time in favour of a repository search. The system prompt contains the line: 'When asked about components, search the codebase for the component definition.' What does this show?",
+   "options": [
+    "Tool descriptions only influence selection when no system-prompt guidance applies, so descriptions should be removed once the prompt is specific.",
+    "A keyword-sensitive system-prompt instruction can override well-written tool descriptions, so the prompt has to be reviewed alongside them.",
+    "The rewrite did not take effect, since description changes require the MCP server to be reconnected.",
+    "A third of the requests are genuinely about definitions rather than specifications, so the split is the correct behaviour."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "The system prompt and the tool descriptions are read together, and an instruction that names a behaviour by keyword — 'components' plus 'search the codebase' — creates an association strong enough to win against a description that says the same tool should be preferred. Fixing descriptions without reading the prompt leaves a competing instruction in place.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.2"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "This inverts the relationship and would remove the primary lever for tool selection. Descriptions and prompt guidance both matter, which is exactly why a conflict between them produces the observed split.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.2"
+    },
+    {
+     "option": 2,
+     "text": "If the rewrite had not taken effect, the behaviour would be unchanged rather than improved to two-thirds. The partial improvement is evidence the new descriptions are being read and are being outweighed on some requests.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.2"
+    },
+    {
+     "option": 3,
+     "text": "Nothing in the scenario distinguishes the bypassed third by subject matter, and the prompt line names components generally. Declaring the split correct explains away a conflict the prompt visibly creates.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.2"
+    }
+   ]
+  },
+  {
+   "g": 22,
+   "block": 1,
+   "domain": "D1",
+   "stem": "To cut latency, an engineer proposes letting the test-analysis specialist send its findings straight to the code-generation specialist, skipping the coordinator hop and saving roughly four seconds per exchange. Both already run under the same coordinator, and the payload is a short structured summary. What is the objection?",
+   "options": [
+    "Direct exchange between specialists removes the coordinator's visibility of what passed between them, its consistent error handling and its control over what each one receives.",
+    "The specialists would need each other's tool definitions, which would widen both tool sets past the reliable range.",
+    "Findings sent directly would arrive without the coordinator's formatting, so the receiving specialist could not parse them.",
+    "There is no objection provided the coordinator is sent a copy of everything the two specialists exchange."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "Hub-and-spoke routes every exchange through the coordinator, and the reasons are structural rather than stylistic: the coordinator is where failures are handled uniformly, where the flow of information is controlled, and where the run can be observed. A direct channel removes all three, and the corpus rejects it regardless of the efficiency gained.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.2"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "Passing a result does not require holding the other agent's tools. This objects on a mechanism that is not implicated and would evaporate if the two tool sets happened to be small.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.2"
+    },
+    {
+     "option": 2,
+     "text": "Formatting is solvable and is not what the constraint protects. Framing the rule as a serialisation detail invites someone to standardise a payload and proceed.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.2"
+    },
+    {
+     "option": 3,
+     "text": "Copying the coordinator restores a log and not control. It still cannot intervene, cannot handle a failure in the exchange, and cannot decide what the receiving specialist should have been given.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.2"
+    }
+   ]
+  },
+  {
+   "g": 23,
+   "block": 1,
+   "domain": "D3",
+   "stem": "The project `CLAUDE.md` has grown to about 700 lines. Most of it is a set of numbered procedures — how to run a dependency audit, how to prepare a release branch, how to triage a flaky test — each used a few times a month. The rest is genuinely universal. Sessions have become noticeably more expensive. What should be done?",
+   "options": [
+    "Move each procedure into its own skill so it loads when invoked, leaving `CLAUDE.md` holding only the universal standards.",
+    "Move the procedures into `.claude/rules/` with globs, so they load only for the relevant file types.",
+    "Keep the procedures in `CLAUDE.md` but compress them into shorter summaries to reduce the token cost.",
+    "Split `CLAUDE.md` into several files in the same directory, so each session loads only the one it needs."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "CLAUDE.md carries always-loaded universal standards, and a procedure used a few times a month is not that — it is a task workflow. Skills are the on-demand mechanism: the procedure is available when invoked and costs nothing the rest of the time, which is where the 700 lines of per-session expense is going.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.11"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "Path rules load when a matching file is read, which is the wrong trigger for a release-branch or triage procedure. Those are invoked by intent, not by which file is open.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+    },
+    {
+     "option": 2,
+     "text": "Compression reduces the size of content that should not be resident at all. It also degrades the procedures, which need their steps intact when they are actually run.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.11"
+    },
+    {
+     "option": 3,
+     "text": "Files in the hierarchy are concatenated as they load rather than selected among, so splitting one long file into several in the same directory changes the layout and not the cost.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.1"
+    }
+   ]
+  },
+  {
+   "g": 24,
+   "block": 1,
+   "domain": "D2",
+   "stem": "The issue-tracker server returns `{\"isError\": true, \"message\": \"Request could not be completed\"}` for every failure — an expired token, a rate limit, a malformed query and an unknown project key all produce that string. The agent retries all of them identically and reports the same unhelpful summary to the user. What must the responses carry?",
+   "options": [
+    "A stack trace from the server, so the agent can determine the failure class from the exception type.",
+    "The original request echoed back, so the agent can compare what it sent against what the server expected.",
+    "A numeric error code the agent can look up against a table supplied in the system prompt.",
+    "An error category, an `isRetryable` flag and a description specific enough to name what failed."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "The agent's recovery depends on distinctions the response is not making. A rate limit is worth retrying after a wait, an expired token needs re-authentication, a malformed query needs correcting, and an unknown project key needs escalating. A category, a retryable flag and a specific description are what let the agent tell those apart and take the right path for each.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A stack trace exposes server internals and asks the agent to infer semantics from an implementation detail. It is verbose, leaks structure, and still does not state whether a retry would help.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+    },
+    {
+     "option": 1,
+     "text": "Echoing the request helps only with the malformed-query case and says nothing about the other three. The agent still cannot tell a transient failure from a permanent one.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+    },
+    {
+     "option": 2,
+     "text": "A code plus a lookup table in the prompt puts the meaning of the error somewhere other than the error, and the table drifts from the server the moment either changes. The response should carry its own semantics.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+    }
+   ]
+  },
+  {
+   "g": 25,
+   "block": 1,
+   "domain": "D1",
+   "stem": "A release specialist must tag a build before publishing it. Its prompt says so, and about one release in twelve is published untagged. An engineer proposes a classifier in front of the coordinator that identifies release requests and routes them to the release specialist. Why does this not address the problem?",
+   "options": [
+    "A classifier adds a component that itself fails occasionally, so the joint failure rate would be worse than one in twelve.",
+    "A classifier would be accurate enough for routing but not for detecting whether a build has been tagged.",
+    "A classifier decides which agent handles a request; the failure happens inside the release specialist's own execution sequence, after routing has already succeeded.",
+    "Classifiers cannot be placed in front of a coordinator, since the coordinator is the entry point to the system."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "Routing and sequencing are different problems. The requests are already reaching the right specialist — the missing tag happens once it is working, when a prompt-level instruction about ordering is not followed. A classifier improves nothing about the order of operations inside an agent, and the fix belongs in a prerequisite gate that blocks publishing until the tag exists.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.14"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "The compounding-error argument is true of any added component and is beside the point. Even a perfect classifier would leave the one-in-twelve untagged releases exactly where they are.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.14"
+    },
+    {
+     "option": 1,
+     "text": "This grants the classifier a role in checking the tag, which is not what a classifier does. It concedes the wrong framing and then argues about accuracy inside it.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.14"
+    },
+    {
+     "option": 3,
+     "text": "Nothing prevents a routing layer in front of a coordinator. Objecting on architecture avoids the actual reason, which is that routing is not where this failure occurs.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.14"
+    }
+   ]
+  },
+  {
+   "g": 26,
+   "block": 1,
+   "domain": "D2",
+   "stem": "A `delete_branch` tool is occasionally called on branches that still carry unmerged commits — three times last month, twice recoverable from the reflog. The team wants deletion to be impossible unless the agent has first seen exactly what would be removed, and wants that guarantee to hold without depending on the model remembering to check. Which tool design achieves it?",
+   "options": [
+    "One tool with a `dry_run` boolean, defaulting to true, that the agent sets to false on the second call.",
+    "Two tools: a preview that returns a short-lived token describing exactly what would be deleted, and a delete that accepts only that token.",
+    "One tool with a `confirmed` boolean the agent must set to true, plus a prompt instruction to preview first.",
+    "One tool that deletes immediately, paired with a `PostToolUse` hook that restores the branch when open work is detected."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "Binding the destructive call to a token that only the preview can issue makes the preview a precondition of the deletion rather than a habit the model is asked to keep. The token also pins the deletion to the specific state that was previewed, so a branch that changed in between cannot be removed on a stale look.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.4"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A single tool with a boolean lets the model set it to false on the first call and delete without ever previewing. The default only changes what happens when the parameter is omitted, not what the model is able to do.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.4"
+    },
+    {
+     "option": 2,
+     "text": "A confirmation flag the caller sets itself confirms nothing, and the preview requirement lives in a prompt instruction rather than in the interface. Both halves are probabilistic where a guarantee was asked for.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.4"
+    },
+    {
+     "option": 3,
+     "text": "A PostToolUse hook runs after the deletion, so the branch is already gone when the check fires. Restoration is a recovery path, and it assumes every deletion is reversible.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.7"
+    }
+   ]
+  },
+  {
+   "g": 27,
+   "block": 1,
+   "domain": "D5",
+   "selectN": 2,
+   "stem": "The team wants Claude to recall architectural decisions made in sessions weeks earlier — why a queue was chosen over polling, which retry library was rejected and on what grounds, and which of two caching strategies was ruled out. Sessions are started fresh each morning and the decisions are currently only in old transcripts. Select TWO approaches that work.",
+   "options": [
+    "Persist each decision with its rationale to a durable store, and retrieve the relevant ones into context when a related question comes up.",
+    "Begin a new session by injecting a structured summary of the decisions that bear on the work about to be done.",
+    "Keep one long-running session alive indefinitely, re-summarising its history whenever it approaches the context limit.",
+    "Move to a model with a larger context window so several weeks of sessions fit without any recall mechanism."
+   ],
+   "correct": [
+    0,
+    1
+   ],
+   "whyRight": {
+    "text": "Recall across sessions has to come from outside the conversation, because the API keeps no state between them. Writing decisions and their rationale to a durable store and retrieving the relevant ones on demand scales without bound, and injecting a structured summary at the start of a session carries the conclusions that matter into the context that needs them.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.7"
+   },
+   "whyWrong": [
+    {
+     "option": 2,
+     "text": "Repeated summarisation of a summary compounds loss at every pass, and the specific content it destroys first — identifiers, the reasons a library was rejected — is exactly what needs to survive. Weeks of decisions cannot be held that way.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.7"
+    },
+    {
+     "option": 3,
+     "text": "A larger window postpones the limit and does not create recall across separate sessions, since each new session starts empty regardless of how large it could grow. It also worsens retrieval, as the relevant decision sits further from the edges of a longer context.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.7"
+    }
+   ]
+  },
+  {
+   "g": 28,
+   "block": 1,
+   "domain": "D3",
+   "stem": "Every file under `infra/` must carry a specific header comment and follow a naming rule, and this must apply automatically whenever Claude edits one of those files — without anyone remembering to ask for it. An engineer proposes writing it as a skill with a `paths` entry. What is the better mechanism, and why?",
+   "options": [
+    "A skill with `paths` is correct, since a paths entry is what makes either mechanism activate on matching files.",
+    "A directory-level `CLAUDE.md` inside `infra/`, because directory-scoped configuration is the only mechanism that applies automatically.",
+    "A path-scoped rule in `.claude/rules/`, because rules load as background guidance whenever a matching file is read, whereas a skill loads as an invoked workflow.",
+    "A pre-commit hook, since conventions that must never be missed cannot be expressed in configuration at all."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "Both mechanisms can be scoped by path, so the discriminator is what each one is. A rule stays in context as background guidance the moment a matching file is read, which is what shapes every edit. A skill is a task-style workflow that loads when it is invoked or matched as an intent. For always-on conventions attached to a file type, rules are the fit.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "This treats the shared frontmatter field as though it made the two mechanisms equivalent. They are scoped the same way and behave differently once scoped, which is the whole of the distinction.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+    },
+    {
+     "option": 1,
+     "text": "A directory-level file would work for one directory and is not the only automatic mechanism. It also stops at the directory boundary, so any convention spanning several would need a copy in each.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+    },
+    {
+     "option": 3,
+     "text": "A commit hook catches violations after they are written and does nothing to guide the edit. It is a useful backstop and not an answer to which configuration mechanism applies the convention.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+    }
+   ]
+  },
+  {
+   "g": 29,
+   "block": 1,
+   "domain": "D1",
+   "stem": "An audit of 40 modules in one pass produces detailed findings for the first several and thin ones thereafter. An engineer argues that a sharper prompt — explicitly requiring the same six checks on every module — makes a multi-pass architecture unnecessary. What is the flaw in that argument?",
+   "options": [
+    "A sharper prompt would work, but multi-pass is preferred because it is easier to parallelise across workers.",
+    "The six checks would need to be listed for each module individually, which makes the prompt too long to be effective.",
+    "Prompts are probabilistic, so the six checks would be applied to most modules but not all, leaving a small residual failure rate.",
+    "A prompt cannot allocate attention across a long input; the depth falls off because each module competes with 39 others in one pass, which is a property of the architecture rather than of the instruction."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "Requiring six checks does not change how attention is distributed over a 40-module input — the later modules still arrive after everything before them. Multi-pass fixes this structurally by giving each module a pass of its own, so its depth does not depend on its position. A better prompt raises the average and leaves the falloff intact.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "This concedes the argument and defends multi-pass on operational grounds. Parallelism is a benefit, but the reason multi-pass is required here is that a single pass cannot deliver even depth at all.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+    },
+    {
+     "option": 1,
+     "text": "Prompt length is not the constraint; the same six checks stated once apply to every module. This objects to a formatting choice rather than to the reasoning.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+    },
+    {
+     "option": 2,
+     "text": "A uniform small residual rate is not what is observed. The findings degrade with position, which points at attention allocation rather than at ordinary instruction-following variance.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+    }
+   ]
+  },
+  {
+   "g": 30,
+   "block": 1,
+   "domain": "D4",
+   "stem": "A prompt asks the agent to flag risky dependency upgrades and to attach a confidence score, with anything below 0.7 suppressed. False positives remain high, and inspection shows suppressed items and surfaced items are similar in kind. What should be done first?",
+   "options": [
+    "Calibrate the confidence scores against a labelled set and keep the 0.7 threshold.",
+    "Raise the suppression threshold to 0.85, since the current cut-off is admitting too much.",
+    "Have the agent produce two independent confidence scores and suppress unless both clear the threshold.",
+    "Define explicit criteria for what counts as risky — a major version change, a transitive change to a package on the security list, a maintainer change — and only then consider confidence for routing."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "The scores are being asked to rank judgements against an undefined standard, so similar items land on either side of the cut-off. Confidence is only meaningful once the model knows what it is being confident about — define the categorical criteria first, and confidence routing becomes a useful refinement afterwards rather than a substitute for the definition.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.16"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Calibration is the right step once there is a stable definition to calibrate against. Labelling a set of items whose criterion nobody has stated reproduces the ambiguity in the labels.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+    },
+    {
+     "option": 1,
+     "text": "Moving an uncalibrated threshold on an undefined criterion suppresses more of everything. Since the suppressed and surfaced items are already alike, a higher bar loses genuine findings at the same rate as false ones.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.16"
+    },
+    {
+     "option": 2,
+     "text": "Two scores from the same model on the same undefined criterion correlate strongly. It doubles the cost and produces agreement rather than accuracy.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.16"
+    }
+   ]
+  }
+ ]
+}

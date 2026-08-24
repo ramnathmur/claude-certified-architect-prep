@@ -18,6 +18,8 @@ Generate HTML-based MCQ mock exams for the Anthropic Claude Certified Architect 
 
 **Design stance (Ram, 2026-07-06):** per-question feedback is deliberate. The tool optimizes learning-per-question, not exam-condition realism. Realism lives in question STYLE, DIFFICULTY, TOPIC COVERAGE, and STRUCTURE — not in withholding feedback.
 
+**Exception — Exam Mode (Ram, 2026-08-16, temporary):** for the final pre-exam sittings only (Test 19, Test 20 — real exam is 2026-08-18), the design stance above is suspended. Per-question feedback, the live score pill, and the live accuracy pill are withheld until the exam is finished; the elapsed timer becomes a 120:00 countdown; full rationale review, domain/block breakdown, and JSON export remain unchanged post-submission. See `EXAM-MODE-DESIGN_v1.md` for the full spec and implementation detail. Test 19 was retrofitted directly; Test 20, when generated via `/cca-exam`, should build `EXAM_MODE = true` in from the start (Step 5), using Test 19's post-patch script as the reference implementation. This does NOT change the default design stance for any exam generated after the 2026-08-18 sitting — revert to per-question feedback unless Ram says otherwise.
+
 ---
 
 ## Corpus (Source of Truth)

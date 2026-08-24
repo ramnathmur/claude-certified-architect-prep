@@ -1,0 +1,533 @@
+{
+  "label": "Code Generation with Claude Code",
+  "narrative": "Your team uses Claude Code across a public-transit ticketing platform — fare calculation, concession eligibility, gate validation and smartcard top-ups — spread over a monorepo with a Kotlin gate service, a Python fares engine and shared schema definitions. Across this block the workspace is progressively configured, then pushed into longer sessions where context management starts to matter.",
+  "questions": [
+    {
+      "g": 16,
+      "block": 1,
+      "domain": "D3",
+      "stem": "The fares package has its own `CLAUDE.md` requiring every monetary value to be handled in minor units. The repository root `CLAUDE.md` says decimals are acceptable where precision is documented. A developer assumes the nearer file wins inside that package. What actually happens when Claude works on a fares file?",
+      "options": [
+        "The package file replaces the root file for files inside that package, so minor units apply.",
+        "The root file wins, because instructions closer to the repository root carry higher authority.",
+        "Both files load together and both instructions are in context, so the conflict must be resolved by editing them.",
+        "Neither loads automatically; a conflict between two levels suppresses both until one is removed."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "The hierarchy is a concatenated load order from the root down to the working directory, not an override chain. Every discovered file contributes its instructions, so Claude sees both statements at once. There is no documented precedence mechanism between levels — conflicts are resolved by editing the files.",
+        "cite": "CCA-Prep_Domain-3_v2.md §3.1"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "This is the named misconception. A directory-level file does not silently replace a higher one; assuming it does is how contradictory guidance ships unnoticed.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.1"
+        },
+        {
+          "option": 1,
+          "text": "The same misconception inverted. Proximity to the root confers no more authority than proximity to the file being edited — the files are concatenated, not ranked.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.1"
+        },
+        {
+          "option": 3,
+          "text": "Discovery is not conditional on consistency. Both files load exactly as they would if they agreed; the contradiction simply travels into context with them.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.1"
+        }
+      ]
+    },
+    {
+      "g": 17,
+      "block": 1,
+      "domain": "D3",
+      "stem": "The root `CLAUDE.md` has grown past 400 lines. It mixes naming and error-handling standards that genuinely apply everywhere with a concession-eligibility release checklist, a fare-table migration procedure, and gate-firmware deployment steps. Nobody can find anything any more, and every session pays for the whole file. What is the appropriate revision?",
+      "options": [
+        "Keep the universal standards in `CLAUDE.md` and move each workflow procedure into its own skill.",
+        "Move the entire contents into skills, so nothing loads until it is explicitly invoked.",
+        "Split the whole file across `.claude/rules/` files, one per topic, with glob frontmatter.",
+        "Keep the file as it is but reorder it so the universal standards appear first."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "`CLAUDE.md` content loads in every session, so universal standards belong there; workflow-specific guidance — release checklists, migration procedures, deployment steps — belongs in skills that are invoked on demand with trigger keywords.",
+        "cite": "CCA-Prep_Domain-3_v2.md §3.11"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "Moving everything to skills means the universal standards need explicit invocation every session, which is exactly what always-loaded configuration exists to avoid.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.11"
+        },
+        {
+          "option": 2,
+          "text": "`.claude/rules/` is path-scoped, not workflow-scoped. A deployment procedure does not correspond to a set of file paths, so a glob cannot express when it applies.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.11"
+        },
+        {
+          "option": 3,
+          "text": "Reordering helps a human skim the file and changes nothing about token cost or the mixing of concerns. All 400 lines still load every session.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.11"
+        }
+      ]
+    },
+    {
+      "g": 18,
+      "block": 1,
+      "domain": "D3",
+      "stem": "A single-file fix arrives with a stack trace pointing at the exact line and a one-line reproduction. The team's rule, written after a costly migration went wrong, is to use plan mode for everything. The fix takes twenty minutes; producing and reviewing its plan takes forty. What does the rule get wrong?",
+      "options": [
+        "Nothing — a uniform rule is worth the overhead because it removes a judgement call from every task.",
+        "Plan mode should apply to any change crossing a package boundary, whatever its size.",
+        "The rule is sound but plans for small changes should be correspondingly shorter.",
+        "Mode follows scope and design ambiguity; a defined fix with a known approach calls for direct execution."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "Planning mode is for large scope, architectural decisions and situations where several approaches are viable. A single-file fix with a clear stack trace has defined scope and a known approach — the corpus's own example of direct execution.",
+        "cite": "CCA-Prep_Domain-3_v2.md §3.6"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "The judgement being removed is the one that determines whether the overhead is worth paying. A rule that doubles the cost of every small fix is not free.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.6"
+        },
+        {
+          "option": 1,
+          "text": "Package boundaries are a proxy for scope, not scope itself. A trivial cross-package rename needs no plan; a complex single-package redesign does.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.6"
+        },
+        {
+          "option": 2,
+          "text": "A shorter plan for a task that needs none is still pure overhead, and it keeps the mode decision detached from the properties that should drive it.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.6"
+        }
+      ]
+    },
+    {
+      "g": 19,
+      "block": 1,
+      "domain": "D3",
+      "stem": "A `/fare-lint` command ships in the repository and every engineer receives it on clone. One wants to run it against a single fare zone at a time rather than editing the command file before each run, so the zone has to arrive at invocation. What does the command file need?",
+      "options": [
+        "A separate command file per zone, each with its zone identifier written in.",
+        "`$ARGUMENTS`, which carries whatever text is typed after the command name.",
+        "An `argument-hint` entry, which supplies the zone value when the command runs.",
+        "A personal copy under `~/.claude/commands/` that she can edit freely between runs."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "The text typed after the command name is available as `$ARGUMENTS` inside the command file. That is the mechanism for parameterising a shared command without forking it.",
+        "cite": "CCA-Prep_Domain-3_v2.md §3.4"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "One file per zone multiplies maintenance across every zone and every future change to the lint itself, to avoid a substitution the command file already supports.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.4"
+        },
+        {
+          "option": 2,
+          "text": "`argument-hint` is displayed when invoking the command to prompt for required arguments. It describes the expected input; it does not carry the value.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+        },
+        {
+          "option": 3,
+          "text": "A personal copy re-creates the per-engineer divergence a shared command exists to prevent, and still requires editing before each run.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.5"
+        }
+      ]
+    },
+    {
+      "g": 20,
+      "block": 1,
+      "domain": "D5",
+      "selectN": 2,
+      "stem": "Standardising fare-rounding across the monorepo needs a discovery pass over roughly 200 call sites before any edit is written. Run in the working session, that pass fills most of the context with match listings, and the design discussion that follows is noticeably vaguer. Which two statements are correct? Select two.",
+      "options": [
+        "Running discovery in an Explore subagent isolates the verbose output and returns a summary.",
+        "The main session's context then stays available for the design and implementation phases.",
+        "Running `/compact` after discovery preserves the precision the implementation phase needs.",
+        "Splitting the work across sessions joined with `--continue` avoids the same context pressure.",
+        "A model with a larger context window removes the need to isolate the discovery output."
+      ],
+      "correct": [
+        0,
+        1
+      ],
+      "whyRight": {
+        "text": "Context isolation used deliberately: an Explore subagent absorbs verbose discovery output and returns a concise summary, leaving the main session's context intact for design and implementation. This is the corpus's named answer for a discovery phase that floods the window.",
+        "cite": "CCA-Prep_Domain-5_v2.md §5.6"
+      },
+      "whyWrong": [
+        {
+          "option": 2,
+          "text": "`/compact` mid-task is lossy exactly where precision matters — the specific call sites the implementation depends on are what compression blurs.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.6"
+        },
+        {
+          "option": 3,
+          "text": "Multiple stitched sessions add coordination overhead and consistency risk, and each still has to carry its own share of the discovery output.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.6"
+        },
+        {
+          "option": 4,
+          "text": "A larger window postpones the problem at higher cost and leaves the structure unchanged: verbose discovery still occupies context the design phase needs.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.5"
+        }
+      ]
+    },
+    {
+      "g": 21,
+      "block": 1,
+      "domain": "D3",
+      "stem": "A reviewer asks where a skill's tool scoping is configured. One engineer proposes the project's `.mcp.json`, alongside the server definitions; another suggests the root `CLAUDE.md`, since it loads every session. Neither is correct. The skill currently runs with no scoping at all and has `Bash` available to it. Where does it belong, and what does that key actually do?",
+      "options": [
+        "In `.mcp.json`, which governs every capability a session can reach, built-in tools included.",
+        "In `CLAUDE.md`, which is always in force and therefore binds the skill while it runs.",
+        "In the skill's `SKILL.md` frontmatter, via `allowed-tools`, which scopes what the skill may do.",
+        "In the skill's body, as a natural-language constraint the model observes during execution."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "`allowed-tools` in SKILL.md frontmatter is the key that scopes a skill's capabilities — the exam guide's framing is that it restricts tool access during skill execution, for example limiting to file writes to prevent destructive actions.",
+        "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "`.mcp.json` configures MCP servers and says nothing about which built-in tools a skill may use. This is a named misconception about where scoping lives.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+        },
+        {
+          "option": 1,
+          "text": "`CLAUDE.md` is always loaded, but loaded guidance is not a capability boundary. Being in force and being enforceable are different things.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+        },
+        {
+          "option": 3,
+          "text": "A constraint written in prose is probabilistic. Frontmatter is the declarative mechanism, which is the whole reason the key exists.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+        }
+      ]
+    },
+    {
+      "g": 22,
+      "block": 1,
+      "domain": "D3",
+      "stem": "The repository ships a `/commit` skill enforcing the team's message format. One engineer wants a stricter local variant under that same command name — appending the transit ticket reference from the branch — with nothing changing for anyone else. She creates `~/.claude/skills/my-commit/SKILL.md` and now sees two entries in the menu.",
+      "options": [
+        "Rename her file's directory to `commit`, so the personal skill overrides the project one by name.",
+        "Keep both and invoke `/my-commit` deliberately, since two entries make the difference explicit.",
+        "Move her version into the project's `.claude/skills/commit/` and gate the extra step behind a flag.",
+        "Delete the project skill locally, so only her version resolves when she invokes `/commit`."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "Personal skills override project skills with the same name. A directory called `my-commit` creates a new `/my-commit` command instead of overriding `/commit` — the corpus's named wrong turn. Renaming the directory to `commit` gives her the familiar command with her behaviour, and changes nothing for the team.",
+        "cite": "CCA-Prep_Domain-3_v2.md §3.5"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "This accepts the defect as a feature. She loses the familiar command name and has to remember which of two entries is hers, which is the outcome the precedence rule exists to avoid.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.5"
+        },
+        {
+          "option": 2,
+          "text": "Putting a personal preference into the shared skill imposes it on the team's tooling and adds a flag everyone else must ignore. The requirement was explicitly that nothing changes for teammates.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.5"
+        },
+        {
+          "option": 3,
+          "text": "Deleting a version-controlled file locally means fighting every pull, and the deletion is one `git checkout` away from returning.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.4"
+        }
+      ]
+    },
+    {
+      "g": 23,
+      "block": 1,
+      "domain": "D5",
+      "stem": "Eleven hours into cataloguing undocumented fare rules, the agent begins describing \"typical rounding conventions\" rather than the specific rules it identified in hour three, and two later summaries contradict its own earlier findings. Nothing has crashed and the session is still running. The scratchpad question has come up twice before and was deferred each time. What addresses this?",
+      "options": [
+        "Restart the session, since the accumulated context has become actively misleading.",
+        "Raise the summarisation threshold so the early findings survive compression for longer.",
+        "Ask the agent to re-read its own earlier messages before producing each new summary.",
+        "Write findings to a scratchpad file as they are established and read it back at each continuation."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "Writing intermediate state and key findings to a scratchpad rather than holding them in context is what counteracts context degradation — the failure where the model starts giving inconsistent answers and referencing typical patterns instead of the specific things it discovered earlier.",
+        "cite": "CCA-Prep_Domain-5_v2.md §5.12"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Restarting discards eleven hours of findings that were never written down anywhere. It resolves the degradation by destroying the work.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.12"
+        },
+        {
+          "option": 1,
+          "text": "The findings are still in context — that is why the agent can contradict them. Preserving more of a degrading context does not restore its reliability.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.12"
+        },
+        {
+          "option": 2,
+          "text": "Re-reading asks the degrading context to police itself, and it grows more expensive with every turn while the underlying drift continues.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.12"
+        }
+      ]
+    },
+    {
+      "g": 24,
+      "block": 1,
+      "domain": "D3",
+      "stem": "You ask for a caching layer over the concession-eligibility service, a domain you do not know well. The first three generated versions each miss a different requirement: invalidation on rule changes, behaviour when the cache is unavailable, and per-operator isolation. Each fix disturbs the last. What is the effective move?",
+      "options": [
+        "Provide the three missed requirements together in one detailed message and regenerate once.",
+        "Restart and ask Claude to interview you about the requirements before it implements anything.",
+        "Write the acceptance criteria out in prose at greater length before the fourth attempt.",
+        "Generate two independent implementations and pick whichever handles more of the cases."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "The interview pattern: have Claude ask clarifying questions first, surfacing considerations you had not anticipated, rather than generating from an underspecified brief and discovering requirements through failed iterations. It is the corpus's named answer for unfamiliar domains and for tasks with non-obvious implications like cache invalidation.",
+        "cite": "CCA-Prep_Domain-3_v2.md §3.7.1"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Batching interacting fixes is right when you know the full list. Here the recurring problem is that a fourth unanticipated requirement is likely still hiding, which only questioning surfaces.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.7.4"
+        },
+        {
+          "option": 2,
+          "text": "Longer prose from someone who does not know what they do not know cannot name the requirement they have not thought of. That is the specific gap the interview closes.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.7.1"
+        },
+        {
+          "option": 3,
+          "text": "Two implementations from the same underspecified brief share its blind spots. Comparing them reveals which is better at the requirements you stated, not the ones you omitted.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.7.1"
+        }
+      ]
+    },
+    {
+      "g": 25,
+      "block": 1,
+      "domain": "D3",
+      "selectN": 3,
+      "stem": "Your `.claude/rules/` directory has grown to fourteen files. A developer notices that a session touching one fares-engine file loaded only two of them, and asks whether the other twelve were skipped in error. Each rule file carries a `paths:` list in its YAML frontmatter. Which three statements are correct? Select three.",
+      "options": [
+        "Rules load automatically only when Claude works on files matching their glob patterns.",
+        "Keeping irrelevant rules out of context is the intended behaviour, not a fault to correct.",
+        "A convention that should apply everywhere belongs in `CLAUDE.md` rather than behind a glob.",
+        "All fourteen load every session; only the two matching ones were shown in the session log.",
+        "Rules load in filename order until a token budget is reached, and the rest are dropped.",
+        "A file matching no rule glob causes the root `CLAUDE.md` to be skipped for that session too."
+      ],
+      "correct": [
+        0,
+        1,
+        2
+      ],
+      "whyRight": {
+        "text": "Rules files carry glob frontmatter and load only when Claude works on matching files, which keeps irrelevant rules out of context and saves tokens. Conventions that apply always belong in the root `CLAUDE.md`, which is the split the two mechanisms exist to express.",
+        "cite": "CCA-Prep_Domain-3_v2.md §3.2"
+      },
+      "whyWrong": [
+        {
+          "option": 3,
+          "text": "Loading is conditional on the glob match, not merely reported that way. Twelve non-matching rules genuinely do not enter context.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.2"
+        },
+        {
+          "option": 4,
+          "text": "There is no filename-order token budget. Selection is by path match, which is what makes it deterministic rather than incidental.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.2"
+        },
+        {
+          "option": 5,
+          "text": "`CLAUDE.md` files are discovered and concatenated independently of any rules match. The two mechanisms do not gate each other.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.1"
+        }
+      ]
+    },
+    {
+      "g": 26,
+      "block": 1,
+      "domain": "D5",
+      "stem": "A gate-fault investigation thread has run to ninety turns. It contains a confirmed firmware version, two station identifiers where the fault reproduces, an agreed rollback threshold, and a great deal of discussion about maintenance windows. The window is filling. Roughly sixty of the ninety turns are scheduling talk. What should be kept, and how?",
+      "options": [
+        "Summarise the whole thread uniformly, so no part of the investigation is privileged over another.",
+        "Keep the twenty most recent turns verbatim and drop everything preceding them.",
+        "Hold the version, identifiers and threshold verbatim in a structured block, summarise the scheduling discussion, keep recent turns.",
+        "Move the entire thread to a scratchpad file and continue in a fresh session with no carried context."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "The hybrid approach: extract the critical structured data — versions, identifiers, agreed thresholds — into a compact block preserved verbatim, compress the low-density discussion, and keep recent exchanges intact for coherence.",
+        "cite": "CCA-Prep_Domain-5_v2.md §5.3"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Uniform summarisation destroys precision exactly where it matters. \"A rollback threshold was agreed\" cannot tell the next step what the number is.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.3"
+        },
+        {
+          "option": 1,
+          "text": "A recency window discards the firmware version and station identifiers if they were established early, which after ninety turns is likely.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.3"
+        },
+        {
+          "option": 3,
+          "text": "A scratchpad is right for state that must survive sessions, but discarding all conversational context mid-investigation loses the reasoning the remaining work builds on.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.12"
+        }
+      ]
+    },
+    {
+      "g": 27,
+      "block": 1,
+      "domain": "D3",
+      "stem": "An engineer objects to moving the overnight client-regeneration job onto the Message Batches API, arguing that batch requests cannot define tools and the job needs a schema-lookup tool partway through its analysis. The job runs unattended at 02:00 and nobody reads its output until morning. What is the accurate position?",
+      "options": [
+        "Batch requests do support tools and multi-turn histories; what they cannot do is pause mid-request for a client to return a tool result.",
+        "The engineer is right — batch rejects any request payload containing a `tools` array.",
+        "Batch supports tools only when `tool_choice` is set to `none` for the whole request.",
+        "Tools work in batch, and a client may return results mid-request provided it responds inside the window."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "A batch request's parameters are the same as a regular Messages API call, tools and multi-message histories included, and older material claiming otherwise is wrong. The real constraint is that each request is one shot: if the model responds with `tool_use`, that request completes there, and continuing needs a follow-up submission.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "This is the outdated claim the corpus explicitly corrects. Batch payloads accept a `tools` array.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+        },
+        {
+          "option": 2,
+          "text": "`tool_choice: none` would prevent tool use rather than enable it, and no such condition is attached to batch support.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+        },
+        {
+          "option": 3,
+          "text": "The first half is right and the second is the exact thing batch cannot do. There is no window inside which a client can answer a mid-request tool call.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+        }
+      ]
+    },
+    {
+      "g": 28,
+      "block": 1,
+      "domain": "D3",
+      "stem": "A transformation converting legacy zone strings into the new fare-zone structure is described in prose. Each run produces a differently shaped result: sometimes nested objects, sometimes flat keys, sometimes zones sorted differently. Two rounds of more detailed prose have not settled it. What most effectively anchors the transformation?",
+      "options": [
+        "A longer description enumerating every field and its expected position in the output.",
+        "A JSON Schema attached to the prompt describing the permitted output shape.",
+        "An instruction to think step by step before producing the transformed structure.",
+        "Two or three concrete input-to-output example pairs showing the exact expected shape."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "When natural-language descriptions of a transformation are interpreted inconsistently, two or three concrete input/output pairs are the most effective fix — they unambiguously demonstrate format and decision logic, and the model generalises the pattern to new inputs rather than merely repeating the samples.",
+        "cite": "CCA-Prep_Domain-3_v2.md §3.7.3"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "More prose is the approach that has already failed twice. Enumerating fields still leaves their arrangement to interpretation, which is where the variance lives.",
+          "cite": "CCA-Prep_Domain-3_v2.md §3.7.3"
+        },
+        {
+          "option": 1,
+          "text": "A schema constrains shape but not the decision logic — which legacy zone maps to which new one, and how ordering is derived. Examples carry both.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.5"
+        },
+        {
+          "option": 2,
+          "text": "A reasoning cue helps multi-step reasoning tasks. The problem here is an underspecified target format, not insufficient deliberation.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.2"
+        }
+      ]
+    },
+    {
+      "g": 29,
+      "block": 1,
+      "domain": "D5",
+      "selectN": 2,
+      "stem": "A review pass over a 70,000-token bundle of gate-service diffs reliably comments on the first files and the concluding summary, while changes sitting in the middle of the bundle go unmentioned. Three runs have skipped the same middle material. Which two changes address the cause? Select two.",
+      "options": [
+        "Place a key-findings summary at the start, in the position the model processes most reliably.",
+        "Add explicit section headings throughout so the model can navigate mid-input content.",
+        "Alternate which service's diffs appear first, so no file is always positioned in the middle.",
+        "Compress the bundle below 20,000 tokens before the review pass runs over it.",
+        "Move the review to a model with a larger context window so the whole bundle fits comfortably."
+      ],
+      "correct": [
+        0,
+        1
+      ],
+      "whyRight": {
+        "text": "This is lost-in-the-middle: reliable processing at the beginning and end of long input, degraded attention in between. The mitigations are to put critical information in the most reliably processed position and to add explicit section headings that help the model navigate the middle.",
+        "cite": "CCA-Prep_Domain-5_v2.md §5.2"
+      },
+      "whyWrong": [
+        {
+          "option": 2,
+          "text": "Rotation changes which material gets lost without reducing how much does. The attention pattern is a property of position in long input, not of which file occupies it.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.2"
+        },
+        {
+          "option": 3,
+          "text": "Compressing to under a third risks discarding the very changes that need reviewing, trading a retrieval problem for a data-loss one.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.2"
+        },
+        {
+          "option": 4,
+          "text": "A larger window does not fix attention quality; the degradation exists regardless of whether the input fits.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.12"
+        }
+      ]
+    },
+    {
+      "g": 30,
+      "block": 1,
+      "domain": "D2",
+      "stem": "`calculatePeakSurcharge` is being renamed. It is re-exported from the fares package's index as `peakSurcharge`, and a compatibility module wraps it again as `applyPeakRate`. An engineer greps for the original name, finds eleven call sites, and reports that as the full blast radius. What did that miss, and what is the right approach?",
+      "options": [
+        "Nothing was missed; a content search on the definition name reaches every caller by definition.",
+        "Consumers importing the wrapper names — first collect every exported alias, then search for each.",
+        "Callers in files the grep could not read; the fix is to re-run it with broader file permissions.",
+        "Callers in test files, which should be enumerated separately with a Glob over test patterns."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "When a function is re-exported or wrapped by intermediate modules, searching only the original name misses every call site that uses a wrapper's name. The strategy is to identify all exported names first — `calculatePeakSurcharge`, `peakSurcharge`, `applyPeakRate` — then search for each across the codebase.",
+        "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "A consumer that imports `applyPeakRate` never mentions the original name anywhere in its source, so no search for that string can find it.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+        },
+        {
+          "option": 2,
+          "text": "Nothing suggests unreadable files, and permissions would not explain a miss that is fully accounted for by the aliasing.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+        },
+        {
+          "option": 3,
+          "text": "Test files are found by the same content search as any other caller. Enumerating them by path pattern addresses a different problem and still misses aliased call sites.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+        }
+      ]
+    }
+  ]
+}

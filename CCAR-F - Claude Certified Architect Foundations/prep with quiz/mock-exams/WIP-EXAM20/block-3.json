@@ -1,0 +1,337 @@
+{
+  "block_index": 2,
+  "scenario_label": "Structured Data Extraction",
+  "narrative": "An intake pipeline extracts structured claim records — incident details, repair-cost estimates, and involved-party information — from submitted auto and property-damage claim documents into a shared JSON schema. A downstream payout-eligibility calculator and an adjuster dashboard consume the extracted records, so schema-level guarantees, confidence calibration, and batch strategy decide what reaches automated processing versus a human adjuster.",
+  "questions": [
+    {
+      "g": 31,
+      "block": 2,
+      "domain": "D4",
+      "stem": "The pipeline's payout-eligibility calculator needs an `incident_classification` tool call to run before a separate `repair_cost_enrichment` tool augments the record with regional labor-rate benchmarks. Logs show enrichment sometimes fires on claims the classification tool never touched, using stale default benchmarks and skewing payout estimates. Which `tool_choice` setting on the first call fixes this?",
+      "options": [
+        "Leave `tool_choice` at `{\"type\": \"auto\"}` and add a system-prompt instruction to always classify before enriching.",
+        "Set `tool_choice` to `{\"type\": \"any\"}` so the model must call some tool on every request.",
+        "Set `tool_choice` to `{\"type\": \"tool\", \"name\": \"incident_classification\"}` on the first call to force that specific tool.",
+        "Remove `repair_cost_enrichment` as a callable tool until classification completes, then re-add it via a follow-up deployment."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "Forcing the specific tool via `tool_choice: {\"type\": \"tool\", \"name\": ...}` is how the corpus's own ordering example is solved: when one extraction must run before a dependent step, force that tool by name so it always executes first.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+      },
+      "whyWrong": [
+        {"option": 0, "text": "`auto` gives no structure guarantee at all, and a prompt instruction to sequence steps is probabilistic — the model may still skip or reorder it under real traffic.", "cite": "CCA-Prep_Domain-4_v2.md §4.6"},
+        {"option": 1, "text": "`any` guarantees that some tool is called, not that the specific classification tool is — enrichment could still fire first by calling itself.", "cite": "CCA-Prep_Domain-4_v2.md §4.6"},
+        {"option": 3, "text": "Removing and redeploying a tool to control call order is heavier and more fragile than a per-call `tool_choice` setting that already solves the ordering problem.", "cite": "CCA-Prep_Domain-4_v2.md §4.6"}
+      ]
+    },
+    {
+      "g": 32,
+      "block": 2,
+      "domain": "D4",
+      "stem": "Repair-cost figures reach the extraction schema in mixed shapes: `$1,240.00`, `1240`, and `840-960` where an adjuster wrote a range instead of a figure. The payout calculator, which expects a single decimal number, has started throwing type errors on roughly 6% of claims. What should the team change?",
+      "options": [
+        "Keep the field as free text and add a post-extraction script that strips currency symbols and averages any range before the calculator reads it.",
+        "Raise the calculator's tolerance so it accepts strings as well as numbers, avoiding the type mismatch entirely.",
+        "Ask the model, via a system-prompt note, to \"always return a clean number\" without changing the field's declared type.",
+        "Declare the field as a `number` type in the schema and add format-normalization guidance to the extraction prompt so only one numeric shape can be emitted."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "The schema constrains the shape (a `number` type) while the prompt governs how messy source formats map into it — the corpus's documented fix for inconsistent currencies and measurements, applied at extraction time rather than after.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.5"
+      },
+      "whyWrong": [
+        {"option": 0, "text": "A post-extraction cleanup script is the after-the-fact repair pattern the corpus flags as the weaker choice — it patches the symptom downstream instead of constraining what the model can emit in the first place.", "cite": "CCA-Prep_Domain-4_v2.md §4.5"},
+        {"option": 1, "text": "Loosening the calculator to accept strings abandons the type guarantee rather than fixing the source of the inconsistency, and still leaves the range value (`840-960`) unresolved.", "cite": "CCA-Prep_Domain-4_v2.md §4.6"},
+        {"option": 2, "text": "A prose instruction with no schema change is prompt-level compliance, not a structural guarantee — the model can still drift, and the declared type is what actually does the work.", "cite": "CCA-Prep_Domain-4_v2.md §4.6"}
+      ]
+    },
+    {
+      "g": 33,
+      "block": 2,
+      "domain": "D5",
+      "stem": "A multi-year claim history compiled for a fraud-review pass runs to roughly 60K tokens: adjuster notes, prior repair records, and correspondence. The review step reliably references the earliest notes and the most recent correspondence but misses a policy-lapse period documented only in the middle third of the file. How should the compiled history be restructured?",
+      "options": [
+        "Place a key-findings summary at the start of the compiled history and add explicit section headings so the model can navigate the middle content.",
+        "Cap the compiled history at 20K tokens so the model processes a shorter input overall.",
+        "Route the compiled history through a larger-context model so more of it fits in a single pass.",
+        "Alternate the ordering of adjuster notes and correspondence on each run so no single section is consistently last."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "A key-findings summary at the start plus explicit section headings puts the most critical content in the reliably-processed primacy position and helps the model navigate what remains in the middle.",
+        "cite": "CCA-Prep_Domain-5_v2.md §5.2"
+      },
+      "whyWrong": [
+        {"option": 1, "text": "Capping at 20K risks cutting the policy-lapse period out of the input entirely rather than helping the model attend to it.", "cite": "CCA-Prep_Domain-5_v2.md §5.2"},
+        {"option": 2, "text": "A larger context window changes how much fits, not how reliably the model attends to content positioned in the middle of what it's given — the attention pattern persists regardless of window size.", "cite": "CCA-Prep_Domain-5_v2.md §5.2"},
+        {"option": 3, "text": "Rotating which section appears last doesn't change the underlying primacy/recency attention pattern — it just relocates which content gets under-attended.", "cite": "CCA-Prep_Domain-5_v2.md §5.2"}
+      ]
+    },
+    {
+      "g": 34,
+      "block": 2,
+      "domain": "D4",
+      "stem": "The extraction tool's JSON schema is maintained by hand in the tool definition, while a separate Pydantic validator enforces the same fields after extraction. The two have drifted twice this quarter — most recently, the validator required `policy_number` while the tool schema still marked it optional. What is the correct fix?",
+      "options": [
+        "Add a code-review checklist item requiring both files to be updated together whenever a field changes.",
+        "Remove the Pydantic validator and rely on the tool's JSON schema alone to catch every error.",
+        "Schedule a weekly script that diffs the two definitions and alerts the team when they disagree.",
+        "Generate the tool's JSON schema from the Pydantic model so one definition drives both the tool_use contract and the post-hoc validator."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "Generating the tool's schema from the Pydantic model makes drift structurally impossible — one definition drives both the tool_use contract and the code-level validator, the corpus's named fix for exactly this drift pattern.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.8"
+      },
+      "whyWrong": [
+        {"option": 0, "text": "A checklist reminder is a process patch for what is actually an architecture problem — it depends on humans remembering, which is how the drift happened twice already.", "cite": "CCA-Prep_Domain-4_v2.md §4.8"},
+        {"option": 1, "text": "tool_use enforces structure at generation time, but code-level validation still catches business-rule and semantic checks no JSON schema can express — removing it loses that layer entirely.", "cite": "CCA-Prep_Domain-4_v2.md §4.8"},
+        {"option": 2, "text": "A diff script detects drift after it has already happened rather than making the two definitions structurally unable to diverge.", "cite": "CCA-Prep_Domain-4_v2.md §4.8"}
+      ]
+    },
+    {
+      "g": 35,
+      "block": 2,
+      "domain": "D5",
+      "stem": "Two body-shop estimates for the same damaged panel arrive attached to one claim: one lists $1,850 for a full panel replacement, the other $960 for a repair. Both shops are on the approved-vendor list and both estimates look complete. What belongs in the structured record here?",
+      "options": [
+        "Apply the lower of the two figures, since repair over replacement is the more conservative default.",
+        "Average the two figures and record the result as the claim's repair-cost estimate.",
+        "Escalate the claim to a human adjuster immediately, before completing extraction of the rest of the record.",
+        "Complete the extraction with both figures recorded and attributed to their source estimate, flagging the disagreement for the coordinator or adjuster to resolve."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "When sources credibly conflict, the agent should not resolve the conflict itself: complete the record with both values, attribute each to its source, and annotate the disagreement for the coordinator or a human to reconcile.",
+        "cite": "CCA-Prep_Domain-5_v2.md §5.10"
+      },
+      "whyWrong": [
+        {"option": 0, "text": "Picking the lower figure by a conservative heuristic is exactly the kind of autonomous resolution the corpus warns against — it abandons a decision that belongs above the extraction step's scope.", "cite": "CCA-Prep_Domain-5_v2.md §5.10"},
+        {"option": 1, "text": "Averaging invents a third figure neither estimate actually states, which is a heuristic resolution rather than a preserved, attributed record of the disagreement.", "cite": "CCA-Prep_Domain-5_v2.md §5.10"},
+        {"option": 2, "text": "Stopping to escalate before finishing extraction blocks the pipeline unnecessarily — the rest of the record can be completed and the conflict annotated within it.", "cite": "CCA-Prep_Domain-5_v2.md §5.10"}
+      ]
+    },
+    {
+      "g": 36,
+      "block": 2,
+      "domain": "D5",
+      "selectN": 2,
+      "stem": "Field-level confidence scores accompany every extracted claim record, and the team wants to decide what happens next. Auto-processing already applies above a fixed confidence cutoff, and reviewer time is limited. Select TWO changes that correctly implement calibrated, capacity-aware human-review routing.",
+      "options": [
+        "Tune the confidence threshold against a labeled validation set rather than trusting the model's raw self-reported score.",
+        "Regularly audit a stratified random sample of high-confidence extractions across document and field types, not only the lowest-confidence queue.",
+        "Route a fixed 10% of all claims to review at random, spread evenly regardless of confidence or document type.",
+        "Trust the raw per-field confidence score directly once it clears the cutoff, without further calibration."
+      ],
+      "correct": [0, 1],
+      "whyRight": {
+        "text": "Confidence thresholds need calibration against ground truth before they're trustworthy, and even the high-confidence stream needs ongoing stratified auditing — unstratified or lowest-confidence-only review lets novel error patterns in the automated path go undetected.",
+        "cite": "CCA-Prep_Domain-5_v2.md §5.9"
+      },
+      "whyWrong": [
+        {"option": 2, "text": "A fixed, unstratified 10% sample wastes reviewer capacity on easy segments and undersamples the rare, worst-performing document types — exactly the pattern the corpus rejects.", "cite": "CCA-Prep_Domain-5_v2.md §5.9"},
+        {"option": 3, "text": "Raw self-reported confidence is uncalibrated by default; trusting it directly once it clears a cutoff skips the validation-set tuning step the corpus requires before thresholds are meaningful.", "cite": "CCA-Prep_Domain-5_v2.md §5.9"}
+      ]
+    },
+    {
+      "g": 37,
+      "block": 2,
+      "domain": "D1",
+      "stem": "A claim packet often includes an incident report, a repair estimate, and adjuster notes as three separate documents. The pipeline currently extracts them one call at a time — incident report first, then a second call once that completes, then a third — and average packet-handling time is 40 seconds even though no document depends on another's output. How should the three calls be restructured?",
+      "options": [
+        "Merge the three documents into a single combined prompt so one call extracts all three records at once.",
+        "Issue the three extraction calls as parallel `Task` calls within a single coordinator response instead of three sequential turns.",
+        "Switch the three extraction calls to the Message Batches API to reduce their combined processing cost.",
+        "Add a fourth subagent whose only job is to schedule the other three calls in the most efficient order."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "Multiple Task calls issued in a single coordinator response execute in parallel; since none of the three documents depends on another's output, this directly fixes the sequential latency.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.15"
+      },
+      "whyWrong": [
+        {"option": 0, "text": "Merging distinct documents into one prompt abandons the per-document schema clarity the three separate calls provide and risks fields from one document contaminating another, rather than fixing the sequencing itself.", "cite": "CCA-Prep_Domain-1_v2.md §1.6"},
+        {"option": 2, "text": "Batch has no latency SLA and can take up to 24 hours — it optimizes cost, not the per-packet handling-time metric this scenario is actually measuring.", "cite": "CCA-Prep_Domain-4_v2.md §4.11"},
+        {"option": 3, "text": "A dedicated scheduling subagent is infrastructure the situation doesn't need — three independent calls issued together in one response already run in parallel without a coordinator for the coordinator.", "cite": "CCA-Prep_Domain-1_v2.md §1.15"}
+      ]
+    },
+    {
+      "g": 38,
+      "block": 2,
+      "domain": "D4",
+      "stem": "The `incident_type` field is declared as a free-text string. A downstream business rule rejects values it doesn't recognize, and near-miss variants — `rear end collision`, `rear-end collision`, `collison` — fail validation at a steady 9% rate. Each failure retries with the validation error appended, but the retry rate hasn't moved in three weeks of tuning the feedback wording. Which change addresses the failure instead of further retry-loop tuning?",
+      "options": [
+        "Increase the maximum retry count so more attempts are available before the pipeline gives up.",
+        "Rewrite the validation error message with more specific wording about the expected spelling.",
+        "Constrain `incident_type` to an enum of the recognized categories in the schema, so free-text variants can no longer be emitted.",
+        "Add ten additional few-shot examples of correctly spelled incident types to the extraction prompt."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "A field with known values belongs in the schema as an enum — this removes the near-miss variant class entirely rather than reducing its rate, which is what three weeks of feedback-wording tuning has already plateaued on.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.5"
+      },
+      "whyWrong": [
+        {"option": 0, "text": "More retries don't help when the failure is a systematic, patterned mismatch rather than an isolated slip — retry-with-feedback is for errors the model can correct from context, and this one keeps recurring at the same rate.", "cite": "CCA-Prep_Domain-4_v2.md §4.9"},
+        {"option": 1, "text": "The stem already shows feedback-wording tuning has plateaued — strengthening the message further stays inside the same probabilistic retry loop instead of removing the failure class.", "cite": "CCA-Prep_Domain-4_v2.md §4.9"},
+        {"option": 3, "text": "Few-shot examples reduce the rate of a probabilistic pattern but remain prompt-level guidance the model can still deviate from; an available schema-level enum is the deterministic option here.", "cite": "CCA-Prep_Domain-4_v2.md §4.5"}
+      ]
+    },
+    {
+      "g": 39,
+      "block": 2,
+      "domain": "D5",
+      "stem": "An overnight run processes 8,000 claim documents through the extraction pipeline. It crashes after roughly 5,300 with no persisted record of which had completed, so the operator re-submits the full 8,000 the next morning — including the 5,300 that already succeeded. What should the pipeline do instead?",
+      "options": [
+        "Rely on the conversation history from the crashed run to determine what had already completed.",
+        "Have the pipeline export each completed claim's status to a known location as it finishes, and load that manifest on restart to resume from the checkpoint.",
+        "Reduce the run size to 500 documents per overnight batch so a crash loses less completed work.",
+        "Re-run the entire 8,000 each time, since re-processing an already-extracted claim produces the same result at no real cost."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "Exporting structured state as each item completes, then loading the manifest on restart, lets the run resume from the checkpoint instead of redoing completed work — the corpus's named pattern for crash recovery.",
+        "cite": "CCA-Prep_Domain-5_v2.md §5.12"
+      },
+      "whyWrong": [
+        {"option": 0, "text": "The API is stateless and an interrupted run's context doesn't survive the crash — there is no conversation history left to consult.", "cite": "CCA-Prep_Domain-5_v2.md §5.12"},
+        {"option": 2, "text": "Shrinking the batch size reduces how much is lost per crash but doesn't fix the underlying problem — nothing is persisted, so any crash still discards completed work.", "cite": "CCA-Prep_Domain-5_v2.md §5.12"},
+        {"option": 3, "text": "Re-running everything wastes the hours already spent on the 5,300 that succeeded — the stem's own numbers show that cost is real, not negligible.", "cite": "CCA-Prep_Domain-5_v2.md §5.12"}
+      ]
+    },
+    {
+      "g": 40,
+      "block": 2,
+      "domain": "D4",
+      "stem": "A repair estimate states a total of $2,150 at the top of the document. The extracted line items for that same estimate sum to $1,890. The extraction schema currently records only the stated total, and the $260 gap was found five weeks later during a routine reconciliation. What schema change would catch this at extraction time?",
+      "options": [
+        "Add a prompt instruction telling the model to double-check its arithmetic before responding.",
+        "Require the model to re-run the extraction a second time and compare the two totals for agreement.",
+        "Add `calculated_total` and `conflict_detected` fields alongside the existing stated total, so the model re-derives the sum from line items and flags disagreement.",
+        "Remove the stated-total field entirely and have the payout calculator compute the total itself from line items."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "Extracting a re-derived `calculated_total` next to the document's own stated total, with a `conflict_detected` flag, is the corpus's structural self-correction pattern — it surfaces arithmetic drift as data at extraction time instead of in a later reconciliation.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.10"
+      },
+      "whyWrong": [
+        {"option": 0, "text": "A vague \"be careful\" instruction gives no detection mechanism — nothing in the output changes, so the same gap would still surface only in reconciliation.", "cite": "CCA-Prep_Domain-4_v2.md §4.10"},
+        {"option": 1, "text": "The corpus's pattern is structural — built into a single output's schema — not a second, separate extraction pass compared afterward.", "cite": "CCA-Prep_Domain-4_v2.md §4.10"},
+        {"option": 3, "text": "Dropping the stated total loses the document's own claimed figure, which is exactly what's needed to detect cases where the source document itself is internally inconsistent, not just extraction error.", "cite": "CCA-Prep_Domain-4_v2.md §4.10"}
+      ]
+    },
+    {
+      "g": 41,
+      "block": 2,
+      "domain": "D4",
+      "stem": "The schema marks `witness_name` and `third_party_insurer` as required strings. Roughly a third of claims are single-vehicle incidents with no witness and no third party involved. Spot checks on those claims find plausible-looking names and insurer names that don't appear anywhere in the source documents. Which change removes the pressure to fabricate these two fields?",
+      "options": [
+        "Make `witness_name` and `third_party_insurer` nullable and remove them from the required list, so the model can return null when neither applies.",
+        "Add a post-extraction check that flags any `witness_name` or `third_party_insurer` value not found verbatim in the source text.",
+        "Lower the model's temperature so it is less likely to invent plausible-sounding names.",
+        "Add a prompt instruction telling the model not to guess names when the information is missing."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "Fields should be required only when the information is always available; making these two nullable and removing them from `required` lets the model return null instead of fabricating a plausible value to satisfy the schema.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.5"
+      },
+      "whyWrong": [
+        {"option": 1, "text": "A verbatim post-extraction check detects fabrication after it has already happened rather than removing the pressure that causes it, and would also flag legitimate normalized or paraphrased values as false positives.", "cite": "CCA-Prep_Domain-4_v2.md §4.5"},
+        {"option": 2, "text": "Temperature controls general randomness, not a specific structural behavior like filling a required field — it doesn't remove the schema pressure that's driving the fabrication.", "cite": "CCA-Prep_Domain-4_v2.md §4.4"},
+        {"option": 3, "text": "A prompt instruction is probabilistic guidance layered on top of a schema that still marks the field required — the model still faces conflicting pressure to produce something.", "cite": "CCA-Prep_Domain-4_v2.md §4.5"}
+      ]
+    },
+    {
+      "g": 42,
+      "block": 2,
+      "domain": "D4",
+      "selectN": 2,
+      "stem": "The team is moving overnight extraction volume onto the Message Batches API and drafting a runbook. One engineer claims tools can't be used inside a batch request at all; another proposes matching each result back to its claim by the position it occupies in the returned array. Select TWO statements that correctly describe the Batch API.",
+      "options": [
+        "Batch requests can include tool definitions, and an individual response may end in `tool_use` just as a synchronous call would.",
+        "A batch request pauses mid-processing so the client can execute a requested tool and return the result before the batch completes.",
+        "Each request must carry a unique `custom_id`, because results can return in a different order than they were submitted.",
+        "Results are guaranteed to come back in the same order the requests were submitted, so position-based matching is reliable."
+      ],
+      "correct": [0, 2],
+      "whyRight": {
+        "text": "The Batch API does support tool definitions and multi-turn histories — a response may end in `tool_use` — and because results can return in any order, `custom_id` is the only reliable join key back to the originating claim.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+      },
+      "whyWrong": [
+        {"option": 1, "text": "Each batch request is self-contained and one-shot — the client cannot execute a tool and return the result mid-request; continuing the loop requires a separate follow-up request.", "cite": "CCA-Prep_Domain-4_v2.md §4.11"},
+        {"option": 3, "text": "Batch results are not guaranteed to preserve submission order — relying on position to match results to claims silently mis-joins data.", "cite": "CCA-Prep_Domain-4_v2.md §4.11"}
+      ]
+    },
+    {
+      "g": 43,
+      "block": 2,
+      "domain": "D5",
+      "stem": "A claims-summary report synthesizes findings from the incident report, the repair estimate, and adjuster notes into a single narrative paragraph per claim for the adjuster dashboard. Adjusters now ask which document supports each stated fact, and the synthesis step has no way to answer — the individual extraction outputs were merged into prose before reaching it. How should extraction and synthesis preserve that link?",
+      "options": [
+        "Have the dashboard's synthesis step re-open the original documents and search for supporting text when an adjuster asks.",
+        "Require each extraction to output structured claim-to-source mappings, and have the synthesis step preserve and merge them instead of flattening findings into prose first.",
+        "Append a general list of the three source documents at the end of each summary.",
+        "Have adjusters open the original claim folder directly whenever they need to verify a fact."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "Requiring structured claim-to-source mappings at extraction and preserving them through synthesis is how attribution survives the pipeline — flattening findings into prose first is what destroys it.",
+        "cite": "CCA-Prep_Domain-5_v2.md §5.11"
+      },
+      "whyWrong": [
+        {"option": 0, "text": "Re-searching the original documents after the fact to reconstruct attribution is expensive and error-prone compared to preserving the mapping through the pipeline in the first place.", "cite": "CCA-Prep_Domain-5_v2.md §5.11"},
+        {"option": 2, "text": "A general bibliography at the end names the sources but leaves individual claims untraceable to any one of them — exactly the gap the adjusters are describing.", "cite": "CCA-Prep_Domain-5_v2.md §5.11"},
+        {"option": 3, "text": "Sending adjusters back to the raw folder shifts the traceability problem onto them instead of fixing the report the pipeline is supposed to produce.", "cite": "CCA-Prep_Domain-5_v2.md §5.11"}
+      ]
+    },
+    {
+      "g": 44,
+      "block": 2,
+      "domain": "D4",
+      "stem": "Extracted claim records must reach the payout calculator within 32 hours of a claim packet arriving. The team plans to submit each day's packets as a single Batch API run and needs to set a submission deadline relative to packet arrival. Given the batch window's worst case, what is the latest that submission can happen?",
+      "options": [
+        "Within 32 hours of packet arrival, since that matches the downstream deadline directly.",
+        "Within 24 hours of packet arrival, matching the batch window's typical completion time.",
+        "Within 8 hours of packet arrival, so the full 24-hour worst case still lands inside the 32-hour deadline.",
+        "Within 30 hours of packet arrival, leaving a 2-hour buffer after the batch window's typical completion time."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "Submission deadline = downstream deadline minus the batch window's 24-hour worst case: 32 − 24 = 8 hours. Planning against the worst case, not the typical case, is what the corpus's SLA guidance requires.",
+        "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+      },
+      "whyWrong": [
+        {"option": 0, "text": "Submitting right at the 32-hour mark leaves zero buffer — any batch that takes close to the full 24-hour worst case blows the deadline.", "cite": "CCA-Prep_Domain-4_v2.md §4.11"},
+        {"option": 1, "text": "Planning around a \"typical\" completion time rather than the documented worst case is exactly the assumption the corpus warns will eventually blow a deadline.", "cite": "CCA-Prep_Domain-4_v2.md §4.11"},
+        {"option": 3, "text": "A 2-hour buffer is far short of the 24-hour worst case that must be budgeted in full — this covers only a minor delay, not the documented SLA.", "cite": "CCA-Prep_Domain-4_v2.md §4.11"}
+      ]
+    },
+    {
+      "g": 45,
+      "block": 2,
+      "domain": "D5",
+      "stem": "Before extraction can run, incoming claim packets must be triaged into auto, property, or liability categories by scanning document text for type indicators across a backlog of 3,000 queued packets. Running this triage inline floods the main pipeline session with scan output before extraction of the first packet even starts. Where should the triage scan run instead?",
+      "options": [
+        "In an isolated subagent that returns only a concise routing list — packet ID and category — to the main session.",
+        "In the main session, followed by running `/compact` partway through the triage scan to free up room for extraction to begin.",
+        "In the main session, after switching to a larger model so the full scan output fits alongside extraction.",
+        "Split across several parallel main-session conversations, each triaging and extracting its own share of the 3,000 packets."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "An isolated subagent absorbs the verbose triage output and returns only a concise summary, preserving the main session's context for the extraction work that follows.",
+        "cite": "CCA-Prep_Domain-5_v2.md §5.6"
+      },
+      "whyWrong": [
+        {"option": 1, "text": "`/compact` mid-task loses precision that extraction still needs — it compresses the very output the next phase depends on.", "cite": "CCA-Prep_Domain-5_v2.md §5.6"},
+        {"option": 2, "text": "A larger model changes how much fits in the session, not whether verbose scan output should be there at all — the flooding problem persists, just at a higher ceiling.", "cite": "CCA-Prep_Domain-5_v2.md §5.6"},
+        {"option": 3, "text": "Splitting into multiple parallel main-session conversations adds coordination overhead and consistency risk rather than isolating the verbose phase from the main pipeline.", "cite": "CCA-Prep_Domain-5_v2.md §5.6"}
+      ]
+    }
+  ]
+}

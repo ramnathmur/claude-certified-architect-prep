@@ -1,0 +1,514 @@
+{
+ "label": "Claude Code for Continuous Integration",
+ "narrative": "Claude Code runs as a review step in the pipeline for a mid-sized service repository. It is invoked on every pull request, posts findings as review comments, and gates the merge on a set of policy checks. Roughly 60 pull requests a week pass through it, and the questions below follow the pipeline as the team hardens it.",
+ "questions": [
+  {
+   "g": 31,
+   "block": 2,
+   "domain": "D3",
+   "stem": "The first pipeline run never completes. The job produces no output and is killed by the runner's timeout after fifteen minutes. Run locally with the same arguments, the same command works. What is the fix?",
+   "options": [
+    "Set `CLAUDE_HEADLESS=true` in the job environment so the process knows it is running without a terminal.",
+    "Pass the `--batch` flag so the invocation is queued rather than run interactively.",
+    "Redirect `/dev/null` into standard input so the process reads end-of-file rather than waiting for a prompt.",
+    "Pass the `-p` (`--print`) flag, which is the documented way to run Claude Code non-interactively."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "Without `-p`, Claude Code starts an interactive session and waits for input that a CI runner will never send, which is exactly the silent hang described. `-p` / `--print` is the documented non-interactive mode: it takes the prompt, runs to completion, prints the result and exits. It works locally because a terminal is attached there.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "There is no `CLAUDE_HEADLESS` environment variable. Setting it changes nothing and the job hangs identically, with the added cost that the configuration now looks deliberate to the next person reading it.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+    },
+    {
+     "option": 1,
+     "text": "There is no `--batch` flag on the CLI. The Message Batches API is a separate API-side facility for latency-tolerant work and has nothing to do with running the CLI without a terminal.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+    },
+    {
+     "option": 2,
+     "text": "Closing standard input may end the wait, but it does so by starving an interactive session rather than requesting non-interactive execution. Behaviour then depends on how the session handles an unexpected EOF, which is not a contract to build a pipeline on.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+    }
+   ]
+  },
+  {
+   "g": 32,
+   "block": 2,
+   "domain": "D3",
+   "stem": "Developers report that pushing a fix-up commit produces a fresh set of review comments that repeats everything from the previous run, including findings already addressed. Several have started ignoring the bot. Each run is invoked identically on the current diff. What should change?",
+   "options": [
+    "Post review comments only on the first run of a pull request and suppress subsequent runs entirely.",
+    "Reduce the review scope to files changed since the previous run, so earlier files are not re-examined.",
+    "Deduplicate on the posting side by hashing each comment body and suppressing any hash already posted to that pull request.",
+    "Pass the previous run's findings into the invocation and instruct Claude to report only new or still-unaddressed issues."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "Each run currently starts from nothing and re-derives the same findings, because it has no way to know what was already said or fixed. Supplying the prior findings as context and asking for new or unaddressed issues only is the documented pattern — it makes the run incremental in substance rather than merely quieter, and it is what keeps developers trusting the comments.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "This trades duplicate comments for no review of anything added after the first push. The later commits are frequently where the fix-up defects live, so it removes the checks at the point they matter most.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+    },
+    {
+     "option": 1,
+     "text": "Narrowing to the newest diff hides regressions that a later commit introduces into a file reviewed earlier. It reduces repetition by reducing coverage, and the model still has no knowledge of the prior findings within its narrowed scope.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+    },
+    {
+     "option": 2,
+     "text": "Hash matching suppresses byte-identical repeats and misses the same finding phrased differently on a re-run. It also cannot tell an unaddressed issue worth restating from an addressed one that should disappear, because the model was never told which was which.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+    }
+   ]
+  },
+  {
+   "g": 33,
+   "block": 2,
+   "domain": "D4",
+   "stem": "To reduce cost, an engineer proposes moving all Claude-powered analysis to the Message Batches API — the pre-merge review that blocks the pipeline, and a weekly architectural drift report that nobody waits on. Which workloads should move?",
+   "options": [
+    "Both, since the batch API returns results in minutes in practice and the cost saving applies to every workload.",
+    "The pre-merge review only, since it runs most often and therefore carries most of the cost.",
+    "The weekly drift report only. The pre-merge review is a blocking check with no tolerance for a processing window measured in hours.",
+    "Neither, since the batch API cannot be used for code analysis workloads."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "The batch API is chosen by latency tolerance, not by volume or cost alone. The weekly drift report has no one waiting on it and is a natural fit. The pre-merge review blocks a developer and a pipeline, and the batch API publishes no latency SLA — it may complete quickly and may take up to 24 hours, so a blocking check cannot be designed around it.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Designing a blocking workflow around typical batch turnaround is designing around best-case timing. There is no guarantee to rely on, so the pipeline would be correct most days and stalled for hours on the day it is not.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+    },
+    {
+     "option": 1,
+     "text": "This inverts the criterion. Frequency and cost are real, but the pre-merge review is precisely the workload whose latency requirement rules batch out, while the weekly report that could move is left synchronous.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+    },
+    {
+     "option": 3,
+     "text": "Nothing about code analysis is incompatible with batch processing. The constraint is the workflow's tolerance for delay, and the weekly report has plenty.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.11"
+    }
+   ]
+  },
+  {
+   "g": 34,
+   "block": 2,
+   "domain": "D1",
+   "stem": "On pull requests touching more than fifteen files, review quality becomes uneven: early files receive detailed findings, later ones a sentence or two, and defects spanning a caller in one file and a signature change in another are missed entirely. The review runs as a single pass over the whole diff. What architecture fixes this?",
+   "options": [
+    "A single pass on a model with a substantially larger context window, so the entire diff is comfortably within budget.",
+    "A single pass with an instruction to allocate equal attention to every file and to check for cross-file effects.",
+    "A per-file pass giving each file dedicated attention, followed by a cross-file integration pass over the collected findings and the interface changes.",
+    "Per-file passes only, dropping the whole-diff pass since each file is now examined thoroughly on its own."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "Two distinct failures are visible and the architecture has to answer both. Uneven depth is attention dilution across a long input, which per-file passes fix by giving each file its own pass. Missed caller-and-signature defects are cross-file by nature and invisible to any single-file pass, so a dedicated integration pass over the collected findings is required as well.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A larger window addresses whether the diff fits, not how evenly it is attended to. The whole diff already fits; the depth still tails off. This is the compensating purchase rather than the structural fix.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.12"
+    },
+    {
+     "option": 1,
+     "text": "Attention allocation is not something an instruction reallocates. The corpus treats this as an architectural property of processing many items in one pass, and a prompt asking for even coverage does not change how the pass behaves.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+    },
+    {
+     "option": 3,
+     "text": "Per-file passes alone leave exactly the defects described unfound, because no pass ever sees the caller and the changed signature together. Dropping the integration pass removes the half of the fix that addresses the harder half of the problem.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+    }
+   ]
+  },
+  {
+   "g": 35,
+   "block": 2,
+   "domain": "D3",
+   "selectN": 2,
+   "stem": "The team is hardening the pipeline invocation. Select TWO changes that are correct for a CI review step.",
+   "options": [
+    "Request `--output-format json` so the pipeline can parse the result rather than scraping printed text.",
+    "Run the review in an instance that has no access to the session that generated the code, so the review is independent.",
+    "Resume the previous run's session on each new commit so the reviewer retains everything it has already learned about the pull request.",
+    "Raise the runner's timeout so long reviews are not killed, and leave the invocation interactive."
+   ],
+   "correct": [
+    0,
+    1
+   ],
+   "whyRight": {
+    "text": "Structured output makes the result machine-readable, so the pipeline can branch on findings instead of parsing prose — the CLI supports `--output-format` for exactly this. Independence matters separately: a reviewer that shares the session which produced the code inherits its reasoning and is markedly less likely to question it, so review runs in a context isolated from generation.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.9"
+   },
+   "whyWrong": [
+    {
+     "option": 2,
+     "text": "Resuming the generating or prior session is the opposite of the isolation a review needs, and it carries forward tool results describing code that the new commit has changed. Prior findings should be passed in as explicit context, not inherited as a live session.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+    },
+    {
+     "option": 3,
+     "text": "A longer timeout lets an interactive session wait for input for longer. It postpones the symptom of the wrong invocation mode without addressing it, and the job still never completes.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+    }
+   ]
+  },
+  {
+   "g": 36,
+   "block": 2,
+   "domain": "D4",
+   "stem": "The pipeline parses the review result into a fixed comment payload. Exactly one tool, `post_review`, produces that payload, and its schema is the contract the pipeline depends on. Occasionally the model replies with a prose summary, or calls the diagnostic `explain_finding` tool instead, and the step fails. Which `tool_choice` setting is correct?",
+   "options": [
+    "`{\"type\": \"any\"}`, which guarantees a tool call and lets the model pick between `post_review` and `explain_finding`.",
+    "`{\"type\": \"tool\", \"name\": \"post_review\"}`, which forces a call to that specific tool on every invocation.",
+    "`{\"type\": \"auto\"}` with `explain_finding` removed from the tool list, so only one tool remains available.",
+    "`{\"type\": \"auto\"}` with a system-prompt rule stating that `post_review` must always be called last."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "The requirement here is stronger than 'some tool must be called' — one named tool produces the payload the pipeline consumes, and any other outcome fails the step. `{\"type\": \"tool\", \"name\": \"post_review\"}` is the form that guarantees a specific tool call, which is exactly the guarantee the contract needs.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "`any` guarantees a tool call but leaves the choice to the model, so it removes the prose replies and leaves the wrong-tool failures. Half the observed failure mode survives, and it is the half that produces a well-formed payload of the wrong shape.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+    },
+    {
+     "option": 2,
+     "text": "Removing the diagnostic tool sacrifices a capability to constrain a selection, and `auto` still permits a text-only reply, so the prose failures continue. It gives up something real and does not deliver the guarantee.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+    },
+    {
+     "option": 3,
+     "text": "A prompt rule is a probabilistic control standing in for an available deterministic one. `auto` continues to allow a text response, so the step keeps failing at a lower rate — the classic substitution of an instruction for a guarantee.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+    }
+   ]
+  },
+  {
+   "g": 37,
+   "block": 2,
+   "domain": "D1",
+   "stem": "The security-policy check must block a merge when a change touches the payments module without an accompanying test. The check is currently expressed in the review prompt, and over three months it has passed eleven changes that should have been blocked. Compliance requires no exceptions. What is the correct change?",
+   "options": [
+    "Add the eleven missed changes as few-shot examples to the prompt so the model recognises the pattern in future.",
+    "Implement the check as a programmatic gate in the pipeline that inspects the diff and fails the job, independently of the model's review.",
+    "Rewrite the prompt instruction more forcefully and place it at the top of the system prompt where it carries more weight.",
+    "Add a second model pass whose only job is this check, and block the merge if either pass flags a violation."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "A compliance requirement stated as 'no exceptions' cannot be met by a mechanism with a failure rate, and eleven misses in three months is a measured failure rate. Whether a diff touches a path and whether a test file accompanies it are both decidable from the diff itself, so the check belongs in code that runs deterministically on every pull request.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.14"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Few-shot examples improve the model's judgement on cases resembling the examples. They shift a probability and cannot produce the categorical guarantee compliance is asking for, and the twelfth miss will simply be a case the eleven did not resemble.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.14"
+    },
+    {
+     "option": 2,
+     "text": "The instruction already exists and already fails. Emphasis and placement move the failure rate down without reaching zero, which is the specific distractor the corpus flags for high-stakes workflow enforcement.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.14"
+    },
+    {
+     "option": 3,
+     "text": "Two probabilistic checks in series lower the joint failure rate but never eliminate it, and their errors correlate because both read the same diff with the same model. It doubles the cost for a guarantee a diff inspection provides outright.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.14"
+    }
+   ]
+  },
+  {
+   "g": 38,
+   "block": 2,
+   "domain": "D3",
+   "stem": "The pipeline currently scrapes the review's printed text with a regular expression to decide whether to fail the job, and the expression breaks whenever the phrasing of the summary line changes. What is the correct way to make the decision robust?",
+   "options": [
+    "Instruct the model in the prompt to end its output with a fixed sentinel line the pipeline can match exactly.",
+    "Have the pipeline pass the printed output to a second Claude invocation that answers pass or fail.",
+    "Invoke with `--output-format json` and branch on the parsed fields rather than on the rendered text.",
+    "Tighten the regular expression so it tolerates the phrasing variants seen so far."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "The CLI can emit structured output directly, and the pipeline should consume that rather than the human-readable rendering. `--output-format json` gives fields to branch on, so a change in how the summary reads has no effect on the decision — the interface between the model and the pipeline stops being prose.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.9"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A sentinel makes the prose slightly more parseable while leaving the contract as free text the model may or may not emit exactly. It is a convention held in place by an instruction, where a supported structured format is available.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.9"
+    },
+    {
+     "option": 1,
+     "text": "This spends a second model call to interpret the first one's prose, adding cost, latency and a new source of error to recover information the CLI can return structured in the original call.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.9"
+    },
+    {
+     "option": 3,
+     "text": "Enumerating the variants seen so far is the maintenance treadmill the question describes. The next unseen phrasing breaks it again, because the underlying interface is still natural language.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.9"
+    }
+   ]
+  },
+  {
+   "g": 39,
+   "block": 2,
+   "domain": "D4",
+   "stem": "Findings are returned through a tool call with a JSON schema, so the payload always parses. A validator then checks that every finding's `line` falls inside the changed hunks of the file it names. About 6% fail that check. The retry sends the identical original prompt again, and roughly the same share fails on the second attempt. What should the retry carry?",
+   "options": [
+    "A higher temperature on the retry, so the second attempt explores a different response rather than reproducing the first.",
+    "The specific validation failure — which finding, which line, and which hunk ranges were valid for that file.",
+    "An instruction to be more careful about line numbers, appended to the original prompt.",
+    "The same prompt against a larger model, since line-accurate attribution is the harder part of the task."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "A retry that sends the same input gets the same output distribution, which is what the unchanged 6% shows. The loop only becomes self-correcting when the model can see what specifically went wrong — naming the finding, the offending line and the valid ranges turns the retry into a correction task rather than a repetition of the original one.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.9"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "More variance produces a different wrong answer as readily as a right one. Sampling differently is not feedback, and the model still has no information about which constraint it violated.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.9"
+    },
+    {
+     "option": 2,
+     "text": "A general exhortation is not error feedback. It does not identify the failing finding or the valid range, so the model has nothing concrete to correct and the same share fails again.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.9"
+    },
+    {
+     "option": 3,
+     "text": "Escalating the model treats a feedback-loop defect as a capability shortfall. The retry mechanism is still blind, so a stronger model repeats the same uninformed attempt at some other rate.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.9"
+    }
+   ]
+  },
+  {
+   "g": 40,
+   "block": 2,
+   "domain": "D3",
+   "stem": "Reviewers notice the pipeline applies none of the repository's conventions: it flags naming the team has documented as correct and misses the error-handling rules everyone follows. The same prompt run by a developer in a local checkout applies all of them. The CI job clones the repository and invokes Claude Code from a scratch directory outside it. What is the cause?",
+   "options": [
+    "The CI runner lacks the permissions to read `CLAUDE.md`, so the file is present but cannot be opened.",
+    "Conventions must be passed as prompt text in non-interactive mode, since `-p` disables configuration file loading.",
+    "The conventions are in a `.claude/rules/` file, and rules do not load in non-interactive invocations.",
+    "Claude Code is being invoked outside the repository, so the project `CLAUDE.md` is never in the loaded hierarchy and the conventions are absent from context."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "Configuration loads from the hierarchy around the working directory, so a run started outside the cloned repository picks up nothing from it. The local checkout works for exactly that reason — the developer is inside the tree. The fix is to invoke from the repository root so the project configuration is in scope, which is what makes a CI run's behaviour match a local one.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.1"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A permissions fault would be a plausible CI-only failure, but the job clones the repository successfully and reads its files to review them. Nothing is unreadable; the configuration is simply outside the directory tree the run is anchored to.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.1"
+    },
+    {
+     "option": 1,
+     "text": "`-p` selects non-interactive execution and does not disable configuration loading. Passing every convention as prompt text would work around the problem by duplicating a file that already exists and would drift from it immediately.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.8"
+    },
+    {
+     "option": 2,
+     "text": "Path-scoped rules are not restricted to interactive sessions. The observation to explain is that nothing from the repository is reaching the run at all, which no property of one configuration mechanism accounts for.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+    }
+   ]
+  },
+  {
+   "g": 41,
+   "block": 2,
+   "domain": "D3",
+   "stem": "The repository holds three conventions Claude Code should apply. Commit-message format applies to every session. A set of migration-file conventions applies to roughly 200 files matched by `db/migrations/**`. A release-checklist procedure is run by hand about once a fortnight. Which arrangement is correct?",
+   "options": [
+    "Commit format in the project `CLAUDE.md`; migration conventions in `.claude/rules/` with a glob on the migrations path; release checklist as a skill.",
+    "Commit format and migration conventions both in the project `CLAUDE.md`; release checklist as a skill.",
+    "Commit format as a skill invoked before each commit; migration conventions in `.claude/rules/`; release checklist in the project `CLAUDE.md`.",
+    "All three in `.claude/rules/`, each with a glob — a match-everything glob for the commit format and narrower globs for the other two."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "Each mechanism is chosen by when the content should be in context. Universal guidance goes in CLAUDE.md, which loads every session. File-scoped conventions go in `.claude/rules/` with a glob, so 200 migration files are covered by one file and nothing is loaded when editing anything else. A fortnightly procedure is a task workflow and belongs in a skill, invoked on demand rather than resident.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.2"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "Putting the migration conventions in CLAUDE.md loads them into every session, including the majority that touch no migration. The glob mechanism exists precisely so file-type guidance costs nothing when it does not apply.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+    },
+    {
+     "option": 2,
+     "text": "This inverts two of the three. A universal convention delivered by an on-demand skill is not applied when the skill is not invoked, and a fortnightly checklist parked in CLAUDE.md occupies every session's context to serve a rare task.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.2"
+    },
+    {
+     "option": 3,
+     "text": "A match-everything glob is a more fragile way of writing what CLAUDE.md does directly, and an interactive checklist expressed as background rules is not invocable as a procedure. Rules carry standing guidance; they are not a substitute for a workflow.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.2"
+    }
+   ]
+  },
+  {
+   "g": 42,
+   "block": 2,
+   "domain": "D4",
+   "selectN": 2,
+   "stem": "Review output is produced through a tool call with a strict JSON schema. Select TWO defect classes that remain possible despite the schema.",
+   "options": [
+    "A finding whose severity field contradicts the severity described in its own explanation text.",
+    "A finding attributing a defect to a file that is not part of this pull request.",
+    "A response whose JSON is truncated mid-object and cannot be parsed.",
+    "A response containing a top-level field the schema does not define."
+   ],
+   "correct": [
+    0,
+    1
+   ],
+   "whyRight": {
+    "text": "A schema constrains shape, not meaning. Both correct options are well-formed against any reasonable schema and wrong on the facts: a severity value that contradicts its own prose, and a valid file path that simply is not in this diff. These are semantic errors, and catching them needs validation logic and a feedback loop rather than a stricter schema.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.7"
+   },
+   "whyWrong": [
+    {
+     "option": 2,
+     "text": "Truncated, unparseable JSON is a syntax failure, and producing output through a tool call with a schema is what eliminates that class. It is the problem the mechanism already solves.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.7"
+    },
+    {
+     "option": 3,
+     "text": "An undefined top-level field is a structural violation the schema rejects, particularly with `additionalProperties` disallowed. Like truncation, it is caught at the boundary rather than surviving into the pipeline.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.5"
+    }
+   ]
+  },
+  {
+   "g": 43,
+   "block": 2,
+   "domain": "D4",
+   "stem": "On long review runs the findings change character as the run proceeds: early comments are specific and cite line numbers, later ones become general observations about style, and the severity labels drift upward. The system prompt specifying the finding format has not changed. What explains this and what fixes it?",
+   "options": [
+    "The system prompt is being truncated as the conversation grows, and raising its priority in the request will restore it.",
+    "The later files are genuinely harder to review, so the model correctly reports at a higher level and with more caution.",
+    "Behavioural drift as the model's own accumulated responses come to dominate its recent context; re-anchor by restating the format requirements periodically or by resetting context between segments.",
+    "The model is running low on output tokens, so it compresses later findings into general observations."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "Over a long run the model's own earlier outputs accumulate and increasingly shape what it produces next, so the style set by a system prompt at the start gradually gives way to the pattern of recent turns. That is behavioural drift, and the corpus's fixes act on the same mechanism: re-state the constraints periodically so they are recent, or segment the run so each part starts clean.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.20"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "The system prompt is re-sent with every request and is not silently dropped as a conversation grows. It is present and being outweighed by accumulated recent context, which is a different problem with a different fix.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.20"
+    },
+    {
+     "option": 1,
+     "text": "This explains away a measurable degradation. File order in a diff is not correlated with difficulty, and the severity labels drifting upward is not something 'more caution' predicts — it is the pattern of recent outputs reinforcing itself.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.20"
+    },
+    {
+     "option": 3,
+     "text": "Output limits truncate a response, producing a finding that stops mid-sentence. They do not turn specific line-referenced findings into general stylistic observations while severity labels climb.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.20"
+    }
+   ]
+  },
+  {
+   "g": 44,
+   "block": 2,
+   "domain": "D1",
+   "stem": "Every pull request review runs the same four steps in the same order: lint-rule conformance, test coverage of changed lines, dependency-policy check, then a summary comment. The steps do not depend on each other's findings, and the set has not changed in six months. An engineer proposes replacing this with a coordinator that decides which checks to run from what it finds. Should the team adopt it?",
+   "options": [
+    "No — the scope is fully known in advance and the steps are independent, which is the case a fixed sequential pipeline is for.",
+    "Yes — adaptive decomposition is the more capable pattern and gives the pipeline room to grow as checks are added.",
+    "Yes — an adaptive coordinator would skip checks that cannot apply to a given diff, reducing cost per review.",
+    "No — but only because adaptive coordination cannot produce the structured output the pipeline needs."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "Decomposition strategy follows task characteristics. Here every step is known before the run starts, the set is stable, and no step's result changes what the next one should do — a fixed pipeline expresses that exactly, runs predictably and is cheap to reason about. Adaptive decomposition earns its complexity when the scope is genuinely unknown at the outset, which is not this case.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "Sophistication is not the selection criterion — fit is. Choosing the adaptive pattern because it is more capable is the specific error the corpus warns against, and adding a fifth known check to a fixed pipeline is not difficult.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+    },
+    {
+     "option": 2,
+     "text": "Conditional skipping is a filter on a fixed step list, which a pipeline can already express without a coordinator deciding anything. The saving is real and does not require adopting a different decomposition pattern to obtain.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+    },
+    {
+     "option": 3,
+     "text": "The conclusion is right but the reason is invented. An adaptive coordinator can produce structured output perfectly well; it is simply the wrong pattern for a task whose stages are all known in advance.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+    }
+   ]
+  },
+  {
+   "g": 45,
+   "block": 2,
+   "domain": "D1",
+   "stem": "A pull request triggers the review, and the dependency-policy step fails because the policy service is unreachable. The lint and coverage steps have already completed with findings. The current handler aborts the run and posts nothing. What should the pipeline do instead?",
+   "options": [
+    "Post the completed findings and annotate the report to record that the dependency-policy check did not run and why.",
+    "Post the completed findings without mention of the dependency check, so developers are not distracted by infrastructure noise.",
+    "Retry the whole review from the beginning until the policy service responds or the job times out.",
+    "Post nothing and mark the pull request as passing, since no policy violation was actually detected."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "A partial failure should not discard the work that succeeded, and it must not be silently hidden either. Publishing the completed findings with an explicit coverage annotation naming the check that did not run is graceful degradation: the developer gets the real findings and an accurate statement of what was and was not examined.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.10"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "Omitting the gap presents partial coverage as complete. A reader reasonably concludes the dependency policy was checked and passed, which is the misreading a coverage annotation exists to prevent.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.10"
+    },
+    {
+     "option": 2,
+     "text": "Re-running everything throws away two successful steps to retry a third, and if the service stays down the job produces nothing at all rather than the findings it already had.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.9"
+    },
+    {
+     "option": 3,
+     "text": "Reporting an unrun check as a pass is silent suppression of a failure, and it is the most damaging option here because it converts an infrastructure outage into a false compliance signal on the record.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.9"
+    }
+   ]
+  }
+ ]
+}

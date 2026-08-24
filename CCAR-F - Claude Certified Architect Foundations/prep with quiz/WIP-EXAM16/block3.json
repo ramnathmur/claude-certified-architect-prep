@@ -1,0 +1,533 @@
+{
+ "label": "Developer Productivity with Claude",
+ "narrative": "You build developer-productivity tooling on the Agent SDK for a payroll and time-and-attendance platform — award interpretation, shift penalties, leave accrual and back-pay recalculation — spread across a monorepo of roughly 2,800 files that four teams have edited over eight years. The agent works through the built-in tools (`Read`, `Write`, `Edit`, `Bash`, `Grep`, `Glob`) alongside an internal code-search MCP server. The questions below follow one quarter of that work.",
+ "questions": [
+  {
+   "g": 31,
+   "block": 2,
+   "domain": "D2",
+   "stem": "A deprecated `calcPenaltyRate` helper has to be located everywhere it is used before it can be removed. The agent ran `Glob` with the pattern `**/calcPenaltyRate*`, reported two matches, and the removal that followed broke eleven call sites at build time across four packages. Why did the search come back clean?",
+   "options": [
+    "The pattern had no leading directory segment, so it searched only the working directory instead of the whole tree.",
+    "Two of the call sites import the helper under a re-exported alias, so no search of any kind could have found them.",
+    "The build failures come from stale compiled output rather than from genuine callers of the helper.",
+    "`Glob` matches file paths, not file contents — it found the two files named after the helper, not the files that use it."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "Glob does path-pattern matching; Grep searches inside files. \"Which files reference this symbol\" is a content question, so the tool for it is Grep across the codebase. Globbing the symbol name returns only files whose names happen to contain it.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A leading `**/` already covers the tree. The mismatch here is a category error about what the tool searches, not a defect in the pattern's scope.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+    },
+    {
+     "option": 1,
+     "text": "Aliased re-exports are a genuine hazard, and the answer to them is to collect every exported name and Grep for each. They are findable — they are simply not findable by a path matcher.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+    },
+    {
+     "option": 2,
+     "text": "Nothing in the situation points at stale artefacts, and eleven simultaneous failures immediately after a removal are the removal. This explanation invents a cause to avoid the tool-choice one.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+    }
+   ]
+  },
+  {
+   "g": 32,
+   "block": 2,
+   "domain": "D3",
+   "stem": "A request to add a leave-accrual engine has produced three generated versions. Each missed something different: pro-rata accrual for part-time staff, the carry-over cap, and the treatment of unpaid leave. The developer asking does not know the award rules well, and neither does anyone else currently on the team. What is the better next move?",
+   "options": [
+    "Describe all three missed requirements in one detailed message and ask for a fourth version.",
+    "Restart and have the model interview you first, surfacing the decisions it needs before it writes anything.",
+    "Split the engine into three smaller generation tasks so each version has less scope to get wrong.",
+    "Ask for a fourth version behind a much longer prose specification covering everything discussed so far."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "The interview pattern exists for exactly this: an underspecified brief in a domain the requester does not know well, where each generation surfaces one more requirement nobody thought to state. One interview turn replaces several correction cycles, because the questions come from the side that knows what is usually needed.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.7.1"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "This is the failing loop with the batch size increased. It fixes the three requirements now known and leaves the fourth and fifth to be discovered the same expensive way.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.7.1"
+    },
+    {
+     "option": 2,
+     "text": "Three smaller tasks still start from the same underspecified brief. Narrower scope means each version is wrong about less, not that the missing requirements surface any earlier.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.7.1"
+    },
+    {
+     "option": 3,
+     "text": "A longer specification written by someone who does not know the award rules cannot contain the rules they do not know. Length is not the missing ingredient; the questions are.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.7.1"
+    }
+   ]
+  },
+  {
+   "g": 33,
+   "block": 2,
+   "domain": "D1",
+   "selectN": 2,
+   "stem": "Nobody knows which parts of the awards module lack tests, and the coverage report has not run in a year. The brief is `add comprehensive test coverage`, over eight years of accumulated history and four teams' worth of conventions. A colleague proposes a fixed six-step pipeline settled before any code is read. Select two properties the right approach has here.",
+   "options": [
+    "It maps the structure first, then prioritises the high-risk areas that the map reveals.",
+    "It regenerates the remainder of its plan as dependencies surface — an external rates service needing a mock, for instance.",
+    "It fixes every step in advance, so runs stay reproducible and comparable across modules.",
+    "It reads every file in the module before planning, so the plan rests on complete information.",
+    "It issues one large prompt covering discovery, prioritisation and test writing together."
+   ],
+   "correct": [
+    0,
+    1
+   ],
+   "whyRight": {
+    "text": "This is the canonical open-ended task, and dynamic adaptive decomposition is its pattern: map the structure, identify high-impact areas, build a prioritised plan, then adapt that plan as discoveries — such as an external dependency needing a mock — change what the remaining work is.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+   },
+   "whyWrong": [
+    {
+     "option": 2,
+     "text": "Fixed sequential pipelines suit predictable structure where every step is known up front. Here the scope is unknown by definition, so a fixed script breaks the moment reality differs from it.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+    },
+    {
+     "option": 3,
+     "text": "Exhaustive upfront reading is the named anti-pattern. Discovery should be driven by content search and then targeted reads, not by loading the module into context first.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+    },
+    {
+     "option": 4,
+     "text": "One giant prompt covering everything produces attention dilution — deep in places, shallow in others, with obvious gaps missed.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.7"
+    }
+   ]
+  },
+  {
+   "g": 34,
+   "block": 2,
+   "domain": "D2",
+   "stem": "An `Edit` call fails on a rates file: the anchor `return base * multiplier;` appears in four functions and the change is needed in exactly one of them, the overtime branch, which is the third occurrence in the file. Retrying with the identical anchor fails the same way. What is the sanctioned next step?",
+   "options": [
+    "Retry with a shorter anchor such as `* multiplier`, which is easier for the tool to match.",
+    "Run a `Bash` command with `sed` to replace the fourth occurrence directly.",
+    "`Read` the file, modify the content, then `Write` the updated version back in full.",
+    "Split the file so each function lives in its own module and every anchor becomes unique."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "Edit works by unique text match and fails when it cannot decide which occurrence to change. The documented fallback is Read the full file, modify the content, Write it back — a reliable full-file modification that does not depend on finding a unique anchor.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Shorter anchors are more likely to be non-unique, not less. This makes the exact failure worse and will match all four occurrences instead of one.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+    },
+    {
+     "option": 1,
+     "text": "Forcing the replacement through a shell utility bypasses the tool designed for the job and its safety properties. The sanctioned fallback is Read plus Write.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+    },
+    {
+     "option": 3,
+     "text": "Restructuring production source to work around a tool's matching rule is a large, risky change made for the convenience of the editor rather than the codebase.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.9"
+    }
+   ]
+  },
+  {
+   "g": 35,
+   "block": 2,
+   "domain": "D4",
+   "stem": "A doc-comment check in the agent raises roughly 40 findings per run. Most of what it flags is accurate but terse. The rule it works from reads `check that comments are accurate`. Developers have stopped reading the output entirely, and dismissals now run at about 90%. Which rewrite of that rule fixes the behaviour?",
+   "options": [
+    "Flag a comment only where the behaviour it claims contradicts what the code actually does.",
+    "Check that comments are accurate, complete, and helpful to a reader unfamiliar with the module.",
+    "Flag comments carefully, using judgement about whether the issue is worth a developer's attention.",
+    "Check that every exported function carries a comment and that each comment is accurate."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "The move is from abstract intent to an explicit, testable criterion. \"Accurate\" is a judgement the model resolves differently every run; \"claims behaviour that contradicts the code\" is a condition that either holds or does not, and terseness no longer qualifies.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.16"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "This adds two more abstractions to the one already failing. \"Complete\" and \"helpful\" are broader than \"accurate\", so the volume of findings goes up rather than down.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.16"
+    },
+    {
+     "option": 2,
+     "text": "\"Carefully\" and \"judgement\" are the vagueness itself, restated as an instruction. Nothing in the rewrite tells the model which of the 40 findings to drop.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.16"
+    },
+    {
+     "option": 3,
+     "text": "This changes the subject to comment coverage and leaves the accuracy criterion exactly as ambiguous as before, while adding a second stream of findings.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.16"
+    }
+   ]
+  },
+  {
+   "g": 36,
+   "block": 2,
+   "domain": "D3",
+   "stem": "A transformation that converts legacy timesheet rows into the new shift schema produces a differently shaped result on each run — sometimes nesting breaks, sometimes flattening them, sometimes dropping zero-hour entries. The prose description has been rewritten twice and lengthened both times, without changing the variance at all. What should be added?",
+   "options": [
+    "A post-processing step that reshapes whatever comes back into the expected structure.",
+    "Two or three concrete input-to-output example pairs, drawn from real rows.",
+    "A longer description enumerating every field and stating how each one should be handled.",
+    "A reminder that the same output shape must be produced on every run whatever the input looks like."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "When a natural-language description of a transformation is interpreted inconsistently, two or three concrete input-to-output pairs are the most effective fix. They show format and decision logic unambiguously, and the model generalises the pattern to rows the examples never covered.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.7.3"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Reshaping the output afterwards cannot restore a zero-hour entry that was dropped, and it hides the inconsistency instead of resolving it.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.7.3"
+    },
+    {
+     "option": 2,
+     "text": "Lengthening the prose is what has already failed twice. More adjectives about a transformation do not disambiguate the decision logic the way a worked pair does.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.7.3"
+    },
+    {
+     "option": 3,
+     "text": "Restating the requirement asserts the goal without communicating the transformation. The model already intends to be consistent; it does not know which shape is intended.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.7.3"
+    }
+   ]
+  },
+  {
+   "g": 37,
+   "block": 2,
+   "domain": "D1",
+   "stem": "The previous session mapped how back-pay recalculation flows through six modules, and building that map took two hours of exploration. Overnight another team refactored three of those six, changing function signatures rather than behaviour. The rest of the map is still accurate. How should today's work continue?",
+   "options": [
+    "Start a fresh session and re-map all six modules, since any stale result makes the whole map untrustworthy.",
+    "Resume the named session and carry on, since the map is mostly current and discrepancies will show up in due course.",
+    "Fork the session so one branch keeps the old map while the other re-analyses, then compare the two.",
+    "Resume the named session and state exactly which three modules changed, so it re-analyses only those."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "When you resume after code has changed, tell the agent precisely which files changed so it performs targeted re-analysis of just those. That keeps the three hours of still-valid mapping and refreshes only what is genuinely stale.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.16"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Re-analysing everything is wasteful when most of the context is still valid. Starting fresh with an injected summary is for cases where the prior results are broadly stale, not three files out of six modules.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.16"
+    },
+    {
+     "option": 1,
+     "text": "A resumed session reasons over its old tool results as though they were current. It has no way to notice that three modules were rewritten while it was not running.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.16"
+    },
+    {
+     "option": 2,
+     "text": "Forking exists to compare two approaches from one shared baseline. Using it here creates a branch deliberately reasoning over known-stale data.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.16"
+    }
+   ]
+  },
+  {
+   "g": 38,
+   "block": 2,
+   "domain": "D2",
+   "selectN": 3,
+   "stem": "Months ago the team replaced two frequently co-occurring calls with a single composite tool, and round-trips fell by about a third. A new workflow now needs only the second half of that composite; the agent calls the composite anyway and discards half the payload on every single request. Select three true statements about this situation.",
+   "options": [
+    "The composite hides its composition, so the agent has no way to ask for only the part it needs.",
+    "The documented preference is to prompt the agent to bundle related tool requests into one turn rather than to build a composite.",
+    "The agent can already request several tools in a single turn, so the original round-trip saving never required a composite.",
+    "Composite tools are never appropriate, and this one should not have been built under any circumstances.",
+    "The discarded payload is a context problem, best solved by trimming the composite's output with a `PostToolUse` hook.",
+    "The agent should be told to call the composite and ignore the unused half, since the round-trip saving still holds."
+   ],
+   "correct": [
+    0,
+    1,
+    2
+   ],
+   "whyRight": {
+    "text": "Composite tools hide the composition, which is the cost being paid now: a workflow needing one half cannot express that. The corpus's preferred handling for habitually-paired calls is to prompt the agent to bundle its requests into one turn, precisely because the agent can already ask for several tools simultaneously — so the saving was available without collapsing the interface.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.8"
+   },
+   "whyWrong": [
+    {
+     "option": 3,
+     "text": "This overstates the guidance. Composite tools are worth considering when agents repeatedly call the same sequence; they are simply not the preferred first answer. \"Never appropriate\" is a rule the corpus does not state.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.8"
+    },
+    {
+     "option": 4,
+     "text": "Trimming would shrink the payload while leaving the wrong tool being called. It treats a downstream symptom of the composition choice rather than the choice.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.5"
+    },
+    {
+     "option": 5,
+     "text": "Instructing the agent to accept the waste entrenches a tool the new workflow does not want, and makes every future partial use case pay the same cost.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.8"
+    }
+   ]
+  },
+  {
+   "g": 39,
+   "block": 2,
+   "domain": "D3",
+   "stem": "A rates library used by 45 files must be swapped for a maintained replacement whose API differs in three places, one of them a changed return shape. A developer starts in direct execution, intending to switch into planning mode later if the work turns out messier than expected. How should you evaluate that intention?",
+   "options": [
+    "Reasonable — the file count is known precisely, which makes this a routine change that planning would only slow down.",
+    "Reasonable — beginning the work surfaces the real complexity faster than any amount of planning can predict it.",
+    "Unsound — a 45-file migration calls for planning up front, and reactive switching wastes whatever was already executed.",
+    "Unsound — planning mode cannot be entered once a session has already modified files on disk."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "A library migration touching 45 files is the corpus's own example of work that belongs in planning mode, and starting-then-switching is its own named trap: reactive switching is expensive, because the rework you pay for is the execution already done under a plan that did not exist.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.6"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Knowing how many files are affected is not the same as the change being routine. Three API differences propagated across 45 call sites is exactly the multi-file, multiple-approach shape planning exists for.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.6"
+    },
+    {
+     "option": 1,
+     "text": "This is the trap stated as a virtue. Discovering complexity by executing into it means discovering it after the edits that have to be undone.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.6"
+    },
+    {
+     "option": 3,
+     "text": "The conclusion is right and the reason is invented. No such restriction is documented; the objection to the plan is about cost, not a mode you can no longer enter.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.6"
+    }
+   ]
+  },
+  {
+   "g": 40,
+   "block": 2,
+   "domain": "D4",
+   "stem": "Requests phrased like `show me how overtime is worked out` route to the code-search server about half the time and to a documentation tool the rest, with no pattern anyone can see. Unambiguous requests route correctly. Twelve examples of clear requests were added last sprint, with no measurable effect on the split. What should be added instead?",
+   "options": [
+    "Four to six examples of the ambiguous phrasings specifically, each with its rationale for choosing one tool over the other.",
+    "Another dozen unambiguous examples, split evenly between the two tools so the evidence stays balanced.",
+    "One example of the exact phrase above, paired with the tool it should have routed to.",
+    "A pre-routing step that classifies each request before any tool is offered to the model."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "Few-shot examples should target the cases the model actually gets wrong. Four to six examples covering the ambiguous phrasings, each stating why one tool was preferred, teaches the discrimination; the rationale is what generalises beyond the exact wording shown.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.1"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "Twelve clear examples have already produced no effect, and twelve more would not either. Adding evidence about cases that already work does not move the boundary between them.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.1"
+    },
+    {
+     "option": 2,
+     "text": "A single example of one phrasing pins that phrasing and leaves its neighbours untouched. The problem is a family of ambiguous requests, not one sentence.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.1"
+    },
+    {
+     "option": 3,
+     "text": "A classifier is a routing layer added to compensate for a signal the model was never given. Targeted examples fix the signal, and cost far less to maintain.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.2"
+    }
+   ]
+  },
+  {
+   "g": 41,
+   "block": 2,
+   "domain": "D1",
+   "stem": "A subagent scoped to summarising module dependencies was given `Bash` so it could run one tree command. Traces show it running test suites and, on one occasion, a package install. Its summaries are good. A prompt line telling it not to run tests reduced this without stopping it. What is the fix?",
+   "options": [
+    "Keep `Bash` and add a stronger prohibition naming the specific commands the subagent must never run.",
+    "Keep `Bash` and review the subagent's transcripts weekly for commands outside its scope.",
+    "Remove every tool from the subagent and have the coordinator run all commands on its behalf.",
+    "Replace `Bash` with a constrained tool that returns the dependency tree and nothing else."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "Replacing a broad tool with a constrained alternative enforces the boundary at the interface, which is the same move as swapping a generic fetch tool for one that only loads documents. The subagent keeps the capability its scope requires and loses the one it was misusing.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.11"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A prompt prohibition is probabilistic — it already reduced the behaviour without eliminating it, which is the signature of the wrong enforcement layer.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.11"
+    },
+    {
+     "option": 1,
+     "text": "Weekly review detects after the fact. By the time a transcript is read, the package install has already run.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.11"
+    },
+    {
+     "option": 2,
+     "text": "Stripping all tools over-corrects: the subagent can no longer do the job it was defined for, and every dependency query becomes a coordinator round-trip.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.11"
+    }
+   ]
+  },
+  {
+   "g": 42,
+   "block": 2,
+   "domain": "D2",
+   "stem": "A bulk rename across the monorepo must always be previewed first. The design has `preview_rename` return a token and `execute_rename` require one. During testing an agent ran an execute carrying a token from an earlier, unrelated preview, and the rename went through against files nobody had previewed. Which property of the token was missing?",
+   "options": [
+    "The token was not signed, so its contents could be altered between issue and presentation.",
+    "The token carried no expiry, so one issued earlier in the day remained valid indefinitely.",
+    "The token was neither single-use nor bound to the preview that issued it, so an earlier one could be replayed.",
+    "The token was minted by the agent rather than returned by `preview_rename`, so its provenance could not be checked."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "The guarantee in the two-tool pattern is that the confirmation token only exists after a preview of this operation — it is single-use and tied to the preview that produced it. Once a token can be reused, or applies to an operation other than the one previewed, execution without a matching preview becomes possible again.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.4"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Signing stops a token being forged or tampered with. The token replayed here was genuine and unaltered, so a signature would have validated it happily.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.4"
+    },
+    {
+     "option": 1,
+     "text": "An expiry narrows the replay window without closing it. A token from a different preview issued minutes ago is still fresh, and still authorises the wrong rename.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.4"
+    },
+    {
+     "option": 3,
+     "text": "The described design already has the server issuing the token from `preview_rename`. Provenance was never the gap; reuse was.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.4"
+    }
+   ]
+  },
+  {
+   "g": 43,
+   "block": 2,
+   "domain": "D3",
+   "selectN": 2,
+   "stem": "Award-interpretation files require decimal-safe arithmetic, the API layer requires a shared error envelope, and test files require fixture factories rather than the inline literals they use today. All three kinds of file sit side by side in every one of the 60-odd feature folders. Select two accurate statements about using `.claude/rules/` here.",
+   "options": [
+    "Each convention becomes its own rules file, with frontmatter globs matching the file type it governs.",
+    "Rules load only when Claude works on files matching their patterns, so the other conventions stay out of context.",
+    "Rules are applied in order of specificity, so the narrowest matching rule overrides the broader ones.",
+    "Rules apply according to the directory the session started in, whichever files are subsequently opened.",
+    "Rules must be listed in the root `CLAUDE.md` before Claude will discover them."
+   ],
+   "correct": [
+    0,
+    1
+   ],
+   "whyRight": {
+    "text": "Rules files carry YAML frontmatter with path globs and load automatically only when Claude is working on matching files. That is exactly right for conventions scoped by file type rather than by directory — which matters here, because all three file types are co-located in every folder.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.2"
+   },
+   "whyWrong": [
+    {
+     "option": 2,
+     "text": "No specificity-ordered override is documented for rules files. Matching rules load; they do not compete for precedence.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.2"
+    },
+    {
+     "option": 3,
+     "text": "Loading is driven by the paths of the files being worked on, not by where the session began. That is the property that makes rules work when file types are interleaved.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.2"
+    },
+    {
+     "option": 4,
+     "text": "There is no registration step. Rules files are discovered from `.claude/rules/` and matched on their own frontmatter.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.2"
+    }
+   ]
+  },
+  {
+   "g": 44,
+   "block": 2,
+   "domain": "D4",
+   "stem": "Every generated snippet arrives behind two sentences of preamble — `Certainly! Here is the function you asked for.` — which developers strip by hand dozens of times a day across the four teams. A system-prompt line asking for no preamble helped for a fortnight and then quietly stopped helping. What removes it reliably?",
+   "options": [
+    "Prefill the assistant turn with the opening of the intended response, so the model continues from there.",
+    "Lower the temperature so the model stops producing conversational filler.",
+    "Post-process every response to strip leading sentences before the first code block.",
+    "Restate the no-preamble instruction more forcefully, and move it to the end of the system prompt."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "Prefilling means including the beginning of the assistant message in the request so the model continues from it rather than starting fresh. It is the documented way to suppress filler openings, because there is no point at which the filler could be generated.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.4"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "Temperature controls randomness in sampling, not whether a particular phrase appears. A low-temperature model produces the same preamble more consistently.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.4"
+    },
+    {
+     "option": 2,
+     "text": "Stripping afterwards is a fragile workaround: it breaks whenever the preamble changes shape, and it can eat a legitimate opening line that was not filler.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.4"
+    },
+    {
+     "option": 3,
+     "text": "This is the instruction that has already decayed. Emphasis and position do not change a probabilistic mechanism into a reliable one.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.4"
+    }
+   ]
+  },
+  {
+   "g": 45,
+   "block": 2,
+   "domain": "D1",
+   "stem": "Two subagents — one mapping call sites, one drafting the migration — were wired to pass results to each other directly so the coordinator would not have to relay them. Latency improved. Then a failure in the mapper left the drafter working from a half-built list, and nothing in the run recorded that this had happened. What did the design give up?",
+   "options": [
+    "Parallel execution, because two agents exchanging messages must now take turns rather than run at once.",
+    "The coordinator's visibility over every exchange, and with it uniform error handling and control of what each agent sees.",
+    "Context isolation, because each subagent now inherits the other's full conversation history along with the results.",
+    "The ability to restrict each subagent's tools, because a shared channel requires both ends to hold the same tool set."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "Hub-and-spoke routes all inter-agent communication through the coordinator, and that is what buys visibility into every exchange, one uniform place to decide retry-versus-skip-versus-escalate, and control over what context each subagent receives. Bypassing the hub trades those three for latency — and the silent half-built list is the first invoice.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.2"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Direct communication does not preclude parallelism, and parallelism was not what failed. The two agents here are sequential by nature — the drafter needs the mapper's output.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.2"
+    },
+    {
+     "option": 2,
+     "text": "They exchanged results, not conversation histories. Isolation was not breached, and it is not the property whose absence let a partial list through unnoticed.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.2"
+    },
+    {
+     "option": 3,
+     "text": "Tool restriction is set per subagent definition and is unaffected by who a subagent talks to. This couples two things the architecture keeps separate.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.2"
+    }
+   ]
+  }
+ ]
+}

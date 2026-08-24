@@ -1,0 +1,514 @@
+{
+ "label": "Customer Support Resolution Agent",
+ "narrative": "A telecoms retention agent handles contract queries, billing disputes and plan changes. It reaches the account platform through MCP tools (`lookup_account`, `read_contract`, `apply_credit`, `change_plan`, `record_outcome`, `escalate`), spawns a triage subagent for complex disputes, and is measured on first-contact resolution against an 80% target. The questions below follow one quarter of production behaviour.",
+ "questions": [
+  {
+   "g": 1,
+   "block": 0,
+   "domain": "D1",
+   "stem": "A developer's loop sends the conversation, reads `stop_reason`, executes the requested tool when it is `tool_use`, and sends the conversation again. It branches correctly on every value. Yet on multi-step requests the agent asks for the same lookup two or three times before giving up. The tool executes successfully each time and its output is logged. What is missing from the loop?",
+   "options": [
+    "A short delay between iterations, so the platform has time to commit the lookup before the next request reads it.",
+    "A cap on repeated calls to the same tool, so a second identical request is refused and the loop moves on.",
+    "A running summary of prior tool calls in the system prompt, so the model can see what it has already requested.",
+    "The tool's result is never appended to the conversation before the next request, so each iteration sends a history in which the call was made and never answered."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "The loop's third step is not just executing the tool but appending its result to the conversation history. Logging the output satisfies the developer and not the model: if the result never re-enters the history, the next request shows a request with no answer, so the model reasonably asks again. Branching on `stop_reason` correctly is necessary and not sufficient.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.1"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Nothing here is a timing problem — the tool completes and its output is captured before the next request is built. A delay slows the loop down and still sends a history with an unanswered call in it.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.1"
+    },
+    {
+     "option": 1,
+     "text": "Refusing the repeat suppresses the visible symptom and leaves the model without the data it asked for, so the turn ends incomplete rather than looping. The repetition is a rational response to a history that never answers.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.1"
+    },
+    {
+     "option": 2,
+     "text": "A prose summary in the system prompt is a second-hand account of results that should be in the conversation as tool results. It also grows without bound and gives the model no way to act on the actual returned values.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.1"
+    }
+   ]
+  },
+  {
+   "g": 2,
+   "block": 0,
+   "domain": "D2",
+   "stem": "Every resolved conversation must end with a structured outcome record. Three tools write one — `record_resolution`, `record_deflection` and `record_escalation` — and which applies depends on how the conversation went, so the calling code cannot know in advance. About one conversation in nine ends with the agent summarising the outcome to the customer in prose and writing no record at all. Which `tool_choice` setting fits?",
+   "options": [
+    "`{\"type\": \"any\"}`, which guarantees one of the three is called while leaving the choice of which to the model.",
+    "`{\"type\": \"auto\"}` with a system-prompt line making the record mandatory before any closing message.",
+    "`{\"type\": \"tool\", \"name\": \"record_resolution\"}`, since resolution is the outcome in most conversations.",
+    "`{\"type\": \"auto\"}` with a post-turn check that re-prompts whenever no record was written."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "Two facts fix the rung. A record is mandatory, so the setting must guarantee a tool call — which rules `auto` out. But which of the three applies depends on the conversation, so the choice has to stay with the model — which rules a forced specific tool out. `any` is the rung that guarantees a call without deciding which one.",
+    "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "`auto` permits a text-only reply, which is exactly what one conversation in nine is producing. A prompt instruction lowers that rate without removing the possibility, so an instruction is standing in for a guarantee the API offers directly.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+    },
+    {
+     "option": 2,
+     "text": "Forcing one named tool is a stronger guarantee than the requirement asks for, and stronger is not safer here — it would write a resolution record for conversations that were deflected or escalated. The mandate is that a record exists, not that this record exists.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+    },
+    {
+     "option": 3,
+     "text": "This detects the missing record and asks again, paying a second turn on one conversation in nine to recover something a single parameter prevents. It is the workaround sitting beside the fix.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.6"
+    }
+   ]
+  },
+  {
+   "g": 3,
+   "block": 0,
+   "domain": "D1",
+   "stem": "The triage subagent is asked to assess whether a disputed charge falls inside the contract's fair-use terms. It returns assessments that ignore the customer's tariff and the contract start date, both of which the main agent established earlier in the conversation. Its prompt reads: 'Assess whether the disputed charge is covered by fair use.' What is the fix?",
+   "options": [
+    "Give the triage subagent the `read_contract` tool so it can retrieve the tariff and start date itself.",
+    "Write the tariff, the contract start date and the disputed charge into the prompt the main agent passes when it spawns the subagent.",
+    "Instruct the triage subagent to ask the main agent for any details it needs before assessing.",
+    "Have the main agent re-state the tariff and start date to the customer before spawning, so they are recent in the conversation."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "A subagent's context starts fresh and inherits nothing from the conversation that spawned it. The tariff and start date exist only in the main agent's history, so the triage subagent has never seen them. The prompt the coordinator writes is the entire channel between them, and anything the subagent needs has to be in it.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.5"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Granting a retrieval tool so the subagent can re-fetch facts the coordinator already holds widens its privileges and adds a round-trip to recover information that could simply have been passed. It also leaves the subagent guessing which account to read.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.11"
+    },
+    {
+     "option": 2,
+     "text": "There is no back-channel from a subagent to its coordinator mid-task. The subagent returns a result; it cannot interrogate the agent that spawned it.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.2"
+    },
+    {
+     "option": 3,
+     "text": "Restating facts to the customer changes the main agent's conversation, which the subagent still cannot see. Recency in a history the subagent does not receive makes no difference.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.5"
+    }
+   ]
+  },
+  {
+   "g": 4,
+   "block": 0,
+   "domain": "D5",
+   "stem": "Disputes that run past fifteen turns start to go wrong: the agent restates the disputed amount to the nearest pound and once quoted a contract start date a month out. History is compacted by re-summarising the whole conversation every five turns. Which change addresses the cause?",
+   "options": [
+    "Compact every eight turns rather than every five, so fewer summarisation passes run over the same content.",
+    "Keep the disputed amount, the account number, the contract start date and the tariff verbatim in a persistent facts block held outside the summarised history.",
+    "Instruct the summariser to reproduce all figures and dates exactly when it rewrites the history.",
+    "Stop compacting and let the conversation grow, accepting the higher token cost for the accuracy."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "Summarisation degrades exactly the content type it is worst at — amounts, dates and identifiers — and each pass compounds the last. Holding those values verbatim outside the summarised text means they are never rewritten, so compaction can keep doing its job on the prose while the transactional facts stay exact.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.4"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Fewer passes slow the degradation without stopping it, and a fifteen-turn dispute still accumulates enough passes to round a figure. It buys time rather than protecting the values.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.4"
+    },
+    {
+     "option": 2,
+     "text": "An instruction to reproduce figures exactly is a probabilistic control applied on every pass, and the pass itself is what introduces the risk. Removing the values from the rewritten text is stronger than asking for them to be rewritten faithfully.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.4"
+    },
+    {
+     "option": 3,
+     "text": "An uncompacted fifteen-turn history puts the disputed amount deep in the middle of a long context, where position effects make it less reliably retrieved. It trades one degradation mechanism for another and costs more.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.2"
+    }
+   ]
+  },
+  {
+   "g": 5,
+   "block": 0,
+   "domain": "D1",
+   "selectN": 2,
+   "stem": "Releasing a PAC code so a customer can port their number away requires a recorded security check first — an absolute rule the regulator audits. The instruction to run that check sits in the system prompt. A complaint investigation this month surfaced nine codes released in the past quarter with no check against them. Select TWO changes that make the requirement deterministic.",
+   "options": [
+    "A prerequisite gate in the tool layer that refuses `change_plan` until a cooling-off check has been recorded for that account in this conversation.",
+    "A rewritten system-prompt instruction that states the check is mandatory and places it at the top of the prompt.",
+    "A two-tool design where `read_contract` returns a short-lived token describing the cooling-off status, and `change_plan` accepts only a valid token.",
+    "A set of few-shot examples showing conversations in which the agent checks cooling-off status before every plan change."
+   ],
+   "correct": [
+    0,
+    2
+   ],
+   "whyRight": {
+    "text": "Both correct options move the requirement out of the model's judgement and into the interface. A prerequisite gate refuses the call until the precondition is recorded; token binding makes the check the only way to obtain the argument the change requires. Either takes the failure rate to zero by construction, which is what a no-exceptions rule means. Twenty-seven failures in 1,200 is the signature of a probabilistic control asked to deliver a guarantee.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.14"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "The prompt already carries this instruction and already fails at roughly 2%. Rewriting and repositioning it moves that number down, not to zero — prompts steer behaviour and cannot enforce it.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.14"
+    },
+    {
+     "option": 3,
+     "text": "Few-shot examples improve consistency on ambiguous cases and remain a probabilistic influence. They shift the distribution of behaviour; they cannot make a step impossible to skip.",
+     "cite": "CCA-Prep_Domain-4_v2.md §4.1"
+    }
+   ]
+  },
+  {
+   "g": 6,
+   "block": 0,
+   "domain": "D2",
+   "stem": "`apply_credit` accepts any amount. Policy caps agent-issued credits at £150, and the team enforces it with a nightly reconciliation job that finds over-limit credits and reverses them. Last month it reversed nine, and four customers had already been told their account was settled. What is the correct change?",
+   "options": [
+    "Run the reconciliation hourly rather than nightly, so an over-limit credit is reversed before the customer acts on it.",
+    "Add a system-prompt rule stating the £150 cap and listing the escalation path for larger amounts.",
+    "Have `apply_credit` reject any amount above £150 and return a structured business-rule error, so an over-limit credit is never applied.",
+    "Have the agent confirm any credit above £150 with the customer before applying it, so the customer is aware of the risk."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "The cap is a property of what the tool is permitted to do, so it belongs in the tool. Refusing the call means the over-limit credit never exists and there is nothing to reverse or explain. Detecting and undoing afterwards is a recovery path being used as a control, and the four customers already told their account was settled are what that costs.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A faster reconciliation shortens the window in which a wrong credit is live without closing it. The customer who is told their account is settled forty minutes before the reversal is in the same position as the one told nine hours before.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+    },
+    {
+     "option": 1,
+     "text": "A prompt rule is a probabilistic control over a capability that remains fully present. It lowers the rate of over-limit credits and the tool can still apply one, so the reconciliation job stays necessary.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+    },
+    {
+     "option": 3,
+     "text": "Confirming with the customer moves the decision to someone with no authority over the policy and still applies the credit. It converts a policy limit into a disclosure.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+    }
+   ]
+  },
+  {
+   "g": 7,
+   "block": 0,
+   "domain": "D1",
+   "stem": "For disputes spanning several charges the agent spawns three triage subagents. On a dispute covering roaming, a handset instalment and an early-termination fee, the returned assessment addresses roaming from three angles and never mentions the other two. All three subagents completed and each returned a careful assessment. Where is the defect?",
+   "options": [
+    "In the subagents, which should have recognised that a multi-charge dispute needed wider coverage than their assignments described.",
+    "In the number of subagents, since a three-charge dispute needs more than three to cover each charge properly.",
+    "In the assembly step, which should have noticed that two of the three charges were absent before returning the assessment.",
+    "In the main agent's decomposition, which split the dispute by aspect of the roaming charge rather than by charge."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "Subagents assess what they are assigned. Three assignments that all name roaming leave the instalment and the termination fee as nobody's job, so no amount of care inside an assignment reaches them. A coverage gap traces back to the point where the task became subtasks.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.6"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A subagent that decides to work outside its assignment produces unpredictable overlap and different gaps. The corpus locates this failure in the partitioning, not in the discipline of the agents carrying it out.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.6"
+    },
+    {
+     "option": 1,
+     "text": "More subagents receive more assignments drawn from the same decomposition, so a fourth and fifth would be handed further roaming angles. Capacity is not what is missing.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.6"
+    },
+    {
+     "option": 2,
+     "text": "A check at assembly would catch the omission after the work is done and cannot supply the missing assessments. It is worth having as a backstop and it does not explain where the gap came from.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.6"
+    }
+   ]
+  },
+  {
+   "g": 8,
+   "block": 0,
+   "domain": "D2",
+   "stem": "Requests to see a bill are split roughly evenly between `read_contract` and a billing tool. The descriptions read: `read_contract` — 'returns account documents', and `read_invoice` — 'returns account documents'. A developer proposes adding a routing step ahead of the agent that inspects the request and picks the tool. What should be done first?",
+   "options": [
+    "Merge the two into a single `read_document` tool with a `kind` parameter, removing the choice.",
+    "Add the routing step, since it removes the selection decision from the model entirely and can be tested independently.",
+    "Rewrite both descriptions so each states what it returns and when to prefer it — a signed contract by account, or an issued invoice by billing period.",
+    "Add few-shot examples showing billing requests routed to the invoice tool."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "The two descriptions are identical strings, so an even split is the expected outcome rather than a surprise. The description is the model's only view of what a tool does and when to prefer it, and making each state its return value and its selection criterion fixes the cause with one edit.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.2"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Consolidation is a defensible longer-term architecture and it relocates the same decision into a `kind` argument the model must still choose correctly. It is also a larger change than the problem warrants.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.2"
+    },
+    {
+     "option": 1,
+     "text": "A routing component is infrastructure added to work around two lines of text. It bypasses the model's language understanding, needs its own maintenance, and is disproportionate as a first response to descriptions nobody has written yet.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.2"
+    },
+    {
+     "option": 3,
+     "text": "Examples compensate for descriptions that do not differentiate the tools. They add tokens to every request and cover only the phrasings demonstrated, so the ambiguity reasserts itself on the next variant.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.2"
+    }
+   ]
+  },
+  {
+   "g": 9,
+   "block": 0,
+   "domain": "D3",
+   "stem": "Three things need to reach Claude Code in the agent's repository. A logging convention applies to every session. A set of redaction conventions applies only when editing the 60 transcript-handling files, which sit across a dozen directories. A quarterly compliance-review procedure runs about four times a year on request. Which arrangement is correct?",
+   "options": [
+    "Logging in the project `CLAUDE.md`; redaction in `.claude/rules/` with a glob on the transcript paths; compliance review as a skill.",
+    "All three in `.claude/rules/`, each with a glob — a match-everything glob for the logging convention and narrower ones for the other two.",
+    "Logging and redaction both in the project `CLAUDE.md`; compliance review in `.claude/rules/` with a glob.",
+    "Logging in `.claude/rules/`; redaction as a directory-level `CLAUDE.md` in each of the twelve directories; compliance review as a skill."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "Each mechanism is chosen by when its content should be in context. A universal convention goes in CLAUDE.md, which loads every session. A convention tied to a file type goes in `.claude/rules/` with a glob, so one file covers a dozen directories and costs nothing when editing anything else. A procedure run four times a year is a task workflow and belongs in a skill, invoked on demand.",
+    "cite": "CCA-Prep_Domain-3_v2.md §3.2"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "A match-everything glob is a more fragile way of writing what CLAUDE.md does directly, and a quarterly procedure expressed as background rules is not invocable as a procedure. Rules carry standing guidance; they do not replace a workflow.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.2"
+    },
+    {
+     "option": 2,
+     "text": "This puts the redaction conventions in every session including the majority that touch no transcript file, and files a four-times-a-year procedure as always-on guidance triggered by file reads. Both halves invert the mechanism.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+    },
+    {
+     "option": 3,
+     "text": "Twelve directory-level files is twelve copies to keep in step for one convention set, and a universal logging rule delivered by a path-scoped mechanism needs a glob that matches everything anyway.",
+     "cite": "CCA-Prep_Domain-3_v2.md §3.3"
+    }
+   ]
+  },
+  {
+   "g": 10,
+   "block": 0,
+   "domain": "D1",
+   "stem": "The retention desk receives handoffs as a single line reading `escalate: early-termination fee disputed`. Nobody on that desk can see the conversation, so each one opens by asking for the account number, the amount and what was already offered. Post-handoff handling time averages fourteen minutes against a six-minute target. What should the payload carry?",
+   "options": [
+    "A transcript of the conversation, so the specialist can read what happened rather than ask again.",
+    "An instruction to escalate earlier, before enough context has accumulated to be worth transferring.",
+    "A self-contained record: account identifier, the disputed amount, the root-cause assessment, what was already offered, and a recommended action.",
+    "A longer free-text note in which the agent describes everything it did before escalating."
+   ],
+   "correct": 2,
+   "whyRight": {
+    "text": "The specialist receiving a handoff has none of the agent's context, so the payload is the whole of what they see and must stand alone. The named fields are the ones the exam calls for — customer identifier, root-cause analysis, the amount at stake and a recommended action — alongside what was already attempted and why it was escalated.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.13"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A transcript makes the specialist re-read a whole conversation to recover four facts. The point of a structured handoff is that the facts arrive already extracted.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.13"
+    },
+    {
+     "option": 1,
+     "text": "Escalating sooner loses less because less was gathered, and it also gives up the autonomous resolution the agent is measured on. It manages the symptom by doing less work.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.13"
+    },
+    {
+     "option": 3,
+     "text": "A longer note is still prose the specialist must mine for four specific values, and its completeness depends on the agent's judgement each time. A defined payload is checkable; a longer note is not.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.13"
+    }
+   ]
+  },
+  {
+   "g": 11,
+   "block": 0,
+   "domain": "D2",
+   "stem": "`change_plan` returns `{\"isError\": true, \"message\": \"Change not permitted\"}` for two unrelated situations: the account is inside a minimum-term commitment, and the platform's plan catalogue is temporarily unreachable. The agent retries both three times and then tells the customer their plan cannot be changed. What must the responses carry?",
+   "options": [
+    "A longer message describing the situation in full sentences, so the agent can read the reason and decide.",
+    "The catalogue's HTTP status code, so the agent can distinguish a client-side refusal from a server-side outage.",
+    "A retry-after value, so the agent waits the right interval before its next attempt in either case.",
+    "An error category, an `isRetryable` flag, and a description naming the commitment end date or the unavailable dependency."
+   ],
+   "correct": 3,
+   "whyRight": {
+    "text": "These are two different error classes wearing one message. A minimum-term commitment is a business-rule refusal that will hold on every retry and needs an alternative path; an unreachable catalogue is transient and worth retrying. A category, a retryable flag and a specific description are what let the agent tell them apart and act correctly on each.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Prose is better than a bare string and still leaves the agent inferring retryability from natural language. The corpus asks for an explicit category and flag precisely so the decision is not an interpretation.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+    },
+    {
+     "option": 1,
+     "text": "Status codes carry transport semantics rather than business semantics. A minimum-term commitment is not a malformed request, and mapping it onto a client-error code tells the agent the call was wrong rather than that the action is not permitted.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+    },
+    {
+     "option": 2,
+     "text": "A retry-after value assumes both cases are worth retrying. It would have the agent wait politely and then fail again on the commitment case, which no interval resolves.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+    }
+   ]
+  },
+  {
+   "g": 12,
+   "block": 0,
+   "domain": "D5",
+   "selectN": 2,
+   "stem": "Escalation volume is 29% against a 20% target, and a review finds the queue full of routine plan changes while three genuine policy gaps stayed with the agent for eleven turns. Escalation currently fires on a sentiment score and on the agent's self-reported confidence. Select TWO triggers that should replace them.",
+   "options": [
+    "The customer explicitly asks for a human.",
+    "The request needs an action outside the agent's permitted range, or has no matching procedure.",
+    "The customer's message scores above a tuned frustration threshold on a second, better-calibrated classifier.",
+    "The conversation passes eight turns without a resolution event being recorded."
+   ],
+   "correct": [
+    0,
+    1
+   ],
+   "whyRight": {
+    "text": "Both correct triggers are structural facts about the request that can be checked rather than inferred. An explicit request for a human is an absolute rule — escalate immediately, no investigation first. An action outside the agent's authority, or a request with no matching procedure, is a case the agent cannot resolve however capable it is. Neither depends on reading the customer's mood or the model's self-assessment.",
+    "cite": "CCA-Prep_Domain-5_v2.md §5.8"
+   },
+   "whyWrong": [
+    {
+     "option": 2,
+     "text": "A better-calibrated frustration classifier measures the same thing more accurately, and the thing is the wrong signal. Mood does not correlate with case complexity in either direction — the three missed policy gaps carried no frustration to detect at any threshold.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.8"
+    },
+    {
+     "option": 3,
+     "text": "Turn count is a complexity proxy rather than a complexity measure. It escalates a chatty customer working through a simple change and leaves a policy gap visible on turn two sitting for seven more.",
+     "cite": "CCA-Prep_Domain-5_v2.md §5.8"
+    }
+   ]
+  },
+  {
+   "g": 13,
+   "block": 0,
+   "domain": "D1",
+   "stem": "A multi-charge dispute needs three assessments: fair-use coverage for roaming, the remaining instalment balance, and the termination fee calculation. None depends on the others' findings. The main agent currently spawns the first triage subagent, waits for it, spawns the second, and so on. Handling time on these disputes averages four minutes. What should change?",
+   "options": [
+    "Spawn them in order of expected duration, shortest first, so partial findings reach the customer sooner.",
+    "Spawn all three in a single response so they run concurrently, and assemble the assessments when they return.",
+    "Combine the three into one subagent holding all the assessment tools, removing two spawn round-trips.",
+    "Keep the sequence and pass each assessment to the next subagent, so later assessments have more context."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "Independent subtasks should be dispatched together. Several spawn calls issued in one coordinator response run concurrently, so the wait becomes the slowest assessment rather than the sum of all three. Nothing here creates an ordering constraint, so the current serialisation is pure latency.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.15"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "Reordering a sequence still takes the sum of its parts. It changes when the first finding appears without removing the serialisation, which is the whole of the cost.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.15"
+    },
+    {
+     "option": 2,
+     "text": "One subagent holding every assessment tool works through the three one after another inside itself and widens its tool surface, which degrades selection. The round-trips were never the dominant cost.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+    },
+    {
+     "option": 3,
+     "text": "Chaining manufactures a dependency the task does not have, keeps the total as the sum of the parts, and lets one assessment's framing colour the next. It also routes findings between subagents rather than through the coordinator.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.2"
+    }
+   ]
+  },
+  {
+   "g": 14,
+   "block": 0,
+   "domain": "D1",
+   "stem": "On a dispute needing all three assessments, the instalment-balance subagent fails because the finance platform is unreachable. The other two completed. The current handler abandons the dispute and escalates it with no findings attached. What should it do instead?",
+   "options": [
+    "Return the two completed assessments and mark the instalment balance as not assessed, naming the reason, so the agent can proceed on what is known or escalate with the gap stated.",
+    "Retry the whole dispute from the start once the finance platform recovers, so the assessment is complete or absent.",
+    "Return the two completed assessments and leave the instalment balance out, so the customer is not told about an internal outage.",
+    "Return all three sections with the instalment balance shown as zero, keeping the assessment's shape consistent."
+   ],
+   "correct": 0,
+   "whyRight": {
+    "text": "A failure in one branch should not discard two that succeeded, and it must not be hidden either. An explicit coverage annotation naming what was not assessed and why is graceful degradation: the agent gets the real findings plus an accurate statement of what is missing, and can decide whether that is enough to resolve or to escalate.",
+    "cite": "CCA-Prep_Domain-1_v2.md §1.10"
+   },
+   "whyWrong": [
+    {
+     "option": 1,
+     "text": "Re-running everything throws away two completed assessments to retry a third, and if the platform stays down the dispute produces nothing at all rather than the findings it already had.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.9"
+    },
+    {
+     "option": 2,
+     "text": "Omitting the gap presents partial coverage as complete. The agent proceeds believing the instalment balance was assessed and found unremarkable, which is the misreading a coverage annotation exists to prevent.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.10"
+    },
+    {
+     "option": 3,
+     "text": "A zero balance is a factual claim the system has no basis to make, and it is more damaging than an omission because it will be acted on. Structural consistency does not justify a fabricated value.",
+     "cite": "CCA-Prep_Domain-1_v2.md §1.10"
+    }
+   ]
+  },
+  {
+   "g": 15,
+   "block": 0,
+   "domain": "D2",
+   "stem": "The triage subagent needs to read the specific contract the main agent has identified. It currently holds `lookup_account`, described as 'searches accounts by any field and returns matching records'. Review finds it has retrieved neighbouring accounts on a shared address and, once, a record matching only a partial surname. How should the tool be scoped?",
+   "options": [
+    "Keep `lookup_account` and add a prompt instruction listing the search fields the subagent must not use.",
+    "Replace it with a `read_contract_by_id` tool that accepts only the account identifier the main agent passes and refuses anything else.",
+    "Keep `lookup_account` but require the main agent to review each result before the subagent acts on it.",
+    "Keep `lookup_account` and have the subagent discard any record whose account identifier does not match the one it was given."
+   ],
+   "correct": 1,
+   "whyRight": {
+    "text": "A tool that searches accounts by any field grants the subagent the whole customer base when its job is to read one identified contract. Least privilege says the interface should express the narrower capability: accepting only the identifier makes the neighbouring-account retrievals impossible rather than discouraged, and makes the tool's purpose legible to the model choosing it.",
+    "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+   },
+   "whyWrong": [
+    {
+     "option": 0,
+     "text": "A prompt denylist is a probabilistic control over a capability that remains fully present, and it can only name the search patterns someone anticipated. The partial-surname match is exactly the case a list of known-bad patterns misses.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+    },
+    {
+     "option": 2,
+     "text": "Review after retrieval means the neighbouring account has already been read before anyone objects. It also puts the main agent in the loop on every subagent call, which removes the point of delegating.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+    },
+    {
+     "option": 3,
+     "text": "Discarding the wrong record after it has been fetched is filtering applied one step too late — the data has already crossed into the subagent's context. It is the detection answer to a question about access.",
+     "cite": "CCA-Prep_Domain-2_v2.md §2.5"
+    }
+   ]
+  }
+ ]
+}

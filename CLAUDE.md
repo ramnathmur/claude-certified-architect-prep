@@ -1,95 +1,137 @@
-# Project: Claude Certified Architect Prep
+# Project: Claude Certification Prep
 
-**Owner:** Ram  
-**Created:** 2026-06-04  
-**Status:** Phase 2 — Training Course Active
+**Owner:** Ram
+**Created:** 2026-06-04 · **Restructured:** 2026-08-19 into one folder per exam
+**Scope:** all four Anthropic Claude certifications
 
----
-
-## Purpose
-
-Prepare Ram to pass the **Claude Certified Architect** exam through a structured, AI-first learning experience — not passive study. Every session should deepen understanding of Claude's architecture, capabilities, and design principles at the level required to architect production-grade Claude-powered systems.
+Global rules live in `~/.claude/CLAUDE.md`. This file covers what applies across every exam folder.
+Each folder has its own `CLAUDE.md` with rules specific to that exam — read both.
 
 ---
 
-## Project Phases
+## Structure
 
-### Phase 1 — Acquire Prep Material ⬜
-- Map all official and community exam preparation resources
-- Download or link: official exam guide, topic domains, sample questions, Anthropic documentation
-- Identify any practice environments or sandbox resources
-- Produce a consolidated `PREP-MATERIAL-INDEX.md` cataloguing everything by domain
+One folder per exam. Each is self-contained: its own exam facts, roadmap, material index, corpus and
+mock-exam engine. Nothing at this root carries exam content.
 
-### Phase 2 — Build the Training Course ⬜
-- Design a full AI-first learning curriculum using Ram's learning methodology (see below)
-- One module per exam domain
-- Produce `CURRICULUM.md` with phased module plan, learning objectives, assessments
-- Build module content as interactive sessions, not lecture dumps
+| Folder | Exam | Status |
+|---|---|---|
+| `CCAR-F - Claude Certified Architect Foundations/` | Architect – Foundations | ✅ Passed 2026-08-18, 851/720. Renewal due 2027-08-18 |
+| `CCAR-P - Claude Certified Architect Professional/` | Architect – Professional | Parallel track — kept warm |
+| `CCAO-F - Claude Certified Associate Foundations/` | Associate – Foundations | Deferred |
+| `CCDV-F - Claude Certified Developer Foundations/` | Developer – Foundations | ⭐ **ACTIVE — next exam.** Guide v1.0 filed, Phase 0 closed, in Phase 1 |
 
-### Phase 3 — Practice + Assessment ⬜
-- Work through every domain module with active recall, not passive reading
-- Track gaps and misconceptions in `GAPS.md`
-- Run mock exam questions under timed conditions
-- Iterate until exam-ready
+**CCDV-F is the active exam.** If Ram says "the exam" or "my prep" without naming one, he means
+CCDV-F. CCAR-P runs alongside it as a warm parallel track — its Integration and Responsible-AI lessons
+feed CCDV-F and are front-loaded for that reason.
 
----
+**CCDV-F holds its official exam guide** (v1.0, July 2026) and its `EXAM-FACTS_v1.md` is fully
+VERIFIED — 8 domains, 25 skills, published weights. **CCAR-P and CCAO-F do not**, so their weightings
+remain UNVERIFIED and no practice question may be generated from them.
 
-## AI-First Learning Methodology
+**Work inside one exam folder at a time.** A question about standing, weightings, or next steps is
+always a question about a specific exam, and the answer lives in that folder. If a request does not
+name an exam, ask which one before reading anything.
 
-Ram learns by **doing, not reading**. Apply these principles to every session:
+Root holds `README.md`, this file, `index.html` (the hub), deployment config, and `sop/`.
 
-| Principle | How to apply |
-|---|---|
-| Why before How | Explain the reasoning behind every Claude design decision before showing how to use it |
-| Big picture first | Orient the domain, then zoom in. Never start mid-detail |
-| Predict before run | Ask Ram to predict outcomes, API responses, or model behaviors before showing the answer |
-| Pattern naming | Name reusable patterns ("context window management", "tool-use delegation", "multi-agent handoff") so Ram can apply them in new situations |
-| Real-world anchors | Connect concepts to Ram's existing work: agents, agentic workflows, Claude Code, the AI-first blueprint |
-| Active recall | End each module with a 5-question quiz — no hints. Score it. Surface gaps immediately |
-| Spaced repetition | Re-surface prior module concepts briefly at the start of each new module |
+## `sop/` — repeatable procedures
 
----
+`sop/SOP_Academy-Course-Extraction_v1.md` — how to pull an Anthropic Partner Academy prep path into
+local text. **Read it before any Academy course capture; do not improvise.** Every step exists because
+a plausible alternative was tried and failed, and §7 lists the dead ends so they are not retried.
+Established on the CCDV-F path 2026-08-19 (4 modules, 83 screens, ~381k chars). The extractor script
+is `sop/extract-module.js`.
 
-## Exam Domain Map
-
-| # | Domain | Weight | Status |
-|---|---|---|---|
-| 1 | Agentic Architecture & Orchestration | 27% | ⬜ |
-| 2 | Tool Design & MCP Integration | 18% | ⬜ |
-| 3 | Claude Code Configuration & Workflows | 20% | ⬜ |
-| 4 | Prompt Engineering & Structured Output | 20% | ⬜ |
-| 5 | Context Management & Reliability | 15% | ⬜ |
+Applies to CCAR-P and CCAO-F when their turn comes.
 
 ---
 
-## File Conventions
+## Rules that apply to every exam folder
 
-| File | Purpose |
-|---|---|
-| `CLAUDE.md` | This file — project brief and methodology |
-| `ROADMAP.md` | Phased checklist with status indicators |
-| `PREP-MATERIAL-INDEX.md` | Full catalogue of exam prep resources by domain |
-| `CURRICULUM.md` | AI-first training course plan with modules and objectives |
-| `GAPS.md` | Running log of misconceptions and weak areas |
-| `modules/` | One `.md` per exam domain — lesson content, examples, quizzes |
-| `practice/` | Mock exam questions, timed attempts, results |
+These are the four things that produced a first-attempt pass on CCAR-F. They are not stylistic.
+
+### 1. One source of truth for standing
+
+`<exam folder>/prep with quiz/EXAM-LOG.md`. No other file carries scores. If one starts to, delete it.
+
+The CCAR-F project lost a month to a stale `academy/PROGRESS.md` reporting 45/60 and NO-GO long after
+the real figure was 57/60, and it produced a materially wrong artifact before anyone noticed.
+
+### 2. The verification rule
+
+Each folder's `EXAM-FACTS_v1.md` has two tables.
+
+- **VERIFIED** requires an Anthropic-controlled source — anthropic.com, claude.com,
+  anthropic-partners.skilljar.com, or pearsonvue.com/anthropic.
+- **UNVERIFIED** is everything else, including every community certification guide.
+- **Never generate a practice question, a domain quota, or a study plan from the UNVERIFIED table.**
+
+Precedent: on CCAR-F, a community guide stated the exam draws 8 scenarios. The real number is 6. That
+error reached generated practice material.
+
+### 3. Corpus discipline
+
+- Domain files are the **only** permitted source for generated questions. Never generate from notes,
+  from the web, or from memory.
+- Each domain file carries: core-facts table · decision tables · exam scenarios with ✅ correct and ❌
+  wrong options · an explicit "Misconception" block per section.
+- Write decision rules, not explanatory prose.
+- Section numbering is permanent. Misses are logged by section, so renumbering breaks the miss history.
+
+### 4. Exam-log conventions
+
+- **Attempt chronology, never file numbering.** The CCAR-F log was corrupted twice by assuming paper
+  number equalled attempt order.
+- Confirmed weakness = the same domain unambiguously weakest on two consecutive papers *by attempt
+  date*. A tie fails the bar.
+- Insights Round every 3 scored papers.
+- Multiple-response items are recorded separately and treated as all-or-nothing until proven otherwise.
+  Eight CCAR-F misses were majority-right answers scored zero.
 
 ---
 
-## Operating Rules for This Project
+## Habits that carry across all four exams
 
-- **Never summarise when you can quiz.** At the end of any explanation, ask a question rather than summarising.
-- **Challenge assumptions.** If Ram states something incorrect about Claude's behaviour, correct it immediately with the right mental model.
-- **Cite Anthropic docs.** Every factual claim about Claude's capabilities should be grounded in official documentation — not hallucinated.
-- **No passive dumps.** Don't paste documentation. Synthesise, explain, connect, test.
-- **Flag knowledge gaps honestly.** If something is uncertain or may have changed since training, say so and point to where to verify.
+From all 64 documented CCAR-F misses:
+
+1. Reaching for a workaround beside a mechanism instead of a narrow adjustment to it.
+2. Losing multiple-response items by being majority-right.
+3. Choosing an option because of how it *sounds* — safer, more architected, more thorough — rather than
+   because it matches the requirement the scenario actually states.
+
+Each folder adds its own fourth habit where one applies. CCAO-F tracks `ALTITUDE` misses (answering
+above the tier the exam tests); CCDV-F splits every miss into `RECALL` versus `CONCEPT` because it is
+sat closed book.
 
 ---
 
-## Reference Resources
+## Output folders
 
-- Anthropic Documentation: https://docs.anthropic.com
-- Claude API Reference: https://docs.anthropic.com/en/api
-- Model Spec: https://docs.anthropic.com/en/anthropic-model-spec (verify URL)
-- AI-First Learning Playbook: `C:\Claude Cowork\Playbook for AI-first learning applications\`
+Deliverables go to `Outputs/` **inside the relevant exam folder**. Never to
+`C:\Claude Cowork\CLAUDE OUTPUTS\` — this is project-scoped work, and never to the repo root.
+
+## File authoring
+
+Use Write/Edit to author file content. Bash is for executing commands (git, npm, python, mv), not
+authoring files. Exception: single-line appends to existing config.
+
+## HTML artifacts
+
+Paged with sticky top nav and prev/next — never one long scroll. Verify in a browser before calling any
+artifact done.
+
+## Teaching and explainer prose
+
+The hard bans in `~/.claude/CLAUDE.md` apply to everything written here: no manufactured strawman to
+negate, no diagnose-negate-reveal tricolon for plain facts, no isolated dramatic one-liners as
+punctuation. A checkable fact gets one flat sentence.
+
+---
+
+## Reference
+
+- Anthropic Partner Academy: https://anthropic-partners.skilljar.com
+- Pearson VUE Anthropic program: https://www.pearsonvue.com/us/en/anthropic.html
+- Claude platform docs: https://platform.claude.com/docs · Claude Code docs: https://code.claude.com/docs
 - Ram's About Me: `C:\Claude Cowork\About Me\about-me.md`

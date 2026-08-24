@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Domain 5 — Context Management & Reliability: Cheatsheet</title>
+<meta name="description" content="Exam reference for context preservation, error propagation, codebase exploration, and confidence calibration patterns."/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --ink: #1b2027;
+  --ink2: #3c434c;
+  --ink3: #6b7480;
+  --surface: #f2f4f6;
+  --surface2: #e7eaed;
+  --surface3: #dbdfe3;
+  --accent: #33566f;
+  --accent-light: #d8e3ea;
+  --accent-dark: #1f384a;
+  --teal: #2a7a6e;
+  --teal-light: #d4f0ec;
+  --coral: #c85a3a;
+  --coral-light: #fae8e2;
+  --purple: #5a3a8a;
+  --purple-light: #ece6f5;
+  --green: #3a7a4a;
+  --green-light: #e2f0e6;
+  --blue: #2a5a8a;
+  --blue-light: #ddeaf5;
+  --gray-light: #f0ece6;
+  --border: #cbd1d8;
+  --shadow: 0 1px 2px rgba(27,32,39,0.06);
+  --shadow-lg: 0 4px 16px rgba(27,32,39,0.10);
+  --radius: 6px;
+  --radius-sm: 4px;
+  --display: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --sans: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'JetBrains Mono', Consolas, 'Courier New', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.6;
+}
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+.skip-link {
+  position: absolute; left: -9999px; top: 0; z-index: 200;
+  background: var(--ink); color: var(--surface); padding: 8px 16px; border-radius: 0 0 6px 0;
+}
+.skip-link:focus { left: 0; }
+.doc-header {
+  padding: 44px 40px 32px;
+  border-bottom: 1px solid var(--border);
+}
+.doc-header-inner { max-width: 1040px; margin: 0 auto; }
+.doc-eyebrow {
+  font-family: var(--mono);
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 14px;
+}
+.doc-header h1 {
+  font-family: var(--display);
+  font-size: clamp(24px, 3.2vw, 34px);
+  font-weight: 600; line-height: 1.2;
+  color: var(--ink);
+  margin-bottom: 12px;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.doc-header h1 em { font-style: normal; color: var(--accent-dark); }
+.doc-sub {
+  font-size: 15px; font-weight: 400;
+  color: var(--ink2);
+  max-width: 680px; line-height: 1.55;
+  margin-bottom: 16px;
+}
+.doc-meta {
+  display: flex; gap: 18px; flex-wrap: wrap;
+  font-family: var(--mono);
+  font-size: 11px; color: var(--ink3);
+}
+.doc-meta span::before { content: '·'; margin-right: 18px; color: var(--border); }
+.doc-meta span:first-child::before { content: ''; margin: 0; }
+.nav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(242,244,246,0.97);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 40px;
+}
+.nav-inner {
+  max-width: 1040px; margin: 0 auto;
+  display: flex; gap: 0; overflow-x: auto; align-items: center;
+}
+.nav-link {
+  font-family: var(--mono);
+  font-size: 12px; font-weight: 500;
+  color: var(--ink3); text-decoration: none;
+  padding: 13px 16px; white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.nav-link:hover { color: var(--ink); border-color: var(--accent); }
+.nav-link.active { color: var(--ink); border-color: var(--accent); }
+.container { max-width: 1040px; margin: 0 auto; padding: 0 40px; }
+.section { padding: 48px 0; }
+.section + .section { border-top: 1px solid var(--border); }
+.section-label {
+  font-family: var(--mono);
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 10px;
+}
+.section-title {
+  font-family: var(--display);
+  font-size: clamp(20px, 2.6vw, 26px);
+  font-weight: 600; line-height: 1.25;
+  color: var(--ink); margin-bottom: 12px;
+  letter-spacing: -0.01em;
+}
+.section-intro {
+  font-size: 14.5px; font-weight: 400;
+  color: var(--ink2); max-width: 680px;
+  margin-bottom: 28px; line-height: 1.6;
+}
+[id] { scroll-margin-top: 56px; }
+.prose { max-width: 680px; }
+.prose p { margin-bottom: 14px; color: var(--ink2); font-size: 14.5px; }
+.prose p strong { color: var(--ink); font-weight: 600; }
+.prose h3 {
+  font-family: var(--display); font-size: 16px; font-weight: 600;
+  color: var(--ink); margin: 26px 0 10px;
+}
+.prose ul, .prose ol { padding-left: 20px; margin-bottom: 14px; color: var(--ink2); font-size: 14.5px; }
+.prose li { margin-bottom: 6px; }
+.prose a { color: var(--accent-dark); text-decoration-color: var(--accent); text-underline-offset: 3px; }
+.note-box {
+  margin: 18px 0; padding: 12px 14px;
+  background: var(--surface3);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: 13px; color: var(--ink2);
+  max-width: 680px;
+}
+.note-box strong { font-weight: 600; color: var(--ink); }
+.table-wrap { overflow-x: auto; margin: 22px 0; }
+.data-table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+  border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
+}
+.data-table caption {
+  caption-side: bottom; text-align: left;
+  font-size: 12px; color: var(--ink3); padding: 8px 4px;
+}
+.data-table thead th {
+  font-family: var(--mono);
+  font-size: 10.5px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ink3); text-align: left;
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  background: var(--surface3);
+}
+.data-table td { padding: 9px 14px; border-bottom: 1px solid var(--border); color: var(--ink2); vertical-align: top; }
+.data-table tbody tr:nth-child(even) { background: var(--surface2); }
+.data-table tbody tr:last-child td { border-bottom: none; }
+code {
+  font-family: var(--mono); font-size: 0.86em;
+  background: var(--surface2); border: 1px solid var(--border);
+  padding: 1px 5px; border-radius: 3px; color: var(--ink);
+}
+pre.code-block {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px 18px; margin: 20px 0;
+  overflow-x: auto; font-family: var(--mono);
+  font-size: 12.5px; line-height: 1.55; color: var(--ink2);
+}
+pre.code-block code { background: none; border: none; padding: 0; }
+.footer-strip {
+  background: var(--ink); color: rgba(242,244,246,0.55);
+  text-align: center; padding: 24px 40px; font-size: 12px; line-height: 1.5;
+  margin-top: 48px;
+}
+.footer-strip strong { color: rgba(242,244,246,0.85); }
+@media (max-width: 720px) {
+  .container, .doc-header { padding-left: 20px; padding-right: 20px; }
+  .nav { padding: 0 16px; }
+}
+@media print {
+  .nav, .skip-link { display: none; }
+  body { background: #fff; }
+}
+</style>
+</head>
+<body>
+
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="doc-header">
+  <div class="doc-header-inner">
+    <div class="doc-eyebrow">Exam Reference · Domain 5 · 15% Weight</div>
+    <h1>Context Management & Reliability</h1>
+    <p class="doc-sub">Master context preservation, escalation logic, error propagation, and confidence calibration. Structure beats summarisation. Explicit signals beat inferred ones.</p>
+    <div class="doc-meta">
+      <span>Content: Cheatsheet</span>
+      <span>Pass cut: 720/1000</span>
+      <span>Study type: Lookup reference</span>
+    </div>
+  </div>
+</header>
+
+<nav class="nav" aria-label="Sections">
+  <div class="nav-inner">
+    <a class="nav-link active" href="#context-preservation">Context</a>
+    <a class="nav-link" href="#escalation">Escalation</a>
+    <a class="nav-link" href="#error-propagation">Error Propagation</a>
+    <a class="nav-link" href="#codebase-exploration">Codebase Exploration</a>
+    <a class="nav-link" href="#calibration">Calibration</a>
+    <a class="nav-link" href="#provenance">Provenance</a>
+    <a class="nav-link" href="#mnemonics">Mnemonics</a>
+  </div>
+</nav>
+
+<main id="main">
+
+<section class="section" id="context-preservation">
+  <div class="container">
+    <div class="section-label">TS 5.1</div>
+    <h2 class="section-title">Context Preservation</h2>
+    <p class="section-intro">Summarisation is lossy compression that disproportionately destroys high-value tokens.</p>
+    <div class="prose">
+      <h3>What Summarisation Compresses Away First</h3>
+      <ul>
+        <li><strong>Numerical values:</strong> "$247.83 refund" → "a refund"</li>
+        <li><strong>Dates:</strong> "March 3rd" → "recently"</li>
+        <li><strong>Order/case IDs:</strong> "#8891" → omitted entirely</li>
+        <li><strong>Percentages / quantities:</strong> "32% increase" → "an increase"</li>
+        <li><strong>Customer-stated expectations:</strong> "by Friday" → vanished</li>
+      </ul>
+      <h3>The Fix: Persistent "Case Facts" Block</h3>
+      <p>Extract transactional facts into a structured block. Inject <strong>verbatim</strong> into every prompt. Summarisation never touches it.</p>
+      <h3>Lost in the Middle: Structural Attention Bias</h3>
+      <p>Transformer attention is empirically biased toward the <strong>beginning and end</strong> of long inputs. Information buried in the middle is measurably less likely to be retrieved correctly.</p>
+      <h3>Mitigation Strategies</h3>
+      <ul>
+        <li>Place key findings summaries at the <strong>beginning</strong></li>
+        <li>Use <strong>explicit section headers</strong> to aid navigation</li>
+        <li>Surface relevant slice of long tool results at the top, full payload below</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="escalation">
+  <div class="container">
+    <div class="section-label">TS 5.2</div>
+    <h2 class="section-title">Escalation and Ambiguity Resolution</h2>
+    <p class="section-intro">Three valid escalation triggers. Two superficially plausible triggers do not work.</p>
+    <div class="table-wrap">
+      <table class="data-table">
+        <caption>Valid escalation triggers</caption>
+        <thead>
+          <tr><th>Trigger</th><th>Required Action</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Customer <strong>explicitly</strong> requests a human</td><td>Escalate immediately. <strong>Do not attempt resolution first.</strong></td></tr>
+          <tr><td>Policy exception or gap (request outside documented policy)</td><td>Escalate — the agent cannot invent policy</td></tr>
+          <tr><td>Inability to make <strong>meaningful</strong> progress</td><td>Escalate after legitimate avenues tried</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note-box"><strong>Two unreliable triggers (wrong answers):</strong> Sentiment-based (customer is frustrated) and Self-reported model confidence.</p>
+    </div>
+    <div class="prose">
+      <h3>The Frustration Nuance (Heavily Tested)</h3>
+      <ul>
+        <li><strong>Straightforward issue + frustrated customer (no human request):</strong> Acknowledge frustration, <strong>offer resolution</strong>, do not escalate yet</li>
+        <li><strong>Customer reiterates preference for a human after you offer help:</strong> Now escalate</li>
+        <li><strong>Customer explicitly says "I want a human" up front:</strong> Escalate immediately</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="error-propagation">
+  <div class="container">
+    <div class="section-label">TS 5.3</div>
+    <h2 class="section-title">Error Propagation</h2>
+    <p class="section-intro">How a failure is reported matters as much as that it happened.</p>
+    <div class="prose">
+      <h3>Structured Error Context: Four Required Fields</h3>
+      <ol>
+        <li><strong>Failure type:</strong> transient / validation / business / permission</li>
+        <li><strong>What was attempted:</strong> Specific query, parameters, endpoint, request shape</li>
+        <li><strong>Partial results:</strong> Anything gathered before the failure</li>
+        <li><strong>Potential alternatives:</strong> Suggested retry, fallback path, narrower query</li>
+      </ol>
+      <h3>The Two Anti-Patterns</h3>
+      <ul>
+        <li><strong>Silent suppression:</strong> Return empty array on tool failure → Orchestrator believes no data exists. ZERO recovery path. Worst answer in any 5.3 question.</li>
+        <li><strong>Workflow termination:</strong> Kill the entire pipeline on a single tool failure → Throws away partial results from other subagents that succeeded</li>
+      </ul>
+      <h3>Access Failure vs Valid Empty Result (Exam Favourite)</h3>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr><th>Type</th><th>Meaning</th><th>Correct Response</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Access failure</strong></td><td>Tool could not reach the data source</td><td><strong>Consider retry</strong> or alternative path</td></tr>
+          <tr><td><strong>Valid empty result</strong></td><td>Tool reached source, found no matches</td><td><strong>No retry.</strong> The empty result <em>is the answer.</em></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="codebase-exploration">
+  <div class="container">
+    <div class="section-label">TS 5.4</div>
+    <h2 class="section-title">Codebase Exploration</h2>
+    <p class="section-intro">Extended agentic sessions degrade when verbose discovery output dilutes early findings.</p>
+    <div class="prose">
+      <h3>Two Symptoms of Context Degradation</h3>
+      <ol>
+        <li>Model references <strong>"typical patterns"</strong> instead of session-specific facts</li>
+        <li>Context fills with <strong>verbose discovery output</strong> and earlier conclusions get buried</li>
+      </ol>
+      <h3>Four Mitigation Strategies</h3>
+      <ul>
+        <li><strong>Scratchpad files:</strong> Write key findings to a file, reference for subsequent questions</li>
+        <li><strong>Subagent delegation:</strong> Spawn a subagent for specific investigation; coordinator receives distilled result only</li>
+        <li><strong>Summary injection:</strong> Summarise findings from one phase before spawning next-phase's subagents</li>
+        <li><strong><code>/compact</code>:</strong> Reduce context usage when verbose output fills the window</li>
+      </ul>
+      <h3>Crash Recovery: Manifest Pattern</h3>
+      <p>Each agent exports structured state to a known file location (a <strong>manifest</strong>) at meaningful checkpoints. On resume, the coordinator loads the manifest and injects it into the resumed agent's prompts.</p>
+      <p><strong>The manifest is the source of truth, not the conversation history.</strong> Robust to process crashes, context window exhaustion, operator interruptions, and long-running jobs spanning multiple sessions.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="calibration">
+  <div class="container">
+    <div class="section-label">TS 5.5</div>
+    <h2 class="section-title">Human Review and Confidence Calibration</h2>
+    <p class="section-intro">Calibration requires ground truth, not intuition. Aggregate metrics hide stratum-level failures.</p>
+    <div class="prose">
+      <h3>The Aggregate Metrics Trap (Exam Favourite)</h3>
+      <p>"Our extraction system achieves 97% accuracy. We can automate."</p>
+      <p><strong>The trap:</strong> 97% overall accuracy can hide a 40% error rate on a specific document type. If that type is high-value, your automation is dangerous.</p>
+      <p><strong>Discipline:</strong> Always validate accuracy by document type <strong>and</strong> by field segment before automating.</p>
+      <h3>Stratified Random Sampling: Ongoing Audit</h3>
+      <p>Even after calibration and deployment, continue sampling <strong>high-confidence</strong> extractions for ongoing verification. Novel error patterns emerge over time; failures slip through silently if not sampled.</p>
+      <h3>Field-Level Confidence Calibration: The Full Pattern</h3>
+      <ol>
+        <li><strong>Per-field confidence</strong> (not per-document) — Fields within a document vary wildly</li>
+        <li><strong>Calibrate thresholds on a labelled validation set</strong> — Ground truth. Raw "0.85" might mean 70% correct or 95% correct depending on context</li>
+        <li><strong>Route low-confidence fields to human review</strong> — The rest auto-process</li>
+        <li><strong>Prioritise scarce reviewer capacity on highest-uncertainty items</strong></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="provenance">
+  <div class="container">
+    <div class="section-label">TS 5.6</div>
+    <h2 class="section-title">Information Provenance</h2>
+    <p class="section-intro">Attribution must travel with every claim as structured data. Conflicts are surfaced, not resolved.</p>
+    <div class="prose">
+      <h3>Structured Claim-Source Mappings: Five Required Fields</h3>
+      <ul>
+        <li><strong>Claim:</strong> The assertion itself</li>
+        <li><strong>Source URL:</strong> Direct link</li>
+        <li><strong>Document name:</strong> Human-readable identifier</li>
+        <li><strong>Relevant excerpt:</strong> The actual passage supporting the claim</li>
+        <li><strong>Publication date:</strong> Temporal context</li>
+      </ul>
+      <p>This bundle travels with the claim through every downstream agent. Without this structure, attribution dies the moment any agent summarises.</p>
+      <h3>Conflict Handling</h3>
+      <p><strong>Wrong:</strong> Arbitrarily pick one. Average the values. Pick the more recent silently.</p>
+      <p><strong>Right: Annotate with both values and full source attribution. Let the consumer decide.</strong></p>
+      <h3>Temporal Awareness</h3>
+      <p>Many apparent contradictions are actually different reporting periods. A 28% figure from 2022 and a 32% figure from 2024 show change over time, not conflict.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="mnemonics">
+  <div class="container">
+    <div class="section-label">Quick Reference</div>
+    <h2 class="section-title">One-Line Mnemonics</h2>
+    <div class="prose">
+      <ul>
+        <li><strong>Summarisation compresses numbers, dates, IDs first.</strong> Extract into a persistent block that summarisation never touches.</li>
+        <li><strong>Lost in the middle is structural.</strong> Put summaries at the beginning, use section headers.</li>
+        <li><strong>Three valid escalation triggers:</strong> explicit human request, policy gap, no meaningful progress.</li>
+        <li><strong>Two unreliable triggers:</strong> sentiment, self-reported confidence.</li>
+        <li><strong>Explicit "I want a human" = escalate now, do not investigate.</strong></li>
+        <li><strong>Frustration alone = offer help first; escalate if reiterated.</strong></li>
+        <li><strong>Structured error = type + attempt + partial results + alternatives.</strong></li>
+        <li><strong>Silent suppression is the worst pattern.</strong> Empty results with status=ok = no recovery path.</li>
+        <li><strong>Access failure ≠ valid empty.</strong> Retry only the former.</li>
+        <li><strong>Long sessions degrade: scratchpad, subagents, summary injection, <code>/compact</code>.</strong></li>
+        <li><strong>Manifest files are the source of truth across crashes.</strong> Not conversation history.</li>
+        <li><strong>97% accuracy can hide 40% on a stratum.</strong> Validate by document type AND field segment.</li>
+        <li><strong>Per-field confidence, calibrated on ground truth.</strong> Raw 0.9 means nothing without it.</li>
+        <li><strong>Every finding carries: claim + URL + doc + excerpt + date.</strong> Attribution dies otherwise.</li>
+        <li><strong>Surface conflicts with both values and attribution.</strong> Never average. Never silently pick.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer-strip">
+  <strong>Domain 5: Context Management & Reliability</strong><br/>
+  Exam weight 15% · Claude Certified Architect Prep · Study reference
+</footer>
+
+<script>
+(function () {
+  var links = document.querySelectorAll('.nav-link');
+  if (!links.length) return;
+  var map = {};
+  links.forEach(function (l) { map[l.getAttribute('href').slice(1)] = l; });
+  var obs = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) {
+        links.forEach(function (l) { l.classList.remove('active'); });
+        var l = map[e.target.id]; if (l) l.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -60% 0px' });
+  document.querySelectorAll('section[id]').forEach(function (s) { obs.observe(s); });
+})();
+</script>
+</body>
+</html>

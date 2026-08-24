@@ -1,0 +1,533 @@
+{
+  "label": "Customer Support Resolution Agent",
+  "narrative": "You run a customer-support resolution agent for a household energy retailer. It reaches the billing and metering back ends through MCP tools (<code>get_customer</code>, <code>lookup_meter_reading</code>, <code>issue_credit</code>, <code>switch_tariff</code>, <code>escalate_to_human</code>) and is measured on first-contact resolution against an 80% target. Across this block the situation moves from raw identification and loop mechanics, through tool and policy design, to the judgement calls about when the agent should stop and hand over.",
+  "questions": [
+    {
+      "g": 1,
+      "block": 0,
+      "domain": "D1",
+      "stem": "Policy requires `get_customer` to return a verified account before any credit is applied. Production logs show the agent sometimes calls `issue_credit` using only the account number a caller reads out over the phone, and on eleven occasions this quarter the credit landed on a different customer with the same surname. What change fixes this?",
+      "options": [
+        "Add four to six few-shot examples showing verification happening before every credit.",
+        "Add a programmatic precondition that blocks `issue_credit` until `get_customer` has returned a verified account ID.",
+        "Strengthen the system prompt to state that identity verification is mandatory before any credit.",
+        "Require the caller to read back their supply address before the agent may apply a credit."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "When correct sequencing is mandatory and errors have financial consequences, enforce it programmatically rather than through the prompt. A precondition that blocks the second tool until the first has returned a verified identifier gives a deterministic guarantee that no prompt-based approach can match.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.14"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Few-shot examples raise compliance probabilistically. Eleven wrong credits in a quarter is the residual failure rate of a probabilistic control, and examples only shrink it.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.14"
+        },
+        {
+          "option": 2,
+          "text": "The same objection, one step weaker. Prompt instructions are the mechanism that is already failing; restating them more firmly does not make compliance deterministic.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.14"
+        },
+        {
+          "option": 3,
+          "text": "This adds a step for the caller without binding the agent. Nothing stops the agent from skipping the read-back exactly as it skips `get_customer` today.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.14"
+        }
+      ]
+    },
+    {
+      "g": 2,
+      "block": 0,
+      "domain": "D2",
+      "stem": "Two tools sit side by side: `lookup_meter_reading` (\"Gets meter data\") and `lookup_billing_period` (\"Gets billing data\"). Both accept an account number and a date range. Callers asking why a bill rose are routed to the billing tool, which returns totals but no consumption figures, so the agent cannot explain the increase. What is the first fix?",
+      "options": [
+        "Add a classifier that inspects the caller's phrasing and pre-selects the tool before the call.",
+        "Merge the two into one `lookup_usage` tool that returns billing totals and meter data together.",
+        "Add few-shot examples covering the ten most common ways callers describe a high bill.",
+        "Expand both descriptions with what each returns, when to prefer it, and when not to."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "Descriptions are the primary input Claude uses to select a tool, and \"Gets meter data\" versus \"Gets billing data\" gives the model almost nothing to discriminate on when both take the same inputs. Check descriptions first, before adding classifiers or examples.",
+        "cite": "CCA-Prep_Domain-2_v2.md §2.2"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "A pre-routing classifier is infrastructure layered over the real defect. It bypasses the model's language understanding while the uninformative descriptions stay exactly as they are.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.2"
+        },
+        {
+          "option": 1,
+          "text": "Consolidation loses the semantic precision that lets the model target the right back end, and buries the same routing decision inside the tool where the model cannot reason about it.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.2"
+        },
+        {
+          "option": 2,
+          "text": "Examples help at genuinely ambiguous margins. Here the descriptions carry no distinguishing information at all, so examples paper over a gap that one edit would close.",
+          "cite": "CCA-Prep_Domain-4_v2.md §4.1"
+        }
+      ]
+    },
+    {
+      "g": 3,
+      "block": 0,
+      "domain": "D1",
+      "stem": "A caller asks for a tariff change to be backdated to the date they first enquired, three weeks before the switch actually completed. Policy covers backdating for retailer error and for cooling-off cancellations, and is silent on enquiry dates. The agent holds every account fact it needs. What should it do?",
+      "options": [
+        "Escalate — the request needs a policy interpretation the agent is not entitled to make.",
+        "Apply the retailer-error provision, since the delay arose on the retailer's side of the process.",
+        "Decline, explaining that backdating to an enquiry date is not something the retailer offers.",
+        "Backdate to the start of the cooling-off window, as the nearest applicable provision."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "A policy gap — where the agent cannot determine the correct action within defined policy — is a named escalation trigger. The corpus's canonical form is competitor price matching where policy covers only own-site adjustments: the agent must not invent policy in either direction.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.12"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "Nothing establishes retailer error; the switch may simply have taken its normal course. Stretching an existing provision to cover an uncovered case is inventing policy.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.12"
+        },
+        {
+          "option": 2,
+          "text": "Refusing on the grounds that policy does not mention it asserts a rule the policy does not state. Silence is not prohibition.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.12"
+        },
+        {
+          "option": 3,
+          "text": "\"Nearest applicable provision\" is the agent legislating. Choosing which unrelated rule to stretch is precisely the judgement that belongs to a human.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.8"
+        }
+      ]
+    },
+    {
+      "g": 4,
+      "block": 0,
+      "domain": "D5",
+      "stem": "`get_customer` returns three accounts matching the name and postcode the caller gave: one closed last year and two active at neighbouring addresses on the same street. The caller is still on the line and has not volunteered any further identifier. Two of the three share a surname with the caller. What should the agent do next?",
+      "options": [
+        "Select the more recently active of the two open accounts and read the balance back for confirmation.",
+        "Escalate to a human, since the lookup returned an ambiguity the agent cannot resolve itself.",
+        "Ask the caller for a further identifier — an email address, or the number on their last bill.",
+        "Select the account whose address most closely matches the postcode the caller supplied."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "When a lookup returns several matching records the agent must request additional identifiers rather than picking by heuristic. The ambiguity is resolvable by asking, and the caller is right there to answer.",
+        "cite": "CCA-Prep_Domain-5_v2.md §5.8"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Recency is a heuristic, and heuristic selection among multiple matches is how the wrong customer gets actioned. Reading a balance back also discloses one customer's data to another.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.8"
+        },
+        {
+          "option": 1,
+          "text": "Escalation is unnecessary here. A resolvable ambiguity handed to a human wastes queue capacity on a question the agent can simply ask.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.8"
+        },
+        {
+          "option": 3,
+          "text": "All three matched on postcode already, which is what produced the ambiguity. Ranking by closeness of match is the same arbitrary selection wearing a more precise-sounding label.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.8"
+        }
+      ]
+    },
+    {
+      "g": 5,
+      "block": 0,
+      "domain": "D1",
+      "selectN": 2,
+      "stem": "Cases currently reach the human queue as an account number plus a one-line free-text note. Agents there report re-asking callers for facts the bot already collected, and average handling time after transfer has risen sharply this quarter. The queue currently receives about ninety transfers a week. Which two changes address the cause? Select two.",
+      "options": [
+        "Compile a self-contained summary carrying the account ID, root cause, amount and recommended action.",
+        "Include the actions already taken and the specific reason the case was escalated.",
+        "Give the human agent read access to the full conversation transcript instead.",
+        "Escalate earlier, so that less context has accumulated by the time of the transfer.",
+        "Have the human agent re-run the bot's tools to rebuild the account picture themselves."
+      ],
+      "correct": [
+        0,
+        1
+      ],
+      "whyRight": {
+        "text": "Escalating mid-process means compiling a structured handoff summary — the human has no transcript access, so the summary is everything they see. The corpus names the core fields: customer ID, root cause, amount and recommended action, plus actions already taken and the escalation reason.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.13"
+      },
+      "whyWrong": [
+        {
+          "option": 2,
+          "text": "Human agents lack transcript access by design, and a raw transcript would force them to re-read the whole conversation to extract what a summary states directly.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.13"
+        },
+        {
+          "option": 3,
+          "text": "Escalating sooner does not fix information loss — it just loses less information while also degrading the autonomous resolution rate the agent is measured on.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.13"
+        },
+        {
+          "option": 4,
+          "text": "Re-running the tools duplicates work already done and is slower than reading a summary. It is the symptom being described, proposed as the cure.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.13"
+        }
+      ]
+    },
+    {
+      "g": 6,
+      "block": 0,
+      "domain": "D2",
+      "stem": "A `preview_account_closure` tool returns impact details plus a confirmation token, and `execute_account_closure` requires that token as a parameter. An engineer proposes generating the token client-side from the account number and a timestamp, so the preview call can be skipped when the agent already holds both. Why does that break the guarantee?",
+      "options": [
+        "The token would expire before slower callers finish confirming, producing spurious `isError` responses.",
+        "A derivable token can be produced without ever calling preview, so nothing enforces the ordering.",
+        "Client-side generation puts the token into application logs, which is a disclosure risk.",
+        "The execute tool would then need the account number twice, inside the token and as a parameter."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "The two-tool pattern works because the token exists only as a product of the preview call — that is what makes executing without a preview architecturally impossible rather than merely discouraged. A token the caller can derive independently reintroduces exactly the bypass the design removed.",
+        "cite": "CCA-Prep_Domain-2_v2.md §2.4"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Expiry is a tuning concern that applies to any token scheme, including a correct one. It is not what distinguishes a server-issued token from a derivable one.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.4"
+        },
+        {
+          "option": 2,
+          "text": "A real hygiene issue, but orthogonal. A token that leaked into logs would still enforce the ordering; a derivable one does not, even if it never leaks.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.4"
+        },
+        {
+          "option": 3,
+          "text": "Redundant parameters are an ergonomic wrinkle, not a failure of the guarantee. The design would be equally broken with the account number passed once.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.4"
+        }
+      ]
+    },
+    {
+      "g": 7,
+      "block": 0,
+      "domain": "D1",
+      "stem": "One caller raises three things: a direct debit taken twice last month, a tariff change scheduled for April that never applied, and a request to close a second property's account. None of the three depends on the others. The agent works through them strictly in turn and the call runs long. Which approach should it take?",
+      "options": [
+        "Resolve the duplicate debit first and offer a callback for the two remaining items.",
+        "Combine all three into a single subagent request so one specialist sees the whole picture.",
+        "Chain the three so that each subagent receives the preceding one's findings as input.",
+        "Decompose into three issues and investigate them in parallel with shared account context."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "Multiple `Task` calls emitted in one coordinator response run in parallel, and a multi-issue request with independent parts is the corpus's named use case. The shared account context is passed explicitly into each subagent prompt, since subagents inherit nothing automatically.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.15"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Deferring two of three issues lowers first-contact resolution, which is the metric the agent exists to move, and the call length problem is caused by serialisation rather than by scope.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.15"
+        },
+        {
+          "option": 1,
+          "text": "Collapsing three distinct investigations into one forfeits the focus decomposition provides, and reintroduces the attention dilution that splitting the work avoids.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.6"
+        },
+        {
+          "option": 2,
+          "text": "Chaining invents a dependency that does not exist. The tariff fault has no bearing on the duplicate debit, so sequencing only adds latency.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.15"
+        }
+      ]
+    },
+    {
+      "g": 8,
+      "block": 0,
+      "domain": "D2",
+      "stem": "`issue_credit` refuses a goodwill credit because the amount exceeds the £50 ceiling the agent's tier permits. The tool returns `{\"isError\": true, \"message\": \"Request failed\"}`. The agent retries four times over two minutes and then tells the caller the system is unavailable. How should the tool respond instead?",
+      "options": [
+        "`retriable: false` with a plain statement of the £50 tier ceiling that the agent can relay.",
+        "`isError: true` with `isRetryable: true`, so the agent can retry after a short backoff.",
+        "Success with an `applied: false` field, leaving the agent to inspect the outcome itself.",
+        "A generic `isError` failure carrying a support reference number the caller can quote later."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "A ceiling being exceeded is a business-rule outcome, not a tool failure — the answer is that the action is disallowed. `retriable: false` tells the agent that re-invoking cannot change anything, and a customer-friendly explanation lets it communicate the limit without paraphrasing internal jargon.",
+        "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "Marking a policy ceiling retryable spends attempts on an outcome that cannot change, which is exactly the four wasted retries the stem describes.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+        },
+        {
+          "option": 2,
+          "text": "Reporting success with the refusal hidden in a field masks the outcome. The agent has to infer a denial from data shape instead of being told.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+        },
+        {
+          "option": 3,
+          "text": "A reference number tells the caller nothing actionable and still leaves the agent unable to distinguish a policy limit from an outage — which is what produced the false \"system unavailable\".",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.3"
+        }
+      ]
+    },
+    {
+      "g": 9,
+      "block": 0,
+      "domain": "D1",
+      "stem": "The orchestrator returns to the caller as soon as a response contains any text block. On requests needing two lookups, callers get the agent's narration of what it intends to do, and the second tool never runs. `stop_reason` on those responses reads `tool_use`. What is the defect?",
+      "options": [
+        "The agent should be prompted not to narrate its intentions before calling a tool.",
+        "Text and `tool_use` blocks should never share a response; the request needs adjusting.",
+        "Termination is being decided on content rather than on `stop_reason`, where `tool_use` means continue.",
+        "The second lookup depends on the first, so the pair should be declared as one composite tool."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "The orchestrator inspects `stop_reason` after each call to decide whether to continue: `tool_use` means execute the tools, append the results and call again; `end_turn` means stop. Deciding on text content instead ends the loop while Claude is still mid-task.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.1"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Narration alongside a tool call is normal and harmless. The defect is that the orchestrator treats its presence as a completion signal.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.1"
+        },
+        {
+          "option": 1,
+          "text": "A response may legitimately contain both. Suppressing text would mask the symptom while leaving loop control keyed to the wrong field.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.1"
+        },
+        {
+          "option": 3,
+          "text": "Nothing indicates the lookups are coupled, and a composite would not help — the loop would still exit on the first response containing text.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.8"
+        }
+      ]
+    },
+    {
+      "g": 10,
+      "block": 0,
+      "domain": "D5",
+      "stem": "Forty turns into a complex billing dispute, the agent refers to \"the goodwill amount we discussed\" rather than the £38.50 agreed at turn six, and to \"the disputed period\" rather than 12 March to 4 April. Summarisation is compressing the history as the conversation grows. What preserves the detail?",
+      "options": [
+        "Raise the summarisation threshold so that compression begins later in the conversation.",
+        "Extract the amounts and dates into a case-facts block held outside the summarised history.",
+        "Revise the summarisation prompt to instruct it to preserve every figure and date verbatim.",
+        "Retain the last twenty turns verbatim and summarise only what precedes them."
+      ],
+      "correct": 1,
+      "whyRight": {
+        "text": "Transactional facts — amounts, dates, IDs, agreed figures — belong in a persistent case-facts block included in every prompt and sitting outside the summarised history, so compression cannot reach them.",
+        "cite": "CCA-Prep_Domain-5_v2.md §5.4"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "Delaying compression postpones the loss rather than preventing it. At turn eighty the same figures are summarised away.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.4"
+        },
+        {
+          "option": 2,
+          "text": "This still depends on the summariser being perfect on every pass. The corpus rejects it for exactly that reason — a structural exclusion beats a better instruction.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.4"
+        },
+        {
+          "option": 3,
+          "text": "A recency window loses the £38.50 precisely because it was agreed at turn six, thirty-four turns ago. Early facts are the ones a window discards.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.3"
+        }
+      ]
+    },
+    {
+      "g": 11,
+      "block": 0,
+      "domain": "D1",
+      "selectN": 3,
+      "stem": "A meter-data service times out intermittently. The billing subagent currently returns the bare string \"lookup failed\" to the coordinator, which cannot tell a timeout from a rejected account number and so treats both identically. The subagent has already retried twice on its own before giving up. Which three elements belong in the error it returns instead? Select three.",
+      "options": [
+        "The failure type, distinguishing a transient timeout from a permanent validation error.",
+        "Whatever partial data was retrieved before the failure interrupted the lookup.",
+        "What was attempted — the endpoint called and the parameters it was called with.",
+        "The recommended next action, decided by the subagent on the coordinator's behalf.",
+        "The number of turns the conversation has run, so the coordinator can judge urgency.",
+        "The caller's full conversation transcript, so the coordinator can re-read the context."
+      ],
+      "correct": [
+        0,
+        1,
+        2
+      ],
+      "whyRight": {
+        "text": "Structured error context is failure type, what was attempted, partial results, and potential alternatives. The coordinator needs all of it to choose between retrying, rerouting, continuing with partial results, or escalating — which is exactly what a bare status string makes impossible.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.9"
+      },
+      "whyWrong": [
+        {
+          "option": 3,
+          "text": "Recovery decisions belong to the coordinator; that is why the error propagates upward at all. The subagent supplies *alternatives* to choose among, not the choice itself.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.9"
+        },
+        {
+          "option": 4,
+          "text": "Conversation length is unrelated to why the lookup failed and does nothing to help the coordinator distinguish a timeout from a rejected identifier.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.9"
+        },
+        {
+          "option": 5,
+          "text": "The coordinator already holds the conversation; the subagent does not need to return it. Attaching a transcript to an error payload adds bulk and no decision-relevant information.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.2"
+        }
+      ]
+    },
+    {
+      "g": 12,
+      "block": 0,
+      "domain": "D2",
+      "stem": "A batch-adjustment tool can apply credits across many accounts in one call. Last month a mis-scoped run credited 1,400 accounts before anyone noticed. Policy now states that any adjustment touching more than 25 accounts requires supervisor approval. The rule currently lives in the agent's system prompt. What actually enforces it?",
+      "options": [
+        "A tool description stating the 25-account limit and the cases where the tool must not be used.",
+        "A `PostToolUse` hook that reverses the adjustment whenever the account count is exceeded.",
+        "A stronger system-prompt rule naming the threshold and the supervisor requirement explicitly.",
+        "A `PreToolUse` hook that blocks the call above 25 accounts and routes it for approval."
+      ],
+      "correct": 3,
+      "whyRight": {
+        "text": "`PreToolUse` fires before the tool executes and can validate or block. Blocking operations above a defined threshold and routing them to escalation is its named primary use case, and it is deterministic — it fires regardless of how the model behaves.",
+        "cite": "CCA-Prep_Domain-2_v2.md §2.7"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "A description shapes which tool the model selects; it does not authorise or refuse a call. Nothing enforces a limit that exists only as guidance in description text.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.2"
+        },
+        {
+          "option": 1,
+          "text": "`PostToolUse` fires after execution, so 1,400 accounts have already been credited. Reversal is messier, slower and less certain than never running.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.7"
+        },
+        {
+          "option": 2,
+          "text": "System-prompt rules are probabilistic, and this one is already in place and already failed. For safety-critical enforcement the corpus is explicit that hooks carry the rule.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.7"
+        }
+      ]
+    },
+    {
+      "g": 13,
+      "block": 0,
+      "domain": "D1",
+      "stem": "Of the three issues a caller raised, the agent has resolved two. The third needs a meter reading from a service that has been unavailable for the entire call, and the retry budget is now exhausted. The caller is still holding on the line. What should the agent's response do?",
+      "options": [
+        "Confirm the two resolved issues and state explicitly that the third is unresolved and why.",
+        "Hold all three until the metering service returns, so the caller receives one complete answer.",
+        "Report the two resolved issues and raise the third only if the caller asks about it.",
+        "Return an error for the whole interaction, since one of the three requests could not complete."
+      ],
+      "correct": 0,
+      "whyRight": {
+        "text": "Graceful degradation: complete what the available data supports, annotate coverage so it is clear which conclusions are well-supported and where the gap is, and propagate that uncertainty. The caller gets two real resolutions and an honest account of the third.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.10"
+      },
+      "whyWrong": [
+        {
+          "option": 1,
+          "text": "Blocking two completed resolutions behind an unavailable third serves nobody, and the service has been down for the whole call with retries exhausted.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.10"
+        },
+        {
+          "option": 2,
+          "text": "Proceeding without noting the gap is the more dangerous failure: the caller reasonably reads silence as \"all handled\" and discovers otherwise later.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.10"
+        },
+        {
+          "option": 3,
+          "text": "Erroring the whole interaction discards two correctly completed resolutions because a third input was missing.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.9"
+        }
+      ]
+    },
+    {
+      "g": 14,
+      "block": 0,
+      "domain": "D2",
+      "selectN": 2,
+      "stem": "One engineer wants to trial an experimental demand-forecast MCP server for a fortnight without changing anyone else's setup, while the team's four production servers must stay byte-identical for all forty operators and visible in code review. Tools from every configured server are discovered together at connection time. Which two statements are correct? Select two.",
+      "options": [
+        "The experimental server belongs in that engineer's `~/.claude.json`, which is not shared through version control.",
+        "The four production servers stay in the project's `.mcp.json`, which is version-controlled and shared.",
+        "Adding the experimental server to `.mcp.json` and gitignoring that file keeps the trial private.",
+        "Project and user scope cannot both be active, so the trial requires removing the shared configuration first.",
+        "An experimental server must be declared in both scopes for tool discovery to resolve it."
+      ],
+      "correct": [
+        0,
+        1
+      ],
+      "whyRight": {
+        "text": "`.mcp.json` at the project root is the shared, version-controlled configuration; `~/.claude.json` in the user's home is for personal overrides, personal auth and experimental servers. The two scopes exist precisely so a private trial and a shared baseline can coexist.",
+        "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+      },
+      "whyWrong": [
+        {
+          "option": 2,
+          "text": "Gitignoring `.mcp.json` un-shares the four production servers too, which is the opposite of the stated requirement that they stay identical and reviewable.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+        },
+        {
+          "option": 3,
+          "text": "Both scopes are active together — that is the design. Tools from all configured servers are discovered at connection time.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+        },
+        {
+          "option": 4,
+          "text": "A single declaration in the appropriate scope is sufficient. Duplicating it across both invites exactly the drift the split is meant to prevent.",
+          "cite": "CCA-Prep_Domain-2_v2.md §2.6"
+        }
+      ]
+    },
+    {
+      "g": 15,
+      "block": 0,
+      "domain": "D1",
+      "stem": "A specialist billing subagent is spawned to investigate a disputed charge. It comes back asking for the account number — which the caller supplied twenty turns earlier and which sits in the coordinator's own history. The prompt the coordinator sent read only \"investigate the disputed charge on this account.\" What is the fix?",
+      "options": [
+        "Instruct the subagent to request any missing identifiers from the coordinator before starting.",
+        "Give the subagent read access to the coordinator's conversation history for the session.",
+        "Include the account number and the relevant case facts explicitly in the subagent's prompt.",
+        "Have the coordinator investigate the charge itself, since it already holds the needed context."
+      ],
+      "correct": 2,
+      "whyRight": {
+        "text": "Subagents have isolated context and see only what the coordinator puts in their prompt. \"This account\" refers to something the subagent was never given, so the coordinator must pass the identifier and the relevant facts explicitly.",
+        "cite": "CCA-Prep_Domain-1_v2.md §1.2"
+      },
+      "whyWrong": [
+        {
+          "option": 0,
+          "text": "A request-and-wait round trip fixes one prompt at the cost of an extra hop on every delegation, and the coordinator still has to send the identifier — just later.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.2"
+        },
+        {
+          "option": 1,
+          "text": "Context isolation is a deliberate property, not a defect. Handing over the full history also floods the subagent with material irrelevant to its narrow task.",
+          "cite": "CCA-Prep_Domain-5_v2.md §5.6"
+        },
+        {
+          "option": 3,
+          "text": "Abandoning delegation because one prompt was underspecified gives up the separation of responsibilities the architecture is built on.",
+          "cite": "CCA-Prep_Domain-1_v2.md §1.2"
+        }
+      ]
+    }
+  ]
+}
