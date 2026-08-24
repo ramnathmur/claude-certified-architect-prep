@@ -13,10 +13,44 @@ clean; 10 clean after resolving a disguised negation-tricolon recurrence; 7 clea
 resolving two analogy-fidelity defects, with one final C14 finding (an unhedged transition sentence,
 substance independently confirmed sound) closed as a Ram-approved documented exception rather than a
 sixth round — see the exception note in `CCDV-F_Prose-Gate_v1.md` §3.3 and
-`Outputs/regeneration/CCDV-F_Resume-Prompt_v2.md` for the full history. **Converted to HTML and
-verified 2026-08-23** (`Outputs/regeneration/html/Ch06..10_*.html`) — awaiting Ram's review before
-committing. Supersedes the 29-class syllabus this file pointed to before that date — see the superseded
-note ahead of Phase 2.
+`Outputs/regeneration/CCDV-F_Resume-Prompt_v2.md` for the full history. **Converted to HTML, verified,
+and committed 2026-08-23** (`Outputs/regeneration/html/Ch06..10_*.html`, commit `e5142c7`, not pushed).
+A same-day cycle-time audit found gate re-review costing more than HTML production; two fixes were
+approved as standing process — see `CCDV-F_Prose-Gate_v1.md` §3.5 (checksum-gated calibration log) and
+`CCDV-F_Regeneration-Plan_v1.md` §7 (Stage 6 authors now receive the gate document itself). **Chapter 11
+authored and gate-verified 2026-08-23** — PASS with two Ram-approved documented exceptions (C5, C7,
+round 2; not read by Ram himself, waived to keep the chapter moving — see
+`CCDV-F_Regeneration-Plan_v1.md` Part III and the exception notes in `CCDV-F_Prose-Gate_v1.md` §3.3), not
+yet converted to HTML. **A second cost audit ran 2026-08-23** (Ram-commissioned, independent agent) specifically on chapter
+11's ~996k-token cost across 4 dispatches, and found and directly fixed two real waste sources: fix
+rounds were being resumed from the full original drafting conversation instead of dispatched fresh
+(286k tokens for 3 tool calls — new standing rule added), and the calibration control was reading the
+full old Class-01.html every round (replaced with a ~77%-smaller fixture,
+`CCDV-F_Calibration-Fixture_v1.md`). **The calibration-checksum bug is now fixed** — narrowed to hash
+only §3.1–§3.3 — reversing the "leave it for now" call above; the audit applied it under a broader fix
+mandate, the conflict was flagged, and Ram chose to keep it. C5/C7 were flagged as possibly
+over-triggering on defensible prose (a real quality tradeoff, reported only, left unchanged). **Chapter 12 gate-verified 2026-08-23 — clean PASS, zero exceptions, 686,648 tokens total (−31% vs.
+chapter 11's 995,986)** — the fixed process's first full validated run. **Chapter 13 hit a real process
+overrun the same day** — round 2 returned FIX, not PASS, and a second fix plus a third full blind
+review were dispatched anyway instead of stopping per the gate's own 2-round cap; running total reached
+~820,000 tokens (near chapter 11's unoptimized cost) before Ram interrupted directly. **Fixed:**
+`CCDV-F_Prose-Gate_v1.md` §3.5's Rounds rule now makes the 2-round cap unconditional — FIX or FAIL on
+round 2 both stop, no discretion to extend, and any round beyond 2 is Ram's call, not another agent
+dispatch. See `CCDV-F_Regeneration-Plan_v1.md` Part III for the full account. **Chapter 13 closed out
+2026-08-23** — Ram trusted the self-verified fix rather than commission a third review. **Chapter 14 hit
+its own round cap the same day** — round 2 came back FAIL (a zero-tolerance C14 hit, notably inside the
+self-test itself rather than the teaching prose, plus a C7+C13 bucket FAIL). Per the corrected rule, no
+third round was dispatched. **Closed out 2026-08-24** — shown the exact contradiction verbatim, Ram
+waived both round-2 findings without a fix, the same waiver pattern as chapters 11 and 13, explicitly
+accepting that the self-test's contradictory "launches the same server automatically" phrasing stays
+live against the chapter's own launch/spawn vs. host/reach split. **Chapters 11–14 converted to HTML
+2026-08-24** — four parallel agents, one plan specified in full first, byte-identical CSS/JS to the
+chapters 6–10 template, full prev/next chain verified Ch10 through Ch14 (not committed). One real gap
+found in the process: chapter 13's self-test markdown had no answer key at all; a key was derived from
+the chapter's own stated decision rule and flagged for Ram to spot-check, not silently invented. Chapter
+15's authoring is **deferred to a later session** — see `resume-prompt.md` for where its research stood
+at deferral and the corrected process to pick back up with. Supersedes the 29-class
+syllabus this file pointed to before 2026-08-22 — see the superseded note ahead of Phase 2.
 
 ---
 

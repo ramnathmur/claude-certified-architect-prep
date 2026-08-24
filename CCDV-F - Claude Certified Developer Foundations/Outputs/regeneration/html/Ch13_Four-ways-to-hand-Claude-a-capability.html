@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 13 — Four Ways to Hand Claude a Capability · CCDV-F</title>
+<meta name="description" content="Claude Certified Developer Foundations, Chapter 13: a built-in tool, a custom tool, a Skill, and an MCP server get Claude the same capability today, differing only in who has to act when the capability underneath needs to change.">
+<meta name="author" content="Ram">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: light dark;
+
+  --ink:    oklch(0.15 0.01 80);
+  --ink2:   oklch(0.30 0.015 75);
+  --ink3:   oklch(0.53 0.015 75);
+  --cream:  oklch(0.97 0.008 85);
+  --cream2: oklch(0.94 0.012 85);
+  --cream3: oklch(0.91 0.015 80);
+  --border: oklch(0.87 0.012 80);
+
+  --amber:       oklch(0.64 0.14 68);
+  --amber-light: oklch(0.93 0.035 80);
+  --amber-dark:  oklch(0.47 0.11 60);
+  --blue:        oklch(0.43 0.09 245);
+  --blue-light:  oklch(0.93 0.025 240);
+  --coral:       oklch(0.55 0.14 30);
+  --coral-light: oklch(0.94 0.025 35);
+  --purple:      oklch(0.38 0.14 300);
+  --purple-light:oklch(0.93 0.03 300);
+  --green:       oklch(0.50 0.10 150);
+  --green-light: oklch(0.94 0.025 145);
+
+  --surface-raised:  oklch(0.15 0.01 80);
+  --on-raised:       oklch(0.97 0.008 85);
+  --on-raised-muted: oklch(0.97 0.008 85 / 0.74);
+  --on-raised-dim:   oklch(0.97 0.008 85 / 0.6);
+  --on-raised-border:oklch(0.97 0.008 85 / 0.15);
+  --nav-bg:          oklch(0.97 0.008 85 / 0.96);
+
+  --font-serif: Georgia, 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+  --font-sans:  system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono:  ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+  --font-body-active: var(--font-sans);
+
+  --fs-body: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --fs-sm:   clamp(0.8125rem, 0.78rem + 0.15vw, 0.9375rem);
+  --fs-xs:   clamp(0.6875rem, 0.67rem + 0.1vw, 0.75rem);
+  --fs-h1:   clamp(2rem, 1.4rem + 3vw, 3.375rem);
+  --fs-h2:   clamp(1.5rem, 1.2rem + 1.5vw, 2.125rem);
+  --fs-h3:   clamp(1.25rem, 1.1rem + 0.75vw, 1.5rem);
+  --fs-pull: clamp(1.375rem, 1.15rem + 1.1vw, 1.625rem);
+  --lh-body: 1.7;
+  --lh-heading: 1.2;
+  --measure: 68ch;
+
+  --space-section: clamp(3rem, 2.5rem + 2.5vw, 4rem);
+  --space-block:   clamp(1.5rem, 1.25rem + 1.25vw, 2.5rem);
+  --space-inline:  clamp(1.25rem, 1rem + 1.25vw, 2rem);
+  --radius:    12px;
+  --radius-sm: 8px;
+  --shadow:    0 2px 16px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
+  --t-fast: 0.15s;
+  --t-med:  0.25s;
+}
+
+[data-theme="dark"] {
+  --ink:    oklch(0.90 0.008 85);
+  --ink2:   oklch(0.78 0.01 80);
+  --ink3:   oklch(0.58 0.01 75);
+  --cream:  oklch(0.15 0.012 75);
+  --cream2: oklch(0.19 0.012 75);
+  --cream3: oklch(0.23 0.015 75);
+  --border: oklch(0.32 0.01 75);
+  --shadow:    0 2px 16px rgba(0,0,0,0.3);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+  --amber:       oklch(0.72 0.13 68);
+  --amber-light: oklch(0.24 0.04 70);
+  --amber-dark:  oklch(0.78 0.10 65);
+  --blue:        oklch(0.70 0.09 245);
+  --blue-light:  oklch(0.24 0.035 245);
+  --coral:       oklch(0.68 0.13 30);
+  --coral-light: oklch(0.26 0.04 30);
+  --purple:      oklch(0.68 0.12 300);
+  --purple-light:oklch(0.25 0.04 300);
+  --green:       oklch(0.68 0.10 150);
+  --green-light: oklch(0.24 0.035 150);
+  --nav-bg: oklch(0.15 0.012 75 / 0.92);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink:    oklch(0.90 0.008 85);
+    --ink2:   oklch(0.78 0.01 80);
+    --ink3:   oklch(0.58 0.01 75);
+    --cream:  oklch(0.15 0.012 75);
+    --cream2: oklch(0.19 0.012 75);
+    --cream3: oklch(0.23 0.015 75);
+    --border: oklch(0.32 0.01 75);
+    --shadow:    0 2px 16px rgba(0,0,0,0.3);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+    --amber:       oklch(0.72 0.13 68);
+    --amber-light: oklch(0.24 0.04 70);
+    --amber-dark:  oklch(0.78 0.10 65);
+    --blue:        oklch(0.70 0.09 245);
+    --blue-light:  oklch(0.24 0.035 245);
+    --coral:       oklch(0.68 0.13 30);
+    --coral-light: oklch(0.26 0.04 30);
+    --purple:      oklch(0.68 0.12 300);
+    --purple-light:oklch(0.25 0.04 300);
+    --green:       oklch(0.68 0.10 150);
+    --green-light: oklch(0.24 0.035 150);
+    --nav-bg: oklch(0.15 0.012 75 / 0.92);
+  }
+}
+
+[data-font="serif"]  { --font-body-active: var(--font-serif); }
+[data-font="legible"]{ --font-body-active: 'Atkinson Hyperlegible', var(--font-sans); --lh-body: 1.85; letter-spacing: 0.01em; }
+
+* , *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 78px; }
+
+body {
+  margin: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-body-active);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
+
+.skip-link {
+  position: absolute; left: -9999px; top: 0; z-index: 200;
+  background: var(--ink); color: var(--cream);
+  padding: 0.7rem 1.1rem; border-radius: var(--radius-sm);
+}
+.skip-link:focus { left: 0.6rem; top: 0.6rem; }
+
+h1, h2, h3 { font-family: var(--font-serif); line-height: var(--lh-heading); font-weight: 400; color: var(--ink); }
+h2 { font-size: var(--fs-h2); margin: 0 0 1em; }
+h3 { font-size: var(--fs-h3); margin: var(--space-block) 0 0.75em; }
+p { margin: 0 0 1.1em; }
+code { font-family: var(--font-mono); font-size: 0.9em; background: var(--cream3); padding: 0.12em 0.4em; border-radius: 4px; }
+a { color: var(--amber-dark, var(--amber)); }
+[data-theme="dark"] a, :root:not([data-theme="light"]) a { color: var(--amber); }
+
+.nav {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--nav-bg);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-inner {
+  max-width: 1000px; margin: 0 auto;
+  padding: 0.7rem clamp(1rem, 3vw, 2.5rem);
+  display: flex; align-items: center; gap: 1.1rem;
+  flex-wrap: wrap;
+}
+.nav-brand {
+  font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3);
+  white-space: nowrap;
+}
+.nav-links { display: flex; gap: 0.9rem; flex-wrap: wrap; margin-right: auto; }
+.nav-link {
+  font-size: var(--fs-sm); color: var(--ink2); text-decoration: none;
+  padding: 0.2rem 0; border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+.nav-link.active { color: var(--amber-dark, var(--amber)); border-bottom-color: var(--amber); }
+[data-theme="dark"] .nav-link.active, :root:not([data-theme="light"]) .nav-link.active { color: var(--amber); }
+.nav-progress { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink3); white-space: nowrap; }
+.nav-btn {
+  font-family: var(--font-sans); font-size: 1rem; line-height: 1;
+  background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  width: 34px; height: 34px; cursor: pointer; color: var(--ink2);
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: border-color var(--t-fast);
+}
+.nav-btn:hover { border-color: var(--amber); }
+.nav-btn.font-toggle { font-family: var(--font-serif); font-size: 0.85rem; width: auto; padding: 0 0.6rem; }
+
+.chapter-nav {
+  max-width: 1000px; margin: 0 auto;
+  padding: 0.85rem clamp(1rem, 3vw, 2.5rem);
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  font-size: var(--fs-sm); color: var(--ink3);
+}
+.chapter-nav-link { color: var(--ink3); text-decoration: none; }
+.chapter-nav-link.disabled { cursor: default; opacity: 0.55; }
+.chapter-nav-link em { font-style: normal; font-size: var(--fs-xs); }
+.chapter-nav-current { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase; }
+
+.hero {
+  background: var(--cream);
+  padding: clamp(2rem, 4vw, 3.5rem) clamp(1rem, 3vw, 2.5rem) clamp(1.5rem, 3vw, 2.5rem);
+  border-bottom: 1px solid var(--border);
+}
+.hero-inner { max-width: 900px; margin: 0 auto; }
+.eyebrow {
+  display: flex; align-items: center; gap: 0.6rem;
+  font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber-dark, var(--amber));
+  margin-bottom: 0.9rem;
+}
+[data-theme="dark"] .eyebrow, :root:not([data-theme="light"]) .eyebrow { color: var(--amber); }
+.eyebrow .icon { font-size: 1.3rem; letter-spacing: 0; }
+.hero h1 { font-size: var(--fs-h1); margin: 0; max-width: 20ch; }
+
+main { max-width: 900px; margin: 0 auto; padding: 0 clamp(1rem, 3vw, 2.5rem); }
+section { padding: var(--space-section) 0 0; }
+section:last-of-type { padding-bottom: var(--space-section); }
+.measure { max-width: var(--measure); }
+
+.analogy, .callout-tip, .callout-warning, .callout-remember {
+  border-radius: var(--radius); padding: 22px 26px; margin: var(--space-block) 0;
+}
+.analogy      { background: var(--amber-light);  border-left: 3.5px solid var(--amber); }
+.callout-tip  { background: var(--amber-light);  border-left: 3.5px solid var(--amber); }
+.callout-warning { background: var(--coral-light); border-left: 3.5px solid var(--coral); }
+.callout-remember { background: var(--purple-light); border-left: 3.5px solid var(--purple); }
+.callout-def {
+  background: var(--blue-light); border-radius: var(--radius-sm);
+  padding: 18px 22px; margin: var(--space-block) 0;
+}
+.box-tag {
+  display: block; font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3);
+  margin-bottom: 8px;
+}
+.analogy .box-tag { color: var(--amber-dark, var(--amber)); }
+[data-theme="dark"] .analogy .box-tag, :root:not([data-theme="light"]) .analogy .box-tag { color: var(--amber); }
+.callout-remember .box-tag { color: var(--purple); }
+.callout-def .box-tag { color: var(--blue); }
+.callout-warning .box-tag { color: var(--coral); }
+.analogy p, .callout-tip p, .callout-def p, .callout-remember p, .callout-warning p { margin-bottom: 0.6em; }
+.analogy p:last-child, .callout-tip p:last-child, .callout-def p:last-child, .callout-remember p:last-child, .callout-warning p:last-child { margin-bottom: 0; }
+
+.takeaway, .worked {
+  background: var(--surface-raised); color: var(--on-raised);
+  border-radius: var(--radius); padding: 26px 28px; margin: var(--space-block) 0;
+}
+.takeaway .box-tag, .worked .box-tag { color: var(--on-raised-dim); }
+.takeaway p, .worked p { color: var(--on-raised-muted); margin-bottom: 0; }
+.takeaway strong, .worked strong { color: var(--on-raised); }
+.worked p { font-family: var(--font-mono); font-size: var(--fs-sm); line-height: 1.75; }
+
+.pullquote {
+  max-width: 640px; margin: var(--space-block) auto;
+  padding-left: 22px; border-left: 3px solid var(--amber);
+  font-family: var(--font-serif); font-size: var(--fs-pull); line-height: 1.45;
+  color: var(--ink2);
+}
+
+.xlink-grid { display: grid; gap: 12px; margin: var(--space-block) 0; }
+.xlink {
+  background: var(--cream2); border-radius: var(--radius-sm);
+  padding: 14px 18px; display: flex; gap: 12px; align-items: baseline;
+  font-size: var(--fs-sm);
+}
+.xlink b { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.05em; color: var(--ink3); white-space: nowrap; }
+.xlink span { color: var(--ink2); }
+a.xlink { text-decoration: none; }
+a.xlink:hover { box-shadow: var(--shadow); }
+
+.diagram { margin: var(--space-block) 0; text-align: center; }
+.diagram svg { max-width: 100%; height: auto; }
+.diagram-caption { font-size: var(--fs-xs); color: var(--ink3); margin-top: 0.6rem; font-family: var(--font-mono); }
+
+.mcq {
+  background: var(--green-light); border-radius: var(--radius);
+  padding: 22px 24px; margin: var(--space-block) 0;
+}
+.mcq-num {
+  font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--green); margin-bottom: 10px; display: flex; gap: 10px; align-items: center;
+}
+.mcq-tag { background: var(--cream); padding: 2px 8px; border-radius: 4px; color: var(--ink3); }
+.mcq-stem { font-size: var(--fs-body); margin-bottom: 1rem; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 0.4rem; }
+.mcq-opt {
+  font-family: var(--font-sans); font-size: var(--fs-sm); text-align: left;
+  background: var(--cream); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 11px 14px; cursor: pointer; color: var(--ink);
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+.mcq-opt:hover:not(:disabled) { border-color: var(--amber); }
+.mcq-opt:disabled { cursor: default; }
+.mcq-opt.mcq-selected { border-color: var(--amber); }
+.mcq-opt.mcq-correct { background: var(--green-light); border-color: var(--green); font-weight: 600; }
+.mcq-opt.mcq-incorrect { background: var(--coral-light); border-color: var(--coral); text-decoration: line-through; }
+.mcq-submit {
+  font-family: var(--font-sans); font-size: var(--fs-sm); font-weight: 600;
+  background: var(--ink); color: var(--cream); border: none; border-radius: var(--radius-sm);
+  padding: 9px 18px; cursor: pointer; margin-top: 4px;
+}
+.mcq-submit:disabled { opacity: 0.5; cursor: default; }
+.mcq-feedback { font-weight: 600; margin-top: 12px; }
+.mcq-feedback.right { color: var(--green); }
+.mcq-feedback.wrong { color: var(--coral); }
+.mcq-explain { margin-top: 10px; font-size: var(--fs-sm); color: var(--ink2); background: var(--cream); border-radius: var(--radius-sm); padding: 12px 16px; }
+
+.chapter-end {
+  background: var(--surface-raised); color: var(--on-raised);
+  border-radius: var(--radius); padding: 30px clamp(24px, 4vw, 40px);
+  margin: var(--space-section) 0; text-align: center;
+}
+.chapter-end p { color: var(--on-raised-muted); margin-bottom: 1.2rem; }
+.chapter-end .chapter-nav { padding: 0; color: var(--on-raised-dim); }
+.chapter-end .chapter-nav-link { color: var(--on-raised); }
+.chapter-end .chapter-nav-link.disabled { color: var(--on-raised-dim); }
+.chapter-end .chapter-nav-current { color: var(--on-raised-dim); }
+
+footer { text-align: center; padding: 2rem 1rem 3rem; font-size: var(--fs-xs); color: var(--ink3); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#hook">Skip to content</a>
+
+<nav class="nav" aria-label="Chapter navigation">
+  <div class="nav-inner">
+    <span class="nav-brand">CCDV-F &middot; Ch. 13</span>
+    <div class="nav-links">
+      <a class="nav-link" href="#hook">The Credit Check</a>
+      <a class="nav-link" href="#four-ways">The Four Options</a>
+      <a class="nav-link" href="#rule">The Decision Rule</a>
+      <a class="nav-link" href="#break">Built to Look Like a Skill</a>
+      <a class="nav-link" href="#boundary">What's Next</a>
+      <a class="nav-link" href="#security-note">Not a Security Boundary</a>
+      <a class="nav-link" href="#exam-cues">Exam Cues</a>
+      <a class="nav-link" href="#self-test">Self-Test</a>
+      <a class="nav-link" href="#reference">Reference</a>
+    </div>
+    <div class="nav-progress">Progress: <span id="depth-pct">0</span>%</div>
+    <button class="nav-btn theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark mode" title="Toggle dark mode">&#127769;</button>
+    <button class="nav-btn font-toggle" id="font-toggle" type="button" aria-label="Change reading font" title="Cycle reading font">Aa</button>
+  </div>
+</nav>
+
+<div class="chapter-nav">
+  <a class="chapter-nav-link" href="Ch12_Streaming-without-corrupting-state.html">&#9668; Chapter 12</a>
+  <span class="chapter-nav-current">Chapter 13 of 34</span>
+  <a class="chapter-nav-link" href="Ch14_Build-once-connect-many.html">Chapter 14 &#9658;</a>
+</div>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="eyebrow"><span class="icon">&#128706;&#65039;</span> Chapter 13 of 34 &middot; Capability Shapes</div>
+    <h1>Four ways to hand Claude a capability</h1>
+  </div>
+</header>
+
+<main>
+
+<section id="hook">
+  <h2>They diverge the day something changes</h2>
+  <div class="measure">
+    <div class="analogy">
+      <span class="box-tag">Hold this analogy</span>
+      <p>&ldquo;Tool&rdquo; has meant one specific thing across the last three chapters: a schema Claude reads, matched against a request, with your application running the code behind it once Claude asks. Chapter 11 covered writing that schema well enough that Claude picks the right one. This chapter asks an earlier question: whether the capability belongs in a tool's shape at all, or in one of three other shapes that do the same job differently.</p>
+      <p>A firm needs to check a customer's credit before it signs a contract. It has four ways to get that capability. It can turn on the credit check already built into its accounting software. It can pay a developer to write one against the credit bureau's API. It can write the procedure into the underwriting handbook and have an analyst follow it. Or it can set up a dedicated connection to the bureau, run as its own standalone service, that sales, risk and both subsidiaries all draw on. Each option gets the firm the same result today: a credit decision it can act on. They diverge the day something about the capability has to change.</p>
+    </div>
+  </div>
+</section>
+
+<section id="four-ways">
+  <h2>Four choices, one axis</h2>
+  <div class="measure">
+    <p>Those four choices sit on one axis: who has to act, and what has to happen, when the capability needs to change. That axis is the one Claude's four options sit on too.</p>
+
+    <h3>Built-in tool</h3>
+    <p>A <strong>built-in tool</strong> is Anthropic's version of the check bundled into the accounting software. Anthropic decides what the check does and when it's updated; the firm may or may not be the one running it day to day, but has no say over the definition, and its part is switching the check on. Six of these run entirely on Anthropic's own infrastructure: web search, web fetch, code execution, an advisor tool, tool search, and the MCP connector. A second group, including bash, the text editor and computer use, ships with a schema Anthropic wrote, but your application still executes every call; chapter 11 covers that server-versus-client split in depth, and this chapter treats both groups as one category, because both share the property that matters here: you accept what Anthropic built rather than writing it yourself. The billing follows the same split: a client tool is priced as an ordinary part of the request, while several of the server tools carry their own separate charge, because Anthropic is the one running the infrastructure behind them. Turning on web search for a support bot that occasionally needs a current shipping-carrier outage is the built-in case in miniature: Anthropic already solved searching the web, and there is nothing this application needs from that capability beyond what the shipped version already provides. One wrinkle worth a sentence and no more: &ldquo;built-in&rdquo; is not a single universal list. The Messages API, Claude's Managed Agents, and the Agent SDK each ship their own default set, overlapping on things like bash and web search without being identical, because each is a different piece of infrastructure with its own defaults.</p>
+
+    <h3>Custom tool</h3>
+    <p>The developer's script, in Claude's world, is a <strong>custom tool</strong>: you write the schema, your application executes the code behind it, and every parameter, every edge case and every fix is yours to ship. Nothing here has been trained into Claude the way an Anthropic-authored schema has, so a custom tool works only as well as its description tells Claude what it does and when to use it, which is the whole subject of chapter 11. A firm's own pricing engine, reachable only from inside its own network and carrying business rules nobody outside the firm could write a schema for, is the custom-tool case: nobody else is going to write this, and nobody else needs to. In the credit-check world, this is the version where the firm's own developer owns the connection to the bureau directly. If the bureau changes its API tomorrow, the developer who wrote that connection is the one who finds out.</p>
+
+    <h3>Skill</h3>
+    <p><strong>Skills</strong> are the handbook pages. A Skill is a markdown file with a description, carrying instructions rather than code, that Claude reads when the description matches the task in front of it. Its frontmatter needs nothing more than a name and a description to exist. Loading happens in layers: only the name and description sit in context at the start of every session, the full body of instructions loads once the description actually matches a task, and anything the Skill bundles beyond that, a template, a script, a reference file, loads only if Claude decides it needs it. A Skill only tells Claude how to proceed, a procedure or a piece of policy, and Claude carries out that instruction using whatever tools it already has. A code-review checklist specific to how one team likes pull requests written up is the Skill case: entirely instructional, nothing to connect to, and exactly the kind of thing that would otherwise be typed fresh into every session. Changing a Skill means editing a file. No application gets redeployed. That makes it the fastest of the four to update.</p>
+
+    <h3>MCP server</h3>
+    <p>Set up the dedicated bureau connection inside Claude's world and you have built an <strong>MCP server</strong>: a separate process, run independently of any single application, that publishes tools, data and prompt templates to whichever client connects to it. That client could be Claude Code, your own application, or a teammate's application, and all three share the same server instead of each rebuilding the link to the bureau themselves. An internal service that already serves three applications and gets updated by a team you don't manage is the clean MCP case: reusable across applications, maintained independently of any one of them. The connection might be staffed by the firm's own risk-operations team, or bought in from a specialist who runs it for several clients at once. Either way, keeping it current is one team's job, done once, rather than every consuming application's job, done separately. What it can reach is also unusually broad: whatever the server itself can reach, which is the opposite end of the scale from the sandbox a Skill runs inside. Underneath, MCP is a small piece of architecture: a host application, Claude Code or your own, creates a client for each server it talks to, and each server can expose tools it executes, resources it hands over as data, and prompt templates for structuring a request. Chapter 14 covers building and hosting one; this chapter needs only the shape of it.</p>
+
+    <p>The analogy stops at procurement. Turning on a built-in tool is a configuration change inside your own account; nobody invoices you the way the bureau invoices the firm. The ownership question is what survives the jump.</p>
+  </div>
+</section>
+
+<section id="rule">
+  <h2>Who has to act when things change</h2>
+  <div class="measure">
+    <p>Derive the rule from those four definitions rather than memorizing them separately. Every one of them answers the same question in a different way: who has to act when the world underneath the capability moves. Start with what the capability is for. If it needs to change how Claude behaves once Claude already has what it needs, rather than reach or fetch anything new, it is a Skill, however much the task looks like it needs a tool. Anthropic states this split as its own rule for two of the four: &ldquo;MCP connects Claude to data; Skills teach Claude what to do with that data.&rdquo; A checklist, a policy for reading a report Claude will already have in front of it: both change Claude's behavior without reaching anything new, which keeps it out of the tool and MCP categories entirely. The two can sit together instead of competing for the same job. A Skill can sit on top of an MCP server, documenting how to use the very system the server connects to, which is exactly the connect-plus-know-what-to-do-with-it pairing the line above describes.</p>
+
+    <div class="pullquote">
+      <p>&ldquo;MCP connects Claude to data; Skills teach Claude what to do with that data.&rdquo;</p>
+    </div>
+
+    <p>If the job is connecting to something, resolve it in order. First, check whether Anthropic already runs an acceptable version: if so, a built-in tool is the answer, and building your own spends effort on a capability Anthropic already maintains for free. If not, look at who else needs it and who is responsible for keeping it correct once the outside system changes. One application, one team, full control over both ends: a custom tool. More than one caller, or a dependency on an external system that changes on a schedule nobody on your side controls: an MCP server, because that option was built to be maintained once and shared. Answer both questions and you know which shape fits, and whose job it will be to fix it when something upstream changes.</p>
+
+    <div class="takeaway">
+      <span class="box-tag">The rule</span>
+      <p>First, check whether Anthropic already runs an acceptable version: if so, a built-in tool is the answer, and building your own spends effort on a capability Anthropic already maintains for free. One application, one team, full control over both ends: a custom tool. More than one caller, or a dependency on an external system that changes on a schedule nobody on your side controls: an MCP server, because that option was built to be maintained once and shared.</p>
+    </div>
+
+    <div class="diagram">
+      <svg viewBox="0 0 680 830" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="d13-title d13-desc">
+        <title id="d13-title">Decision flowchart for choosing among the four capability shapes</title>
+        <desc id="d13-desc">A flowchart starting at "Need a capability?" leading to three sequential yes-or-no questions. First: does it only change Claude's behavior on data it already has, with nothing to fetch — if yes, the answer is a Skill. If no: does Anthropic already run an acceptable version of it — if yes, a built-in tool. If no: is there more than one caller, or a dependency on an external system nobody on your side controls — if yes, an MCP server; if no, a custom tool.</desc>
+        <defs>
+          <marker id="arr13" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#7a6a55"/></marker>
+          <linearGradient id="g13" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#f0e6d4"/><stop offset="100%" stop-color="#e7ad5c" stop-opacity="0.6"/></linearGradient>
+        </defs>
+
+        <rect x="110" y="12" width="220" height="56" rx="10" fill="url(#g13)"/>
+        <text x="220" y="45" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#3a2000">NEED A CAPABILITY?</text>
+        <path d="M220,68 L220,106" fill="none" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr13)"/>
+
+        <polygon points="25,195 220,110 415,195 220,280" fill="url(#g13)"/>
+        <text x="220" y="178" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12.5" fill="#3a2000">Only changes Claude's behavior</text>
+        <text x="220" y="195" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12.5" fill="#3a2000">on data it already has &mdash;</text>
+        <text x="220" y="212" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12.5" fill="#3a2000">nothing to fetch?</text>
+
+        <path d="M415,195 L476,195" fill="none" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr13)"/>
+        <text x="447" y="186" text-anchor="middle" font-family="ui-monospace, monospace" font-size="11" font-weight="700" fill="#7a6a55">YES</text>
+
+        <path d="M220,280 L220,321" fill="none" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr13)"/>
+        <text x="238" y="304" text-anchor="start" font-family="ui-monospace, monospace" font-size="11" font-weight="700" fill="#7a6a55">NO</text>
+
+        <rect x="480" y="167" width="160" height="56" rx="10" fill="url(#g13)"/>
+        <text x="560" y="200" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#3a2000">SKILL</text>
+
+        <polygon points="25,410 220,325 415,410 220,495" fill="url(#g13)"/>
+        <text x="220" y="401" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12.5" fill="#3a2000">Does Anthropic already run</text>
+        <text x="220" y="419" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12.5" fill="#3a2000">an acceptable version?</text>
+
+        <path d="M415,410 L476,410" fill="none" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr13)"/>
+        <text x="447" y="401" text-anchor="middle" font-family="ui-monospace, monospace" font-size="11" font-weight="700" fill="#7a6a55">YES</text>
+
+        <path d="M220,495 L220,536" fill="none" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr13)"/>
+        <text x="238" y="519" text-anchor="start" font-family="ui-monospace, monospace" font-size="11" font-weight="700" fill="#7a6a55">NO</text>
+
+        <rect x="480" y="382" width="160" height="56" rx="10" fill="url(#g13)"/>
+        <text x="560" y="415" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#3a2000">BUILT-IN TOOL</text>
+
+        <polygon points="25,625 220,540 415,625 220,710" fill="url(#g13)"/>
+        <text x="220" y="608" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12.5" fill="#3a2000">More than one caller, or</text>
+        <text x="220" y="625" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12.5" fill="#3a2000">depends on an external system</text>
+        <text x="220" y="642" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12.5" fill="#3a2000">you don't control?</text>
+
+        <path d="M415,625 L476,625" fill="none" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr13)"/>
+        <text x="447" y="616" text-anchor="middle" font-family="ui-monospace, monospace" font-size="11" font-weight="700" fill="#7a6a55">YES</text>
+
+        <path d="M220,710 L220,746" fill="none" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr13)"/>
+        <text x="238" y="732" text-anchor="start" font-family="ui-monospace, monospace" font-size="11" font-weight="700" fill="#7a6a55">NO</text>
+
+        <rect x="480" y="597" width="160" height="56" rx="10" fill="url(#g13)"/>
+        <text x="560" y="630" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#3a2000">MCP SERVER</text>
+
+        <rect x="140" y="750" width="160" height="56" rx="10" fill="url(#g13)"/>
+        <text x="220" y="783" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#3a2000">CUSTOM TOOL</text>
+      </svg>
+      <div class="diagram-caption">Figure 13.1 — one decision, four exits</div>
+    </div>
+
+    <p>Cost inside the context window moves in the same direction as ownership. A built-in tool's definition sits in the request whether or not it gets used, the same as a custom tool's schema. A Skill costs almost nothing until triggered: description only, full instructions on demand. An MCP server's tool list loads at connection time, with the full schema for any one tool arriving only once that tool is actually called. None of that changes which of the four is correct for a given job, but it explains why switching on ten built-in tools you rarely use is a worse habit than it looks: every one of them is paid for on every request, used or not.</p>
+  </div>
+</section>
+
+<section id="break">
+  <h2>A case built to look like a Skill</h2>
+  <div class="measure">
+    <p>Break the rule against a case built to look like a Skill. A team deploying straight against the Claude API, rather than Claude Code, wants Claude to review a return request: read the customer's message, check a live inventory system to see whether the item is back in stock, and apply the company's own refund policy above a certain value. Someone starts writing a Skill. The description-and-instructions shape fits every surface feature.</p>
+
+    <p>The mechanism disagrees. A Skill invoked through the Claude API runs inside a code-execution sandbox with no network access at all. It cannot make an external call, regardless of what its own instructions say to do. A Skill written to check live inventory is a Skill whose first instruction it cannot carry out. In the credit-check world, this is the handbook page handed to an analyst who has memorized the entire policy but has been given no phone and no terminal: extremely well instructed, and unable to check a single file.</p>
+
+    <p>The mechanism wins by splitting the job: it puts each half where it belongs, the Skill included. The inventory check needs a tool, a custom one if this application is the only caller, an MCP server if other applications need the same stock check. The refund policy, the part that is genuinely just procedure, still belongs in a Skill sitting on top of whichever one gets built. Package both into one Skill that also tries to reach the network, and it fails quietly in exactly the spot that mattered.</p>
+  </div>
+</section>
+
+<section id="boundary">
+  <h2>Where the rule stops</h2>
+  <div class="measure">
+    <p>This chapter's rule stops at which shape. Two things sit immediately on the other side of that decision and belong to other chapters. Deciding that an MCP server is the right shape is not the same job as building one. Chapter 14 picks up from exactly that decision already made: choosing stdio against HTTP as the transport, registering the server at one of four scope levels, writing per-tool permission rules, and keeping its credential out of the same file as its configuration, so a leaked config file does not also leak the secret that authenticates it. Nothing in that list changes which of the four options belongs here.</p>
+
+    <p>Skills get a second pass in chapter 20 too, from a different angle: as a primitive inside Claude Code specifically, alongside how the CLI discovers them, triggers them by name, and packages them for a team to share. A Skill's fundamental shape stays the same between here and there. Only the surrounding tooling differs.</p>
+
+    <div class="xlink-grid">
+      <div class="xlink"><b>CH. 14</b><span>Choosing stdio against HTTP as the transport, registering the server at one of four scope levels, writing per-tool permission rules, and keeping its credential out of the same file as its configuration.</span></div>
+      <div class="xlink"><b>CH. 20</b><span>Skills as a primitive inside Claude Code specifically, alongside how the CLI discovers them, triggers them by name, and packages them for a team to share.</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="security-note">
+  <h2>A Skill is not a security boundary</h2>
+  <div class="measure">
+    <div class="callout-warning">
+      <span class="box-tag">Characteristic misuse</span>
+      <p>One more limit, stated plainly: a Skill is not a security boundary. Its instructions can direct Claude to call tools in ways its stated purpose never mentioned, so a Skill from a source you do not already trust is closer to installing unreviewed software than to reading a document. That question comes after this chapter's answer, once a Skill is already the shape you picked.</p>
+    </div>
+  </div>
+</section>
+
+<section id="exam-cues">
+  <h2>The tell</h2>
+  <div class="measure">
+    <div class="callout-remember">
+      <span class="box-tag">Remember this</span>
+      <p>The tell: a stem naming a second consumer, &ldquo;reusable across applications,&rdquo; &ldquo;another team needs it too,&rdquo; &ldquo;maintained independently of your release cycle.&rdquo; That phrase moves the answer to an MCP server. Its absence, with Anthropic already covering the behavior, points to a built-in tool. Its absence without that coverage points to a custom tool.</p>
+    </div>
+  </div>
+</section>
+
+<section id="self-test">
+  <h2>Self-test</h2>
+  <div class="measure">
+    <p>Four items, in the exam's own shape.</p>
+
+    <div class="mcq" data-qtype="single" data-correct="A">
+      <div class="mcq-num">Question 1 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">A customer-support application built directly against the Claude API needs Claude to pull each customer's current shipping status from the company's own order database mid-conversation. Exactly one application uses this today, and the team that owns the database also owns the support application.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. Write a custom tool: you define the schema, and your application executes the lookup against the order database.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Turn on Anthropic's built-in web search tool so Claude can find the shipping status.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. Build an MCP server exposing the lookup, so other teams can reuse it if they need to later.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Add an instruction to the system prompt telling Claude to check the order database before answering.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: A.</strong> One application, one team, full control over both ends: a custom tool — exactly this scenario, stated in the chapter's own rule. B reaches for a built-in tool that does not fit the job; web search cannot reach a private order database. C jumps to an MCP server despite neither condition that calls for one: no second caller, and no external system on somebody else's release schedule. D substitutes a bare instruction for an actual way to execute the lookup, which does not exist without a tool of some kind.</div>
+    </div>
+
+    <div class="mcq" data-qtype="single" data-correct="B">
+      <div class="mcq-num">Question 2 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">A team deploying directly against the Claude API drafts a Skill that documents their return-policy rules and also instructs Claude to call the company's live inventory system to check stock before approving a refund.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. Add a note in the Skill telling Claude not to attempt the inventory check unless network access happens to be available.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. The Skill's sandbox has no network access on the Claude API; the inventory check needs a tool or MCP server, and the policy rules can stay in the Skill.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. Move the whole thing into an MCP server, including the return-policy text that never needed network access in the first place.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Set <code>tool_choice</code> to force the Skill to run before Claude responds.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: B.</strong> A Skill invoked through the Claude API runs inside a code-execution sandbox with no network access at all, so the inventory check cannot work no matter how the Skill is worded — the fix splits the job, a tool or MCP server for the inventory check and the policy rules staying in the Skill. A treats the sandbox limit as conditional rather than absolute; there is no configuration that grants it network access. C moves policy text that never needed a network call into an MCP server for no reason. D confuses <code>tool_choice</code>, which controls which tool Claude selects, with granting a Skill the ability to reach the network — it cannot.</div>
+    </div>
+
+    <div class="mcq" data-qtype="single" data-correct="A">
+      <div class="mcq-num">Question 3 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">Four separate internal applications, owned by four different teams, each need to look up a vendor's sanctions-list status before approving a payment. The sanctions-list provider updates its matching rules on its own schedule, several times a year, and none of the four teams controls that schedule.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. Build an MCP server wrapping the sanctions-list lookup, maintained on its own, that all four applications connect to.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Turn on Anthropic's built-in web search tool, since the sanctions list is published on the web.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. Add the same system-prompt instruction to all four applications, telling Claude to always check sanctions before approving a payment.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Stand up a company-wide integration gateway that proxies every external lookup the firm will ever need, and connect Claude to that.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: A.</strong> More than one caller, or a dependency on an external system that changes on a schedule nobody on your side controls: an MCP server, built to be maintained once and shared — this scenario has both conditions, with four callers and a schedule none of the four teams controls. B reaches for a built-in tool that was never built for this; general web search is not a vendor's structured sanctions-matching logic. C repeats a system-prompt instruction across four applications, which gives Claude no way to execute the lookup and multiplies the maintenance the MCP server was built to avoid. D invents a shape outside the chapter's four — a company-wide gateway for every future lookup is scope well beyond what this decision calls for.</div>
+    </div>
+
+    <div class="mcq" data-qtype="multi" data-correct="A,B">
+      <div class="mcq-num">Question 4 <span class="mcq-tag">Select TWO</span></div>
+      <p class="mcq-stem">Claude Code is already connected to an MCP server that exposes tools for the company's ticketing system: creating tickets, updating status, and searching. The support team also wants Claude to apply their specific triage rubric, how to score urgency and who to escalate to, every time it works with a ticket.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. Keep the existing MCP server for the ticket actions.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Add a Skill documenting the triage rubric, which Claude applies once it already has ticket data from the MCP server.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. Replace the MCP server with a Skill that both creates tickets and scores urgency.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Skip the Skill and put the full triage rubric in the system prompt every session instead.</button>
+      </div>
+      <button class="mcq-submit" type="button">Submit</button>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: A, B.</strong> MCP connects Claude to data; Skills teach Claude what to do with that data — the ticket actions already work through the MCP server, and the triage rubric is a Skill sitting on top of it, exactly the procedure-only case the chapter describes. C throws away a working MCP server to rebuild ticket creation inside a Skill, which cannot reach the ticketing system's network in the first place. D turns a Skill's job into a system-prompt instruction repeated every session, discarding the shape built for exactly this: a policy Claude applies once it already has the data in front of it.</div>
+    </div>
+
+  </div>
+</section>
+
+<section id="reference">
+  <h2>Reference, not revision</h2>
+  <div class="measure">
+    <p>None of the self-test above depends on what follows. These are the specific numbers and field names Anthropic publishes, and they can change without changing the decision rule above.</p>
+
+    <div class="xlink-grid">
+      <div class="xlink"><b>SKILL.md frontmatter</b><span>Needs only <code>name</code> and <code>description</code>. <code>name</code> is capped at 64 characters, lowercase letters, numbers and hyphens only, and cannot contain the words &ldquo;anthropic&rdquo; or &ldquo;claude.&rdquo; <code>description</code> is capped at 1,024 characters.</span></div>
+      <div class="xlink"><b>Progressive disclosure</b><span>Three costs: roughly 100 tokens per Skill for its name and description, loaded at every session start regardless of use; under 5,000 tokens for the SKILL.md body, loaded only once triggered; and nothing at all for bundled scripts or reference files until Claude actually opens them.</span></div>
+      <div class="xlink"><b>Invoking a Skill via the API</b><span>Passing a <code>skill_id</code> inside the <code>container</code> parameter alongside the code-execution tool; Skills only run inside that container.</span></div>
+      <div class="xlink"><b>Pre-built Skills</b><span>PowerPoint, Excel, Word and PDF are available on the Claude API, claude.ai and the major platform partners, but not inside Claude Code.</span></div>
+      <div class="xlink"><b>Default toolsets by surface</b><span>Managed Agents ships its own eight-tool default set (<code>bash</code>, <code>read</code>, <code>write</code>, <code>edit</code>, <code>glob</code>, <code>grep</code>, <code>web_fetch</code>, <code>web_search</code>) as a single toolset entry. The Agent SDK ships a different list again: file operations, search, execution, web access, plus orchestration primitives including Skill and Agent themselves. Neither list matches the Messages API's built-in set described above, and none of the three is worth memorizing beyond knowing they differ.</span></div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<div class="chapter-end">
+  <p>End of Chapter 13 — Capability Shapes</p>
+  <div class="chapter-nav">
+    <a class="chapter-nav-link" href="Ch12_Streaming-without-corrupting-state.html">&#9668; Chapter 12</a>
+    <span class="chapter-nav-current">Chapter 13 of 34</span>
+    <a class="chapter-nav-link" href="Ch14_Build-once-connect-many.html">Chapter 14 &#9658;</a>
+  </div>
+</div>
+
+<footer>CCDV-F Regeneration &middot; Chapter 13 of 34</footer>
+
+<script>
+var pct = document.getElementById('depth-pct');
+function onScroll() {
+  var h = document.documentElement;
+  var max = h.scrollHeight - h.clientHeight;
+  var p = max > 0 ? (h.scrollTop || document.body.scrollTop) / max : 0;
+  var v = Math.round(p * 100);
+  if (pct) pct.textContent = v;
+  var links = document.querySelectorAll('.nav-link[href^="#"]');
+  var cur = '';
+  document.querySelectorAll('section[id]').forEach(function (s) {
+    if (s.getBoundingClientRect().top <= 120) cur = s.id;
+  });
+  links.forEach(function (l) {
+    l.classList.toggle('active', l.getAttribute('href') === '#' + cur);
+  });
+}
+window.addEventListener('scroll', onScroll, { passive: true });
+window.addEventListener('resize', onScroll);
+document.addEventListener('DOMContentLoaded', onScroll);
+
+var toggle = document.getElementById('theme-toggle');
+var root = document.documentElement;
+var stored = localStorage.getItem('ccdv-theme');
+if (stored) root.setAttribute('data-theme', stored);
+function isDark() {
+  var attr = root.getAttribute('data-theme');
+  if (attr === 'dark') return true;
+  if (attr === 'light') return false;
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+function updateToggle() {
+  if (!toggle) return;
+  var dark = isDark();
+  toggle.innerHTML = dark ? '&#9728;&#65039;' : '&#127769;';
+  toggle.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+}
+updateToggle();
+if (toggle) {
+  toggle.addEventListener('click', function () {
+    var next = isDark() ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    localStorage.setItem('ccdv-theme', next);
+    updateToggle();
+  });
+}
+
+var fontToggle = document.getElementById('font-toggle');
+var fontModes = ['default', 'serif', 'legible'];
+var fontLabels = { default: 'Aa', serif: 'Aa (serif)', legible: 'Aa+ (legible)' };
+var storedFont = localStorage.getItem('ccdv-font');
+if (storedFont && storedFont !== 'default') root.setAttribute('data-font', storedFont);
+function updateFontToggle() {
+  if (!fontToggle) return;
+  var current = root.getAttribute('data-font') || 'default';
+  fontToggle.textContent = fontLabels[current];
+  fontToggle.setAttribute('aria-label', 'Reading font: ' + current + '. Click to change.');
+}
+updateFontToggle();
+if (fontToggle) {
+  fontToggle.addEventListener('click', function () {
+    var current = root.getAttribute('data-font') || 'default';
+    var next = fontModes[(fontModes.indexOf(current) + 1) % fontModes.length];
+    if (next === 'default') { root.removeAttribute('data-font'); }
+    else { root.setAttribute('data-font', next); }
+    localStorage.setItem('ccdv-font', next);
+    updateFontToggle();
+  });
+}
+
+document.querySelectorAll('.mcq').forEach(function (mcq) {
+  var qtype = mcq.dataset.qtype;
+  var correct = mcq.dataset.correct.split(',');
+  var options = Array.prototype.slice.call(mcq.querySelectorAll('.mcq-opt'));
+  var feedback = mcq.querySelector('.mcq-feedback');
+  var explain = mcq.querySelector('.mcq-explain');
+  var resolved = false;
+
+  if (qtype === 'single') {
+    options.forEach(function (opt) {
+      opt.addEventListener('click', function () {
+        if (resolved) return;
+        resolved = true;
+        var letter = opt.dataset.letter;
+        options.forEach(function (o) {
+          o.disabled = true;
+          if (correct.indexOf(o.dataset.letter) !== -1) o.classList.add('mcq-correct');
+          else if (o === opt) o.classList.add('mcq-incorrect');
+        });
+        var ok = letter === correct[0];
+        feedback.hidden = false;
+        feedback.textContent = ok ? 'Correct.' : 'Not quite.';
+        feedback.className = 'mcq-feedback ' + (ok ? 'right' : 'wrong');
+        explain.hidden = false;
+      });
+    });
+  } else {
+    var selected = [];
+    options.forEach(function (opt) {
+      opt.setAttribute('aria-pressed', 'false');
+      opt.addEventListener('click', function () {
+        if (resolved) return;
+        var letter = opt.dataset.letter;
+        var idx = selected.indexOf(letter);
+        if (idx === -1) { selected.push(letter); opt.setAttribute('aria-pressed', 'true'); opt.classList.add('mcq-selected'); }
+        else { selected.splice(idx, 1); opt.setAttribute('aria-pressed', 'false'); opt.classList.remove('mcq-selected'); }
+      });
+    });
+    var submit = mcq.querySelector('.mcq-submit');
+    if (submit) {
+      submit.addEventListener('click', function () {
+        if (resolved) return;
+        resolved = true;
+        var ok = selected.length === correct.length && selected.every(function (l) { return correct.indexOf(l) !== -1; });
+        options.forEach(function (o) {
+          o.disabled = true;
+          var letter = o.dataset.letter;
+          var was = selected.indexOf(letter) !== -1;
+          var isRight = correct.indexOf(letter) !== -1;
+          if (isRight) o.classList.add('mcq-correct');
+          else if (was) o.classList.add('mcq-incorrect');
+        });
+        submit.disabled = true;
+        feedback.hidden = false;
+        feedback.textContent = ok ? 'Correct — both required options selected.' : 'Not quite — multiple-response items are all-or-nothing on the real exam.';
+        feedback.className = 'mcq-feedback ' + (ok ? 'right' : 'wrong');
+        explain.hidden = false;
+      });
+    }
+  }
+});
+</script>
+</body>
+</html>

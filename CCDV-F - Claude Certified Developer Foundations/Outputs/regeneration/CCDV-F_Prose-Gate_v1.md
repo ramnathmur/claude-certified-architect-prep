@@ -300,11 +300,17 @@ Count standalone paragraphs of 12 words or fewer. For each, apply the deletion t
 **C5 — Repetition check.**
 Walk each paragraph sentence by sentence and mark every sentence that introduces a fact absent from all sentences before it. **FAIL if any paragraph contains two consecutive unmarked sentences.**
 
+**Ram-approved exception, 2026-08-23 (Ch11, round 2).** Flagged: *"Both descriptions need the boundary. Fixing just one leaves the other's description exactly as ambiguous as it was."* (`Ch11_Why-Claude-picked-the-wrong-tool.md`, section "Writing a label that survives contact with a real question"). This was chapter 11's second gate round, at the process's 2-round cap, and the reviewer itself flagged the finding as involving interpretive judgment rather than a bare mechanical count. Presented with the exact sentence and three options (patch and re-round, review it himself, rewrite the section from outline), Ram chose to waive it and proceed, without reading the sentence himself. **Unlike the C14 exception above, this is not a finding that the passage is sound** — it is a pragmatic one-off call to stop spending rounds on a narrow, contested, non-zero-tolerance hit. Do not cite this as precedent for waiving a future C5 finding; each gets evaluated fresh.
+
 **C6 — Reader mind-reading. Zero tolerance for the unsourced form.**
 **FAIL on any sentence asserting what the reader believes, expects, imagines, feels, or previously did**, unless the same paragraph names the source of that claim (an exam distractor, a documented misconception, a named incident). Even sourced, **FAIL if more than one appears per chapter.** Test case from the old corpus that must FAIL: *"The difference is that you agonised over the system prompt and pasted the screenshots without thinking."*
 
 **C7 — Unsourced superlative.**
 **FAIL on "most common", "most expensive", "the whole of", "everything", "almost everybody", "never", "always" used as a claim about people or the industry, unless a number or citation appears in the same paragraph.** Claims about mechanism are exempt ("the model never has state between calls" is a fact about the system, not about people). The distinguisher: is the superlative about the world of humans, or about the API.
+
+**Ram-approved exception, 2026-08-23 (Ch11, round 2).** Flagged: *"it's the one that actually resolves an overlap"* (following "most descriptions skip [the exclusion clause]"), plus a second, weaker instance, *"this covers most tool-use traffic in practice"* (`Ch11_Why-Claude-picked-the-wrong-tool.md`, same section as the C5 exception above: "Writing a label that survives contact with a real question" / "Who actually walks to the shelf"). Same round, same disposition, same reasoning as the C5 exception directly above — Ram waived both without reading the sentences himself, to close out the chapter rather than run a third round on checks the reviewer flagged as judgment calls. **Not a finding that the sentences are sound.** Do not cite as precedent for a future C7 finding.
+
+**Ram-approved exception, 2026-08-24 (Ch14, round 2).** Flagged: *"A user can already ask for most tasks in plain language"* (`Ch14_Build-once-connect-many.md`, opening paragraph explaining when a prompt earns its place). Same disposition as the Ch11 exceptions above — Ram waived without reading the sentence in isolation, choosing to close the chapter rather than dispatch a further round on a check the reviewer flagged as one of a two-item bucket FAIL. **Not a finding that the sentence is sound.** Do not cite as precedent for a future C7 finding.
 
 **C8 — Rule-of-three.**
 Count asyndetic three-item lists. Classify each as enumerative (items are distinct and at least one is referenced later) or rhythmic (items are near-synonyms, or two could be cut with no fact lost). **FAIL if more than one rhythmic triple appears in the chapter.**
@@ -324,6 +330,8 @@ Run the `my-voice.md` master list. **FAIL on any hit** other than a literal tech
 **C13 — Fact density (positive check).**
 **FAIL any screen that contains no number, API name, file path, parameter, or precisely stated mechanism.** Analogy without checkable content does not pass.
 
+**Ram-approved exception, 2026-08-24 (Ch14, round 2).** Flagged: the chapter's opening section, a water-main analogy with no number, API name, file path, parameter, or stated mechanism. Part of the same round-2 bucket FAIL as the C7 exception above (two hits in the ten-check bucket). Ram waived without requesting a rewrite, the same pragmatic close-the-chapter disposition as the other Ch14 and Ch11 exceptions on this page. **Not a finding that the opening carries sufficient fact density** — a deliberate tradeoff, made once, at the chapter's round cap. Do not cite as precedent for a future C13 finding on an analogy-only opening.
+
 **C14 — Analogy fidelity.** *Added 2026-08-22, after the specimen chapter in `CCDV-F_Specimen-Gated_v1.md` passed every check above while its own analogy inverted on its own stated discriminator — a subscription owned externally, mapped onto an MCP server the reader owns, under a discriminator the chapter itself named as "who owns the capability when it changes."* For each extended analogy in the chapter, build a two-column table: every analogue named, and the referent it is mapped onto. Then, for each row, search the chapter for a sentence that assigns the referent a property contradicting the analogue's stated property. **FAIL on any contradicted row.** Separately, **FAIL on any sentence claiming the mapping is exact, complete, or one-to-one** ("maps exactly", "the same X", "identical") **unless the chapter also states, in one sentence, what the analogy does not carry.** Zero tolerance — same tier as C3/C6/C11.
 
 **Ram-approved exception, 2026-08-23.** The unhedged-exact-mapping clause above does not require a
@@ -339,6 +347,8 @@ or a stated carve-out — only for the sentence that opens the comparison. Prece
 own two fidelity tables — covering every extended analogy in the chapter — finding zero contradicted
 rows in either. Closed by Ram rather than running a sixth round on a passage three consecutive rounds
 had already confirmed substantively sound.
+
+**Ram-approved exception, 2026-08-24 (Ch14, round 2).** Flagged: the self-test's Question 4 stem describes a committed per-client stdio MCP configuration as making "every clone launch[] the same server automatically" — reusing "launches" for the shared-server case that the chapter's own "What actually runs when three people connect" section spends a full section establishing does *not* hold for that setup (`Ch14_Build-once-connect-many.md`, self-test Question 4 vs. that section). This is the first C14 hit located inside a self-test item rather than teaching prose, and — unlike the Ch7 exception above — **not a finding that the passage is sound**: Ram waived it without independent verification, the same pragmatic disposition as the C5/C7 Ch11 exceptions, extended here for the first time to a zero-tolerance check. Presented with the exact contradiction verbatim and three options (targeted fix, waive, fix-plus-third-review), he chose to waive and close the chapter. Do not cite this as precedent for waiving a future C14 finding by default — each zero-tolerance hit is still evaluated on its own facts; this one was a deliberate cost/thoroughness tradeoff, not a determination that self-test/teaching-prose contradictions are acceptable going forward.
 
 **Verdict rule.**
 - Any FAIL on **C3, C6, C11, or C14** → chapter FAILS outright. These are zero-tolerance; a single instance of any one is sufficient.
@@ -397,6 +407,62 @@ The 54-word strawman went. The original built a belief for the reader ("you're g
 
 **On FAIL.** The chapter is rewritten from its outline rather than patched. Patching a chapter that failed C3 or C6 moves the defect instead of removing it, because those defects live in how the passage was conceived, not in its wording.
 
-**Rounds.** Two, maximum. Draft → gate → fix → gate. If the second gate does not return PASS, stop and escalate to Ram with both gate reports and the checks that keep failing. Do not run a third automatic round. Three rounds of the same agent editing the same prose converges on text that satisfies the counters and still reads wrong, which is the failure mode that produced the previous attempt.
+**Rounds.** Two gate verdicts, maximum — a hard cap, not a guideline subject to judgment. Draft → gate (round 1) → fix → gate (round 2). **If round 2 does not return PASS — FIX or FAIL, either one — stop and escalate to Ram immediately with both gate reports.** Do not dispatch a second fix. Do not dispatch a third gate round. Do not reason past this because a round-2 finding looks narrow, or because it's technically a new defect rather than a repeat of an already-fixed one — that exact reasoning produced a real overrun on chapter 13 (2026-08-23): round 2 returned FIX rather than PASS, and rather than stopping there, a second fix and a third full blind review were dispatched anyway, pushing the chapter's running total past 800,000 tokens — most of the way back to an unoptimized chapter's cost — before Ram interrupted it directly and pointed out that repeated full blind reviews were themselves the largest remaining cost driver. Three rounds of the same agent editing the same prose also converges on text that satisfies the counters and still reads wrong, which is the failure mode that produced the previous attempt. **Round 3 (if the chapter needs anything at all after round 2) is Ram's decision, not another agent's** — and it should usually be cheap: read the fix agent's own quoted before/after report and decide, rather than commissioning a fresh comprehensive blind review of the whole chapter to confirm what a targeted diff already shows.
 
-**Calibration control.** Before trusting the gate on new material, run it once on `CCDV-F_Class-01.html` from the old corpus. It must return FAIL, and it must flag at least C1, C2, C3, C4, C6 and C7. A gate that passes Class 1 is miscalibrated and its verdicts on new chapters mean nothing.
+**Calibration control.** Before trusting the gate on new material, confirm it correctly fails
+`CCDV-F_Calibration-Fixture_v1.md` (in this same folder), flagging at least C1, C2, C3, C4, C6 and C7.
+A gate that passes the fixture is miscalibrated and its verdicts on new chapters mean nothing.
+
+**Changed 2026-08-23, cost audit.** The calibration target was the full `CCDV-F_Class-01.html`
+(1,193 lines / 66,209 bytes), of which 371 lines — a `<style>` block and a `<script>` block — carry no
+prose at all and were read in full on every round regardless. Of the file's ten teaching screens, five
+(screens 1, 2, 3, 4 and 8) already contain a confirmed instance of every check this control requires;
+the other five add no defect type the required six don't already cover. `CCDV-F_Calibration-Fixture_v1.md`
+is those five screens, markup-stripped of everything but prose structure, verified 2026-08-23: 2,054
+words, 22 em-dashes (10.4 per 1,000, clear of the C2 ceiling of 5), and the same defect-bearing
+sentences the worked demonstration and defect catalogue above already cite as confirmed C1, C3, C4 and
+C6 hits, present verbatim. No sentence was cut from context to make a check fire — every screen kept is intact,
+contiguous chapter prose. The one check not independently hand-confirmed on this fixture is C7; a
+reviewer may still find it fires (screen 1 carries "the whole of what physically happens" and
+"everybody makes it," screen 8 carries "close to physics"), but this was not verified against C7's
+exact wording the way the other five were, so the first run against this fixture should still watch
+for it rather than assume it.
+
+**Calibration log, added 2026-08-23, checksum scope fixed 2026-08-23.** Re-deriving this from scratch
+every round was measured at roughly 183,000 tokens and 13 minutes per round across chapters 7 and 10's
+five re-verify rounds — pure overhead, since the result depends only on this document's own check
+definitions (§3.1–§3.3) and the fixed calibration input, neither of which changes round to round. Trust
+a logged calibration instead of re-running it, under this rule:
+
+1. Compute a checksum over **§3.1–§3.3 only**, not the whole file — everything from the line beginning
+   `### 3.1` up to (not including) the line beginning `### 3.4`. Reproducible one-liner:
+   `sed -n '/^### 3.1 /,/^### 3.4 /p' CCDV-F_Prose-Gate_v1.md | sed '$d' | sha256sum`.
+   **Why not the whole file, as this section originally specified:** the log below is itself inside
+   this file, in this same section, so hashing the whole file made every appended row invalidate the
+   file for the very next round — confirmed empirically on chapter 11, whose round 2 could not match
+   round 1's brand-new entry and had to re-run full calibration anyway. Scoping the hash to §3.1–§3.3
+   hashes only the content the result actually depends on, so appending a log row here in §3.5 never
+   moves the checksum a future round needs to match. The scope can still drift on a genuine rule change
+   — a new exception note added inside §3.3 (as C5's and C7's already are) will change this checksum,
+   correctly, because that is a real change to what a reviewer is being asked to apply.
+2. If the log below has an entry whose checksum matches, cite that entry's verdict and flagged checks
+   in your report instead of re-scoring the fixture. State plainly that you did this — skipping the
+   re-derivation is not the same as skipping the report of the result.
+3. If no entry matches (§3.1–§3.3 changed since the last logged run, or the log has no row under the
+   current scheme yet), run the full calibration control as specified above, then append a new row
+   below: date, the checksum you computed, the verdict, and the checks flagged.
+4. Never cite a log entry without checking the checksum yourself first. Citing a stale entry without
+   checking is itself a calibration failure, not a shortcut.
+
+**Legacy rows below (2026-08-23, both same-day) were computed under the old whole-file scheme, against
+the old full-HTML calibration target, and cannot be matched against a §3.1–§3.3-only checksum or cited
+for a run against the fixture — they are kept only as a record that the gate reliably flagged the
+required six checks twice running before this change.** The table has no row yet under the new scheme;
+the next reviewer to run calibration will be the first to populate one, against the fixture, at the
+fixture's lower cost rather than the full file's.
+
+| Date | Checksum (scope) | Verdict | Checks flagged |
+|---|---|---|---|
+| 2026-08-23 | 3EC566CC0A7C (whole file — legacy, see above) | FAIL | C1, C2, C3, C4, C6, C7 |
+| 2026-08-23 | F20DA6CF909B (whole file — legacy, see above) | FAIL | C1, C2, C3, C4, C6, C7 |
+| 2026-08-23 | 47011b7a2c6bb260bf56367f6cd5855f1beb5d0d7b24d063b78b26a452270bfb (§3.1–§3.3, sha256, fixture run) | FAIL | C1, C2, C3, C4, C6, C7 |

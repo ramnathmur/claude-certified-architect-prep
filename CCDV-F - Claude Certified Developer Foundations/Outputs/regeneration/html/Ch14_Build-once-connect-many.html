@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 14 — Build Once, Connect Many · CCDV-F</title>
+<meta name="description" content="Claude Certified Developer Foundations, Chapter 14: MCP turns a capability into an independently versioned service reached by many hosts, instead of a feature wired into one application.">
+<meta name="author" content="Ram">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: light dark;
+
+  --ink:    oklch(0.15 0.01 80);
+  --ink2:   oklch(0.30 0.015 75);
+  --ink3:   oklch(0.53 0.015 75);
+  --cream:  oklch(0.97 0.008 85);
+  --cream2: oklch(0.94 0.012 85);
+  --cream3: oklch(0.91 0.015 80);
+  --border: oklch(0.87 0.012 80);
+
+  --amber:       oklch(0.64 0.14 68);
+  --amber-light: oklch(0.93 0.035 80);
+  --amber-dark:  oklch(0.47 0.11 60);
+  --blue:        oklch(0.43 0.09 245);
+  --blue-light:  oklch(0.93 0.025 240);
+  --coral:       oklch(0.55 0.14 30);
+  --coral-light: oklch(0.94 0.025 35);
+  --purple:      oklch(0.38 0.14 300);
+  --purple-light:oklch(0.93 0.03 300);
+  --green:       oklch(0.50 0.10 150);
+  --green-light: oklch(0.94 0.025 145);
+
+  --surface-raised:  oklch(0.15 0.01 80);
+  --on-raised:       oklch(0.97 0.008 85);
+  --on-raised-muted: oklch(0.97 0.008 85 / 0.74);
+  --on-raised-dim:   oklch(0.97 0.008 85 / 0.6);
+  --on-raised-border:oklch(0.97 0.008 85 / 0.15);
+  --nav-bg:          oklch(0.97 0.008 85 / 0.96);
+
+  --font-serif: Georgia, 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+  --font-sans:  system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono:  ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+  --font-body-active: var(--font-sans);
+
+  --fs-body: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --fs-sm:   clamp(0.8125rem, 0.78rem + 0.15vw, 0.9375rem);
+  --fs-xs:   clamp(0.6875rem, 0.67rem + 0.1vw, 0.75rem);
+  --fs-h1:   clamp(2rem, 1.4rem + 3vw, 3.375rem);
+  --fs-h2:   clamp(1.5rem, 1.2rem + 1.5vw, 2.125rem);
+  --fs-h3:   clamp(1.25rem, 1.1rem + 0.75vw, 1.5rem);
+  --fs-pull: clamp(1.375rem, 1.15rem + 1.1vw, 1.625rem);
+  --lh-body: 1.7;
+  --lh-heading: 1.2;
+  --measure: 68ch;
+
+  --space-section: clamp(3rem, 2.5rem + 2.5vw, 4rem);
+  --space-block:   clamp(1.5rem, 1.25rem + 1.25vw, 2.5rem);
+  --space-inline:  clamp(1.25rem, 1rem + 1.25vw, 2rem);
+  --radius:    12px;
+  --radius-sm: 8px;
+  --shadow:    0 2px 16px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
+  --t-fast: 0.15s;
+  --t-med:  0.25s;
+}
+
+[data-theme="dark"] {
+  --ink:    oklch(0.90 0.008 85);
+  --ink2:   oklch(0.78 0.01 80);
+  --ink3:   oklch(0.58 0.01 75);
+  --cream:  oklch(0.15 0.012 75);
+  --cream2: oklch(0.19 0.012 75);
+  --cream3: oklch(0.23 0.015 75);
+  --border: oklch(0.32 0.01 75);
+  --shadow:    0 2px 16px rgba(0,0,0,0.3);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+  --amber:       oklch(0.72 0.13 68);
+  --amber-light: oklch(0.24 0.04 70);
+  --amber-dark:  oklch(0.78 0.10 65);
+  --blue:        oklch(0.70 0.09 245);
+  --blue-light:  oklch(0.24 0.035 245);
+  --coral:       oklch(0.68 0.13 30);
+  --coral-light: oklch(0.26 0.04 30);
+  --purple:      oklch(0.68 0.12 300);
+  --purple-light:oklch(0.25 0.04 300);
+  --green:       oklch(0.68 0.10 150);
+  --green-light: oklch(0.24 0.035 150);
+  --nav-bg: oklch(0.15 0.012 75 / 0.92);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink:    oklch(0.90 0.008 85);
+    --ink2:   oklch(0.78 0.01 80);
+    --ink3:   oklch(0.58 0.01 75);
+    --cream:  oklch(0.15 0.012 75);
+    --cream2: oklch(0.19 0.012 75);
+    --cream3: oklch(0.23 0.015 75);
+    --border: oklch(0.32 0.01 75);
+    --shadow:    0 2px 16px rgba(0,0,0,0.3);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+    --amber:       oklch(0.72 0.13 68);
+    --amber-light: oklch(0.24 0.04 70);
+    --amber-dark:  oklch(0.78 0.10 65);
+    --blue:        oklch(0.70 0.09 245);
+    --blue-light:  oklch(0.24 0.035 245);
+    --coral:       oklch(0.68 0.13 30);
+    --coral-light: oklch(0.26 0.04 30);
+    --purple:      oklch(0.68 0.12 300);
+    --purple-light:oklch(0.25 0.04 300);
+    --green:       oklch(0.68 0.10 150);
+    --green-light: oklch(0.24 0.035 150);
+    --nav-bg: oklch(0.15 0.012 75 / 0.92);
+  }
+}
+
+[data-font="serif"]  { --font-body-active: var(--font-serif); }
+[data-font="legible"]{ --font-body-active: 'Atkinson Hyperlegible', var(--font-sans); --lh-body: 1.85; letter-spacing: 0.01em; }
+
+* , *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 78px; }
+
+body {
+  margin: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-body-active);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
+
+.skip-link {
+  position: absolute; left: -9999px; top: 0; z-index: 200;
+  background: var(--ink); color: var(--cream);
+  padding: 0.7rem 1.1rem; border-radius: var(--radius-sm);
+}
+.skip-link:focus { left: 0.6rem; top: 0.6rem; }
+
+h1, h2, h3 { font-family: var(--font-serif); line-height: var(--lh-heading); font-weight: 400; color: var(--ink); }
+h2 { font-size: var(--fs-h2); margin: 0 0 1em; }
+h3 { font-size: var(--fs-h3); margin: var(--space-block) 0 0.75em; }
+p { margin: 0 0 1.1em; }
+code { font-family: var(--font-mono); font-size: 0.9em; background: var(--cream3); padding: 0.12em 0.4em; border-radius: 4px; }
+a { color: var(--amber-dark, var(--amber)); }
+[data-theme="dark"] a, :root:not([data-theme="light"]) a { color: var(--amber); }
+
+.nav {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--nav-bg);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-inner {
+  max-width: 1000px; margin: 0 auto;
+  padding: 0.7rem clamp(1rem, 3vw, 2.5rem);
+  display: flex; align-items: center; gap: 1.1rem;
+  flex-wrap: wrap;
+}
+.nav-brand {
+  font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3);
+  white-space: nowrap;
+}
+.nav-links { display: flex; gap: 0.9rem; flex-wrap: wrap; margin-right: auto; }
+.nav-link {
+  font-size: var(--fs-sm); color: var(--ink2); text-decoration: none;
+  padding: 0.2rem 0; border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+.nav-link.active { color: var(--amber-dark, var(--amber)); border-bottom-color: var(--amber); }
+[data-theme="dark"] .nav-link.active, :root:not([data-theme="light"]) .nav-link.active { color: var(--amber); }
+.nav-progress { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink3); white-space: nowrap; }
+.nav-btn {
+  font-family: var(--font-sans); font-size: 1rem; line-height: 1;
+  background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  width: 34px; height: 34px; cursor: pointer; color: var(--ink2);
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: border-color var(--t-fast);
+}
+.nav-btn:hover { border-color: var(--amber); }
+.nav-btn.font-toggle { font-family: var(--font-serif); font-size: 0.85rem; width: auto; padding: 0 0.6rem; }
+
+.chapter-nav {
+  max-width: 1000px; margin: 0 auto;
+  padding: 0.85rem clamp(1rem, 3vw, 2.5rem);
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  font-size: var(--fs-sm); color: var(--ink3);
+}
+.chapter-nav-link { color: var(--ink3); text-decoration: none; }
+.chapter-nav-link.disabled { cursor: default; opacity: 0.55; }
+.chapter-nav-link em { font-style: normal; font-size: var(--fs-xs); }
+.chapter-nav-current { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase; }
+
+.hero {
+  background: var(--cream);
+  padding: clamp(2rem, 4vw, 3.5rem) clamp(1rem, 3vw, 2.5rem) clamp(1.5rem, 3vw, 2.5rem);
+  border-bottom: 1px solid var(--border);
+}
+.hero-inner { max-width: 900px; margin: 0 auto; }
+.eyebrow {
+  display: flex; align-items: center; gap: 0.6rem;
+  font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber-dark, var(--amber));
+  margin-bottom: 0.9rem;
+}
+[data-theme="dark"] .eyebrow, :root:not([data-theme="light"]) .eyebrow { color: var(--amber); }
+.eyebrow .icon { font-size: 1.3rem; letter-spacing: 0; }
+.hero h1 { font-size: var(--fs-h1); margin: 0; max-width: 20ch; }
+
+main { max-width: 900px; margin: 0 auto; padding: 0 clamp(1rem, 3vw, 2.5rem); }
+section { padding: var(--space-section) 0 0; }
+section:last-of-type { padding-bottom: var(--space-section); }
+.measure { max-width: var(--measure); }
+
+.analogy, .callout-tip, .callout-warning, .callout-remember {
+  border-radius: var(--radius); padding: 22px 26px; margin: var(--space-block) 0;
+}
+.analogy      { background: var(--amber-light);  border-left: 3.5px solid var(--amber); }
+.callout-tip  { background: var(--amber-light);  border-left: 3.5px solid var(--amber); }
+.callout-warning { background: var(--coral-light); border-left: 3.5px solid var(--coral); }
+.callout-remember { background: var(--purple-light); border-left: 3.5px solid var(--purple); }
+.callout-def {
+  background: var(--blue-light); border-radius: var(--radius-sm);
+  padding: 18px 22px; margin: var(--space-block) 0;
+}
+.box-tag {
+  display: block; font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3);
+  margin-bottom: 8px;
+}
+.analogy .box-tag { color: var(--amber-dark, var(--amber)); }
+[data-theme="dark"] .analogy .box-tag, :root:not([data-theme="light"]) .analogy .box-tag { color: var(--amber); }
+.callout-remember .box-tag { color: var(--purple); }
+.callout-def .box-tag { color: var(--blue); }
+.callout-warning .box-tag { color: var(--coral); }
+.analogy p, .callout-tip p, .callout-def p, .callout-remember p, .callout-warning p { margin-bottom: 0.6em; }
+.analogy p:last-child, .callout-tip p:last-child, .callout-def p:last-child, .callout-remember p:last-child, .callout-warning p:last-child { margin-bottom: 0; }
+
+.takeaway, .worked {
+  background: var(--surface-raised); color: var(--on-raised);
+  border-radius: var(--radius); padding: 26px 28px; margin: var(--space-block) 0;
+}
+.takeaway .box-tag, .worked .box-tag { color: var(--on-raised-dim); }
+.takeaway p, .worked p { color: var(--on-raised-muted); margin-bottom: 0; }
+.takeaway strong, .worked strong { color: var(--on-raised); }
+.worked p { font-family: var(--font-mono); font-size: var(--fs-sm); line-height: 1.75; }
+
+.pullquote {
+  max-width: 640px; margin: var(--space-block) auto;
+  padding-left: 22px; border-left: 3px solid var(--amber);
+  font-family: var(--font-serif); font-size: var(--fs-pull); line-height: 1.45;
+  color: var(--ink2);
+}
+
+.xlink-grid { display: grid; gap: 12px; margin: var(--space-block) 0; }
+.xlink {
+  background: var(--cream2); border-radius: var(--radius-sm);
+  padding: 14px 18px; display: flex; gap: 12px; align-items: baseline;
+  font-size: var(--fs-sm);
+}
+.xlink b { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.05em; color: var(--ink3); white-space: nowrap; }
+.xlink span { color: var(--ink2); }
+a.xlink { text-decoration: none; }
+a.xlink:hover { box-shadow: var(--shadow); }
+
+.diagram { margin: var(--space-block) 0; text-align: center; }
+.diagram svg { max-width: 100%; height: auto; }
+.diagram-caption { font-size: var(--fs-xs); color: var(--ink3); margin-top: 0.6rem; font-family: var(--font-mono); }
+
+.mcq {
+  background: var(--green-light); border-radius: var(--radius);
+  padding: 22px 24px; margin: var(--space-block) 0;
+}
+.mcq-num {
+  font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--green); margin-bottom: 10px; display: flex; gap: 10px; align-items: center;
+}
+.mcq-tag { background: var(--cream); padding: 2px 8px; border-radius: 4px; color: var(--ink3); }
+.mcq-stem { font-size: var(--fs-body); margin-bottom: 1rem; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 0.4rem; }
+.mcq-opt {
+  font-family: var(--font-sans); font-size: var(--fs-sm); text-align: left;
+  background: var(--cream); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 11px 14px; cursor: pointer; color: var(--ink);
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+.mcq-opt:hover:not(:disabled) { border-color: var(--amber); }
+.mcq-opt:disabled { cursor: default; }
+.mcq-opt.mcq-selected { border-color: var(--amber); }
+.mcq-opt.mcq-correct { background: var(--green-light); border-color: var(--green); font-weight: 600; }
+.mcq-opt.mcq-incorrect { background: var(--coral-light); border-color: var(--coral); text-decoration: line-through; }
+.mcq-submit {
+  font-family: var(--font-sans); font-size: var(--fs-sm); font-weight: 600;
+  background: var(--ink); color: var(--cream); border: none; border-radius: var(--radius-sm);
+  padding: 9px 18px; cursor: pointer; margin-top: 4px;
+}
+.mcq-submit:disabled { opacity: 0.5; cursor: default; }
+.mcq-feedback { font-weight: 600; margin-top: 12px; }
+.mcq-feedback.right { color: var(--green); }
+.mcq-feedback.wrong { color: var(--coral); }
+.mcq-explain { margin-top: 10px; font-size: var(--fs-sm); color: var(--ink2); background: var(--cream); border-radius: var(--radius-sm); padding: 12px 16px; }
+
+.chapter-end {
+  background: var(--surface-raised); color: var(--on-raised);
+  border-radius: var(--radius); padding: 30px clamp(24px, 4vw, 40px);
+  margin: var(--space-section) 0; text-align: center;
+}
+.chapter-end p { color: var(--on-raised-muted); margin-bottom: 1.2rem; }
+.chapter-end .chapter-nav { padding: 0; color: var(--on-raised-dim); }
+.chapter-end .chapter-nav-link { color: var(--on-raised); }
+.chapter-end .chapter-nav-link.disabled { color: var(--on-raised-dim); }
+.chapter-end .chapter-nav-current { color: var(--on-raised-dim); }
+
+footer { text-align: center; padding: 2rem 1rem 3rem; font-size: var(--fs-xs); color: var(--ink3); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#hook">Skip to content</a>
+
+<nav class="nav" aria-label="Chapter navigation">
+  <div class="nav-inner">
+    <span class="nav-brand">CCDV-F &middot; Ch. 14</span>
+    <div class="nav-links">
+      <a class="nav-link" href="#hook">The Well and the Main</a>
+      <a class="nav-link" href="#server">What a Server Is</a>
+      <a class="nav-link" href="#three-things">Tools, Resources, Prompts</a>
+      <a class="nav-link" href="#transport">Two Ways to Reach It</a>
+      <a class="nav-link" href="#earns-cost">When It Earns Its Cost</a>
+      <a class="nav-link" href="#three-clones">Three Clones, Three Pumps</a>
+      <a class="nav-link" href="#secrets">The Secret Rule</a>
+      <a class="nav-link" href="#exam-cues">Exam Cues</a>
+      <a class="nav-link" href="#self-test">Self-Test</a>
+    </div>
+    <div class="nav-progress">Progress: <span id="depth-pct">0</span>%</div>
+    <button class="nav-btn theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark mode" title="Toggle dark mode">&#127769;</button>
+    <button class="nav-btn font-toggle" id="font-toggle" type="button" aria-label="Change reading font" title="Cycle reading font">Aa</button>
+  </div>
+</nav>
+
+<div class="chapter-nav">
+  <a class="chapter-nav-link" href="Ch13_Four-ways-to-hand-Claude-a-capability.html">&#9668; Chapter 13</a>
+  <span class="chapter-nav-current">Chapter 14 of 34</span>
+  <span class="chapter-nav-link disabled" aria-disabled="true">Chapter 15 <em>(coming soon)</em> &#9658;</span>
+</div>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="eyebrow"><span class="icon">&#128688;</span> Chapter 14 of 34 &middot; MCP Architecture</div>
+    <h1>Build once, connect many</h1>
+  </div>
+</header>
+
+<main>
+
+<section id="hook">
+  <h2>The main under the street</h2>
+  <div class="measure">
+    <div class="analogy">
+      <span class="box-tag">Hold this analogy</span>
+      <p>A town does not give every house its own well. Before the utility existed, that is what happened: each house sank its own hole, installed its own pump, and maintained it alone. A failed pump was that house's problem to fix, on its own schedule, at its own cost. A town of a hundred houses had a hundred separate systems, none of them coordinated with any other.</p>
+      <p>The utility replaced all of that with one thing: a main. A single pipe, sunk once, carrying water treated to one standard past every street in town. A house that wants water does not dig anything. It runs its own service line from the wall to the main and draws from a source it had no part in building. The same main serves the house next door, and it will serve a house built five years from now without being redesigned for it.</p>
+      <p>Software faces the same choice.</p>
+    </div>
+  </div>
+</section>
+
+<section id="server">
+  <h2>What a server actually is</h2>
+  <div class="measure">
+    <p>Wire a capability directly into one application's own code, and the well is dug: it works, and it belongs entirely to that application. If three different applications need the same external service, each one repeats the whole job from its own well: another schema to maintain, another place for a bug to hide. MCP, the Model Context Protocol, replaces the well with a main. It separates a capability from any one application and turns it into its own process, a program that runs independently and exposes what it offers to whoever connects. That program is the <strong>server</strong>.</p>
+    <p>Anthropic's own documentation for MCP compares this to a familiar piece of hardware: a USB-C port, one standard connector that lets many devices plug into many peripherals without a custom cable for every pair. The comparison states the payoff directly: build once, integrate everywhere.</p>
+    <p>The application that wants the capability is the <strong>host</strong> — Claude Code, an internal tool, a teammate's application, whatever program is actually doing the work. The host does not reach the server directly. It creates a <strong>client</strong>, a component whose only job is to hold open one connection to one server. A host that needs three separate servers creates three separate clients, one per server, the way a house drawing from both the town main and a private irrigation line keeps two separate service connections rather than merging them into one.</p>
+    <p>Authoring a server means deciding, once, what it will expose: which actions become tools, which fixed pieces of data become resources, which vetted instructions become prompts. Every host that connects afterward inherits that decision without making it again. This is also what integration comes to mean once a server exists: creating a client and connecting to it, work that costs far less than writing code against someone else's API from scratch. The applications that connect do not have to be alike. Claude Code is one host; a custom internal dashboard built by a different team is another; whatever a teammate builds next year for a problem nobody has thought of yet will be a third. None of them touch the server's own code to get access.</p>
+  </div>
+</section>
+
+<section id="three-things">
+  <h2>Three things a server can hand back</h2>
+  <div class="measure">
+    <p>A server can do more than answer requests to act. MCP defines three things a server can expose, and each solves a different problem.</p>
+    <p>A <strong>tool</strong> is a named action the model can call, with a schema describing its inputs, just like a tool wired directly into an application. Nothing about how a tool works changes because it now lives on a server; only where it is defined and who maintains it changes. A GitHub server's tool for opening an issue looks, from the model's side, like any tool an application wrote for itself: a name, a description, and a set of parameters the model fills in before the client sends the call on to the server.</p>
+    <p>A <strong>resource</strong> is read-only data the server hands the client directly, without the model deciding to call anything. A direct resource sits at a fixed address, such as a list of a company's approved vendors. A templated resource takes a parameter in its address, such as one specific document identified by its ID. Reach for a resource when the client should already have the data in context at the start of a turn, because pulling it in directly is cheaper and more predictable than sending the model to fetch it with a tool call.</p>
+    <p>A <strong>prompt</strong> is a pre-written instruction template the server exposes by name. A user can already ask for most tasks in plain language, so a prompt earns its place only where carefully built wording produces a materially better result than whatever a given user would type, and where every client connecting to the server should get that same wording rather than reinventing it.</p>
+    <p>Splitting the capability into three primitives instead of one is itself part of what lets a single server serve many different hosts well. A host that only knows how to call tools still benefits from a server that also offers resources and prompts, because nothing requires it to use all three; it uses whichever ones its own client supports. Resource support in particular varies from one client to the next, so a server built to lean on resources is worth checking against the specific client that will connect to it.</p>
+    <p>One more piece of the mechanism explains why changing the transport never touches any of this. MCP separates what is exchanged from how it travels: a data layer carries the actual protocol messages, such as listing which tools are available or calling one; a transport layer carries those messages between client and server. A server's tools, resources and prompts are defined once, in the data layer, and stay unchanged whether that server is reached locally or remotely. Only the transport layer changes.</p>
+  </div>
+</section>
+
+<section id="transport">
+  <h2>Two ways to reach it</h2>
+  <div class="measure">
+    <p>A client and server still have to talk to each other, and that transport layer comes in two families.</p>
+    <p><strong>stdio</strong> runs the server as a subprocess on the same machine as the client. The client launches it directly, and the two talk over standard input and output, just like a program printing to a screen or reading a keystroke. Nothing leaves the machine. This is the direct line run from a single house to a small pump sitting on that same property: fast, simple, and reachable only by the one house it was run for. That directness is stdio's advantage where it fits: no network round-trip, and no separate authentication step to configure. A local script that reads a file and returns its contents pays only the cost of one process talking to another on the same machine.</p>
+    <p><strong>Sockets</strong> carry the connection over a network instead. A client and server built for this family can sit on entirely different machines. MCP's current transport in this family is Streamable HTTP: the client sends requests as HTTP POST calls, and the server can stream events back over the same connection. This is the main running under the street, reachable by any house with a valid connection to it, including a house on the far side of town. Because a sockets connection can reach a server on someone else's infrastructure, it typically needs its own authentication on every request: a bearer token, an API key, or a full OAuth sign-in. A stdio server on your own machine needs none of that; it already runs with whatever access your own machine has.</p>
+    <p>A stdio server is spawned fresh by whichever client starts it, so it typically serves exactly one client. A sockets server is typically hosted somewhere reachable on the network and typically serves many clients that connect to that one running instance. Which one fits is a deployment question: run the capability once, in one place, and let everyone who connects reach that instance, or run it fresh and local, for whoever happens to start it on their own machine. GitHub's own MCP server, which exposes tools for managing pull requests and issues, takes the first path: hosted once by GitHub and reached over sockets, one running instance answering however many houses tap into it.</p>
+  </div>
+</section>
+
+<section id="earns-cost">
+  <h2>When the main earns its cost</h2>
+  <div class="measure">
+    <p>Digging a well remains the right answer when only one house needs water and no other house ever will: less to build, and nothing to coordinate with anyone else. The main only pays for itself once a second house wants to connect.</p>
+    <p>The server decision runs on this arithmetic too. A capability wired directly into one application costs one integration and answers to one team's roadmap. The moment a second application needs the same capability, wiring it twice means maintaining it twice: two schemas to keep in sync with whatever the underlying service changes, two places a bug can diverge from its twin. Say the warehouse API adds a required field to its query endpoint next quarter. With two direct integrations, two different engineers on two different schedules discover this the same way, when a request starts failing. With one server, the fix lands once, in the server's own schema, and both applications inherit it the next time their client calls in.</p>
+    <p>Building the capability as a server once, and letting every application that needs it create its own client connection, means the underlying service can change in one place and every connected application gets the update the next time it calls in. MCP's own materials name this payoff directly: build once, integrate everywhere.</p>
+    <div class="takeaway">
+      <span class="box-tag">The rule</span>
+      <p>The rule this chapter derives follows from it: reach for a server, over sockets, once more than one application needs the capability, or once the capability must be kept current against something your own team does not control. Below that line, a well is still the right answer.</p>
+    </div>
+    <p>Building it as a server is not enough by itself: a stdio server built once still runs as separately as the wells it replaced, once more than one machine needs to reach it. The transport has to carry the &ldquo;many&rdquo; as well as the &ldquo;once.&rdquo; The decision can run on a plausible guess about whether a second application will show up, made before either application depends on the answer. Waiting until a second team already depends on the direct integration turns the choice into a migration of a live dependency instead of a decision made in advance.</p>
+  </div>
+</section>
+
+<section id="three-clones">
+  <h2>What actually runs when three people connect</h2>
+  <div class="measure">
+    <p>A team building an internal tool decides three developers should each be able to reach the same data-warehouse capability from their own laptops. Someone writes the MCP server, commits its configuration to the project's repository, and tells the team: clone the repo, and you're connected to the shared server.</p>
+
+    <div class="diagram">
+      <svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="d14-title d14-desc">
+        <title id="d14-title">Two MCP transport topologies compared: stdio versus sockets</title>
+        <desc id="d14-desc">A two-panel diagram. Left panel, labeled stdio, three private copies: three developer boxes, Dev A, Dev B and Dev C, each connected straight down to its own separate server box, with no lines between the three servers, captioned each clone launches its own copy. Right panel, labeled sockets, one shared instance: the same three developer boxes with lines converging into a single shared server box, captioned every client connects to the one running instance.</desc>
+        <defs>
+          <marker id="arr14" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#7a6a55"/></marker>
+          <linearGradient id="g14" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#f0e6d4"/><stop offset="100%" stop-color="#e7ad5c" stop-opacity="0.6"/></linearGradient>
+        </defs>
+
+        <text x="175" y="24" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#3a2000">stdio — three private copies</text>
+        <text x="545" y="24" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#3a2000">sockets — one shared instance</text>
+
+        <line x1="360" y1="12" x2="360" y2="252" stroke="#c9b48a" stroke-width="1.5" stroke-dasharray="4 4"/>
+
+        <rect x="38" y="46" width="84" height="38" rx="8" fill="url(#g14)"/>
+        <text x="80" y="70" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#3a2000">Dev A</text>
+        <rect x="133" y="46" width="84" height="38" rx="8" fill="url(#g14)"/>
+        <text x="175" y="70" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#3a2000">Dev B</text>
+        <rect x="228" y="46" width="84" height="38" rx="8" fill="url(#g14)"/>
+        <text x="270" y="70" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#3a2000">Dev C</text>
+
+        <line x1="80" y1="84" x2="80" y2="141" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr14)"/>
+        <line x1="175" y1="84" x2="175" y2="141" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr14)"/>
+        <line x1="270" y1="84" x2="270" y2="141" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr14)"/>
+
+        <rect x="45" y="144" width="70" height="36" rx="8" fill="url(#g14)"/>
+        <text x="80" y="167" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="#3a2000">Server</text>
+        <rect x="140" y="144" width="70" height="36" rx="8" fill="url(#g14)"/>
+        <text x="175" y="167" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="#3a2000">Server</text>
+        <rect x="235" y="144" width="70" height="36" rx="8" fill="url(#g14)"/>
+        <text x="270" y="167" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="#3a2000">Server</text>
+
+        <text x="175" y="210" text-anchor="middle" font-family="ui-monospace, monospace" font-size="12" fill="#7a6a55">each clone launches its own copy</text>
+
+        <rect x="398" y="46" width="84" height="38" rx="8" fill="url(#g14)"/>
+        <text x="440" y="70" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#3a2000">Dev A</text>
+        <rect x="493" y="46" width="84" height="38" rx="8" fill="url(#g14)"/>
+        <text x="535" y="70" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#3a2000">Dev B</text>
+        <rect x="588" y="46" width="84" height="38" rx="8" fill="url(#g14)"/>
+        <text x="630" y="70" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#3a2000">Dev C</text>
+
+        <line x1="440" y1="84" x2="497" y2="145" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr14)"/>
+        <line x1="535" y1="84" x2="535" y2="145" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr14)"/>
+        <line x1="630" y1="84" x2="573" y2="145" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr14)"/>
+
+        <rect x="470" y="146" width="130" height="40" rx="9" fill="url(#g14)"/>
+        <text x="535" y="171" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#3a2000">Server</text>
+
+        <text x="535" y="210" text-anchor="middle" font-family="ui-monospace, monospace" font-size="11.5" fill="#7a6a55">
+          <tspan x="535" dy="0">every client connects to</tspan>
+          <tspan x="535" dy="15">the one running instance</tspan>
+        </text>
+      </svg>
+      <div class="diagram-caption">Figure 14.1 — three private copies, or one shared instance</div>
+    </div>
+
+    <p>The surface of that plan looks like the main: one configuration, checked in once, available to everyone who clones it. The transport underneath works differently. The server was written for stdio, launched as a subprocess by whichever client starts it. When the first developer clones the repository and opens the project, their client reads the committed configuration and spawns its own copy of the server, running locally, on their own machine. The second developer's client spawns a second copy, on their machine. The third spawns a third. Three developers now run three separate server processes, each built from the identical configuration, each a private pump serving only the one house that started it. None of them share one main. Each developer's machine also needs whatever runtime the server requires installed locally, because each machine is running its own copy: if the server is launched with a command like <code>npx some-warehouse-server</code>, all three need Node installed and working before their own copy will even start, a requirement that has nothing to do with the warehouse and everything to do with how stdio launches a server.</p>
+    <p>stdio is doing what a subprocess is supposed to do here: running next to the one client that started it. The mistake is expecting a checked-in stdio configuration to behave like a main when it behaves like a blueprint for three separate pumps. A capability three developers need to reach as one running, centrally maintained instance needs a socket-based server they all connect to. A fresh local copy per developer cannot produce that, no matter how carefully the configuration file is written. Moving the same server to a socket-based transport, hosted on one machine the whole team can reach, turns the three copies back into the one instance the plan assumed from the start: one process, one place a fix has to land.</p>
+  </div>
+</section>
+
+<section id="secrets">
+  <h2>The one thing the config file must never hold</h2>
+  <div class="measure">
+    <p>A server reached over sockets often needs its own credential to do its job: a data-warehouse server needs a token that proves it may query the warehouse, a code-hosting server needs a token that proves it may act on a repository on your behalf. That credential belongs in an environment variable the configuration file references by name, never written into the file as a literal value.</p>
+    <p>A configuration file that gets committed to a shared repository, the way project-wide server configuration typically does, carries anything written into it into that repository's history permanently. A later commit that removes the credential removes it only from the current version of the file; the earlier commit where it was still readable stays in history, reachable by anyone who can read the repository. That is the mistake it is tempting to make: edit the credential out of the latest commit and consider it handled. A credential that was ever committed as a literal value has to be treated as compromised and rotated, not edited out. The fix going forward is simple: the configuration file names an environment variable, such as one holding a warehouse token, and the actual value lives wherever environment variables live on that machine, never inside the file MCP reads.</p>
+    <p>A stdio server rarely raises this problem, since it runs with your own machine's access and is less often checked into a repository everyone else reads. The risk concentrates where sharing does: a sockets server, reached by a team, configured in a file the whole team's clones will hold.</p>
+    <p>That is where this chapter's authority over secrets ends. Rotating a compromised credential and deciding who is allowed to hold one: that is a separate discipline, and it does not belong here.</p>
+    <div class="xlink-grid">
+      <div class="xlink"><b>CH. 31</b><span>Rotating a compromised credential, and deciding who is allowed to hold one.</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="exam-cues">
+  <h2>What the stem sounds like</h2>
+  <div class="measure">
+    <div class="callout-remember">
+      <span class="box-tag">Remember this</span>
+      <p>A stem naming this chapter's mechanism says a capability must be reachable from a machine other than the one running it, that several teams need to reach one running instance, or that a credential is about to be written into a file every clone will carry. It does not describe a single developer, alone, on one machine.</p>
+    </div>
+  </div>
+</section>
+
+<section id="self-test">
+  <h2>Self-test</h2>
+  <div class="measure">
+
+    <div class="mcq" data-qtype="single" data-correct="A">
+      <div class="mcq-num">Question 1 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">A solo developer builds an MCP server that wraps a script only she runs, only from her own laptop. Nothing else will ever connect to it. Which transport fits?</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. stdio, since the client and server are always on the same machine.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Sockets, hosted centrally, so the server stays reachable if she later works from a different laptop.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. Sockets, because that is the transport GitHub's own MCP server uses.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Either transport, as long as the team agrees not to commit credentials to the configuration file.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: A.</strong> Nothing here needs a network; B and C both spend hosting or transport complexity the scenario never asked for, and D relies on team agreement rather than the mechanism.</div>
+    </div>
+
+    <div class="mcq" data-qtype="single" data-correct="A">
+      <div class="mcq-num">Question 2 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">An internal application needs to reach three separate services (a ticketing system, a deployment pipeline, and a metrics dashboard), each exposed as its own MCP server. How does the host manage these three connections?</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. It creates one MCP client for each server: three clients, each maintaining its own connection.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. It builds one new MCP server that wraps all three services behind a single connection.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. A single client can reach all three, provided the team documents which tools belong to which service.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. It caches the tool definitions from all three servers so the context cost stays flat.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: A.</strong> One client per server is the architecture; B is real but unneeded for three existing servers, and C and D each solve a different problem than the one asked.</div>
+    </div>
+
+    <div class="mcq" data-qtype="single" data-correct="A">
+      <div class="mcq-num">Question 3 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">An internal MCP server exposes a fixed, rarely changing list of approved vendors. Every session using this server needs that list in context from the first turn, and fetching it never depends on anything the user says. Which primitive fits, and how should the server expose it?</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. A direct resource: a fixed address the client fetches and places into context, no tool call required.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. A tool the model calls at the start of every session to retrieve the list.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. A prompt template that instructs the model to always ask the user for the vendor list.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. A note in the server's documentation that the list rarely changes, so clients can cache it themselves.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: A.</strong> Fixed, parameter-free, needed from turn one is exactly a direct resource; B spends a tool call on static data, C misuses a prompt template, and D relies on every client remembering to cache on its own.</div>
+    </div>
+
+    <div class="mcq" data-qtype="multi" data-correct="A,B">
+      <div class="mcq-num">Question 4 <span class="mcq-tag">Select TWO</span></div>
+      <p class="mcq-stem">A team commits its MCP server configuration to the project repository so every clone launches the same server automatically. The server needs a bearer token to reach an internal data warehouse. Select the two statements that correctly describe how the token should be handled.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. Reference the token through an environment variable inside the configuration file; never write it as a literal string.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Once a token has ever been committed as a literal value, treat it as compromised and rotate it, even after a later commit removes it.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. Overwrite the configuration file in a new commit with the literal value removed; that clears the exposure.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Switch the transport from sockets to stdio so the token never has to leave the local machine.</button>
+      </div>
+      <button class="mcq-submit" type="button">Submit</button>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: A, B.</strong> Reference the value, and treat any credential that was ever committed inline as compromised regardless of later edits. C is false, since history persists past the edit, and D changes an unrelated design decision without removing the exposure.</div>
+    </div>
+
+  </div>
+</section>
+
+</main>
+
+<div class="chapter-end">
+  <p>End of Chapter 14 — MCP Architecture</p>
+  <div class="chapter-nav">
+    <a class="chapter-nav-link" href="Ch13_Four-ways-to-hand-Claude-a-capability.html">&#9668; Chapter 13</a>
+    <span class="chapter-nav-current">Chapter 14 of 34</span>
+    <span class="chapter-nav-link disabled" aria-disabled="true">Chapter 15 <em>(coming soon)</em> &#9658;</span>
+  </div>
+</div>
+
+<footer>CCDV-F Regeneration &middot; Chapter 14 of 34</footer>
+
+<script>
+var pct = document.getElementById('depth-pct');
+function onScroll() {
+  var h = document.documentElement;
+  var max = h.scrollHeight - h.clientHeight;
+  var p = max > 0 ? (h.scrollTop || document.body.scrollTop) / max : 0;
+  var v = Math.round(p * 100);
+  if (pct) pct.textContent = v;
+  var links = document.querySelectorAll('.nav-link[href^="#"]');
+  var cur = '';
+  document.querySelectorAll('section[id]').forEach(function (s) {
+    if (s.getBoundingClientRect().top <= 120) cur = s.id;
+  });
+  links.forEach(function (l) {
+    l.classList.toggle('active', l.getAttribute('href') === '#' + cur);
+  });
+}
+window.addEventListener('scroll', onScroll, { passive: true });
+window.addEventListener('resize', onScroll);
+document.addEventListener('DOMContentLoaded', onScroll);
+
+var toggle = document.getElementById('theme-toggle');
+var root = document.documentElement;
+var stored = localStorage.getItem('ccdv-theme');
+if (stored) root.setAttribute('data-theme', stored);
+function isDark() {
+  var attr = root.getAttribute('data-theme');
+  if (attr === 'dark') return true;
+  if (attr === 'light') return false;
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+function updateToggle() {
+  if (!toggle) return;
+  var dark = isDark();
+  toggle.innerHTML = dark ? '&#9728;&#65039;' : '&#127769;';
+  toggle.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+}
+updateToggle();
+if (toggle) {
+  toggle.addEventListener('click', function () {
+    var next = isDark() ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    localStorage.setItem('ccdv-theme', next);
+    updateToggle();
+  });
+}
+
+var fontToggle = document.getElementById('font-toggle');
+var fontModes = ['default', 'serif', 'legible'];
+var fontLabels = { default: 'Aa', serif: 'Aa (serif)', legible: 'Aa+ (legible)' };
+var storedFont = localStorage.getItem('ccdv-font');
+if (storedFont && storedFont !== 'default') root.setAttribute('data-font', storedFont);
+function updateFontToggle() {
+  if (!fontToggle) return;
+  var current = root.getAttribute('data-font') || 'default';
+  fontToggle.textContent = fontLabels[current];
+  fontToggle.setAttribute('aria-label', 'Reading font: ' + current + '. Click to change.');
+}
+updateFontToggle();
+if (fontToggle) {
+  fontToggle.addEventListener('click', function () {
+    var current = root.getAttribute('data-font') || 'default';
+    var next = fontModes[(fontModes.indexOf(current) + 1) % fontModes.length];
+    if (next === 'default') { root.removeAttribute('data-font'); }
+    else { root.setAttribute('data-font', next); }
+    localStorage.setItem('ccdv-font', next);
+    updateFontToggle();
+  });
+}
+
+document.querySelectorAll('.mcq').forEach(function (mcq) {
+  var qtype = mcq.dataset.qtype;
+  var correct = mcq.dataset.correct.split(',');
+  var options = Array.prototype.slice.call(mcq.querySelectorAll('.mcq-opt'));
+  var feedback = mcq.querySelector('.mcq-feedback');
+  var explain = mcq.querySelector('.mcq-explain');
+  var resolved = false;
+
+  if (qtype === 'single') {
+    options.forEach(function (opt) {
+      opt.addEventListener('click', function () {
+        if (resolved) return;
+        resolved = true;
+        var letter = opt.dataset.letter;
+        options.forEach(function (o) {
+          o.disabled = true;
+          if (correct.indexOf(o.dataset.letter) !== -1) o.classList.add('mcq-correct');
+          else if (o === opt) o.classList.add('mcq-incorrect');
+        });
+        var ok = letter === correct[0];
+        feedback.hidden = false;
+        feedback.textContent = ok ? 'Correct.' : 'Not quite.';
+        feedback.className = 'mcq-feedback ' + (ok ? 'right' : 'wrong');
+        explain.hidden = false;
+      });
+    });
+  } else {
+    var selected = [];
+    options.forEach(function (opt) {
+      opt.setAttribute('aria-pressed', 'false');
+      opt.addEventListener('click', function () {
+        if (resolved) return;
+        var letter = opt.dataset.letter;
+        var idx = selected.indexOf(letter);
+        if (idx === -1) { selected.push(letter); opt.setAttribute('aria-pressed', 'true'); opt.classList.add('mcq-selected'); }
+        else { selected.splice(idx, 1); opt.setAttribute('aria-pressed', 'false'); opt.classList.remove('mcq-selected'); }
+      });
+    });
+    var submit = mcq.querySelector('.mcq-submit');
+    if (submit) {
+      submit.addEventListener('click', function () {
+        if (resolved) return;
+        resolved = true;
+        var ok = selected.length === correct.length && selected.every(function (l) { return correct.indexOf(l) !== -1; });
+        options.forEach(function (o) {
+          o.disabled = true;
+          var letter = o.dataset.letter;
+          var was = selected.indexOf(letter) !== -1;
+          var isRight = correct.indexOf(letter) !== -1;
+          if (isRight) o.classList.add('mcq-correct');
+          else if (was) o.classList.add('mcq-incorrect');
+        });
+        submit.disabled = true;
+        feedback.hidden = false;
+        feedback.textContent = ok ? 'Correct — both required options selected.' : 'Not quite — multiple-response items are all-or-nothing on the real exam.';
+        feedback.className = 'mcq-feedback ' + (ok ? 'right' : 'wrong');
+        explain.hidden = false;
+      });
+    }
+  }
+});
+</script>
+</body>
+</html>
