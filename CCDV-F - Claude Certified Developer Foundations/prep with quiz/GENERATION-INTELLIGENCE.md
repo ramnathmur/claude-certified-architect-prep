@@ -1,15 +1,21 @@
 # CCDV-F Generation Intelligence Log
 
-**Last updated:** 2026-08-20 · **Sessions recorded: 1** (engine build — no paper generated yet)
+**Last updated:** 2026-08-25 · **Sessions recorded: 1** (engine build — no paper generated yet)
 
 > AI-to-AI learning log. Records what each generation run discovered, so the next run starts from
 > accumulated intelligence rather than cold. `EXAM-LOG.md` is the audit trail of what was *scored*;
 > this file is the living record of what was *learned while building*. Modelled on the CCAR-F file of
 > the same name, which reached 21 sessions and is the reason that project passed first attempt.
 
-> **NO PAPER HAS BEEN GENERATED YET.** Session 1 built the mock-exam engine only. Paper generation is
-> gated behind the corpus: questions may come only from `CCDV-F_Domain-N_v1.md` files, and none exist.
-> The trackers below are seeded and empty on purpose — they are ready, not stale.
+> **NO PAPER HAS BEEN GENERATED YET.** Session 1 built the mock-exam engine only, and Stage 9
+> instrumentation (the diagnostic pre-test and the three weighted mock papers) has still not been
+> built or run. **The reason has changed since this note was first written**: the corpus is no longer
+> blocked on missing domain files (see DV-09, closed) — all 34 course chapters are authored as of
+> 2026-08-25, each carrying its own self-test items, which is now the permitted corpus source. What's
+> missing is the instrumentation itself, plus a decision on whether items from chapters 16–34 (authored
+> but never independently gate-reviewed — see `../ROADMAP.md` and `../resume-prompt.md`) are fair game
+> for a mock before any review runs over them. The trackers below are still seeded and empty — the
+> gate that kept them that way changed shape, but a mock still hasn't been generated.
 
 ---
 
@@ -116,7 +122,7 @@ schema is a contract and gets signed off, not amended in passing. Extended addit
 **Require this behaviour in every generation brief:** an agent that finds a contract mismatch reports
 it and stops. It does not reconcile the contract to its own output.
 
-### DV-09 — The corpus gate is real and blocks paper generation · OPEN
+### DV-09 — The corpus gate is real and blocks paper generation · CLOSED (superseded, not fixed as written)
 
 Practice questions may come **only** from `CCDV-F_Domain-N_v1.md` files. None exist. Until they do, the
 engine ships with the three official sample questions from the guide, which are legitimate — published
@@ -124,6 +130,22 @@ by Anthropic, explicitly not drawn from the live item bank, and provided to show
 
 **Do not soften this.** On CCAR-F a community source claiming the exam draws 8 scenarios (the real
 number is 6) reached generated practice material. That is what the rule exists to prevent.
+
+**What closed it.** The premise changed, not the discipline. On 2026-08-22 the domain-file corpus plan
+(`CCDV-F_Domain-N_v1.md` × 8) was superseded by the Regeneration Plan: each authored chapter's own
+embedded self-test items became the permitted corpus source instead (`CCDV-F_Regeneration-Plan_v1.md`
+Stage 8). As of 2026-08-25, all 34 chapters are authored, so a corpus now exists in full — the "none
+exist" premise this finding was written against is no longer true.
+
+**This does not mean the gate is fully open.** Chapters 1–15 are gate-verified; chapter 16 has one
+applied, self-verified fix with no independent round-2 review; chapters 17–34 are author-only, with
+independent blind review explicitly declined for that whole batch (confirmed 2026-08-25 — see
+`../resume-prompt.md`). Whether items from an unreviewed chapter are safe to draw a mock question from
+is an open question this finding never anticipated, since it was written when no chapters existed at
+all. **Raise this to Ram before Stage 9 draws its first item from chapters 16–34** — do not assume the
+corpus existing is the same thing as the corpus being reviewed. The underlying discipline this finding
+protects — generate only from what's actually authored, never from memory or community sources — still
+holds and was never in question.
 
 ### DV-10 — The agent brief shape that worked · OPEN · reuse verbatim
 
