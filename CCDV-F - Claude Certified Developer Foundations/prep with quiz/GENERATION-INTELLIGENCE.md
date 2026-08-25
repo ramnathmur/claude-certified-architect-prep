@@ -1,21 +1,19 @@
 # CCDV-F Generation Intelligence Log
 
-**Last updated:** 2026-08-25 · **Sessions recorded: 1** (engine build — no paper generated yet)
+**Last updated:** 2026-08-25 · **Sessions recorded: 2** (Session 1: engine build. Session 2: Paper 1 generated)
 
 > AI-to-AI learning log. Records what each generation run discovered, so the next run starts from
 > accumulated intelligence rather than cold. `EXAM-LOG.md` is the audit trail of what was *scored*;
 > this file is the living record of what was *learned while building*. Modelled on the CCAR-F file of
 > the same name, which reached 21 sessions and is the reason that project passed first attempt.
 
-> **NO PAPER HAS BEEN GENERATED YET.** Session 1 built the mock-exam engine only, and Stage 9
-> instrumentation (the diagnostic pre-test and the three weighted mock papers) has still not been
-> built or run. **The reason has changed since this note was first written**: the corpus is no longer
-> blocked on missing domain files (see DV-09, closed) — all 34 course chapters are authored as of
-> 2026-08-25, each carrying its own self-test items, which is now the permitted corpus source. What's
-> missing is the instrumentation itself, plus a decision on whether items from chapters 16–34 (authored
-> but never independently gate-reviewed — see `../ROADMAP.md` and `../resume-prompt.md`) are fair game
-> for a mock before any review runs over them. The trackers below are still seeded and empty — the
-> gate that kept them that way changed shape, but a mock still hasn't been generated.
+> **PAPER 1 GENERATED 2026-08-25, NOT YET SAT.** `mock-exams/CCDV-F_MockTest-1_v1.html` — 53 items at
+> the exact published domain weights (8/17/2/1/9/6/4/6). Items are drawn from the 34 chapters' own
+> self-tests (the corpus source since the 2026-08-22 supersession of the domain-file plan — see DV-09,
+> closed). This is the first of the plan's three full weighted papers; the 30-item diagnostic and
+> papers 2–3 have not been built. **The chapters-16–34-review question DV-09 flagged was raised and
+> answered**: Ram chose to proceed, so items from unreviewed chapters are in this paper, each carrying
+> a `reviewStatus` field and a visible on-page badge — see DV-11.
 
 ---
 
@@ -160,6 +158,43 @@ The successful brief had five parts, and the fifth is the one usually left out:
    reasoned about."** The agent came back with an honest list of what it could not confirm. Without that
    sentence, the same agent would very likely have reported the work as fully verified.
 
+### DV-11 — A chapter-to-domain brief can be wrong even when everything downstream executes cleanly · CLOSED (caught before publishing)
+
+Building Paper 1's item-selection brief, chapter 11 ("Why Claude picked the wrong tool" — tool
+description writing, approval patterns, tool-set construction) was written into the **D2 Applications
+and Integration** bucket. It is D8 §8.1 Tool Implementation — `CCDV-F_Coverage-Contract_v1.md` §4 says
+so directly, and `ROADMAP.md`'s own skill table confirms it ("Tool Implementation... CCAR-F
+`Domain-2_v2`" — a CCAR-F domain number that has nothing to do with CCDV-F's D2).
+
+**The selection agent executed the wrong brief faithfully and correctly** — it read Ch11, transcribed
+five items verbatim, tagged them D2 exactly as instructed, and hit the D2 quota exactly. Nothing in its
+own output was wrong. The error was one level up, in the brief itself, and would have shipped as five
+misfiled items — D2 overcounted by 5, D8 undercounted by 5 — if nobody had cross-checked the finished
+selection against `CCDV-F_Coverage-Contract_v1.md` §4 after the fact.
+
+**The fix applied:** dropped Ch11's five items from the paper entirely rather than relabel them into
+D8 (D8's own quota was already correctly filled from Ch10/12/13/14 — adding Ch11 on top would have
+overshot it). Backfilled D2's resulting gap from Ch21, which the same selection agent had already read
+and independently confirmed fits D2 §2.6 Configuration Management, not the D3 §3.1 Claude Code
+Operation half of its nominal dual-mapping — see the agent's own `notes` field, preserved in Paper 1's
+generation record.
+
+**The generalizable rule: verify a chapter→domain/section brief against `CCDV-F_Coverage-
+Contract_v1.md` §4 before handing it to a selection agent, not just after.** A brief that's wrong
+produces output that is internally consistent and passes every downstream check (index bounds, quota
+totals, whyWrong coverage) while still being substantively wrong. None of the structural validation run
+on Paper 1 (Node-based index/quota/coverage checks — see the Session 2 reflection below) would have
+caught this; only a source-of-truth cross-check did.
+
+**Also closed in the same pass:** chapter 13's self-test sits outside a `## Self-test` heading, uses
+plain (not bold) numbering, and its markdown has no Answers section at all — a gap already flagged in
+`ROADMAP.md` and `resume-prompt.md` for the HTML build. Paper 1 uses one Ch13 item (§8.3) with a
+rationale **constructed from the chapter's own stated decision rule, not transcribed** — the item's
+`cite` field says so explicitly (`"... DERIVED RATIONALE ..."`), unlike every other item on the paper,
+which quotes its source chapter's own rationale verbatim. Do not let this become the default pattern —
+it works once because the underlying decision rule is stated plainly elsewhere in the chapter; a
+chapter without that would need a real fix to its markdown, not a derived item.
+
 ---
 
 ## Section Coverage Tracker
@@ -169,31 +204,31 @@ the guide. Empty until the first paper is generated.
 
 | § | Skill | % | ≈items | Papers used in | Learner signal |
 |---|---|---|---|---|---|
-| 1.1 | Agent Architecture | 4.5 | 2.4 | — | — |
-| 1.2 | Agent Construction with Claude | 5.3 | 2.8 | — | — |
+| 1.1 | Agent Architecture | 4.5 | 2.4 | Paper 1 (4 items, Ch15) | — |
+| 1.2 | Agent Construction with Claude | 5.3 | 2.8 | Paper 1 (4 items, Ch16/17) | — |
 | 1.3 | Agent Patterns and Frameworks | 4.9 | 2.6 | — | — |
 | 2.1 | Understanding Requirements | 3.4 | 1.8 | — | — |
 | 2.2 | Systems Life Cycle | 2.8 | 1.5 | — | — |
-| 2.3 | Claude API Mechanics | 6.8 | 3.6 | engine demo (official Sample 1) | — |
-| 2.4 | Software Engineering Foundations | 7.4 | 3.9 | — | — |
-| 2.5 | Claude Application Design | 8.6 | 4.6 | — | — |
-| 2.6 | Configuration Management | 4.1 | 2.2 | — | — |
-| 3.1 | Claude Code Operation | 3.1 | 1.6 | — | — |
-| 4.1 | Debugging and Error Handling | 2.6 | 1.4 | — | — |
-| 5.1 | LLM Fundamentals | 5.2 | 2.8 | — | — |
+| 2.3 | Claude API Mechanics | 6.8 | 3.6 | engine demo (official Sample 1); Paper 1 (10 items, Ch4/5) | — |
+| 2.4 | Software Engineering Foundations | 7.4 | 3.9 | Paper 1 (1 item, Ch34) | — |
+| 2.5 | Claude Application Design | 8.6 | 4.6 | Paper 1 (1 item, Ch23) | — |
+| 2.6 | Configuration Management | 4.1 | 2.2 | Paper 1 (5 items, Ch21) | — |
+| 3.1 | Claude Code Operation | 3.1 | 1.6 | Paper 1 (2 items, Ch20) | — |
+| 4.1 | Debugging and Error Handling | 2.6 | 1.4 | Paper 1 (1 item, Ch27) | — |
+| 5.1 | LLM Fundamentals | 5.2 | 2.8 | Paper 1 (3 items, Ch2) | — |
 | 5.2 | Technical Fundamentals | 6.1 | 3.2 | — | — |
-| 5.3 | Model Selection and Tradeoffs | 2.7 | 1.4 | — | — |
-| 5.4 | Cost and Token Management | 2.8 | 1.5 | — | — |
-| 6.1 | Context Engineering | 3.8 | 2.0 | — | — |
-| 6.2 | Prompt Engineering | 4.6 | 2.4 | — | — |
-| 6.3 | Output Handling | 2.6 | 1.4 | — | — |
-| 7.1 | AI Application Security | 3.2 | 1.7 | engine demo (official Sample 2) | — |
-| 7.2 | Guardrails and Safe Deployment | 2.3 | 1.2 | — | — |
+| 5.3 | Model Selection and Tradeoffs | 2.7 | 1.4 | Paper 1 (3 items, Ch3) | — |
+| 5.4 | Cost and Token Management | 2.8 | 1.5 | Paper 1 (3 items, Ch9) | — |
+| 6.1 | Context Engineering | 3.8 | 2.0 | Paper 1 (2 items, Ch8) | — |
+| 6.2 | Prompt Engineering | 4.6 | 2.4 | Paper 1 (2 items, Ch6) | — |
+| 6.3 | Output Handling | 2.6 | 1.4 | Paper 1 (2 items, Ch7) | — |
+| 7.1 | AI Application Security | 3.2 | 1.7 | engine demo (official Sample 2); Paper 1 (2 items, Ch29) | — |
+| 7.2 | Guardrails and Safe Deployment | 2.3 | 1.2 | Paper 1 (1 item, Ch30) | — |
 | 7.3 | Claude Hooks | 1.0 | 0.5 | — | — |
-| 7.4 | Identity, Secrets, and Key Management | 1.6 | 0.8 | — | — |
-| 8.1 | Tool Implementation | 4.4 | 2.3 | — | — |
-| 8.2 | MCP Server Development | 2.1 | 1.1 | — | — |
-| 8.3 | Agentic Customization | 4.1 | 2.2 | engine demo (official Sample 3) | — |
+| 7.4 | Identity, Secrets, and Key Management | 1.6 | 0.8 | Paper 1 (1 item, Ch31) | — |
+| 8.1 | Tool Implementation | 4.4 | 2.3 | Paper 1 (3 items, Ch10/12) | — |
+| 8.2 | MCP Server Development | 2.1 | 1.1 | Paper 1 (2 items, Ch14) | — |
+| 8.3 | Agentic Customization | 4.1 | 2.2 | engine demo (official Sample 3); Paper 1 (1 item, Ch13, derived rationale) | — |
 
 **Sections under 1.5 expected items** — 2.2, 4.1, 5.4, 6.3, 7.2, 7.3, 7.4, 8.2, and 3.1 — will appear
 zero or one times on any given paper. That is the real paper's shape. Do not force them in to make the
@@ -292,3 +327,42 @@ exist. When it does: read the ledger first, seed from the Section Coverage Track
 Family Rotation, and log every item's section as it is written rather than reconstructing afterwards —
 CCAR-F's tracker went stale at Exam 12 precisely because reconstruction was left for later and then
 could not be done honestly.
+
+### Session 2 — 2026-08-25 · Paper 1 generated (all 34 chapters, mixed review status)
+
+Generated `mock-exams/CCDV-F_MockTest-1_v1.html`, the first real 53-item paper, drawn from chapter
+self-tests (the corpus source since the 2026-08-22 supersession noted above) rather than the
+domain-file plan this log originally assumed. This session opened with a status check that found the
+course had quietly reached 34/34 authored chapters while every tracking doc still said 14/34 — that
+was fixed first, in a separate pass, before paper generation started.
+
+**What went well.** A dedicated selection agent read 22 of the 34 chapters, transcribed 53 items
+verbatim with full stem/options/rationale, hit the exact 8/17/2/1/9/6/4/6 domain quota on its first
+pass, and self-flagged every judgment call in its own `notes` field rather than leaving them implicit.
+Splitting the whole build into a skeleton-plus-4-chunk-fills (per DV-01) worked cleanly for an
+~836-line insertion — no failed write, no anchor left unfilled. A Node `vm`-based structural validator
+(index bounds, section validity, `selectN` vs `correct.length`, every wrong option covered by a
+`whyWrong` entry) caught zero errors on the finished 53 — cheap insurance that would have caught DV-04-
+shaped bugs immediately if any had been introduced.
+
+**What went wrong, and was caught before shipping.** DV-11: the item-selection brief misfiled chapter
+11 into D2 instead of its actual D8 §8.1. The selection agent executed that wrong brief perfectly — the
+bug was one level up, in the brief, not in the transcription. Caught by cross-checking the finished
+selection against `CCDV-F_Coverage-Contract_v1.md` §4 after generation, not before. **This should move
+earlier next time**: verify the brief against the Coverage Contract before dispatching the selection
+agent, not after.
+
+**The unexpected find.** Browser-based visual verification was attempted and failed for a structural
+reason, not a content one: the Browser pane's preview server is running against a frozen filesystem
+snapshot that predates this entire session — it still served `resume-prompt.md`'s original 2026-08-24
+content after multiple in-session rewrites. This generalizes DV-06 from "screenshots don't render" to
+"the preview server itself may not see files written this session at all." Verification for Paper 1
+rests on static JS syntax check + the Node structural validator + manual re-read of the CSS/render
+wiring — not on a rendered page. **A human glance at this file in a real browser is still the one
+verification step nobody has done.**
+
+**Ready for Session 3**, whenever it runs: the 30-item diagnostic and Papers 2–3 are still unbuilt.
+Before drawing more items from chapters 17–34, note that DV-11's fix pulled Paper 1's D2 quota more
+heavily toward unreviewed material (Ch21) than a first cut would have — Papers 2 and 3 should actively
+look for chances to substitute in still-unused gate-verified items where the domain allows it, not
+default to whichever chapter is easiest to read again.

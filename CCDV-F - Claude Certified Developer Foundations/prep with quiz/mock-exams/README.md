@@ -10,9 +10,15 @@ overrides them.
 
 ## Status
 
-**No paper can be generated yet.** The eight domain corpus files do not exist — Phase 3 builds them.
-The template currently ships with the three official sample questions as demo items so the engine can
-be exercised end to end. They are not a paper and not corpus output.
+**Paper 1 exists.** `CCDV-F_MockTest-1_v1.html`, generated 2026-08-25 — 53 items at the exact published
+domain weights, drawn from the 34 chapters' own self-tests. This corpus source superseded the original
+domain-file plan on 2026-08-22 (`../GENERATION-INTELLIGENCE.md` DV-09); the eight
+`CCDV-F_Domain-N_v1.md` files this section used to require **still do not exist and are not planned**.
+Every item on Paper 1 carries a `reviewStatus` field (`"gate-verified"` / `"partial-review"` /
+`"unreviewed"`) with a matching on-page badge, because 19 of the 34 source chapters were never
+independently reviewed — see `../GENERATION-INTELLIGENCE.md` DV-11 for a real chapter-mistagging bug
+this caught before the paper shipped. The template still ships with the three official sample questions
+as demo items, unrelated to any generated paper.
 
 ---
 
@@ -37,19 +43,32 @@ Check the directory first and take the next free `N`. Never overwrite an existin
 Everything between the `/* ==== ITEMS ==== */` banner and `/* ==== END ITEMS ==== */` at the bottom of
 the `<script>` block. Delete all three demo items.
 
-**The only permitted source for generated questions is the eight domain corpus files:**
+**The only permitted source for generated questions is the 34 course chapters' own self-tests**
+(`..\Outputs\regeneration\chapters\Ch01_*.md` through `Ch34_*.md`), per the 2026-08-22 supersession of
+the domain-file plan the eight paths below used to name. Kept here so the old instruction isn't silently
+lost, not because it's still live:
 
-    prep with quiz\CCDV-F_Domain-1_v1.md    Agents and Workflows              14.7%
-    prep with quiz\CCDV-F_Domain-2_v1.md    Applications and Integration      33.1%
-    prep with quiz\CCDV-F_Domain-3_v1.md    Claude Code                        3.1%
-    prep with quiz\CCDV-F_Domain-4_v1.md    Eval, Testing, and Debugging       2.6%
-    prep with quiz\CCDV-F_Domain-5_v1.md    Model Selection and Optimization  16.8%
-    prep with quiz\CCDV-F_Domain-6_v1.md    Prompt and Context Engineering    11.0%
-    prep with quiz\CCDV-F_Domain-7_v1.md    Security and Safety                8.1%
-    prep with quiz\CCDV-F_Domain-8_v1.md    Tools and MCPs                    10.6%
+    ~~prep with quiz\CCDV-F_Domain-1_v1.md    Agents and Workflows              14.7%~~
+    ~~prep with quiz\CCDV-F_Domain-2_v1.md    Applications and Integration      33.1%~~
+    ~~prep with quiz\CCDV-F_Domain-3_v1.md    Claude Code                        3.1%~~
+    ~~prep with quiz\CCDV-F_Domain-4_v1.md    Eval, Testing, and Debugging       2.6%~~
+    ~~prep with quiz\CCDV-F_Domain-5_v1.md    Model Selection and Optimization  16.8%~~
+    ~~prep with quiz\CCDV-F_Domain-6_v1.md    Prompt and Context Engineering    11.0%~~
+    ~~prep with quiz\CCDV-F_Domain-7_v1.md    Security and Safety                8.1%~~
+    ~~prep with quiz\CCDV-F_Domain-8_v1.md    Tools and MCPs                    10.6%~~
 
-Never from notes, never from the web, never from memory. This is a repo-level rule, and it exists
-because a community guide's wrong scenario count reached generated CCAR-F practice material.
+Map a chapter to its domain/section by cross-checking `..\Outputs\regeneration\CCDV-F_Coverage-
+Contract_v1.md` §4 **before** dispatching a selection agent, not after — DV-11 in
+`..\GENERATION-INTELLIGENCE.md` documents a real chapter mistagged into the wrong domain that a
+selection agent then executed faithfully, and that only a Coverage-Contract cross-check caught.
+
+Also record each item's source-chapter review status (`"gate-verified"` for Ch1-15, `"partial-review"`
+for Ch16, `"unreviewed"` for Ch17-34, per `..\ROADMAP.md`) in a `reviewStatus` field — Paper 1 added
+this field and its on-page badge; keep both.
+
+Never from notes, never from the web, never from memory, and never paraphrased from a chapter's own
+self-test — transcribe verbatim. This is a repo-level rule, and it exists because a community guide's
+wrong scenario count reached generated CCAR-F practice material.
 
 Item shape:
 
@@ -58,6 +77,7 @@ Item shape:
 | `g` | 1-based position. Must equal array index + 1 |
 | `domain` | `"D1"`..`"D8"` |
 | `section` | Skill section `"N.M"`. Must sit inside its own domain |
+| `reviewStatus` | `"gate-verified"` \| `"partial-review"` \| `"unreviewed"` — the source chapter's own review status, shown as a badge on the item card. Omitted defaults to `"gate-verified"` |
 | `stem` | The scenario. **Multiple-response stems must state their count**, e.g. `(Select two.)` |
 | `options` | Array of strings. Backticks render as inline code |
 | `correct` | Single-answer: option index. Multiple-response: sorted array of indexes |

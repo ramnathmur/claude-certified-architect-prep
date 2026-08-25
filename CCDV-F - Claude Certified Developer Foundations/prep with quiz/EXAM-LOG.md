@@ -3,11 +3,13 @@
 **The single source of truth for Ram's standing on CCDV-F.** No other file in this project carries
 scores. If one starts to, delete it.
 
-**Status:** no papers generated, no papers sat. **Phase 0 closed 2026-08-19** — the official guide is
-filed and the blueprint is confirmed. **All 34 course chapters are authored as of 2026-08-25** (the
-corpus this exam's items now come from, superseding the old domain-file plan), but Stage 9
-instrumentation — the diagnostic pre-test and the three weighted mock papers — has not run yet. Papers
-start once that runs. See `../ROADMAP.md`.
+**Status:** Paper 1 generated 2026-08-25, not yet sat. **Phase 0 closed 2026-08-19** — the official
+guide is filed and the blueprint is confirmed. **All 34 course chapters are authored as of 2026-08-25**
+(the corpus this exam's items now come from, superseding the old domain-file plan). `mock-exams/
+CCDV-F_MockTest-1_v1.html` is the first of the plan's three full weighted papers — 53 items at the
+exact published domain weights, drawn from chapters with mixed review status (see `reviewStatus` on
+each item and `GENERATION-INTELLIGENCE.md` DV-11). The 30-item diagnostic and Papers 2–3 are still
+unbuilt. See `../ROADMAP.md`.
 
 **The paper being simulated:** 53 items · 120 minutes · standalone items, each stating how many
 responses to select · 720 scaled on 100–1,000 · **no domain floor**, total score only.
@@ -117,7 +119,15 @@ State the RECALL/CONCEPT ratio and what it implies: more corpus work, or more un
 
 ## Papers
 
-*None yet.*
+**Paper 1 — GENERATED 2026-08-25, not yet sat.**
+
+**File:** `mock-exams/CCDV-F_MockTest-1_v1.html` · 53 items at the exact domain weights (14.7/33.1/3.1/
+2.6/16.8/11.0/8.1/10.6 → 8/17/2/1/9/6/4/6 items) · single-answer and multiple-response, each stating
+its select count · Exam Mode built in.
+
+No entry using the scored template above until this paper is actually sat — this line exists only so
+"Papers: none yet" doesn't read as stale once a paper does exist. Delete this paragraph and replace it
+with a real `## Paper 1 — SCORED ...` entry, per the template, once it's attempted.
 
 ---
 
