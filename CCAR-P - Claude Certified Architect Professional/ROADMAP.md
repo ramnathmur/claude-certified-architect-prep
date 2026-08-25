@@ -88,13 +88,21 @@ guide's wrong scenario count reached generated practice material.
       `BACKGROUND-MATERIAL-INDEX_v1.md`) — these are the only documented weaknesses that already exist
 - [ ] Confirm rather than re-sit the six Academy pre-enrolment courses
 
-### Phase 2 — Build the corpus (weeks 6–16, overlapping Phase 1)
-- [ ] One `CCAR-P_Domain-N_v1.md` per confirmed domain, built the way the Foundations `_v2` files were:
-      core facts, decision tables, exam scenarios with ✅/❌, explicit misconceptions
-- [ ] Port the Foundations D1/D4/D5 material into the Models/Prompting/Context domain
-- [ ] Build the Evaluation domain from the existing Eval Design Blueprint
-- [ ] Tier-3 governance reading → the Governance domain file
-- [ ] Corpus index + concept inventory, so coverage can be audited
+### Phase 2 — Build the corpus (**completed 2026-08-25**, far ahead of the weeks 6–16 estimate)
+- [x] One `CCAR-P_Domain-N_v1.md` per confirmed domain, built the way the Foundations `_v2` files were:
+      core facts, decision tables, exam scenarios with ✅/❌, explicit misconceptions — **all seven
+      created, 77 sections, 77 scenarios, 154 tagged distractors.** Counts per domain in
+      `prep with quiz/CCAR-P_Corpus-Index_v1.md`
+- [x] Port the Foundations D1/D4/D5 material into the Models/Prompting/Context domain
+- [x] Build the Evaluation domain from the existing Eval Design Blueprint
+- [x] Tier-3 governance reading → the Governance domain file
+- [x] Corpus index updated with per-domain section counts, so coverage can be audited
+- [x] **Companion lessons** — `Outputs/lessons/CCAR-P_Lesson-Domain-N_v1.md`, seven long-form
+      teaching files (~64,150 words) covering all 38 objectives. Not a question source; the domain
+      files remain the only permitted origin for generated questions
+
+> **Not yet studied.** The lessons exist as reference material to work through chapter by chapter.
+> Nothing in this project records them as read, and no mock paper has been generated or sat.
 
 ### Phase 3 — Production exposure (months 3–8, Path B only)
 - [ ] Take one Claude system at Infosys from design to production: integration, evals, safety
