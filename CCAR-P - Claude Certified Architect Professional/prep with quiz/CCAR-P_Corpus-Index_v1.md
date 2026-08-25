@@ -1,9 +1,16 @@
 # CCAR-P Corpus Index
 
-**Status:** Phase 0 reconciliation done 2026-08-25. Domain files still not created — that is Phase 2.
+**Status:** Phase 0 reconciliation done 2026-08-25. **Phase 2 corpus complete 2026-08-25** — all seven
+domain files exist, 77 sections carrying 77 exam scenarios and 154 tagged distractors.
 
 Domain files are the only permitted source for generated questions. The domain list and weightings
-are now confirmed (see below), so Phase 2 file creation is unblocked, but no domain file exists yet.
+are confirmed (see below), and the corpus now satisfies the orchestration prompt's Phase 0 preflight,
+which aborts while any domain file is listed as not created.
+
+**Companion teaching material.** Each domain also has a long-form lesson in `../Outputs/lessons/`
+(`CCAR-P_Lesson-Domain-N_v1.md`, ~64,150 words total). Those are for learning and revision, written
+to teach the mechanism behind each decision rule. **They are not a question source** — questions come
+from the domain files in this folder and nowhere else.
 
 ---
 
@@ -39,17 +46,32 @@ re-fetch the guide via a direct Partner Academy login to close the provenance ca
 
 ## Corpus files
 
-Created in Phase 2, one per confirmed domain, from `CCAR-P_Domain-Template_v1.md`.
+Created in Phase 2, one per confirmed domain, from `CCAR-P_Domain-Template_v1.md`. All seven created
+2026-08-25.
 
-| File | Domain | Weight | Sections | Status |
-|---|---|---|---|---|
-| `CCAR-P_Domain-1_v1.md` | Solution Design & Architecture | 17% | 6 objectives | not created |
-| `CCAR-P_Domain-2_v1.md` | Claude Models, Prompting & Context Engineering | 13% | 5 objectives | not created |
-| `CCAR-P_Domain-3_v1.md` | Integration | 19% | 8 objectives | not created |
-| `CCAR-P_Domain-4_v1.md` | Evaluation, Testing & Optimization | 16% | 6 objectives | not created |
-| `CCAR-P_Domain-5_v1.md` | Governance, Safety & Risk Management | 14% | 5 objectives | not created |
-| `CCAR-P_Domain-6_v1.md` | Stakeholder Communication & Lifecycle Management | 14% | 5 objectives | not created |
-| `CCAR-P_Domain-7_v1.md` | Developer Productivity & Operational Enablement | 7% | 3 objectives | not created |
+| File | Domain | Weight | Sections | Objectives | Scenarios (✅/❌) |
+|---|---|---|---|---|---|
+| `CCAR-P_Domain-1_v1.md` | Solution Design & Architecture | 17% | 12 (1.1–1.12) | 6 | 12 / 24 |
+| `CCAR-P_Domain-2_v1.md` | Claude Models, Prompting & Context Engineering | 13% | 9 (2.1–2.9) | 5 | 9 / 18 |
+| `CCAR-P_Domain-3_v1.md` | Integration | 19% | 14 (3.1–3.14) | 8 | 14 / 28 |
+| `CCAR-P_Domain-4_v1.md` | Evaluation, Testing & Optimization | 16% | 12 (4.1–4.12) | 6 | 12 / 24 |
+| `CCAR-P_Domain-5_v1.md` | Governance, Safety & Risk Management | 14% | 11 (5.1–5.11) | 5 | 11 / 22 |
+| `CCAR-P_Domain-6_v1.md` | Stakeholder Communication & Lifecycle Management | 14% | 12 (6.1–6.12) | 5 | 12 / 24 |
+| `CCAR-P_Domain-7_v1.md` | Developer Productivity & Operational Enablement | 7% | 7 (7.1–7.7) | 3 | 7 / 14 |
+| | **Total** | **100%** | **77** | **38** | **77 / 154** |
+
+Every file was verified structurally on creation: one Core Facts table per section, exactly one ✅ and
+two ❌ per exam scenario, one quoted misconception per section, and every ❌ tagged with a distractor
+family (OVERSPEC / DISCARD / REPAIR / ARCHITECTED / HALF-MOVE / WRONG-AXIS).
+
+**Section counts track domain weight, deliberately.** Integration (19%, eight objectives) earns the
+most at 14; Developer Productivity (7%, three objectives) earns the fewest at 7. Domains 1 and 6 both
+exceeded their planned 8–11 range at 12 sections each, on the same reasoning: the template's
+one-decision-per-section rule made merging lossy, and since numbering is permanent, splitting is the
+safer error.
+
+**Deliberate cross-domain de-duplication:** prompt caching is a full section in Domain 2 (§2.8) and a
+single decision-table row in Domain 3 (§3.4), rather than two competing sections.
 
 ## Head starts — material that already exists
 
