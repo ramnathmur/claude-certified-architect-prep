@@ -1,41 +1,39 @@
 # CCAR-P Corpus Index
 
-**Status:** empty. No domain files exist yet, by design.
+**Status:** Phase 0 reconciliation done 2026-08-25. Domain files still not created — that is Phase 2.
 
-Domain files are the only permitted source for generated questions. Creating them now would mean
-naming them after domains that currently rest on a community source which states on its own site
-that it is not affiliated with Anthropic. That is the exact failure mode this project is structured
-to avoid, so the corpus starts after Phase 0 closes.
+Domain files are the only permitted source for generated questions. The domain list and weightings
+are now confirmed (see below), so Phase 2 file creation is unblocked, but no domain file exists yet.
 
 ---
 
-## Phase 0 reconciliation checklist
+## Phase 0 reconciliation checklist — closed 2026-08-25
 
-Run this the moment the official CCAR-P Exam Guide PDF lands in `../sources/`.
+Full detail and sourcing live in `../EXAM-FACTS_v1.md`. Summary:
 
-- [ ] **Domain list.** Record the real domain names and codes. Community source says seven:
-      Integration · Solution Design & Architecture · Evaluation, Testing & Optimisation ·
-      Governance, Safety & Risk Management · Stakeholder Communication & Lifecycle Management ·
-      Claude Models, Prompting & Context Engineering · Developer Productivity & Operational
-      Enablement. The names are corroborated by the official prep path's lesson titles; treat the
-      *set* as likely and the *labels* as unconfirmed.
-- [ ] **Weightings.** Community source says 19/17/16/14/14/13/7. Nothing official corroborates these.
-      Question quotas come from the guide, never from that list.
-- [ ] **Item count.** Community source says 63. Unverified.
-- [ ] **Item structure.** Community source says standalone, not scenario-based. Anthropic's own FAQ
-      says all four exams use "multiple choice and scenario-based multiple response questions."
-      **These contradict.** The guide settles it. If scenarios exist, record how many are in the pool
-      and how many are drawn per sitting — the Foundations answer was 6 in pool, 4 drawn, and the
-      block structure changed how papers had to be generated.
-- [ ] **Multiple-response scoring.** All-or-nothing, or partial credit? On Foundations it was
-      all-or-nothing and cost eight marks. This single answer changes exam-day tactics more than any
-      content fact.
-- [ ] **Objective list.** The Foundations score report exposed 37 objectives — the right granularity
-      to build against. Capture the published objectives per domain.
-- [ ] **Guide version and date.** The Foundations guide moved to v1.0 in July 2026 and dropped a whole
-      section. Record version + date here and re-check quarterly.
-- [ ] Update `../EXAM-FACTS_v1.md`: move confirmed rows to VERIFIED, delete disproved rows, and note
-      anything the guide states that neither source anticipated.
+- [x] **Domain list.** Confirmed — the same seven names the community source used: Solution Design &
+      Architecture · Claude Models, Prompting & Context Engineering · Integration · Evaluation,
+      Testing & Optimization · Governance, Safety & Risk Management · Stakeholder Communication &
+      Lifecycle Management · Developer Productivity & Operational Enablement.
+- [x] **Weightings.** Confirmed exactly as the community source stated: 17/13/19/16/14/14/7.
+- [x] **Item count.** Confirmed — **63**.
+- [ ] **Item structure / scenario pooling.** **Still open.** The guide states the item format
+      (multiple-choice/multiple-response, each item states how many to select) but never uses the
+      word "scenario" and never describes a pool-and-draw structure the way the Foundations guide
+      did (6 in pool, 4 drawn). Do not assume either standalone or shared-scenario blocks until this
+      is resolved.
+- [ ] **Multiple-response scoring.** **Still open.** Not stated in the guide. Treat as all-or-nothing
+      (the Foundations behavior) until proven otherwise.
+- [x] **Objective list.** Captured — **38 objectives** across the seven domains, full text in
+      `../EXAM-FACTS_v1.md`.
+- [x] **Guide version and date.** **v1.0, effective July 2026.** Re-check quarterly per the standing
+      rule.
+- [x] Updated `../EXAM-FACTS_v1.md`: confirmed rows promoted to VERIFIED with a provenance caveat —
+      the PDF was obtained via a third-party repository's cited S3 mirror, not a direct Partner
+      Academy login. Re-confirm directly when convenient.
+
+**Residual work before Phase 2 fully trusts the corpus:** resolve the two open items above, and
+re-fetch the guide via a direct Partner Academy login to close the provenance caveat.
 
 ---
 
@@ -45,13 +43,13 @@ Created in Phase 2, one per confirmed domain, from `CCAR-P_Domain-Template_v1.md
 
 | File | Domain | Weight | Sections | Status |
 |---|---|---|---|---|
-| `CCAR-P_Domain-1_v1.md` | *pending Phase 0* | — | — | not created |
-| `CCAR-P_Domain-2_v1.md` | *pending Phase 0* | — | — | not created |
-| `CCAR-P_Domain-3_v1.md` | *pending Phase 0* | — | — | not created |
-| `CCAR-P_Domain-4_v1.md` | *pending Phase 0* | — | — | not created |
-| `CCAR-P_Domain-5_v1.md` | *pending Phase 0* | — | — | not created |
-| `CCAR-P_Domain-6_v1.md` | *pending Phase 0* | — | — | not created |
-| `CCAR-P_Domain-7_v1.md` | *pending Phase 0* | — | — | not created |
+| `CCAR-P_Domain-1_v1.md` | Solution Design & Architecture | 17% | 6 objectives | not created |
+| `CCAR-P_Domain-2_v1.md` | Claude Models, Prompting & Context Engineering | 13% | 5 objectives | not created |
+| `CCAR-P_Domain-3_v1.md` | Integration | 19% | 8 objectives | not created |
+| `CCAR-P_Domain-4_v1.md` | Evaluation, Testing & Optimization | 16% | 6 objectives | not created |
+| `CCAR-P_Domain-5_v1.md` | Governance, Safety & Risk Management | 14% | 5 objectives | not created |
+| `CCAR-P_Domain-6_v1.md` | Stakeholder Communication & Lifecycle Management | 14% | 5 objectives | not created |
+| `CCAR-P_Domain-7_v1.md` | Developer Productivity & Operational Enablement | 7% | 3 objectives | not created |
 
 ## Head starts — material that already exists
 

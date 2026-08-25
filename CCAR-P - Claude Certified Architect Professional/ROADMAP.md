@@ -2,7 +2,8 @@
 
 **Created:** 2026-08-18, the day CCAR-F was passed (851/720).
 **Status:** Phase 0, **parallel track.** CCDV-F became the active exam on 2026-08-19; this project is
-kept warm rather than paused. Still blocked on the official exam guide.
+kept warm rather than paused. Exam guide obtained and reconciled 2026-08-25 — see the provenance
+caveat in `EXAM-FACTS_v1.md`. Only the Path A/B decision below remains open in Phase 0.
 
 > **Revised ordering, 2026-08-19.** Ram is sitting **CCDV-F first**. Phase 1 below still runs, but in
 > CCDV-F-serving order: **Lesson 2 (Enterprise Integration & Production), then Lesson 3 (Responsible
@@ -41,7 +42,7 @@ Professional is a different shape:
   ground as a consultant — it just has to be converted from professional instinct into exam-shaped
   recall.
 
-*(Percentages are the community blueprint's and are UNVERIFIED — see `EXAM-FACTS_v1.md`.)*
+*(Percentages are now VERIFIED against the official exam guide — see `EXAM-FACTS_v1.md`.)*
 
 **The honest bottleneck is not study time. It's production exposure.** The exam is written for people
 who have shipped and operated a Claude system. Reading closes the knowledge gap; it does not close
@@ -65,10 +66,16 @@ without colliding with P revision.
 ## Phases
 
 ### Phase 0 — Unblock (this week)
-- [ ] Sign in to Anthropic Partner Academy with the Infosys Claude Partner Network account
-- [ ] Download the **CCAR-P Official Exam Guide (PDF)** → `sources/`
-- [ ] Reconcile every ⚠️ in `EXAM-FACTS_v1.md`; move confirmed rows to VERIFIED
-- [ ] Confirm the real domain list and weightings, then rename the `CCAR-P_Domain-N` stubs to match
+- [x] Download the **CCAR-P Official Exam Guide (PDF)** → `sources/CCAR-P_Official-Exam-Guide_v1.0.pdf`
+      (2026-08-25, via a third-party repo's cited S3 mirror — not a direct Partner Academy login; see
+      the provenance caveat in `EXAM-FACTS_v1.md`)
+- [ ] Sign in to Anthropic Partner Academy with the Infosys Claude Partner Network account and
+      re-fetch the guide directly, to close the provenance caveat above
+- [x] Reconcile every ⚠️ in `EXAM-FACTS_v1.md`; move confirmed rows to VERIFIED (2026-08-25) — two
+      items remain genuinely open (scenario pooling, multi-response scoring), not caveat-blocked
+- [x] Confirm the real domain list and weightings — all seven names and percentages matched the
+      community source exactly; `CCAR-P_Domain-N` stub table in the corpus index now carries the
+      confirmed names and weights (files themselves still not created — that's Phase 2)
 - [ ] Decide Path A or Path B and write the target date into this file
 
 **Nothing else starts until Phase 0 closes.** This is the lesson from Foundations, where a community

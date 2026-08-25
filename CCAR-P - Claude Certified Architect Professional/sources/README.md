@@ -3,13 +3,18 @@
 Official, authoritative documents only. Anything from a community site belongs in `../notes/` with
 its provenance recorded, never here.
 
-## Wanted — in priority order
+## On hand
+
+| # | File | Obtained |
+|---|---|---|
+| 1 | **CCAR-P_Official-Exam-Guide_v1.0.pdf** | 2026-08-25, via a third-party repository's cited S3 mirror, not a direct Partner Academy login. Provenance chain and the caveat this carries are recorded in `../EXAM-FACTS_v1.md`. Re-fetch directly from Partner Academy when convenient and drop the caveat once confirmed. |
+
+## Still wanted
 
 | # | File | Where to get it |
 |---|---|---|
-| 1 | **CCAR-P Official Exam Guide (PDF)** | Anthropic Partner Academy → Claude Certified Architect – Professional certification page. Requires Claude Partner Network sign-in (Infosys account) |
-| 2 | Certification terms & policies | Same page |
-| 3 | Any exam-guide revision that supersedes #1 | Re-check quarterly |
+| 1 | Certification terms & policies | Anthropic Partner Academy → Claude Certified Architect – Professional certification page. Requires Claude Partner Network sign-in (Infosys account) |
+| 2 | Any exam-guide revision that supersedes v1.0 | Re-check quarterly |
 
 ## Naming
 
