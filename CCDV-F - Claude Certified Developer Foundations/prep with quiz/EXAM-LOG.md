@@ -123,7 +123,8 @@ State the RECALL/CONCEPT ratio and what it implies: more corpus work, or more un
 
 **File:** `mock-exams/CCDV-F_MockTest-1_v1.html` · 53 items at the exact domain weights (14.7/33.1/3.1/
 2.6/16.8/11.0/8.1/10.6 → 8/17/2/1/9/6/4/6 items) · single-answer and multiple-response, each stating
-its select count · Exam Mode built in.
+its select count · **Practice Mode** (per-question feedback), the CCAR-F-matching default — see
+`mock-exams/README.md` "Never change these → Exam mode" and `GENERATION-INTELLIGENCE.md` DV-12.
 
 No entry using the scored template above until this paper is actually sat — this line exists only so
 "Papers: none yet" doesn't read as stale once a paper does exist. Delete this paragraph and replace it

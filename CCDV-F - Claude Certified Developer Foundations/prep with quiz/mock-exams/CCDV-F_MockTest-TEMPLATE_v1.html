@@ -313,12 +313,7 @@ body{font-family:var(--sans);background:var(--cream);color:var(--ink);font-size:
       the guide does not say. Eight CCAR-F misses came from exactly this leak.</div>
     </div>
 
-    <div class="sf" style="margin-top:12px;background:rgba(255,255,255,0.6)">
-      <div class="k">Exam mode</div>
-      <div class="v prose">No per-question feedback, no live score, no correctness colour. Answers stay freely
-      changeable until you submit - click again, use Back, or jump from the map. The timer counts 120:00 down and
-      floors at 0:00 without auto-submitting; this is a practice tool, not proctoring software.</div>
-    </div>
+    <div class="sf" id="modeInfo" style="margin-top:12px;background:rgba(255,255,255,0.6)"></div>
 
     <div class="start-actions"><button class="btn" onclick="goToQuestion(1)">Begin exam</button></div>
   </div>
@@ -347,10 +342,24 @@ body{font-family:var(--sans);background:var(--cream);color:var(--ink);font-size:
 // PER-PAPER: give every paper its own localStorage key, or two papers share one save file.
 const KEY = "ccdvf-mock-TEMPLATE";
 
-// Exam mode per ..\..\CCAR-F...\prep with quiz\EXAM-MODE-DESIGN_v1.md.
-// Answers stay freely changeable; no correctness signal of any kind until submit;
-// no live score pill; 120:00 countdown; NO auto-submit at zero.
-const EXAM_MODE = true;
+// DESIGN STANCE (corrected 2026-08-25, was wrong from Session 1 - see
+// GENERATION-INTELLIGENCE.md DV-12): per-question feedback is the DEFAULT,
+// same as CCAR-F's own explicit design stance (Ram, 2026-07-06 -
+// "..\..\CCAR-F...\prep with quiz\CLAUDE.md" line 19 - "per-question feedback
+// is deliberate. The tool optimizes learning-per-question, not exam-condition
+// realism."). Exam Mode is the EXCEPTION, not the rule: reserve it only for a
+// genuine final dress-rehearsal paper close to Ram's actual CCDV-F sitting,
+// the same way CCAR-F used it only for Tests 19-20 - see
+// "..\..\CCAR-F...\prep with quiz\EXAM-MODE-DESIGN_v1.md". There is no
+// runtime toggle by design (mirrors that spec's own §7): pick the mode once,
+// per paper, at generation time.
+//
+// EXAM_MODE = true:  no per-question feedback; no live score pill; 120:00
+//                     countdown; NO auto-submit at zero; answers freely
+//                     changeable until submit.
+// EXAM_MODE = false (DEFAULT): full explanation immediately after each
+//                     question; count-up timer for pacing only, no limit.
+const EXAM_MODE = false;
 
 const EXAM_SECONDS = 120 * 60;   // 120 minutes, official guide v1.0 Section 5
 const SCALED_MIN   = 100;        // official scaled range is 100-1000
@@ -786,9 +795,12 @@ function paintChrome(){
     "Mock Test " + (DATA.paper_label || DATA.paper_n) + " - generated " + DATA.generated;
   document.getElementById("startFacts").innerHTML =
     fact("Format", N + " items - " + (N-mr) + " single-answer + " + mr + " multiple-response - no scenario blocks") +
-    fact("Time", "120:00 countdown - no auto-submit at zero") +
+    fact("Time", EXAM_MODE ? "120:00 countdown - no auto-submit at zero" : "Untimed - a stopwatch counts up per question for pacing awareness, no limit, no auto-submit") +
     fact("Pass line", "720 scaled on 100-1000. On " + N + " items that is " + minRawToPass(N) + " raw correct or better (estimator only).") +
     fact("Domain floors", "None. Pass/fail is total scaled score only - the guide states section percentages are not used to determine the result.");
+  document.getElementById("modeInfo").innerHTML = EXAM_MODE
+    ? '<div class="k">Exam mode</div><div class="v prose">No per-question feedback, no live score, no correctness colour. Answers stay freely changeable until you submit - click again, use Back, or jump from the map. The timer counts 120:00 down and floors at 0:00 without auto-submitting; this is a practice tool, not proctoring software.</div>'
+    : '<div class="k">Practice mode</div><div class="v prose">Full explanation appears immediately after each question - right or wrong, why, and the source citation. This is the default design: the tool optimizes learning-per-question, not exam-condition realism (the same explicit design stance CCAR-F states in its own CLAUDE.md, carried into CCDV-F). Once answered, an item locks - use Back or the jump map to revisit it, review-only. Exam Mode exists as a separate, deliberate choice for a genuine final dress rehearsal, not the default here.</div>';
 }
 function fact(k,v){ return '<div class="sf"><div class="k">'+esc(k)+'</div><div class="v prose">'+esc(v)+'</div></div>'; }
 

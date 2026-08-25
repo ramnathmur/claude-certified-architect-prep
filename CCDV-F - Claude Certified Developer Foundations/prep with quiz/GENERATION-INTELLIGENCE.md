@@ -195,6 +195,45 @@ which quotes its source chapter's own rationale verbatim. Do not let this become
 it works once because the underlying decision rule is stated plainly elsewhere in the chapter; a
 chapter without that would need a real fix to its markdown, not a derived item.
 
+### DV-12 — Exam Mode was ported as the permanent default, inverting CCAR-F's actual design stance · CLOSED
+
+Both `CCDV-F_MockTest-TEMPLATE_v1.html` (Session 1, 2026-08-20) and Paper 1's first version (Session 2,
+2026-08-25) hardcoded `EXAM_MODE = true` with **no way to get per-question feedback at all** — every
+CCDV-F paper, forever, would sit in Exam Mode. Ram flagged this directly ("does not have the hint
+option") and it traces to a real misreading of the reference material.
+
+**What the reference actually says**, verbatim from CCAR-F's own `prep with quiz/CLAUDE.md` line 19:
+*"Design stance (Ram, 2026-07-06): per-question feedback is deliberate. The tool optimizes
+learning-per-question, not exam-condition realism."* Line 21 names Exam Mode as an explicit,
+temporary **exception** — "for the final pre-exam sittings only (Test 19, Test 20 ... This does NOT
+change the default design stance for any exam generated after the 2026-08-18 sitting." The spec file
+itself (`EXAM-MODE-DESIGN_v1.md` §7) states it even more plainly: *"No practice/exam toggle UI — fixed
+behavior for these two files only (Ram's choice)."* Confirmed empirically too: CCAR-F Test 5, a normal
+study paper, has zero occurrences of the string `EXAM_MODE` in its file — its base engine gives
+immediate feedback unconditionally, with no flag needed at all.
+
+**What went wrong:** Session 1 read `CCDV-F_MockTest-TEMPLATE_v1.html`'s job as "port the exam-mode
+mechanism," found it fully documented in `EXAM-MODE-DESIGN_v1.md`, and ported it faithfully — but
+never carried forward *when* that spec says to use it. The exception became CCDV-F's only mode. This
+is DV-11's shape again, one layer higher up: the mechanism was built correctly, but the mechanism was
+applied outside the scope its own source document names for it.
+
+**The fix:** `EXAM_MODE` now defaults to `false` (Practice Mode) in both the template and Paper 1, with
+a header comment quoting the CCAR-F design-stance line directly so this can't drift back unnoticed. The
+static "Exam mode" info block on the landing card is no longer hardcoded prose — it is now rendered by
+`paintChrome()` from the live `EXAM_MODE` value, so whichever mode a given paper actually runs in is
+what the landing page describes. **Reserve `EXAM_MODE = true` for an actual final CCDV-F dress
+rehearsal**, generated deliberately that way, the same narrow scope CCAR-F used it for — not before.
+
+**Also raised in the same pass and fixed:** CCDV-F had no dashboard at all — `mock-exams/DASHBOARD.html`
+now exists, ported from CCAR-F's `DASHBOARD.html`, reading the same `DASHBOARD-DATA.jsonl` this project
+already writes to.
+
+**The generalizable rule: when porting a design decision from a reference project, port its stated
+*scope* with the same rigor as its mechanism.** A spec that says "exception, these two files only" is
+not evidence for "this is now the standing default" just because it's the only fully-documented example
+available at build time.
+
 ---
 
 ## Section Coverage Tracker
@@ -361,8 +400,27 @@ rests on static JS syntax check + the Node structural validator + manual re-read
 wiring — not on a rendered page. **A human glance at this file in a real browser is still the one
 verification step nobody has done.**
 
+**A second, larger bug surfaced immediately after Ram reviewed the shipped paper.** DV-12: both the
+template and Paper 1 had hardcoded Exam Mode as the *only*, permanent behavior — every future CCDV-F
+paper would have shipped with no per-question feedback at all, which directly inverts CCAR-F's own
+explicit design stance (per-question feedback is the deliberate default; Exam Mode is a documented
+exception for two final pre-exam sittings only). Fixed in the same session: both files now default to
+Practice Mode, with the landing-card mode description now rendered from the live `EXAM_MODE` value
+instead of hardcoded prose, so it can't silently drift out of sync with whichever mode a paper actually
+runs in again. A CCDV-F dashboard (`mock-exams/DASHBOARD.html`, ported from CCAR-F's) was also missing
+entirely and got built in the same pass, since Ram raised it alongside the mode bug.
+
+**Worth naming as a pattern, not just two isolated bugs.** DV-11 and DV-12 are the same failure at two
+different altitudes: DV-11 misapplied a chapter to the wrong domain bucket; DV-12 misapplied an entire
+design mechanism outside the scope its own source document named for it. Both passed every downstream
+structural check cleanly — the Node validator and the app's own `validateItems()` catch shape errors,
+not scope errors. Both were only caught by cross-checking against a source of truth after the fact (the
+Coverage Contract; Ram's own read of the shipped file). **Next session, verify scope against the
+reference document *before* building, not after shipping and waiting for it to be noticed.**
+
 **Ready for Session 3**, whenever it runs: the 30-item diagnostic and Papers 2–3 are still unbuilt.
 Before drawing more items from chapters 17–34, note that DV-11's fix pulled Paper 1's D2 quota more
 heavily toward unreviewed material (Ch21) than a first cut would have — Papers 2 and 3 should actively
 look for chances to substitute in still-unused gate-verified items where the domain allows it, not
-default to whichever chapter is easiest to read again.
+default to whichever chapter is easiest to read again. Papers 2–3 should also default to Practice Mode
+unless one of them is deliberately built as the eventual final dress rehearsal.

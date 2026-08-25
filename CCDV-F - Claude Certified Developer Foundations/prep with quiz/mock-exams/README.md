@@ -20,6 +20,12 @@ independently reviewed — see `../GENERATION-INTELLIGENCE.md` DV-11 for a real 
 this caught before the paper shipped. The template still ships with the three official sample questions
 as demo items, unrelated to any generated paper.
 
+**Corrected 2026-08-25 (DV-12):** the template and Paper 1 both shipped defaulting to Exam Mode,
+permanently, with no way to get per-question feedback at all. That inverted CCAR-F's own explicit,
+documented design stance — see "Never change these → Exam mode" below. Both files now default to
+Practice Mode. `mock-exams/DASHBOARD.html` also did not exist until this fix; it now does, ported from
+CCAR-F's `DASHBOARD.html`.
+
 ---
 
 ## The paper being simulated
@@ -162,9 +168,17 @@ explicit sign-off first — `..\DASHBOARD-SCHEMA.md` rule 4.
 architecture was removed wholesale from this engine — no block headers, no block grouping in the jump
 map, no per-block results breakdown. Do not reintroduce it.
 
-**Exam mode.** `EXAM_MODE = true`. No correctness signal of any kind during the sitting, no live score
-pill, answers freely changeable until submit, 120:00 countdown, no auto-submit at zero. Spec:
-`..\..\..\CCAR-F - Claude Certified Architect Foundations\prep with quiz\EXAM-MODE-DESIGN_v1.md`.
+**Design stance — Practice Mode is the default, not Exam Mode.** `EXAM_MODE = false` on every new
+paper unless it is a genuine final dress rehearsal. This mirrors CCAR-F's own explicit design stance
+(`..\..\..\CCAR-F - Claude Certified Architect Foundations\prep with quiz\CLAUDE.md`, "Design stance,
+Ram, 2026-07-06": *"per-question feedback is deliberate. The tool optimizes learning-per-question, not
+exam-condition realism."*). Exam Mode (`EXAM_MODE = true`: no correctness signal during the sitting, no
+live score pill, answers freely changeable until submit, 120:00 countdown, no auto-submit at zero) is
+the documented **exception** CCAR-F reserved only for its final two pre-exam sittings — spec:
+`..\..\..\CCAR-F - Claude Certified Architect Foundations\prep with quiz\EXAM-MODE-DESIGN_v1.md`. There
+is no runtime toggle by design (that spec's own §7); pick the mode once, per paper, at generation time,
+and revert to Practice Mode for the paper after any dress rehearsal. **Getting this backwards is exactly
+what shipped in Session 1 and Paper 1's first version** — see `../GENERATION-INTELLIGENCE.md` DV-12.
 
 **Self-contained.** No web fonts, no CDN, no external stylesheets or scripts, no network calls. The
 CCAR-F reference linked Google Fonts; that link is gone and local font stacks replace it. Keep it that
@@ -219,4 +233,5 @@ first. Until then the exported line carries a key the schema does not document.
 |---|---|
 | `CCDV-F_MockTest-TEMPLATE_v1.html` | The engine. Copy it; do not sit it |
 | `CCDV-F_MockTest-N_v1.html` | Generated papers |
+| `DASHBOARD.html` | Reads `..\DASHBOARD-DATA.jsonl`. Static snapshot with a paste-to-refresh panel — see its own header comment |
 | `README.md` | This file |
