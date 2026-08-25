@@ -4,7 +4,10 @@
 scores. If one starts to, delete it.
 
 **Status:** no papers generated, no papers sat. **Phase 0 closed 2026-08-19** — the official guide is
-filed and the blueprint is confirmed. Papers start once the corpus exists (Phase 3). See `../ROADMAP.md`.
+filed and the blueprint is confirmed. **All 34 course chapters are authored as of 2026-08-25** (the
+corpus this exam's items now come from, superseding the old domain-file plan), but Stage 9
+instrumentation — the diagnostic pre-test and the three weighted mock papers — has not run yet. Papers
+start once that runs. See `../ROADMAP.md`.
 
 **The paper being simulated:** 53 items · 120 minutes · standalone items, each stating how many
 responses to select · 720 scaled on 100–1,000 · **no domain floor**, total score only.

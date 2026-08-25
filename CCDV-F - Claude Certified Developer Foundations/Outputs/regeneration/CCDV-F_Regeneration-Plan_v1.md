@@ -1,6 +1,6 @@
 # CCDV-F — Study Material Regeneration Plan
 
-**Created:** 2026-08-22 · **Status:** ✅ Part I (chapters 1–5) complete, gate-verified, converted to HTML, and Ram-approved · ✅ Part II (chapters 6–10) gate-verified, converted to HTML, and committed 2026-08-23 — all five PASS (7 carries one Ram-approved documented C14 exception; see §5 Stage 7 note and the gate document's own exception note) · ⏳ Part III (chapters 11–20) in progress, 2026-08-23 — **Ch11** PASS with two Ram-approved exceptions (C5, C7) · **Ch12** clean PASS, zero exceptions · **Ch13** closed out after a round-cap process overrun, corrected the same day · **Ch14** stuck at its round cap, awaiting Ram's decision (the pending item at session pause) — none of 11–14 yet converted to HTML; see Part III below for full round-by-round detail · **See `CCDV-F_Resume-Prompt_v2.md` for Part I/II's full round-by-round history, or `resume-prompt.md` for Part III's current state**
+**Created:** 2026-08-22 · **Status:** ✅ Part I (chapters 1–5) complete, gate-verified, converted to HTML, and Ram-approved · ✅ Part II (chapters 6–10) gate-verified, converted to HTML, and committed 2026-08-23 — all five PASS (7 carries one Ram-approved documented C14 exception; see §5 Stage 7 note and the gate document's own exception note) · ✅ **Part III (chapters 11–34) COMPLETE, 2026-08-25 — all 34 chapters of the course are now authored.** **Ch11** PASS with two Ram-approved exceptions (C5, C7) · **Ch12** clean PASS, zero exceptions · **Ch13** closed out after a round-cap process overrun, corrected the same day · **Ch14** closed 2026-08-24, two round-2 findings Ram-waived including a zero-tolerance C14 · Ch11–14 converted to HTML 2026-08-24 · **Ch15** gate-verified 2026-08-24, clean PASS on round 2 (round 1 fixed C7/C9/C13) · **Ch16** authored 2026-08-24, one round-1 fix applied (C5), round 2 skipped at Ram's explicit request — not gate-confirmed · **Ch17–34** authored 2026-08-24/25 with no gate review run at all, per Ram's explicit instruction — none of 16–34 yet converted to HTML or committed · see Part III below for full round-by-round detail · **See `CCDV-F_Resume-Prompt_v2.md` for Part I/II's full round-by-round history, or `resume-prompt.md` for the last Part III resume state (now superseded — the course is complete)**
 **Supersedes:** `Outputs/CCDV-F_Syllabus_v1.md` (29 classes, 14 built).
 
 **Authoritative chapter list and budgets: `CCDV-F_Pedagogy-Design_v2.md` — 34 chapters, 79,500 words.**
@@ -75,7 +75,7 @@ still open. *(Corrected 2026-08-23: this line previously said chapters 6–10 we
 which stopped being true the moment `e5142c7` landed and was never updated — caught while answering a
 progress-update question, verified directly against `git log`.)*
 
-## Part III — chapters 11–20, in progress
+## Part III — chapters 11–34, complete 2026-08-25
 
 **Chapter 11 — "Why Claude picked the wrong tool" — gate-verified 2026-08-23, with two Ram-approved
 documented exceptions.**
@@ -238,8 +238,222 @@ written cleanly against the chapter's real vocabulary and independently checked 
 "launches" appears nowhere near the shared-server label — new content stays correct even though the
 untouched self-test stem does not.
 
-Chapters 15–20 (authoring) are deferred to a later session — see the resume prompt for exactly where
-chapter 15's research stood at the point of deferral and the corrected process to resume with.
+**Chapter 15 ("Workflow or agent") — gate-verified 2026-08-24, clean PASS on round 2.**
+
+Authored against `CCDV-F_Module-2` lines 950–1099 (primary source: the workflow-vs-agent decision
+table, wiring paths, HITL table) plus `CCDV-F_Module-4` lines 853–989 and 1328–1396 (the
+orchestrator-worker treatment and its ~15x token-cost figure, needed because M2 alone only mentions
+manager/supervisor hierarchies in one throwaway line — the brief's own flagged gap, confirmed real).
+Form 2 two-column fork, Open B (a decision already made badly), anchored on assembly line vs. repair
+shop.
+
+- **Round 1: FAIL.** Three non-zero-tolerance hits, no zero-tolerance check fired: **C7** (unsourced
+  superlative — "The instinct, once a task is agent-shaped, is to register everything it might
+  conceivably need"), **C9** (rhetorical question answered in its own paragraph, in "The
+  enumerate-the-steps test"), **C13** (fact-free closing screen, "What the stem sounds like," no
+  number/API/mechanism). Fixed by a fresh agent (never the original author's conversation, per the
+  standing rule): C7 rewritten as a mechanism fact about tool-routing cost rather than a claim about
+  developer instinct; C9 converted to a declarative sentence; C13 anchored to the chapter's own
+  already-established "roughly fifteen times" cost figure and context-window mechanism rather than
+  left as pure vocabulary-matching guidance.
+- **Round 2: clean PASS**, all 14 checks clear, including all four zero-tolerance checks (C3, C6, C11,
+  C14). Reviewer's own summary: "the cleanest of the checks I ran... the earlier corpus's signature
+  defects... are essentially absent rather than merely reduced."
+
+Final word count 3,159 (target 3,200). Analogy-fidelity table (assembly line/repair shop) built and
+checked against both teaching prose and the self-test — no contradictions found, and the required
+"where it breaks" caveat is explicit (a technician can grab an unlabelled tool off a shelf; Claude
+cannot call an unregistered one). Not converted to HTML, not committed — both wait on explicit request.
+
+**Chapter 16 ("Who runs the loop") — authored and round-1 fixed 2026-08-24; round-2 review skipped at
+Ram's explicit request.**
+
+Authored against `Outputs/regeneration/source-packs/Pack-B_ch11-ch13-ch16.md`, the "CHAPTER 16" section
+(line 795 to the end). Form 11 inventory audit, Open F (a term he owns — "agent"), anchored on hiring
+models (employee / agency temp / managed service / franchise) mapped to raw loop / framework-in-your-
+process / Anthropic-hosted Managed Agents / self-hosted Managed Agents. Central must-land fact: the
+self-hosted/Anthropic-hosted distinction — self-hosted moves only tool execution to your infrastructure,
+never the model, loop, or session state.
+
+- **Round 1: FIX.** One non-zero-tolerance C5 finding (repetition — the franchise-analogy-breaks-down
+  paragraph's closing sentence largely re-asserted the prior sentence's fact rather than adding a new
+  one; reviewer flagged it as a borderline, interpretive call). Fixed by a fresh agent: rewrote the
+  closing sentence to name Anthropic's loop as the franchisor explicitly, adding a genuinely new fact
+  (who authors the playbook) rather than restating what the operator lacks. The load-bearing "self-hosted
+  ≠ running the agent yourself" caveat was preserved, not cut.
+- **Round 2: not run.** Ram interrupted the second blind-review dispatch and asked to skip further review
+  rounds and finish generating the chapters. Chapter 16 is therefore authored and carries one applied,
+  self-verified fix — **it has not been independently gate-confirmed PASS**, unlike chapters 1–15 which
+  all completed at least one full blind round-2 review. Treat this status as distinct from a PASS or a
+  Ram-waived exception: no round-2 findings exist because no round 2 ran, not because none were found.
+
+Final word count 3,223 (target 3,400). Analogy-fidelity table (hiring models) was built and self-checked
+by the author agent before the fix — the franchise/self-hosted mapping was reported clean, including an
+explicit "where it breaks" caveat foreclosing the "self-hosted = you run everything" misread. Not
+independently re-verified by a blind reviewer. Not converted to HTML, not committed.
+
+**Chapters 17–20 — authored 2026-08-24, no gate review run on any of them (Ram's explicit instruction:
+"complete 17 to 20 without the reviews").** Each was written by its own author agent with the full prose
+gate and pedagogy design given up front (not just the brief), and each self-audited its own draft against
+the gate's mechanical checks (contrast-pair count, em-dash density, analogy-fidelity table checked against
+the self-test) before finishing — but **none of the four has been independently blind-reviewed**, the same
+status chapter 16 already carries. Treat all of 16–20 as authored-only until a review is explicitly
+requested.
+
+- **Ch17 ("Building the loop by hand"), 2,215 words** (target 1,800 teaching prose ≈1,700 + self-test).
+  Source: M2 lines 1045–1144 (the four wiring steps, the loop-wiring checklist, the file-editing-agent
+  production incident used as the worked example). Self-reported: 2 contrast-pairs (at budget), one
+  self-caught analogy-fidelity contradiction (an early draft implied flat-pack furniture has an
+  equivalent completion-check for the exit-condition step, undercutting the "where it breaks" caveat —
+  rewritten to exclude it).
+- **Ch18 ("State that outlives a turn"), 2,705 words** (target 2,200; over due to a 5-item self-test
+  chosen to give both subagent-mechanism and memory-scope facts their own item). Source: M2 lines 793,
+  836–840, 1272–1341, 1349–1366; M3 lines 316–390. Self-reported: 0 contrast-pairs (drafted several,
+  cut all during a mechanical audit), one self-caught self-test answer-key error (fixed), context-window
+  slice confirmed narrow (no compaction/pruning/token-counting content, verified by the author's own grep).
+- **Ch19 ("Where the human stands"), 2,206 words** (target 1,800; author chose not to pad further to hit
+  the target, citing repetition-check risk). Source: M3 lines 298–460, M4 lines 1058–1122, M2 lines
+  1068–1077. Self-reported: 1 contrast-pair, 0 em-dashes, "deny beats ask beats allow" taught as a
+  product-independent precedence principle first, Claude Code's own implementation named only after
+  (settings-file mechanics explicitly deferred to ch.20).
+- **Ch20 ("Claude Code as a governed agent"), 2,900 words** (target 2,600; author cites the brief's own
+  "budget space accordingly" instruction for an 8-sub-topic chapter, trimmed ~180 words of redundant
+  restatement first). Source: M3 lines 51–160, 272, 483–628; Pack C lines 379/424 for headless mode.
+  **Streaming mode has zero corpus content** (confirmed by direct search across all four module
+  transcripts and every source pack) — the chapter states this honestly rather than inventing flag names
+  or mechanics, per this project's standing grounding rule. Self-reported: 1 contrast-pair, "the CLI
+  session" used consistently (never bare "session"), Skills and Commands both explicitly named as 2 of
+  the guide's 5 Claude Code primitives.
+
+**Chapters 21–25 — authored 2026-08-24, no gate review run on any of them**, same explicit instruction
+as 17–20. Five author agents dispatched in parallel, each given the full prose gate and pedagogy design
+plus explicit source ranges, self-auditing before finishing.
+
+- **Ch21 ("Three places a durable instruction can live"), 3,763 words** (3,153 teaching prose against a
+  3,300 target). Source: Pack C lines 12–339. Widest chapter yet (9 sub-topics). Prompt-versioning gap
+  handled honestly — states plainly that Managed Agents' `agents.update` version-pin/rollback is the
+  *only* documented instance, flagged as a cookbook page specific to that one product, not a general
+  application practice; the unconfirmed Console-versioning claim is named and excluded. Self-reported:
+  2 contrast-pairs (at budget).
+- **Ch22 ("The same model, five front doors"), 3,070 words** (target 3,000). Source: Pack C lines
+  341–597 — the thinnest corpus support of any chapter in the course ("Claude Desktop" appears once in
+  381k characters of transcript), sourced almost entirely from Pack C's live-fetched docs. Self-reported
+  roughly balanced coverage across all five surfaces (API deliberately kept leaner per the brief's
+  warning not to let it dominate). Self-caught and fixed one analogy contradiction (an early draft's
+  "one ledger, one balance" framing implied persistent memory, contradicting the later stated fact that
+  the model carries nothing forward between calls). 1 contrast-pair.
+- **Ch23 ("Contracts inside your own application"), 2,623 words** (2,170 teaching prose against a 2,200
+  target). Source: Pack C lines 598–750. **Deliberately reframed away from chapter 29's future security
+  argument** — the same underlying Anthropic prompt-injection-mitigation facts are taught here through a
+  reliability/detectability lens ("the shape you ask for decides whether a wrong answer is detectable")
+  rather than an attack/defense one; the author verified this by grepping for "adversary"/"exploit"/
+  "defense" and confirmed each appears exactly once, inside a single deliberate forward-pointer sentence.
+  1 contrast-pair.
+- **Ch24 ("What an application remembers"), 2,589 words** (1,890 teaching prose against a 1,800 target).
+  Source: Pack C lines 753–940 plus M2 lines 858–920 (the sales-receipts context-ceiling postmortem, used
+  narrowly for its design-time-decision lesson, not re-teaching chapter 8's budget mechanics). **Handled
+  the Agent-SDK/CLI session-storage overlap honestly rather than forcing a clean boundary the source
+  doesn't support** — states directly that Agent SDK sessions and Claude Code CLI sessions share the same
+  file-based storage (`~/.claude/projects/<encoded-cwd>/*.jsonl`) by default, and that "the application's
+  own session" is a framing distinction there, not a storage-level separation; the boundary is fully clean
+  only for Managed Agents, a genuinely separate server-side resource. 2 contrast-pairs (at budget).
+- **Ch25 ("Sending Claude things that are not text"), 2,120 words** (target 2,200). Source: M2 lines
+  1600–1694. Delivers on the brief's explicit must-land instruction to do the token arithmetic in front
+  of the reader — two full worked walkthroughs (1,000×1,000px → 36×36 patches → 1,296 visual tokens; and
+  a 4,000×3,000px image exceeding 15,000 tokens, used to motivate the downscaling caveat). No per-tier
+  resolution numbers invented — the source explicitly withholds them as volatile, and the chapter states
+  the concept (limits exist, differ by tier, change over time) without asserting specific figures. 1
+  contrast-pair.
+
+**Chapters 26–30 — authored 2026-08-24, no gate review run on any of them**, same explicit instruction
+as 17–25. Five author agents dispatched in parallel. This batch opens "Part VI — Proving it holds, and
+defending it."
+
+- **Ch26 ("Defining done before you build it"), 1,868 words** (target 1,800 — held tightly, per the
+  brief's own explicit warning this chapter owns zero published sub-topics and is "the first thing to
+  cut if the budget tightens"). Source: M4 lines 50–191 (the eval pipeline, three grading methods, judge
+  calibration). Author confirmed the design-doc framing stayed brief (named once, not re-taught) and the
+  chapter didn't drift into error-handling, tracing, or security depth owned by chapters 27–29. 1
+  contrast-pair.
+- **Ch27 ("Finding where it broke"), 2,094 words** (target 1,800; self-test proportionately scaled).
+  Source: M4 lines 297–472 (four test levels, tracing, the retrieve()/build_prompt() format-mismatch
+  postmortem used as the chapter's central worked example). Stopped cleanly at isolation — retriable/
+  terminal classification and recovery explicitly deferred to ch.28. 1 contrast-pair.
+- **Ch28 ("Failures you can wait out, failures you cannot"), 1,551 words** (target 1,400; author held
+  back from further trimming since remaining content — the decision table, `retry-after` mechanism,
+  `is_error`/refusal handling — was brief-mandated, not padding). Source: M4 lines 477–625. Real content
+  bug avoided: author confirmed refusals (200 + `stop_reason: "refusal"`) are taught as fail-fast, never
+  retried, distinct from the retriable/terminal HTTP-status fork. 0 contrast-pairs.
+- **Ch29 ("Untrusted content and the action boundary"), 3,401 words** (target 2,900). Source: Pack D
+  lines 62–417, tier-flagged throughout (PII section explicitly flagged as the thinnest-sourced area in
+  the whole pack). **Confidentiality/integrity vocabulary gap disclosed exactly once, plainly**: "This
+  chapter borrows 'confidentiality' and 'integrity' from the exam guide's own vocabulary to name that
+  split; Anthropic documents the two properties and the two mechanisms behind them without ever pairing
+  those two words itself." Deliberately kept visibly distinct from chapter 23's reliability framing and
+  from chapter 30's future layering treatment (one forward-pointer paragraph only, no layer taxonomy
+  built here). Real content bug caught and fixed during self-check: a self-test item originally had 3
+  true options against a stated "select 2" count — rewritten to exactly 2. 2 contrast-pairs (at budget).
+- **Ch30 ("Layered guardrails"), 1,756 words** (1,224 teaching prose against a 1,300 target, held under
+  rather than padded). Source: Pack D lines 419–624. Tier-B material (the 24-of-25 credential-
+  exfiltration figure, content-policy specifics) hedged explicitly ("Anthropic's own engineering team
+  reported...", "the policy states...") rather than presented with Tier-A confidence. 2 contrast-pairs
+  (at budget).
+
+None of chapters 15–30 are converted to HTML or committed. Chapter 31 (authoring) is deferred to a
+later session — see the resume prompt for the corrected process to resume with.
+
+**Chapters 31–34 — authored 2026-08-25, no gate review run on any of them**, same explicit
+author-only instruction as 17–30. Four author agents dispatched in parallel. **This batch completes
+the course — all 34 chapters are now authored.**
+
+- **Ch31 ("Identity, secrets, and the reviewer's three questions"), 2,602 words** (1,854 body prose
+  against a 2,400 target; left ~8% over rather than cut further, since the brief itself flags this as
+  the densest chapter in the course at 9 must-land sub-topics). Sources: M3 lines 855–910 (the
+  `.mcp.json` key-leak postmortem, used as opening/anchor) and Pack D lines 632–1120 (Q31.1 static
+  keys vs. WIF, Q31.3 least privilege as blast-radius not prevention, Q31.4 identity/approval/
+  monitoring including the Compliance-API/inference-hooks/OpenTelemetry three-way comparison). All 9
+  owned sub-topics land explicitly; states its boundary with chapter 14 (MCP-specific secret rule
+  only) directly. Author self-caught and fixed a near-miss C3 tricolon and an unsourced C7
+  superlative before finishing. 2 contrast-pairs (at budget), em-dash density 2.7/1,000.
+- **Ch32 ("From business requirement to functional and infrastructure requirement"), 1,800 body
+  words** (target 1,900) **+ 1,101-word self-test** — 8–10 items per the Domain-2-substitution
+  tripled-budget instruction (Pedagogy-Design v2 §4). Source: Pack E lines 421–637 (RQ1–RQ4). Resolved
+  both must-land open questions rather than leaving them implied: the exam guide's published skill
+  line names solution architecture as the *second* input source alongside business requirements, and
+  the relationship is bidirectional (requirements shape the architecture; the chosen architecture then
+  generates further requirements of its own); on infrastructure-vs-non-functional naming, every
+  standards source checked (ISO/IEC 25010, an architecture body of knowledge, AWS's framework) uses
+  "non-functional" as the umbrella term, with "infrastructure requirement" naming only a narrower
+  hardware/network/hosting subset in practitioner use — taught as the best-supported reading, not
+  manufactured certainty. Central worked example: the five-row regulated-data-constraint table from M2
+  lines 1094–1112. Author caught and corrected a fabricated detail mid-draft (an invented fourth
+  solution-architecture viewpoint not in the source) before finishing. 2 contrast-pairs (at budget),
+  0 em-dashes.
+- **Ch33 ("Reading and reviewing code you did not write"), 1,887 body words** (target 2,000, one
+  sub-topic, full budget). Source: Pack E lines 638–812 (Google's code-health standard, GitHub Copilot
+  review's documented diff/hallucination limitations, DORA's CAB-vs-peer-review research) plus M3
+  line 1287, quoted directly: "an AI code review gives you a set of findings to triage, not a verdict
+  to apply." Core idea — a reviewer can only prove what the diff shows — carried end to end. 2
+  contrast-pairs (at budget, both direct sourced quotations), em-dash density 3.18/1,000.
+- **Ch34 ("Changing a live system without breaking it"), 2,279 body words** (target 2,800) **+
+  1,188-word 10-item self-test** — tripled budget, same Domain-2-substitution rule as Ch32. **The
+  final chapter of the course.** Sources: Pack E lines 813–1046 (ISO/IEC/IEEE 12207, ITIL, the DevOps
+  loop, Fowler's refactoring definition, Google's Large-Scale Changes chapter, DORA's version-control
+  capability) and M3 lines 1010–1021 (the legacy-modernization scenario and its three verbatim scoping
+  questions). All four life-cycle phases — developing, implementing, operating, maintaining — land as
+  four distinct explicit definitions rather than one named and three implied. The model-version-drift/
+  eval-regression section (~350 words, drawn from M1 lines 90–102 and M4 lines 630–660, outside Pack
+  E's scope) lands as the chapter's stated novel contribution, not shortchanged in favor of textbook
+  SDLC content. Closes on the Answers block like every other chapter — no manufactured "this is the
+  end" send-off. Author cut a draft's contrast-pair count from 10 to 1 and its em-dash count from 20
+  (5.8/1,000) to 0 during self-audit.
+
+None of chapters 15–34 are converted to HTML or committed — waiting on explicit request, same as
+every prior batch. **Course-completion milestone reached 2026-08-25: all 34 chapters of the CCDV-F
+regenerated course are now authored.** Chapters 1–15 are gate-verified; 16 has one round-1 fix, round
+2 skipped; 17–34 are author-only with no independent review, per Ram's standing instruction for this
+batch of the session. Whether any further review pass runs over 16–34 before HTML conversion is
+Ram's call, not assumed here.
 
 > **The acceptance test, and the only bar that matters.** A student is dropped in cold. He studies
 > this material and **nothing else**. Then he sits CCDV-F: 53 items, 120 minutes, closed book,

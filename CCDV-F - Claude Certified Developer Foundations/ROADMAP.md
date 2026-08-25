@@ -47,10 +47,55 @@ live against the chapter's own launch/spawn vs. host/reach split. **Chapters 11�
 2026-08-24** — four parallel agents, one plan specified in full first, byte-identical CSS/JS to the
 chapters 6–10 template, full prev/next chain verified Ch10 through Ch14 (not committed). One real gap
 found in the process: chapter 13's self-test markdown had no answer key at all; a key was derived from
-the chapter's own stated decision rule and flagged for Ram to spot-check, not silently invented. Chapter
-15's authoring is **deferred to a later session** — see `resume-prompt.md` for where its research stood
-at deferral and the corrected process to pick back up with. Supersedes the 29-class
-syllabus this file pointed to before 2026-08-22 — see the superseded note ahead of Phase 2.
+the chapter's own stated decision rule and flagged for Ram to spot-check, not silently invented.
+**Chapter 15 ("Workflow or agent") authored and gate-verified 2026-08-24** — round 1 FAIL on three
+non-zero-tolerance checks (C7 unsourced superlative, C9 rhetorical question, C13 fact-free screen),
+fixed by a fresh agent, round 2 clean PASS with all 14 checks clear including all four zero-tolerance
+ones. **Chapter 16 ("Who runs the loop") authored 2026-08-24** — round 1 FIX on one C5 finding, fixed by
+a fresh agent; **round 2 review was skipped at Ram's explicit request** ("skip the reviews and just
+finish generating the chapters"), so chapter 16 carries one applied fix but is not independently
+gate-confirmed. **Chapters 17–20 authored 2026-08-24 with no gate review at all**, per a further explicit
+instruction ("complete 17 to 20 without the reviews") — Ch17 "Building the loop by hand" (2,215 words),
+Ch18 "State that outlives a turn" (2,705 words), Ch19 "Where the human stands" (2,206 words), Ch20
+"Claude Code as a governed agent" (2,900 words). Each author agent received the full prose gate and
+pedagogy design and self-audited its own draft (contrast-pair counts, em-dash density, analogy-fidelity
+tables checked against self-tests) before finishing, but none of chapters 16–20 has been independently
+blind-reviewed. Chapter 20's streaming-mode sub-topic has confirmed zero corpus content across every
+module transcript and source pack — the chapter states this honestly rather than inventing mechanics.
+**Chapters 21–25 authored 2026-08-24, same no-review instruction** — Ch21 "Three places a durable
+instruction can live" (3,763 words, 9 sub-topics, the widest chapter in the course), Ch22 "The same
+model, five front doors" (3,070 words, the thinnest-corpus chapter — "Claude Desktop" appears once in
+381k characters of transcript, sourced almost entirely from live-fetched docs), Ch23 "Contracts inside
+your own application" (2,623 words, deliberately reframed away from chapter 29's future security
+argument onto a reliability/detectability argument, verified by the author), Ch24 "What an application
+remembers" (2,589 words, honestly states that Agent SDK sessions and the Claude Code CLI session share
+the same file-based storage by default rather than forcing a clean boundary the source doesn't support),
+Ch25 "Sending Claude things that are not text" (2,120 words, delivers two full worked token-arithmetic
+walkthroughs per the brief's explicit must-land instruction). **Chapters 26–30 authored 2026-08-24, same
+no-review instruction, opening "Part VI — Proving it holds, and defending it"** — Ch26 "Defining done
+before you build it" (1,868 words, held tight per its own explicit "zero owned sub-topics, first thing
+to cut" warning), Ch27 "Finding where it broke" (2,094 words, stops cleanly at isolation), Ch28
+"Failures you can wait out, failures you cannot" (1,551 words, refusals taught as fail-fast and never
+retried, distinct from the retriable/terminal fork), Ch29 "Untrusted content and the action boundary"
+(3,401 words, discloses the confidentiality/integrity vocabulary gap explicitly rather than attributing
+CIA-triad language to Anthropic, and caught+fixed a real self-test bug — an item with 3 true options
+against a stated "select 2" count), Ch30 "Layered guardrails" (1,756 words, hedges its Tier-B evidence —
+a reported 24-of-25 exfiltration-success figure — rather than presenting it as a fixed spec number).
+**Chapters 31–34 authored 2026-08-25, same author-only instruction, completing the course** — Ch31
+"Identity, secrets, and the reviewer's three questions" (2,602 words, densest chapter at 9 must-land
+sub-topics), Ch32 "From business requirement to functional and infrastructure requirement" (1,800
+words + 8–10-item self-test, tripled per the Domain-2-substitution rule — resolves both must-land
+open questions: solution architecture is the guide's named second input source alongside business
+requirements, and "infrastructure requirement" is the narrower practitioner term inside the broader
+"non-functional requirement" umbrella), Ch33 "Reading and reviewing code you did not write" (1,887
+words, one owned sub-topic at full depth), Ch34 "Changing a live system without breaking it" (2,279
+words + 10-item self-test, tripled — **the final chapter of the course**, all four life-cycle phases
+explicit, model-drift/eval-regression as its stated novel contribution). **All 34 chapters of the
+CCDV-F course are now authored — course-completion milestone reached 2026-08-25.** None of chapters
+15–34 yet converted to HTML or committed; that and any further review pass over 16–34 is Ram's call.
+`resume-prompt.md` now describes a superseded checkpoint (chapters 31–34 pending) rather than the
+current state. Supersedes the 29-class syllabus this file pointed to before 2026-08-22 — see the
+superseded note ahead of Phase 2.
 
 ---
 

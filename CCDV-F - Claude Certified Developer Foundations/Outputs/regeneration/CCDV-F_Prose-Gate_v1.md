@@ -466,3 +466,4 @@ fixture's lower cost rather than the full file's.
 | 2026-08-23 | 3EC566CC0A7C (whole file — legacy, see above) | FAIL | C1, C2, C3, C4, C6, C7 |
 | 2026-08-23 | F20DA6CF909B (whole file — legacy, see above) | FAIL | C1, C2, C3, C4, C6, C7 |
 | 2026-08-23 | 47011b7a2c6bb260bf56367f6cd5855f1beb5d0d7b24d063b78b26a452270bfb (§3.1–§3.3, sha256, fixture run) | FAIL | C1, C2, C3, C4, C6, C7 |
+| 2026-08-24 | fe0dcfa2bc2db4187d85b58d2285d9c71f12207119308dcf43bbb9b69b203e03 (§3.1–§3.3, sha256, fixture run, Ch15 blind review) | FAIL | C1, C2, C3, C4, C6, C7 |
