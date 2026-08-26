@@ -19,15 +19,19 @@ mock-exam engine. Nothing at this root carries exam content.
 | `CCAR-F - Claude Certified Architect Foundations/` | Architect – Foundations | ✅ Passed 2026-08-18, 851/720. Renewal due 2027-08-18 |
 | `CCAR-P - Claude Certified Architect Professional/` | Architect – Professional | Parallel track — kept warm |
 | `CCAO-F - Claude Certified Associate Foundations/` | Associate – Foundations | Deferred |
-| `CCDV-F - Claude Certified Developer Foundations/` | Developer – Foundations | ⭐ **ACTIVE — next exam.** Guide v1.0 filed, Phase 0 closed, in Phase 1 |
+| `CCDV-F - Claude Certified Developer Foundations/` | Developer – Foundations | ⭐ **ACTIVE — next exam.** Guide v1.0 filed, Phase 0 closed. All 34 course chapters authored 2026-08-25 — see its own `ROADMAP.md` for the live stage |
 
 **CCDV-F is the active exam.** If Ram says "the exam" or "my prep" without naming one, he means
 CCDV-F. CCAR-P runs alongside it as a warm parallel track — its Integration and Responsible-AI lessons
 feed CCDV-F and are front-loaded for that reason.
 
-**CCDV-F holds its official exam guide** (v1.0, July 2026) and its `EXAM-FACTS_v1.md` is fully
-VERIFIED — 8 domains, 25 skills, published weights. **CCAR-P and CCAO-F do not**, so their weightings
-remain UNVERIFIED and no practice question may be generated from them.
+**CCDV-F and CCAR-P hold their official exam guides.** CCDV-F's `EXAM-FACTS_v1.md` is fully VERIFIED —
+8 domains, 25 skills, published weights. CCAR-P's guide was obtained 2026-08-25 (a verified
+third-party mirror, not a direct Partner Academy login) and its 7 domains / 38 objectives are
+VERIFIED with that provenance caveat attached — see its `EXAM-FACTS_v1.md`. **CCAO-F does not** hold a
+guide, so its weightings remain UNVERIFIED and no practice question may be generated from it.
+*(Corrected 2026-08-26 via `/sync-up` — this previously grouped CCAR-P with CCAO-F as both
+guide-less.)*
 
 **Work inside one exam folder at a time.** A question about standing, weightings, or next steps is
 always a question about a specific exam, and the answer lives in that folder. If a request does not

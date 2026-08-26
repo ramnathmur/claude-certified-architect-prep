@@ -3916,3 +3916,23 @@ existing unattempted papers is more valuable than producing more this close to t
 24 hours left, the higher-value use of remaining time is a direct, targeted re-read of
 `CCA-Prep_Domain-4_v2.md §4.11` and §4.6, plus `CCA-Prep_Domain-3_v2.md §3.7.4`, rather than a full new
 60-question sitting.
+
+---
+
+## THE REAL EXAM — SAT 2026-08-18
+
+**Result:** PASS — scaled score **851** (scale 100–1000, pass line 720)
+**Attempt date:** 2026-08-18
+
+**Note added 2026-08-26 via `/sync-up`:** this file's own last entry (Exam 20, scored 2026-08-17) and
+the Professor's Note above still framed the real sitting as upcoming. The root project docs
+(`README.md`, `CLAUDE.md`) have carried the 851/720 pass since the day it happened, but this log — the
+project's designated single source of truth for standing — never recorded it. Recording it now closes
+that gap.
+
+This log's job — dedup ledger and standing tracker for *generated mock exams* — is complete. No
+further mocks are needed for CCAR-F. Renewal due 2027-08-18 (free, non-proctored, if done on time).
+
+*A full per-domain/per-question breakdown of the real sitting was not captured at the time and is not
+fabricated here. If that detail exists elsewhere (an official score report, notes from the day), it
+can be added as a follow-up edit.*

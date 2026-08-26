@@ -74,8 +74,11 @@ assistant in the room, and no amount of reading substitutes for having written i
 
 ## What is not here yet
 
-No practice questions, no domain content, no mock papers. Phase 3 builds the corpus; the quotas are
-now real, so it can start whenever Phase 1's self-assessment gives it a priority order.
+**Superseded, 2026-08-26 (via `/sync-up`).** This section described the state as of 2026-08-22. Since
+then: all 34 course chapters are authored (2026-08-25, each carrying its own self-test items as the
+question corpus) and Mock Paper 1 has been generated (2026-08-25, not yet sat) — see `ROADMAP.md` for
+the live stage. What's still genuinely missing: chapters 15–34 have not been converted to HTML yet,
+and no mock paper has been sat or scored.
 
 Three things the guide settled that change how the corpus gets built:
 

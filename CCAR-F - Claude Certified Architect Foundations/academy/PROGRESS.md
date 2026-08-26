@@ -6,6 +6,12 @@
 
 ---
 
+> **SUPERSEDED, 2026-08-26 (via `/sync-up`).** This academy track was abandoned mid-program (stopped at
+> session 36 of 37) in favor of the `prep with quiz/` mock-exam generator, this project's real source
+> of truth. The real exam was sat 2026-08-18 and **PASSED at 851/720** — see
+> `../prep with quiz/EXAM-LOG.md`'s closing entry. The "NO-GO, 45/60" status below reflects one early
+> mock from this abandoned track, was never the final word, and should not be read as current standing.
+
 ## Current Status
 
 ```

@@ -2,7 +2,10 @@
 
 **Status:** ⭐ **ACTIVE — this is the next exam.** **Phase 0 closed 2026-08-19** — the official guide
 (v1.0, July 2026) is filed and reconciled.
-**Now in:** Phase 1.
+**Now in:** the regeneration plan's Stage 9 (see the superseded-note further down this file) — all 34
+chapters authored 2026-08-25 (Stage 6 complete); Mock Paper 1 generated 2026-08-25, not yet sat.
+*(Corrected 2026-08-26 via `/sync-up` — this line previously still said "Phase 1," three days after
+this same file's own body recorded Phases 2–4 as superseded.)*
 **Target date:** none. This plan gates on evidence, not calendar.
 **Running alongside:** CCAR-P, kept warm — see "The parallel track".
 **Teaching plan:** `Outputs/regeneration/CCDV-F_Regeneration-Plan_v1.md` — 34 chapters across all 25

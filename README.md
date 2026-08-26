@@ -8,26 +8,37 @@ self-contained with its own exam facts, roadmap, corpus and mock-exam engine.
 | [`CCAR-F - Claude Certified Architect Foundations`](CCAR-F%20-%20Claude%20Certified%20Architect%20Foundations/) | Claude Certified Architect – Foundations | $125 | ✅ **Passed 2026-08-18, 851/720**, first attempt. Renewal due 2027-08-18 |
 | [`CCAR-P - Claude Certified Architect Professional`](CCAR-P%20-%20Claude%20Certified%20Architect%20Professional/) | Claude Certified Architect – Professional | $175 | Parallel track — kept warm, Integration + Safety lessons front-loaded |
 | [`CCAO-F - Claude Certified Associate Foundations`](CCAO-F%20-%20Claude%20Certified%20Associate%20Foundations/) | Claude Certified Associate – Foundations | $99 | Deferred — whether to sit it at all is still open |
-| [`CCDV-F - Claude Certified Developer Foundations`](CCDV-F%20-%20Claude%20Certified%20Developer%20Foundations/) | Claude Certified Developer – Foundations | $125 | ⭐ **ACTIVE — next exam.** **Phase 0 closed 2026-08-19**, guide v1.0 filed and reconciled. In Phase 1 |
+| [`CCDV-F - Claude Certified Developer Foundations`](CCDV-F%20-%20Claude%20Certified%20Developer%20Foundations/) | Claude Certified Developer – Foundations | $125 | ⭐ **ACTIVE — next exam.** **Phase 0 closed 2026-08-19**, guide v1.0 filed and reconciled. All 34 course chapters authored 2026-08-25 — see its own `ROADMAP.md` for the live stage |
 
 Every folder opens with `README.md`, then `EXAM-FACTS_v1.md`, then `ROADMAP.md`.
 
 ---
 
-## Exam guides — one held, two outstanding
+## Exam guides — two held, one outstanding
+
+*Updated 2026-08-26 via `/sync-up` — this section previously said "one held, two outstanding" and had
+not caught up to CCAR-P obtaining its guide on 2026-08-25.*
 
 **✅ CCDV-F:** the official guide (**v1.0, July 2026**) is filed at
 `CCDV-F .../sources/CCDV-F_Official-Exam-Guide_v1.0.pdf` and fully reconciled. 8 domains, 25 skills,
 all with published weights. That folder is no longer guessing.
 
-**⏸ CCAR-P and CCAO-F:** still behind Claude Partner Network sign-in. Each folder's `sources/README.md`
-names the exact file. Neither is being worked right now, so neither is urgent — but the same sign-in
-that produced the CCDV-F guide will produce both.
+**✅ CCAR-P:** the official guide (**v1.0, July 2026**) is filed at
+`CCAR-P .../sources/CCAR-P_Official-Exam-Guide_v1.0.pdf`, obtained 2026-08-25 via a third-party
+repository's cited mirror of a real Anthropic S3 asset — not a direct Partner Academy login, but
+independently verified byte-identical and internally consistent with a genuine Anthropic guide. 7
+domains, 38 objectives, all with published weights, promoted to VERIFIED with that provenance caveat
+attached. Full detail in that folder's `EXAM-FACTS_v1.md`. Re-confirming directly via Partner Academy
+sign-in remains open but no longer blocking.
 
-Until a guide lands, that folder's domain list and weightings come from community sources and are
-labelled UNVERIFIED. The CCAR-F run is why that labelling exists: a community guide stated the exam
-drew 8 scenarios when the real number was 6, and the error reached generated practice material before
-it was caught.
+**⏸ CCAO-F:** still behind Claude Partner Network sign-in. Its `sources/README.md` names the exact
+file. Not being worked right now, so not urgent — but the same sign-in that produced the other two
+guides will produce this one too.
+
+Until a guide lands for CCAO-F, that folder's domain list and weightings come from community sources
+and are labelled UNVERIFIED. The CCAR-F run is why that labelling exists: a community guide stated the
+exam drew 8 scenarios when the real number was 6, and the error reached generated practice material
+before it was caught.
 
 > **Worth recording:** for CCDV-F the community figures turned out to be **exactly right** — every
 > domain weight, the item count, the fee, the pass mark. The sources were transcribing the real

@@ -1,5 +1,10 @@
 # CCDV-F Corpus Index
 
+> **Superseded 2026-08-22 (noted here 2026-08-26 via `/sync-up`).** The 8-domain-file plan below was
+> replaced by the regeneration approach — 34 authored chapters are now the question corpus. See
+> `../CLAUDE.md`'s Corpus Conventions section and `mock-exams/README.md`. Left below as historical
+> record; this file/section list is not being built.
+
 **Status:** ✅ **Unblocked.** The official guide (v1.0, July 2026) is filed at
 `../sources/CCDV-F_Official-Exam-Guide_v1.0.pdf` and reconciled into `../EXAM-FACTS_v1.md`.
 Domain files can now be created against confirmed weights.

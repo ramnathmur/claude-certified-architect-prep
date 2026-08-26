@@ -61,7 +61,8 @@ reproduced here:
 
 ## What is deliberately not here yet
 
-No practice questions, no domain content, no mock papers. Phase 0 has to close first — the domain
-list and weightings currently rest on a community source that says on its own site it is not
-affiliated with Anthropic. Generating a corpus against unverified quotas is exactly the failure this
-project is structured to avoid.
+**Superseded, 2026-08-26 (via `/sync-up`).** This section described the state before Phase 0 closed.
+Since 2026-08-25: the official guide is obtained and reconciled (verified with a documented provenance
+caveat — see `EXAM-FACTS_v1.md`), and all seven domain files are built (77 sections, 77 scenarios, 154
+tagged distractors, per `ROADMAP.md`'s Phase 2). What's still genuinely missing: no mock paper has been
+generated or sat, and only Domains 1–4 of 7 have been taught/read so far.

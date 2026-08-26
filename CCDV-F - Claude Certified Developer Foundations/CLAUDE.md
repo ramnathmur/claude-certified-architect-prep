@@ -75,6 +75,12 @@ change without notice." The CCAR-F guide moved to v1.0 mid-prep and silently dro
 
 ## Corpus conventions (from Phase 3 onward)
 
+> **Superseded 2026-08-22 (noted here 2026-08-26 via `/sync-up`).** The 8-domain-file plan below was
+> replaced by the regeneration approach: 34 authored chapters, each carrying its own self-test items,
+> are now the question corpus — see `Outputs/regeneration/CCDV-F_Regeneration-Plan_v1.md` and
+> `prep with quiz/mock-exams/README.md`. The domain files below do not exist and are not planned. Left
+> here as the historical record of the original plan's reasoning.
+
 - Domain files are named `CCDV-F_Domain-N_v1.md` and are the **only** permitted source for generated
   questions. Never generate from notes, from the web, or from memory.
 - Each domain file carries: core-facts table · decision tables · exam scenarios with ✅ correct and ❌

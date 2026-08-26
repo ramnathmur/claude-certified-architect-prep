@@ -3,6 +3,11 @@
 **Target:** Pass CCA-F exam — **seat booked for 2026-08-18**
 **Last updated:** 2026-08-10
 
+> **RESULT, 2026-08-18 (recorded here 2026-08-26 via `/sync-up`): PASSED, scaled score 851/720.**
+> See `prep with quiz/EXAM-LOG.md`'s closing entry. Everything below this line is the plan as it stood
+> on 2026-08-10 and is left as historical record; the checkboxes for "sit the exam" are marked done
+> below rather than rewritten.
+
 > Detailed per-course/extension tracker (KB sizes, gate scores, artifacts): `courses/COURSE-ROADMAP.md`.
 > Extension topic briefs + sources: `courses/EXTENSION-RECOMMENDATION.md`.
 > Resume state for next session: `resume-prompt.md`.
@@ -24,7 +29,7 @@ The exam seat is booked for **2026-08-18**. This phase supersedes the open items
 - [ ] Aug 15 — drill · sit Mock 4 · import
 - [ ] Aug 16 — held-out mock (`practice/held-out-mocks/`) as the dress rehearsal · import
 - [ ] Aug 17 — final sweep only, no new cards
-- [ ] Aug 18 — **sit the exam**
+- [x] Aug 18 — **sit the exam** — PASSED, 851/720
 
 **The standing risk:** four full mock exams exist and **none has ever been scored** (`EXAM-LOG.md`, `DASHBOARD-DATA.jsonl` — all null). Every readiness signal to date is either synthetic or from June. Sitting Mock 2 is the highest-value single action available this week; the drill deck is deliberately built to consume its output.
 
@@ -134,4 +139,4 @@ The applied cost lever + prompt-engineering judgment. Lower weight but high scen
 - [ ] Second mock exam if any domain < 70%
 - [ ] Final gap review
 - [x] Book exam seat — **2026-08-18**
-- [ ] Sit exam
+- [x] Sit exam — PASSED, 851/720
