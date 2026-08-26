@@ -1,0 +1,822 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#faf8f3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1f1c19" media="(prefers-color-scheme: dark)">
+<title>CCAR-P Lesson — Domain 4: Evaluation, Testing &amp; Optimization</title>
+<script>
+(function () {
+  var r = document.documentElement;
+  var t = null;
+  try { t = localStorage.getItem('site-theme'); } catch (e) {}
+  var mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+  if (!t && mq && mq.matches) t = 'dark';
+  if (t) r.setAttribute('data-theme', t);
+  if (mq && mq.addEventListener) mq.addEventListener('change', function (e) {
+    var stored = null;
+    try { stored = localStorage.getItem('site-theme'); } catch (err) {}
+    if (stored) return;
+    r.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+    window.dispatchEvent(new Event('themechange'));
+  });
+})();
+</script>
+<style>
+:root {
+  color-scheme: light;
+  --ink:    oklch(0.15 0.01 80);
+  --ink2:   oklch(0.30 0.015 75);
+  --ink3:   oklch(0.47 0.015 75);
+  --cream:  oklch(0.97 0.008 85);
+  --cream2: oklch(0.94 0.012 85);
+  --cream3: oklch(0.91 0.015 80);
+  --border: oklch(0.87 0.012 80);
+
+  --amber:       oklch(0.64 0.14 68);
+  --amber-light: oklch(0.93 0.035 80);
+  --amber-dark:  oklch(0.47 0.11 60);
+  --coral:       oklch(0.55 0.14 30);
+  --coral-light: oklch(0.94 0.025 35);
+  --coral-dark:  oklch(0.45 0.12 30);
+  --green:       oklch(0.50 0.10 150);
+  --green-light: oklch(0.94 0.025 145);
+  --green-dark:  oklch(0.40 0.09 150);
+  --blue:        oklch(0.43 0.09 245);
+  --blue-light:  oklch(0.93 0.025 240);
+  --blue-dark:   oklch(0.38 0.08 245);
+
+  --surface-raised:   oklch(0.15 0.01 80);
+  --on-raised:        oklch(0.97 0.008 85);
+  --on-raised-muted:  oklch(0.97 0.008 85 / 0.74);
+  --on-raised-dim:    oklch(0.97 0.008 85 / 0.6);
+  --on-raised-border: oklch(0.97 0.008 85 / 0.15);
+  --nav-bg:           oklch(0.97 0.008 85 / 0.96);
+
+  --shadow:    0 2px 16px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
+  --radius:    12px;
+  --radius-sm: 8px;
+  --bar:       3px;
+  --focus:     var(--ink);
+  --nav-h:     64px;
+  --maxw:      900px;
+
+  --font-serif: Georgia, 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+  --font-sans:  system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono:  ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+  --font-body-active: var(--font-serif);
+
+  --fs-body: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --fs-sm:   clamp(0.8125rem, 0.78rem + 0.15vw, 0.9375rem);
+  --fs-xs:   clamp(0.6875rem, 0.67rem + 0.1vw, 0.75rem);
+  --fs-h1:   clamp(2rem, 1.4rem + 3vw, 3.375rem);
+  --fs-h2:   clamp(1.5rem, 1.2rem + 1.5vw, 2.125rem);
+  --fs-h3:   clamp(1.25rem, 1.1rem + 0.75vw, 1.5rem);
+  --fs-pull: clamp(1.375rem, 1.15rem + 1.1vw, 1.625rem);
+
+  --space-section: clamp(3rem, 2.5rem + 2.5vw, 4rem);
+  --space-block:   clamp(1.5rem, 1.25rem + 1.25vw, 2.5rem);
+  --space-inline:  clamp(1.25rem, 1rem + 1.25vw, 2rem);
+  --box-pad-sm: 16px;
+  --box-pad:    22px;
+  --box-pad-lg: 30px;
+  --lh-body:    1.7;
+  --lh-heading: 1.2;
+  --t-fast: 0.15s;
+  --t-med:  0.25s;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --ink:    oklch(0.90 0.008 85);
+  --ink2:   oklch(0.78 0.01 80);
+  --ink3:   oklch(0.62 0.01 75);
+  --cream:  oklch(0.15 0.012 75);
+  --cream2: oklch(0.19 0.012 75);
+  --cream3: oklch(0.23 0.015 75);
+  --border: oklch(0.32 0.01 75);
+
+  --amber:       oklch(0.72 0.13 68);
+  --amber-light: oklch(0.24 0.04 70);
+  --amber-dark:  oklch(0.82 0.10 65);
+  --coral:       oklch(0.70 0.13 30);
+  --coral-light: oklch(0.24 0.045 32);
+  --coral-dark:  oklch(0.80 0.10 30);
+  --green:       oklch(0.70 0.11 150);
+  --green-light: oklch(0.23 0.04 148);
+  --green-dark:  oklch(0.80 0.09 150);
+  --blue:        oklch(0.70 0.10 245);
+  --blue-light:  oklch(0.24 0.04 242);
+  --blue-dark:   oklch(0.80 0.08 245);
+
+  --surface-raised:   oklch(0.24 0.012 75);
+  --on-raised:        oklch(0.93 0.008 85);
+  --on-raised-muted:  oklch(0.93 0.008 85 / 0.74);
+  --on-raised-dim:    oklch(0.93 0.008 85 / 0.6);
+  --on-raised-border: oklch(0.93 0.008 85 / 0.15);
+  --nav-bg:           oklch(0.15 0.012 75 / 0.96);
+
+  --shadow:    0 2px 16px rgba(0,0,0,0.3);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-body-active);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
+.container { max-width: var(--maxw); margin-inline: auto; padding-inline: var(--space-inline); }
+
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: var(--radius-sm); }
+:focus:not(:focus-visible) { outline: none; }
+
+.skip-link {
+  position: absolute; left: 8px; top: -100px; z-index: 100;
+  background: var(--cream2); color: var(--ink);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 10px 16px; text-decoration: none;
+  font-family: var(--font-sans); font-size: var(--fs-sm);
+  transition: top var(--t-fast);
+}
+.skip-link:focus { top: 8px; }
+main:focus { outline: none; }
+section[id], h2[id], h3[id] { scroll-margin-top: calc(var(--nav-h) + 12px); }
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --t-fast: 0.01ms; --t-med: 0.01ms; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important; animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important; scroll-behavior: auto !important;
+  }
+}
+@media (forced-colors: active) { :focus-visible { outline: 3px solid Highlight; } }
+
+/* ---- nav ---- */
+.nav {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--nav-bg); backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-inner {
+  max-width: var(--maxw); margin-inline: auto; padding: 0 var(--space-inline);
+  height: var(--nav-h); display: flex; align-items: center; gap: 18px;
+  font-family: var(--font-sans);
+}
+.nav-home { color: var(--ink); text-decoration: none; font-weight: 600; font-size: var(--fs-sm); white-space: nowrap; }
+.nav-links { display: flex; gap: 14px; overflow-x: auto; flex: 1; scrollbar-width: none; }
+.nav-links::-webkit-scrollbar { display: none; }
+.nav-link {
+  color: var(--ink3); text-decoration: none; font-size: var(--fs-xs);
+  font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em;
+  white-space: nowrap; padding: 4px 0; border-bottom: 2px solid transparent;
+}
+.nav-link.active { color: var(--amber-dark); border-bottom-color: var(--amber); }
+.nav-progress { position: absolute; left: 0; bottom: -1px; height: 2px; background: var(--cream2); width: 100%; }
+.scrollbar-fill { height: 2px; background: var(--amber); width: 0%; transition: width var(--t-fast); }
+.theme-toggle {
+  background: none; border: 1px solid var(--border); border-radius: 99px;
+  width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0; font-size: 15px;
+}
+.theme-toggle:hover { border-color: var(--amber); }
+
+main { display: block; }
+section { padding-block: var(--space-section); }
+section + section { border-top: 1px solid var(--border); }
+h1 {
+  font-family: var(--font-serif); font-size: var(--fs-h1); line-height: var(--lh-heading);
+  font-weight: 400; margin: 0 0 10px;
+}
+h2 {
+  font-family: var(--font-serif); font-size: var(--fs-h2); line-height: var(--lh-heading);
+  font-weight: 400; margin: 0 0 var(--space-block);
+}
+h3 {
+  font-family: var(--font-sans); font-size: var(--fs-h3); line-height: var(--lh-heading);
+  font-weight: 600; margin: var(--space-block) 0 12px;
+}
+p { margin: 0 0 1.15em; }
+.eyebrow {
+  font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--amber-dark); margin-bottom: 14px;
+}
+.dek { font-size: var(--fs-pull); color: var(--ink2); font-weight: 400; max-width: 640px; }
+.meta-row {
+  display: flex; flex-wrap: wrap; gap: 10px 22px; margin-top: 22px;
+  font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink3);
+}
+.meta-row b { color: var(--ink); font-weight: 600; }
+
+/* ---- chapter list ---- */
+.chap {
+  display: grid; grid-template-columns: 34px 1fr; gap: 14px; align-items: start;
+  padding: 12px 0; border-top: 1px solid var(--border); text-decoration: none; color: inherit;
+}
+.chap:first-of-type { border-top: none; }
+.chap .num { font-family: var(--font-mono); color: var(--ink3); font-size: var(--fs-sm); padding-top: 2px; }
+.chap .body strong { display: block; font-family: var(--font-sans); font-size: var(--fs-body); }
+.chap .body em { display: block; font-style: normal; color: var(--ink3); font-size: var(--fs-sm); margin-top: 2px; }
+.chap:hover .body strong, .chap:focus-visible .body strong { color: var(--amber-dark); }
+
+/* ---- tables ---- */
+.table-wrap { overflow-x: auto; margin: var(--space-block) 0; }
+table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+caption { text-align: left; font-family: var(--font-sans); font-size: var(--fs-xs); color: var(--ink3);
+  text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+thead th { font-family: var(--font-sans); font-weight: 600; color: var(--ink2);
+  border-bottom: 2px solid var(--border); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.04em; }
+tbody tr:last-child td { border-bottom: none; }
+td.num, th.num { font-family: var(--font-mono); }
+
+/* ---- box family (parameterised base, per house style P1.7) ---- */
+.box {
+  background: var(--box-bg, var(--cream2));
+  border: 1px solid var(--border);
+  border-left: var(--bar) solid var(--box-accent, transparent);
+  border-radius: var(--radius);
+  padding: var(--box-pad);
+  margin: var(--space-block) 0;
+  break-inside: avoid;
+}
+.box.warning { --box-bg: var(--coral-light); --box-accent: var(--coral); }
+.box.raised  { --box-bg: var(--surface-raised); color: var(--on-raised); --box-pad: var(--box-pad-lg); --box-accent: transparent; }
+.box.raised h3 { color: var(--on-raised); }
+.box.raised p, .box.raised li { color: var(--on-raised-muted); }
+.box.raised .label { color: var(--on-raised-dim); }
+@media (forced-colors: active) { .box { border: 2px solid CanvasText; } }
+
+.label {
+  font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 600;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber-dark); margin-bottom: 10px;
+}
+.box.raised .label { color: var(--on-raised-dim); }
+
+/* ---- pullquote ---- */
+.pullquote {
+  border-left: var(--bar) solid var(--amber);
+  padding: 4px 0 4px 26px;
+  margin: var(--space-block) 0;
+  max-width: 640px;
+}
+.pullquote p {
+  font-family: var(--font-serif); font-size: var(--fs-pull); font-style: italic;
+  color: var(--ink2); margin: 0; line-height: 1.5;
+}
+
+/* ---- misconceptions grid ---- */
+.misc-grid { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin: var(--space-block) 0; }
+.misc-row { padding: 14px 20px; border-top: 1px solid var(--border); }
+.misc-row:first-of-type { border-top: none; }
+.misc-row .k {
+  font-family: var(--font-mono); font-weight: 700; font-size: var(--fs-xs);
+  text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 5px;
+}
+.misc-row.myth    { background: var(--coral-light); }
+.misc-row.myth .k { color: var(--coral-dark); }
+.misc-row.why  .k { color: var(--ink3); }
+.misc-row.reality    { background: var(--green-light); }
+.misc-row.reality .k { color: var(--green-dark); }
+.misc-row.test .k    { color: var(--amber-dark); }
+details.misc { border: 1px solid var(--border); border-radius: var(--radius); margin: var(--space-block) 0; overflow: hidden; }
+details.misc summary {
+  font-family: var(--font-sans); font-weight: 600; padding: 16px 20px; cursor: pointer;
+  list-style: none; display: flex; align-items: center; gap: 10px; background: var(--cream2);
+}
+details.misc summary::before { content: '\25B6'; font-size: 10px; transition: transform var(--t-med); color: var(--ink3); }
+details.misc[open] summary::before { transform: rotate(90deg); }
+details.misc + details.misc { border-top: none; margin-top: -1px; }
+
+/* ---- widget ---- */
+.widget { background: var(--cream2); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--box-pad); margin: var(--space-block) 0; }
+.widget-title { font-family: var(--font-sans); font-weight: 600; font-size: var(--fs-h3); margin-bottom: 6px; }
+.widget-hint { font-size: var(--fs-sm); color: var(--ink3); margin-bottom: 18px; }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+.btn {
+  font-family: var(--font-sans); font-size: var(--fs-sm); font-weight: 600;
+  padding: 8px 16px; border-radius: 99px; border: 1px solid var(--border);
+  background: var(--cream); color: var(--ink2); cursor: pointer;
+}
+.btn.active { background: var(--ink); color: var(--cream); border-color: var(--ink); }
+.btn:hover:not(.active) { border-color: var(--amber); color: var(--amber-dark); }
+.k-row { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; font-family: var(--font-mono); font-size: var(--fs-sm); }
+.k-row input[type="range"] { flex: 1; accent-color: var(--amber); }
+.k-val { min-width: 2ch; text-align: center; font-weight: 700; color: var(--amber-dark); }
+.metric-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 640px) { .metric-pair { grid-template-columns: 1fr; } }
+.metric-cell { }
+.metric-label { display: flex; justify-content: space-between; font-size: var(--fs-sm); margin-bottom: 8px; }
+.metric-label b { font-family: var(--font-mono); font-size: var(--fs-h3); }
+.metric-track { height: 10px; background: var(--cream3); border-radius: 99px; overflow: hidden; }
+.metric-fill { height: 100%; transition: width var(--t-med); }
+.widget-summary {
+  margin-top: 20px; padding-top: 18px; border-top: 1px dashed var(--border);
+  font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--ink2);
+}
+
+/* ---- prev/next (project convention: paged wayfinding inside the one-file model) ---- */
+.pagenav {
+  display: flex; justify-content: space-between; gap: 16px; margin-top: var(--space-block);
+  font-family: var(--font-sans); font-size: var(--fs-sm);
+}
+.pagenav a { color: var(--ink2); text-decoration: none; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 10px 16px; }
+.pagenav a:hover, .pagenav a:focus-visible { border-color: var(--amber); color: var(--amber-dark); }
+.pagenav .next { margin-left: auto; }
+
+footer { border-top: 1px solid var(--border); padding-block: var(--space-block); }
+footer p { color: var(--ink3); font-size: var(--fs-xs); font-family: var(--font-mono); }
+
+strong.load-bearing { color: var(--amber-dark); }
+em { font-style: italic; }
+</style>
+</head>
+<body>
+<!-- LEDGER
+  Register:   App (course / multi-module explainer) — Step 0 row 1, deviated: plain chapter
+              list not card grid, because this is one lesson read start-to-finish, not
+              modules browsed out of order
+  Hues:       3 of 3 — amber = primary/emphasis, coral = misconceptions "myth" + risk,
+              green = misconceptions "reality" + the lenient reliability metric
+  Box types:  3 of 4 — box.warning, box.raised, misc-grid (pullquote debits nothing)
+  Widgets:    1 of 1 — pass@k vs pass^k reliability explorer, adapted from the Threshold
+              Explorer shape (single control, two opposing live-computed metrics) but driven
+              by the actual reliability formulas (1-(1-p)^k and p^k), not a labelled dataset —
+              invented variant, not the catalogued spam-threshold instance
+  Hero:       0 — no bespoke illustration; the widget carries the one visual budget item
+  Dark cards: 3, none consecutive
+  Devices:    plain chapter list, box.warning, box.raised, misc-grid, pullquote, widget,
+              accessible data tables
+  Invented:   pass@k / pass^k explorer (see Widgets row above)
+  Deviations: prose contract followed per teaching-style-lecture-not-socratic memory — no
+              per-objective template, tables reserved for genuine multi-column data only.
+              Prev/Next links added per this project's own CLAUDE.md ("paged... prev/next"),
+              layered on top of the house style's anchor-nav model rather than replacing it —
+              both rules are satisfied at once rather than picking one.
+-->
+<a class="skip-link" href="#main">Skip to content</a>
+<nav class="nav" aria-label="Page navigation">
+  <div class="nav-inner">
+    <a class="nav-home" href="#intro">⌂ Domain 4</a>
+    <div class="nav-links">
+      <a class="nav-link" href="#metrics">Metrics</a>
+      <a class="nav-link" href="#dataset">Dataset</a>
+      <a class="nav-link" href="#change-control">Change control</a>
+      <a class="nav-link" href="#diagnosis">Diagnosis</a>
+      <a class="nav-link" href="#optimization">Optimization</a>
+      <a class="nav-link" href="#monitoring">Monitoring</a>
+      <a class="nav-link" href="#synthesis">Synthesis</a>
+    </div>
+    <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark mode" title="Toggle dark mode">
+      <span aria-hidden="true">🌙</span>
+    </button>
+    <div class="nav-progress"><div class="scrollbar-fill" id="scrollbar-fill"></div></div>
+  </div>
+</nav>
+
+<main id="main" tabindex="-1">
+
+<section id="intro"><div class="container">
+  <div class="eyebrow">CCAR-P · Domain 4 · 16% of the exam</div>
+  <h1>Evaluation, Testing &amp; Optimization</h1>
+  <p class="dek">Every other domain asks whether you can build the thing. This one asks whether you can tell, afterward, that it's actually working — and prove it to someone who won't just take your word for it.</p>
+  <div class="meta-row">
+    <span><b>Objectives</b> 6</span>
+    <span><b>Weight</b> 16%</span>
+    <span><b>Source</b> official exam guide v1.0</span>
+  </div>
+
+  <h3>Contents</h3>
+  <nav aria-label="Chapters">
+    <a class="chap" href="#metrics"><span class="num">1</span><span class="body"><strong>What actually makes a metric a metric</strong><em>Accuracy, latency, cost, safety, security — five families, one test</em></span></a>
+    <a class="chap" href="#dataset"><span class="num">2</span><span class="body"><strong>Building an evaluation set that isn't lying to you</strong><em>Composition, stratification, the masking trap, three grading instruments</em></span></a>
+    <a class="chap" href="#change-control"><span class="num">3</span><span class="body"><strong>Change control</strong><em>Treating a prompt like production code</em></span></a>
+    <a class="chap" href="#diagnosis"><span class="num">4</span><span class="body"><strong>Diagnosing what actually broke</strong><em>The diagnosis order, and hallucination's three causes</em></span></a>
+    <a class="chap" href="#optimization"><span class="num">5</span><span class="body"><strong>Making it cheaper and faster without breaking it</strong><em>Caching, cascades, retrieval discipline, streaming</em></span></a>
+    <a class="chap" href="#monitoring"><span class="num">6</span><span class="body"><strong>Watching it in production</strong><em>Attribution, online proxies, alerting, privacy</em></span></a>
+    <a class="chap" href="#synthesis"><span class="num">7</span><span class="body"><strong>How it all runs as one system</strong><em>A year in the life of one claims assistant</em></span></a>
+  </nav>
+
+  <p>The six objectives on the guide read like six separate skills, but they're really one loop with a direction to it. You define what "working" means as a number with a threshold attached. You build a fixed set of cases that number gets measured against. You use that set to gate every change before it touches real traffic. When production tells you something broke, you diagnose it in a fixed order instead of by hunch. You make the system cheaper and faster, but only inside the quality bar you already declared. And you instrument production so it reports back to you — partly to catch the next break, and partly to feed the eval set failures its authors never thought to imagine.</p>
+
+  <div class="pullquote"><p>An evaluation set built at design time only contains the failures its authors could think of. Production contains the ones they couldn't.</p></div>
+
+  <p>If you never route production failures back into your eval set, you're measuring your own imagination, with increasing precision, forever. That's the whole point of the loop, so it's worth sitting with before anything else.</p>
+
+  <p>At Professional tier there's a fifth question riding on top of all of this: can you defend the decision? Not just which eval design is technically correct, but which one is affordable at 200,000 requests a month, which one survives a regulator asking how you know, and how you explain a tradeoff to a stakeholder who thinks "97% accurate" is a complete sentence. One structural note before we start: because pass/fail runs on total score with no domain floor, a weak Domain 4 is survivable in the arithmetic of passing this exam. It is not survivable in practice — the reflexes built here show up again in Domain 3's observability objective, Domain 5's human-in-the-loop validation, and Domain 6's SLA conversations.</p>
+</div></section>
+
+<section id="metrics"><div class="container">
+  <h2>1. What actually makes a metric a metric</h2>
+
+  <p>Here's a test you can apply to almost anything a team calls a metric: if the number crossing its threshold wouldn't change anything you do, it's decoration, not a metric. Most of what teams collect fails this test immediately. A metric only earns its keep when it has a specific failure being counted (not "quality" — "the fraction where the model's answer contradicts the gold label"), a denominator to compare against, a segment of the population it describes, and a threshold declared before anyone saw any results. Set the bar after the scores come in and you haven't set a bar — you've just described what you got.</p>
+
+  <p>The guide names five families of metric, and they're separate for a real reason: they fail in different ways and get owned by different people.</p>
+
+  <p>Accuracy is task fidelity against a ground truth — the one family that requires you to have already decided what "correct" means, because you need a label to compare against. Latency isn't a single number, it's a distribution, and the mean is nearly useless for an SLA because the users who give up and leave are sitting in the tail — report p95 or p99 instead. And there's a distinction inside latency worth getting right: time-to-first-token versus total completion time. For a chat interface where someone's watching a cursor, TTFT is what they actually experience as responsiveness. For a batch job nobody's staring at, only the total matters — get this backwards and you'll optimize the wrong half of the pipeline.</p>
+
+  <p>Cost should be measured per unit of business work, not per token. Tokens are the unit you're billed in, and the one unit nobody outside engineering can reason about. "$0.08 per resolved ticket" is a sentence a finance stakeholder can hold you to. "1.4 million tokens a day" is telemetry that means nothing to them.</p>
+
+  <p>Safety is a rate of policy-violating output over a stated denominator, and the thing to get right here is achievability. On an open-ended generative task, a target of zero isn't an ambitious goal — it's an unachievable number, and the first time you miss it, the whole metric quietly stops being enforced because everyone's already decided it's aspirational. Set a small non-zero rate instead — say, under 0.1% of ten thousand outputs flagged for toxicity — and save the hard zero for properties a deterministic check can actually guarantee, like zero outputs containing a field marked as someone else's personal data.</p>
+
+  <p>And security is a genuinely different axis from safety, which is exactly the kind of distinction this exam likes to test. Safety is about what the model <em>says</em>. Security is about what the system <em>permits</em> — whether an injected instruction hiding in a retrieved document can reach a tool, whether an agent's credentials are scoped to only what it needs, whether data can leave through a tool call. You measure security against an adversarial test suite, not a quality rubric, and a system can be perfectly safe and completely insecure at the same time. Two different failure modes, two different owners.</p>
+
+  <h3>Putting numbers under it</h3>
+  <p>Take an insurance claims assistant that reads a submitted claim and the retrieved policy documents, drafts a coverage determination, and escalates when the policy is ambiguous — 12,000 claims a month. Here's what a finished metric set looks like:</p>
+
+  <div class="table-wrap"><table>
+    <caption>Claims assistant — finished metric set</caption>
+    <thead><tr><th scope="col">Metric</th><th scope="col">Definition</th><th scope="col">Threshold</th><th scope="col">What it gates</th></tr></thead>
+    <tbody>
+      <tr><td>Determination accuracy</td><td>Matches the adjuster's gold label, per claim type</td><td class="num">≥ 0.95 on every type</td><td>Auto-draft vs. mandatory review</td></tr>
+      <tr><td>Grounding</td><td>Cited span exists verbatim in the source document</td><td class="num">1.00</td><td>Release block</td></tr>
+      <tr><td>Escalation recall</td><td>Genuinely ambiguous claims that got escalated</td><td class="num">≥ 0.98</td><td>Release block</td></tr>
+      <tr><td>Latency (p95)</td><td>Submission to drafted determination</td><td class="num">≤ 6.0 s</td><td>SLA</td></tr>
+      <tr><td>Cost</td><td>Mean cost per claim</td><td class="num">≤ $0.19</td><td>Budget</td></tr>
+      <tr><td>PII containment</td><td>Outputs leaking another claimant's identifier</td><td class="num">0 per 12,000</td><td>Regulatory</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>Look at what each choice is doing. Accuracy carries a per-claim-type clause, because without it a claim type that's 3% of volume could fail 40% of the time and never show up in the aggregate. Grounding and PII are hard zeros because a deterministic check can enforce them — nothing probabilistic about whether a quoted span exists in a document. Escalation is expressed as recall rather than accuracy, because the expensive error here is <em>failing</em> to escalate, and a plain accuracy figure would let a high true-negative rate quietly paper over that. Cost is in dollars per claim, because that's the sentence the business sponsor is actually going to repeat back to you.</p>
+
+  <div class="box warning">
+    <div class="label">How the exam tends to phrase this</div>
+    <p style="margin:0">A scenario hands you a requirement in adjectives — "the system needs to be fast, accurate, and safe" — and asks which measurement plan you'd adopt. The wrong answers cluster in predictable ways: metrics that are easy to collect rather than decision-relevant (average response length, tokens per day), a single composite quality score that sounds tidy and tells you nothing when it drops three points, a threshold "calibrated once we see baseline performance" — the after-the-fact bar wearing a lab coat — or a safety metric quietly applied to what's actually a security requirement.</p>
+  </div>
+
+  <div class="pagenav"><span></span><a class="next" href="#dataset">Next: Building an evaluation set →</a></div>
+</div></section>
+
+<section id="dataset"><div class="container">
+  <h2>2. Building an evaluation set that isn't lying to you</h2>
+  <p>This is the longest part of the domain, and it's where the exam's best traps live, so it's worth slowing down.</p>
+
+  <p>Start from the first principle: an eval set is a measuring stick, and a measuring stick only works if it stays the same length. If the cases change between runs, a score change tells you nothing — you can't distinguish "the system got better" from "the test got easier." Which has an uncomfortable consequence: your set <em>will</em> go stale, and refreshing it destroys comparability with everything you measured before. You handle that by versioning the set and re-baselining on purpose, not by quietly editing cases in place because one looked wrong to you last Tuesday.</p>
+
+  <p>Where should the cases come from? Real production traces first, synthetic cases second, and hand-written cases only for failure shapes you have good reason to expect but haven't actually seen yet. The reasoning is blunt: the failures you <em>imagine</em> from a spec are not the failures that actually occur. A set built entirely from a design document just encodes its authors' mental model of the system — and the entire point of evaluation is to test that model against reality, not confirm it. Treat every case written from imagination as a hypothesis until a real trace proves the failure exists.</p>
+
+  <p>Here's a number that surprises people the first time: twenty to fifty hand-verified cases beat several hundred unverified synthetic ones. It sounds backwards until you think about what an unverified case actually contributes — a score, with no information behind it, because you don't actually know whether its label is correct. Run the arithmetic: a set of 500 cases with a 6% label-error rate has a hard ceiling on measurable accuracy at 94%, and you can burn weeks chasing the last six points of a number that was never real.</p>
+
+  <h3>The bias that ruins most eval sets quietly</h3>
+  <p>A team collects examples while building the system, keeps the ones that were interesting to look at, and drops the ones that were too messy to bother labeling. What's left is a set assembled almost entirely from cases the system already handles well — and it will report excellent performance while concealing every failure that actually matters. Adding five hundred more cases collected the same way doesn't fix this. It multiplies the same bias tenfold and hands you a tighter confidence interval around a number that was wrong to begin with. The fix has to be compositional — rebuilding around the segments and failure modes you actually need to report on — not volumetric.</p>
+
+  <h3>Why natural frequency is the wrong sampling rule</h3>
+  <p>The instinct most people bring to sampling is exactly backwards: sample the eval set to match production frequency, so the number "represents reality." A document-extraction system runs 78% invoices, 15% purchase orders, 5% credit notes, 2% handwritten remittance advices. Sample fifty cases at natural frequency and the handwritten segment gets exactly one case — and you cannot measure a failure rate on one case. You can't even detect a 40% failure rate on one case; you'll see a single pass or a single fail, and either one is noise, not signal.</p>
+
+  <p>So build the set to answer the question you actually have to answer. If you have to report accuracy by document type, every type needs enough cases to support a rate — thirty as a working floor — and the rare, expensive segments get <em>over</em>-sampled relative to their share of traffic, not under-sampled. If you need an aggregate figure afterward, reconstruct it by weighting.</p>
+
+  <div class="box raised">
+    <div class="label">The masking trap</div>
+    <p style="margin:0">An aggregate accuracy of 97% can be hiding a 40% failure rate on a rare document type, because overall metrics average away segment failures — and the segments they hide are disproportionately the rare, weird, expensive ones nobody wants to think about. Before anyone reduces human review on the strength of an aggregate number, every segment has to clear the bar independently.</p>
+  </div>
+
+  <p>One more balancing move worth knowing: for every failure your eval set is meant to catch, include a near-miss case where the system behaves correctly and a brittle grader would wrongly flag it. A set built only from failures hides false alarms; a set built only from clean cases hides misses. Aim for roughly equal counts, and treat that as a requirement rather than a nicety as stakes rise.</p>
+
+  <h3>Three instruments, three different jobs</h3>
+  <p>This is what the guide means by "mixed methodologies" — it's really asking whether you know these are three distinct tools, not one grading pipeline with three settings.</p>
+
+  <p>The first instrument is a deterministic check: exact match, schema validation, a regex, a numeric comparison, running the output against unit tests, a PII pattern scan. These are exact, reproducible, effectively free at any volume, and immune to grader error — and the range of things they can catch is wider than people assume. Schema validity, whether a cited span actually exists in the document, forbidden-field presence, numeric tolerance, tool-call ordering, refusal-when-required — all of that is code-checkable. Use these first, always, and never route something code-checkable to a model grader instead. Citation validation is the sharpest illustration of why: asking a model "is this citation accurate?" scores around 38% agreement with ground truth in published evaluation — worse than a coin flip — while checking whether the quoted string literally appears in the cited document is exact and costs nothing to run.</p>
+
+  <p>The second instrument is a model grader working from a rubric, for exactly the properties code can't reach — tone, coherence, whether an answer actually resolves the question that was asked. Four things make this instrument trustworthy rather than decorative. Decompose the rubric into binary sub-criteria instead of a 1-to-5 scale, because nobody can consistently say what separates a 3 from a 4 — the boundary drifts between runs. Use a grader from a different model family than whatever's generating the output, because a same-family grader shows self-preference bias and shares the generator's blind spots, so the exact failures it can't see are the exact failures the system is likely to produce. Validate the grader against real human labels before you believe anything it says — hand-label a sample, run the grader on the same sample, measure agreement, and treat something like 75% as a starting bar to calibrate from, not a fact carved anywhere official. And know its biases going in: it favors whichever option it saw first, it rewards length regardless of whether length helped, and if only a same-family grader is available, its output gets reported as degraded, never as ground truth.</p>
+
+  <p>The third instrument is a human, whose job is calibration, not grading at scale — establishing the labels the deterministic checks compare against, producing the sample the model grader gets validated on, periodically re-auditing that grader to catch it drifting. There's a hard limit worth remembering: if two domain experts wouldn't independently reach the same verdict on a case, no automated grader can be trusted on that case at any threshold. That's not a grading problem to solve with a better rubric — it's a sign the case needs re-scoping.</p>
+
+  <p>Put the three together and the order is always the same: deterministic checks filter, the model grader scales, humans calibrate periodically. Picture a support assistant producing 2,000 answers a day. Deterministic checks run on all 2,000 at zero marginal cost, and maybe 110 fail here and never see the next layer. The model grader runs on the surviving 1,890, scoring four binary criteria, at a fraction of a cent each. And fifty cases a week — stratified across segments and across pass/fail verdicts, not just the worst-looking ones — get human review, with grader-versus-human agreement tracked over time so nobody notices only after the grader has quietly drifted out from under them.</p>
+
+  <h3>Shapes that need more than one score</h3>
+  <p>A RAG system needs two separate rows — one for retrieval, one for generation — because a faithfulness score computed over the wrong passages is a meaningless number: the answer can be perfectly faithful to material that never actually answers the question. Agentic systems need two rows as well: trajectory (was the right tool called, in a sensible order) and outcome (did the final state actually satisfy the goal), because a correct answer reached through a wrong or irreversible path is still a failure. If an agent deleted a record and then reported the correct value from before the deletion, grading the outcome alone calls that a pass. And multi-turn systems need you to attribute the <em>first</em> turn that broke, not just the final state, because a late self-correction can mask an early defect that won't always self-correct next time.</p>
+
+  <p>One more distinction worth having ready: <code>pass@k</code> counts a success if at least one of k attempts worked — the right measure when something downstream catches a bad attempt and retries. <code>pass^k</code> counts a success only if all k attempts worked — the right measure when every single attempt is user-visible or does something in the world. An agent that books account changes might use pass@3 ≥ 0.90 for task completion, because a validator catches a bad plan before it executes. But the row that checks "did it confirm before any irreversible action" needs pass^5 = 1.0, because one silent irreversible action out of five tries is one too many.</p>
+
+  <div class="widget" id="k-widget">
+    <h3 class="widget-title" style="margin-top:0">Same k, opposite claims</h3>
+    <p class="widget-hint">Pick how reliable one attempt is, then drag the number of attempts. Watch what "reachable success" and "every single attempt has to land" do to the <em>same</em> k.</p>
+    <div class="btn-row" role="group" aria-label="Per-attempt success rate">
+      <button class="btn" type="button" data-p="0.6">Shaky step · p = 0.60</button>
+      <button class="btn active" type="button" data-p="0.85">Solid step · p = 0.85</button>
+      <button class="btn" type="button" data-p="0.97">Hardened step · p = 0.97</button>
+    </div>
+    <div class="k-row">
+      <span>k = 1</span>
+      <input type="range" id="k-range" min="1" max="10" value="5" aria-describedby="k-summary">
+      <span>k = 10</span>
+      <span class="k-val" id="k-val">5</span>
+    </div>
+    <div class="metric-pair">
+      <div class="metric-cell">
+        <div class="metric-label"><span>pass@k — at least one lands<br><small style="color:var(--ink3)">(a validator can retry)</small></span><b id="pass-at-val" style="color:var(--green-dark)">—</b></div>
+        <div class="metric-track"><div class="metric-fill" id="pass-at-bar" style="background:var(--green)"></div></div>
+      </div>
+      <div class="metric-cell">
+        <div class="metric-label"><span>pass^k — every one lands<br><small style="color:var(--ink3)">(irreversible, world-acting)</small></span><b id="pass-pow-val" style="color:var(--coral-dark)">—</b></div>
+        <div class="metric-track"><div class="metric-fill" id="pass-pow-bar" style="background:var(--coral)"></div></div>
+      </div>
+    </div>
+    <div class="widget-summary" id="k-summary" aria-live="polite"></div>
+  </div>
+
+  <p>The exam's favorite shape here is a healthy-looking number next to an unhappy reality: 96% accuracy on a 500-case set, and customers keep complaining anyway. The tempting answer is to enlarge the set, because "get more data" is the right reflex almost everywhere else in engineering. Here it's wrong: it multiplies whatever bias the set already had and tightens the confidence interval around a number that was never true. The right answer rebuilds the set from real production failures and reports by segment.</p>
+
+  <div class="pagenav"><a class="prev" href="#metrics">← Metrics</a><a class="next" href="#change-control">Next: Change control →</a></div>
+</div></section>
+
+<section id="change-control"><div class="container">
+  <h2>3. Change control — treating a prompt like production code</h2>
+  <p>A prompt is production code with no type system, no compiler, and no unit of change smaller than "the whole behavior." Edit one sentence and you can move accuracy on a segment you weren't even thinking about. The only safety net is measurement, run in a fixed order every time: regression evaluation first, then a controlled A/B against the current prompt on metrics declared in advance, then a staged rollout.</p>
+
+  <p>Each step exists because the one after it can't do its job alone. Regression goes first because an A/B costs real user traffic, and a change that already fails your held-out set has disqualified itself before it should ever touch a live cohort — the regression set is also the only place rare segments get proper coverage, since you deliberately over-sampled them there. The A/B comes next because the regression set can't tell you how the change behaves on the live distribution, at production latency, under production load. Staged rollout comes last because even a clean two-week 50/50 split hasn't exposed the change to every seasonal pattern or the Monday-morning traffic spike.</p>
+
+  <p>Designing the A/B so the result actually means something takes a few disciplines. Change one variable at a time — swap the prompt <em>and</em> the model <em>and</em> the retrieval depth in one variant, and a win only tells you the bundle helped, with three suspects and no way to isolate which one earned it later. Randomize at a stable unit like user or session, never at the request level, or a single conversation flips between prompt versions mid-thread and corrupts both the conversation and the metric. Declare the primary metric and the guardrails before the test starts — guardrails like latency, cost, or safety rate can only <em>block</em>, never justify shipping on their own. Fix the duration and sample size in advance and don't peek and stop the moment things look good, because that inflates your false-positive rate in a way that feels completely reasonable while you're doing it. And report by segment as well as in aggregate, because the same masking trap from the eval-set discussion applies here too.</p>
+
+  <h3>What this looks like on a real system</h3>
+  <p>A support assistant handling 40,000 requests a week, proposing to add three targeted few-shot examples to fix two tools the agent keeps confusing. The regression run on the 400-case set shows tool-selection accuracy on the ambiguous subset climbing from 0.71 to 0.93, overall accuracy holding steady — nothing regressed, so it earns a live test. The A/B is declared up front: primary metric is first-contact resolution, guardrails are p95 latency under 4.0 seconds and cost under $0.11 per resolved ticket, split 50/50 by user, two weeks. Resolution rate moves from 0.82 to 0.86, latency ticks from 3.4 to 3.6 seconds — inside the guardrail — cost ticks from $0.094 to $0.099 — inside the guardrail — and the gain concentrates exactly where predicted, with nothing else regressing. It ships, staged at 10%, then 50%, then 100%.</p>
+
+  <p>Notice that the extra tokens weren't free — they cost half a cent and two-tenths of a second — and the change shipped anyway, because those costs were declared as guardrails in advance and they cleared, not because nobody noticed them.</p>
+
+  <div class="pagenav"><a class="prev" href="#dataset">← Dataset</a><a class="next" href="#diagnosis">Next: Diagnosis →</a></div>
+</div></section>
+
+<section id="diagnosis"><div class="container">
+  <h2>4. Diagnosing what actually broke</h2>
+  <p>Here's the empirical fact that should reorganize how you debug any of this: when an LLM system degrades, the fault sits in what feeds the model far more often than in the model itself. Every layer upstream poisons everything downstream — swap the model while retrieval is still broken and all you've done is change the <em>phrasing</em> of a wrong answer. So the diagnosis order is data and retrieval first, then prompt and context, then model mismatch — and it's not just empirically correct, it's economically correct too. Checking retrieval against known-good passage IDs takes an afternoon. Swapping the model means a re-benchmark, a re-tune, a cost renegotiation, and re-running every eval you have.</p>
+
+  <h3>Failure signatures worth memorizing</h3>
+  <div class="table-wrap"><table>
+    <caption>Symptom → most likely layer</caption>
+    <thead><tr><th scope="col">Symptom</th><th scope="col">Layer</th></tr></thead>
+    <tbody>
+      <tr><td>Confidently wrong right after a corpus refresh or re-index</td><td>Retrieval / indexing — the timing tells you</td></tr>
+      <tr><td>Wrong on one document type, correct elsewhere</td><td>Data coverage / chunking — segment-shaped, not general</td></tr>
+      <tr><td>Facts correct, format or steps missing</td><td>Prompt / instructions — the knowledge arrived, the instruction didn't</td></tr>
+      <tr><td>Format inconsistent across runs despite explicit instructions</td><td>Few-shot needed — prose has already failed once</td></tr>
+      <tr><td>Forgets something from two turns ago, short conversation</td><td>Application bug — stateless API, history not resent</td></tr>
+      <tr><td>Fails on multi-step reasoning, retrieval and prompt already verified clean</td><td>Model mismatch — the conclusion, not the first move</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Hallucination is three different failures</h3>
+  <p>Treating hallucination as one phenomenon produces one reflexive fix — usually an instruction not to make things up — that addresses none of the actual causes.</p>
+  <p>The model can make an unsupported claim when the context <em>did</em> contain the answer — it had the material and departed from it, a grounding problem, fixed by requiring a citation for every claim plus a deterministic check that the cited span exists. It can make an unsupported claim when retrieval returned nothing relevant — it filled a vacuum, a retrieval problem plus a missing refusal path. Or it can fabricate under context pressure, when something got dropped by compaction and the model reconstructed it from nothing — a context-management problem, fixed by extracting precision-critical facts verbatim instead of summarizing everything uniformly. Same symptom, three different root causes, and the evidence that tells you which one you have is sitting in your logs: what was retrieved, what was actually in the context window, whether the claim has a resolvable source.</p>
+
+  <div class="box raised">
+    <div class="label">Worked case</div>
+    <p>A policy assistant's grounded-answer rate falls from 0.94 to 0.71 over a week. The team's first instinct is a bigger model. Following the order instead: retrieval Recall@5 has collapsed from 0.92 to 0.55. Root cause — a corpus refresh restructured headings, the chunker now splits mid-table, and the entitlement tables answering the most common question class are split across two chunks that individually score below the relevance floor. The investigation stops there. The model was never touched, and a bigger model would have produced a more articulate answer built on exactly the same missing passages.</p>
+  </div>
+
+  <p>The general lesson underneath: when quality drops sharply and something changed right before it, the thing that changed is your hypothesis. Sharp drops have causes. Gradual drift has drivers, which is a different kind of investigation. The exam's version of this always pairs a symptom with a timeline detail — a corpus refresh, a re-index, a prompt release — and the timeline detail <em>is</em> the answer key. The official guide's own sample question follows exactly this shape: a RAG system turning confidently wrong right after a document refresh points at retrieval and indexing, not the model.</p>
+
+  <div class="pagenav"><a class="prev" href="#change-control">← Change control</a><a class="next" href="#optimization">Next: Optimization →</a></div>
+</div></section>
+
+<section id="optimization"><div class="container">
+  <h2>5. Making it cheaper and faster without breaking it</h2>
+  <p>A token is simultaneously a line of cost and a line of latency, so cutting tokens usually helps both at once, and adding context to chase accuracy usually hurts both at once. Optimization in this domain means moving along that curve on purpose, inside a quality bar already declared — and the rule that governs everything else here is: measure which stage actually dominates before you optimize anything. Halving the time of a stage that's 8% of your latency budget buys you 4%.</p>
+
+  <p>The single highest-value lever, by a wide margin, is prompt caching. When a large block of content is byte-identical on every request — a system prompt, a policy document, a tool schema — put it first, put whatever varies last, and turn caching on. The stable prefix gets reused instead of reprocessed, cutting time-to-first-token and cost together, at no quality cost, because nothing about the content changed. It's also, per the guide's own sample question, the answer whenever a scenario names latency and cost in the same sentence. Two things can silently break it: the prefix has to be genuinely identical — a timestamp or session ID rendered into it kills the cache instantly and invisibly — and the static content has to actually come first.</p>
+
+  <p>After that: route the routine majority of traffic to a smaller, faster model and escalate only the hard minority, but validate the escalation trigger on a labeled set rather than assuming it. Retrieval discipline matters more than people expect — fetching the top 20 passages instead of the top 5 costs tokens on every request <em>and</em> often hurts accuracy, because the extra passages are noise sitting exactly in the middle of the context window, where attention is already weakest. Output shaping matters because output tokens are usually the expensive side of the ledger and drive latency token by generated token. For long conversations, extract the facts that have to stay exact into a structured block and summarize everything else, because uniform summarization is how a dollar amount quietly turns into "approximately." And know what streaming actually buys you: it reduces how fast the first tokens arrive, not total completion time and not cost — a real win for an interactive chat interface, nothing at all for an overnight batch job.</p>
+
+  <h3>The caching lever, with real numbers</h3>
+  <p>A claims assistant sends an 8,000-token static policy preamble on every request, 200,000 requests a month. Without caching, that preamble gets billed and reprocessed 200,000 times — 1.6 billion input tokens a month that are byte-for-byte identical every single time, sitting in front of every request's first token because it has to be processed before generation can even start. Reorder it to the front, enable caching, and the prefix stops needing reprocessing — cost drops, time-to-first-token drops, nothing about the policy content changed.</p>
+
+  <div class="box warning">
+    <div class="label">The trap version of this answer</div>
+    <p style="margin:0">Someone proposes cutting the preamble from 8,000 tokens to 3,000 by trimming "the parts we rarely need." That produces a bigger number on the slide, and it also removes required policy content from a regulated determination process — a compliance regression wearing an optimization's clothes, exactly the trade a Professional-tier item is built to test. The stakeholder sentence for the real fix: <strong class="load-bearing">we reordered the prompt so the unchanging policy text gets cached instead of resent, which cut cost and response time without removing any policy content.</strong> Nobody in that conversation needs to hear the word "token."</p>
+  </div>
+
+  <div class="pagenav"><a class="prev" href="#diagnosis">← Diagnosis</a><a class="next" href="#monitoring">Next: Monitoring →</a></div>
+</div></section>
+
+<section id="monitoring"><div class="container">
+  <h2>6. Watching it in production</h2>
+  <p>An evaluation set tells you what happened on a fixed set of cases. Monitoring tells you what's happening on traffic nobody anticipated, and the eval set can never substitute for it, because a frozen input distribution is precisely what makes it a good measuring stick and precisely what makes it blind to drift. Production needs its own instrumentation, and that instrumentation has one organizing requirement: attribution. A metric moving is only useful information if you can say <em>what</em> moved it.</p>
+
+  <p>The field that matters most, and the one people skip: model identifier and prompt version, logged with every request. Without it, a quality change can never be tied back to a release, and every investigation starts as archaeology through a deploy log. Alongside that: retrieved document IDs and relevance scores, token counts split by input/output/cache-read, and latency broken out by stage rather than reported as one aggregate number nobody can act on.</p>
+
+  <p>Production also gives you cheap proxies that move before an offline evaluation ever would: escalation rate rising usually means the system is hitting more cases it can't handle, retry rate rising means outputs are failing some downstream check, thumbs-down rate rising is a quality regression the deterministic checks don't cover. None of these is a quality measurement on its own, and that's exactly what makes them worth alerting on — they move first, before anyone's opened the eval harness. Run the model grader continuously too, on a stratified live sample — not the whole stream, and not only the flagged cases, since novel error patterns show up first in the high-confidence stream, precisely where nobody's looking. And alert on rates and segments, not individual events, favoring leading indicators like cache-hit rate over lagging ones like user complaints.</p>
+
+  <h3>A story worth keeping</h3>
+  <p>Cost per request triples overnight, latency climbs almost two seconds, every quality metric stays completely flat. The cache-hit-rate panel shows a drop from 0.93 to 0.11 at 2:14am. The prompt-version field shows a release landed at 2:10 — someone had inserted a rendered timestamp into the system preamble for debugging, which made the prefix different on every request and silently killed cache reuse. Time to diagnosis: about four minutes, because two fields existed. Without them, that's a week of bisecting deploys while finance asks pointed questions. Notice the shape of the clue: cost and latency moved together while quality didn't move at all, and that combination points at the token or caching layer specifically, because a genuine model-behavior change would have disturbed quality too.</p>
+
+  <p>One more thing that's easy to treat as an afterthought and shouldn't be: production logs of a real system contain real user data. Redact at write time rather than read time, set an actual retention period, restrict who can see it. In a regulated sector this isn't hygiene, it's a control with an auditor's name attached to it, and any eval sample pulled from those logs inherits the same obligation.</p>
+
+  <div class="pagenav"><a class="prev" href="#optimization">← Optimization</a><a class="next" href="#synthesis">Next: Synthesis →</a></div>
+</div></section>
+
+<section id="synthesis"><div class="container">
+  <h2>7. How it all runs as one system</h2>
+  <p>Take that claims assistant through a full year and watch each objective hand its output to the next. Week one: six metrics, thresholds agreed with the business sponsor before anyone knows what the system will actually score — the only time that conversation is honest. Weeks two and three: 400 cases pulled from real submitted claims, stratified so the 2% that are handwritten remittance advices — carrying 30% of the actual risk — get real coverage, every case hand-verified by an adjuster. Every prompt edit after that runs the regression set first, then a declared A/B, then a staged rollout, no exceptions.</p>
+
+  <p>Then, in month four, grounded-answer rate drops from 0.94 to 0.71. The diagnosis order runs exactly as designed: retrieval first, which has in fact collapsed following a corpus refresh that broke table chunking. The model is never touched. The fix is a chunking change, verified against the regression set before anything ships — and the newly discovered failure mode becomes twelve new cases added to the eval set.</p>
+
+  <div class="pullquote"><p>That's the loop actually closing: production just taught the evaluation set something its authors didn't know a month ago.</p></div>
+
+  <p>Month five, optimization: profiling shows the policy preamble dominates both cost and time-to-first-token, so it gets reordered and cached, and a separate proposal to also trim it by 5,000 tokens gets rejected outright, because the removed sections are regulatorily required and the quality bar from week one isn't something you renegotiate for a cost saving. And continuously, underneath all of it: dashboards tracking accuracy by claim type, escalation rate, cost per claim, cache-hit rate, and grader-versus-human agreement over time, with every surfaced failure becoming a candidate for the next version of the eval set.</p>
+
+  <div class="box raised">
+    <div class="label">The property worth naming</div>
+    <p>Nothing in that whole year depends on anyone's gut feeling about whether the system "feels" better. Every decision is gated by a number defined before the result was known, and every number can be traced back to a specific layer that produced it.</p>
+  </div>
+
+  <h3>Common misconceptions</h3>
+  <div class="misc-grid">
+    <div class="misc-row myth"><span class="k">The myth</span>A bigger evaluation set is a better evaluation set.</div>
+    <div class="misc-row why"><span class="k">Why it's tempting</span>More data is the correct reflex in almost every other part of engineering.</div>
+    <div class="misc-row reality"><span class="k">The reality</span>Coverage of real failure modes beats count. Enlarging a biased set multiplies the bias and tightens the interval around a wrong number.</div>
+    <div class="misc-row test"><span class="k">The one test</span>Did the new cases come from real production traces, or from collecting more of what the team already thought to write down?</div>
+  </div>
+  <div class="misc-grid">
+    <div class="misc-row myth"><span class="k">The myth</span>97% accuracy means the system is ready to reduce human review.</div>
+    <div class="misc-row why"><span class="k">Why it's tempting</span>97% sounds finished — it's a single, confident, reportable number.</div>
+    <div class="misc-row reality"><span class="k">The reality</span>An aggregate can hide a 40% failure rate on a rare segment. Every segment has to clear the bar independently before oversight is reduced.</div>
+    <div class="misc-row test"><span class="k">The one test</span>Break the number out by segment. If any segment hasn't been checked separately, the 97% hasn't earned its confidence yet.</div>
+  </div>
+  <div class="misc-grid">
+    <div class="misc-row myth"><span class="k">The myth</span>The model started hallucinating, so we need a better model.</div>
+    <div class="misc-row why"><span class="k">Why it's tempting</span>A model swap is a one-line change and feels like the decisive engineering move.</div>
+    <div class="misc-row reality"><span class="k">The reality</span>Diagnose data and retrieval first, then prompt and context, then model mismatch. Hallucination has three distinct causes with three distinct fixes.</div>
+    <div class="misc-row test"><span class="k">The one test</span>Has Recall@5 against gold passages been checked since the last thing that changed? If not, the model isn't cleared as a suspect yet.</div>
+  </div>
+
+  <p style="margin-top:var(--space-block)">That's Domain 4, one of seven in this lesson series — Domain 1 (Solution Design &amp; Architecture) and Domain 2 (Claude Models, Prompting &amp; Context Engineering) are taught but not yet built as HTML in this same pattern. Corpus this lesson teaches against: <code>prep with quiz/CCAR-P_Domain-4_v1.md</code>.</p>
+
+  <div class="pagenav"><a class="prev" href="#monitoring">← Monitoring</a><span></span></div>
+</div></section>
+
+</main>
+
+<footer><div class="container">
+  <p>CCAR-P Prep &middot; Domain 4 of 7 &middot; Claude Certified Architect &ndash; Professional</p>
+</div></footer>
+
+<script>
+(function () {
+  /* ---- theme toggle ---- */
+  var root = document.documentElement;
+  var toggle = document.getElementById('theme-toggle');
+  function isDark() {
+    var t = root.getAttribute('data-theme');
+    if (t) return t === 'dark';
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  function updateToggle() {
+    var dark = isDark();
+    toggle.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+    toggle.querySelector('span').textContent = dark ? '☀️' : '🌙';
+  }
+  toggle.addEventListener('click', function () {
+    var next = isDark() ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('site-theme', next); } catch (e) {}
+    updateToggle();
+  });
+  window.addEventListener('themechange', updateToggle);
+  updateToggle();
+
+  /* ---- scroll progress + active nav link ---- */
+  var fill = document.getElementById('scrollbar-fill');
+  var navH = parseFloat(getComputedStyle(root).getPropertyValue('--nav-h')) || 64;
+  function onScroll() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var p = max > 0 ? (h.scrollTop || document.body.scrollTop) / max : 0;
+    if (fill) fill.style.width = Math.round(p * 100) + '%';
+    var links = document.querySelectorAll('.nav-link[href^="#"]');
+    var cur = '';
+    document.querySelectorAll('main section[id]').forEach(function (s) {
+      if (s.getBoundingClientRect().top <= navH + 4) cur = s.id;
+    });
+    links.forEach(function (l) {
+      l.classList.toggle('active', l.getAttribute('href') === '#' + cur);
+    });
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', function () {
+    navH = parseFloat(getComputedStyle(root).getPropertyValue('--nav-h')) || 64;
+    onScroll();
+  });
+  document.addEventListener('DOMContentLoaded', onScroll);
+  onScroll();
+
+  /* ---- pass@k / pass^k widget ---- */
+  var kRange = document.getElementById('k-range');
+  var kVal = document.getElementById('k-val');
+  var passAtVal = document.getElementById('pass-at-val');
+  var passPowVal = document.getElementById('pass-pow-val');
+  var passAtBar = document.getElementById('pass-at-bar');
+  var passPowBar = document.getElementById('pass-pow-bar');
+  var summary = document.getElementById('k-summary');
+  var pBtns = document.querySelectorAll('#k-widget .btn[data-p]');
+  var p = 0.85;
+
+  function fmtPct(x) { return (x * 100).toFixed(1) + '%'; }
+
+  function render() {
+    var k = parseInt(kRange.value, 10);
+    kVal.textContent = k;
+    var passAt = 1 - Math.pow(1 - p, k);
+    var passPow = Math.pow(p, k);
+    passAtVal.textContent = fmtPct(passAt);
+    passPowVal.textContent = fmtPct(passPow);
+    passAtBar.style.width = (passAt * 100) + '%';
+    passPowBar.style.width = (passPow * 100) + '%';
+    summary.textContent = 'At k = ' + k + ' attempts, p = ' + p.toFixed(2) + ' per attempt: pass@k = ' +
+      fmtPct(passAt) + ' (great if a validator can retry) — pass^k = ' + fmtPct(passPow) +
+      ' (this is why a world-acting or irreversible step needs its own gate, not this one).';
+  }
+
+  kRange.addEventListener('input', render);
+  pBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      pBtns.forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      p = parseFloat(btn.getAttribute('data-p'));
+      render();
+    });
+  });
+  render();
+})();
+</script>
+
+<script>
+/* P1.9b contrast self-test — gated behind ?audit, run nothing unless asked */
+(function () {
+  if (!/[?&]audit\b/.test(location.search)) return;
+  var cx = (function () { var c = document.createElement('canvas'); c.width = c.height = 1;
+                          return c.getContext('2d', { willReadFrequently: true }); })();
+  function px(backdrop, css) {
+    cx.globalCompositeOperation = 'copy';        cx.fillStyle = backdrop; cx.fillRect(0, 0, 1, 1);
+    cx.globalCompositeOperation = 'source-over'; cx.fillStyle = css;      cx.fillRect(0, 0, 1, 1);
+    var d = cx.getImageData(0, 0, 1, 1).data;
+    return [d[0], d[1], d[2]];
+  }
+  var memo = {};
+  function resolve(css) {
+    if (memo[css]) return memo[css];
+    var b = px('#000', css), w = px('#fff', css);
+    var a = 1 - (w[0] - b[0]) / 255;
+    if (a < 0) a = 0; if (a > 1) a = 1;
+    var out = { rgb: a > 0.002 ? [b[0] / a, b[1] / a, b[2] / a] : [0, 0, 0], a: a };
+    memo[css] = out;
+    return out;
+  }
+  function blend(fg, a, bg) { return [fg[0]*a+bg[0]*(1-a), fg[1]*a+bg[1]*(1-a), fg[2]*a+bg[2]*(1-a)]; }
+  function chan(c) { c/=255; return c<=0.03928 ? c/12.92 : Math.pow((c+0.055)/1.055,2.4); }
+  function lum(p) { return 0.2126*chan(p[0])+0.7152*chan(p[1])+0.0722*chan(p[2]); }
+  function ratio(x,y) { var a=lum(x),b=lum(y); if(a<b){var t=a;a=b;b=t;} return (a+0.05)/(b+0.05); }
+  function bgOf(el) {
+    var stack=[], n=el;
+    while (n && n.nodeType===1) {
+      var c = resolve(getComputedStyle(n).backgroundColor);
+      if (c.a>0.004) { stack.push(c); if (c.a>0.995) break; }
+      n = n.parentElement;
+    }
+    var out=[255,255,255];
+    for (var i=stack.length-1;i>=0;i--) out=blend(stack[i].rgb, stack[i].a, out);
+    return out;
+  }
+  function label(el) {
+    var s = el.tagName.toLowerCase();
+    if (el.id) s += '#'+el.id;
+    if (el.className && typeof el.className==='string' && el.className.trim())
+      s += '.'+el.className.trim().split(/\s+/).join('.');
+    return s;
+  }
+  function sweep(mode) {
+    var out=[];
+    Array.prototype.forEach.call(document.querySelectorAll('body *'), function (el) {
+      var owns = Array.prototype.some.call(el.childNodes, function (n) {
+        return n.nodeType===3 && n.textContent.trim().length>1;
+      });
+      if (!owns) return;
+      var cs = getComputedStyle(el);
+      if (cs.display==='none'||cs.visibility==='hidden'||parseFloat(cs.opacity)<0.99) return;
+      var fg = resolve(cs.color);
+      if (fg.a<0.02) return;
+      var bg = bgOf(el);
+      var eff = fg.a>0.995 ? fg.rgb : blend(fg.rgb, fg.a, bg);
+      var r = ratio(eff, bg);
+      var size = parseFloat(cs.fontSize), bold = parseInt(cs.fontWeight,10)>=700;
+      var need = (size>=24 || (size>=18.66 && bold)) ? 3 : 4.5;
+      if (r+0.005<need) out.push({mode:mode, el:label(el), ratio:+r.toFixed(2), need:need,
+                                   text:(el.textContent||'').trim().slice(0,44)});
+    });
+    return out;
+  }
+  var root = document.documentElement, prior = root.getAttribute('data-theme');
+  root.setAttribute('data-theme','light'); var fails = sweep('light');
+  root.setAttribute('data-theme','dark');  fails = fails.concat(sweep('dark'));
+  if (prior) root.setAttribute('data-theme', prior); else root.removeAttribute('data-theme');
+  window.__audit = fails;
+  if (fails.length) { console.error('CONTRAST AUDIT - '+fails.length+' failing'); console.table(fails); }
+  else { console.log('CONTRAST AUDIT - clean in both modes'); }
+})();
+</script>
+</body>
+</html>
