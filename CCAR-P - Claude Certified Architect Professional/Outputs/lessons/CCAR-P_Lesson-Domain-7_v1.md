@@ -689,6 +689,8 @@ Three concrete shapes of this error:
 | A skill uses a tool it should not touch | Add "do not use the Bash tool" to the skill body | Scope `allowed-tools` in the skill's frontmatter |
 | A skill's exploratory output crowds out the main task | Add "be concise, summarise your findings" | Set `context: fork` so it runs in an isolated context |
 | A convention applies only to test files but bleeds elsewhere | Add "only apply this to tests" to the project file | Move it to `.claude/rules/` with a glob for test paths |
+| An agent must never run a destructive command | Add "never force-push" to CLAUDE.md | A `deny` rule in `settings.json` permissions |
+| Formatting must run after every edit | Add "remember to format after editing" | A `PostToolUse` hook matched to the edit tools |
 
 In each row the left column asks the model to simulate a constraint the right column simply imposes.
 The left column will work most of the time, which is what makes it dangerous.
@@ -719,13 +721,43 @@ Two questions, asked in this order, resolve most of these items.
 | Guidance the model should follow, weighed with other context | Instruction context — CLAUDE.md, rules files |
 | A capability boundary during a defined activity | Tool scoping — `allowed-tools` in skill frontmatter |
 | Isolation, so one activity cannot contaminate another | `context: fork` |
-| Must hold every time regardless of what any prompt says | Deterministic enforcement outside the model's discretion |
+| Must hold every time regardless of what any prompt says | Deterministic enforcement — a hook, or a permission rule in `settings.json` |
 
-That last row deserves care in a lesson rather than a guess. The general property is what the exam
-tests: a mechanism that runs outside the model's discretion is what you reach for when a rule must
-hold unconditionally, and it is over-specification to reach for it when the rule is a preference.
-Where a scenario names a specific enforcement mechanism, answer with the property — unconditional
-enforcement, no model judgement involved — rather than from a half-remembered file schema.
+That last row is where this domain's documented weakness lives, so it gets named rather than gestured
+at. Two mechanisms sit outside the model's discretion, they live in the same file, and they are not
+the same thing.
+
+**Permission rules** go in `settings.json` under a `permissions` key holding three arrays: `allow`,
+`ask`, and `deny`. Each entry names a tool and optionally a pattern, as in `Bash(git push *)` or
+`Read(./.env)`. One rule about how they resolve decides a whole class of items: **evaluation runs
+deny, then ask, then allow, first match wins, and specificity does not change that order.** A broad
+deny beats a narrow allow, which is the opposite of how CSS or firewall rules train you to think.
+
+The documentation states this domain's thesis more plainly than any paraphrase: permission rules are
+enforced by Claude Code, not by the model, and instructions in a prompt or in CLAUDE.md shape what
+Claude *tries* to do without changing what Claude Code *allows*.
+
+**Hooks** are shell commands Claude Code runs at fixed points in its lifecycle, configured in the
+same settings files under a `hooks` key, with a matcher scoping them to particular tools. The docs'
+own framing is that they give you deterministic control, so certain actions always happen rather than
+relying on the model to choose to run them. A `PreToolUse` hook can block the call outright. Where a
+permission rule answers *may this run*, a hook runs your code at the moment it matters, which is how
+a formatter, a test run, or an audit entry stops being something everyone agreed to remember.
+
+Now the structural fact, and it runs opposite to the rule from Objective 1. Instruction files
+concatenate: every discovered CLAUDE.md contributes and none overrides another. Settings files do
+not. They resolve by a strict precedence — managed enterprise policy at the top, then the command
+line, then project-local, then shared project, then user at the bottom — and nothing below managed
+policy can override it.
+
+**So the two halves of Claude Code configuration behave in opposite ways, and a scenario turning on
+"which one wins" is telling you which half it is about.** Two CLAUDE.md files that disagree hand the
+model two instructions and no winner. Two settings files that disagree have a winner, and it is
+decided by which file the rule sits in rather than by how specific it is.
+
+Reaching for either when the rule is a preference is over-specification, and the exam tests that
+direction too. A style choice does not belong behind a mechanism that makes someone merge a config
+change to format a file.
 
 Two cross-checks close most remaining ambiguity. *Does it need to survive a clone?* If yes, it is
 inside the repository, not in a home directory. *Does it need to be paid for on every request?*
@@ -858,7 +890,10 @@ importing file. Import depth is contested between sources — never answer on th
 `context: fork` for isolated execution · `allowed-tools` for scoping what it may do.
 
 **Mechanism selection.** When is it needed → always/path-scoped/on-demand. How hard must it hold →
-guidance / tool scope / isolation / deterministic enforcement. Does it need to survive a clone → in
+guidance / tool scope / isolation / deterministic enforcement via a hook or a `settings.json`
+permission rule. Permissions resolve deny → ask → allow, first match wins, specificity irrelevant.
+Settings files have a strict precedence with managed policy on top; instruction files merely
+concatenate. Does it need to survive a clone → in
 the repository. Does it need to be paid for every session → weigh always-loaded against on-demand.
 
 **Plan vs direct.** Undetermined approach with expensive rework → plan first, read-only exploration,

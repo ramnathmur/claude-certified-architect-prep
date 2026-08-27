@@ -1,7 +1,15 @@
 # CCAR-P Corpus Index
 
 **Status:** Phase 0 reconciliation done 2026-08-25. **Phase 2 corpus complete 2026-08-25** — all seven
-domain files exist, 77 sections carrying 77 exam scenarios and 154 tagged distractors.
+domain files exist, 78 sections carrying 79 exam scenarios and 158 tagged distractors.
+
+> **Appended 2026-08-27:** §7.8 (Deterministic Enforcement — Hooks and Permission Rules), added after a
+> cold review found hooks and `settings.json` absent from both the corpus and the Domain 7 lesson while
+> being named explicitly in carry-over weakness #1, which scored 0% on the real CCAR-F paper. Facts are
+> sourced from current Claude Code documentation. Numbering is append-only, so no miss history moved.
+> The same review corrected `/memory` → `/context` in five places in Domain 7 (including an exam
+> scenario's correct answer) and one distractor rationale in §1.5 that rested on "hub-and-spoke", which
+> is not Anthropic's vocabulary.
 
 Domain files are the only permitted source for generated questions. The domain list and weightings
 are confirmed (see below), and the corpus now satisfies the orchestration prompt's Phase 0 preflight,
@@ -57,8 +65,8 @@ Created in Phase 2, one per confirmed domain, from `CCAR-P_Domain-Template_v1.md
 | `CCAR-P_Domain-4_v1.md` | Evaluation, Testing & Optimization | 16% | 12 (4.1–4.12) | 6 | 12 / 24 |
 | `CCAR-P_Domain-5_v1.md` | Governance, Safety & Risk Management | 14% | 11 (5.1–5.11) | 5 | 11 / 22 |
 | `CCAR-P_Domain-6_v1.md` | Stakeholder Communication & Lifecycle Management | 14% | 12 (6.1–6.12) | 5 | 12 / 24 |
-| `CCAR-P_Domain-7_v1.md` | Developer Productivity & Operational Enablement | 7% | 7 (7.1–7.7) | 3 | 7 / 14 |
-| | **Total** | **100%** | **77** | **38** | **77 / 154** |
+| `CCAR-P_Domain-7_v1.md` | Developer Productivity & Operational Enablement | 7% | 8 (7.1–7.8) | 3 | 9 / 18 |
+| | **Total** | **100%** | **78** | **38** | **79 / 158** |
 
 Every file was verified structurally on creation: one Core Facts table per section, exactly one ✅ and
 two ❌ per exam scenario, one quoted misconception per section, and every ❌ tagged with a distractor

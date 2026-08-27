@@ -42,7 +42,11 @@ Two things about this exam's format remain genuinely unsettled and this lesson d
 
 ### 1.1 The concept, from first principles
 
-Model families ship in capability tiers. Higher tiers reason further across ambiguity, hold longer chains of inference together, and handle instructions that are underspecified. Lower tiers are faster and cheaper per call. This lesson names no specific model, size, or price, and neither should your reasoning — the tier names and their numbers change on a schedule you do not control, and an architect who has memorized a price list has memorized the one part of the job that expires.
+Model families ship in capability tiers. Higher tiers reason further across ambiguity, hold longer chains of inference together, and handle instructions that are underspecified. Lower tiers are faster and cheaper per call. This lesson names no specific price, and neither should your reasoning — the numbers change on a schedule you do not control, and an architect who has memorized a price list has memorized the one part of the job that expires.
+
+The tier *names* are worth carrying, because a closed-book exam can put them in the options and you have to know which position each occupies. Anthropic's families run in a stable order: **Haiku** is the fast, inexpensive tier, **Sonnet** the balanced middle, **Opus** the most capable. Read an option naming a tier as naming a position on the cost-capability trade, then apply the four inputs below exactly as you would if the options were unlabelled.
+
+One caution about that ordering, because it is where the reasoning goes wrong: it holds *within* a generation, not across them. Generations move, and a current middle tier routinely clears bars an older top tier missed, so "Opus beats Sonnet" is a claim about two models of the same vintage and nothing more.
 
 What does not expire is the selection procedure.
 
@@ -468,6 +472,7 @@ Notice how often one decision served two objectives. Ordering the template by st
 |---|---|
 | "The safest choice is always the largest model." | Model choice is a cost–latency–quality trade-off argued from the task's stated requirement. Oversized capability is unpriced cost, not safety. |
 | "Pick the model once, for the whole system." | Selection is per call path. One system routinely runs different tiers on different steps. |
+| "A newer mid-tier model cannot beat an older top-tier one." | The Haiku → Sonnet → Opus ordering holds within a generation, not across them. A current middle tier routinely clears bars an older top tier missed; only a benchmark on your own data ranks models of different vintages. |
 | "A published benchmark tells me which model to use." | The accuracy bar is defined over your traffic. Benchmark candidates on representative data including the messy tail. |
 | "If it's documented anywhere in the pipeline, the model will follow it." | Only content that reaches the model as part of the request shapes behavior. Environment variables and design docs are invisible to it. |
 | "A rule stated in the first user message is set for the conversation." | It has authority for that turn and decays as the conversation grows. Persistent constraints belong in the system prompt. |

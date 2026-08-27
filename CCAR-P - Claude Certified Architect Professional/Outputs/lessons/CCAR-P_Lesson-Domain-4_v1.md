@@ -705,7 +705,13 @@ large win; for a batch pipeline where no human is waiting, it is nothing. An exa
 offer streaming as a latency fix for a nightly batch job.
 
 **7. Batching and asynchronous processing.** For work with no interactive deadline, moving to
-asynchronous or batch processing changes the cost structure without touching quality.
+asynchronous or batch processing changes the cost structure without touching quality. The Batches API
+processes asynchronously for roughly half the synchronous cost against a window of up to 24 hours,
+and the discriminator is not job size but whether anyone is blocked: a pre-merge check is synchronous
+by definition, a nightly job is not. One capability boundary decides whether a given job can move —
+a batched request cannot make a tool call partway through and feed the result back to the model, so
+any job that fetches related material based on what it just read has to resolve that set up front.
+That is a redesign, not a change of schedule. Domain 7 works the case through in full.
 
 ### Worked example
 

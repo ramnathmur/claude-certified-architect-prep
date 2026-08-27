@@ -1059,12 +1059,14 @@ details.checkpoint .answer .verdict {
   </div>
 
   <div class="table-wrap"><table>
-    <caption>Three shapes of the same error</caption>
+    <caption>Five shapes of the same error</caption>
     <thead><tr><th scope="col">Symptom</th><th scope="col">The prompt-instruction non-fix</th><th scope="col">The mechanism fix</th></tr></thead>
     <tbody>
       <tr><td>A skill uses a tool it should not touch</td><td>Add "do not use the Bash tool" to the skill body</td><td>Scope <code>allowed-tools</code> in the skill's frontmatter</td></tr>
       <tr><td>A skill's exploratory output crowds out the main task</td><td>Add "be concise, summarise your findings"</td><td>Set <code>context: fork</code> so it runs in an isolated context</td></tr>
       <tr><td>A convention applies only to test files but bleeds elsewhere</td><td>Add "only apply this to tests" to the project file</td><td>Move it to <code>.claude/rules/</code> with a glob for test paths</td></tr>
+      <tr><td>An agent must never run a destructive command</td><td>Add "never force-push" to CLAUDE.md</td><td>A <code>deny</code> rule in <code>settings.json</code> permissions</td></tr>
+      <tr><td>Formatting must run after every edit</td><td>Add "remember to format after editing"</td><td>A <code>PostToolUse</code> hook matched to the edit tools</td></tr>
     </tbody>
   </table></div>
 
@@ -1079,7 +1081,7 @@ details.checkpoint .answer .verdict {
   <figure class="fig">
     <svg viewBox="0 0 720 254" role="img" aria-labelledby="fig5-t fig5-d">
       <title id="fig5-t">Mechanism selection on two axes</title>
-      <desc id="fig5-d">Question one asks when the rule needs to be in effect. Always for everyone on the project means a project-level instruction file under version control. Always for one person across all their projects means a user-level instruction file, not shared. Only when specific files or paths are in play means dot claude slash rules with glob patterns in YAML frontmatter. Only when someone deliberately invokes a procedure means a skill or a command. Question two asks how strongly it must hold. Guidance the model should weigh with other context means instruction context. A capability boundary during a defined activity means tool scoping via allowed-tools. Isolation so one activity cannot contaminate another means context fork. And a rule that must hold every time regardless of any prompt means deterministic enforcement outside the model's discretion. Two cross-checks follow: does it need to survive a clone, which puts it inside the repository, and does it need to be paid for on every request, which weighs always-loaded against on-demand.</desc>
+      <desc id="fig5-d">Question one asks when the rule needs to be in effect. Always for everyone on the project means a project-level instruction file under version control. Always for one person across all their projects means a user-level instruction file, not shared. Only when specific files or paths are in play means dot claude slash rules with glob patterns in YAML frontmatter. Only when someone deliberately invokes a procedure means a skill or a command. Question two asks how strongly it must hold. Guidance the model should weigh with other context means instruction context. A capability boundary during a defined activity means tool scoping via allowed-tools. Isolation so one activity cannot contaminate another means context fork. And a rule that must hold every time regardless of any prompt means deterministic enforcement outside the model's discretion, which in practice means a hook or a permission rule in settings.json. Two cross-checks follow: does it need to survive a clone, which puts it inside the repository, and does it need to be paid for on every request, which weighs always-loaded against on-demand.</desc>
 
       <text class="s-key" x="0" y="16">Question 1 &#183; When must it be in effect?</text>
       <g class="s-green-t">
@@ -1118,7 +1120,7 @@ details.checkpoint .answer .verdict {
         <text x="10"  y="140">guidance, weighed</text><text x="10"  y="162">instruction context</text>
         <text x="192" y="140">a capability boundary</text><text x="192" y="162">allowed-tools</text>
         <text x="374" y="140">isolation from other work</text><text x="374" y="162">context: fork</text>
-        <text x="556" y="140">must hold every time</text><text x="556" y="162">enforcement outside</text>
+        <text x="556" y="140">must hold every time</text><text x="556" y="162">hooks &#183; permissions</text>
       </g>
 
       <line x1="0" y1="192" x2="720" y2="192" stroke="var(--border)" stroke-width="1"/>
@@ -1129,9 +1131,19 @@ details.checkpoint .answer .verdict {
     <figcaption><b>Two questions, and they are not interchangeable orderings.</b> "When" narrows you to a location and "how strongly" narrows you to a family, and a scenario that names a cost ceiling or a regulated sector is usually moving you along the second axis rather than the first.</figcaption>
   </figure>
 
-  <p>The rightmost cell on the second axis deserves care rather than a guess. The general property is what the exam tests: a mechanism running outside the model's discretion is what you reach for when a rule must hold unconditionally, and it is over-specification to reach for it when the rule is a preference.</p>
+  <p>The rightmost cell is where this domain's documented weakness lives, so it gets named rather than gestured at. Two mechanisms sit outside the model's discretion, they live in the same file, and they are not the same thing.</p>
 
-  <p>Where a scenario names a specific enforcement mechanism, answer with the property, meaning unconditional enforcement with no model judgement involved, rather than from a half-remembered file schema.</p>
+  <p><b>Permission rules</b> go in <code>settings.json</code> under a <code>permissions</code> key holding three arrays: <code>allow</code>, <code>ask</code>, and <code>deny</code>. Each entry names a tool and optionally a pattern, as in <code>Bash(git push *)</code> or <code>Read(./.env)</code>. One rule about how they resolve decides a whole class of items: <strong class="load-bearing">evaluation runs deny, then ask, then allow, first match wins, and specificity does not change that order.</strong> A broad deny beats a narrow allow, which is the opposite of how CSS or firewall rules train you to think.</p>
+
+  <p>The documentation states this domain's thesis more plainly than any paraphrase: permission rules are enforced by Claude Code, not by the model, and instructions in a prompt or in CLAUDE.md shape what Claude <em>tries</em> to do without changing what Claude Code <em>allows</em>.</p>
+
+  <p><b>Hooks</b> are shell commands Claude Code runs at fixed points in its lifecycle, configured in the same settings files under a <code>hooks</code> key, with a matcher scoping them to particular tools. The docs' own framing is that they give you deterministic control, so certain actions always happen rather than relying on the model to choose to run them. A <code>PreToolUse</code> hook can block the call outright. Where a permission rule answers <em>may this run</em>, a hook runs your code at the moment it matters, which is how a formatter, a test run, or an audit entry stops being something everyone agreed to remember.</p>
+
+  <p>Now the structural fact, and it runs opposite to the rule from section 1. Instruction files concatenate: every discovered CLAUDE.md contributes and none overrides another. Settings files do not. They resolve by a strict precedence &mdash; managed enterprise policy at the top, then the command line, then project-local, then shared project, then user at the bottom &mdash; and nothing below managed policy can override it.</p>
+
+  <p><strong class="load-bearing">So the two halves of Claude Code configuration behave in opposite ways, and a scenario turning on "which one wins" is telling you which half it is about.</strong> Two CLAUDE.md files that disagree hand the model two instructions and no winner. Two settings files that disagree have a winner, and it is decided by which file the rule sits in rather than by how specific it is.</p>
+
+  <p>Reaching for either when the rule is a preference is over-specification, and the exam tests that direction too. A style choice does not belong behind a mechanism that makes someone merge a config change to format a file.</p>
 
   <details class="checkpoint">
     <summary>Checkpoint 4 &middot; the mechanism reflex</summary>
@@ -1254,6 +1266,13 @@ details.checkpoint .answer .verdict {
 
   <p><b>Measuring outcomes meets Domain 6.</b> Baseline before adoption, metric named before adoption, confound stated by you. That is Domain 6's discovery discipline arriving in a tooling context.</p>
 
+  <div class="misc-grid">
+    <div class="misc-row myth"><span class="k">The myth</span>A more specific permission rule beats a broader one, the way it does everywhere else.</div>
+    <div class="misc-row why"><span class="k">Why it's tempting</span>CSS, firewall rules, and routing tables all resolve by specificity, so the instinct transfers without friction.</div>
+    <div class="misc-row reality"><span class="k">The reality</span>Rules resolve deny, then ask, then allow, and the first match in that order wins. A broad <code>deny</code> beats a narrow <code>allow</code>, and specificity never enters into it.</div>
+    <div class="misc-row test"><span class="k">The one test</span>Does any deny rule match this call? Then it is denied, however precisely some allow rule also matches it.</div>
+  </div>
+
   <h3>Common misconceptions</h3>
 
   <div class="misc-grid">
@@ -1292,7 +1311,7 @@ details.checkpoint .answer .verdict {
 
   <p><b>Skill frontmatter.</b> <code>description</code> for the menu, <code>argument-hint</code> for expected arguments, <code>context: fork</code> for isolated execution, <code>allowed-tools</code> for scoping what it may do.</p>
 
-  <p><b>Mechanism selection.</b> When is it needed: always, path-scoped, or on demand. How hard must it hold: guidance, tool scope, isolation, or deterministic enforcement. Does it need to survive a clone: then it lives in the repository. Does it need to be paid for every session: weigh always-loaded against on-demand.</p>
+  <p><b>Mechanism selection.</b> When is it needed: always, path-scoped, or on demand. How hard must it hold: guidance, tool scope, isolation, or deterministic enforcement via a hook or a <code>settings.json</code> permission rule. Permissions resolve deny, then ask, then allow, first match wins, specificity irrelevant. Settings files have a strict precedence with managed policy on top; instruction files merely concatenate. Does it need to survive a clone: then it lives in the repository. Does it need to be paid for every session: weigh always-loaded against on-demand.</p>
 
   <p><b>Plan against direct.</b> Undetermined approach with expensive rework means plan first, read-only exploration, plan presented before execution. Determined approach means direct. Never switch reactively once it gets hard. Plan output doubles as a reviewable artifact for approval and audit.</p>
 

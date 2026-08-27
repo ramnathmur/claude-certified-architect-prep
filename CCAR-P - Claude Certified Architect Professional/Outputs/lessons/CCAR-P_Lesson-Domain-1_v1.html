@@ -886,6 +886,14 @@ details.checkpoint .answer .verdict {
     </div>
   </div>
 
+  <h3>The rung people skip</h3>
+
+  <p>Between the plain call and the workflow sits the rung that gets the least attention and answers more scenarios than its share: the model plus retrieval, tools, or memory. It is the entire design whenever the task is a single judgment the model cannot make from what it already knows.</p>
+
+  <p>A support team wants answers about their own product, from their own documentation. One question in, one answer out, and no sequence to orchestrate. A workflow here would be steps invented to look like engineering. What the scenario states is that the knowledge is private and current, and that is a retrieval requirement rather than a control-flow one.</p>
+
+  <p>The tell sits in what the requirement names. If it names knowledge the model does not have, or an action it cannot take, you are on this rung and the answer is to augment. If it names a sequence, you are on the next one. Scenarios about stale answers, private data, or "it does not know our policies" resolve here, and the distractors offer a workflow or an agent to solve a problem that has no steps in it.</p>
+
   <h3>Two clarifications people get wrong in both directions</h3>
 
   <p><b>A workflow can branch.</b> Routing a request to one of five sub-prompts based on a classification step is still a workflow, because the five branches are enumerated.</p>
@@ -894,9 +902,13 @@ details.checkpoint .answer .verdict {
 
   <p><b>An agent is not a smarter workflow.</b> It is a workflow whose control flow has been handed to a nondeterministic component. That is the right trade in some cases and a bad trade in most.</p>
 
-  <p>The five named workflow patterns worth having cold: <b>prompt chaining</b> (fixed sequence, each step feeding the next, with optional programmatic gates between); <b>routing</b> (classify, then dispatch to a specialised handler); <b>parallelisation</b> (independent subtasks fanned out and aggregated, either sectioning by aspect or voting for reliability); <b>orchestrator-worker</b> (a controlling step dispatching to workers, with dispatch logic in code); and <b>evaluator-optimiser</b> (a generator and an independent critic, looping until the critic passes).</p>
+  <p>The five named workflow patterns worth having cold: <b>prompt chaining</b> (fixed sequence, each step feeding the next, with optional programmatic gates between); <b>routing</b> (classify, then dispatch to a specialised handler); <b>parallelisation</b> (independent subtasks fanned out and aggregated, either sectioning by aspect or voting for reliability); <b>orchestrator-worker</b> (a central model decomposes the task at runtime, delegates to workers, and synthesises their results); and <b>evaluator-optimiser</b> (a generator and an independent critic, looping until the critic passes).</p>
 
   <p>That last one earns a warning. An evaluator-optimiser only works if the evaluator is genuinely independent, meaning a separate call that does not see the generator's reasoning. A generator asked to self-review inside the same context has already rationalised its choices, and it will confirm them.</p>
+
+  <p>Orchestrator-worker earns a second look, because it is the pattern most often mistaken for the rung above it. It sits in the workflow list and the scaffold really is code: something spawns the workers, collects what they return, and assembles the result. What is <em>not</em> in code is the decomposition. The controlling model decides at runtime how many subtasks there are and what each one is, which is the whole reason the pattern exists &mdash; you reach for it when the subtasks cannot be predicted, the way the number of files a change touches depends on the change.</p>
+
+  <p>That gives you the boundary against section 4's multi-agent systems, and it is narrower than it looks. Parallelisation and orchestrator-worker draw the same diagram. <strong class="load-bearing">The difference is whether the subtasks were enumerated when you wrote the code or decided when the request arrived.</strong></p>
 
   <h3>The hybrid answer</h3>
 
@@ -989,7 +1001,7 @@ details.checkpoint .answer .verdict {
 
   <div class="entry"><b>By the end of this section</b> you will diagnose a multi-agent failure by looking at the coordinator first, which is where the exam puts nearly all of them.</div>
 
-  <p>Multi-agent systems are hub-and-spoke. One coordinator, several specialist subagents, and no direct communication between subagents. Everything flows through the coordinator.</p>
+  <p>The multi-agent shape worth knowing here is one coordinator and several specialist subagents, with no direct channel between subagents. Everything flows through the coordinator. Other topologies exist in the field; this is the one the objectives are written around, and that single constraint is what makes it governable.</p>
 
   <p>That single constraint is the whole design, and it buys four things.</p>
 
@@ -1392,7 +1404,7 @@ details.checkpoint .answer .verdict {
   <div class="misc-grid">
     <div class="misc-row myth"><span class="k">The myth</span>The subagent produced the bad output, so fix the subagent.</div>
     <div class="misc-row why"><span class="k">Why it's tempting</span>The defect is visible in that subagent's output, and that is where anyone naturally looks first.</div>
-    <div class="misc-row reality"><span class="k">The reality</span>In hub-and-spoke, most output defects trace to coordinator decomposition, context passing, or termination criteria.</div>
+    <div class="misc-row reality"><span class="k">The reality</span>With a coordinator and isolated subagents, most output defects trace to coordinator decomposition, context passing, or termination criteria.</div>
     <div class="misc-row test"><span class="k">The one test</span>Were the subagents' individual outputs correct? If yes, the fault is upstream of all of them.</div>
   </div>
 
@@ -1414,7 +1426,7 @@ details.checkpoint .answer .verdict {
 
   <p><b>The ladder.</b> Plain call, augmented LLM, workflow, agent, multi-agent. Move right only on a stated requirement. The discriminator is whether you can enumerate the paths.</p>
 
-  <p><b>Workflow patterns.</b> Prompt chaining, routing, parallelisation (sectioning or voting), orchestrator-worker, evaluator-optimiser. The evaluator must be independent.</p>
+  <p><b>Workflow patterns.</b> Prompt chaining, routing, parallelisation (sectioning or voting), orchestrator-worker, evaluator-optimiser. The evaluator must be independent, and orchestrator-worker's subtasks are decided at runtime, not enumerated in code.</p>
 
   <p><b>Four stages.</b> Input (acquire, validate, normalise, trust boundary), processing (model plus deterministic code), output (schema, destination, consumer, error tolerance), feedback (signal plus a destination that changes behaviour).</p>
 

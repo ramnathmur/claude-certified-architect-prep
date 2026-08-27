@@ -16,7 +16,7 @@
 | Load semantics | **Concatenated** root → working directory. All discovered files contribute. No documented override precedence between CLAUDE.md levels |
 | Shared vs personal | Project-level is version-controlled and reaches everyone who clones. User-level reaches one person and is invisible in code review |
 | Skill precedence | Personal skill overrides project skill **of the same name** |
-| Verification command | `/memory` — lists the memory files actually loaded in the current session |
+| Verification command | `/context` — shows what actually loaded into the current session (`/memory` lists memory file locations, which is a different question) |
 | Cost dimension | Always-loaded content is paid for in tokens on every request by every engineer |
 
 ### Durability axis — inherited artifact vs person-dependent transfer
@@ -39,7 +39,7 @@ engineer, invisible in per-PR review.
 
 ### Exam scenario: a newly hired engineer's generated code omits a convention the other three engineers always get
 
-- ✅ The convention is in the other engineers' user-level configuration, not project-level; move it into the version-controlled project configuration and confirm with `/memory`
+- ✅ The convention is in the other engineers' user-level configuration, not project-level; move it into the version-controlled project configuration and confirm with `/context`
 - ❌ Have the new engineer prefix every prompt with the convention — **REPAIR**: patches each session downstream of a configuration gap that a committed file closes once, and fails silently the first time they forget
 - ❌ Add the convention to a team wiki page and link it in the onboarding email — **HALF-MOVE**: transfers the knowledge to a human and never reaches the model's request at all
 
@@ -75,8 +75,8 @@ Q1: *when* must this be in effect (always / on matching paths / on invocation)? 
 | Universal coding standards | Project CLAUDE.md | Needed every session; on-demand invocation would depend on memory |
 | A 500-line CLAUDE.md mixing standards, PR checklists and deploy steps | Keep universal standards; move workflow procedures to skills, file-scoped conventions to `.claude/rules/` | Always-loaded tokens are paid every session; occasional procedures should cost nothing when unused |
 | Same situation, fixed by moving everything into skills | Reject | Universal standards would then need explicit invocation every time |
-| A rule that must hold every time regardless of what any prompt says | Deterministic enforcement outside the model's discretion | Instruction prose is weighed against other context; enforcement is not |
-| A style preference, proposed for deterministic enforcement | Reject | A suggestion converted into a hard failure |
+| A rule that must hold every time regardless of what any prompt says | Deterministic enforcement — a hook, or a `deny` rule in `settings.json` permissions (§7.8) | Instruction prose is weighed against other context; enforcement is not |
+| A style preference, proposed for deterministic enforcement | Reject | A suggestion converted into a hard failure someone must merge a config change to undo |
 
 **Compliance constraint:** a rule that must be *auditable*, a rule that must be *followed*, and a
 rule that must be *enforced* are three different requirements and select three different mechanisms.
@@ -254,7 +254,7 @@ a large refactor landed mid-quarter. Naming it is the difference between a measu
 |---|---|
 | Objective | Support debugging and operational issue resolution |
 | Method | Identify the layer that owns the symptom; bisection assumes determinism an agentic system does not have |
-| Rung 1 | Is the content loaded? `/memory` lists the memory files loaded in the session |
+| Rung 1 | Is the content loaded? `/context` shows what actually loaded into the session |
 | Rung 2 | Is it in the right layer for the strength required (guidance / tool scope / isolation / enforcement)? |
 | Rung 3 | Context polluted or stale? `context: fork` isolates verbose work; `/compact` risks losing exact values, dates, and specifics |
 | Rung 4 | Tooling wired and scoped? Least privilege means **removing** the unneeded capability, not logging or confirming its use |
@@ -269,7 +269,7 @@ Each environmental detail eliminates a layer; read the stem for exclusions rathe
 | Evidence in the stem | Layer that owns it | Ruled out |
 |---|---|---|
 | Behaviour differs between engineers on the same repository | Configuration scope — user-level vs project-level | Model version, tool version |
-| Works in some sessions, not others, same machine | Conditional loading — check what `/memory` reports | Randomness; conditional is not intermittent |
+| Works in some sessions, not others, same machine | Conditional loading — check what `/context` reports | Randomness; conditional is not intermittent |
 | A fact from two turns ago is missing in a short conversation | The application is not sending prior history | Context-window exhaustion |
 | Accuracy collapsed right after a document refresh; answers are confident, not hedged | Retrieval and indexing | The model — confident-and-wrong is correct reasoning over wrong retrieved content |
 | A subagent holds the tool but never uses it correctly | Wiring and permissions | Prompt wording |
@@ -281,9 +281,66 @@ signal that would have located the cause.
 
 ### Exam scenario: a convention holds in some Claude Code sessions and not others, same repository, same week
 
-- ✅ Run `/memory` in a working and a failing session and compare the loaded set — the rule is in a file that is not consistently discovered (wrong level, wrong directory, or a path-scoped glob that does not match)
+- ✅ Run `/context` in a working and a failing session and compare what loaded — the rule is in a file that is not consistently discovered (wrong level, wrong directory, or a path-scoped glob that does not match)
 - ❌ Restate the convention at the top of every prompt in capitals — **REPAIR**: patches each session downstream of a loading problem, and mostly-working suppresses the diagnostic signal
 - ❌ Move to a more capable model on the grounds that instruction-following is inconsistent — **DISCARD**: replaces a working component to explain a symptom the configuration layer already accounts for
 
 ### ❌ Misconception
 "Behaviour that works sometimes is non-deterministic and hard to pin down." — It is usually conditional rather than random; find the condition, starting with what is actually loaded.
+
+---
+
+## 7.8 Deterministic Enforcement — Hooks and Permission Rules
+
+### Core Facts
+
+| Attribute | Value |
+|---|---|
+| Objective | Configure Claude tools and environments for teams · support debugging and operational issue resolution |
+| Permission rules | `settings.json` → `permissions` object holding three arrays: `allow`, `ask`, `deny`. Entries name a tool and optionally a pattern — `Bash(git push *)`, `Read(./.env)` |
+| Permission resolution order | **deny → ask → allow, first match wins. Specificity does not change the order** — a broad `deny` beats a narrow `allow` |
+| Enforcement property | Permission rules are enforced by Claude Code, not by the model. Prompt and CLAUDE.md instructions shape what Claude *tries* to do; they do not change what Claude Code *allows* |
+| Hooks | User-defined shell commands run at fixed lifecycle points, configured in the same settings files under a `hooks` key, scoped by a `matcher` |
+| Hook property | Deterministic control — the action always happens rather than depending on the model choosing to run it |
+| Blocking | A `PreToolUse` hook can block the tool call |
+| Settings precedence | managed enterprise policy → command line → `.claude/settings.local.json` → `.claude/settings.json` → `~/.claude/settings.json`. **Nothing below managed policy overrides it** |
+| Contrast with instruction files | Instruction files *concatenate* — all discovered files contribute, none overrides another. Settings files *resolve by precedence* — there is a winner |
+
+### The two halves behave in opposite ways
+
+| Question | Instruction files | Settings files |
+|---|---|---|
+| Two files disagree — which wins? | Neither. Both load; the model receives two contradictory instructions | The one higher in the precedence order |
+| Can an organisation impose a rule nobody can override? | No | Yes — managed policy |
+| Does specificity decide anything? | No | No — order decides, and it is deny → ask → allow |
+
+### Decision table
+
+| Situation | Answer | Why |
+|---|---|---|
+| A capability must never be exercised, regardless of any prompt | A `deny` rule in `settings.json` permissions | Enforced by Claude Code, outside the model's discretion |
+| Same situation, addressed by a strongly-worded CLAUDE.md instruction | Reject | Shapes what Claude tries to do; does not change what is allowed |
+| An action must happen every time a tool runs (format, test, audit entry) | A hook on the relevant event, scoped by matcher | The action always happens rather than depending on the model choosing it |
+| Same situation, addressed by "remember to run the formatter" in the project file | Reject | A reminder competes with everything else in context |
+| A tool call must be stopped before it executes | `PreToolUse` hook, or a `deny` permission rule | Both act before execution; a log acts after |
+| A narrow `allow` exists and a broad `deny` also matches | Denied | First match in deny → ask → allow order wins; specificity is irrelevant |
+| An organisation must guarantee a rule survives every local override | Managed policy settings | Nothing below it in the precedence order can override it |
+| A team style preference, proposed for a hook or a deny rule | Reject | Over-specification: a suggestion converted into a hard failure someone must merge a config change to undo |
+
+### Exam scenario: an agent must never be able to force-push, and a CLAUDE.md instruction saying so has not held
+
+- ✅ Add a `deny` rule for the force-push command pattern to `settings.json` permissions
+- ❌ Restate the prohibition more forcefully and in more places in CLAUDE.md — **REPAIR**: instructions shape what Claude tries to do and do not change what Claude Code allows; more prose is more of the thing that already failed
+- ❌ Add an `allow` rule listing every git command the agent *may* run, on the grounds that an allow-list is stricter than a deny-list — **HALF-MOVE**: an allow-list narrows the default path but does not stop a matching call the way an explicit `deny` does, and it breaks every legitimate command nobody thought to enumerate
+
+### Exam scenario: a rule must hold on every developer machine and cannot be overridden locally
+
+- ✅ Managed policy settings — nothing below it in the precedence order can override it
+- ❌ Put it in the project `.claude/settings.json` and require review on that file — **HALF-MOVE**: `.claude/settings.local.json` sits above it in the precedence order, so a local file still wins
+- ❌ Put it in the project CLAUDE.md, which every clone receives — **WRONG-AXIS**: instruction files concatenate and never override, so this cannot produce a rule that wins a conflict at all
+
+### ❌ Misconception
+"A more specific permission rule beats a broader one, the way it does in CSS or a firewall." — Rules resolve deny → ask → allow and the first match in that order wins. Specificity never enters into it, so a broad `deny` beats a narrow `allow`.
+
+### ❌ Misconception
+"Hooks and permission rules are two names for the same enforcement layer." — A permission rule answers *may this run*. A hook runs your own code at a lifecycle point, and a `PreToolUse` hook can also block. They are configured in the same file and answer different questions.

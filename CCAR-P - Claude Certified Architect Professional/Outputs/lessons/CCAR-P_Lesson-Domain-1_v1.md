@@ -215,7 +215,7 @@ A **workflow can branch**. Routing a request to one of five sub-prompts based on
 
 An **agent is not a smarter workflow**. It is a workflow whose control flow has been handed to a nondeterministic component. That is the right trade in some cases and a bad trade in most.
 
-The named workflow patterns worth having at your fingertips: **prompt chaining** (fixed sequence, each step's output feeding the next, with the option of a programmatic gate between steps); **routing** (classify, then dispatch to a specialised handler); **parallelisation** (independent subtasks fanned out, results aggregated — either sectioning by aspect or voting for reliability); **orchestrator-worker** (a controlling step that dispatches to workers, with the dispatch logic in code); **evaluator-optimiser** (a generator and an independent critic, looping until the critic passes).
+The named workflow patterns worth having at your fingertips: **prompt chaining** (fixed sequence, each step's output feeding the next, with the option of a programmatic gate between steps); **routing** (classify, then dispatch to a specialised handler); **parallelisation** (independent subtasks fanned out, results aggregated — either sectioning by aspect or voting for reliability); **orchestrator-worker** (a central model decomposes the task at runtime, delegates to workers, and synthesises their results — the subtasks are not enumerated in advance); **evaluator-optimiser** (a generator and an independent critic, looping until the critic passes).
 
 That last one earns a note. An evaluator-optimiser only works if the evaluator is genuinely independent — a separate call that does not see the generator's reasoning. A generator asked to self-review inside the same context has already rationalised its own choices, and it will confirm them.
 
@@ -271,7 +271,7 @@ A third shape asks you to justify a choice rather than make it. The stem gives a
 - Every step right on the ladder must be paid for by a requirement stated in the scenario.
 - Cost of a workflow is a point; cost of an agent is a distribution with a tail.
 - Hybrid — workflow with an agentic exception route — is frequently the professionally correct answer.
-- Know the five workflow patterns by name: chaining, routing, parallelisation, orchestrator-worker, evaluator-optimiser.
+- Know the five workflow patterns by name: chaining, routing, parallelisation, orchestrator-worker, evaluator-optimiser. Orchestrator-worker's subtasks are decided at runtime by the controlling model, not enumerated in code — that is the one property separating it from parallelisation.
 - An evaluator must be independent of the generator to be worth anything.
 
 ---
@@ -280,7 +280,7 @@ A third shape asks you to justify a choice rather than make it. The stem gives a
 
 ### The concept from first principles
 
-Multi-agent systems are hub-and-spoke: one coordinator, several specialist subagents, and **no direct communication between subagents**. Everything flows through the coordinator.
+The multi-agent shape worth knowing here is one coordinator and several specialist subagents, with **no direct channel between subagents**. Everything flows through the coordinator. Other topologies exist in the field; this is the one the objectives are written around, and that single constraint is what makes it governable.
 
 That constraint is the whole design. It buys four things:
 
@@ -544,7 +544,7 @@ Read the six sections back in order and notice the dependency chain: the regulat
 | "If the model can decide the path, let it." | Nondeterministic control flow costs tokens, latency variance, evaluability, and debuggability. It is purchased with a requirement, not with a preference. |
 | "A workflow can't branch — branching means you need an agent." | Enumerated branches are routing, which is a workflow pattern. Agency is choosing without a fixed menu. |
 | "More agents means better coverage." | Coverage is set by the coordinator's decomposition. More agents executing a bad partition produce more of the same gap. |
-| "The subagent produced the bad output, so fix the subagent." | In hub-and-spoke, most output defects trace to coordinator decomposition, context passing, or termination criteria. |
+| "The subagent produced the bad output, so fix the subagent." | With a coordinator and isolated subagents, most output defects trace to coordinator decomposition, context passing, or termination criteria. |
 | "Tell the agent not to use that tool." | Instructions are probabilistic; configuration is deterministic. Least privilege means removing the capability, not logging or confirming its use. |
 | "Logging the system's behaviour is the feedback loop." | A log records what happened. Feedback carries a correctness signal to a destination that changes the system. |
 | "Human review in the loop means the system will improve." | Only if the correction is captured and routed somewhere. Reviewers whose edits are discarded generate no learning. |
@@ -562,7 +562,7 @@ Read the six sections back in order and notice the dependency chain: the regulat
 
 **The ladder** — plain call → augmented LLM → workflow → agent → multi-agent. Move right only on a stated requirement. Discriminator: **can you enumerate the paths?**
 
-**Workflow patterns** — prompt chaining · routing · parallelisation (sectioning or voting) · orchestrator-worker · evaluator-optimiser (the evaluator must be independent).
+**Workflow patterns** — prompt chaining · routing · parallelisation (sectioning or voting) · orchestrator-worker (subtasks decided at runtime) · evaluator-optimiser (the evaluator must be independent).
 
 **Four architecture stages** — input (acquire, validate, normalise, trust boundary) → processing (model plus deterministic code) → output (schema, destination, consumer, error tolerance) → feedback (signal plus a destination that changes behaviour).
 

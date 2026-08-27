@@ -173,7 +173,7 @@ Name which of the three justifications the scenario states. If none is stated, o
 
 - ✅ Single agent with the required tool set
 - ❌ Coordinator plus three specialist subagents, for separation of concerns — **ARCHITECTED**: reads as the more rigorous design; adds 4–5× tokens and a handoff at every boundary to satisfy no stated requirement
-- ❌ Two agents that pass results directly to each other without a coordinator — **WRONG-AXIS**: violates hub-and-spoke, which is the topology that makes multi-agent governable at all
+- ❌ Two agents that pass results directly to each other without a coordinator — **WRONG-AXIS**: the coordinator boundary is what buys context isolation and per-role privilege, and a direct channel between subagents dissolves both while still paying multi-agent's token cost
 
 ### ❌ Misconception
 "Multi-agent is the more scalable architecture, so it's the safer default for a complex problem." — It is the most expensive rung and the one that loses the most information at handoffs; it is chosen for latency, isolation, or privilege, never for sophistication.
