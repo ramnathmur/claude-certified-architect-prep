@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 16 — Who Runs the Loop · CCDV-F</title>
+<meta name="description" content="Self-hosted Managed Agents moves only tool execution to your own infrastructure — the model, the loop, and session state stay with Anthropic in both hosting modes.">
+<meta name="author" content="Ram">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: light dark;
+
+  --ink:    oklch(0.15 0.01 80);
+  --ink2:   oklch(0.30 0.015 75);
+  --ink3:   oklch(0.53 0.015 75);
+  --cream:  oklch(0.97 0.008 85);
+  --cream2: oklch(0.94 0.012 85);
+  --cream3: oklch(0.91 0.015 80);
+  --border: oklch(0.87 0.012 80);
+
+  --amber:       oklch(0.64 0.14 68);
+  --amber-light: oklch(0.93 0.035 80);
+  --amber-dark:  oklch(0.47 0.11 60);
+  --blue:        oklch(0.43 0.09 245);
+  --blue-light:  oklch(0.93 0.025 240);
+  --coral:       oklch(0.55 0.14 30);
+  --coral-light: oklch(0.94 0.025 35);
+  --purple:      oklch(0.38 0.14 300);
+  --purple-light:oklch(0.93 0.03 300);
+  --green:       oklch(0.50 0.10 150);
+  --green-light: oklch(0.94 0.025 145);
+
+  --surface-raised:  oklch(0.15 0.01 80);
+  --on-raised:       oklch(0.97 0.008 85);
+  --on-raised-muted: oklch(0.97 0.008 85 / 0.74);
+  --on-raised-dim:   oklch(0.97 0.008 85 / 0.6);
+  --on-raised-border:oklch(0.97 0.008 85 / 0.15);
+  --nav-bg:          oklch(0.97 0.008 85 / 0.96);
+
+  --font-serif: Georgia, 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+  --font-sans:  system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono:  ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+  --font-body-active: var(--font-sans);
+
+  --fs-body: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --fs-sm:   clamp(0.8125rem, 0.78rem + 0.15vw, 0.9375rem);
+  --fs-xs:   clamp(0.6875rem, 0.67rem + 0.1vw, 0.75rem);
+  --fs-h1:   clamp(2rem, 1.4rem + 3vw, 3.375rem);
+  --fs-h2:   clamp(1.5rem, 1.2rem + 1.5vw, 2.125rem);
+  --fs-h3:   clamp(1.25rem, 1.1rem + 0.75vw, 1.5rem);
+  --fs-pull: clamp(1.375rem, 1.15rem + 1.1vw, 1.625rem);
+  --lh-body: 1.7;
+  --lh-heading: 1.2;
+  --measure: 68ch;
+
+  --space-section: clamp(3rem, 2.5rem + 2.5vw, 4rem);
+  --space-block:   clamp(1.5rem, 1.25rem + 1.25vw, 2.5rem);
+  --space-inline:  clamp(1.25rem, 1rem + 1.25vw, 2rem);
+  --radius:    12px;
+  --radius-sm: 8px;
+  --shadow:    0 2px 16px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
+  --t-fast: 0.15s;
+  --t-med:  0.25s;
+}
+
+[data-theme="dark"] {
+  --ink:    oklch(0.90 0.008 85);
+  --ink2:   oklch(0.78 0.01 80);
+  --ink3:   oklch(0.58 0.01 75);
+  --cream:  oklch(0.15 0.012 75);
+  --cream2: oklch(0.19 0.012 75);
+  --cream3: oklch(0.23 0.015 75);
+  --border: oklch(0.32 0.01 75);
+  --shadow:    0 2px 16px rgba(0,0,0,0.3);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+  --amber:       oklch(0.72 0.13 68);
+  --amber-light: oklch(0.24 0.04 70);
+  --amber-dark:  oklch(0.78 0.10 65);
+  --blue:        oklch(0.70 0.09 245);
+  --blue-light:  oklch(0.24 0.035 245);
+  --coral:       oklch(0.68 0.13 30);
+  --coral-light: oklch(0.26 0.04 30);
+  --purple:      oklch(0.68 0.12 300);
+  --purple-light:oklch(0.25 0.04 300);
+  --green:       oklch(0.68 0.10 150);
+  --green-light: oklch(0.24 0.035 150);
+  --nav-bg: oklch(0.15 0.012 75 / 0.92);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink:    oklch(0.90 0.008 85);
+    --ink2:   oklch(0.78 0.01 80);
+    --ink3:   oklch(0.58 0.01 75);
+    --cream:  oklch(0.15 0.012 75);
+    --cream2: oklch(0.19 0.012 75);
+    --cream3: oklch(0.23 0.015 75);
+    --border: oklch(0.32 0.01 75);
+    --shadow:    0 2px 16px rgba(0,0,0,0.3);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+    --amber:       oklch(0.72 0.13 68);
+    --amber-light: oklch(0.24 0.04 70);
+    --amber-dark:  oklch(0.78 0.10 65);
+    --blue:        oklch(0.70 0.09 245);
+    --blue-light:  oklch(0.24 0.035 245);
+    --coral:       oklch(0.68 0.13 30);
+    --coral-light: oklch(0.26 0.04 30);
+    --purple:      oklch(0.68 0.12 300);
+    --purple-light:oklch(0.25 0.04 300);
+    --green:       oklch(0.68 0.10 150);
+    --green-light: oklch(0.24 0.035 150);
+    --nav-bg: oklch(0.15 0.012 75 / 0.92);
+  }
+}
+
+[data-font="serif"]  { --font-body-active: var(--font-serif); }
+[data-font="legible"]{ --font-body-active: 'Atkinson Hyperlegible', var(--font-sans); --lh-body: 1.85; letter-spacing: 0.01em; }
+
+* , *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 78px; }
+
+body {
+  margin: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-body-active);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
+
+.skip-link {
+  position: absolute; left: -9999px; top: 0; z-index: 200;
+  background: var(--ink); color: var(--cream);
+  padding: 0.7rem 1.1rem; border-radius: var(--radius-sm);
+}
+.skip-link:focus { left: 0.6rem; top: 0.6rem; }
+
+h1, h2, h3 { font-family: var(--font-serif); line-height: var(--lh-heading); font-weight: 400; color: var(--ink); }
+h2 { font-size: var(--fs-h2); margin: 0 0 1em; }
+h3 { font-size: var(--fs-h3); margin: var(--space-block) 0 0.75em; }
+p { margin: 0 0 1.1em; }
+code { font-family: var(--font-mono); font-size: 0.9em; background: var(--cream3); padding: 0.12em 0.4em; border-radius: 4px; }
+a { color: var(--amber-dark, var(--amber)); }
+[data-theme="dark"] a, :root:not([data-theme="light"]) a { color: var(--amber); }
+
+.nav {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--nav-bg);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-inner {
+  max-width: 1000px; margin: 0 auto;
+  padding: 0.7rem clamp(1rem, 3vw, 2.5rem);
+  display: flex; align-items: center; gap: 1.1rem;
+  flex-wrap: wrap;
+}
+.nav-brand {
+  font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3);
+  white-space: nowrap;
+}
+.nav-links { display: flex; gap: 0.9rem; flex-wrap: wrap; margin-right: auto; }
+.nav-link {
+  font-size: var(--fs-sm); color: var(--ink2); text-decoration: none;
+  padding: 0.2rem 0; border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+.nav-link.active { color: var(--amber-dark, var(--amber)); border-bottom-color: var(--amber); }
+[data-theme="dark"] .nav-link.active, :root:not([data-theme="light"]) .nav-link.active { color: var(--amber); }
+.nav-progress { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink3); white-space: nowrap; }
+.nav-btn {
+  font-family: var(--font-sans); font-size: 1rem; line-height: 1;
+  background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  width: 34px; height: 34px; cursor: pointer; color: var(--ink2);
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: border-color var(--t-fast);
+}
+.nav-btn:hover { border-color: var(--amber); }
+.nav-btn.font-toggle { font-family: var(--font-serif); font-size: 0.85rem; width: auto; padding: 0 0.6rem; }
+
+.chapter-nav {
+  max-width: 1000px; margin: 0 auto;
+  padding: 0.85rem clamp(1rem, 3vw, 2.5rem);
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  font-size: var(--fs-sm); color: var(--ink3);
+}
+.chapter-nav-link { color: var(--ink3); text-decoration: none; }
+.chapter-nav-link.disabled { cursor: default; opacity: 0.55; }
+.chapter-nav-link em { font-style: normal; font-size: var(--fs-xs); }
+.chapter-nav-current { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase; }
+
+.hero {
+  background: var(--cream);
+  padding: clamp(2rem, 4vw, 3.5rem) clamp(1rem, 3vw, 2.5rem) clamp(1.5rem, 3vw, 2.5rem);
+  border-bottom: 1px solid var(--border);
+}
+.hero-inner { max-width: 900px; margin: 0 auto; }
+.eyebrow {
+  display: flex; align-items: center; gap: 0.6rem;
+  font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber-dark, var(--amber));
+  margin-bottom: 0.9rem;
+}
+[data-theme="dark"] .eyebrow, :root:not([data-theme="light"]) .eyebrow { color: var(--amber); }
+.eyebrow .icon { font-size: 1.3rem; letter-spacing: 0; }
+.hero h1 { font-size: var(--fs-h1); margin: 0; max-width: 20ch; }
+
+main { max-width: 900px; margin: 0 auto; padding: 0 clamp(1rem, 3vw, 2.5rem); }
+section { padding: var(--space-section) 0 0; }
+section:last-of-type { padding-bottom: var(--space-section); }
+.measure { max-width: var(--measure); }
+
+.analogy, .callout-tip, .callout-warning, .callout-remember {
+  border-radius: var(--radius); padding: 22px 26px; margin: var(--space-block) 0;
+}
+.analogy      { background: var(--amber-light);  border-left: 3.5px solid var(--amber); }
+.callout-tip  { background: var(--amber-light);  border-left: 3.5px solid var(--amber); }
+.callout-warning { background: var(--coral-light); border-left: 3.5px solid var(--coral); }
+.callout-remember { background: var(--purple-light); border-left: 3.5px solid var(--purple); }
+.callout-def {
+  background: var(--blue-light); border-radius: var(--radius-sm);
+  padding: 18px 22px; margin: var(--space-block) 0;
+}
+.box-tag {
+  display: block; font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3);
+  margin-bottom: 8px;
+}
+.analogy .box-tag { color: var(--amber-dark, var(--amber)); }
+[data-theme="dark"] .analogy .box-tag, :root:not([data-theme="light"]) .analogy .box-tag { color: var(--amber); }
+.callout-remember .box-tag { color: var(--purple); }
+.callout-def .box-tag { color: var(--blue); }
+.callout-warning .box-tag { color: var(--coral); }
+.analogy p, .callout-tip p, .callout-def p, .callout-remember p, .callout-warning p { margin-bottom: 0.6em; }
+.analogy p:last-child, .callout-tip p:last-child, .callout-def p:last-child, .callout-remember p:last-child, .callout-warning p:last-child { margin-bottom: 0; }
+
+.takeaway, .worked {
+  background: var(--surface-raised); color: var(--on-raised);
+  border-radius: var(--radius); padding: 26px 28px; margin: var(--space-block) 0;
+}
+.takeaway .box-tag, .worked .box-tag { color: var(--on-raised-dim); }
+.takeaway p, .worked p { color: var(--on-raised-muted); margin-bottom: 0; }
+.takeaway strong, .worked strong { color: var(--on-raised); }
+.worked p { font-family: var(--font-mono); font-size: var(--fs-sm); line-height: 1.75; }
+
+.pullquote {
+  max-width: 640px; margin: var(--space-block) auto;
+  padding-left: 22px; border-left: 3px solid var(--amber);
+  font-family: var(--font-serif); font-size: var(--fs-pull); line-height: 1.45;
+  color: var(--ink2);
+}
+
+.xlink-grid { display: grid; gap: 12px; margin: var(--space-block) 0; }
+.xlink {
+  background: var(--cream2); border-radius: var(--radius-sm);
+  padding: 14px 18px; display: flex; gap: 12px; align-items: baseline;
+  font-size: var(--fs-sm);
+}
+.xlink b { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.05em; color: var(--ink3); white-space: nowrap; }
+.xlink span { color: var(--ink2); }
+a.xlink { text-decoration: none; }
+a.xlink:hover { box-shadow: var(--shadow); }
+
+.diagram { margin: var(--space-block) 0; text-align: center; }
+.diagram svg { max-width: 100%; height: auto; }
+.diagram-caption { font-size: var(--fs-xs); color: var(--ink3); margin-top: 0.6rem; font-family: var(--font-mono); }
+
+.mcq {
+  background: var(--green-light); border-radius: var(--radius);
+  padding: 22px 24px; margin: var(--space-block) 0;
+}
+.mcq-num {
+  font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--green); margin-bottom: 10px; display: flex; gap: 10px; align-items: center;
+}
+.mcq-tag { background: var(--cream); padding: 2px 8px; border-radius: 4px; color: var(--ink3); }
+.mcq-stem { font-size: var(--fs-body); margin-bottom: 1rem; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 0.4rem; }
+.mcq-opt {
+  font-family: var(--font-sans); font-size: var(--fs-sm); text-align: left;
+  background: var(--cream); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 11px 14px; cursor: pointer; color: var(--ink);
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+.mcq-opt:hover:not(:disabled) { border-color: var(--amber); }
+.mcq-opt:disabled { cursor: default; }
+.mcq-opt.mcq-selected { border-color: var(--amber); }
+.mcq-opt.mcq-correct { background: var(--green-light); border-color: var(--green); font-weight: 600; }
+.mcq-opt.mcq-incorrect { background: var(--coral-light); border-color: var(--coral); text-decoration: line-through; }
+.mcq-submit {
+  font-family: var(--font-sans); font-size: var(--fs-sm); font-weight: 600;
+  background: var(--ink); color: var(--cream); border: none; border-radius: var(--radius-sm);
+  padding: 9px 18px; cursor: pointer; margin-top: 4px;
+}
+.mcq-submit:disabled { opacity: 0.5; cursor: default; }
+.mcq-feedback { font-weight: 600; margin-top: 12px; }
+.mcq-feedback.right { color: var(--green); }
+.mcq-feedback.wrong { color: var(--coral); }
+.mcq-explain { margin-top: 10px; font-size: var(--fs-sm); color: var(--ink2); background: var(--cream); border-radius: var(--radius-sm); padding: 12px 16px; }
+
+.chapter-end {
+  background: var(--surface-raised); color: var(--on-raised);
+  border-radius: var(--radius); padding: 30px clamp(24px, 4vw, 40px);
+  margin: var(--space-section) 0; text-align: center;
+}
+.chapter-end p { color: var(--on-raised-muted); margin-bottom: 1.2rem; }
+.chapter-end .chapter-nav { padding: 0; color: var(--on-raised-dim); }
+.chapter-end .chapter-nav-link { color: var(--on-raised); }
+.chapter-end .chapter-nav-link.disabled { color: var(--on-raised-dim); }
+.chapter-end .chapter-nav-current { color: var(--on-raised-dim); }
+
+footer { text-align: center; padding: 2rem 1rem 3rem; font-size: var(--fs-xs); color: var(--ink3); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#four-things">Skip to content</a>
+
+<nav class="nav" aria-label="Chapter navigation">
+  <div class="nav-inner">
+    <span class="nav-brand">CCDV-F &middot; Ch. 16</span>
+    <div class="nav-links">
+      <a class="nav-link" href="#four-things">A Word, Four Meanings</a>
+      <a class="nav-link" href="#five-ways">Five Ways to Run a Loop</a>
+      <a class="nav-link" href="#not-running">Why Self-Hosted Isn&rsquo;t &ldquo;Running It&rdquo;</a>
+      <a class="nav-link" href="#the-trap">The Self-Hosted Trap</a>
+      <a class="nav-link" href="#boundary">Boundary of This Audit</a>
+      <a class="nav-link" href="#reading-stem">Reading the Stem</a>
+      <a class="nav-link" href="#self-test">Self-Test</a>
+    </div>
+    <div class="nav-progress">Progress: <span id="depth-pct">0</span>%</div>
+    <button class="nav-btn theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark mode" title="Toggle dark mode">&#127769;</button>
+    <button class="nav-btn font-toggle" id="font-toggle" type="button" aria-label="Change reading font" title="Cycle reading font">Aa</button>
+  </div>
+</nav>
+
+<div class="chapter-nav">
+  <a class="chapter-nav-link" href="Ch15_Workflow-or-agent.html">&#9668; Chapter 15</a>
+  <span class="chapter-nav-current">Chapter 16 of 34</span>
+  <a class="chapter-nav-link" href="Ch17_Building-the-loop-by-hand.html">Chapter 17 &#9658;</a>
+</div>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="eyebrow"><span class="icon">&#127918;</span> Chapter 16 of 34 &middot; Agent Execution Models</div>
+    <h1>Who runs the loop</h1>
+  </div>
+</header>
+
+<main>
+
+<section id="four-things">
+  <h2>A word that means four different things</h2>
+  <div class="measure">
+    <div class="analogy">
+      <span class="box-tag">Four builds, one word</span>
+      <p>Four engineers at the same company each say they &ldquo;built an agent&rdquo; last quarter. One wrote her own loop against the Messages API, deciding in her own code when to call a tool and when to stop. One built his on the Claude Agent SDK, a library running on his own server with Anthropic&rsquo;s loop logic inside it. One fired a request at Claude Managed Agents and let Anthropic run the whole thing on Anthropic&rsquo;s own infrastructure. One made that same Managed Agents call, except his company&rsquo;s security team required the tool calls themselves to execute inside the company&rsquo;s own network.</p>
+      <p>All four call it &ldquo;an agent.&rdquo; The four builds share almost nothing: different code owns the loop, different infrastructure hosts it, and a different party is on the hook when something breaks.</p>
+    </div>
+    <p>Choosing among them is an architecture decision, made once per project, and the exam expects it to be made by mechanism rather than by feel.</p>
+  </div>
+</section>
+
+<section id="five-ways">
+  <h2>Five ways to run a loop</h2>
+  <div class="measure">
+    <p>Every option in this chapter answers one question differently: who owns the loop, the code deciding what happens next, and who owns the machine that loop runs on. Employment models sort the five options cleanly, because hiring asks exactly this question about a different kind of work: build it in-house, bring in someone else&rsquo;s process, or hand the whole job to a vendor.</p>
+    <p>Anthropic&rsquo;s own documentation frames the first four with a placement table:</p>
+
+    <div style="overflow-x:auto;">
+      <table style="width:100%; border-collapse:collapse; margin:1rem 0; font-size:var(--fs-sm);">
+        <thead>
+          <tr style="border-bottom:2px solid var(--border);">
+            <th style="text-align:left; padding:10px 12px; color:var(--ink3); font-family:var(--font-mono); font-size:var(--fs-xs); text-transform:uppercase; letter-spacing:0.05em;">If you&rsquo;re&hellip;</th>
+            <th style="text-align:left; padding:10px 12px; color:var(--ink3); font-family:var(--font-mono); font-size:var(--fs-xs); text-transform:uppercase; letter-spacing:0.05em;">Use</th>
+            <th style="text-align:left; padding:10px 12px; color:var(--ink3); font-family:var(--font-mono); font-size:var(--fs-xs); text-transform:uppercase; letter-spacing:0.05em;">Why</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:10px 12px; vertical-align:top;">Building an agent without implementing the tool loop yourself</td>
+            <td style="padding:10px 12px; vertical-align:top;"><strong>Agent SDK</strong></td>
+            <td style="padding:10px 12px; vertical-align:top; color:var(--ink2);">A library that runs the agent loop in your own process</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:10px 12px; vertical-align:top;">Doing interactive development from a terminal</td>
+            <td style="padding:10px 12px; vertical-align:top;"><strong>Claude Code CLI</strong></td>
+            <td style="padding:10px 12px; vertical-align:top; color:var(--ink2);">The terminal interface, built for daily interactive use</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:10px 12px; vertical-align:top;">Calling the API directly and implementing the tool loop yourself</td>
+            <td style="padding:10px 12px; vertical-align:top;"><strong>Client SDK</strong></td>
+            <td style="padding:10px 12px; vertical-align:top; color:var(--ink2);">Direct API access; you implement the tool loop</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 12px; vertical-align:top;">Running long-running agents without managing your own sandbox</td>
+            <td style="padding:10px 12px; vertical-align:top;"><strong>Managed Agents</strong></td>
+            <td style="padding:10px 12px; vertical-align:top; color:var(--ink2);">Anthropic runs the agent and the sandbox</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>That table already answers the chapter&rsquo;s own title question for three of its rows. The fifth stop, splitting Managed Agents into a cloud form and a self-hosted form, is Anthropic&rsquo;s next distinction, and it&rsquo;s where this chapter puts most of its weight.</p>
+
+    <p><strong>The raw loop: you as employee.</strong> Write your own loop against the Messages API and you own everything it touches: when to call a tool, when to stop, what state carries between calls. That&rsquo;s the Client SDK row above, and it&rsquo;s the employee model: full control, and every retry policy, every context-window check, every exit condition is a problem you solve, because nobody else owns any part of the loop. Chapter 17 covers how that loop actually gets built; this chapter only places it on the map.</p>
+
+    <p><strong>The Claude Agent SDK: an agency temp who already knows the building.</strong> Hire the Agent SDK and you still run the process, on your own server and your own deployment. What&rsquo;s Anthropic&rsquo;s is the loop logic itself: the code that receives a prompt, calls a tool, evaluates the result, and decides whether to continue, packaged as a library for Python or TypeScript. It ships the same loop that runs Claude Code: receive the prompt with its system prompt, tool definitions, and history; evaluate and respond; execute any tool calls; repeat until a response carries no tool call; return the result. Anthropic calls one full pass through that cycle a turn, and a turn runs without handing control back to your code partway through. Read-only tools can run concurrently inside a turn; tools that modify state run one at a time to avoid stepping on each other. Beyond running that cycle, the SDK does four things a hand-written loop has to build for itself. Automatic compaction summarizes older conversation history once the context window fills, keeping recent exchanges and key decisions intact. One design consequence follows: a persistent rule belongs in <code>CLAUDE.md</code> rather than an early message, because <code>CLAUDE.md</code> content is re-injected on every request while a compacted message might not survive. A <code>max_turns</code> or <code>max_budget_usd</code> cap stops a loop that would otherwise run until Claude decides it&rsquo;s finished, useful once a task stops being well-scoped, and the budget cap covers any subagents the loop spawns too. Permission evaluation and hooks run inside your application process rather than inside the model&rsquo;s context window, so a hook that fires a hundred times costs no tokens. And sessions persist, resuming or forking with the full prior context restored rather than starting cold. Every one of those four sits on top of the raw loop as a capability the SDK adds; you&rsquo;re still the one deploying and operating the process it runs in.</p>
+
+    <p><strong>Provider-neutral frameworks: temps from other agencies.</strong> Three more options occupy that exact same layer, a library running the loop inside your own process, without being Claude-specific. Each is a different opinion about what matters most once you&rsquo;re the one holding the contract.</p>
+
+    <p>Strands, built by AWS and already running production systems inside Amazon Q Developer, AWS Glue, and VPC Reachability Analyzer, bets on the model itself. Its documentation calls this a model-driven approach: the model dynamically directs its own steps and its own tool use, and Strands runs the surrounding loop without you writing orchestration logic or a parser for the model&rsquo;s output. It works with Amazon Bedrock, Anthropic Claude, Llama, Ollama, and other providers through LiteLLM. The project&rsquo;s own phrase for this is &ldquo;any model, any cloud.&rdquo; It integrates with thousands of published MCP servers to use as tools and publishes its own Strands MCP server besides. It ships built-in multi-agent patterns, Agent-as-Tool and Swarm, for when one agent calls another, and it can run as a local client, behind an API on Lambda or Fargate, or split across separate agent and tool environments.</p>
+
+    <p>LangGraph, built by LangChain Inc but usable without LangChain, sits one layer below LangChain rather than beside it. LangChain&rsquo;s own docs describe it as the orchestration runtime handling durable execution, streaming, human-in-the-loop, and persistence. Its central abstraction is a graph of nodes and edges over shared state, and the capability that earns it a place here is that it lets you mix deterministic, hand-coded steps with LLM-driven agentic steps inside the same graph. Reach for it when the requirement is precise control over every part of the agent&rsquo;s behavior, plus durability across a failure and a human-in-the-loop interrupt at a specific point in the graph. LangChain&rsquo;s own docs route a team that just wants a higher-level abstraction, rather than that level of control, toward LangChain&rsquo;s prebuilt agent architectures instead.</p>
+
+    <p>PydanticAI, built by the team behind the Pydantic validation library that already underpins the OpenAI SDK, the Anthropic SDK, and FastAPI, bets on the contract rather than the control flow. It runs a typed agent loop where structured output is validated on every single run against a Pydantic model, tools and dependency injection are typed the same way, and swapping the underlying model is a one-line string change; provider support spans OpenAI, Anthropic, Google, Bedrock, Azure, and dozens more, either with individual keys or through a single gateway key with failover built in. Reach for it when what matters most is validated, typed output the downstream code can trust without checking, in a codebase that already speaks Pydantic or FastAPI, rather than fine-grained control over the steps in between.</p>
+
+    <p><strong>Claude Managed Agents, cloud: the managed service.</strong> Managed Agents is a different product from the Agent SDK: a hosted REST API, not a library. Anthropic&rsquo;s own comparison draws the line plainly: the Messages API is for &ldquo;custom agent loops and fine-grained control,&rdquo; Managed Agents is for &ldquo;long-running tasks and asynchronous work.&rdquo; Four concepts organize it. An <strong>agent</strong> is the model, system prompt, tools, MCP servers, and skills. A <strong>session</strong> is one running instance of that agent. <strong>Events</strong> are the messages passed between your application and the agent. An <strong>environment</strong> is where sessions run, and that&rsquo;s where the hosting choice lives. In the cloud form, that&rsquo;s the managed-service hire in full: Anthropic runs the sandbox, the orchestration, and the model, and you consume events and results without operating any infrastructure at all. It suits work running minutes or hours across many tool calls, work needing a persistent filesystem and conversation history across a pause, or work running on a cron schedule.</p>
+
+    <p><strong>Claude Managed Agents, self-hosted: the franchise.</strong> Self-hosting changes exactly one thing. Anthropic&rsquo;s own description of the self-hosted sandbox is precise about the boundary: it &ldquo;keeps the orchestration on Anthropic&rsquo;s side but moves tool execution into infrastructure you control, so the agent&rsquo;s code, filesystem, and network egress never leave your environment.&rdquo;</p>
+
+    <div class="takeaway">
+      <span class="box-tag">The one thing that changes</span>
+      <p>The model, the agent loop, and the session state stay with Anthropic in both hosting modes. Only tool execution moves.</p>
+    </div>
+
+    <div style="overflow-x:auto;">
+      <table style="width:100%; border-collapse:collapse; margin:1rem 0; font-size:var(--fs-sm);">
+        <thead>
+          <tr style="border-bottom:2px solid var(--border);">
+            <th style="text-align:left; padding:10px 12px; color:var(--ink3); font-family:var(--font-mono); font-size:var(--fs-xs); text-transform:uppercase; letter-spacing:0.05em;">Aspect</th>
+            <th style="text-align:left; padding:10px 12px; color:var(--ink3); font-family:var(--font-mono); font-size:var(--fs-xs); text-transform:uppercase; letter-spacing:0.05em;">Cloud (Anthropic-hosted)</th>
+            <th style="text-align:left; padding:10px 12px; color:var(--ink3); font-family:var(--font-mono); font-size:var(--fs-xs); text-transform:uppercase; letter-spacing:0.05em;">Self-hosted</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:10px 12px; vertical-align:top;"><strong>Tool execution</strong></td>
+            <td style="padding:10px 12px; vertical-align:top; color:var(--ink2);">Anthropic&rsquo;s sandboxes</td>
+            <td style="padding:10px 12px; vertical-align:top; color:var(--ink2);">Your infrastructure</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:10px 12px; vertical-align:top;"><strong>Agent orchestration</strong></td>
+            <td style="padding:10px 12px; vertical-align:top; color:var(--ink2);">Anthropic</td>
+            <td style="padding:10px 12px; vertical-align:top; color:var(--ink2);">Anthropic</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:10px 12px; vertical-align:top;"><strong>Claude model</strong></td>
+            <td style="padding:10px 12px; vertical-align:top; color:var(--ink2);">Anthropic</td>
+            <td style="padding:10px 12px; vertical-align:top; color:var(--ink2);">Anthropic</td>
+          </tr>
+          <tr>
+            <td style="padding:10px 12px; vertical-align:top;"><strong>Network egress</strong></td>
+            <td style="padding:10px 12px; vertical-align:top; color:var(--ink2);">Anthropic&rsquo;s controls</td>
+            <td style="padding:10px 12px; vertical-align:top; color:var(--ink2);">Your network policy</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="diagram">
+      <svg viewBox="0 0 780 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="d16-title d16-desc">
+        <title id="d16-title">Who owns each layer across the five ways to run a loop</title>
+        <desc id="d16-desc">A grid with three rows, Model, Loop, and Tool execution, against five columns, Raw loop, Agent SDK, Frameworks, Cloud Managed Agents, and Self-hosted Managed Agents. The Model row reads Anthropic in every column. The Loop row reads You for raw loop, Agent SDK, and Frameworks, and Anthropic for both Cloud and Self-hosted Managed Agents. The Tool execution row reads You for raw loop, Agent SDK, and Frameworks, Anthropic for Cloud Managed Agents, and You again for Self-hosted Managed Agents, the single cell that changes between the two Managed Agents columns.</desc>
+        <defs>
+          <linearGradient id="g16" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#f0e6d4"/><stop offset="100%" stop-color="#e7ad5c" stop-opacity="0.6"/></linearGradient>
+        </defs>
+
+        <text x="194" y="18" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="#3a2000">Raw loop</text>
+        <text x="322" y="18" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="#3a2000">Agent SDK</text>
+        <text x="450" y="18" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="#3a2000">Frameworks</text>
+        <text x="578" y="14" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="#3a2000"><tspan x="578" dy="0">Cloud</tspan><tspan x="578" dy="13">Managed Agents</tspan></text>
+        <text x="706" y="14" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="#3a2000"><tspan x="706" dy="0">Self-hosted</tspan><tspan x="706" dy="13">Managed Agents</tspan></text>
+
+        <line x1="8" y1="44" x2="768" y2="44" stroke="#c9b48a" stroke-width="1.5"/>
+        <line x1="126" y1="8" x2="126" y2="186" stroke="#c9b48a" stroke-width="1.5" stroke-dasharray="4 4"/>
+
+        <text x="16" y="72" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#3a2000">Model</text>
+        <text x="16" y="120" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#3a2000">Loop</text>
+        <text x="16" y="162" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#3a2000"><tspan x="16" dy="0">Tool</tspan><tspan x="16" dy="14">execution</tspan></text>
+
+        <rect x="135" y="49" width="118" height="38" rx="7" fill="url(#g16)"/>
+        <text x="194" y="72" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#3a2000">Anthropic</text>
+        <rect x="263" y="49" width="118" height="38" rx="7" fill="url(#g16)"/>
+        <text x="322" y="72" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#3a2000">Anthropic</text>
+        <rect x="391" y="49" width="118" height="38" rx="7" fill="url(#g16)"/>
+        <text x="450" y="72" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#3a2000">Anthropic</text>
+        <rect x="519" y="49" width="118" height="38" rx="7" fill="url(#g16)"/>
+        <text x="578" y="72" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#3a2000">Anthropic</text>
+        <rect x="647" y="49" width="118" height="38" rx="7" fill="url(#g16)"/>
+        <text x="706" y="72" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#3a2000">Anthropic</text>
+
+        <rect x="135" y="97" width="118" height="38" rx="7" fill="url(#g16)" fill-opacity="0.35" stroke="#7a6a55" stroke-width="1" stroke-dasharray="3 3"/>
+        <text x="194" y="120" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#3a2000">You</text>
+        <rect x="263" y="97" width="118" height="38" rx="7" fill="url(#g16)" fill-opacity="0.35" stroke="#7a6a55" stroke-width="1" stroke-dasharray="3 3"/>
+        <text x="322" y="120" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#3a2000">You</text>
+        <rect x="391" y="97" width="118" height="38" rx="7" fill="url(#g16)" fill-opacity="0.35" stroke="#7a6a55" stroke-width="1" stroke-dasharray="3 3"/>
+        <text x="450" y="120" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#3a2000">You</text>
+        <rect x="519" y="97" width="118" height="38" rx="7" fill="url(#g16)"/>
+        <text x="578" y="120" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#3a2000">Anthropic</text>
+        <rect x="647" y="97" width="118" height="38" rx="7" fill="url(#g16)"/>
+        <text x="706" y="120" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#3a2000">Anthropic</text>
+
+        <rect x="135" y="145" width="118" height="38" rx="7" fill="url(#g16)" fill-opacity="0.35" stroke="#7a6a55" stroke-width="1" stroke-dasharray="3 3"/>
+        <text x="194" y="168" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#3a2000">You</text>
+        <rect x="263" y="145" width="118" height="38" rx="7" fill="url(#g16)" fill-opacity="0.35" stroke="#7a6a55" stroke-width="1" stroke-dasharray="3 3"/>
+        <text x="322" y="168" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#3a2000">You</text>
+        <rect x="391" y="145" width="118" height="38" rx="7" fill="url(#g16)" fill-opacity="0.35" stroke="#7a6a55" stroke-width="1" stroke-dasharray="3 3"/>
+        <text x="450" y="168" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#3a2000">You</text>
+        <rect x="519" y="145" width="118" height="38" rx="7" fill="url(#g16)"/>
+        <text x="578" y="168" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#3a2000">Anthropic</text>
+        <rect x="647" y="145" width="118" height="38" rx="7" fill="url(#g16)" fill-opacity="0.35" stroke="#7a6a55" stroke-width="1" stroke-dasharray="3 3"/>
+        <text x="706" y="168" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#3a2000">You</text>
+
+        <rect x="132" y="204" width="26" height="16" rx="4" fill="url(#g16)"/>
+        <text x="166" y="216" font-family="ui-monospace, monospace" font-size="11" fill="#7a6a55">Anthropic operates this layer</text>
+        <rect x="440" y="204" width="26" height="16" rx="4" fill="url(#g16)" fill-opacity="0.35" stroke="#7a6a55" stroke-width="1" stroke-dasharray="3 3"/>
+        <text x="474" y="216" font-family="ui-monospace, monospace" font-size="11" fill="#7a6a55">You operate this layer</text>
+      </svg>
+      <div class="diagram-caption">Figure 16.1 &mdash; who operates the model, the loop, and tool execution, across all five ways to run a loop</div>
+    </div>
+
+    <p>What you provide is a Linux host and an environment worker: a process that polls Anthropic&rsquo;s work queue, claims sessions assigned to your environment, downloads the agent&rsquo;s skills, executes the tool calls locally, and posts the results back. You&rsquo;re also responsible for the containerization, the network and egress policy, and the credentials the worker uses.</p>
+
+    <div class="analogy">
+      <span class="box-tag">Where the franchise metaphor breaks</span>
+      <p>Push the franchise analogy one step further and it breaks: a real franchisee decides staffing, hours, and day-to-day operating choices inside the franchisor&rsquo;s rules. Self-hosted Managed Agents gives you no equivalent decision-making: you don&rsquo;t decide when a tool runs or what happens after, you only execute the call the loop hands you and report the result back. In this metaphor, Anthropic&rsquo;s loop is the franchisor: it keeps sole authorship of the playbook, deciding which call happens next, while you run the storefront that carries it out.</p>
+    </div>
+
+    <div class="callout-warning">
+      <span class="box-tag">Watch for this</span>
+      <p>One boundary catches people out even inside a self-hosted environment. Web search and web fetch always run on Anthropic&rsquo;s servers, whether the sandbox is cloud or self-hosted, and the environment&rsquo;s own networking settings govern only the sandbox&rsquo;s outbound traffic, not those two tools. Restricting what a web tool can reach takes a per-tool allow-list or block-list, separate from the network policy that governs everything else the worker touches.</p>
+    </div>
+  </div>
+</section>
+
+<section id="not-running">
+  <h2>Why self-hosted still isn&rsquo;t &ldquo;running the agent&rdquo;</h2>
+  <div class="measure">
+    <p>Follow the mechanism instead of the label. If orchestration and the model both stay with Anthropic in self-hosted mode, the only thing self-hosting can change is a decision that depends on where tool execution physically happens. That rules out latency: moving one component off-site while the model call itself still crosses the network to Anthropic changes little about round-trip time, and it never appears in Anthropic&rsquo;s own list of reasons to self-host. Cost points the same direction: self-hosting adds infrastructure you now operate, a worker process, a sandbox, an egress policy, all of it overhead you&rsquo;re newly responsible for.</p>
+
+    <div class="callout-def">
+      <span class="box-tag">The fit condition</span>
+      <p>What&rsquo;s left is exactly what depends on where tool execution runs: the data it touches, the services it reaches, and the controls it operates under. Anthropic states the fit condition in one sentence: self-hosting suits an agent that needs to operate on data that cannot leave your network boundary, reach internal services that are not publicly routable from the internet, or run under your organization&rsquo;s own compliance and audit controls. Three discriminators, and only these three. A stem naming any one of them points at self-hosted. A stem about speed or spend is naming something neither hosting mode is documented to change.</p>
+    </div>
+
+    <div class="callout-warning">
+      <span class="box-tag">Two qualifications</span>
+      <p>Tool inputs and outputs still flow to Anthropic&rsquo;s control plane in self-hosted mode too, because the model has to see a tool&rsquo;s result before it can decide what happens next. Isolation covers where the code executes; the round-trip that lets Claude read the answer still crosses to Anthropic either way. And because Managed Agents stores conversation history, sandbox state, and outputs server-side in both hosting modes, it currently qualifies for neither Zero Data Retention nor a HIPAA Business Associate Agreement, in cloud or self-hosted form alike. Self-hosting relocates where code runs; the data path through Anthropic and the compliance eligibility stay exactly where they were.</p>
+    </div>
+  </div>
+</section>
+
+<section id="the-trap">
+  <h2>The trap the word &ldquo;self-hosted&rdquo; sets</h2>
+  <div class="measure">
+    <p>A payments team needs an agent that reconciles transactions against a database with no public endpoint, on a network their security team won&rsquo;t open to the internet. &ldquo;We need this on our own infrastructure&rdquo; sounds like a vote for the Agent SDK, the option most associated with running things yourself.</p>
+    <p>The mechanism says otherwise. What the team needs is tool execution reachable from inside their own network, while orchestration, the model, and session handling stay off their plate entirely. That&rsquo;s exactly the non-routable-services discriminator from the section above. Self-hosted Managed Agents gives them that directly: their environment worker runs inside the network the database lives on, and it can serve a custom tool that wraps the database&rsquo;s own internal API, claiming sessions, calling that tool, and posting results back while Anthropic keeps running the loop deciding when to call it. Building the Agent SDK path instead hands the team a second job nobody asked for, writing and operating the orchestration logic itself, to solve a problem that was only ever about where one step of tool execution could physically run.</p>
+    <p>The surface reading treats &ldquo;our own infrastructure&rdquo; as a request to own the whole build. The documented discriminator is narrower: which single layer, tool execution, needs to sit inside a boundary the team controls. Everything else about the agent can stay exactly where Anthropic already runs it.</p>
+    <p>The trap also runs the other direction. A team weighing cloud against self-hosted Managed Agents purely to shave a few hundred milliseconds off each tool call, or to trim the bill, is optimizing against neither of the documented discriminators, and it&rsquo;s taking on the worker-process overhead from the section above for nothing that overhead is documented to buy. A stem built around either pressure is testing habit against constraint: whether the reader reaches for self-hosted by reflex, or checks the scenario for one of the three discriminators first.</p>
+  </div>
+</section>
+
+<section id="boundary">
+  <h2>The boundary of this audit</h2>
+  <div class="measure">
+    <p>This chapter decides which of five options runs the loop; how any of them gets built is separate territory. Registering tools, scoping a system prompt, pairing a tool-use block with its result, and writing an exit condition are chapter 17&rsquo;s, once raw loop or Agent SDK has already been chosen as the shape. An earlier chapter named the Agent SDK only to contrast it against other API layers in passing; this is the chapter that actually teaches it.</p>
+    <p>Two more boundaries are worth naming so a stem doesn&rsquo;t get answered from the wrong place. Choosing between a built-in tool, a custom tool, a Skill, and an MCP server is a four-way comparison this chapter doesn&rsquo;t attempt. That&rsquo;s a decision about what a single tool call is, a different question from who runs the surrounding loop, and it belongs elsewhere in this course. And this chapter doesn&rsquo;t rank the three frameworks against each other on a general &ldquo;which is best&rdquo; axis; it places them by what each one optimizes for, and the exam tests the placement rather than a personal preference.</p>
+    <div class="xlink-grid">
+      <div class="xlink"><b>CH. 17</b><span>Registering tools, scoping a system prompt, pairing a tool-use block with its result, and writing an exit condition &mdash; how the raw loop or Agent SDK actually gets built.</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="reading-stem">
+  <h2>Reading the stem</h2>
+  <div class="measure">
+    <div class="callout-remember">
+      <span class="box-tag">Remember this</span>
+      <p>&ldquo;Build your own tool loop&rdquo; points at the raw loop or the Agent SDK. &ldquo;Data can&rsquo;t leave our network,&rdquo; &ldquo;reach an internal service,&rdquo; or &ldquo;our own compliance controls&rdquo; points at self-hosted Managed Agents: never latency, never cost. &ldquo;Validated, typed output&rdquo; points at PydanticAI. &ldquo;Mix scripted and model-driven steps&rdquo; points at LangGraph. &ldquo;The model should decide its own steps&rdquo; points at Strands.</p>
+    </div>
+  </div>
+</section>
+
+<section id="self-test">
+  <h2>Self-test</h2>
+  <div class="measure">
+
+    <div class="mcq" data-qtype="single" data-correct="B">
+      <div class="mcq-num">Question 1 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">A finance team&rsquo;s agent needs to read files from a server with no public IP address, unreachable from the internet, while everything else about the deployment (session handling, model calls, conversation history) can stay however Anthropic already runs it.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. Claude Agent SDK, because the team needs to run the whole agent themselves.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Self-hosted Claude Managed Agents, because tool execution needs to reach a non-routable internal service.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. Cloud (Anthropic-hosted) Managed Agents, because it&rsquo;s the fastest path to production.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. A raw loop against the Messages API, for the lowest possible latency.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: B.</strong> The stated need, reaching a non-routable internal service, is one of the three documented discriminators for self-hosting; A mistakes &ldquo;our own infrastructure&rdquo; for owning the whole loop, and C and D solve a problem the scenario never raised.</div>
+    </div>
+
+    <div class="mcq" data-qtype="multi" data-correct="A,C">
+      <div class="mcq-num">Question 2 <span class="mcq-tag">Select TWO</span></div>
+      <p class="mcq-stem">Which of the following are documented reasons to choose self-hosted Managed Agents over the cloud-hosted form?</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. The agent needs to operate on data that cannot leave the company&rsquo;s network boundary.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Self-hosted sessions respond faster because tool calls skip a network hop.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. The organization&rsquo;s own compliance and audit controls need to govern the session.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Self-hosted infrastructure costs less to operate than the cloud-hosted form.</button>
+      </div>
+      <button class="mcq-submit" type="button">Submit</button>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: A, C.</strong> Data residency and an organization&rsquo;s own compliance controls are two of the three documented discriminators named in the options; B and D name latency and cost, which the source material never lists as reasons to self-host.</div>
+    </div>
+
+    <div class="mcq" data-qtype="single" data-correct="C">
+      <div class="mcq-num">Question 3 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">A team wants an agent whose structured output is validated against a schema on every run, in a codebase already built on FastAPI conventions; orchestration control over each step isn&rsquo;t the priority.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. LangGraph, for its graph-based control over every step.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Strands, for its model-driven loop.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. PydanticAI, for its typed, validated output on every run.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. The Claude Agent SDK, for its built-in permission system.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: C.</strong> Validated, typed output on every run in a Pydantic/FastAPI-shaped codebase is PydanticAI&rsquo;s stated fit; A and B optimize for control and model-driven flexibility respectively, and D solves a different problem.</div>
+    </div>
+
+    <div class="mcq" data-qtype="multi" data-correct="A,C">
+      <div class="mcq-num">Question 4 <span class="mcq-tag">Select TWO</span></div>
+      <p class="mcq-stem">A team is comparing Claude Managed Agents&rsquo; cloud and self-hosted environments. Which two statements correctly describe what stays the same between the two modes?</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. The Claude model that runs the agent.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Where tool execution happens.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. The agent orchestration loop.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. The network egress policy the sandbox operates under.</button>
+      </div>
+      <button class="mcq-submit" type="button">Submit</button>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: A, C.</strong> The model and the orchestration loop stay with Anthropic in both modes; B and D name the two things self-hosting actually changes, tool execution and the network egress policy governing it, so they describe what changes between the two modes rather than what stays fixed.</div>
+    </div>
+
+    <div class="mcq" data-qtype="single" data-correct="B">
+      <div class="mcq-num">Question 5 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">A team wants an agent where the model itself dynamically directs which tool to call next, with no hand-written orchestration graph, and wants the code to stay portable across model providers rather than committing to one vendor.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. LangGraph, because it offers precise control over every part of the agent&rsquo;s behavior.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Strands, because it runs a model-driven loop and works with multiple model providers.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. The Claude Agent SDK, because it ships the same loop that runs Claude Code.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Cloud Managed Agents, because Anthropic operates the sandbox for you.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: B.</strong> A model-driven loop with no hand-written orchestration graph, kept portable across providers, is Strands&rsquo;s stated fit; A describes LangGraph&rsquo;s graph-based control, C ties the loop to Claude specifically rather than staying provider-neutral, and D hands the whole loop to Anthropic rather than answering the model-driven requirement at all.</div>
+    </div>
+
+  </div>
+</section>
+
+</main>
+
+<div class="chapter-end">
+  <p>End of Chapter 16 &mdash; Agent Execution Models</p>
+  <div class="chapter-nav">
+    <a class="chapter-nav-link" href="Ch15_Workflow-or-agent.html">&#9668; Chapter 15</a>
+    <span class="chapter-nav-current">Chapter 16 of 34</span>
+    <a class="chapter-nav-link" href="Ch17_Building-the-loop-by-hand.html">Chapter 17 &#9658;</a>
+  </div>
+</div>
+
+<footer>CCDV-F Regeneration &middot; Chapter 16 of 34</footer>
+
+<script>
+var pct = document.getElementById('depth-pct');
+function onScroll() {
+  var h = document.documentElement;
+  var max = h.scrollHeight - h.clientHeight;
+  var p = max > 0 ? (h.scrollTop || document.body.scrollTop) / max : 0;
+  var v = Math.round(p * 100);
+  if (pct) pct.textContent = v;
+  var links = document.querySelectorAll('.nav-link[href^="#"]');
+  var cur = '';
+  document.querySelectorAll('section[id]').forEach(function (s) {
+    if (s.getBoundingClientRect().top <= 120) cur = s.id;
+  });
+  links.forEach(function (l) {
+    l.classList.toggle('active', l.getAttribute('href') === '#' + cur);
+  });
+}
+window.addEventListener('scroll', onScroll, { passive: true });
+window.addEventListener('resize', onScroll);
+document.addEventListener('DOMContentLoaded', onScroll);
+
+var toggle = document.getElementById('theme-toggle');
+var root = document.documentElement;
+var stored = localStorage.getItem('ccdv-theme');
+if (stored) root.setAttribute('data-theme', stored);
+function isDark() {
+  var attr = root.getAttribute('data-theme');
+  if (attr === 'dark') return true;
+  if (attr === 'light') return false;
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+function updateToggle() {
+  if (!toggle) return;
+  var dark = isDark();
+  toggle.innerHTML = dark ? '&#9728;&#65039;' : '&#127769;';
+  toggle.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+}
+updateToggle();
+if (toggle) {
+  toggle.addEventListener('click', function () {
+    var next = isDark() ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    localStorage.setItem('ccdv-theme', next);
+    updateToggle();
+  });
+}
+
+var fontToggle = document.getElementById('font-toggle');
+var fontModes = ['default', 'serif', 'legible'];
+var fontLabels = { default: 'Aa', serif: 'Aa (serif)', legible: 'Aa+ (legible)' };
+var storedFont = localStorage.getItem('ccdv-font');
+if (storedFont && storedFont !== 'default') root.setAttribute('data-font', storedFont);
+function updateFontToggle() {
+  if (!fontToggle) return;
+  var current = root.getAttribute('data-font') || 'default';
+  fontToggle.textContent = fontLabels[current];
+  fontToggle.setAttribute('aria-label', 'Reading font: ' + current + '. Click to change.');
+}
+updateFontToggle();
+if (fontToggle) {
+  fontToggle.addEventListener('click', function () {
+    var current = root.getAttribute('data-font') || 'default';
+    var next = fontModes[(fontModes.indexOf(current) + 1) % fontModes.length];
+    if (next === 'default') { root.removeAttribute('data-font'); }
+    else { root.setAttribute('data-font', next); }
+    localStorage.setItem('ccdv-font', next);
+    updateFontToggle();
+  });
+}
+
+document.querySelectorAll('.mcq').forEach(function (mcq) {
+  var qtype = mcq.dataset.qtype;
+  var correct = mcq.dataset.correct.split(',');
+  var options = Array.prototype.slice.call(mcq.querySelectorAll('.mcq-opt'));
+  var feedback = mcq.querySelector('.mcq-feedback');
+  var explain = mcq.querySelector('.mcq-explain');
+  var resolved = false;
+
+  if (qtype === 'single') {
+    options.forEach(function (opt) {
+      opt.addEventListener('click', function () {
+        if (resolved) return;
+        resolved = true;
+        var letter = opt.dataset.letter;
+        options.forEach(function (o) {
+          o.disabled = true;
+          if (correct.indexOf(o.dataset.letter) !== -1) o.classList.add('mcq-correct');
+          else if (o === opt) o.classList.add('mcq-incorrect');
+        });
+        var ok = letter === correct[0];
+        feedback.hidden = false;
+        feedback.textContent = ok ? 'Correct.' : 'Not quite.';
+        feedback.className = 'mcq-feedback ' + (ok ? 'right' : 'wrong');
+        explain.hidden = false;
+      });
+    });
+  } else {
+    var selected = [];
+    options.forEach(function (opt) {
+      opt.setAttribute('aria-pressed', 'false');
+      opt.addEventListener('click', function () {
+        if (resolved) return;
+        var letter = opt.dataset.letter;
+        var idx = selected.indexOf(letter);
+        if (idx === -1) { selected.push(letter); opt.setAttribute('aria-pressed', 'true'); opt.classList.add('mcq-selected'); }
+        else { selected.splice(idx, 1); opt.setAttribute('aria-pressed', 'false'); opt.classList.remove('mcq-selected'); }
+      });
+    });
+    var submit = mcq.querySelector('.mcq-submit');
+    if (submit) {
+      submit.addEventListener('click', function () {
+        if (resolved) return;
+        resolved = true;
+        var ok = selected.length === correct.length && selected.every(function (l) { return correct.indexOf(l) !== -1; });
+        options.forEach(function (o) {
+          o.disabled = true;
+          var letter = o.dataset.letter;
+          var was = selected.indexOf(letter) !== -1;
+          var isRight = correct.indexOf(letter) !== -1;
+          if (isRight) o.classList.add('mcq-correct');
+          else if (was) o.classList.add('mcq-incorrect');
+        });
+        submit.disabled = true;
+        feedback.hidden = false;
+        feedback.textContent = ok ? 'Correct — both required options selected.' : 'Not quite — multiple-response items are all-or-nothing on the real exam.';
+        feedback.className = 'mcq-feedback ' + (ok ? 'right' : 'wrong');
+        explain.hidden = false;
+      });
+    }
+  }
+});
+</script>
+</body>
+</html>

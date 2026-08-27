@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 17 — Building the Loop by Hand · CCDV-F</title>
+<meta name="description" content="A hand-built agent loop has exactly four moving parts — register the tools, scope the system prompt, run the iterate/exit cycle, define the exit condition — and each one is load-bearing.">
+<meta name="author" content="Ram">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: light dark;
+
+  --ink:    oklch(0.15 0.01 80);
+  --ink2:   oklch(0.30 0.015 75);
+  --ink3:   oklch(0.53 0.015 75);
+  --cream:  oklch(0.97 0.008 85);
+  --cream2: oklch(0.94 0.012 85);
+  --cream3: oklch(0.91 0.015 80);
+  --border: oklch(0.87 0.012 80);
+
+  --amber:       oklch(0.64 0.14 68);
+  --amber-light: oklch(0.93 0.035 80);
+  --amber-dark:  oklch(0.47 0.11 60);
+  --blue:        oklch(0.43 0.09 245);
+  --blue-light:  oklch(0.93 0.025 240);
+  --coral:       oklch(0.55 0.14 30);
+  --coral-light: oklch(0.94 0.025 35);
+  --purple:      oklch(0.38 0.14 300);
+  --purple-light:oklch(0.93 0.03 300);
+  --green:       oklch(0.50 0.10 150);
+  --green-light: oklch(0.94 0.025 145);
+
+  --surface-raised:  oklch(0.15 0.01 80);
+  --on-raised:       oklch(0.97 0.008 85);
+  --on-raised-muted: oklch(0.97 0.008 85 / 0.74);
+  --on-raised-dim:   oklch(0.97 0.008 85 / 0.6);
+  --on-raised-border:oklch(0.97 0.008 85 / 0.15);
+  --nav-bg:          oklch(0.97 0.008 85 / 0.96);
+
+  --font-serif: Georgia, 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+  --font-sans:  system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono:  ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+  --font-body-active: var(--font-sans);
+
+  --fs-body: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --fs-sm:   clamp(0.8125rem, 0.78rem + 0.15vw, 0.9375rem);
+  --fs-xs:   clamp(0.6875rem, 0.67rem + 0.1vw, 0.75rem);
+  --fs-h1:   clamp(2rem, 1.4rem + 3vw, 3.375rem);
+  --fs-h2:   clamp(1.5rem, 1.2rem + 1.5vw, 2.125rem);
+  --fs-h3:   clamp(1.25rem, 1.1rem + 0.75vw, 1.5rem);
+  --fs-pull: clamp(1.375rem, 1.15rem + 1.1vw, 1.625rem);
+  --lh-body: 1.7;
+  --lh-heading: 1.2;
+  --measure: 68ch;
+
+  --space-section: clamp(3rem, 2.5rem + 2.5vw, 4rem);
+  --space-block:   clamp(1.5rem, 1.25rem + 1.25vw, 2.5rem);
+  --space-inline:  clamp(1.25rem, 1rem + 1.25vw, 2rem);
+  --radius:    12px;
+  --radius-sm: 8px;
+  --shadow:    0 2px 16px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
+  --t-fast: 0.15s;
+  --t-med:  0.25s;
+}
+
+[data-theme="dark"] {
+  --ink:    oklch(0.90 0.008 85);
+  --ink2:   oklch(0.78 0.01 80);
+  --ink3:   oklch(0.58 0.01 75);
+  --cream:  oklch(0.15 0.012 75);
+  --cream2: oklch(0.19 0.012 75);
+  --cream3: oklch(0.23 0.015 75);
+  --border: oklch(0.32 0.01 75);
+  --shadow:    0 2px 16px rgba(0,0,0,0.3);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+  --amber:       oklch(0.72 0.13 68);
+  --amber-light: oklch(0.24 0.04 70);
+  --amber-dark:  oklch(0.78 0.10 65);
+  --blue:        oklch(0.70 0.09 245);
+  --blue-light:  oklch(0.24 0.035 245);
+  --coral:       oklch(0.68 0.13 30);
+  --coral-light: oklch(0.26 0.04 30);
+  --purple:      oklch(0.68 0.12 300);
+  --purple-light:oklch(0.25 0.04 300);
+  --green:       oklch(0.68 0.10 150);
+  --green-light: oklch(0.24 0.035 150);
+  --nav-bg: oklch(0.15 0.012 75 / 0.92);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink:    oklch(0.90 0.008 85);
+    --ink2:   oklch(0.78 0.01 80);
+    --ink3:   oklch(0.58 0.01 75);
+    --cream:  oklch(0.15 0.012 75);
+    --cream2: oklch(0.19 0.012 75);
+    --cream3: oklch(0.23 0.015 75);
+    --border: oklch(0.32 0.01 75);
+    --shadow:    0 2px 16px rgba(0,0,0,0.3);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+    --amber:       oklch(0.72 0.13 68);
+    --amber-light: oklch(0.24 0.04 70);
+    --amber-dark:  oklch(0.78 0.10 65);
+    --blue:        oklch(0.70 0.09 245);
+    --blue-light:  oklch(0.24 0.035 245);
+    --coral:       oklch(0.68 0.13 30);
+    --coral-light: oklch(0.26 0.04 30);
+    --purple:      oklch(0.68 0.12 300);
+    --purple-light:oklch(0.25 0.04 300);
+    --green:       oklch(0.68 0.10 150);
+    --green-light: oklch(0.24 0.035 150);
+    --nav-bg: oklch(0.15 0.012 75 / 0.92);
+  }
+}
+
+[data-font="serif"]  { --font-body-active: var(--font-serif); }
+[data-font="legible"]{ --font-body-active: 'Atkinson Hyperlegible', var(--font-sans); --lh-body: 1.85; letter-spacing: 0.01em; }
+
+* , *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 78px; }
+
+body {
+  margin: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-body-active);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
+
+.skip-link {
+  position: absolute; left: -9999px; top: 0; z-index: 200;
+  background: var(--ink); color: var(--cream);
+  padding: 0.7rem 1.1rem; border-radius: var(--radius-sm);
+}
+.skip-link:focus { left: 0.6rem; top: 0.6rem; }
+
+h1, h2, h3 { font-family: var(--font-serif); line-height: var(--lh-heading); font-weight: 400; color: var(--ink); }
+h2 { font-size: var(--fs-h2); margin: 0 0 1em; }
+h3 { font-size: var(--fs-h3); margin: var(--space-block) 0 0.75em; }
+p { margin: 0 0 1.1em; }
+code { font-family: var(--font-mono); font-size: 0.9em; background: var(--cream3); padding: 0.12em 0.4em; border-radius: 4px; }
+a { color: var(--amber-dark, var(--amber)); }
+[data-theme="dark"] a, :root:not([data-theme="light"]) a { color: var(--amber); }
+
+.nav {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--nav-bg);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-inner {
+  max-width: 1000px; margin: 0 auto;
+  padding: 0.7rem clamp(1rem, 3vw, 2.5rem);
+  display: flex; align-items: center; gap: 1.1rem;
+  flex-wrap: wrap;
+}
+.nav-brand {
+  font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3);
+  white-space: nowrap;
+}
+.nav-links { display: flex; gap: 0.9rem; flex-wrap: wrap; margin-right: auto; }
+.nav-link {
+  font-size: var(--fs-sm); color: var(--ink2); text-decoration: none;
+  padding: 0.2rem 0; border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+.nav-link.active { color: var(--amber-dark, var(--amber)); border-bottom-color: var(--amber); }
+[data-theme="dark"] .nav-link.active, :root:not([data-theme="light"]) .nav-link.active { color: var(--amber); }
+.nav-progress { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink3); white-space: nowrap; }
+.nav-btn {
+  font-family: var(--font-sans); font-size: 1rem; line-height: 1;
+  background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  width: 34px; height: 34px; cursor: pointer; color: var(--ink2);
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: border-color var(--t-fast);
+}
+.nav-btn:hover { border-color: var(--amber); }
+.nav-btn.font-toggle { font-family: var(--font-serif); font-size: 0.85rem; width: auto; padding: 0 0.6rem; }
+
+.chapter-nav {
+  max-width: 1000px; margin: 0 auto;
+  padding: 0.85rem clamp(1rem, 3vw, 2.5rem);
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  font-size: var(--fs-sm); color: var(--ink3);
+}
+.chapter-nav-link { color: var(--ink3); text-decoration: none; }
+.chapter-nav-link.disabled { cursor: default; opacity: 0.55; }
+.chapter-nav-link em { font-style: normal; font-size: var(--fs-xs); }
+.chapter-nav-current { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase; }
+
+.hero {
+  background: var(--cream);
+  padding: clamp(2rem, 4vw, 3.5rem) clamp(1rem, 3vw, 2.5rem) clamp(1.5rem, 3vw, 2.5rem);
+  border-bottom: 1px solid var(--border);
+}
+.hero-inner { max-width: 900px; margin: 0 auto; }
+.eyebrow {
+  display: flex; align-items: center; gap: 0.6rem;
+  font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber-dark, var(--amber));
+  margin-bottom: 0.9rem;
+}
+[data-theme="dark"] .eyebrow, :root:not([data-theme="light"]) .eyebrow { color: var(--amber); }
+.eyebrow .icon { font-size: 1.3rem; letter-spacing: 0; }
+.hero h1 { font-size: var(--fs-h1); margin: 0; max-width: 20ch; }
+
+main { max-width: 900px; margin: 0 auto; padding: 0 clamp(1rem, 3vw, 2.5rem); }
+section { padding: var(--space-section) 0 0; }
+section:last-of-type { padding-bottom: var(--space-section); }
+.measure { max-width: var(--measure); }
+
+.analogy, .callout-tip, .callout-warning, .callout-remember {
+  border-radius: var(--radius); padding: 22px 26px; margin: var(--space-block) 0;
+}
+.analogy      { background: var(--amber-light);  border-left: 3.5px solid var(--amber); }
+.callout-tip  { background: var(--amber-light);  border-left: 3.5px solid var(--amber); }
+.callout-warning { background: var(--coral-light); border-left: 3.5px solid var(--coral); }
+.callout-remember { background: var(--purple-light); border-left: 3.5px solid var(--purple); }
+.callout-def {
+  background: var(--blue-light); border-radius: var(--radius-sm);
+  padding: 18px 22px; margin: var(--space-block) 0;
+}
+.box-tag {
+  display: block; font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3);
+  margin-bottom: 8px;
+}
+.analogy .box-tag { color: var(--amber-dark, var(--amber)); }
+[data-theme="dark"] .analogy .box-tag, :root:not([data-theme="light"]) .analogy .box-tag { color: var(--amber); }
+.callout-remember .box-tag { color: var(--purple); }
+.callout-def .box-tag { color: var(--blue); }
+.callout-warning .box-tag { color: var(--coral); }
+.analogy p, .callout-tip p, .callout-def p, .callout-remember p, .callout-warning p { margin-bottom: 0.6em; }
+.analogy p:last-child, .callout-tip p:last-child, .callout-def p:last-child, .callout-remember p:last-child, .callout-warning p:last-child { margin-bottom: 0; }
+
+.takeaway, .worked {
+  background: var(--surface-raised); color: var(--on-raised);
+  border-radius: var(--radius); padding: 26px 28px; margin: var(--space-block) 0;
+}
+.takeaway .box-tag, .worked .box-tag { color: var(--on-raised-dim); }
+.takeaway p, .worked p { color: var(--on-raised-muted); margin-bottom: 0; }
+.takeaway strong, .worked strong { color: var(--on-raised); }
+.worked p { font-family: var(--font-mono); font-size: var(--fs-sm); line-height: 1.75; }
+
+.pullquote {
+  max-width: 640px; margin: var(--space-block) auto;
+  padding-left: 22px; border-left: 3px solid var(--amber);
+  font-family: var(--font-serif); font-size: var(--fs-pull); line-height: 1.45;
+  color: var(--ink2);
+}
+
+.xlink-grid { display: grid; gap: 12px; margin: var(--space-block) 0; }
+.xlink {
+  background: var(--cream2); border-radius: var(--radius-sm);
+  padding: 14px 18px; display: flex; gap: 12px; align-items: baseline;
+  font-size: var(--fs-sm);
+}
+.xlink b { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.05em; color: var(--ink3); white-space: nowrap; }
+.xlink span { color: var(--ink2); }
+a.xlink { text-decoration: none; }
+a.xlink:hover { box-shadow: var(--shadow); }
+
+.diagram { margin: var(--space-block) 0; text-align: center; }
+.diagram svg { max-width: 100%; height: auto; }
+.diagram-caption { font-size: var(--fs-xs); color: var(--ink3); margin-top: 0.6rem; font-family: var(--font-mono); }
+
+.mcq {
+  background: var(--green-light); border-radius: var(--radius);
+  padding: 22px 24px; margin: var(--space-block) 0;
+}
+.mcq-num {
+  font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--green); margin-bottom: 10px; display: flex; gap: 10px; align-items: center;
+}
+.mcq-tag { background: var(--cream); padding: 2px 8px; border-radius: 4px; color: var(--ink3); }
+.mcq-stem { font-size: var(--fs-body); margin-bottom: 1rem; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 0.4rem; }
+.mcq-opt {
+  font-family: var(--font-sans); font-size: var(--fs-sm); text-align: left;
+  background: var(--cream); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 11px 14px; cursor: pointer; color: var(--ink);
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+.mcq-opt:hover:not(:disabled) { border-color: var(--amber); }
+.mcq-opt:disabled { cursor: default; }
+.mcq-opt.mcq-selected { border-color: var(--amber); }
+.mcq-opt.mcq-correct { background: var(--green-light); border-color: var(--green); font-weight: 600; }
+.mcq-opt.mcq-incorrect { background: var(--coral-light); border-color: var(--coral); text-decoration: line-through; }
+.mcq-submit {
+  font-family: var(--font-sans); font-size: var(--fs-sm); font-weight: 600;
+  background: var(--ink); color: var(--cream); border: none; border-radius: var(--radius-sm);
+  padding: 9px 18px; cursor: pointer; margin-top: 4px;
+}
+.mcq-submit:disabled { opacity: 0.5; cursor: default; }
+.mcq-feedback { font-weight: 600; margin-top: 12px; }
+.mcq-feedback.right { color: var(--green); }
+.mcq-feedback.wrong { color: var(--coral); }
+.mcq-explain { margin-top: 10px; font-size: var(--fs-sm); color: var(--ink2); background: var(--cream); border-radius: var(--radius-sm); padding: 12px 16px; }
+
+.chapter-end {
+  background: var(--surface-raised); color: var(--on-raised);
+  border-radius: var(--radius); padding: 30px clamp(24px, 4vw, 40px);
+  margin: var(--space-section) 0; text-align: center;
+}
+.chapter-end p { color: var(--on-raised-muted); margin-bottom: 1.2rem; }
+.chapter-end .chapter-nav { padding: 0; color: var(--on-raised-dim); }
+.chapter-end .chapter-nav-link { color: var(--on-raised); }
+.chapter-end .chapter-nav-link.disabled { color: var(--on-raised-dim); }
+.chapter-end .chapter-nav-current { color: var(--on-raised-dim); }
+
+footer { text-align: center; padding: 2rem 1rem 3rem; font-size: var(--fs-xs); color: var(--ink3); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#hook">Skip to content</a>
+
+<nav class="nav" aria-label="Chapter navigation">
+  <div class="nav-inner">
+    <span class="nav-brand">CCDV-F &middot; Ch. 17</span>
+    <div class="nav-links">
+      <a class="nav-link" href="#hook">Ten Iterations, Never Used</a>
+      <a class="nav-link" href="#four-steps">Register, Scope, Iterate, Exit</a>
+      <a class="nav-link" href="#why-four">Why These Four</a>
+      <a class="nav-link" href="#the-write">The Write That Broke Production</a>
+      <a class="nav-link" href="#tool-list">When the Tool List Is the Problem</a>
+      <a class="nav-link" href="#authority-stops">Where Authority Stops</a>
+      <a class="nav-link" href="#exam-cues">Exam Cues</a>
+      <a class="nav-link" href="#self-test">Self-Test</a>
+    </div>
+    <div class="nav-progress">Progress: <span id="depth-pct">0</span>%</div>
+    <button class="nav-btn theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark mode" title="Toggle dark mode">&#127769;</button>
+    <button class="nav-btn font-toggle" id="font-toggle" type="button" aria-label="Change reading font" title="Cycle reading font">Aa</button>
+  </div>
+</nav>
+
+<div class="chapter-nav">
+  <a class="chapter-nav-link" href="Ch16_Who-runs-the-loop.html">&#9668; Chapter 16</a>
+  <span class="chapter-nav-current">Chapter 17 of 34</span>
+  <a class="chapter-nav-link" href="Ch18_State-that-outlives-a-turn.html">Chapter 18 &#9658;</a>
+</div>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="eyebrow"><span class="icon">&#128295;</span> Chapter 17 of 34 &middot; Wiring the Agent Loop</div>
+    <h1>Building the loop by hand</h1>
+  </div>
+</header>
+
+<main>
+
+<section id="hook">
+  <h2>Ten iterations, never used</h2>
+  <div class="measure">
+    <p>A developer building a file-editing agent set a cap on its retry loop: ten iterations. The agent could read a config file, propose a fix, write it, validate it, and try again, up to ten times, before giving up. In every test run it converged in two or three iterations. In production it converged in one. The cap was never reached, on any run, before or after deployment. That number was never the problem. The agent went on to break a customer&rsquo;s production environment while behaving exactly as its ten-iteration loop was built to behave. The failure sat somewhere else in the build entirely, and this chapter is about finding where.</p>
+
+    <div class="analogy">
+      <span class="box-tag">Hold this analogy</span>
+      <p>Building an agent loop by hand is flat-pack furniture without the instructions. You have every part: the tools, a model that can call them, a rough picture of what the finished thing does. What you don&rsquo;t have is a fixed order to assemble them in, unless you write one yourself. Skip a step, or do two of them out of sequence, and you can still end up with something that stands up and looks like a bookshelf. Whether it holds weight under load is a separate question, and it&rsquo;s usually not one you get an answer to until something is standing on it.</p>
+    </div>
+
+    <div class="callout-warning">
+      <span class="box-tag">Where the analogy breaks</span>
+      <p>Furniture assembly forgives some reordering: tighten the screws in a different order and the shelf still holds. A loop&rsquo;s exit condition doesn&rsquo;t work that way. It isn&rsquo;t a step you can leave until late in the build; it&rsquo;s a boundary that has to exist before the first write reaches a live environment, and the furniture picture has no equivalent for that.</p>
+    </div>
+  </div>
+</section>
+
+<section id="four-steps">
+  <h2>Register, scope, iterate, exit</h2>
+  <div class="measure">
+    <p>Four steps hold across every way of wiring a loop, whether you write it directly against the API or lean on a framework to carry part of the weight. You still write all four; a framework only changes how much of each you write yourself versus inherit.</p>
+
+    <p><strong>Register the tools.</strong> Every tool the agent can call needs a schema entry: a name, a description, and the parameters it accepts. That entry is what lets the agent know, on any given turn, what&rsquo;s actually available to call. Getting this wrong runs in two directions. A tool named in the system prompt but never registered can&rsquo;t be executed when the model reaches for it. A tool that is registered but described so vaguely it overlaps with a neighbor gets picked inconsistently. The registration list has to be complete and each entry has to be distinguishable from the others.</p>
+
+    <p><strong>Scope the system prompt.</strong> A prompt that says &ldquo;handle this customer&rsquo;s request&rdquo; hands the model a wide field to route across. A prompt that names the specific task and the specific tools available for it narrows that field to what the task actually needs. The difference shows up as routing reliability: a broad prompt produces broader, less predictable tool selection, because the model has less in the prompt to anchor a choice to. The prompt should name the task, name the tools that apply to it, and say nothing about tools the agent doesn&rsquo;t have.</p>
+
+    <p><strong>Handle the tool-use loop.</strong> When an assistant turn contains one or more tool-use blocks, your code executes every one of them and returns a tool-result block for each, matched by id, before the next assistant turn can proceed. A turn with three tool calls needs three tool-result blocks back, all in the same round. This step is mechanical rather than a design choice. Miss it and the conversation itself stalls or gets rejected by the API, immediately, rather than degrading quietly the way a scoping problem does.</p>
+
+    <p><strong>Define exit conditions.</strong> The loop runs until it receives a stop condition. Leave that condition undefined and the loop keeps requesting tool calls past the point where the task is actually finished, because nothing in the build has told it &ldquo;done&rdquo; already happened. An iteration cap, like the ten in the opening incident, is one kind of exit condition: it stops a loop from running away. It is not the only kind, and the incident below shows exactly what an iteration cap does not catch.</p>
+
+    <div class="diagram">
+      <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="d17-title d17-desc">
+        <title id="d17-title">The four-step agent loop: register, scope, iterate, exit</title>
+        <desc id="d17-desc">A pipeline diagram. Three boxes in a row, labeled 1. Register tools, 2. Scope prompt, and 3. Iterate — call tool, get result, connected left to right by arrows. An arrow runs down from the Iterate box to a diamond labeled Exit condition met. A looping path leaves the diamond's left point, marked "not yet — call tool again," and curves back up into the bottom of the Iterate box, showing the loop repeating. A second path leaves the diamond's right point, marked "yes — stop," and points to a fourth box labeled 4. Exit, marked as where the loop terminates. Small text beneath the diamond notes that this check has no equivalent step in the furniture-assembly picture.</desc>
+        <defs>
+          <marker id="arr17" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#7a6a55"/></marker>
+          <linearGradient id="g17" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#f0e6d4"/><stop offset="100%" stop-color="#e7ad5c" stop-opacity="0.6"/></linearGradient>
+        </defs>
+
+        <rect x="20" y="40" width="140" height="50" rx="9" fill="url(#g17)"/>
+        <text x="90" y="61" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#3a2000">1. Register</text>
+        <text x="90" y="77" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10.5" fill="#3a2000">tools</text>
+
+        <line x1="160" y1="65" x2="196" y2="65" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr17)"/>
+
+        <rect x="198" y="40" width="140" height="50" rx="9" fill="url(#g17)"/>
+        <text x="268" y="61" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#3a2000">2. Scope</text>
+        <text x="268" y="77" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10.5" fill="#3a2000">system prompt</text>
+
+        <line x1="338" y1="65" x2="374" y2="65" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr17)"/>
+
+        <rect x="376" y="40" width="160" height="50" rx="9" fill="url(#g17)"/>
+        <text x="456" y="61" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#3a2000">3. Iterate</text>
+        <text x="456" y="77" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10.5" fill="#3a2000">call tool &rarr; get result</text>
+
+        <line x1="456" y1="90" x2="456" y2="148" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr17)"/>
+
+        <polygon points="456,150 526,190 456,230 386,190" fill="url(#g17)" stroke="#7a6a55" stroke-width="1"/>
+        <text x="456" y="186" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10.5" font-weight="700" fill="#3a2000">Exit condition</text>
+        <text x="456" y="199" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10.5" font-weight="700" fill="#3a2000">met?</text>
+
+        <path d="M386,190 L288,190 L288,96 L372,96" fill="none" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr17)"/>
+        <text x="288" y="130" text-anchor="middle" font-family="ui-monospace, monospace" font-size="10.5" fill="#7a6a55"><tspan x="288" dy="0">not yet &mdash;</tspan><tspan x="288" dy="13">call tool again</tspan></text>
+
+        <line x1="526" y1="190" x2="558" y2="190" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr17)"/>
+        <text x="542" y="177" text-anchor="middle" font-family="ui-monospace, monospace" font-size="10.5" fill="#7a6a55">yes &mdash; stop</text>
+
+        <rect x="560" y="165" width="150" height="50" rx="9" fill="url(#g17)"/>
+        <text x="635" y="186" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#3a2000">4. Exit</text>
+        <text x="635" y="202" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10.5" fill="#3a2000">loop terminates</text>
+
+        <text x="456" y="258" text-anchor="middle" font-family="ui-monospace, monospace" font-size="10.5" fill="#7a6a55">*no equivalent in the furniture picture</text>
+      </svg>
+      <div class="diagram-caption">Figure 17.1 &mdash; register, scope, then iterate until the exit condition says stop</div>
+    </div>
+
+    <p>The checklist that verifies this wiring runs to five items, not four: tools registered, prompt scoped, tool-use loop implemented, exit conditions defined, and one more, at least one human checkpoint somewhere in the loop. Where that checkpoint belongs is a separate decision, worked out in chapter 19.</p>
+
+    <div class="takeaway">
+      <span class="box-tag">What this chapter checks</span>
+      <p>The checklist forces the question before the loop ships. The other four items on it are the same four steps just walked through, verified rather than re-taught.</p>
+    </div>
+  </div>
+</section>
+
+<section id="why-four">
+  <h2>Why these four and no others</h2>
+  <div class="measure">
+    <p>Each step exists to close one specific gap, and no step covers for a gap in another. An unregistered tool produces a call the loop can&rsquo;t execute; nothing about a well-scoped prompt changes that, because the tool still isn&rsquo;t there to call. An unscoped prompt doesn&rsquo;t stop the loop from running; it degrades which tool gets chosen, turn over turn, in a way that shows up as unreliability rather than as a hard failure. An unresolved tool-use block breaks the conversation outright, the moment the next turn is attempted, because the API is waiting on a result that never came back. A missing exit condition breaks nothing visibly either. It just keeps the loop running, spending tool calls, past the point where stopping was the correct move.</p>
+
+    <div class="pullquote">Four different ways to fail, one step assigned to each.</div>
+
+    <p>Mapped onto the flat-pack picture, three of the four are ordinary instruction steps: the parts list, the picture on the box, the fastening sequence. The fourth, the exit condition, is the one the picture doesn&rsquo;t cover at all, which is exactly the gap the caveat above names. That is the whole of what &ldquo;wiring the loop&rdquo; means: closing all four gaps, in whichever order you build them, before the loop runs unsupervised.</p>
+  </div>
+</section>
+
+<section id="the-write">
+  <h2>The write that passed validation and broke production</h2>
+  <div class="measure">
+    <p>The file-editing agent from the opening had three tools: <code>read_file</code>, <code>write_file</code>, and <code>validate_config</code>. After each write it re-ran <code>validate_config</code>; if the result still failed, it adjusted the edit and wrote again, up to the ten-iteration cap. Tested against a scratch copy of the target config, it worked on every run, usually settling in two or three iterations.</p>
+
+    <div class="worked">
+      <span class="box-tag">What actually happened</span>
+      <p>In production, it found a parameter out of range, proposed a correction, wrote the file, and re-ran <code>validate_config</code>. The check passed. The loop exited after one iteration, exactly as built.</p>
+      <p>The parameter it corrected was a rate limit the customer&rsquo;s application depended on. <code>validate_config</code> checked the new value against the schema&rsquo;s allowed range, and the value was inside that range. The check had never been built to ask whether anything downstream still depended on the old one. Within minutes, the customer&rsquo;s application started failing: requests were being throttled at a rate it wasn&rsquo;t built to handle.</p>
+    </div>
+
+    <p>The loop edited the file, validated it, and exited on a pass &mdash; exactly what an exit condition scoped to &ldquo;did this file validate&rdquo; will always do. The gap sat between two states the loop never distinguished: a change proposed, and a change committed to a live environment. Nothing in the build stopped <code>write_file</code> from crossing that line unattended, and the ten-iteration cap was never built to catch it, because the cap only watches iteration count. If a tool can take an irreversible action in production, it needs a checkpoint before it runs, and that constraint belongs at the point where the tool surface is scoped.</p>
+  </div>
+</section>
+
+<section id="tool-list">
+  <h2>Where the tool list itself becomes the problem</h2>
+  <div class="measure">
+    <p>Registering tools correctly is necessary, but a correctly-registered list can still be the wrong list. Two failure directions pull opposite ways here. A registry with too many overlapping tools, two entries both described as roughly &ldquo;update a record,&rdquo; for instance, degrades routing on every turn: the model is choosing between near-duplicates, and picking wrong gets more likely as the overlap grows. A registry with too few tools forces the agent to either hallucinate a path that doesn&rsquo;t exist or return an incomplete result, because the capability it needed was never on offer.</p>
+
+    <p>Over-tooling is the shape that shows up after ship. A tool gets added &ldquo;just in case&rdquo; it&rsquo;s needed later, and it sits in the registry from then on, weighed against on every subsequent turn whether or not it&rsquo;s ever called again. It isn&rsquo;t a neutral addition. Selection quality degrades as the registered surface grows, so an unused tool is still a cost the loop pays on every decision, even the ones that never touch it.</p>
+
+    <div class="takeaway">
+      <span class="box-tag">The corrective</span>
+      <p>Start with the minimum set of tools the task actually requires, and add one only once a specific gap in capability is confirmed. A prompt can only be scoped as tightly as the toolset it has to describe.</p>
+    </div>
+  </div>
+</section>
+
+<section id="authority-stops">
+  <h2>Where this chapter&rsquo;s authority stops</h2>
+  <div class="measure">
+    <p>This chapter covers the loop itself: registering tools, scoping the prompt, resolving tool-use blocks, and defining an exit condition. Three things sit next to it, decided elsewhere, and this chapter doesn&rsquo;t re-decide any of them &mdash; it only assumes them.</p>
+    <div class="xlink-grid">
+      <div class="xlink"><b>CH. 16</b><span>Which path actually runs this loop &mdash; a direct implementation, the Agent SDK, or Managed Agents &mdash; was decided before this chapter started. Whichever path you picked, all four steps above still apply to it.</span></div>
+      <div class="xlink"><b>CH. 18</b><span>What the loop carries forward between turns, and what a subagent is for, is a different problem.</span></div>
+      <div class="xlink"><b>CH. 19</b><span>A deterministic action tied to a specific loop event is a hook, outside the loop&rsquo;s own control flow. Where the checklist&rsquo;s human checkpoint belongs inside the loop is also settled there.</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="exam-cues">
+  <h2>What the stem sounds like</h2>
+  <div class="measure">
+    <div class="callout-remember">
+      <span class="box-tag">Remember this</span>
+      <p>A stem naming this chapter describes an agent already built or mid-build, and asks about the loop&rsquo;s own construction: whether a tool called is actually registered, whether the prompt names only the tools the agent has, whether every tool-use block gets a matching result, or whether an exit condition exists and what it fails to catch when it&rsquo;s scoped too narrowly, the way <code>validate_config</code> was.</p>
+    </div>
+  </div>
+</section>
+
+<section id="self-test">
+  <h2>Self-test</h2>
+  <div class="measure">
+
+    <div class="mcq" data-qtype="single" data-correct="C">
+      <div class="mcq-num">Question 1 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">An agent&rsquo;s system prompt reads: &ldquo;Assist the user with their account.&rdquo; It has twelve registered tools spanning billing, provisioning, and support ticketing. Routing has become unpredictable.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. Add more tools so the agent has a path for every request.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Raise the iteration cap so the agent has more attempts to find the right tool.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. Narrow the system prompt to name the specific task and the specific tools it requires.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Remove the exit condition so the loop doesn&rsquo;t stop before finishing.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: C.</strong> Twelve tools behind a task-agnostic prompt is the over-tooling and unscoped-prompt pattern together; A and B spend complexity in the wrong place, and D removes a control the scenario never questioned.</div>
+    </div>
+
+    <div class="mcq" data-qtype="single" data-correct="C">
+      <div class="mcq-num">Question 2 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">A loop&rsquo;s exit condition is &ldquo;the tool result matches the expected schema.&rdquo; A tool call that matches the schema but takes an irreversible production action has just been proposed. Which addition closes the actual gap?</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. A higher iteration cap, so the loop has more chances to self-correct.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. A more detailed tool description, so the model chooses more accurately.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. A checkpoint between the change being proposed and the change being committed.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. A broader system prompt, so the agent has more context about the task.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: C.</strong> A schema-matching result says nothing about whether the action itself is safe to commit, which is exactly the gap the file-editing incident exposed; A, B, and D all improve a part of the loop that was never the problem.</div>
+    </div>
+
+    <div class="mcq" data-qtype="multi" data-correct="A,B">
+      <div class="mcq-num">Question 3 <span class="mcq-tag">Select TWO</span></div>
+      <p class="mcq-stem">Which two of the following are required by the loop-wiring checklist independently of which path (direct implementation, SDK, or Managed Agents) runs the loop?</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. Every tool the agent may call is registered before the loop runs.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. The loop has a defined exit condition that does not depend on the model volunteering to stop.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. The agent is limited to a single tool to minimize routing risk.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. The system prompt describes every tool the underlying framework makes available, whether or not the agent has it.</button>
+      </div>
+      <button class="mcq-submit" type="button">Submit</button>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: A, B.</strong> Registration and exit conditions are two of the four steps that hold regardless of path; C invents a rule the chapter never states, and D has the requirement backwards &mdash; the prompt should name only tools the agent actually has.</div>
+    </div>
+
+    <div class="mcq" data-qtype="single" data-correct="B">
+      <div class="mcq-num">Question 4 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">A team adds a fourth tool to an agent&rsquo;s registry &ldquo;in case a future request needs it,&rdquo; though no current task calls for it. What is the most direct cost of that addition?</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. The unused tool has no effect until it is called for the first time.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. It degrades selection quality on every turn, because the model weighs it against the others regardless of whether it&rsquo;s called.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. It forces the loop&rsquo;s exit condition to be redefined.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. It requires a human checkpoint to be added before the loop can run.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: B.</strong> A tool sitting unused in the registry is still weighed on every routing decision; A treats it as free, and C and D attach consequences the scenario gives no basis for.</div>
+    </div>
+
+  </div>
+</section>
+
+</main>
+
+<div class="chapter-end">
+  <p>End of Chapter 17 &mdash; Wiring the Agent Loop</p>
+  <div class="chapter-nav">
+    <a class="chapter-nav-link" href="Ch16_Who-runs-the-loop.html">&#9668; Chapter 16</a>
+    <span class="chapter-nav-current">Chapter 17 of 34</span>
+    <a class="chapter-nav-link" href="Ch18_State-that-outlives-a-turn.html">Chapter 18 &#9658;</a>
+  </div>
+</div>
+
+<footer>CCDV-F Regeneration &middot; Chapter 17 of 34</footer>
+
+<script>
+var pct = document.getElementById('depth-pct');
+function onScroll() {
+  var h = document.documentElement;
+  var max = h.scrollHeight - h.clientHeight;
+  var p = max > 0 ? (h.scrollTop || document.body.scrollTop) / max : 0;
+  var v = Math.round(p * 100);
+  if (pct) pct.textContent = v;
+  var links = document.querySelectorAll('.nav-link[href^="#"]');
+  var cur = '';
+  document.querySelectorAll('section[id]').forEach(function (s) {
+    if (s.getBoundingClientRect().top <= 120) cur = s.id;
+  });
+  links.forEach(function (l) {
+    l.classList.toggle('active', l.getAttribute('href') === '#' + cur);
+  });
+}
+window.addEventListener('scroll', onScroll, { passive: true });
+window.addEventListener('resize', onScroll);
+document.addEventListener('DOMContentLoaded', onScroll);
+
+var toggle = document.getElementById('theme-toggle');
+var root = document.documentElement;
+var stored = localStorage.getItem('ccdv-theme');
+if (stored) root.setAttribute('data-theme', stored);
+function isDark() {
+  var attr = root.getAttribute('data-theme');
+  if (attr === 'dark') return true;
+  if (attr === 'light') return false;
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+function updateToggle() {
+  if (!toggle) return;
+  var dark = isDark();
+  toggle.innerHTML = dark ? '&#9728;&#65039;' : '&#127769;';
+  toggle.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+}
+updateToggle();
+if (toggle) {
+  toggle.addEventListener('click', function () {
+    var next = isDark() ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    localStorage.setItem('ccdv-theme', next);
+    updateToggle();
+  });
+}
+
+var fontToggle = document.getElementById('font-toggle');
+var fontModes = ['default', 'serif', 'legible'];
+var fontLabels = { default: 'Aa', serif: 'Aa (serif)', legible: 'Aa+ (legible)' };
+var storedFont = localStorage.getItem('ccdv-font');
+if (storedFont && storedFont !== 'default') root.setAttribute('data-font', storedFont);
+function updateFontToggle() {
+  if (!fontToggle) return;
+  var current = root.getAttribute('data-font') || 'default';
+  fontToggle.textContent = fontLabels[current];
+  fontToggle.setAttribute('aria-label', 'Reading font: ' + current + '. Click to change.');
+}
+updateFontToggle();
+if (fontToggle) {
+  fontToggle.addEventListener('click', function () {
+    var current = root.getAttribute('data-font') || 'default';
+    var next = fontModes[(fontModes.indexOf(current) + 1) % fontModes.length];
+    if (next === 'default') { root.removeAttribute('data-font'); }
+    else { root.setAttribute('data-font', next); }
+    localStorage.setItem('ccdv-font', next);
+    updateFontToggle();
+  });
+}
+
+document.querySelectorAll('.mcq').forEach(function (mcq) {
+  var qtype = mcq.dataset.qtype;
+  var correct = mcq.dataset.correct.split(',');
+  var options = Array.prototype.slice.call(mcq.querySelectorAll('.mcq-opt'));
+  var feedback = mcq.querySelector('.mcq-feedback');
+  var explain = mcq.querySelector('.mcq-explain');
+  var resolved = false;
+
+  if (qtype === 'single') {
+    options.forEach(function (opt) {
+      opt.addEventListener('click', function () {
+        if (resolved) return;
+        resolved = true;
+        var letter = opt.dataset.letter;
+        options.forEach(function (o) {
+          o.disabled = true;
+          if (correct.indexOf(o.dataset.letter) !== -1) o.classList.add('mcq-correct');
+          else if (o === opt) o.classList.add('mcq-incorrect');
+        });
+        var ok = letter === correct[0];
+        feedback.hidden = false;
+        feedback.textContent = ok ? 'Correct.' : 'Not quite.';
+        feedback.className = 'mcq-feedback ' + (ok ? 'right' : 'wrong');
+        explain.hidden = false;
+      });
+    });
+  } else {
+    var selected = [];
+    options.forEach(function (opt) {
+      opt.setAttribute('aria-pressed', 'false');
+      opt.addEventListener('click', function () {
+        if (resolved) return;
+        var letter = opt.dataset.letter;
+        var idx = selected.indexOf(letter);
+        if (idx === -1) { selected.push(letter); opt.setAttribute('aria-pressed', 'true'); opt.classList.add('mcq-selected'); }
+        else { selected.splice(idx, 1); opt.setAttribute('aria-pressed', 'false'); opt.classList.remove('mcq-selected'); }
+      });
+    });
+    var submit = mcq.querySelector('.mcq-submit');
+    if (submit) {
+      submit.addEventListener('click', function () {
+        if (resolved) return;
+        resolved = true;
+        var ok = selected.length === correct.length && selected.every(function (l) { return correct.indexOf(l) !== -1; });
+        options.forEach(function (o) {
+          o.disabled = true;
+          var letter = o.dataset.letter;
+          var was = selected.indexOf(letter) !== -1;
+          var isRight = correct.indexOf(letter) !== -1;
+          if (isRight) o.classList.add('mcq-correct');
+          else if (was) o.classList.add('mcq-incorrect');
+        });
+        submit.disabled = true;
+        feedback.hidden = false;
+        feedback.textContent = ok ? 'Correct — both required options selected.' : 'Not quite — multiple-response items are all-or-nothing on the real exam.';
+        feedback.className = 'mcq-feedback ' + (ok ? 'right' : 'wrong');
+        explain.hidden = false;
+      });
+    }
+  }
+});
+</script>
+</body>
+</html>

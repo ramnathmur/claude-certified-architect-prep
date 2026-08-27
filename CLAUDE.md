@@ -47,7 +47,16 @@ a plausible alternative was tried and failed, and §7 lists the dead ends so the
 Established on the CCDV-F path 2026-08-19 (4 modules, 83 screens, ~381k chars). The extractor script
 is `sop/extract-module.js`.
 
-Applies to CCAR-P and CCAO-F when their turn comes.
+`sop/SOP_Mock-Exam-Engine_v1.md` — the mock-exam engine's design stance (Practice Mode default, Exam
+Mode as a narrow exception), item schema, domain-weighted seeding methodology, dashboard pattern, and
+verification discipline. **Read it before building or porting a mock-exam engine, a paper, or a
+dashboard into any exam folder.** Extracted from CCDV-F 2026-08-25 after two real defects were found
+and fixed in that build (an inverted design-stance default, a chapter-to-domain mistagging that passed
+every structural check). Governs the engine only — it does not relax each folder's own corpus-
+verification gate (§2 below), which stays the deciding factor for whether any item may actually be
+generated.
+
+Both apply to CCAR-P and CCAO-F when their turn comes.
 
 ---
 

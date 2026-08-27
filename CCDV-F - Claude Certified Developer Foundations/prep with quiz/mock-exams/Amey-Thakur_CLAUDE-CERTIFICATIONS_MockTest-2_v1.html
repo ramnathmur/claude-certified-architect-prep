@@ -1,0 +1,1614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CCDV-F Mock Test TEMPLATE - Developer Foundations Practice</title>
+<!--
+  ==========================================================================
+  CCDV-F MOCK-EXAM TEMPLATE v1
+  ==========================================================================
+  WHAT THIS IS
+    A working, self-contained mock-exam shell for the Claude Certified
+    Developer - Foundations exam (CCDV-F). It runs as-is: the three official
+    sample questions from the exam guide are wired in as demo items so the
+    engine can be exercised end to end. It is NOT a paper. Generating a real
+    paper means replacing the item array - see the ITEMS anchor in the script
+    and README.md in this folder.
+
+  DERIVED FROM
+    ..\..\CCAR-F - Claude Certified Architect Foundations\prep with quiz\
+      mock-exams\CCA-Prep_MockTest-20_v1.html
+    (read-only reference; the CCAR-F folder was not modified). Design system,
+    localStorage resume routing, single/multiple-response handling, exam mode,
+    results card, full-rationale review and results-JSON export all carry
+    forward from it.
+
+  WHAT CHANGED FOR CCDV-F
+    - 53 items, not 60. 120-minute countdown unchanged.
+    - No scenario blocks. CCDV-F items are standalone (official guide v1.0,
+      Section 5 item-format row). The entire block architecture is gone -
+      no block headers, no block grouping in the jump map, no per-block
+      results breakdown.
+    - 8 domains with published weights, not CCAR-F's 5.
+    - Every item carries a skill section number N.M alongside its domain.
+    - Every missed item gets tagged RECALL or CONCEPT in the review view,
+      and the tag rides along in the export.
+    - Estimated scaled score (100-1000, pass 720) on the results card.
+    - No external resources of any kind: no web fonts, no CDN, no network.
+
+  DATE: 2026-08-20
+  ==========================================================================
+-->
+<style>
+:root{
+  --ink:#1a1814; --ink2:#3d3a34; --ink3:#7a7670;
+  --cream:#faf7f2; --cream2:#f2ede4; --cream3:#e8e1d4;
+  --amber:#c8832a; --amber-light:#f5e6cc; --amber-dark:#8a5a1a;
+  --teal:#2a7a6e; --teal-light:#d4f0ec;
+  --coral:#c85a3a; --coral-light:#fae8e2;
+  --green:#3a7a4a; --green-light:#e2f0e6;
+  --blue:#2a5a8a; --blue-light:#ddeaf5;
+  --violet:#6b4a8a; --violet-light:#ece2f5;
+  --border:#ddd8ce; --shadow:0 2px 16px rgba(26,24,20,0.08);
+  --radius:12px; --radius-sm:8px;
+  /* Local stacks only - the CCAR-F reference linked Google Fonts; that network
+     call is removed here. Georgia stands in for the display serif. */
+  --serif:Georgia,'Iowan Old Style','Times New Roman',serif;
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  --mono:ui-monospace,'Cascadia Mono','Segoe UI Mono',Consolas,'Courier New',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:var(--sans);background:var(--cream);color:var(--ink);font-size:16px;line-height:1.7;}
+
+/* ---- hero ---------------------------------------------------------- */
+.hero{background:var(--cream2);border-bottom:1px solid var(--border);color:var(--ink);padding:20px 40px 18px;text-align:center;}
+.hero-eyebrow{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:0.18em;text-transform:uppercase;color:var(--amber-dark);margin-bottom:8px;}
+.hero h1{font-family:var(--serif);font-size:clamp(20px,3vw,28px);font-weight:400;line-height:1.15;margin-bottom:6px;color:var(--ink);}
+.hero h1 em{font-style:italic;color:var(--amber-dark);}
+.hero-sub{font-size:13px;font-weight:300;color:var(--ink2);max-width:640px;margin:0 auto 12px;line-height:1.5;}
+.hero-tags{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+.tag{font-size:11px;font-weight:500;letter-spacing:0.06em;padding:4px 11px;border-radius:99px;border:1px solid var(--border);color:var(--ink2);background:#fff;}
+.tag.new{border-color:var(--violet);color:var(--violet);background:var(--violet-light);}
+
+/* ---- sticky nav ---------------------------------------------------- */
+.nav-bar{position:sticky;top:0;z-index:100;background:rgba(250,247,242,0.96);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:12px 40px;display:flex;flex-direction:column;}
+.nav-bar-row{display:flex;align-items:center;gap:18px;}
+.nav-progress{flex:1;min-width:0;}
+.progress-track{height:8px;background:var(--cream2);border-radius:99px;overflow:hidden;}
+.progress-fill{height:8px;background:linear-gradient(to right,var(--amber),var(--amber-dark));width:0;transition:width .4s;}
+.progress-meta{font-family:var(--mono);font-size:11px;color:var(--ink3);margin-top:4px;letter-spacing:0.05em;display:flex;justify-content:space-between;gap:10px;}
+.nav-timer{font-family:var(--mono);font-size:12px;font-weight:600;padding:6px 12px;border-radius:99px;background:var(--cream2);border:1px solid var(--border);color:var(--ink2);white-space:nowrap;}
+.nav-timer.time-low{color:var(--coral);border-color:var(--coral);background:var(--coral-light);}
+.exam-mode-badge{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:0.05em;padding:5px 10px;border-radius:99px;background:var(--coral-light);border:1px solid var(--coral);color:var(--coral);white-space:nowrap;}
+.score-pill{font-family:var(--mono);font-size:12px;font-weight:600;padding:6px 12px;border-radius:99px;background:var(--cream2);border:1px solid var(--border);color:var(--ink2);white-space:nowrap;}
+.score-pill .ok{color:var(--green);} .score-pill .x{color:var(--coral);}
+.pct-pill{font-family:var(--mono);font-size:12px;font-weight:700;padding:6px 12px;border-radius:99px;background:var(--cream2);border:1px solid var(--border);color:var(--ink3);white-space:nowrap;}
+.pct-pill.pass{color:var(--green);border-color:var(--green);background:var(--green-light);}
+.pct-pill.fail{color:var(--coral);border-color:var(--coral);background:var(--coral-light);}
+
+/* ---- jump map (flat - CCDV-F items are standalone, no block grouping) -- */
+.jump-toggle{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--ink3);cursor:pointer;white-space:nowrap;user-select:none;}
+.jump-toggle:hover{color:var(--amber-dark);}
+.nav-jumpmap{display:none;}
+.nav-jumpmap.open{display:block;padding-top:14px;margin-top:12px;border-top:1px solid var(--border);}
+.jm-label{font-family:var(--mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink3);margin-bottom:6px;}
+.jm-dots{display:flex;flex-wrap:wrap;gap:6px;}
+.dot{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1.5px solid var(--border);background:var(--cream2);font-family:var(--mono);font-size:11px;font-weight:600;color:var(--ink3);cursor:pointer;transition:all .15s;position:relative;}
+.dot:hover{border-color:var(--amber);}
+.dot.answered{background:var(--teal-light);border-color:var(--teal);color:var(--teal);}
+.dot.current{border-width:2px;border-color:var(--amber);box-shadow:0 0 0 2px var(--amber-light);}
+.dot.multi::after{content:"";position:absolute;top:-2px;right:-2px;width:7px;height:7px;border-radius:50%;background:var(--violet);}
+.jm-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);flex-wrap:wrap;}
+.jm-legend{font-family:var(--mono);font-size:10px;color:var(--ink3);letter-spacing:0.06em;}
+
+/* ---- layout -------------------------------------------------------- */
+.container{max-width:840px;margin:0 auto;padding:36px 40px 80px;}
+
+/* ---- landing / start card ------------------------------------------ */
+.start-card{background:var(--amber-light);border:1px solid #e8d0a0;border-radius:var(--radius);padding:30px 34px;margin:8px 0 34px;}
+.start-card .kicker{font-family:var(--mono);font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--amber-dark);margin-bottom:12px;}
+.start-card h3{font-family:var(--serif);font-size:26px;font-weight:400;margin-bottom:12px;color:var(--ink);text-align:center;}
+.start-card p{font-size:14px;color:var(--ink2);margin:0 auto 12px;line-height:1.7;max-width:620px;}
+.start-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:18px 0 6px;}
+.sf{background:rgba(255,255,255,0.6);border:1px solid #e8d0a0;border-radius:var(--radius-sm);padding:12px 14px;}
+.sf .k{font-family:var(--mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--amber-dark);margin-bottom:5px;}
+.sf .v{font-size:14px;color:var(--ink);font-weight:500;}
+.sf.flag{border-color:var(--violet);background:var(--violet-light);}
+.sf.flag .k{color:var(--violet);}
+.sf.wide{grid-column:1/-1;}
+.sf .v.prose{font-weight:400;font-size:13px;line-height:1.6;}
+.start-actions{text-align:center;margin-top:20px;}
+
+/* ---- validation banner --------------------------------------------- */
+.warn{display:none;background:var(--coral-light);border:1.5px solid var(--coral);border-radius:var(--radius-sm);padding:14px 18px;margin:0 0 22px;color:var(--ink);font-size:13px;line-height:1.6;}
+.warn.shown{display:block;}
+.warn h4{font-family:var(--mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--coral);margin-bottom:8px;}
+.warn ul{margin:0;padding-left:20px;}
+.warn li{margin-bottom:3px;}
+
+/* ---- question card -------------------------------------------------- */
+.q-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:28px 30px;margin-bottom:18px;box-shadow:var(--shadow);}
+.q-meta{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;gap:10px;flex-wrap:wrap;}
+.q-num{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--amber);letter-spacing:0.08em;}
+.q-meta-tags{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+.q-domain{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--blue);background:var(--blue-light);padding:3px 10px;border-radius:99px;}
+.q-section{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--teal);background:var(--teal-light);padding:3px 10px;border-radius:99px;}
+.q-review{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:3px 10px;border-radius:99px;color:var(--coral);background:var(--coral-light);border:1px solid var(--coral);}
+.q-stem{font-family:var(--serif);font-size:18px;line-height:1.5;color:var(--ink);margin-bottom:20px;}
+.q-stem code{font-family:var(--mono);font-size:14px;background:var(--cream2);padding:1px 6px;border-radius:4px;color:var(--ink2);}
+.q-multi{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--violet);background:var(--violet-light);border:1px solid #d8c8ea;padding:9px 14px;border-radius:var(--radius-sm);margin-bottom:14px;}
+.q-multi .count{font-weight:500;letter-spacing:0.04em;text-transform:none;color:var(--ink3);}
+.q-opts{display:flex;flex-direction:column;gap:10px;}
+.opt{display:flex;align-items:flex-start;gap:12px;padding:13px 16px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--cream2);cursor:pointer;transition:all .15s;font-size:14px;line-height:1.5;color:var(--ink2);}
+.opt:hover:not(.locked){border-color:var(--amber);background:var(--cream);}
+.opt.locked{cursor:default;}
+.opt.pending{border-color:var(--violet);background:var(--violet-light);color:var(--ink);font-weight:500;}
+.opt.pick-correct{border-color:var(--green);background:var(--green-light);color:var(--ink);font-weight:500;}
+.opt.pick-wrong{border-color:var(--coral);background:var(--coral-light);color:var(--ink);}
+.opt.reveal-correct{border-color:var(--green);background:var(--green-light);color:var(--ink);font-weight:500;}
+.opt.missed{border-color:var(--green);background:var(--green-light);color:var(--ink);font-weight:500;border-style:dashed;}
+.opt.dim{opacity:0.65;}
+.opt-letter{font-family:var(--mono);font-size:13px;font-weight:600;flex-shrink:0;min-width:18px;}
+.opt-box{flex-shrink:0;width:17px;height:17px;margin-top:2px;border:1.5px solid var(--ink3);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px;line-height:1;color:#fff;background:#fff;}
+.opt.pending .opt-box{background:var(--violet);border-color:var(--violet);}
+.opt.pick-correct .opt-box,.opt.reveal-correct .opt-box,.opt.missed .opt-box{background:var(--green);border-color:var(--green);}
+.opt.pick-wrong .opt-box{background:var(--coral);border-color:var(--coral);}
+.opt-mark{margin-left:auto;font-family:var(--mono);font-size:12px;font-weight:700;flex-shrink:0;text-align:right;}
+.opt.pick-correct .opt-mark,.opt.reveal-correct .opt-mark,.opt.missed .opt-mark{color:var(--green);}
+.opt.pick-wrong .opt-mark{color:var(--coral);}
+
+/* ---- rationale feedback (review only - never during the sitting) ----- */
+.feedback{margin-top:18px;border-radius:var(--radius-sm);overflow:hidden;display:none;border:1px solid var(--border);}
+.feedback.shown{display:block;animation:fadeUp .35s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+.fb-verdict{padding:12px 18px;font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;}
+.fb-verdict.ok{background:var(--green-light);color:var(--green);}
+.fb-verdict.no{background:var(--coral-light);color:var(--coral);}
+.fb-verdict.skip{background:var(--cream3);color:var(--ink2);}
+.fb-body{padding:6px 18px 16px;background:#fff;}
+.fb-row{padding:12px 0;border-bottom:1px solid var(--cream2);}
+.fb-row:last-child{border-bottom:none;}
+.fb-row .lbl{font-family:var(--mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;font-weight:600;margin-bottom:5px;display:flex;align-items:center;gap:8px;}
+.fb-row.right .lbl{color:var(--green);}
+.fb-row.wrong .lbl{color:var(--coral);}
+.fb-row .opt-ref{font-family:var(--mono);font-size:11px;color:var(--ink3);font-weight:500;}
+.fb-row .txt{font-size:13.5px;color:var(--ink2);line-height:1.6;}
+.fb-row .cite{font-family:var(--mono);font-size:10.5px;color:var(--amber-dark);margin-top:5px;letter-spacing:0.03em;}
+.fb-sub{font-family:var(--mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink3);margin:6px 0 2px;}
+
+/* ---- RECALL / CONCEPT miss tagging ---------------------------------- */
+.miss-tag{margin-top:16px;border:1.5px dashed var(--violet);background:var(--violet-light);border-radius:var(--radius-sm);padding:14px 16px;}
+.mt-head{font-family:var(--mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;font-weight:600;color:var(--violet);margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.mt-req{font-weight:600;letter-spacing:0.04em;text-transform:none;color:var(--coral);}
+.mt-req.done{color:var(--green);}
+.mt-btns{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:9px;}
+.mt-btn{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:0.08em;padding:7px 16px;border-radius:99px;border:1.5px solid var(--border);background:#fff;color:var(--ink3);cursor:pointer;transition:all .15s;}
+.mt-btn:hover{border-color:var(--violet);color:var(--violet);}
+.mt-btn.on{background:var(--violet);border-color:var(--violet);color:#fff;}
+.mt-btn.clear{border-style:dashed;font-weight:500;letter-spacing:0.04em;text-transform:none;}
+.mt-btn.hidden{display:none;}
+.mt-help{font-size:12px;color:var(--ink2);line-height:1.6;}
+
+/* ---- results card --------------------------------------------------- */
+.results{background:var(--ink);color:var(--cream);padding:40px 36px;border-radius:var(--radius);margin:44px 0 24px;text-align:center;display:none;}
+.results.shown{display:block;}
+.results h2{font-family:var(--serif);font-size:30px;font-weight:400;margin-bottom:8px;color:#fff;}
+.results .score-big{font-family:var(--serif);font-size:52px;color:var(--amber);margin:14px 0 4px;}
+.results .scaled{font-family:var(--mono);font-size:14px;color:rgba(250,247,242,0.8);margin-bottom:6px;}
+.results .scaled-formula{font-family:var(--mono);font-size:11px;color:rgba(250,247,242,0.6);margin:2px auto 8px;letter-spacing:0.02em;max-width:600px;line-height:1.6;}
+.results .passline{font-family:var(--mono);font-size:12px;font-weight:600;padding:5px 14px;border-radius:99px;display:inline-block;margin-top:6px;}
+.results .passline.pass{background:var(--green);color:#fff;}
+.results .passline.fail{background:var(--coral);color:#fff;}
+.results .caveat{font-size:12px;color:rgba(250,247,242,0.6);max-width:600px;margin:14px auto 0;line-height:1.6;font-style:italic;}
+.res-note{font-size:12px;color:rgba(250,247,242,0.72);max-width:620px;margin:10px auto 0;line-height:1.6;}
+.res-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:14px;text-align:left;}
+.res-card{background:rgba(250,247,242,0.06);border:1px solid rgba(250,247,242,0.14);border-radius:var(--radius-sm);padding:13px 15px;}
+.res-card .rc-name{font-family:var(--mono);font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:var(--amber);margin-bottom:6px;line-height:1.3;}
+.res-card .rc-score{font-family:var(--serif);font-size:22px;color:#fff;}
+.res-card .rc-pct{font-size:12px;color:rgba(250,247,242,0.6);}
+.res-card .rc-weight{font-family:var(--mono);font-size:10px;color:rgba(250,247,242,0.45);margin-top:3px;letter-spacing:0.04em;}
+.res-card.empty{opacity:0.42;}
+.res-card.empty .rc-score{font-size:14px;font-family:var(--mono);color:rgba(250,247,242,0.7);}
+.res-section-label{font-family:var(--mono);font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(250,247,242,0.55);margin:28px 0 2px;text-align:left;}
+.tag-tally{background:rgba(107,74,138,0.24);border:1px solid rgba(236,226,245,0.3);border-radius:var(--radius-sm);padding:14px 18px;margin-top:14px;text-align:left;}
+.tag-tally .tt-line{font-family:var(--mono);font-size:13px;font-weight:600;color:#fff;letter-spacing:0.04em;}
+.tag-tally .tt-note{font-size:12px;color:rgba(250,247,242,0.72);margin-top:6px;line-height:1.6;}
+.tag-tally .tt-note.urgent{color:#f3c4b4;}
+
+/* ---- export --------------------------------------------------------- */
+.export{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:22px 24px;margin:24px 0;display:none;box-shadow:var(--shadow);}
+.export.shown{display:block;}
+.export h3{font-family:var(--serif);font-size:20px;font-weight:400;margin-bottom:6px;color:var(--ink);}
+.export p{font-size:13px;color:var(--ink3);margin-bottom:14px;line-height:1.6;}
+.export h4{font-family:var(--mono);font-size:10.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--amber-dark);margin:20px 0 6px;}
+.export pre{background:var(--cream2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;font-family:var(--mono);font-size:11px;color:var(--ink2);overflow-x:auto;max-height:260px;white-space:pre;}
+.export pre.wrap{white-space:pre-wrap;word-break:break-word;max-height:170px;}
+.export .handnote{background:var(--amber-light);border:1px solid #e8d0a0;border-radius:var(--radius-sm);padding:12px 15px;font-size:12.5px;color:var(--ink2);line-height:1.65;margin-top:14px;}
+.export .handnote strong{color:var(--amber-dark);}
+
+/* ---- review view ---------------------------------------------------- */
+.review{display:none;}
+.review.shown{display:block;}
+.review-head{background:var(--cream2);border:1px solid var(--border);border-left:4px solid var(--amber);border-radius:var(--radius-sm);padding:18px 22px;margin:34px 0 20px;}
+.review-head h3{font-family:var(--serif);font-size:22px;font-weight:400;color:var(--ink);margin-bottom:6px;}
+.review-head p{font-size:13px;color:var(--ink2);line-height:1.65;}
+
+/* ---- buttons -------------------------------------------------------- */
+.btn{font-family:var(--sans);font-size:13px;font-weight:600;padding:9px 22px;border-radius:99px;border:1.5px solid var(--amber);background:var(--amber);color:#fff;cursor:pointer;transition:all .15s;}
+.btn:hover:not(:disabled){background:var(--amber-dark);border-color:var(--amber-dark);}
+.btn.ghost{background:transparent;color:var(--ink2);border-color:var(--border);}
+.btn.ghost:hover{border-color:var(--ink2);background:var(--cream2);}
+.btn:disabled{background:var(--cream3);border-color:var(--border);color:var(--ink3);cursor:default;}
+.btn.ghost:disabled{background:transparent;color:var(--border);border-color:var(--border);}
+.export-actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
+.page-nav{display:flex;align-items:center;justify-content:space-between;margin-top:24px;gap:12px;}
+.submit-note{font-size:13px;color:var(--ink3);}
+
+/* ---- responsive / print --------------------------------------------- */
+@media (max-width:720px){
+  .container{padding:24px 16px 60px;}
+  .nav-bar{padding:10px 16px;}
+  .nav-bar-row{gap:10px;flex-wrap:wrap;}
+  .hero{padding:16px 16px 14px;}
+  .q-card{padding:22px 18px;}
+  .results{padding:28px 20px;}
+  .nav-timer,.score-pill,.pct-pill{font-size:11px;padding:5px 9px;}
+}
+@media print{
+  .nav-bar,.btn,.export,.start-card,.warn{display:none!important;}
+  body{background:#fff;}
+  .q-card{break-inside:avoid;box-shadow:none;}
+  .review{display:block!important;}
+}
+</style>
+</head>
+<body>
+<div class="hero">
+  <div class="hero-eyebrow">Claude Certified Developer - Foundations</div>
+  <h1>Mock Test <em id="heroPaper">TEMPLATE</em></h1>
+  <p class="hero-sub" id="heroSub">Standalone items weighted to the official CCDV-F blueprint. Exam mode: no correctness signal of any kind until you submit, then full rationale on every item.</p>
+  <div class="hero-tags" id="heroTags"></div>
+</div>
+<div class="nav-bar">
+  <div class="nav-bar-row">
+    <div class="nav-progress">
+      <div class="progress-track"><div class="progress-fill" id="progFill"></div></div>
+      <div class="progress-meta"><span id="progCount">0 answered</span></div>
+    </div>
+    <span class="nav-timer" id="navTimer">120:00</span>
+    <span class="exam-mode-badge" id="examModeBadge" style="display:none">EXAM MODE</span>
+    <span class="score-pill" id="scorePill"><span class="ok">0 right</span> - <span class="x">0 wrong</span></span>
+    <span class="pct-pill" id="pctPill">-%</span>
+    <span class="jump-toggle" id="jumpToggle" onclick="toggleJumpMap()">&#9656; Jump to question</span>
+  </div>
+  <div class="nav-jumpmap" id="navJumpMap"></div>
+</div>
+<div class="container">
+  <div class="warn" id="warnBanner"></div>
+
+  <div class="start-card" id="startCard">
+    <div class="kicker">Before you begin</div>
+    <h3 id="startTitle">CCDV-F Mock Exam Template</h3>
+
+    <!-- ============================================================
+         PER-PAPER PROSE - REPLACE WHEN GENERATING A REAL PAPER.
+         Say what this paper targets and why, drawn from the previous
+         paper's Professor's Note in EXAM-LOG.md. Everything else on
+         this card is filled from DATA by JS and needs no editing.
+         ============================================================ -->
+    <p id="startProse"><strong>This paper's 15 questions are not generated by this project.</strong> They are
+    transcribed from a third-party GitHub repository —
+    <a href="https://github.com/Amey-Thakur/CLAUDE-CERTIFICATIONS/blob/main/developer-foundations/mock-exam-2.md" target="_blank" rel="noopener">Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md</a> —
+    reformatted into this engine's Practice Mode / Exam Mode + fully-explained-answers construct at Ram's request.
+    Every item card carries an <strong>EXTERNAL SOURCE</strong> badge for exactly this reason. Options were
+    reordered A–D for a clean layout; wording is otherwise verbatim. Per this project's corpus-discipline rule,
+    nothing here counts as CCDV-F-verified — see <code>README.md</code> in this folder and
+    <code>../GENERATION-INTELLIGENCE.md</code>.</p>
+
+    <div class="start-facts" id="startFacts"></div>
+
+    <div class="sf flag" style="margin-top:12px">
+      <div class="k">Multiple-response items</div>
+      <div class="v prose">Every item states its own response count in the stem - that is how the real exam is
+      specified, so the count is the first thing to read. Multiple-response items here are scored
+      <strong>all-or-nothing</strong>: a majority-right answer scores zero. That is an assumption, not a published fact -
+      the guide does not say. Eight CCAR-F misses came from exactly this leak.</div>
+    </div>
+
+    <div class="sf" id="modeInfo" style="margin-top:12px;background:rgba(255,255,255,0.6)"></div>
+
+    <div class="start-actions"><button class="btn" onclick="goToQuestion(1)">Begin exam</button></div>
+  </div>
+
+  <div id="exam"></div>
+  <div class="results" id="results"></div>
+  <div class="export" id="export"></div>
+  <div class="review" id="review"></div>
+</div>
+<script>
+/* ====================================================================
+   CCDV-F MOCK-EXAM ENGINE
+   Sections below are anchored. Fill/replace one anchor at a time.
+     CONFIG        - keys, exam constants, domain and skill-section maps
+     ITEMS         - the item array. THIS is what a generated paper replaces
+     VALIDATE      - startup self-checks on the item array
+     STATE         - localStorage load/save, answer model helpers
+     RENDER        - views, jump map, question rendering, painting
+     SCORING       - scaled-score estimate, per-domain / per-section tally
+     REVIEW        - post-submit rationale review + RECALL/CONCEPT tagging
+     EXPORT        - results JSON, DASHBOARD-DATA line, EXAM-LOG stub
+     BOOT          - timer, resume routing
+   ==================================================================== */
+
+/* ==== CONFIG ==== */
+// EXTERNAL SOURCE — READ BEFORE EDITING OR TRUSTING THIS FILE.
+// Every item below is transcribed from a THIRD-PARTY GitHub repository, not
+// generated by this project and not drawn from the CCDV-F chapter corpus:
+//   Amey-Thakur/CLAUDE-CERTIFICATIONS, developer-foundations/mock-exam-2.md
+//   https://github.com/Amey-Thakur/CLAUDE-CERTIFICATIONS/blob/main/developer-foundations/mock-exam-2.md
+// Options were reordered A-D for a clean single-select layout (source lists
+// them scrambled); wording is otherwise verbatim. whyRight text is the
+// source's own "Why" column; whyWrong entries are split from that same
+// per-option "(A) ... (B) ..." text where the source gives it (this file
+// does, for every item). Domain tags are the source's own; skill-SECTION
+// tags are this project's inference on top of them (same DV-07 convention
+// as every other paper). Per this project's corpus-discipline rule, NOTHING
+// here counts as CCDV-F-verified or corpus-grounded — see EXAM-FACTS_v1.md's
+// UNVERIFIED table and GENERATION-INTELLIGENCE.md.
+const KEY = "ccdvf-external-amey-thakur-mock-2";
+
+// DESIGN STANCE (corrected 2026-08-25, was wrong from Session 1 - see
+// GENERATION-INTELLIGENCE.md DV-12): per-question feedback is the DEFAULT,
+// same as CCAR-F's own explicit design stance (Ram, 2026-07-06 -
+// "..\..\CCAR-F...\prep with quiz\CLAUDE.md" line 19 - "per-question feedback
+// is deliberate. The tool optimizes learning-per-question, not exam-condition
+// realism."). Exam Mode is the EXCEPTION, not the rule: reserve it only for a
+// genuine final dress-rehearsal paper close to Ram's actual CCDV-F sitting,
+// the same way CCAR-F used it only for Tests 19-20 - see
+// "..\..\CCAR-F...\prep with quiz\EXAM-MODE-DESIGN_v1.md". There is no
+// runtime toggle by design (mirrors that spec's own §7): pick the mode once,
+// per paper, at generation time.
+//
+// EXAM_MODE = true:  no per-question feedback; no live score pill; 120:00
+//                     countdown; NO auto-submit at zero; answers freely
+//                     changeable until submit.
+// EXAM_MODE = false (DEFAULT): full explanation immediately after each
+//                     question; count-up timer for pacing only, no limit.
+const EXAM_MODE = false;
+
+const EXAM_SECONDS = 120 * 60;   // 120 minutes, official guide v1.0 Section 5
+const SCALED_MIN   = 100;        // official scaled range is 100-1000
+const SCALED_MAX   = 1000;
+const PASS_SCALED  = 720;        // official cut score
+
+// Human-readable statement of the estimator, shown on the results card and
+// carried in the export. See the SCORING anchor for the function itself.
+const SCALED_FORMULA = "round( correct / items x 900 + 100 )";
+
+const DOM_ORDER = ["D1","D2","D3","D4","D5","D6","D7","D8"];
+
+// Official CCDV-F blueprint, guide v1.0 (July 2026) Section 6. Domains sum to 100.0.
+const DOMAIN_NAMES = {
+  D1:"Agents and Workflows",
+  D2:"Applications and Integration",
+  D3:"Claude Code",
+  D4:"Eval, Testing, and Debugging",
+  D5:"Model Selection and Optimization",
+  D6:"Prompt and Context Engineering",
+  D7:"Security and Safety",
+  D8:"Tools and MCPs"
+};
+const DOMAIN_WEIGHTS = { D1:14.7, D2:33.1, D3:3.1, D4:2.6, D5:16.8, D6:11.0, D7:8.1, D8:10.6 };
+
+// Skill sections, numbered N.M in the guide's own published order within each
+// domain. Numbering is PERMANENT - misses are logged by section, so renumbering
+// destroys the miss history. Mirrors the section map in
+// prep with quiz\CCDV-F_Corpus-Index_v1.md.
+//
+// NOTE FOR THE PROJECT OWNER: this enumerates 25 skills. Several project files
+// (EXAM-FACTS_v1.md, both CLAUDE.md files, CCDV-F_Corpus-Index_v1.md prose) say
+// "21 skills". Counting the guide's own "Detailed objectives by domain" pages
+// gives 3+6+1+1+4+3+4+3 = 25, and the 25 skill weights sum exactly to their
+// domains and to 100.0. The section numbering below is unaffected either way -
+// it matches the Corpus-Index map exactly - but the "21" figure looks wrong.
+const SECTIONS = {
+  "1.1":{name:"Agent Architecture",                    w:4.5},
+  "1.2":{name:"Agent Construction with Claude",        w:5.3},
+  "1.3":{name:"Agent Patterns and Frameworks",         w:4.9},
+  "2.1":{name:"Understanding Requirements",            w:3.4},
+  "2.2":{name:"Systems Life Cycle",                    w:2.8},
+  "2.3":{name:"Claude API Mechanics",                  w:6.8},
+  "2.4":{name:"Software Engineering Foundations",      w:7.4},
+  "2.5":{name:"Claude Application Design",             w:8.6},
+  "2.6":{name:"Configuration Management",              w:4.1},
+  "3.1":{name:"Claude Code Operation",                 w:3.1},
+  "4.1":{name:"Debugging and Error Handling",          w:2.6},
+  "5.1":{name:"LLM Fundamentals",                      w:5.2},
+  "5.2":{name:"Technical Fundamentals",                w:6.1},
+  "5.3":{name:"Model Selection and Tradeoffs",         w:2.7},
+  "5.4":{name:"Cost and Token Management",             w:2.8},
+  "6.1":{name:"Context Engineering",                   w:3.8},
+  "6.2":{name:"Prompt Engineering",                    w:4.6},
+  "6.3":{name:"Output Handling",                       w:2.6},
+  "7.1":{name:"AI Application Security",               w:3.2},
+  "7.2":{name:"Guardrails and Safe Deployment",        w:2.3},
+  "7.3":{name:"Claude Hooks",                          w:1.0},
+  "7.4":{name:"Identity, Secrets, and Key Management", w:1.6},
+  "8.1":{name:"Tool Implementation",                   w:4.4},
+  "8.2":{name:"MCP Server Development",                w:2.1},
+  "8.3":{name:"Agentic Customization",                 w:4.1}
+};
+
+/* ==== VALIDATE ==== */
+// Startup self-checks on the item array. A generated paper that trips any of
+// these is malformed; the banner makes that loud instead of silent.
+function validateItems(){
+  const p = [];
+  const qs = (DATA && Array.isArray(DATA.questions)) ? DATA.questions : null;
+  if(!qs || !qs.length){ return ["DATA.questions is missing or empty."]; }
+
+  const N = qs.length;
+  if(DATA.format === "FULL53" && N !== 53)
+    p.push("format is FULL53 but the array holds " + N + " items. A full simulation is 53 items; anything else must be named explicitly (e.g. DRILL20) per DASHBOARD-SCHEMA.md rule 6.");
+  if(DATA.format === "FULL53" && (KEY.indexOf("TEMPLATE") !== -1 || !DATA.paper_n))
+    p.push("format is FULL53 but KEY and/or DATA.paper_n still carry template values. Set both before sitting the paper.");
+
+  const seen = {};
+  qs.forEach(function(q, idx){
+    const tag = "Item at position " + (idx+1) + " (g=" + q.g + ")";
+    if(q.g !== idx+1) p.push(tag + ": g must be the 1-based position; expected " + (idx+1) + ".");
+    if(seen[q.g]) p.push(tag + ": duplicate g.");
+    seen[q.g] = true;
+
+    if(!DOMAIN_NAMES[q.domain]){ p.push(tag + ": unknown domain '" + q.domain + "'."); }
+    if(!SECTIONS[q.section]){
+      p.push(tag + ": unknown skill section '" + q.section + "'. Sections come from the guide's published skill list - see the SECTIONS map.");
+    } else if(DOMAIN_NAMES[q.domain] && ("D" + String(q.section).split(".")[0]) !== q.domain){
+      p.push(tag + ": section " + q.section + " does not belong to domain " + q.domain + ".");
+    }
+
+    if(!Array.isArray(q.options) || q.options.length < 2){ p.push(tag + ": needs at least two options."); return; }
+
+    if(q.selectN){
+      // multiple-response
+      if(q.selectN < 2 || q.selectN >= q.options.length)
+        p.push(tag + ": selectN of " + q.selectN + " is out of range for " + q.options.length + " options.");
+      if(!Array.isArray(q.correct) || q.correct.length !== q.selectN)
+        p.push(tag + ": correct must be an array of exactly selectN option indexes.");
+      else if(q.correct.some(function(i){ return !(i >= 0 && i < q.options.length); }))
+        p.push(tag + ": a correct index is out of range.");
+      // The official guide specifies that every item states how many responses to
+      // select. Multiple-response stems must therefore say so in words.
+      if(String(q.stem).toLowerCase().indexOf("select") === -1)
+        p.push(tag + ": multiple-response stem does not state its response count. Every item must say so, e.g. \"(Select two.)\"");
+    } else {
+      if(!(Number.isInteger(q.correct) && q.correct >= 0 && q.correct < q.options.length))
+        p.push(tag + ": correct must be an option index.");
+    }
+
+    const right = new Set(q.selectN ? q.correct : [q.correct]);
+    const covered = new Set((q.whyWrong || []).map(function(w){ return w.option; }));
+    q.options.forEach(function(_, i){
+      if(!right.has(i) && !covered.has(i)) p.push(tag + ": no whyWrong entry for option " + letter(i) + ".");
+    });
+    if(!q.whyRight || !q.whyRight.text) p.push(tag + ": missing whyRight.");
+  });
+  return p;
+}
+
+function paintValidation(){
+  const problems = validateItems();
+  const el = document.getElementById("warnBanner");
+  if(!el || !problems.length) return;
+  el.innerHTML = "<h4>Item array failed validation - " + problems.length + " problem(s)</h4><ul>" +
+    problems.map(function(t){ return "<li>" + esc(t) + "</li>"; }).join("") + "</ul>";
+  el.classList.add("shown");
+}
+
+/* ==== STATE ==== */
+let state = load();
+let currentG = null;          // 1..N while viewing a question; null on landing/results
+let currentView = "landing";  // "landing" | "question" | "results"
+let jumpMapOpen = false;
+
+function load(){
+  try{
+    const s = JSON.parse(localStorage.getItem(KEY));
+    if(s && s.answers){
+      if(!s.pending)  s.pending  = {};
+      if(!s.missTags) s.missTags = {};   // backfill for saves written before tagging existed
+      return s;
+    }
+  }catch(e){}
+  return {answers:{}, pending:{}, times:{}, missTags:{}, started:null, firstShownAt:{}};
+}
+function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
+
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function code(s){ return esc(s).replace(/`([^`]+)`/g,'<code>$1</code>'); }
+function letter(i){ return String.fromCharCode(65+i); }
+function numWord(n){ return {2:"two",3:"three",4:"four",5:"five",6:"six"}[n] || String(n); }
+function fmtTime(sec){ sec=Math.max(0,Math.round(sec)); const m=Math.floor(sec/60), s=sec%60; return m+":"+String(s).padStart(2,"0"); }
+function itemCount(){ return DATA.questions.length; }
+
+/* ---- answer model ---------------------------------------------------
+   Single-answer items store an integer in state.answers[g] and carry an
+   integer `correct`. Multiple-response items store a sorted array and carry a
+   sorted array `correct`, plus `selectN`. In-progress multi selections live in
+   state.pending[g] until exactly selectN options are chosen, at which point
+   the answer commits. In exam mode nothing locks - see pick().
+   ------------------------------------------------------------------- */
+function isMulti(q){ return !!q.selectN; }
+function sameSet(a,b){
+  if(!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+  const x=[...a].sort((p,r)=>p-r), y=[...b].sort((p,r)=>p-r);
+  return x.every((v,i)=>v===y[i]);
+}
+
+// ---------------------------------------------------------------------
+// SCORING SITE - MULTIPLE-RESPONSE ITEMS ARE SCORED ALL-OR-NOTHING HERE.
+//
+// THIS IS AN ASSUMPTION, NOT A VERIFIED FACT. The official CCDV-F exam guide
+// v1.0 (July 2026) does not state anywhere whether the real exam awards
+// partial credit on multiple-response items. It is recorded as STILL OPEN in
+// EXAM-FACTS_v1.md section 1 and in CCDV-F_Corpus-Index_v1.md.
+//
+// The assumption is carried over from CCAR-F, where all-or-nothing was the
+// real behaviour and cost eight marks to majority-right answers.
+//
+// WHOEVER CONFIRMS THIS FROM THE REAL SCORE REPORT AFTER THE SITTING: this is
+// the place to change. sameSet() below is the all-or-nothing rule. If the real
+// exam gives partial credit, replace the boolean return with a fractional
+// score and follow the change through computeResults(), which counts items
+// rather than points, and through DASHBOARD-SCHEMA.md's multi_response
+// [correct, of] pair, which also assumes whole items.
+// ---------------------------------------------------------------------
+function isRight(q, ans){
+  if(ans === null || ans === undefined) return false;
+  return isMulti(q) ? sameSet(ans, q.correct) : ans === q.correct;
+}
+
+function answerLetters(q, ans){
+  if(ans === null || ans === undefined) return null;
+  return isMulti(q) ? [...ans].sort((a,b)=>a-b).map(letter).join(",") : letter(ans);
+}
+function keyLetters(q){
+  return isMulti(q) ? [...q.correct].sort((a,b)=>a-b).map(letter).join(",") : letter(q.correct);
+}
+function answerOf(q){ return (q.g in state.answers) ? state.answers[q.g] : null; }
+function pendingFor(g){ return state.pending[g] || []; }
+
+/* ==== RENDER ==== */
+function setView(mode){
+  currentView = mode;
+  document.getElementById("startCard").style.display = (mode==="landing") ? "" : "none";
+  document.getElementById("exam").style.display      = (mode==="question") ? "" : "none";
+  document.getElementById("jumpToggle").style.display= (mode==="landing") ? "none" : "";
+  if(mode === "landing") collapseJumpMap();
+  if(mode !== "results"){
+    document.getElementById("results").classList.remove("shown");
+    document.getElementById("export").classList.remove("shown");
+    // Clear the review, or its question cards duplicate every id in #exam.
+    const rv = document.getElementById("review");
+    rv.classList.remove("shown");
+    rv.innerHTML = "";
+  }
+}
+
+function collapseJumpMap(){
+  jumpMapOpen = false;
+  document.getElementById("navJumpMap").classList.remove("open");
+  document.getElementById("jumpToggle").innerHTML = "&#9656; Jump to question";
+}
+function toggleJumpMap(){
+  jumpMapOpen = !jumpMapOpen;
+  document.getElementById("navJumpMap").classList.toggle("open", jumpMapOpen);
+  document.getElementById("jumpToggle").innerHTML = (jumpMapOpen ? "&#9662;" : "&#9656;") + " Jump to question";
+}
+
+// Flat map. CCDV-F items are standalone, so there is nothing to group them by.
+function renderJumpMap(){
+  const chips = DATA.questions.map(function(q){
+    const answered = q.g in state.answers;
+    const cls = "dot" + (answered?" answered":"") + (q.g===currentG?" current":"") + (isMulti(q)?" multi":"");
+    const t = "Q"+q.g+" - "+q.domain+" "+q.section + (isMulti(q)?(" - select "+q.selectN):"") + (answered?" - answered":"");
+    return '<span class="'+cls+'" onclick="goToQuestion('+q.g+')" title="'+esc(t)+'">'+q.g+'</span>';
+  }).join("");
+  document.getElementById("navJumpMap").innerHTML =
+    '<div class="jm-label">All '+itemCount()+' items</div><div class="jm-dots">'+chips+'</div>' +
+    '<div class="jm-actions"><span class="jm-legend">violet corner dot = multiple-response</span>' +
+    '<span class="submit-note" id="submitNote"></span>' +
+    '<button class="btn ghost" onclick="submitExam()">Show results now</button></div>';
+}
+
+function renderPage(g, opts){
+  opts = opts || {};
+  const q = DATA.questions.find(function(x){ return x.g===g; });
+  if(!q) return;
+  currentG = g;
+  setView("question");
+
+  const N = itemCount();
+  const answered = g in state.answers;
+  const isLast = (g === N);
+  let h = renderQ(q);
+  h += '<div class="page-nav">' +
+       '<button class="btn ghost" id="backBtn" onclick="goBack()" '+(g===1?'disabled':'')+'>Back</button>' +
+       '<button class="btn" id="nextBtn" onclick="'+(isLast?'submitExam()':'goNext()')+'" '+(answered?'':'disabled')+'>' +
+       (isLast ? 'Show my results' : 'Next') + '</button></div>';
+  document.getElementById("exam").innerHTML = h;
+
+  if(EXAM_MODE){
+    markShown(q);
+    if(isMulti(q)) paintPending(q);
+    else if(answered) paintExamSelected(q);
+  } else if(answered){
+    paintAnswered(q);
+  } else {
+    markShown(q);
+    if(isMulti(q)) paintPending(q);
+  }
+  renderJumpMap();
+  updateNav();
+  if(opts.scrollTop !== false) window.scrollTo(0,0);
+}
+
+function goNext(){ if(currentG in state.answers && currentG < itemCount()) renderPage(currentG+1); }
+function goBack(){ if(currentG > 1) renderPage(currentG-1); }
+function goToQuestion(g){ if(g<1 || g>itemCount()) return; collapseJumpMap(); renderPage(g); }
+
+function renderQ(q, opts){
+  opts = opts || {};
+  const multi = isMulti(q);
+  const options = q.options.map(function(o,i){
+    return '<div class="opt" id="opt-'+q.g+'-'+i+'" onclick="pick('+q.g+','+i+')">' +
+      (multi ? '<span class="opt-box" id="box-'+q.g+'-'+i+'"></span>' : '') +
+      '<span class="opt-letter">'+letter(i)+'</span>' +
+      '<span class="opt-text">'+code(o)+'</span>' +
+      '<span class="opt-mark" id="mark-'+q.g+'-'+i+'"></span></div>';
+  }).join("");
+
+  const banner = multi
+    ? '<div class="q-multi"><span>Multiple response - select '+numWord(q.selectN)+' of '+numWord(q.options.length)+
+      '</span><span class="count" id="count-'+q.g+'"></span></div>'
+    : '';
+
+  const sec = SECTIONS[q.section];
+  const secLabel = sec ? (q.section + " " + sec.name) : (q.section + " (unknown section)");
+  const reviewBadge = '<span class="q-review" title="Transcribed from a third-party GitHub repository - not generated by this project, not corpus-verified. See the CONFIG-anchor comment and the start card.">EXTERNAL SOURCE</span>';
+
+  // Miss tagging appears only in the post-submit review, only on items you got wrong.
+  let tagBlock = "";
+  if(opts.review && !isRight(q, answerOf(q))) tagBlock = renderMissTag(q.g);
+
+  return '<div class="q-card" id="q-'+q.g+'" data-domain="'+q.domain+'" data-section="'+q.section+'">' +
+    '<div class="q-meta"><span class="q-num">Q'+q.g+' / '+itemCount()+'</span>' +
+    '<span class="q-meta-tags">' +
+      '<span class="q-domain" title="'+esc(DOMAIN_NAMES[q.domain]||"")+'">'+q.domain+' '+esc(DOMAIN_NAMES[q.domain]||"?")+'</span>' +
+      '<span class="q-section" title="Skill section '+esc(secLabel)+'">&sect;'+esc(q.section)+'</span>' +
+      reviewBadge +
+    '</span></div>' +
+    '<div class="q-stem">'+code(q.stem)+'</div>' + banner +
+    '<div class="q-opts">'+options+'</div>' +
+    '<div class="feedback" id="fb-'+q.g+'"></div>' + tagBlock +
+    '</div>';
+}
+
+function markShown(q){ if(!(q.g in state.firstShownAt)) state.firstShownAt[q.g] = Date.now(); }
+
+function commit(q, ans){
+  if(state.started === null) state.started = Date.now();
+  const shown = state.firstShownAt[q.g] || state.started || Date.now();
+  state.times[q.g] = Math.max(1, Math.round((Date.now()-shown)/1000));
+  state.answers[q.g] = ans;
+  // Exam mode keeps the pending set live so a revisit continues from the real
+  // selection instead of a blank one.
+  if(!EXAM_MODE) delete state.pending[q.g];
+  else if(isMulti(q)) state.pending[q.g] = Array.isArray(ans) ? [...ans] : [ans];
+  save();
+  renderPage(q.g, {scrollTop:false});
+  const btn = document.getElementById("nextBtn");
+  if(btn){ btn.scrollIntoView({behavior:"smooth", block:"end"}); btn.focus({preventScroll:true}); }
+}
+
+function pick(g, i){
+  if(!EXAM_MODE && g in state.answers) return;   // locked in practice mode only
+  const q = DATA.questions.find(function(x){ return x.g===g; });
+  if(!q) return;
+  if(state.started === null) state.started = Date.now();
+  if(!isMulti(q)){ commit(q, i); return; }
+
+  const cur = new Set(pendingFor(g));
+  if(cur.has(i)) cur.delete(i); else cur.add(i);
+  const arr = [...cur].sort((a,b)=>a-b);
+  if(arr.length === q.selectN){ commit(q, arr); return; }
+  state.pending[g] = arr;
+  // Dropped back below selectN: no longer answered, so Next re-disables.
+  if(EXAM_MODE) delete state.answers[g];
+  save();
+  paintPending(q);
+  syncNextBtn();
+  renderJumpMap();
+  updateNav();
+}
+
+// pick() repaints in place rather than re-rendering the page, so the Next
+// button's disabled state has to be resynced by hand. Without this, dropping a
+// multiple-response selection back below selectN leaves Next enabled on an
+// item that no longer has an answer.
+function syncNextBtn(){
+  const btn = document.getElementById("nextBtn");
+  if(btn) btn.disabled = !(currentG in state.answers);
+}
+
+function paintPending(q){
+  const sel = new Set(pendingFor(q.g));
+  q.options.forEach(function(o,i){
+    const el = document.getElementById("opt-"+q.g+"-"+i);
+    const bx = document.getElementById("box-"+q.g+"-"+i);
+    if(!el) return;
+    el.classList.toggle("pending", sel.has(i));
+    if(bx) bx.textContent = sel.has(i) ? "✓" : "";
+  });
+  const c = document.getElementById("count-"+q.g);
+  if(c) c.textContent = sel.size + " of " + q.selectN + " selected";
+}
+
+// Exam mode: show the chosen option, nothing about whether it is right.
+function paintExamSelected(q){
+  const ans = state.answers[q.g];
+  q.options.forEach(function(o,i){
+    const el = document.getElementById("opt-"+q.g+"-"+i);
+    const mk = document.getElementById("mark-"+q.g+"-"+i);
+    if(!el) return;
+    el.classList.remove("locked","pick-correct","pick-wrong","reveal-correct","missed","dim");
+    el.classList.toggle("pending", i===ans);
+    if(mk) mk.textContent = (i===ans) ? "selected" : "";
+  });
+}
+
+function updateNav(){
+  const N = itemCount();
+  const answered = Object.keys(state.answers).length;
+  document.getElementById("progFill").style.width = (N ? (answered/N*100) : 0) + "%";
+  document.getElementById("progCount").textContent = answered + " / " + N + " answered";
+  // No live score in exam mode - a right/wrong count leaks correctness by proxy.
+  if(!EXAM_MODE){
+    let correct = 0;
+    for(const g in state.answers){
+      const q = DATA.questions.find(function(x){ return x.g == g; });
+      if(q && isRight(q, state.answers[g])) correct++;
+    }
+    document.getElementById("scorePill").innerHTML =
+      '<span class="ok">'+correct+' right</span> - <span class="x">'+(answered-correct)+' wrong</span>';
+    const pctPill = document.getElementById("pctPill");
+    if(answered === 0){ pctPill.textContent = "-%"; pctPill.classList.remove("pass","fail"); }
+    else{
+      const rawPct = correct/answered*100;
+      const threshold = minRawToPass(N)/N*100;
+      pctPill.textContent = Math.round(rawPct)+"%";
+      pctPill.classList.toggle("pass", rawPct >= threshold);
+      pctPill.classList.toggle("fail", rawPct <  threshold);
+    }
+  }
+  const note = document.getElementById("submitNote");
+  if(note) note.textContent = answered < N
+    ? (N-answered) + " still unanswered - you can submit now or finish them first."
+    : "All " + N + " answered.";
+}
+
+// Hero and landing facts are filled from DATA so a generated paper only has to
+// edit DATA and the one marked prose block in the start card.
+function paintChrome(){
+  const N = itemCount();
+  const mr = DATA.questions.filter(isMulti).length;
+  document.getElementById("heroPaper").textContent = DATA.paper_label || String(DATA.paper_n || "?");
+  const isFull = DATA.format === "FULL53";
+  document.getElementById("heroTags").innerHTML =
+    '<span class="tag">'+esc(DATA.format)+'</span>' +
+    '<span class="tag">'+N+' standalone items</span>' +
+    (mr ? '<span class="tag new">'+mr+' multiple-response</span>' : '<span class="tag">all single-answer</span>') +
+    (isFull ? '<span class="tag">120 minutes</span><span class="tag">Pass line 720</span>' : '<span class="tag">untimed drill</span><span class="tag">self-scored, no official pass line</span>');
+  document.getElementById("startTitle").textContent =
+    "Mock Test " + (DATA.paper_label || DATA.paper_n) + " - generated " + DATA.generated;
+  document.getElementById("startFacts").innerHTML =
+    fact("Format", N + " items - " + (N-mr) + " single-answer + " + mr + " multiple-response - no scenario blocks") +
+    fact("Time", EXAM_MODE ? "120:00 countdown - no auto-submit at zero" : "Untimed - a stopwatch counts up per question for pacing awareness, no limit, no auto-submit") +
+    (isFull
+      ? fact("Pass line", "720 scaled on 100-1000. On " + N + " items that is " + minRawToPass(N) + " raw correct or better (estimator only).")
+      : fact("Scoring", N + " items is a short drill, not a scaled-score simulation - the 100-1000/720 mapping only applies to a full FULL53 paper. Score yourself as raw correct out of " + N + "."))+
+    fact("Domain floors", "None. Pass/fail is total scaled score only - the guide states section percentages are not used to determine the result.");
+  document.getElementById("modeInfo").innerHTML = EXAM_MODE
+    ? '<div class="k">Exam mode</div><div class="v prose">No per-question feedback, no live score, no correctness colour. Answers stay freely changeable until you submit - click again, use Back, or jump from the map. The timer counts 120:00 down and floors at 0:00 without auto-submitting; this is a practice tool, not proctoring software.</div>'
+    : '<div class="k">Practice mode</div><div class="v prose">Full explanation appears immediately after each question - right or wrong, why, and the source citation. This is the default design: the tool optimizes learning-per-question, not exam-condition realism (the same explicit design stance CCAR-F states in its own CLAUDE.md, carried into CCDV-F). Once answered, an item locks - use Back or the jump map to revisit it, review-only. Exam Mode exists as a separate, deliberate choice for a genuine final dress rehearsal, not the default here.</div>';
+}
+function fact(k,v){ return '<div class="sf"><div class="k">'+esc(k)+'</div><div class="v prose">'+esc(v)+'</div></div>'; }
+
+/* ==== SCORING ==== */
+/* SCALED-SCORE ESTIMATE - READ THIS BEFORE TRUSTING THE NUMBER.
+   The real exam reports 100-1000 with a cut score of 720, set by a formal
+   standard-setting study and applied through psychometric scaling across
+   equated forms. None of that is reproducible here.
+   What this does instead: a straight linear map of raw percentage onto the
+   published range, round(correct / items x 900 + 100). It is the same mapping
+   the CCAR-F papers used, kept identical on purpose so estimates from the two
+   projects stay comparable. On 53 items it puts the pass line at 37 correct.
+   It is an ESTIMATE and is labelled as one everywhere it appears. */
+function scaledFrom(correct, total){
+  if(!total) return SCALED_MIN;
+  return Math.round((correct/total) * (SCALED_MAX - SCALED_MIN) + SCALED_MIN);
+}
+function minRawToPass(total){
+  for(let c=0; c<=total; c++){ if(scaledFrom(c,total) >= PASS_SCALED) return c; }
+  return total;
+}
+function totalSeconds(){ return Object.values(state.times).reduce(function(a,b){ return a+b; }, 0); }
+
+function computeResults(){
+  const qs = DATA.questions, N = qs.length;
+  const perDom = {}, perSec = {};
+  DOM_ORDER.forEach(function(d){ perDom[d] = {correct:0, of:0}; });
+
+  let totalCorrect=0, mrCorrect=0, mrTotal=0, recall=0, concept=0, untagged=0;
+  const qlist = [];
+
+  qs.forEach(function(q){
+    const ans = answerOf(q);
+    const ok  = isRight(q, ans);
+    if(!perDom[q.domain]) perDom[q.domain] = {correct:0, of:0};
+    if(!perSec[q.section]) perSec[q.section] = {correct:0, of:0};
+    perDom[q.domain].of++; perSec[q.section].of++;
+    if(ok){ totalCorrect++; perDom[q.domain].correct++; perSec[q.section].correct++; }
+    if(isMulti(q)){ mrTotal++; if(ok) mrCorrect++; }
+
+    let tag = null;
+    if(!ok){
+      tag = state.missTags[q.g] || null;
+      if(tag === "RECALL") recall++; else if(tag === "CONCEPT") concept++; else untagged++;
+    }
+    qlist.push({
+      q:q.g, domain:q.domain, section:q.section,
+      format: isMulti(q) ? ("multi-"+q.selectN) : "single",
+      answered: ans !== null,
+      selected: answerLetters(q, ans),
+      key: keyLetters(q),
+      correct: ok,
+      seconds: state.times[q.g] || null,
+      miss_tag: tag
+    });
+  });
+
+  const saTotal = N - mrTotal, saCorrect = totalCorrect - mrCorrect;
+  return {
+    N:N, totalCorrect:totalCorrect,
+    perDom:perDom, perSec:perSec,
+    sa:{correct:saCorrect, of:saTotal}, mr:{correct:mrCorrect, of:mrTotal},
+    recall:recall, concept:concept, untagged:untagged, misses:N-totalCorrect,
+    scaled: scaledFrom(totalCorrect, N),
+    passRaw: minRawToPass(N),
+    seconds: totalSeconds(),
+    questions: qlist
+  };
+}
+
+// Free text per DASHBOARD-SCHEMA.md. D3 and D4 carry 1-2 items on a real paper,
+// so when one of them wins it is flagged rather than reported as a signal.
+function weakestDomainOf(perDom){
+  const rows = DOM_ORDER.filter(function(d){ return perDom[d].of > 0; })
+                        .map(function(d){ return {d:d, pct:perDom[d].correct/perDom[d].of}; });
+  if(!rows.length) return null;
+  const min = Math.min.apply(null, rows.map(function(r){ return r.pct; }));
+  const at  = rows.filter(function(r){ return Math.abs(r.pct-min) < 1e-9; }).map(function(r){ return r.d; });
+  const pct = Math.round(min*100) + "%";
+  let s = (at.length > 1) ? ("tied: " + at.join("/") + " (all " + pct + ")") : (at[0] + " (" + pct + ")");
+  const thin = at.filter(function(d){ return d==="D3" || d==="D4"; });
+  if(thin.length) s += " - " + thin.join("/") + " carries too few items to be signal; see EXAM-LOG.md convention 9";
+  return s;
+}
+
+function domCard(d, c){
+  const w = '<div class="rc-weight">official weight ' + DOMAIN_WEIGHTS[d].toFixed(1) + '%</div>';
+  if(!c.of) return '<div class="res-card empty"><div class="rc-name">'+d+' '+esc(DOMAIN_NAMES[d])+'</div>' +
+                   '<div class="rc-score">no items</div>'+w+'</div>';
+  return '<div class="res-card"><div class="rc-name">'+d+' '+esc(DOMAIN_NAMES[d])+'</div>' +
+         '<div class="rc-score">'+c.correct+'/'+c.of+'</div>' +
+         '<div class="rc-pct">'+Math.round(c.correct/c.of*100)+'% correct</div>'+w+'</div>';
+}
+function secCard(k, c){
+  const nm = SECTIONS[k] ? SECTIONS[k].name : "unknown section";
+  return '<div class="res-card"><div class="rc-name">&sect;'+esc(k)+' '+esc(nm)+'</div>' +
+         '<div class="rc-score">'+c.correct+'/'+c.of+'</div>' +
+         '<div class="rc-pct">'+Math.round(c.correct/c.of*100)+'% correct</div></div>';
+}
+function tagTallyHtml(res){
+  if(!res.misses) return '<div class="tt-line">No misses to tag.</div>';
+  const line = 'RECALL ' + res.recall + '  -  CONCEPT ' + res.concept + '  -  untagged ' + res.untagged +
+               '   (of ' + res.misses + ' miss' + (res.misses===1?'':'es') + ')';
+  const note = res.untagged
+    ? '<div class="tt-note urgent">Every miss needs a tag before this paper goes in the log - recall_misses + concept_misses must equal the miss count (DASHBOARD-SCHEMA.md rule 5). Tag them in the review below.</div>'
+    : '<div class="tt-note">All misses tagged. RECALL share ' + Math.round(res.recall/res.misses*100) + '% - the tripwire on the judgement-shaped assumption fires above 25% across three consecutive papers (EXAM-LOG.md convention 8).</div>';
+  return '<div class="tt-line">' + line + '</div>' + note;
+}
+
+function paintResults(res){
+  const pass = res.scaled >= PASS_SCALED;
+  const domGrid = DOM_ORDER.map(function(d){ return domCard(d, res.perDom[d]); }).join("");
+  const secGrid = Object.keys(res.perSec).sort().map(function(k){ return secCard(k, res.perSec[k]); }).join("");
+  const fmtGrid =
+    '<div class="res-card"><div class="rc-name">Single-answer items</div><div class="rc-score">'+res.sa.correct+'/'+res.sa.of+'</div>' +
+    '<div class="rc-pct">'+(res.sa.of?Math.round(res.sa.correct/res.sa.of*100):0)+'% correct</div></div>' +
+    '<div class="res-card'+(res.mr.of?'':' empty')+'"><div class="rc-name">Multiple-response items</div>' +
+    '<div class="rc-score">'+(res.mr.of?(res.mr.correct+'/'+res.mr.of):'none on this paper')+'</div>' +
+    '<div class="rc-pct">'+(res.mr.of?(Math.round(res.mr.correct/res.mr.of*100)+'% correct - all-or-nothing'):'')+'</div></div>';
+
+  document.getElementById("results").innerHTML =
+    '<h2>Mock Test ' + esc(String(DATA.paper_label || DATA.paper_n)) + ' - Results</h2>' +
+    '<div class="score-big">' + res.totalCorrect + ' / ' + res.N + '</div>' +
+    '<div class="scaled">Estimated scaled score: <strong>' + res.scaled + '</strong> / 1000</div>' +
+    '<div class="scaled-formula">ESTIMATE ONLY - mapping used: ' + esc(SCALED_FORMULA) +
+      '. On ' + res.N + ' items the pass line lands at ' + res.passRaw + ' raw correct.</div>' +
+    '<div class="passline ' + (pass?'pass':'fail') + '">' + (pass?'Above':'Below') + ' pass line (720)</div>' +
+    '<div class="scaled" style="margin-top:12px">Total time: ' + fmtTime(res.seconds) + ' of 120:00</div>' +
+    '<div class="res-section-label">By domain</div>' +
+    '<div class="res-grid">' + domGrid + '</div>' +
+    '<p class="res-note">Percent-correct by domain is what the real score report gives back. <strong>There are no domain minimums</strong> - the official guide states section percentages are provided to help you understand your performance and are not used to determine your pass or fail result. Pass/fail is total scaled score only.</p>' +
+    '<div class="res-section-label">By skill section</div>' +
+    '<div class="res-grid">' + secGrid + '</div>' +
+    '<p class="res-note">Section-level detail is a project addition, not something the real report is known to return. Misses are logged by section, so this is what makes the miss history durable.</p>' +
+    '<div class="res-section-label">By item format</div>' +
+    '<div class="res-grid">' + fmtGrid + '</div>' +
+    '<div class="res-section-label">Miss tagging</div>' +
+    '<div class="tag-tally" id="tagTally">' + tagTallyHtml(res) + '</div>' +
+    '<p class="caveat">The scaled figure is a linear approximation. The real exam is criterion-referenced and psychometrically scaled across equated forms, so treat this as a rough gauge, not a prediction. Multiple-response items are scored all-or-nothing here; the official guide v1.0 does not state whether the real exam awards partial credit.</p>';
+  document.getElementById("results").classList.add("shown");
+}
+
+function submitExam(){
+  setView("results");
+  const res = computeResults();
+  paintResults(res);
+  paintExport(res);
+  renderReview();
+  document.getElementById("results").scrollIntoView({behavior:"smooth"});
+}
+
+/* ==== REVIEW ==== */
+// Nothing in this section runs during the sitting. It is reachable only after
+// submitExam(), which is what keeps exam mode honest.
+
+function paintAnswered(q){
+  const ans = answerOf(q);
+  const chosen = new Set(ans === null ? [] : (isMulti(q) ? ans : [ans]));
+  const right  = new Set(isMulti(q) ? q.correct : [q.correct]);
+  q.options.forEach(function(o,i){
+    const el = document.getElementById("opt-"+q.g+"-"+i);
+    const mk = document.getElementById("mark-"+q.g+"-"+i);
+    const bx = document.getElementById("box-"+q.g+"-"+i);
+    if(!el) return;
+    el.classList.add("locked");
+    el.classList.remove("pending","pick-correct","pick-wrong","reveal-correct","missed","dim");
+    if(mk) mk.textContent = "";
+    if(chosen.has(i) && right.has(i)){ el.classList.add("pick-correct"); if(mk) mk.textContent="✓ your answer"; if(bx) bx.textContent="✓"; }
+    else if(chosen.has(i) && !right.has(i)){ el.classList.add("pick-wrong"); if(mk) mk.textContent="✗ your answer"; if(bx) bx.textContent="✗"; }
+    else if(right.has(i)){
+      el.classList.add(isMulti(q) ? "missed" : "reveal-correct");
+      if(mk) mk.textContent = isMulti(q) ? "✓ correct - not picked" : "✓ correct";
+      if(bx) bx.textContent = "✓";
+    }
+    else { el.classList.add("dim"); if(bx) bx.textContent = ""; }
+  });
+  const c = document.getElementById("count-"+q.g);
+  if(c) c.textContent = (ans === null) ? "not answered" : ("answered " + answerLetters(q, ans));
+  renderFeedback(q, ans);
+}
+
+function fbRow(cls, label, txt, cite){
+  return '<div class="fb-row '+cls+'"><div class="lbl">'+label+'</div><div class="txt">'+code(txt||"")+'</div>' +
+         (cite ? '<div class="cite">Source: '+esc(cite)+'</div>' : '') + '</div>';
+}
+
+function renderFeedback(q, ans){
+  const fb = document.getElementById("fb-"+q.g);
+  if(!fb) return;
+  const multi = isMulti(q);
+  const chosen = (ans === null) ? [] : (multi ? [...ans].sort((a,b)=>a-b) : [ans]);
+  const right  = multi ? [...q.correct].sort((a,b)=>a-b) : [q.correct];
+  const rightSet = new Set(right), chosenSet = new Set(chosen);
+  const wrongByOpt = {}; (q.whyWrong||[]).forEach(function(w){ wrongByOpt[w.option] = w; });
+  const ok = isRight(q, ans);
+  const all = q.options.map(function(_,i){ return i; });
+  let rows = "";
+
+  if(ok){
+    const label = multi
+      ? '✓ Correct - why ' + right.map(letter).join(" and ") + ' are right'
+      : '✓ Correct - why ' + letter(q.correct) + ' is right';
+    rows += fbRow("right", label, q.whyRight.text, q.whyRight.cite);
+    rows += '<div class="fb-sub">Why the other options are wrong</div>';
+    all.filter(function(i){ return !rightSet.has(i); }).forEach(function(i){
+      const w = wrongByOpt[i]; if(w) rows += fbRow("wrong", "Option "+letter(i), w.text, w.cite);
+    });
+    fb.innerHTML = '<div class="fb-verdict ok">Correct</div><div class="fb-body">'+rows+'</div>';
+    fb.classList.add("shown");
+    return;
+  }
+
+  const badPicks = chosen.filter(function(i){ return !rightSet.has(i); });
+  const missed   = right.filter(function(i){ return !chosenSet.has(i); });
+  if(badPicks.length){
+    rows += '<div class="fb-sub">' +
+      (!multi ? "Your answer" : (badPicks.length>1 ? "The options you picked that are wrong" : "The option you picked that is wrong")) +
+      '</div>';
+    badPicks.forEach(function(i){
+      const w = wrongByOpt[i];
+      rows += fbRow("wrong", "✗ Why "+letter(i)+" is wrong", w?w.text:"", w?w.cite:"");
+    });
+  }
+  if(missed.length && chosen.length){
+    rows += '<div class="fb-sub">'+(missed.length>1?"Correct options you missed":"Correct option you missed")+'</div>';
+    rows += fbRow("right", '✓ '+missed.map(letter).join(" and ")+' belong'+(missed.length>1?"":"s")+' in the answer',
+                  q.whyRight.text, q.whyRight.cite);
+  } else {
+    rows += '<div class="fb-sub">The correct answer</div>';
+    rows += fbRow("right", '✓ '+right.map(letter).join(" and ")+' '+(right.length>1?"are":"is")+' correct',
+                  q.whyRight.text, q.whyRight.cite);
+  }
+  const rest = all.filter(function(i){ return !rightSet.has(i) && !chosenSet.has(i); });
+  if(rest.length){
+    rows += '<div class="fb-sub">The other incorrect options</div>';
+    rest.forEach(function(i){
+      const w = wrongByOpt[i]; if(w) rows += fbRow("wrong", "Option "+letter(i), w.text, w.cite);
+    });
+  }
+  const verdict = (ans === null)
+    ? "Not answered - the answer was " + right.map(letter).join(", ")
+    : (multi ? ("Not quite - the answer was " + right.map(letter).join(", ")) : "Not quite");
+  fb.innerHTML = '<div class="fb-verdict '+(ans===null?"skip":"no")+'">'+esc(verdict)+'</div><div class="fb-body">'+rows+'</div>';
+  fb.classList.add("shown");
+}
+
+/* ---- RECALL / CONCEPT miss tagging ----------------------------------
+   Specific to CCDV-F. The exam is sat closed book, and the project's whole
+   plan rests on the exam being judgement-shaped rather than syntax-bound.
+   The RECALL share is the tripwire on that assumption: if RECALL misses exceed
+   a quarter of all misses across three consecutive papers by attempt date, the
+   assumption is wrong. See EXAM-LOG.md convention 8.
+   Unanswered items count as misses and are taggable, because DASHBOARD-SCHEMA
+   rule 5 requires recall_misses + concept_misses to equal the miss count with
+   no "unclassified" bucket.
+   -------------------------------------------------------------------- */
+function renderMissTag(g){
+  const t = state.missTags[g] || null;
+  return '<div class="miss-tag" id="tag-'+g+'">' +
+    '<div class="mt-head">Tag this miss ' +
+      (t ? '<span class="mt-req done">tagged ' + t + '</span>' : '<span class="mt-req">required</span>') +
+    '</div>' +
+    '<div class="mt-btns">' +
+      '<button class="mt-btn'+(t==="RECALL"?" on":"")+'" onclick="setMissTag('+g+',\'RECALL\')">RECALL</button>' +
+      '<button class="mt-btn'+(t==="CONCEPT"?" on":"")+'" onclick="setMissTag('+g+',\'CONCEPT\')">CONCEPT</button>' +
+      '<button class="mt-btn clear'+(t?"":" hidden")+'" onclick="setMissTag('+g+',null)">clear</button>' +
+    '</div>' +
+    '<div class="mt-help"><strong>RECALL</strong> - you knew which approach was right but could not recall a specific. ' +
+    '<strong>CONCEPT</strong> - you did not know which approach was right for the constraint the stem stated.</div>' +
+    '</div>';
+}
+
+function setMissTag(g, tag){
+  if(tag) state.missTags[g] = tag; else delete state.missTags[g];
+  save();
+  const el = document.getElementById("tag-"+g);
+  if(el) el.outerHTML = renderMissTag(g);   // repaint just this control, keep scroll position
+  const res = computeResults();
+  const tally = document.getElementById("tagTally");
+  if(tally) tally.innerHTML = tagTallyHtml(res);
+  paintExport(res);
+}
+
+function renderReview(){
+  document.getElementById("exam").innerHTML = "";   // avoid duplicate ids with the review cards
+  const rv = document.getElementById("review");
+  const res = computeResults();
+  rv.innerHTML =
+    '<div class="review-head"><h3>Full review - all ' + res.N + ' items</h3>' +
+    '<p>Every item with its full rationale: why the right answer is right, and why each wrong option is wrong. ' +
+    'The ' + res.misses + ' item' + (res.misses===1?'':'s') + ' you missed carry a RECALL / CONCEPT control - tag every one before logging this paper.</p></div>' +
+    DATA.questions.map(function(q){ return renderQ(q, {review:true}); }).join("");
+  rv.classList.add("shown");
+  DATA.questions.forEach(function(q){ paintAnswered(q); });
+}
+
+function printAll(){ window.print(); }
+
+/* ==== EXPORT ==== */
+/* Three panes, because three different files consume this:
+     1. dashboard line  -> one JSONL line for DASHBOARD-DATA.jsonl
+     2. results JSON    -> the full per-item record
+     3. log stub        -> markdown for the EXAM-LOG.md entry template
+
+   SCHEMA NOTE - ADDITIVE EXTENSION.
+   DASHBOARD-SCHEMA.md already carries RECALL/CONCEPT (recall_misses,
+   concept_misses) so those need nothing new. It has NO field that can express
+   skill-section numbers, and CCDV-F logs misses by section. `section_scores`
+   is therefore appended to the line as an additive field, same [correct, of]
+   array shape as domain_scores. It is additive only: every documented field
+   keeps its name, type and meaning. DASHBOARD-SCHEMA.md has NOT been edited -
+   the amendment needs the project owner's sign-off first. */
+function dashboardLine(res){
+  const line = {
+    paper_n:          DATA.paper_n,
+    format:           DATA.format,
+    generated_date:   DATA.generated,
+    attempted_date:   new Date().toISOString().slice(0,10),
+    score_source:     "results-json",
+    total_correct:    res.totalCorrect,
+    total_questions:  res.N,
+    estimated_scaled: res.scaled,
+    total_seconds:    res.seconds,
+    single_answer:    [res.sa.correct, res.sa.of],
+    multi_response:   [res.mr.correct, res.mr.of],
+    recall_misses:    res.recall,
+    concept_misses:   res.concept,
+    domain_scores:    {},
+    weakest_domain:   weakestDomainOf(res.perDom),
+    // Needs the previous paper by ATTEMPT date - the paper cannot know it.
+    confirmed_weakness: null,
+    // Needs the scored-paper count from EXAM-LOG.md - the paper cannot know it.
+    insight_round_due: false,
+    mode:             EXAM_MODE ? "exam" : "practice",
+    section_scores:   {}   // ADDITIVE - see the schema note above
+  };
+  DOM_ORDER.forEach(function(d){ line.domain_scores[d] = [res.perDom[d].correct, res.perDom[d].of]; });
+  Object.keys(res.perSec).sort().forEach(function(k){ line.section_scores[k] = [res.perSec[k].correct, res.perSec[k].of]; });
+  return line;
+}
+
+function resultsPayload(res){
+  return {
+    exam: "CCDV-F",
+    file: DATA.file,
+    paper_n: DATA.paper_n,
+    paper_label: DATA.paper_label,
+    format: DATA.format,
+    mode: EXAM_MODE ? "exam" : "practice",
+    generated_date: DATA.generated,
+    attempted_date: new Date().toISOString().slice(0,10),
+    score_source: "results-json",
+    total_correct: res.totalCorrect,
+    total_questions: res.N,
+    total_seconds: res.seconds,
+    scaled_estimate: {
+      value: res.scaled,
+      pass_line: PASS_SCALED,
+      scale: [SCALED_MIN, SCALED_MAX],
+      formula: SCALED_FORMULA,
+      min_raw_to_pass: res.passRaw,
+      authoritative: false,
+      note: "Project estimator only, not an Anthropic figure. Linear map of raw percentage onto the published 100-1000 range. The real exam is criterion-referenced and psychometrically scaled across equated forms."
+    },
+    item_formats: {
+      single_answer: {correct:res.sa.correct, of:res.sa.of},
+      multi_response: {correct:res.mr.correct, of:res.mr.of, scoring:"all-or-nothing (ASSUMPTION - guide v1.0 does not state whether partial credit applies)"}
+    },
+    domain_scores: dashboardLine(res).domain_scores,
+    section_scores: dashboardLine(res).section_scores,
+    miss_tags: {RECALL:res.recall, CONCEPT:res.concept, untagged:res.untagged, total_misses:res.misses},
+    weakest_domain: weakestDomainOf(res.perDom),
+    domain_floors: "none - pass/fail is total scaled score only",
+    dashboard_line: dashboardLine(res),
+    questions: res.questions
+  };
+}
+
+function logStub(res){
+  const today = new Date().toISOString().slice(0,10);
+  const rows = DOM_ORDER.map(function(d){
+    const c = res.perDom[d];
+    const pct = c.of ? (Math.round(c.correct/c.of*100) + "%") : "-";
+    return "| " + d.slice(1) + " | " + DOMAIN_NAMES[d] + " | " + DOMAIN_WEIGHTS[d].toFixed(1) + "% | " +
+           (c.of || "-") + " | " + (c.of ? c.correct : "-") + " | " + pct + " |";
+  }).join("\n");
+  const misses = res.questions.filter(function(r){ return !r.correct; }).map(function(r){
+    return "| " + r.q + " | " + r.domain + " §" + r.section + " | " + r.format + " | " +
+           (r.seconds!==null ? (r.seconds + "s") : "-") + " | " + (r.selected || "not answered") + " | " +
+           r.key + " |  | " + (r.miss_tag || "UNTAGGED") + " |";
+  }).join("\n");
+
+  return "## Paper " + (DATA.paper_n || "N") + " — SCORED " + today +
+         " (" + res.totalCorrect + "/" + res.N + ", scaled " + res.scaled + ")\n\n" +
+    "**File:** `mock-exams/" + DATA.file + "`\n" +
+    "**Attempt date:** " + today + " | **Score source:** results-json | **Total time:** " + fmtTime(res.seconds) + " of 120:00\n" +
+    "**Total score:** " + res.totalCorrect + " / " + res.N + " correct (estimated scaled " + res.scaled +
+      "; pass line 720; estimator " + SCALED_FORMULA + ")\n" +
+    "**Item formats:** single-answer (" + res.sa.correct + "/" + res.sa.of + ") · multiple-response (" +
+      res.mr.correct + "/" + res.mr.of + ", all-or-nothing) — all standalone, no blocks\n" +
+    "**Miss split:** RECALL " + res.recall + " · CONCEPT " + res.concept +
+      (res.untagged ? (" · UNTAGGED " + res.untagged + "  <-- tag these before filing") : "") + "\n" +
+    "**Mode:** " + (EXAM_MODE ? "Exam Mode (no per-question feedback)" : "Practice Mode") + "\n\n" +
+    "### Domain Breakdown\n" +
+    "| D | Domain | Quota | Questions | Correct | % |\n|---|---|---|---|---|---|\n" + rows + "\n\n" +
+    "### Misses\n" +
+    "| Q | Domain § | Format | Time | Picked | Correct | Why wrong | RECALL/CONCEPT |\n" +
+    "|---|---|---|---|---|---|---|---|\n" + (misses || "| — | — | — | — | — | — | none | — |") + "\n\n" +
+    "### Confirmed-weakness check\n" +
+    "Comparator: Paper ?, attempted ????-??-?? (the true immediate predecessor by attempt date).\n" +
+    "Weakest this paper: " + (weakestDomainOf(res.perDom) || "-") + " | Unambiguous? ? | confirmed_weakness: ?\n" +
+    "(D3 and D4 excluded — too few items to be signal. See convention 9.)\n\n" +
+    "### Tripwire check\n" +
+    "RECALL share this paper: " + res.recall + "/" + res.misses + ". Across the last three papers by attempt date: ?/?.\n" +
+    "Over a quarter? ? — if yes, the judgement-shaped assumption is failing. Escalate to ROADMAP Phase 2.\n";
+}
+
+function paintExport(res){
+  const line = JSON.stringify(dashboardLine(res));
+  const full = JSON.stringify(resultsPayload(res), null, 2);
+  const stub = logStub(res);
+  const ex = document.getElementById("export");
+  if(!ex.dataset.built){
+    ex.innerHTML =
+      '<h3>Results export</h3>' +
+      '<p>Three panes, for the three files that consume a scored paper. <code>EXAM-LOG.md</code> is authoritative; the JSONL line is its machine-readable mirror.</p>' +
+      '<h4>1 &middot; DASHBOARD-DATA.jsonl &mdash; one line, append as-is</h4><pre class="wrap" id="exportLine"></pre>' +
+      '<h4>2 &middot; Full results JSON &mdash; per-item record</h4><pre id="exportJson"></pre>' +
+      '<h4>3 &middot; EXAM-LOG.md entry &mdash; paste and finish by hand</h4><pre id="exportLog"></pre>' +
+      '<div class="handnote"><strong>Two fields the paper cannot compute.</strong> ' +
+      '<code>confirmed_weakness</code> needs the previous paper by attempt date and is exported as <code>null</code>. ' +
+      '<code>insight_round_due</code> needs the scored-paper count and is exported as <code>false</code>. ' +
+      'Set both from <code>EXAM-LOG.md</code> before writing the line. The &ldquo;Why wrong&rdquo; column of the miss table is deliberately blank &mdash; that is the diagnosis, and it is yours to write.</div>' +
+      '<div class="export-actions">' +
+      '<button class="btn" onclick="copyPane(this,\'exportLine\')">Copy JSONL line</button>' +
+      '<button class="btn" onclick="copyPane(this,\'exportJson\')">Copy results JSON</button>' +
+      '<button class="btn" onclick="copyPane(this,\'exportLog\')">Copy log entry</button>' +
+      '<button class="btn ghost" onclick="printAll()">Print full review</button>' +
+      '<button class="btn ghost" onclick="resetExam()">Reset this exam</button></div>';
+    ex.dataset.built = "1";
+  }
+  document.getElementById("exportLine").textContent = line;
+  document.getElementById("exportJson").textContent = full;
+  document.getElementById("exportLog").textContent  = stub;
+  ex.classList.add("shown");
+}
+
+function copyPane(btn, id){
+  const txt = document.getElementById(id).textContent;
+  const done = function(){ const o = btn.textContent; btn.textContent = "Copied"; setTimeout(function(){ btn.textContent = o; }, 1600); };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(done).catch(function(){ selectPane(id); });
+  } else { selectPane(id); }
+}
+function selectPane(id){
+  const rng = document.createRange();
+  rng.selectNode(document.getElementById(id));
+  window.getSelection().removeAllRanges();
+  window.getSelection().addRange(rng);
+}
+
+function resetExam(){
+  if(!confirm("Clear all answers, timing and miss tags for Mock Test " + (DATA.paper_label || DATA.paper_n) + "?")) return;
+  localStorage.removeItem(KEY);
+  state = {answers:{}, pending:{}, times:{}, missTags:{}, started:null, firstShownAt:{}};
+  currentG = null;
+  setView("landing");
+  renderJumpMap();
+  updateNav();
+  window.scrollTo(0,0);
+}
+
+/* ==== BOOT ==== */
+// Exam mode: 120:00 countdown. It floors at 0:00 and does NOT auto-submit -
+// this is a practice tool, not proctoring software, and silently submitting an
+// in-progress answer risks losing work over a UI decision nobody asked for.
+setInterval(function(){
+  const t = document.getElementById("navTimer");
+  if(!t) return;
+  if(state.started === null){ t.textContent = EXAM_MODE ? fmtTime(EXAM_SECONDS) : "0:00"; return; }
+  const elapsed = (Date.now() - state.started)/1000;
+  if(EXAM_MODE){
+    const remain = Math.max(0, EXAM_SECONDS - elapsed);
+    t.textContent = fmtTime(remain);
+    t.classList.toggle("time-low", remain < 600);
+  } else {
+    t.textContent = fmtTime(elapsed);
+  }
+}, 1000);
+
+// Three-way resume routing, keyed off state.answers:
+//   nothing started  -> landing
+//   some answered    -> first unanswered question
+//   all answered     -> results
+function routeOnLoad(){
+  paintChrome();
+  paintValidation();
+  if(EXAM_MODE){
+    const sp = document.getElementById("scorePill");
+    const pp = document.getElementById("pctPill");
+    const bd = document.getElementById("examModeBadge");
+    if(sp) sp.style.display = "none";   // a live right/wrong count leaks correctness
+    if(pp) pp.style.display = "none";
+    if(bd) bd.style.display = "";
+  }
+  renderJumpMap();
+  if(state.started === null){ setView("landing"); updateNav(); return; }
+  const next = DATA.questions.find(function(q){ return !(q.g in state.answers); });
+  if(next) renderPage(next.g); else submitExam();
+}
+window.addEventListener("DOMContentLoaded", routeOnLoad);
+
+/* ====================================================================
+   ==== ITEMS - EXTERNAL SOURCE, NOT PROJECT-GENERATED ====
+   All 15 items are transcribed from a third-party GitHub repository, not
+   generated from the CCDV-F chapter corpus and not corpus-verified:
+     Amey-Thakur/CLAUDE-CERTIFICATIONS, developer-foundations/mock-exam-2.md
+   Ram asked for this repo's three mock exams reformatted into this engine's
+   construct (Practice Mode / Exam Mode + fully-explained answers) - see the
+   CONFIG-anchor comment for the full transcription and citation rules.
+   ==================================================================== */
+const DATA = {
+  paper_n: 2,
+  paper_label: "External Mock 2 (Amey-Thakur/CLAUDE-CERTIFICATIONS)",
+  format: "DRILL15",
+  generated: "2026-08-25",
+  file: "Amey-Thakur_CLAUDE-CERTIFICATIONS_MockTest-2_v1.html",
+  questions: [
+  {
+    g: 1, domain: "D2", section: "2.3", reviewStatus: "external-source",
+    stem: "A service sends the same 8,000-token system prompt on every request and cost is dominated by input tokens. What is the first change to evaluate?",
+    options: [
+      "Rewriting the system prompt to be shorter.",
+      "Switching to a cheaper model.",
+      "Caching the stable prefix so it is not reprocessed on every call.",
+      "Reducing the number of requests."
+    ],
+    correct: 2,
+    whyRight: { text: "A large unchanging prefix repeated per call is what caching addresses, without losing any instruction.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q1 answer key" },
+    whyWrong: [
+      {option: 0, text: "Shortening the prompt sacrifices capability instead of addressing the repeated-reprocessing cost.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q1 answer key"},
+      {option: 1, text: "A cheaper model trades quality rather than removing the redundant reprocessing.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q1 answer key"},
+      {option: 3, text: "Reducing the number of requests changes the product, not the per-request cost of the repeated prefix.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q1 answer key"}
+    ]
+  },
+  {
+    g: 2, domain: "D2", section: "2.3", reviewStatus: "external-source",
+    stem: "An endpoint must return within 500 ms but the model needs longer for a good answer. What is the appropriate pattern?",
+    options: [
+      "Return an acknowledgement immediately and deliver the result through a callback or poll.",
+      "Truncate the model's output.",
+      "Use the smallest model regardless of quality.",
+      "Increase the timeout on the client."
+    ],
+    correct: 0,
+    whyRight: { text: "Decoupling acceptance from completion satisfies the latency contract without degrading the answer.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q2 answer key" },
+    whyWrong: [
+      {option: 1, text: "Truncating the output sacrifices the result to hit the deadline.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q2 answer key"},
+      {option: 2, text: "The smallest model regardless of quality also sacrifices the result.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q2 answer key"},
+      {option: 3, text: "Increasing the client timeout is the stated constraint being worked around, not a fix.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q2 answer key"}
+    ]
+  },
+  {
+    g: 3, domain: "D2", section: "2.3", reviewStatus: "external-source",
+    stem: "What does a stop reason indicating the maximum token limit tell you?",
+    options: [
+      "The input was too long.",
+      "The request was malformed.",
+      "The model refused the request.",
+      "The output was cut off before the model finished."
+    ],
+    correct: 3,
+    whyRight: { text: "That stop reason reports that generation hit the output ceiling.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q3 answer key" },
+    whyWrong: [
+      {option: 0, text: "An oversized input fails before generation ever begins, which is a different failure than this stop reason.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q3 answer key"},
+      {option: 1, text: "A malformed request does not produce this stop reason.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q3 answer key"},
+      {option: 2, text: "A refusal does not produce this stop reason either.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q3 answer key"}
+    ]
+  },
+  {
+    g: 4, domain: "D2", section: "2.3", reviewStatus: "external-source",
+    stem: "A tool result returns 50,000 tokens of JSON, most of it unused. What is the right fix?",
+    options: [
+      "Raise the model's context limit.",
+      "Change the tool to return only the fields the task needs.",
+      "Summarise the JSON with a second model call.",
+      "Call the tool less frequently."
+    ],
+    correct: 1,
+    whyRight: { text: "Tools should return what the task requires, which preserves context for reasoning.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q4 answer key" },
+    whyWrong: [
+      {option: 0, text: "A larger window delays the problem rather than fixing the oversized payload.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q4 answer key"},
+      {option: 2, text: "A second model call to summarise adds cost and failure surface on top of the same oversized payload.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q4 answer key"},
+      {option: 3, text: "Calling the tool less often does not change what each call returns.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q4 answer key"}
+    ]
+  },
+  {
+    g: 5, domain: "D2", section: "2.3", reviewStatus: "external-source",
+    stem: "Which condition warrants a retry with backoff rather than surfacing an error?",
+    options: [
+      "The request contained an invalid parameter.",
+      "The service returned a rate limit or a transient server error.",
+      "The model returned an answer you disagree with.",
+      "The response exceeded the expected length."
+    ],
+    correct: 1,
+    whyRight: { text: "Rate limits and transient server errors are the recoverable class.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q5 answer key" },
+    whyWrong: [
+      {option: 0, text: "An invalid parameter fails identically on retry, so retrying does not help.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q5 answer key"},
+      {option: 2, text: "Disagreeing with an answer is not a transport failure a retry can address.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q5 answer key"},
+      {option: 3, text: "Response length is likewise not a transport failure a retry can address.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q5 answer key"}
+    ]
+  },
+  {
+    g: 6, domain: "D5", section: "5.4", reviewStatus: "external-source",
+    stem: "A workload runs nightly over 50,000 records with no interactive requirement. Which choice reduces cost most?",
+    options: [
+      "Streaming each request.",
+      "Using the largest model for accuracy.",
+      "Increasing concurrency against the standard endpoint.",
+      "Submitting the work as a batch."
+    ],
+    correct: 3,
+    whyRight: { text: "Large, uniform, latency-tolerant work is exactly the batch case, and it is materially cheaper.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q6 answer key" },
+    whyWrong: [
+      {option: 0, text: "Streaming serves interactive use; it does not reduce unit cost for a nightly batch job.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q6 answer key"},
+      {option: 1, text: "The largest model raises cost rather than reducing it.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q6 answer key"},
+      {option: 2, text: "Increasing concurrency against the standard endpoint does not change the unit price paid.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q6 answer key"}
+    ]
+  },
+  {
+    g: 7, domain: "D5", section: "5.3", reviewStatus: "external-source",
+    stem: "Accuracy on a simple extraction task is identical between a small and a large model. What should be deployed?",
+    options: [
+      "The small model, since it meets the requirement at lower cost.",
+      "The large model, in case inputs change.",
+      "Both, alternating between them.",
+      "The newest model available."
+    ],
+    correct: 0,
+    whyRight: { text: "Where the requirement is met, the cheaper option is correct, and changing inputs are handled by re-evaluating.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q7 answer key" },
+    whyWrong: [
+      {option: 1, text: "Insurance against hypothetical future change spends without a demonstrated benefit today.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q7 answer key"},
+      {option: 2, text: "Alternating between the two spends without benefit, the same as choosing the larger model outright.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q7 answer key"},
+      {option: 3, text: "Recency alone is not a reason to deploy a model that costs more for the same measured accuracy.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q7 answer key"}
+    ]
+  },
+  {
+    g: 8, domain: "D5", section: "5.3", reviewStatus: "external-source",
+    stem: "A task requires the model to plan across many interacting constraints and revise as it goes. What does this argue for?",
+    options: [
+      "The smallest model, to keep cost down.",
+      "Splitting the task across several small models.",
+      "A more capable model, since the work is reasoning-heavy.",
+      "A longer prompt with the same model."
+    ],
+    correct: 2,
+    whyRight: { text: "Multi-step reasoning under interacting constraints is where capability differences show.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q8 answer key" },
+    whyWrong: [
+      {option: 0, text: "The smallest model fragments the reasoning the task actually needs.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q8 answer key"},
+      {option: 1, text: "Splitting across several small models likewise fragments reasoning that needs to stay coherent.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q8 answer key"},
+      {option: 3, text: "A longer prompt on the same model does not add the capability the reasoning-heavy work requires.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q8 answer key"}
+    ]
+  },
+  {
+    g: 9, domain: "D1", section: "1.1", reviewStatus: "external-source",
+    stem: "An agent is given ten tools, three of which overlap in purpose. What is the likely consequence?",
+    options: [
+      "Faster execution, since more options are available.",
+      "Lower token cost.",
+      "Better error handling.",
+      "More frequent wrong tool selection."
+    ],
+    correct: 3,
+    whyRight: { text: "Overlapping tools make selection ambiguous, which is where agents go wrong.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q9 answer key" },
+    whyWrong: [
+      {option: 0, text: "Overlap does not improve execution speed.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q9 answer key"},
+      {option: 1, text: "Overlap does not reduce token cost - extra overlapping tool definitions add to it.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q9 answer key"},
+      {option: 2, text: "Overlap does not help error handling.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q9 answer key"}
+    ]
+  },
+  {
+    g: 10, domain: "D1", section: "1.1", reviewStatus: "external-source",
+    stem: "What should terminate an agent loop?",
+    options: [
+      "A fixed wall-clock timeout only.",
+      "The model deciding it is finished.",
+      "An explicit success condition, with a step ceiling as a backstop.",
+      "Running out of context."
+    ],
+    correct: 2,
+    whyRight: { text: "A defined success condition ends the loop correctly, and the ceiling bounds the failure case.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q10 answer key" },
+    whyWrong: [
+      {option: 0, text: "A timeout alone does not recognize whether the task actually succeeded.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q10 answer key"},
+      {option: 1, text: "The model's own judgment that it is finished is not a guarantee of actual success.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q10 answer key"},
+      {option: 3, text: "Running out of context is a failure mode, not a designed termination condition.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q10 answer key"}
+    ]
+  },
+  {
+    g: 11, domain: "D6", section: "6.2", reviewStatus: "external-source",
+    stem: "Where should a stable instruction that must apply to every turn be placed?",
+    options: [
+      "At the end of the latest user message.",
+      "In the system prompt.",
+      "Repeated in each user message.",
+      "In a tool description."
+    ],
+    correct: 1,
+    whyRight: { text: "The system prompt is designed for persistent framing across the exchange.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q11 answer key" },
+    whyWrong: [
+      {option: 0, text: "Placing it in a user turn mixes configuration with input rather than persistent framing.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q11 answer key"},
+      {option: 2, text: "Repeating it in each user message likewise mixes configuration with input.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q11 answer key"},
+      {option: 3, text: "Tool descriptions govern tool selection, not standing behavior across every turn.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q11 answer key"}
+    ]
+  },
+  {
+    g: 12, domain: "D6", section: "6.2", reviewStatus: "external-source",
+    stem: "Which change most improves output that is correct but inconsistently formatted?",
+    options: [
+      "Providing an example of the exact output required.",
+      "Raising the temperature.",
+      "Asking for the output to be neat.",
+      "Using a larger model."
+    ],
+    correct: 0,
+    whyRight: { text: "An example defines the target unambiguously, which is what formatting consistency needs.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q12 answer key" },
+    whyWrong: [
+      {option: 1, text: "Higher temperature increases variance, working against consistency.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q12 answer key"},
+      {option: 2, text: "A vague adjective like \"neat\" does not specify the target format.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q12 answer key"},
+      {option: 3, text: "A larger model does not know your specific format without being shown it.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q12 answer key"}
+    ]
+  },
+  {
+    g: 13, domain: "D8", section: "8.1", reviewStatus: "external-source",
+    stem: "What is the most important property of a tool description?",
+    options: [
+      "It states what the tool does, when to use it, and what each parameter means.",
+      "It is short.",
+      "It lists the implementation language.",
+      "It matches the function name exactly."
+    ],
+    correct: 0,
+    whyRight: { text: "The description is the model's only basis for choosing and calling the tool correctly.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q13 answer key" },
+    whyWrong: [
+      {option: 1, text: "Brevity is secondary to clarity - a short but unclear description still causes selection errors.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q13 answer key"},
+      {option: 2, text: "Implementation-language detail does not guide selection.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q13 answer key"},
+      {option: 3, text: "Matching the function name exactly does not guide selection either.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q13 answer key"}
+    ]
+  },
+  {
+    g: 14, domain: "D7", section: "7.1", reviewStatus: "external-source",
+    stem: "Content retrieved from an external site contains instructions aimed at the model. What is the correct defense?",
+    options: [
+      "Instruct the model in the system prompt to ignore such content.",
+      "Treat retrieved content as untrusted data and bound the model's permissions outside the prompt.",
+      "Scan for known injection phrases and block them.",
+      "Use a model with a larger context window."
+    ],
+    correct: 1,
+    whyRight: { text: "The durable control is that the model cannot exceed its granted permissions regardless of what the content says.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q14 answer key" },
+    whyWrong: [
+      {option: 0, text: "Prompt instructions are bypassable by a sufficiently crafted injected instruction.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q14 answer key"},
+      {option: 2, text: "Phrase filters are likewise bypassable by rephrasing.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q14 answer key"},
+      {option: 3, text: "Context size is irrelevant to whether injected instructions can trigger sensitive actions.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q14 answer key"}
+    ]
+  },
+  {
+    g: 15, domain: "D4", section: "4.1", reviewStatus: "external-source",
+    stem: "A prompt change improved results on the five examples you tested. What should happen before it reaches production?",
+    options: [
+      "Ship it, since all five improved.",
+      "Ask the model to compare the two prompts.",
+      "Evaluate it against a held-out set that reflects real inputs, on defined criteria.",
+      "Ship it to a small percentage of traffic and watch error rates."
+    ],
+    correct: 2,
+    whyRight: { text: "Five hand-picked cases cannot separate a real gain from noise, which is what an evaluation set settles.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q15 answer key" },
+    whyWrong: [
+      {option: 0, text: "Shipping on five improved cases makes users the test rather than measuring the change first.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q15 answer key"},
+      {option: 1, text: "Asking the model to compare the two prompts is not measurement.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q15 answer key"},
+      {option: 3, text: "A traffic ramp also makes users the test rather than evaluating the change beforehand.", cite: "Amey-Thakur/CLAUDE-CERTIFICATIONS, mock-exam-2.md, Q15 answer key"}
+    ]
+  }
+  ]
+};
+/* ==== END ITEMS ==== */
+</script>
+</body>
+</html>

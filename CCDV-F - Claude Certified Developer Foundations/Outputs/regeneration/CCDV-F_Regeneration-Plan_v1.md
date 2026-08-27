@@ -1,6 +1,6 @@
 # CCDV-F — Study Material Regeneration Plan
 
-**Created:** 2026-08-22 · **Status:** ✅ Part I (chapters 1–5) complete, gate-verified, converted to HTML, and Ram-approved · ✅ Part II (chapters 6–10) gate-verified, converted to HTML, and committed 2026-08-23 — all five PASS (7 carries one Ram-approved documented C14 exception; see §5 Stage 7 note and the gate document's own exception note) · ✅ **Part III (chapters 11–34) COMPLETE, 2026-08-25 — all 34 chapters of the course are now authored.** **Ch11** PASS with two Ram-approved exceptions (C5, C7) · **Ch12** clean PASS, zero exceptions · **Ch13** closed out after a round-cap process overrun, corrected the same day · **Ch14** closed 2026-08-24, two round-2 findings Ram-waived including a zero-tolerance C14 · Ch11–14 converted to HTML 2026-08-24 · **Ch15** gate-verified 2026-08-24, clean PASS on round 2 (round 1 fixed C7/C9/C13) · **Ch16** authored 2026-08-24, one round-1 fix applied (C5), round 2 skipped at Ram's explicit request — not gate-confirmed · **Ch17–34** authored 2026-08-24/25 with no gate review run at all, per Ram's explicit instruction — none of 16–34 yet converted to HTML or committed · see Part III below for full round-by-round detail · **See `CCDV-F_Resume-Prompt_v2.md` for Part I/II's full round-by-round history, or `resume-prompt.md` for the last Part III resume state (now superseded — the course is complete)**
+**Created:** 2026-08-22 · **Status:** ✅ Part I (chapters 1–5) complete, gate-verified, converted to HTML, and Ram-approved · ✅ Part II (chapters 6–10) gate-verified, converted to HTML, and committed 2026-08-23 — all five PASS (7 carries one Ram-approved documented C14 exception; see §5 Stage 7 note and the gate document's own exception note) · ✅ **Part III (chapters 11–34) COMPLETE, 2026-08-25 — all 34 chapters of the course are now authored.** **Ch11** PASS with two Ram-approved exceptions (C5, C7) · **Ch12** clean PASS, zero exceptions · **Ch13** closed out after a round-cap process overrun, corrected the same day · **Ch14** closed 2026-08-24, two round-2 findings Ram-waived including a zero-tolerance C14 · Ch11–14 converted to HTML 2026-08-24 · **Ch15** gate-verified 2026-08-24, clean PASS on round 2 (round 1 fixed C7/C9/C13) · **Ch16** authored 2026-08-24, one round-1 fix applied (C5), round 2 skipped at Ram's explicit request — not gate-confirmed · **Ch17–34** authored 2026-08-24/25 with no gate review run at all, per Ram's explicit instruction · **Ch17 and Ch18 subsequently gate-verified 2026-08-25** (Ch17: round 1 FAIL on zero-tolerance C3 + C1 over-budget, fixed, round 2 PASS; Ch18: round 1 FIX on C13, fixed, round 2 PASS) ahead of HTML conversion · **Ch15–18 converted to HTML and browser-verified 2026-08-25** (Ch11–14 remain the prior HTML batch) — none of 15–34 committed · Ch19–34 remain author-only, not yet reviewed or converted · see Part III below for full round-by-round detail · **See `CCDV-F_Resume-Prompt_v2.md` for Part I/II's full round-by-round history, or `resume-prompt.md` for the last Part III resume state (now superseded — the course is complete)**
 **Supersedes:** `Outputs/CCDV-F_Syllabus_v1.md` (29 classes, 14 built).
 
 **Authoritative chapter list and budgets: `CCDV-F_Pedagogy-Design_v2.md` — 34 chapters, 79,500 words.**
@@ -448,12 +448,39 @@ the course — all 34 chapters are now authored.**
   end" send-off. Author cut a draft's contrast-pair count from 10 to 1 and its em-dash count from 20
   (5.8/1,000) to 0 during self-audit.
 
-None of chapters 15–34 are converted to HTML or committed — waiting on explicit request, same as
-every prior batch. **Course-completion milestone reached 2026-08-25: all 34 chapters of the CCDV-F
-regenerated course are now authored.** Chapters 1–15 are gate-verified; 16 has one round-1 fix, round
-2 skipped; 17–34 are author-only with no independent review, per Ram's standing instruction for this
-batch of the session. Whether any further review pass runs over 16–34 before HTML conversion is
-Ram's call, not assumed here.
+**Course-completion milestone reached 2026-08-25: all 34 chapters of the CCDV-F regenerated course are
+now authored.** At that point chapters 1–15 were gate-verified; 16 had one round-1 fix, round 2 skipped;
+17–34 were author-only with no independent review.
+
+**Chapters 15–18 converted to HTML 2026-08-25, on request.** Before converting, Ram chose to run a
+blind gate review on 17 and 18 first — they had never been reviewed at all, unlike 15 (already
+gate-verified) and 16 (one applied fix). **Ch17: round 1 FAILed** (one zero-tolerance C3
+negation-tricolon at the "write that passed validation" incident, plus C1 over budget at 3 contrast
+pairs) — a fresh fix agent patched the specific passage rather than rewriting from outline, consistent
+with the Ch11 precedent of patching a narrow, non-recurring zero-tolerance hit, and trimmed one
+contrast pair; round 2 **clean PASS**, all 14 checks clear. **Ch18: round 1 returned FIX** (one C13
+fact-density gap in the "What the stem sounds like" section, which carried no number/API/mechanism) —
+a fresh fix agent anchored it back to the chapter's own already-named four memory scopes; round 2
+**clean PASS**. Both are now gate-verified, same standing as chapters 1–15.
+
+Four parallel agents then built the HTML (Ch15, Ch16, Ch17, Ch18), each copying Ch14's
+`<style>`/`<script>` blocks byte-for-byte (verified by diff) and adding one new inline SVG diagram
+apiece: Ch15 a two-level workflow/agent/hierarchy decision tree, Ch16 a model/loop/tool-execution
+ownership grid across the five hosting modes, Ch17 a four-step register/scope/iterate/exit pipeline,
+Ch18 a four-panel memory-scope comparison. Ch15's build agent caught and corrected a scope error in its
+own brief (self-test Q3 is select-two, not select-one, per the source markdown) rather than following
+the brief's incorrect generalization. Ch14's own forward chapter-nav link (both the top bar and the
+closing `.chapter-end` block) was updated from a disabled "coming soon" placeholder to a live link to
+Ch15, closing the chain. The full Ch14→15→16→17→18 navigation chain was verified live in a browser
+(served over localhost, not `file://`, which serves as a dead-hash `data:` URL in this environment) —
+every forward/back link resolves to the correct chapter, no console errors, self-test interactions
+(including Ch15's and Ch18's multi-select items) fire correctly, and Ch18's forward link is correctly
+disabled pending Chapter 19.
+
+None of chapters 19–34 are converted to HTML, and none of 15–34 are committed to git — both wait on
+explicit request. Chapters 1–18 are now gate-verified; 19–34 remain author-only with no independent
+review, per Ram's standing instruction for that batch of the session. Whether any further review pass
+runs over 19–34 before HTML conversion is Ram's call, not assumed here.
 
 > **The acceptance test, and the only bar that matters.** A student is dropped in cold. He studies
 > this material and **nothing else**. Then he sits CCDV-F: 53 items, 120 minutes, closed book,

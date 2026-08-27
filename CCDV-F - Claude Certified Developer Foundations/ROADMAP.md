@@ -94,10 +94,23 @@ requirements, and "infrastructure requirement" is the narrower practitioner term
 words, one owned sub-topic at full depth), Ch34 "Changing a live system without breaking it" (2,279
 words + 10-item self-test, tripled — **the final chapter of the course**, all four life-cycle phases
 explicit, model-drift/eval-regression as its stated novel contribution). **All 34 chapters of the
-CCDV-F course are now authored — course-completion milestone reached 2026-08-25.** None of chapters
-15–34 yet converted to HTML or committed; that and any further review pass over 16–34 is Ram's call.
-`resume-prompt.md` now describes a superseded checkpoint (chapters 31–34 pending) rather than the
-current state. Supersedes the 29-class syllabus this file pointed to before 2026-08-22 — see the
+CCDV-F course are now authored — course-completion milestone reached 2026-08-25.**
+
+**Chapters 15–18 converted to HTML 2026-08-25, on request.** Ch17 and Ch18 had never been reviewed at
+all, so Ram had them gate-reviewed first: Ch17 round 1 FAILed (zero-tolerance C3 + C1 over-budget),
+fixed and round 2 clean PASS; Ch18 round 1 returned FIX (one C13 gap), fixed and round 2 clean PASS —
+both now gate-verified, same standing as chapters 1–15. Four parallel agents then built the HTML,
+copying Ch14's `<style>`/`<script>` byte-for-byte and adding one new SVG diagram each (Ch15 a
+workflow/agent/hierarchy decision tree, Ch16 a model/loop/tool-execution ownership grid, Ch17 a
+register/scope/iterate/exit pipeline, Ch18 a four-panel memory-scope comparison). Ch14's forward nav
+link was updated from a disabled placeholder to a live link to Ch15, and the full Ch14→18 chain was
+verified live in a browser (served over localhost, not `file://`) — all links resolve, no console
+errors, self-tests including the multi-select items work correctly.
+
+None of chapters 19–34 are converted to HTML, and none of 15–34 are committed; that and any further
+review pass over 19–34 is Ram's call. `resume-prompt.md` now describes a superseded checkpoint
+(chapters 31–34 pending) rather than the current state. Supersedes the 29-class syllabus this file
+pointed to before 2026-08-22 — see the
 superseded note ahead of Phase 2.
 
 ---

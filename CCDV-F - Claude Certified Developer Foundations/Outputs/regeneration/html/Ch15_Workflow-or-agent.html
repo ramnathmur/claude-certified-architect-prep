@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chapter 15 — Workflow or Agent · CCDV-F</title>
+<meta name="description" content="Claude Certified Developer Foundations, Chapter 15: the enumerate-the-steps test decides workflow or agent — build a workflow when the steps can be written in code, an agent when the path has to be discovered at run time.">
+<meta name="author" content="Ram">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: light dark;
+
+  --ink:    oklch(0.15 0.01 80);
+  --ink2:   oklch(0.30 0.015 75);
+  --ink3:   oklch(0.53 0.015 75);
+  --cream:  oklch(0.97 0.008 85);
+  --cream2: oklch(0.94 0.012 85);
+  --cream3: oklch(0.91 0.015 80);
+  --border: oklch(0.87 0.012 80);
+
+  --amber:       oklch(0.64 0.14 68);
+  --amber-light: oklch(0.93 0.035 80);
+  --amber-dark:  oklch(0.47 0.11 60);
+  --blue:        oklch(0.43 0.09 245);
+  --blue-light:  oklch(0.93 0.025 240);
+  --coral:       oklch(0.55 0.14 30);
+  --coral-light: oklch(0.94 0.025 35);
+  --purple:      oklch(0.38 0.14 300);
+  --purple-light:oklch(0.93 0.03 300);
+  --green:       oklch(0.50 0.10 150);
+  --green-light: oklch(0.94 0.025 145);
+
+  --surface-raised:  oklch(0.15 0.01 80);
+  --on-raised:       oklch(0.97 0.008 85);
+  --on-raised-muted: oklch(0.97 0.008 85 / 0.74);
+  --on-raised-dim:   oklch(0.97 0.008 85 / 0.6);
+  --on-raised-border:oklch(0.97 0.008 85 / 0.15);
+  --nav-bg:          oklch(0.97 0.008 85 / 0.96);
+
+  --font-serif: Georgia, 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+  --font-sans:  system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono:  ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+  --font-body-active: var(--font-sans);
+
+  --fs-body: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --fs-sm:   clamp(0.8125rem, 0.78rem + 0.15vw, 0.9375rem);
+  --fs-xs:   clamp(0.6875rem, 0.67rem + 0.1vw, 0.75rem);
+  --fs-h1:   clamp(2rem, 1.4rem + 3vw, 3.375rem);
+  --fs-h2:   clamp(1.5rem, 1.2rem + 1.5vw, 2.125rem);
+  --fs-h3:   clamp(1.25rem, 1.1rem + 0.75vw, 1.5rem);
+  --fs-pull: clamp(1.375rem, 1.15rem + 1.1vw, 1.625rem);
+  --lh-body: 1.7;
+  --lh-heading: 1.2;
+  --measure: 68ch;
+
+  --space-section: clamp(3rem, 2.5rem + 2.5vw, 4rem);
+  --space-block:   clamp(1.5rem, 1.25rem + 1.25vw, 2.5rem);
+  --space-inline:  clamp(1.25rem, 1rem + 1.25vw, 2rem);
+  --radius:    12px;
+  --radius-sm: 8px;
+  --shadow:    0 2px 16px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
+  --t-fast: 0.15s;
+  --t-med:  0.25s;
+}
+
+[data-theme="dark"] {
+  --ink:    oklch(0.90 0.008 85);
+  --ink2:   oklch(0.78 0.01 80);
+  --ink3:   oklch(0.58 0.01 75);
+  --cream:  oklch(0.15 0.012 75);
+  --cream2: oklch(0.19 0.012 75);
+  --cream3: oklch(0.23 0.015 75);
+  --border: oklch(0.32 0.01 75);
+  --shadow:    0 2px 16px rgba(0,0,0,0.3);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+  --amber:       oklch(0.72 0.13 68);
+  --amber-light: oklch(0.24 0.04 70);
+  --amber-dark:  oklch(0.78 0.10 65);
+  --blue:        oklch(0.70 0.09 245);
+  --blue-light:  oklch(0.24 0.035 245);
+  --coral:       oklch(0.68 0.13 30);
+  --coral-light: oklch(0.26 0.04 30);
+  --purple:      oklch(0.68 0.12 300);
+  --purple-light:oklch(0.25 0.04 300);
+  --green:       oklch(0.68 0.10 150);
+  --green-light: oklch(0.24 0.035 150);
+  --nav-bg: oklch(0.15 0.012 75 / 0.92);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink:    oklch(0.90 0.008 85);
+    --ink2:   oklch(0.78 0.01 80);
+    --ink3:   oklch(0.58 0.01 75);
+    --cream:  oklch(0.15 0.012 75);
+    --cream2: oklch(0.19 0.012 75);
+    --cream3: oklch(0.23 0.015 75);
+    --border: oklch(0.32 0.01 75);
+    --shadow:    0 2px 16px rgba(0,0,0,0.3);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+    --amber:       oklch(0.72 0.13 68);
+    --amber-light: oklch(0.24 0.04 70);
+    --amber-dark:  oklch(0.78 0.10 65);
+    --blue:        oklch(0.70 0.09 245);
+    --blue-light:  oklch(0.24 0.035 245);
+    --coral:       oklch(0.68 0.13 30);
+    --coral-light: oklch(0.26 0.04 30);
+    --purple:      oklch(0.68 0.12 300);
+    --purple-light:oklch(0.25 0.04 300);
+    --green:       oklch(0.68 0.10 150);
+    --green-light: oklch(0.24 0.035 150);
+    --nav-bg: oklch(0.15 0.012 75 / 0.92);
+  }
+}
+
+[data-font="serif"]  { --font-body-active: var(--font-serif); }
+[data-font="legible"]{ --font-body-active: 'Atkinson Hyperlegible', var(--font-sans); --lh-body: 1.85; letter-spacing: 0.01em; }
+
+* , *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 78px; }
+
+body {
+  margin: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-body-active);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
+
+.skip-link {
+  position: absolute; left: -9999px; top: 0; z-index: 200;
+  background: var(--ink); color: var(--cream);
+  padding: 0.7rem 1.1rem; border-radius: var(--radius-sm);
+}
+.skip-link:focus { left: 0.6rem; top: 0.6rem; }
+
+h1, h2, h3 { font-family: var(--font-serif); line-height: var(--lh-heading); font-weight: 400; color: var(--ink); }
+h2 { font-size: var(--fs-h2); margin: 0 0 1em; }
+h3 { font-size: var(--fs-h3); margin: var(--space-block) 0 0.75em; }
+p { margin: 0 0 1.1em; }
+code { font-family: var(--font-mono); font-size: 0.9em; background: var(--cream3); padding: 0.12em 0.4em; border-radius: 4px; }
+a { color: var(--amber-dark, var(--amber)); }
+[data-theme="dark"] a, :root:not([data-theme="light"]) a { color: var(--amber); }
+
+.nav {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--nav-bg);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-inner {
+  max-width: 1000px; margin: 0 auto;
+  padding: 0.7rem clamp(1rem, 3vw, 2.5rem);
+  display: flex; align-items: center; gap: 1.1rem;
+  flex-wrap: wrap;
+}
+.nav-brand {
+  font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3);
+  white-space: nowrap;
+}
+.nav-links { display: flex; gap: 0.9rem; flex-wrap: wrap; margin-right: auto; }
+.nav-link {
+  font-size: var(--fs-sm); color: var(--ink2); text-decoration: none;
+  padding: 0.2rem 0; border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+.nav-link.active { color: var(--amber-dark, var(--amber)); border-bottom-color: var(--amber); }
+[data-theme="dark"] .nav-link.active, :root:not([data-theme="light"]) .nav-link.active { color: var(--amber); }
+.nav-progress { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink3); white-space: nowrap; }
+.nav-btn {
+  font-family: var(--font-sans); font-size: 1rem; line-height: 1;
+  background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  width: 34px; height: 34px; cursor: pointer; color: var(--ink2);
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: border-color var(--t-fast);
+}
+.nav-btn:hover { border-color: var(--amber); }
+.nav-btn.font-toggle { font-family: var(--font-serif); font-size: 0.85rem; width: auto; padding: 0 0.6rem; }
+
+.chapter-nav {
+  max-width: 1000px; margin: 0 auto;
+  padding: 0.85rem clamp(1rem, 3vw, 2.5rem);
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  font-size: var(--fs-sm); color: var(--ink3);
+}
+.chapter-nav-link { color: var(--ink3); text-decoration: none; }
+.chapter-nav-link.disabled { cursor: default; opacity: 0.55; }
+.chapter-nav-link em { font-style: normal; font-size: var(--fs-xs); }
+.chapter-nav-current { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase; }
+
+.hero {
+  background: var(--cream);
+  padding: clamp(2rem, 4vw, 3.5rem) clamp(1rem, 3vw, 2.5rem) clamp(1.5rem, 3vw, 2.5rem);
+  border-bottom: 1px solid var(--border);
+}
+.hero-inner { max-width: 900px; margin: 0 auto; }
+.eyebrow {
+  display: flex; align-items: center; gap: 0.6rem;
+  font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber-dark, var(--amber));
+  margin-bottom: 0.9rem;
+}
+[data-theme="dark"] .eyebrow, :root:not([data-theme="light"]) .eyebrow { color: var(--amber); }
+.eyebrow .icon { font-size: 1.3rem; letter-spacing: 0; }
+.hero h1 { font-size: var(--fs-h1); margin: 0; max-width: 20ch; }
+
+main { max-width: 900px; margin: 0 auto; padding: 0 clamp(1rem, 3vw, 2.5rem); }
+section { padding: var(--space-section) 0 0; }
+section:last-of-type { padding-bottom: var(--space-section); }
+.measure { max-width: var(--measure); }
+
+.analogy, .callout-tip, .callout-warning, .callout-remember {
+  border-radius: var(--radius); padding: 22px 26px; margin: var(--space-block) 0;
+}
+.analogy      { background: var(--amber-light);  border-left: 3.5px solid var(--amber); }
+.callout-tip  { background: var(--amber-light);  border-left: 3.5px solid var(--amber); }
+.callout-warning { background: var(--coral-light); border-left: 3.5px solid var(--coral); }
+.callout-remember { background: var(--purple-light); border-left: 3.5px solid var(--purple); }
+.callout-def {
+  background: var(--blue-light); border-radius: var(--radius-sm);
+  padding: 18px 22px; margin: var(--space-block) 0;
+}
+.box-tag {
+  display: block; font-family: var(--font-mono); font-size: var(--fs-xs);
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3);
+  margin-bottom: 8px;
+}
+.analogy .box-tag { color: var(--amber-dark, var(--amber)); }
+[data-theme="dark"] .analogy .box-tag, :root:not([data-theme="light"]) .analogy .box-tag { color: var(--amber); }
+.callout-remember .box-tag { color: var(--purple); }
+.callout-def .box-tag { color: var(--blue); }
+.callout-warning .box-tag { color: var(--coral); }
+.analogy p, .callout-tip p, .callout-def p, .callout-remember p, .callout-warning p { margin-bottom: 0.6em; }
+.analogy p:last-child, .callout-tip p:last-child, .callout-def p:last-child, .callout-remember p:last-child, .callout-warning p:last-child { margin-bottom: 0; }
+
+.takeaway, .worked {
+  background: var(--surface-raised); color: var(--on-raised);
+  border-radius: var(--radius); padding: 26px 28px; margin: var(--space-block) 0;
+}
+.takeaway .box-tag, .worked .box-tag { color: var(--on-raised-dim); }
+.takeaway p, .worked p { color: var(--on-raised-muted); margin-bottom: 0; }
+.takeaway strong, .worked strong { color: var(--on-raised); }
+.worked p { font-family: var(--font-mono); font-size: var(--fs-sm); line-height: 1.75; }
+
+.pullquote {
+  max-width: 640px; margin: var(--space-block) auto;
+  padding-left: 22px; border-left: 3px solid var(--amber);
+  font-family: var(--font-serif); font-size: var(--fs-pull); line-height: 1.45;
+  color: var(--ink2);
+}
+
+.xlink-grid { display: grid; gap: 12px; margin: var(--space-block) 0; }
+.xlink {
+  background: var(--cream2); border-radius: var(--radius-sm);
+  padding: 14px 18px; display: flex; gap: 12px; align-items: baseline;
+  font-size: var(--fs-sm);
+}
+.xlink b { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.05em; color: var(--ink3); white-space: nowrap; }
+.xlink span { color: var(--ink2); }
+a.xlink { text-decoration: none; }
+a.xlink:hover { box-shadow: var(--shadow); }
+
+.diagram { margin: var(--space-block) 0; text-align: center; }
+.diagram svg { max-width: 100%; height: auto; }
+.diagram-caption { font-size: var(--fs-xs); color: var(--ink3); margin-top: 0.6rem; font-family: var(--font-mono); }
+
+.mcq {
+  background: var(--green-light); border-radius: var(--radius);
+  padding: 22px 24px; margin: var(--space-block) 0;
+}
+.mcq-num {
+  font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--green); margin-bottom: 10px; display: flex; gap: 10px; align-items: center;
+}
+.mcq-tag { background: var(--cream); padding: 2px 8px; border-radius: 4px; color: var(--ink3); }
+.mcq-stem { font-size: var(--fs-body); margin-bottom: 1rem; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 0.4rem; }
+.mcq-opt {
+  font-family: var(--font-sans); font-size: var(--fs-sm); text-align: left;
+  background: var(--cream); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 11px 14px; cursor: pointer; color: var(--ink);
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+.mcq-opt:hover:not(:disabled) { border-color: var(--amber); }
+.mcq-opt:disabled { cursor: default; }
+.mcq-opt.mcq-selected { border-color: var(--amber); }
+.mcq-opt.mcq-correct { background: var(--green-light); border-color: var(--green); font-weight: 600; }
+.mcq-opt.mcq-incorrect { background: var(--coral-light); border-color: var(--coral); text-decoration: line-through; }
+.mcq-submit {
+  font-family: var(--font-sans); font-size: var(--fs-sm); font-weight: 600;
+  background: var(--ink); color: var(--cream); border: none; border-radius: var(--radius-sm);
+  padding: 9px 18px; cursor: pointer; margin-top: 4px;
+}
+.mcq-submit:disabled { opacity: 0.5; cursor: default; }
+.mcq-feedback { font-weight: 600; margin-top: 12px; }
+.mcq-feedback.right { color: var(--green); }
+.mcq-feedback.wrong { color: var(--coral); }
+.mcq-explain { margin-top: 10px; font-size: var(--fs-sm); color: var(--ink2); background: var(--cream); border-radius: var(--radius-sm); padding: 12px 16px; }
+
+.chapter-end {
+  background: var(--surface-raised); color: var(--on-raised);
+  border-radius: var(--radius); padding: 30px clamp(24px, 4vw, 40px);
+  margin: var(--space-section) 0; text-align: center;
+}
+.chapter-end p { color: var(--on-raised-muted); margin-bottom: 1.2rem; }
+.chapter-end .chapter-nav { padding: 0; color: var(--on-raised-dim); }
+.chapter-end .chapter-nav-link { color: var(--on-raised); }
+.chapter-end .chapter-nav-link.disabled { color: var(--on-raised-dim); }
+.chapter-end .chapter-nav-current { color: var(--on-raised-dim); }
+
+footer { text-align: center; padding: 2rem 1rem 3rem; font-size: var(--fs-xs); color: var(--ink3); }
+
+.table-wrap { overflow-x: auto; margin: var(--space-block) 0; }
+.decision-table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); margin: 0; }
+.decision-table th, .decision-table td { text-align: left; padding: 12px 16px; border: 1px solid var(--border); vertical-align: top; }
+.decision-table thead th { background: var(--cream2); color: var(--ink2); font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.05em; text-transform: uppercase; font-weight: 600; }
+.decision-table tbody tr:nth-child(even) { background: var(--cream2); }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#hook">Skip to content</a>
+
+<nav class="nav" aria-label="Chapter navigation">
+  <div class="nav-inner">
+    <span class="nav-brand">CCDV-F &middot; Ch. 15</span>
+    <div class="nav-links">
+      <a class="nav-link" href="#hook">Five Tools, No Map</a>
+      <a class="nav-link" href="#the-test">The Enumerate Test</a>
+      <a class="nav-link" href="#start-simple">Start Simple</a>
+      <a class="nav-link" href="#assembly-repair">Assembly Line vs Repair Shop</a>
+      <a class="nav-link" href="#hierarchy">Why a Hierarchy Exists</a>
+      <a class="nav-link" href="#fifteen-times">The 15&times; Multiplier</a>
+      <a class="nav-link" href="#two-questions">Two Questions, In Order</a>
+      <a class="nav-link" href="#unpredictable-input">Input vs Path</a>
+      <a class="nav-link" href="#authority-stops">Where Authority Stops</a>
+      <a class="nav-link" href="#exam-cues">Exam Cues</a>
+      <a class="nav-link" href="#self-test">Self-Test</a>
+    </div>
+    <div class="nav-progress">Progress: <span id="depth-pct">0</span>%</div>
+    <button class="nav-btn theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark mode" title="Toggle dark mode">&#127769;</button>
+    <button class="nav-btn font-toggle" id="font-toggle" type="button" aria-label="Change reading font" title="Cycle reading font">Aa</button>
+  </div>
+</nav>
+
+<div class="chapter-nav">
+  <a class="chapter-nav-link" href="Ch14_Build-once-connect-many.html">&#9668; Chapter 14</a>
+  <span class="chapter-nav-current">Chapter 15 of 34</span>
+  <a class="chapter-nav-link" href="Ch16_Who-runs-the-loop.html">Chapter 16 &#9658;</a>
+</div>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="eyebrow"><span class="icon">&#128256;</span> Chapter 15 of 34 &middot; Agent Design Patterns</div>
+    <h1>Workflow or agent</h1>
+  </div>
+</header>
+
+<main>
+
+<section id="hook">
+  <h2>Five tools and no map</h2>
+  <div class="measure">
+    <p>A team building an enterprise onboarding pipeline wired it as an agent. Every new account needs five things done: create the account record, verify the domain, provision seats, send the welcome email, notify the sales rep who closed the deal. The team registered all five as tools, wrote a system prompt describing the goal, &ldquo;onboard this new account,&rdquo; and let Claude work out which tool to call and when.</p>
+    <p>For a few weeks it worked. Then the tickets started: an account provisioned before its domain was verified, a welcome email sent twice, a sales rep never notified because Claude judged the notification redundant on a run where the first four steps had gone smoothly. Every individual tool call succeeded. The sequence itself was the defect, and it was a different sequence almost every run, which made the failures hard to reproduce and harder to trust a fix for.</p>
+    <div class="pullquote">The five steps never varied: every new account needed the same order, every time &mdash; a fact that could have gone straight into code before a single system-prompt line was drafted.</div>
+  </div>
+</section>
+
+<section id="the-test">
+  <h2>The enumerate-the-steps test</h2>
+  <div class="measure">
+    <p>The onboarding pipeline is a workflow wearing an agent's clothes. The question that decides which one a task needs comes before any other design choice: whether you can enumerate the exact steps in code. If the steps can be enumerated, build a <strong>workflow</strong> &mdash; fixed logic, in an order you wrote. If the path itself has to be discovered at run time, from a goal and a toolset rather than a script, build an <strong>agent</strong>.</p>
+    <p>That one question forks into five more specific ones, and a mismatch on any of them is a signal the wrong pattern was picked.</p>
+
+    <div class="table-wrap">
+      <table class="decision-table">
+        <thead>
+          <tr><th>Choose a workflow when&hellip;</th><th>Choose an agent when&hellip;</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>You can enumerate the exact steps in code.</td><td>You can specify the goal and the tools, leaving the exact path unspecified.</td></tr>
+          <tr><td>Error cost is real and step-level guardrails matter.</td><td>The path cannot be enumerated in advance.</td></tr>
+          <tr><td>Observability with standard tooling is required.</td><td>Non-determinism is acceptable, and the agent's actions are bounded by its registered toolset.</td></tr>
+          <tr><td>Inputs are constrained to a known set.</td><td>Inputs vary unpredictably in content and structure.</td></tr>
+          <tr><td>Every execution follows the same sequence.</td><td>The task requires creative sequencing of the available tools.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="takeaway">
+      <span class="box-tag">The one variable</span>
+      <p>One variable does all the work across those five rows: how much of the path can be known in advance. Error cost, observability, and input shape are downstream of that one fact. A workflow is a script you commit to before the first request arrives. An agent is a decision you defer to Claude, request by request, constrained only by the tools you handed it.</p>
+    </div>
+
+    <p>That deferral is the whole trade this chapter is about. You buy an agent when you cannot enumerate the steps in advance, and what you pay for that flexibility is determinism: the same input can take a different route through the same toolset on two different runs &mdash; which is exactly what happened to the onboarding pipeline.</p>
+  </div>
+</section>
+
+<section id="start-simple">
+  <h2>Start simple, and earn the next step</h2>
+  <div class="measure">
+    <p>The guidance for picking a pattern is a ladder, climbed one rung at a time: start with the simplest pattern that solves the problem &mdash; a single API call, then a workflow, then an agent &mdash; and move up only when the simpler pattern cannot handle the variability the task requires. An agent is the rung you reach for last, only once the simpler patterns have proven insufficient.</p>
+    <p>Two workflow properties make the case concrete. Error cost: a workflow's guardrails sit at the step where they're needed, so a bad output at step three is caught at step three, before step four ever runs on it. An agent's guardrails are harder to place, because there may be no fixed step three to place one at. Observability: a workflow produces the same shape of log entry on every run, so a dashboard built for a fixed sequence works unmodified. Reading an agent's log to find out why one run skipped the sales notification means reading a transcript rather than checking a line count.</p>
+    <div class="callout-warning">
+      <span class="box-tag">The hidden cost of a wide toolset</span>
+      <p>Choosing agent carries one more cost worth naming, because it compounds with everything else: every tool you register adds to what the model has to choose between on every step, and a wide toolset degrades routing quality even when each individual tool is well described. Registering every tool a task might conceivably need, &ldquo;just in case,&rdquo; carries that cost directly: each extra entry in the toolset is one more option the model has to weigh at every step, so a toolset padded past what the task requires degrades the very routing it was meant to protect.</p>
+      <p>Start with the minimum set the task actually requires and add a tool only once a specific gap is confirmed. A workflow does not carry this cost the same way, because a workflow's steps call exactly the tools they were written to call, and nothing else is ever on the table.</p>
+    </div>
+  </div>
+</section>
+
+<section id="assembly-repair">
+  <h2>An assembly line against a repair shop</h2>
+  <div class="measure">
+    <p>The clearest real-world version of this fork is the difference between an assembly line and a repair shop.</p>
+    <div class="analogy">
+      <span class="box-tag">Hold this analogy</span>
+      <p>An assembly line is built once, for one product, in one order: weld the frame, mount the engine, fit the doors, run the paint booth, inspect. Every unit gets the same steps in the same sequence, and a guard or a sensor sits at each station because the station, and what can go wrong there, is known in advance. That is a workflow: enumerable steps, a fixed path, guardrails placed exactly where the risk is.</p>
+      <p>A repair shop knows its goal, fix the car, and its toolset, the bay's full set of diagnostics and tools, but not the path. A technician who hears a rattling noise does not run a fixed script; she listens, tests a hypothesis, checks a different part if the first one turns out fine, and assembles a sequence that fits the specific fault in front of her. That is an agent: a goal, a bounded toolset, and a path built at run time from what the situation turns out to need.</p>
+    </div>
+    <div class="callout-warning">
+      <span class="box-tag">Where the analogy breaks</span>
+      <p>A technician can walk to a shelf you never labelled and grab a tool you forgot existed. Claude cannot. Whatever an agent does at run time, it does with the tools you registered and no others &mdash; the fifth row of the table above, non-determinism bounded by a fixed toolset. The improvisation is real, but it is a search over a space you defined in advance, rather than an open-ended one.</p>
+    </div>
+  </div>
+</section>
+
+<section id="hierarchy">
+  <h2>Why a hierarchy exists at all</h2>
+  <div class="measure">
+    <p>Everything so far describes a single agent: one loop, one context window, one set of registered tools. Some tasks outgrow that shape before they outgrow the workflow-or-agent question. A single agent's context window is one shared pot; every source it reads, every tool result, every intermediate note it keeps sits in the same window competing for the same space. A research task reading forty independent sources fills that window with the first several and starves the rest, and it reads them one at a time, because one loop can only do one thing at once.</p>
+    <p>A manager/supervisor hierarchy exists to solve exactly that problem: it splits one large context and one sequential loop into several smaller ones that run at the same time. A lead agent, the manager, decomposes the task and hands pieces to subagents, the workers, each with its own context window, working its own piece independently of the others. The lead is not doing the reading itself; it decides how to split the work and, once the pieces come back, compiles them into one answer.</p>
+    <div class="callout-def">
+      <span class="box-tag">Definition: subagent</span>
+      <p>That split is what a subagent is for, stated plainly: a subagent buys an isolated context window, so one source's worth of reading does not crowd out another's, and it buys parallel work &mdash; several pieces explored at the same time instead of one after another. Neither is available to a single agent's one-loop, one-window shape, however well the prompt is written.</p>
+    </div>
+  </div>
+</section>
+
+<section id="fifteen-times">
+  <h2>What the fifteen-times number is buying</h2>
+  <div class="measure">
+    <p>Orchestrator-worker is the concrete pattern a hierarchy takes in practice: a lead agent plans, several subagents run in parallel against their own context, and the lead synthesizes what comes back. Anthropic's own multi-agent research system runs on this pattern. Against a single-agent baseline, the multi-agent version showed a substantial accuracy improvement on Anthropic's internal research evals, and it did so at roughly fifteen times the token cost of a normal chat interaction, because every subagent spends its own tokens against its own context.</p>
+    <p>Derive what that multiplier is paying for. A single agent answering a research question might spend on the order of ten thousand tokens. Splitting that into a lead plus four subagents means five separate contexts, each reading and reasoning independently, plus a synthesis pass over what they return. At roughly fifteen times the single-agent cost, a question that cost ten thousand tokens alone costs on the order of a hundred and fifty thousand tokens split across the hierarchy. The multiplier buys parallel exploration across independent sources. On a task that never needed splitting, it buys nothing.</p>
+    <p>The token cost is not the only thing a hierarchy multiplies. Every subagent is another place a call can fail, so the same retry and fallback discipline a single agent needs has to run independently inside each one. A subagent that hits a rate limit with no backoff can leave the lead waiting on a return that never arrives, holding up the whole compilation step. Spreading work across agents multiplies the surface area a failure can occur on at the same rate it multiplies the tokens spent.</p>
+    <p>That is exactly what happened to a real customer: an orchestrator-worker setup where the bill tripled and the answers barely improved, because the task was a sequence of dependent steps, each waiting on the last rather than a fan-out across independent sources. Moved back to a single agent with the same context, the bill dropped and the answer quality held. The lesson is not that orchestration is bad, but that the multiplier only pays off when the work actually splits into independent parts.</p>
+  </div>
+</section>
+
+<section id="two-questions">
+  <h2>Two questions, in order</h2>
+  <div class="measure">
+    <p>Put the two decisions in sequence rather than making them at once. First: workflow or agent, decided by whether the steps can be enumerated in advance. Second, only once the answer is agent: does the task decompose into independent parts that can be explored at the same time, or is it a single chain where each step depends on the last?</p>
+
+    <div class="diagram">
+      <svg viewBox="0 0 680 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="d15-title d15-desc">
+        <title id="d15-title">Two decisions in sequence: workflow or agent, then single agent or hierarchy</title>
+        <desc id="d15-desc">A decision tree with two questions asked in sequence. First question: can the steps be enumerated in code? Answering yes leads to a workflow, fixed steps written in code. Answering no leads to an agent. A second question then applies only to the agent branch: do the parts of the task run independently? Answering no leads to a single agent, one loop and one context window. Answering yes leads to a hierarchy, a lead agent coordinating several subagents in parallel.</desc>
+        <defs>
+          <marker id="arr15" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#7a6a55"/></marker>
+          <linearGradient id="g15" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#f0e6d4"/><stop offset="100%" stop-color="#e7ad5c" stop-opacity="0.6"/></linearGradient>
+        </defs>
+
+        <rect x="200" y="16" width="280" height="54" rx="8" fill="url(#g15)" stroke="#7a6a55" stroke-width="1.2"/>
+        <text x="340" y="38" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#3a2000">Can the steps be enumerated</text>
+        <text x="340" y="56" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#3a2000">in code?</text>
+
+        <line x1="300" y1="70" x2="120" y2="136" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr15)"/>
+        <line x1="380" y1="70" x2="560" y2="136" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr15)"/>
+        <text x="180" y="98" text-anchor="middle" font-family="ui-monospace, monospace" font-size="12" fill="#7a6a55">No</text>
+        <text x="500" y="98" text-anchor="middle" font-family="ui-monospace, monospace" font-size="12" fill="#7a6a55">Yes</text>
+
+        <rect x="40" y="140" width="140" height="44" rx="8" fill="url(#g15)" stroke="#7a6a55" stroke-width="1.2"/>
+        <text x="110" y="167" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#3a2000">Agent</text>
+
+        <rect x="500" y="140" width="140" height="44" rx="8" fill="url(#g15)" stroke="#7a6a55" stroke-width="1.2"/>
+        <text x="570" y="167" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#3a2000">Workflow</text>
+
+        <line x1="110" y1="184" x2="110" y2="220" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr15)"/>
+
+        <rect x="20" y="220" width="180" height="54" rx="8" fill="url(#g15)" stroke="#7a6a55" stroke-width="1.2"/>
+        <text x="110" y="242" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12.5" font-weight="700" fill="#3a2000">Do the parts run</text>
+        <text x="110" y="260" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12.5" font-weight="700" fill="#3a2000">independently?</text>
+
+        <line x1="90" y1="274" x2="80" y2="318" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr15)"/>
+        <line x1="150" y1="274" x2="240" y2="318" stroke="#7a6a55" stroke-width="1.5" marker-end="url(#arr15)"/>
+        <text x="65" y="300" text-anchor="middle" font-family="ui-monospace, monospace" font-size="12" fill="#7a6a55">No</text>
+        <text x="205" y="300" text-anchor="middle" font-family="ui-monospace, monospace" font-size="12" fill="#7a6a55">Yes</text>
+
+        <rect x="10" y="320" width="140" height="44" rx="8" fill="url(#g15)" stroke="#7a6a55" stroke-width="1.2"/>
+        <text x="80" y="347" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12.5" font-weight="700" fill="#3a2000">Single agent</text>
+
+        <rect x="170" y="320" width="190" height="44" rx="8" fill="url(#g15)" stroke="#7a6a55" stroke-width="1.2"/>
+        <text x="265" y="340" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12.5" font-weight="700" fill="#3a2000">Hierarchy</text>
+        <text x="265" y="356" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10.5" fill="#3a2000">(lead + subagents)</text>
+      </svg>
+      <div class="diagram-caption">Figure 15.1 &mdash; two decisions in sequence: workflow or agent, then single agent or hierarchy</div>
+    </div>
+
+    <p>Answer no to the second question and a single agent is the right shape; a hierarchy would spend the token multiplier on a parallelism the task cannot use. Answer yes, and the multiplier buys something real: research across many sources, a broad sweep where the pieces genuinely do not depend on each other's answers. Tightly coupled work, coding tasks among them, fails that second test even when it clearly needed an agent for the first: each step's output shapes the next step's input, so there is nothing to run in parallel, and a hierarchy here spends the multiplier on subagents that are, in effect, waiting on each other anyway.</p>
+
+    <div class="takeaway">
+      <span class="box-tag">Back to the onboarding pipeline</span>
+      <p>The first question alone settles it: five steps, always the same order, so the whole thing is a workflow, with the tool calls written into code in the sequence they always run. If provisioning genuinely needed judgment somewhere inside that sequence &mdash; deciding which of a dozen seat configurations fit an account nobody had described in a fixed field &mdash; that one step could be an agent call embedded inside the workflow, invoked at the single place the path actually branches. The two questions apply per step, separately at each point in the task, and a pipeline can mix both patterns and still get the right answer at each point in it.</p>
+    </div>
+  </div>
+</section>
+
+<section id="unpredictable-input">
+  <h2>When the input looks unpredictable and the path still isn't</h2>
+  <div class="measure">
+    <p>A support-ticket system reads an incoming ticket, decides whether it belongs to billing, technical, security, or sales, and hands it to that team's queue with a summary attached. Every ticket's wording is different: different products, different tone, different length. A surface reading of the decision table says agent &mdash; the fourth row, inputs vary unpredictably &mdash; looks satisfied on the first pass.</p>
+    <p>The mechanism disagrees. What varies is the ticket's content, not the number of things the system can do with it. There are four categories and one action per category: classify, then route, then summarize. The step count and the step order never change; only which of four fixed branches gets taken changes, and that is exactly what a workflow's branching logic is for. Building this as an agent buys nothing, because there is no path to discover: the classification step decides the branch, and the branch was always going to be one of four.</p>
+    <div class="callout-remember">
+      <span class="box-tag">The distinguishing question</span>
+      <p>A ticket classifier answers yes, four branches, and belongs in a workflow with a classification step. A research agent answers no, because which source it reads next depends on what the last one said, and that dependency is exactly what a workflow cannot express without hand-coding every branch in advance.</p>
+    </div>
+  </div>
+</section>
+
+<section id="authority-stops">
+  <h2>Where this chapter's authority stops</h2>
+  <div class="measure">
+    <p>Deciding workflow or agent, and if agent, single agent or hierarchy, is a design decision made before any code exists. Several things sit immediately on the other side of that decision and belong to other chapters.</p>
+    <div class="xlink-grid">
+      <div class="xlink"><b>CH. 16</b><span>Which wiring path actually runs the loop &mdash; the Messages API directly, the Agent SDK, or Claude Managed Agents. Does not change which pattern you picked here.</span></div>
+      <div class="xlink"><b>CH. 17</b><span>Building the loop's own moving parts: registering tools, scoping the system prompt, handling the tool-use-and-result pairing, defining an exit condition.</span></div>
+      <div class="xlink"><b>CH. 18</b><span>How a subagent is actually spawned, scoped, and handed a slice of the task, and what state a hierarchy carries across a session.</span></div>
+      <div class="xlink"><b>CH. 19</b><span>Deciding where a human checkpoint goes in an agent's loop, made on the worst-case outcome of the step it guards.</span></div>
+      <div class="xlink"><b>CH. 27</b><span>The retry and backoff discipline each subagent needs once it can fail independently.</span></div>
+    </div>
+    <p>This chapter's job ends at the fork itself: enumerable or not, and if not, parallel or not.</p>
+  </div>
+</section>
+
+<section id="exam-cues">
+  <h2>What the stem sounds like</h2>
+  <div class="measure">
+    <div class="callout-remember">
+      <span class="box-tag">Remember this</span>
+      <p>A stem naming this chapter's fork says &ldquo;the exact steps are known&rdquo; or &ldquo;every case follows the same sequence&rdquo; for a workflow, and &ldquo;the path can't be predetermined&rdquo; or &ldquo;inputs vary in ways you can't enumerate&rdquo; for an agent. A second consumer of parallel, independent subtasks &mdash; research across many sources &mdash; is the tell for a hierarchy; a chain of dependent steps is the tell against one, the same distinction that decides whether an orchestrator-worker setup's roughly fifteen-times token cost is buying parallel exploration across separate context windows or is being spent on subagents that end up waiting on each other's output anyway.</p>
+    </div>
+  </div>
+</section>
+
+<section id="self-test">
+  <h2>Self-test</h2>
+  <div class="measure">
+
+    <div class="mcq" data-qtype="single" data-correct="B">
+      <div class="mcq-num">Question 1 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">A team needs to process incoming invoices: extract the vendor name and amount, check it against a fixed approval-threshold table, and route it to one of three fixed approval queues. Every invoice goes through the same three steps in the same order.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. Build this as an agent; invoice text varies too much for a workflow to enumerate.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Build this as a workflow; the steps and their order never change, only the values inside them do.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. Build this as an orchestrator-worker hierarchy, so each invoice is processed in its own context.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Build this as an agent with a wide toolset, so it can improvise the path invoices most often need.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: B.</strong> The steps and their order are fixed; only the values differ, which is a workflow by the first row of the decision table. A, C, and D each spend agent or hierarchy complexity the scenario never asked for.</div>
+    </div>
+
+    <div class="mcq" data-qtype="single" data-correct="B">
+      <div class="mcq-num">Question 2 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">A team's task reads a single long contract and answers a chain of follow-up questions where each answer depends on the previous one. They configure it as a five-subagent orchestrator-worker setup to speed it up.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. Justified: more agents finish work faster regardless of how the steps depend on each other.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Not justified: the steps are sequentially dependent, so the subagents mostly wait on each other while still paying the token multiplier.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. Justified: a hierarchy always improves accuracy over a single agent on Anthropic's own reported evals.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Not justified: contracts should always be handled by a workflow, never an agent.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: B.</strong> Dependent steps cannot be explored in parallel, so the hierarchy pays roughly fifteen times the token cost for no parallel benefit. A and C overstate what the pattern guarantees, and D overcorrects into a rule the chapter never states.</div>
+    </div>
+
+    <div class="mcq" data-qtype="multi" data-correct="A,C">
+      <div class="mcq-num">Question 3 <span class="mcq-tag">Select TWO</span></div>
+      <p class="mcq-stem">Which two of the following does delegating work to subagents in a manager/supervisor hierarchy actually buy, that a single agent's one loop and one context window cannot?</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. An isolated context window per subagent, so one source's reading does not crowd out another's.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. A guarantee that the combined answer will always be more accurate than a single agent's.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. Parallel exploration of independent pieces of the task at the same time.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. A lower total token cost than running the task as a single agent.</button>
+      </div>
+      <button class="mcq-submit" type="button">Submit</button>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: A, C.</strong> Isolation and parallelism are what a hierarchy adds that a single loop cannot. B and D overstate the trade &mdash; a hierarchy buys parallel reach without guaranteeing either automatic accuracy or savings.</div>
+    </div>
+
+    <div class="mcq" data-qtype="single" data-correct="B">
+      <div class="mcq-num">Question 4 <span class="mcq-tag">Select ONE</span></div>
+      <p class="mcq-stem">A helpdesk system reads a free-text employee request and decides whether it needs IT, facilities, or HR, then opens a ticket in that team's queue with a one-line summary. Every request produces exactly one of those three outcomes.</p>
+      <div class="mcq-options">
+        <button class="mcq-opt" data-letter="A" type="button">A. Agent &mdash; the free text varies too widely for any script to handle.</button>
+        <button class="mcq-opt" data-letter="B" type="button">B. Workflow with a classification step &mdash; three fixed branches chosen from varying input is still an enumerable path.</button>
+        <button class="mcq-opt" data-letter="C" type="button">C. Orchestrator-worker &mdash; split the classification and the summary into two parallel subagents.</button>
+        <button class="mcq-opt" data-letter="D" type="button">D. Managed Agents &mdash; offload the classification to Anthropic's hosted loop.</button>
+      </div>
+      <div class="mcq-feedback" hidden aria-live="polite"></div>
+      <div class="mcq-explain" hidden><strong>Answer: B.</strong> Three fixed branches chosen from varying free text is still an enumerable path with a classification step. A mistakes input variety for path variety, and C and D spend complexity the three-branch, low-volume task never needed.</div>
+    </div>
+
+  </div>
+</section>
+
+</main>
+
+<div class="chapter-end">
+  <p>End of Chapter 15 &mdash; Agent Design Patterns</p>
+  <div class="chapter-nav">
+    <a class="chapter-nav-link" href="Ch14_Build-once-connect-many.html">&#9668; Chapter 14</a>
+    <span class="chapter-nav-current">Chapter 15 of 34</span>
+    <a class="chapter-nav-link" href="Ch16_Who-runs-the-loop.html">Chapter 16 &#9658;</a>
+  </div>
+</div>
+
+<footer>CCDV-F Regeneration &middot; Chapter 15 of 34</footer>
+
+<script>
+var pct = document.getElementById('depth-pct');
+function onScroll() {
+  var h = document.documentElement;
+  var max = h.scrollHeight - h.clientHeight;
+  var p = max > 0 ? (h.scrollTop || document.body.scrollTop) / max : 0;
+  var v = Math.round(p * 100);
+  if (pct) pct.textContent = v;
+  var links = document.querySelectorAll('.nav-link[href^="#"]');
+  var cur = '';
+  document.querySelectorAll('section[id]').forEach(function (s) {
+    if (s.getBoundingClientRect().top <= 120) cur = s.id;
+  });
+  links.forEach(function (l) {
+    l.classList.toggle('active', l.getAttribute('href') === '#' + cur);
+  });
+}
+window.addEventListener('scroll', onScroll, { passive: true });
+window.addEventListener('resize', onScroll);
+document.addEventListener('DOMContentLoaded', onScroll);
+
+var toggle = document.getElementById('theme-toggle');
+var root = document.documentElement;
+var stored = localStorage.getItem('ccdv-theme');
+if (stored) root.setAttribute('data-theme', stored);
+function isDark() {
+  var attr = root.getAttribute('data-theme');
+  if (attr === 'dark') return true;
+  if (attr === 'light') return false;
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+function updateToggle() {
+  if (!toggle) return;
+  var dark = isDark();
+  toggle.innerHTML = dark ? '&#9728;&#65039;' : '&#127769;';
+  toggle.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+}
+updateToggle();
+if (toggle) {
+  toggle.addEventListener('click', function () {
+    var next = isDark() ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    localStorage.setItem('ccdv-theme', next);
+    updateToggle();
+  });
+}
+
+var fontToggle = document.getElementById('font-toggle');
+var fontModes = ['default', 'serif', 'legible'];
+var fontLabels = { default: 'Aa', serif: 'Aa (serif)', legible: 'Aa+ (legible)' };
+var storedFont = localStorage.getItem('ccdv-font');
+if (storedFont && storedFont !== 'default') root.setAttribute('data-font', storedFont);
+function updateFontToggle() {
+  if (!fontToggle) return;
+  var current = root.getAttribute('data-font') || 'default';
+  fontToggle.textContent = fontLabels[current];
+  fontToggle.setAttribute('aria-label', 'Reading font: ' + current + '. Click to change.');
+}
+updateFontToggle();
+if (fontToggle) {
+  fontToggle.addEventListener('click', function () {
+    var current = root.getAttribute('data-font') || 'default';
+    var next = fontModes[(fontModes.indexOf(current) + 1) % fontModes.length];
+    if (next === 'default') { root.removeAttribute('data-font'); }
+    else { root.setAttribute('data-font', next); }
+    localStorage.setItem('ccdv-font', next);
+    updateFontToggle();
+  });
+}
+
+document.querySelectorAll('.mcq').forEach(function (mcq) {
+  var qtype = mcq.dataset.qtype;
+  var correct = mcq.dataset.correct.split(',');
+  var options = Array.prototype.slice.call(mcq.querySelectorAll('.mcq-opt'));
+  var feedback = mcq.querySelector('.mcq-feedback');
+  var explain = mcq.querySelector('.mcq-explain');
+  var resolved = false;
+
+  if (qtype === 'single') {
+    options.forEach(function (opt) {
+      opt.addEventListener('click', function () {
+        if (resolved) return;
+        resolved = true;
+        var letter = opt.dataset.letter;
+        options.forEach(function (o) {
+          o.disabled = true;
+          if (correct.indexOf(o.dataset.letter) !== -1) o.classList.add('mcq-correct');
+          else if (o === opt) o.classList.add('mcq-incorrect');
+        });
+        var ok = letter === correct[0];
+        feedback.hidden = false;
+        feedback.textContent = ok ? 'Correct.' : 'Not quite.';
+        feedback.className = 'mcq-feedback ' + (ok ? 'right' : 'wrong');
+        explain.hidden = false;
+      });
+    });
+  } else {
+    var selected = [];
+    options.forEach(function (opt) {
+      opt.setAttribute('aria-pressed', 'false');
+      opt.addEventListener('click', function () {
+        if (resolved) return;
+        var letter = opt.dataset.letter;
+        var idx = selected.indexOf(letter);
+        if (idx === -1) { selected.push(letter); opt.setAttribute('aria-pressed', 'true'); opt.classList.add('mcq-selected'); }
+        else { selected.splice(idx, 1); opt.setAttribute('aria-pressed', 'false'); opt.classList.remove('mcq-selected'); }
+      });
+    });
+    var submit = mcq.querySelector('.mcq-submit');
+    if (submit) {
+      submit.addEventListener('click', function () {
+        if (resolved) return;
+        resolved = true;
+        var ok = selected.length === correct.length && selected.every(function (l) { return correct.indexOf(l) !== -1; });
+        options.forEach(function (o) {
+          o.disabled = true;
+          var letter = o.dataset.letter;
+          var was = selected.indexOf(letter) !== -1;
+          var isRight = correct.indexOf(letter) !== -1;
+          if (isRight) o.classList.add('mcq-correct');
+          else if (was) o.classList.add('mcq-incorrect');
+        });
+        submit.disabled = true;
+        feedback.hidden = false;
+        feedback.textContent = ok ? 'Correct — both required options selected.' : 'Not quite — multiple-response items are all-or-nothing on the real exam.';
+        feedback.className = 'mcq-feedback ' + (ok ? 'right' : 'wrong');
+        explain.hidden = false;
+      });
+    }
+  }
+});
+</script>
+</body>
+</html>

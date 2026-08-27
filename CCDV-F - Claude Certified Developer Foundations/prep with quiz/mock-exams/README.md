@@ -26,6 +26,16 @@ documented design stance — see "Never change these → Exam mode" below. Both 
 Practice Mode. `mock-exams/DASHBOARD.html` also did not exist until this fix; it now does, ported from
 CCAR-F's `DASHBOARD.html`.
 
+**Three external-source papers added 2026-08-25:** `Amey-Thakur_CLAUDE-CERTIFICATIONS_MockTest-{1,2,3}_v1.html`
+— 15 questions each, transcribed verbatim from a third-party GitHub repository
+([Amey-Thakur/CLAUDE-CERTIFICATIONS](https://github.com/Amey-Thakur/CLAUDE-CERTIFICATIONS/tree/main/developer-foundations)),
+reformatted into this engine's construct at Ram's request. **These are not CCDV-F-generated content** —
+every item card carries an EXTERNAL SOURCE badge, the filename is prefaced with the source repo's name,
+and none of it counts as corpus-grounded per this project's own discipline. `format: "DRILL15"`, not
+`FULL53` — short untimed drills, not domain-weighted simulations. Every answer, stem, and option set was
+programmatically cross-checked against the source's own raw markdown after transcription: 0 mismatches
+across all 45 items.
+
 ---
 
 ## The paper being simulated
@@ -233,5 +243,6 @@ first. Until then the exported line carries a key the schema does not document.
 |---|---|
 | `CCDV-F_MockTest-TEMPLATE_v1.html` | The engine. Copy it; do not sit it |
 | `CCDV-F_MockTest-N_v1.html` | Generated papers |
+| `Amey-Thakur_CLAUDE-CERTIFICATIONS_MockTest-{1,2,3}_v1.html` | External-source drills, not CCDV-F-generated — see Status above |
 | `DASHBOARD.html` | Reads `..\DASHBOARD-DATA.jsonl`. Static snapshot with a paste-to-refresh panel — see its own header comment |
 | `README.md` | This file |
