@@ -49,11 +49,11 @@ The Foundations-tier framing of this is "least privilege." The Professional-tier
 
 An internal operations agent has accumulated 22 tools over three quarters, because each new integration was added to the same agent rather than to a scoped one.
 
-Token cost: tool definitions average roughly 180 tokens each once the input schema is included. 22 tools is about 4,000 tokens present on every request before a single word of user content. At 40,000 requests per day, that is 160 million tokens per day spent describing tools, the large majority of which are irrelevant to any given request.
+Token cost: tool definitions average roughly 200 tokens each once the input schema is included. 22 tools is about 4,400 tokens present on every request before a single word of user content. At 40,000 requests per day, that is 176 million tokens per day spent describing tools, the large majority of which are irrelevant to any given request.
 
 Selection cost: audit of a week of traces shows misroutes concentrated in three pairs — `get_customer` / `get_account`, `search_tickets` / `search_knowledge`, `send_notification` / `create_alert`. Misroute rate on requests touching those domains is 11%. On requests touching the other sixteen tools it is under 2%.
 
-The fix is not one change but a decomposition. Split the agent by role: a customer-lookup agent with 4 tools, a knowledge agent with 3, a notification agent with 3. Each request routes to one role. Tool surface per request drops from 22 to 3–4, token cost per request drops by roughly 3,300, and the confusable pairs are now in *different agents*, so the discrimination problem disappears rather than being mitigated.
+The fix is not one change but a decomposition. Split the agent by role: a customer-lookup agent with 4 tools, a knowledge agent with 3, a notification agent with 3. Each request routes to one role. Tool surface per request drops from 22 to 3–4, token cost per request drops by roughly 3,700, and the confusable pairs are now in *different agents*, so the discrimination problem disappears rather than being mitigated.
 
 Then, and only then, tighten the descriptions on the pairs that remain confusable within a single agent.
 
@@ -606,7 +606,7 @@ A regional insurer builds a claims assistant for 900 adjusters. Volume: 180,000 
 
 **Capability bloat (1).** The first design gave the adjuster agent all 19 available tools. Trace analysis found an 8% misroute rate concentrated between three near-duplicate pairs. The agent is split into three role-scoped agents of 4–6 tools each. One narrowly scoped cross-role tool survives the split: the claims agent keeps a read-only `check_policy_status` because it needs it on nearly every turn and the coordinator round-trip was the dominant latency cost.
 
-**Progressive discovery (8).** Across the three agents plus their sub-systems the total surface is 34 tools. Namespace-level discovery over 5 namespaces plus promotion of the 7 tools accounting for 64% of calls. Base surface: ~2,600 tokens against 6,800 monolithic.
+**Progressive discovery (8).** Across the three agents plus their sub-systems the total surface is 34 tools. Namespace-level discovery over 5 namespaces plus promotion of the 7 tools accounting for 64% of calls. Base surface: ~2,150 tokens against 6,800 monolithic.
 
 **Auth and authz (2).** The adjuster's identity propagates from the edge to every data access. The policy store's retrieval query carries an entitlement filter, so documents outside the adjuster's line of business are never candidates. The issue-tracker server uses per-user credential substitution. During review, the agent was found to hold a `update_claim_status` tool that no workflow used; it was removed rather than logged, confirmed, or restricted by hour.
 

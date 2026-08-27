@@ -468,11 +468,11 @@ Efficiency and productivity are close enough to be worth separating carefully. E
 
 This is the part that makes Objective 6 an architecture objective rather than a communications one.
 
-**A latency SLA constrains the pattern.** Suppose the commitment is a p95 response under 3 seconds and a single model call runs ~1.5s at p95.
+**A latency SLA constrains the pattern.** Suppose the commitment is a p95 response under 3.5 seconds and a single model call runs ~1.5s at p95.
 
 - A five-step serial chain is ~7.5s. Fails.
 - The same five steps with three of them parallel is ~1.5s + 1.5s + 1.5s ≈ 4.5s. Still fails.
-- Move the two enrichment steps off the request path — precompute at ingest — and the request path is two calls, ~3s. Passes, barely.
+- Move the two enrichment steps off the request path — precompute at ingest — and the request path is two calls, ~3s. Passes, with ~500ms of margin.
 - An agent averaging nine calls is not in the conversation, and its tail is worse than its mean.
 
 The SLA did not just rank the designs. It eliminated a rung of the ladder.
@@ -486,7 +486,7 @@ The SLA did not just rank the designs. It eliminated a rung of the ladder.
 The invoice pipeline again, argued three ways for three audiences. Same system, same numbers.
 
 - **To the CFO (cost):** processing cost falls from $4.10 per invoice in fully-manual handling to $0.11 in compute plus $0.38 in residual human review, on 50,000 invoices a month. Annual run rate on the platform is roughly $65,000 against about $2.4M in current handling cost.
-- **To the operations director (efficiency and productivity):** average handling time drops from 11 minutes to under 2. The team of eighteen stops keying invoices and moves to exception handling and vendor disputes — the work that was permanently deferred.
+- **To the operations director (efficiency and productivity):** average handling time drops from 11 minutes to under 2. The team of sixty stops keying invoices and moves to exception handling and vendor disputes — the work that was permanently deferred.
 - **To the CIO (SLA):** p95 processing time is 7.5 seconds against a 10-second commitment, with a documented escape route for the 4% of invoices that take the agentic path and a human queue behind that.
 
 Three sentences, three units, one architecture. Producing them is the skill Objective 6 tests, and it is the skill the "communicate architectural decisions" objective in Domain 6 builds on.

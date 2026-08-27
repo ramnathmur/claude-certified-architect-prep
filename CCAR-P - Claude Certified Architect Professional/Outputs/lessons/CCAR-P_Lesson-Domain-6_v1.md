@@ -190,7 +190,7 @@ consulting advice most sharply. A single headline number is normally good commun
 it is the pyramid principle working correctly. For a system whose performance varies sharply by case
 type, a single aggregate number is actively misleading, because the aggregate is a weighted average
 over a mix that will change. A system at 94% on standard cases and 61% on complex ones reports as
-"88% accurate" only until the case mix shifts, at which point the number moves for reasons nobody
+"87% accurate" only until the case mix shifts, at which point the number moves for reasons nobody
 can explain.
 
 The professional answer has three components: **break performance out by case type**, **state how it
@@ -215,7 +215,7 @@ cases." Same decision, same trade-off, priced in the units the audience owns.
 The sponsor of the claims-routing system asks, in a steering meeting: "So how accurate is it? Give me
 one number I can take to the board."
 
-The answer that fails: "88%." The mix that produced 88% is not stable, and the number will move next
+The answer that fails: "87%." The mix that produced 87% is not stable, and the number will move next
 quarter for reasons unrelated to the system.
 
 The answer that also fails: "It's hard to reduce to one number." True, and useless.
@@ -258,7 +258,7 @@ trade-off entirely and present the choice as obviously correct.
 
 ### Wrong turns, and why they are tempting
 
-**The flattering aggregate.** Reporting 88% is not dishonest in intent, and it is what the stakeholder
+**The flattering aggregate.** Reporting 87% is not dishonest in intent, and it is what the stakeholder
 asked for. It is wrong because the number is unstable and conceals the segment where the risk lives.
 
 **Declining to quantify.** Attractive because it is technically defensible and feels appropriately
@@ -415,8 +415,8 @@ written down. An ADR without its constraints is a decision that can never be saf
 
 For an AI system there is a fifth thing worth recording, though it lives under constraints: **the
 performance the decision was based on, and the evaluation that produced it.** "We chose model X" is
-weak; "we chose model X after it reached 93.1% on the 400-claim stratified set against model Y's
-94.4%, because the 1.3-point gap did not justify 2.1 seconds of added latency at 40,000 daily
+weak; "we chose model X after it reached 86.7% on the 400-claim stratified set against model Y's
+88.0%, because the 1.3-point gap did not justify 2.1 seconds of added latency at 40,000 daily
 requests" is a decision a successor can re-run when either number changes.
 
 Implementation guidance is the adjacent artifact and answers a different question: not "why" but
@@ -442,7 +442,7 @@ written:
 > human triage.
 >
 > **Alternatives considered.**
-> *(a)* The frontier model for all claims — 94.4% on the evaluation set, but adds 2.1s median latency
+> *(a)* The frontier model for all claims — 88.0% on the evaluation set, but adds 2.1s median latency
 > and roughly £18,000/month at projected volume.
 > *(b)* A fine-tuned smaller model — potentially cheaper still, but requires a labelled corpus the
 > client does not have and adds a retraining obligation to the operating model.
@@ -526,7 +526,7 @@ The three assumption classes worth naming every time:
 - **Support load.** Pilot users had direct access to the team. At ten times the users, the same
   question rate becomes a support function that does not exist yet, and the human-review queue that
   absorbed 12% of pilot volume becomes a staffing line item.
-- **Edge cases.** A 1-in-500 failure is invisible in a 200-case pilot and is four events a day at
+- **Edge cases.** A 1-in-500 failure is invisible in a 200-case pilot and is eighty events a day at
   scale. Rare events are only rare relative to volume.
 
 **Delivery to operations.** A handover that survives its first year is defined by what the receiving
@@ -644,9 +644,9 @@ handler-override log feeds the evaluation set fortnightly. **Qualified and re-ch
 
 **Pilot to scale.** The pilot ran with 40 handlers on one region's claims. Before the national
 rollout you table the assumptions at risk: the input distribution widens across regions with
-different claim-form versions; the human triage queue at 12% of pilot volume becomes 4.5 full-time
-staff at national volume; the 1-in-500 malformed-attachment failure that appeared twice in the pilot
-becomes several events per day. The cost model and the model-tier decision are then rebuilt on those
+different claim-form versions; the human triage queue at 12% of pilot volume becomes 4,800 claims
+a day at national volume, a staffing line item rather than a rounding error; the 1-in-500
+malformed-attachment failure that appeared once in the pilot becomes dozens of events per day. The cost model and the model-tier decision are then rebuilt on those
 numbers rather than extrapolated from the pilot. **Assumptions before arithmetic.**
 
 **Handoff.** Claims Operations receives the evaluation suite, the per-segment thresholds, the

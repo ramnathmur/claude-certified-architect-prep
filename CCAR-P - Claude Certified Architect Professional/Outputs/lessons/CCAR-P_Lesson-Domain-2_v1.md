@@ -74,7 +74,9 @@ Two facts settle this before any cost analysis. The higher tier misses the 800 m
 
 Now change one number and watch the answer move. Suppose the accuracy bar is 95.5% instead, because a misroute in this system means a compliance-sensitive ticket sits in the wrong queue for a day. The lower tier no longer clears it. The higher tier does, but still fails the latency gate — so neither candidate is simply "the answer," and the design has to change: classify asynchronously and show an optimistic routing state, or run the lower tier first and escalate only the low-confidence minority to the higher tier.
 
-That escalation design is worth understanding as engineering even though it rarely appears as an exam option. Run the fast model on everything. If it emits a confident label, take it. If it does not, re-run on the higher tier. If 88% of tickets come back confident, you pay the expensive model on 12% of traffic — roughly 4,800 calls a day instead of 40,000 — and the p95 latency stays near the fast path because the escalated minority does not dominate the 95th percentile. The reason this is worth knowing is that it makes the underlying arithmetic visible: model selection is not a single choice per system, it is a choice per call path, and a system can hold several.
+That escalation design is worth understanding as engineering even though it rarely appears as an exam option. Run the fast model on everything. If it emits a confident label, take it. If it does not, re-run on the higher tier. If 96% of tickets come back confident, you pay the expensive model on 4% of traffic — roughly 1,600 calls a day instead of 40,000 — and the p95 latency stays on the fast path, because only the escalated 4% sits above the 95th percentile.
+
+Watch that last clause, because it is a constraint rather than a rounding detail. The escalated fraction has to stay below the percentile the SLA names. Escalate 12% instead and the 95th percentile is itself an escalated call, so p95 becomes fast path plus slow path — around 2.2s here — and the 800ms gate the design existed to clear is missed by a factor of nearly three. The reason this is worth knowing is that it makes the underlying arithmetic visible: model selection is not a single choice per system, it is a choice per call path, and a system can hold several.
 
 ### 1.3 How the exam probes it
 
@@ -205,7 +207,7 @@ The fourth row is the one that separates architects from prompt tinkerers. A mod
 
 An agent has two tools: `get_customer`, which returns account-level information, and `lookup_order`, which returns order-level information. Requests phrased like "I need help with my recent purchase" are genuinely ambiguous — the user might want the order status or might want their account's return eligibility.
 
-Measured on a 400-item labeled sample of ambiguous phrasings:
+Suppose you try four fixes and score each on a 400-item labeled sample of ambiguous phrasings. Illustrative figures, but the shape is the point:
 
 | Change | Routing accuracy on the ambiguous subset |
 |---|---|

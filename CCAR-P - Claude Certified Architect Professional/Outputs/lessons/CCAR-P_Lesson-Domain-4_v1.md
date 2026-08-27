@@ -270,9 +270,9 @@ validity, citation-span existence, forbidden-field presence, numeric tolerance, 
 and refusal-when-required are all deterministic.
 
 Use them first, always, and never route a code-checkable property to a model grader. Citation
-validation deserves its own sentence: asking a model "is this citation accurate?" scores roughly 38%
-in published evaluation, which is worse than useless, while checking whether the quoted string
-appears in the cited document is exact and costs nothing. When a property is checkable in code, a
+validation deserves its own sentence: asking a model "is this citation accurate?" is a judgement call
+it can get wrong in both directions, and you would then need a second measurement to know how often,
+while checking whether the quoted string appears in the cited document is exact and costs nothing. When a property is checkable in code, a
 model grader is a strictly worse instrument.
 
 **Instrument 2 — rubric-driven, model-graded evaluation.** For subjective quality that no code check

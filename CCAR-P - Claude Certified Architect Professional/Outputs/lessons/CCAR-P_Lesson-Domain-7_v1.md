@@ -182,7 +182,7 @@ error handling" into `~/.claude/CLAUDE.md` when they set up the tool. User-level
 in version control. The new engineer cloned the repository and got everything in it, which does not
 include the other three engineers' home directories.
 
-The confirming step is `/memory`, which lists the memory files actually loaded in the current
+The confirming step is `/context`, which shows what actually loaded into the current
 session. Run it on the new engineer's machine and the project-level file will be there and the
 instruction will be visibly absent. Run it on an original engineer's machine and the user-level file
 appears with the instruction inside it. That is the diagnosis closed in about ninety seconds, without
@@ -276,7 +276,7 @@ thorough.
   per session.
 - Committed context describing conventions and structure is what unblocks work on an existing
   codebase. Repository size is not the binding constraint.
-- `/memory` lists what is actually loaded. It is the first diagnostic for any "works for them, not
+- `/context` shows what actually loaded. It is the first diagnostic for any "works for them, not
   for me" report.
 
 ---
@@ -524,7 +524,7 @@ Work these in order. Each rung is cheaper than the one below it, and each one el
 causes.
 
 **Rung 1 — Is the content actually loaded?** Before theorising about model behaviour, verify what the
-model received. `/memory` lists the memory files loaded in the current session, and it is the first
+model received. `/context` shows what actually loaded into the current session, and it is the first
 step for any symptom of the form "it follows this rule sometimes but not always" or "it works on
 their machine." Half of the reports in this family close here: the file holding the rule is at the
 wrong level, in the wrong directory, or in someone's home folder.
@@ -540,8 +540,8 @@ exploratory output floods the window and the original task drifts out of focus �
 it in an isolated subagent context and returns only the result. Tool results from earlier in a
 session can be stale if files have changed since, and a fresh session seeded with a short summary of
 prior findings beats resuming with old tool data. `/compact` compresses context while preserving what
-it judges essential, with a documented risk: exact numeric values, dates, and specific details can be
-lost in the summarisation. Compacting mid-task, when the implementation phase still needs the
+it judges essential. That judgement is the risk: exact numeric values, dates, and specific details
+are exactly the kind of detail a summary drops. Compacting mid-task, when the implementation phase still needs the
 discovery detail, is the classic wrong call — the right one is to isolate the verbose discovery work
 in a subagent from the start so the main session never fills.
 
@@ -569,8 +569,8 @@ An engineer reports that Claude Code applies the team's API error-envelope conve
 sessions and not others, on the same repository, within the same week. They have started prefixing
 their prompts with the convention manually, in capitals, which works about four times in five.
 
-Rung 1. Run `/memory` in a session where the convention held and in one where it did not, and compare
-the loaded set. Suppose the convention lives in a path-scoped rule with a glob for `src/api/**/*.ts`.
+Rung 1. Run `/context` in a session where the convention held and in one where it did not, and compare
+what loaded. Suppose the convention lives in a path-scoped rule with a glob for `src/api/**/*.ts`.
 Sessions started while working in the API directory load it. Sessions started at the repository root,
 or from a test file elsewhere, do not. The behaviour is not intermittent; it is conditional, and the
 condition is the file path, exactly as configured.
@@ -651,7 +651,7 @@ evaluate, and when it appears to help it often just perturbed a non-deterministi
 
 - Identify the layer, do not bisect the code. Wrongness lives in one layer and rarely the one named
   in the report.
-- Verify what is loaded first. `/memory` closes a large fraction of "works for them, not for me."
+- Verify what is loaded first. `/context` closes a large fraction of "works for them, not for me."
 - Context pollution is fixed by isolating verbose work in a forked subagent context, not by
   compacting mid-task.
 - Least privilege means removing the unneeded capability. Logging and confirming are not substitutes.

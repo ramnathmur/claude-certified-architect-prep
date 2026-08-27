@@ -636,7 +636,9 @@ details.checkpoint .answer .verdict {
 
   <p>The lower tier no longer clears it. The higher tier does, and still fails the latency gate. So neither candidate is simply the answer, and the design has to change: classify asynchronously and show an optimistic routing state, or run the lower tier first and escalate only the low-confidence minority.</p>
 
-  <p>That escalation design is worth understanding even though it rarely appears as an option. Run the fast model on everything, take the confident labels, and re-run the rest on the higher tier. If 88% come back confident you pay the expensive model on 4,800 calls a day instead of 40,000, and p95 stays near the fast path because the escalated minority does not dominate the 95th percentile.</p>
+  <p>That escalation design is worth understanding even though it rarely appears as an option. Run the fast model on everything, take the confident labels, and re-run the rest on the higher tier. If 96% come back confident you pay the expensive model on 1,600 calls a day instead of 40,000, and p95 stays on the fast path, because only the escalated 4% sits above the 95th percentile.</p>
+
+  <p>Watch that last clause, because it is a constraint rather than a rounding detail. The escalated fraction has to stay below the percentile the SLA names. Escalate 12% instead and the 95th percentile is itself an escalated call, so p95 becomes fast path plus slow path, around 2.2s here, and the 800ms gate the design existed to clear is missed by a factor of nearly three.</p>
 
   <p>The reason that is worth knowing: <strong class="load-bearing">model selection is a choice per call path, not per system, and one system can hold several.</strong></p>
 
@@ -831,7 +833,7 @@ details.checkpoint .answer .verdict {
 
   <p>An agent has two tools. <code>get_customer</code> returns account-level information; <code>lookup_order</code> returns order-level information. Requests like "I need help with my recent purchase" are genuinely ambiguous.</p>
 
-  <p>Measured on a 400-item labelled sample of ambiguous phrasings, here is what four different fixes actually bought.</p>
+  <p>Suppose you score four different fixes on a 400-item labelled sample of ambiguous phrasings. The figures below are illustrative; the shape is the point.</p>
 
   <figure class="fig">
     <svg viewBox="0 0 720 244" role="img" aria-labelledby="fig4-t fig4-d">
