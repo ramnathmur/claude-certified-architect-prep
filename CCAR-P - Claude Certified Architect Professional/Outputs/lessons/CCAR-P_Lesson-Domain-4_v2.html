@@ -1,0 +1,1622 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#faf8f3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1f1c19" media="(prefers-color-scheme: dark)">
+<title>CCAR-P Lesson — Domain 4: Evaluation, Testing &amp; Optimization</title>
+<script>
+(function () {
+  var r = document.documentElement;
+  var t = null;
+  try { t = localStorage.getItem('site-theme'); } catch (e) {}
+  var mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+  if (!t && mq && mq.matches) t = 'dark';
+  if (t) r.setAttribute('data-theme', t);
+  if (mq && mq.addEventListener) mq.addEventListener('change', function (e) {
+    var stored = null;
+    try { stored = localStorage.getItem('site-theme'); } catch (err) {}
+    if (stored) return;
+    r.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+    window.dispatchEvent(new Event('themechange'));
+  });
+})();
+</script>
+<style>
+:root {
+  color-scheme: light;
+  --ink:    oklch(0.15 0.01 80);
+  --ink2:   oklch(0.30 0.015 75);
+  --ink3:   oklch(0.47 0.015 75);
+  --cream:  oklch(0.97 0.008 85);
+  --cream2: oklch(0.94 0.012 85);
+  --cream3: oklch(0.91 0.015 80);
+  --border: oklch(0.87 0.012 80);
+
+  --amber:       oklch(0.64 0.14 68);
+  --amber-light: oklch(0.93 0.035 80);
+  --amber-dark:  oklch(0.47 0.11 60);
+  --coral:       oklch(0.55 0.14 30);
+  --coral-light: oklch(0.94 0.025 35);
+  --coral-dark:  oklch(0.45 0.12 30);
+  --green:       oklch(0.50 0.10 150);
+  --green-light: oklch(0.94 0.025 145);
+  --green-dark:  oklch(0.40 0.09 150);
+  --blue:        oklch(0.43 0.09 245);
+  --blue-light:  oklch(0.93 0.025 240);
+  --blue-dark:   oklch(0.38 0.08 245);
+
+  --surface-raised:   oklch(0.15 0.01 80);
+  --on-raised:        oklch(0.97 0.008 85);
+  --on-raised-muted:  oklch(0.97 0.008 85 / 0.74);
+  --on-raised-dim:    oklch(0.97 0.008 85 / 0.6);
+  --on-raised-border: oklch(0.97 0.008 85 / 0.15);
+  --nav-bg:           oklch(0.97 0.008 85 / 0.96);
+
+  --shadow:    0 2px 16px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
+  --radius:    12px;
+  --radius-sm: 8px;
+  --bar:       3px;
+  --focus:     var(--ink);
+  --nav-h:     64px;
+  --maxw:      900px;
+
+  --font-serif: Georgia, 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+  --font-sans:  system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono:  ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+  --font-body-active: var(--font-serif);
+
+  --fs-body: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --fs-sm:   clamp(0.8125rem, 0.78rem + 0.15vw, 0.9375rem);
+  --fs-xs:   clamp(0.6875rem, 0.67rem + 0.1vw, 0.75rem);
+  --fs-h1:   clamp(2rem, 1.4rem + 3vw, 3.375rem);
+  --fs-h2:   clamp(1.5rem, 1.2rem + 1.5vw, 2.125rem);
+  --fs-h3:   clamp(1.25rem, 1.1rem + 0.75vw, 1.5rem);
+  --fs-pull: clamp(1.375rem, 1.15rem + 1.1vw, 1.625rem);
+
+  --space-section: clamp(3rem, 2.5rem + 2.5vw, 4rem);
+  --space-block:   clamp(1.5rem, 1.25rem + 1.25vw, 2.5rem);
+  --space-inline:  clamp(1.25rem, 1rem + 1.25vw, 2rem);
+  --box-pad-sm: 16px;
+  --box-pad:    22px;
+  --box-pad-lg: 30px;
+  --lh-body:    1.7;
+  --lh-heading: 1.2;
+  --t-fast: 0.15s;
+  --t-med:  0.25s;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --ink:    oklch(0.90 0.008 85);
+  --ink2:   oklch(0.78 0.01 80);
+  --ink3:   oklch(0.62 0.01 75);
+  --cream:  oklch(0.15 0.012 75);
+  --cream2: oklch(0.19 0.012 75);
+  --cream3: oklch(0.23 0.015 75);
+  --border: oklch(0.32 0.01 75);
+
+  --amber:       oklch(0.72 0.13 68);
+  --amber-light: oklch(0.24 0.04 70);
+  --amber-dark:  oklch(0.82 0.10 65);
+  --coral:       oklch(0.70 0.13 30);
+  --coral-light: oklch(0.24 0.045 32);
+  --coral-dark:  oklch(0.80 0.10 30);
+  --green:       oklch(0.70 0.11 150);
+  --green-light: oklch(0.23 0.04 148);
+  --green-dark:  oklch(0.80 0.09 150);
+  --blue:        oklch(0.70 0.10 245);
+  --blue-light:  oklch(0.24 0.04 242);
+  --blue-dark:   oklch(0.80 0.08 245);
+
+  --surface-raised:   oklch(0.24 0.012 75);
+  --on-raised:        oklch(0.93 0.008 85);
+  --on-raised-muted:  oklch(0.93 0.008 85 / 0.74);
+  --on-raised-dim:    oklch(0.93 0.008 85 / 0.6);
+  --on-raised-border: oklch(0.93 0.008 85 / 0.15);
+  --nav-bg:           oklch(0.15 0.012 75 / 0.96);
+
+  --shadow:    0 2px 16px rgba(0,0,0,0.3);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-body-active);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
+.container { max-width: var(--maxw); margin-inline: auto; padding-inline: var(--space-inline); }
+
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: var(--radius-sm); }
+:focus:not(:focus-visible) { outline: none; }
+
+.skip-link {
+  position: absolute; left: 8px; top: -100px; z-index: 100;
+  background: var(--cream2); color: var(--ink);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 10px 16px; text-decoration: none;
+  font-family: var(--font-sans); font-size: var(--fs-sm);
+  transition: top var(--t-fast);
+}
+.skip-link:focus { top: 8px; }
+main:focus { outline: none; }
+section[id], h2[id], h3[id] { scroll-margin-top: calc(var(--nav-h) + 12px); }
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --t-fast: 0.01ms; --t-med: 0.01ms; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important; animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important; scroll-behavior: auto !important;
+  }
+}
+@media (forced-colors: active) { :focus-visible { outline: 3px solid Highlight; } }
+
+/* ---- nav ---- */
+.nav {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--nav-bg); backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-inner {
+  max-width: var(--maxw); margin-inline: auto; padding: 0 var(--space-inline);
+  height: var(--nav-h); display: flex; align-items: center; gap: 18px;
+  font-family: var(--font-sans);
+}
+.nav-home { color: var(--ink); text-decoration: none; font-weight: 600; font-size: var(--fs-sm); white-space: nowrap; }
+.nav-links { display: flex; gap: 14px; overflow-x: auto; flex: 1; scrollbar-width: none; }
+.nav-links::-webkit-scrollbar { display: none; }
+.nav-link {
+  color: var(--ink3); text-decoration: none; font-size: var(--fs-xs);
+  font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em;
+  white-space: nowrap; padding: 4px 0; border-bottom: 2px solid transparent;
+}
+.nav-link.active { color: var(--amber-dark); border-bottom-color: var(--amber); }
+.nav-progress { position: absolute; left: 0; bottom: -1px; height: 2px; background: var(--cream2); width: 100%; }
+.scrollbar-fill { height: 2px; background: var(--amber); width: 0%; transition: width var(--t-fast); }
+.theme-toggle {
+  background: none; border: 1px solid var(--border); border-radius: 99px;
+  width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0; font-size: 15px;
+}
+.theme-toggle:hover { border-color: var(--amber); }
+
+main { display: block; }
+section { padding-block: var(--space-section); }
+section + section { border-top: 1px solid var(--border); }
+h1 {
+  font-family: var(--font-serif); font-size: var(--fs-h1); line-height: var(--lh-heading);
+  font-weight: 400; margin: 0 0 10px;
+}
+h2 {
+  font-family: var(--font-serif); font-size: var(--fs-h2); line-height: var(--lh-heading);
+  font-weight: 400; margin: 0 0 var(--space-block);
+}
+h3 {
+  font-family: var(--font-sans); font-size: var(--fs-h3); line-height: var(--lh-heading);
+  font-weight: 600; margin: var(--space-block) 0 12px;
+}
+p { margin: 0 0 1.15em; }
+.eyebrow {
+  font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--amber-dark); margin-bottom: 14px;
+}
+.dek { font-size: var(--fs-pull); color: var(--ink2); font-weight: 400; max-width: 640px; }
+.meta-row {
+  display: flex; flex-wrap: wrap; gap: 10px 22px; margin-top: 22px;
+  font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink3);
+}
+.meta-row b { color: var(--ink); font-weight: 600; }
+
+/* ---- chapter list ---- */
+.chap {
+  display: grid; grid-template-columns: 34px 1fr; gap: 14px; align-items: start;
+  padding: 12px 0; border-top: 1px solid var(--border); text-decoration: none; color: inherit;
+}
+.chap:first-of-type { border-top: none; }
+.chap .num { font-family: var(--font-mono); color: var(--ink3); font-size: var(--fs-sm); padding-top: 2px; }
+.chap .body strong { display: block; font-family: var(--font-sans); font-size: var(--fs-body); }
+.chap .body em { display: block; font-style: normal; color: var(--ink3); font-size: var(--fs-sm); margin-top: 2px; }
+.chap:hover .body strong, .chap:focus-visible .body strong { color: var(--amber-dark); }
+
+/* ---- tables ---- */
+.table-wrap { overflow-x: auto; margin: var(--space-block) 0; }
+table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+caption { text-align: left; font-family: var(--font-sans); font-size: var(--fs-xs); color: var(--ink3);
+  text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+thead th { font-family: var(--font-sans); font-weight: 600; color: var(--ink2);
+  border-bottom: 2px solid var(--border); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.04em; }
+tbody tr:last-child td { border-bottom: none; }
+td.num, th.num { font-family: var(--font-mono); }
+
+/* ---- box family (parameterised base, per house style P1.7) ---- */
+.box {
+  background: var(--box-bg, var(--cream2));
+  border: 1px solid var(--border);
+  border-left: var(--bar) solid var(--box-accent, transparent);
+  border-radius: var(--radius);
+  padding: var(--box-pad);
+  margin: var(--space-block) 0;
+  break-inside: avoid;
+}
+.box.warning { --box-bg: var(--coral-light); --box-accent: var(--coral); }
+.box.raised  { --box-bg: var(--surface-raised); color: var(--on-raised); --box-pad: var(--box-pad-lg); --box-accent: transparent; }
+.box.raised h3 { color: var(--on-raised); }
+.box.raised p, .box.raised li { color: var(--on-raised-muted); }
+.box.raised .label { color: var(--on-raised-dim); }
+@media (forced-colors: active) { .box { border: 2px solid CanvasText; } }
+
+.label {
+  font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 600;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber-dark); margin-bottom: 10px;
+}
+.box.raised .label { color: var(--on-raised-dim); }
+
+/* ---- pullquote ---- */
+.pullquote {
+  border-left: var(--bar) solid var(--amber);
+  padding: 4px 0 4px 26px;
+  margin: var(--space-block) 0;
+  max-width: 640px;
+}
+.pullquote p {
+  font-family: var(--font-serif); font-size: var(--fs-pull); font-style: italic;
+  color: var(--ink2); margin: 0; line-height: 1.5;
+}
+
+/* ---- misconceptions grid ---- */
+.misc-grid { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin: var(--space-block) 0; }
+.misc-row { padding: 14px 20px; border-top: 1px solid var(--border); }
+.misc-row:first-of-type { border-top: none; }
+.misc-row .k {
+  font-family: var(--font-mono); font-weight: 700; font-size: var(--fs-xs);
+  text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 5px;
+}
+.misc-row.myth    { background: var(--coral-light); }
+.misc-row.myth .k { color: var(--coral-dark); }
+.misc-row.why  .k { color: var(--ink3); }
+.misc-row.reality    { background: var(--green-light); }
+.misc-row.reality .k { color: var(--green-dark); }
+.misc-row.test .k    { color: var(--amber-dark); }
+details.misc { border: 1px solid var(--border); border-radius: var(--radius); margin: var(--space-block) 0; overflow: hidden; }
+details.misc summary {
+  font-family: var(--font-sans); font-weight: 600; padding: 16px 20px; cursor: pointer;
+  list-style: none; display: flex; align-items: center; gap: 10px; background: var(--cream2);
+}
+details.misc summary::before { content: '\25B6'; font-size: 10px; transition: transform var(--t-med); color: var(--ink3); }
+details.misc[open] summary::before { transform: rotate(90deg); }
+details.misc + details.misc { border-top: none; margin-top: -1px; }
+
+/* ---- widget ---- */
+.widget { background: var(--cream2); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--box-pad); margin: var(--space-block) 0; }
+.widget-title { font-family: var(--font-sans); font-weight: 600; font-size: var(--fs-h3); margin-bottom: 6px; }
+.widget-hint { font-size: var(--fs-sm); color: var(--ink3); margin-bottom: 18px; }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+.btn {
+  font-family: var(--font-sans); font-size: var(--fs-sm); font-weight: 600;
+  padding: 8px 16px; border-radius: 99px; border: 1px solid var(--border);
+  background: var(--cream); color: var(--ink2); cursor: pointer;
+}
+.btn.active { background: var(--ink); color: var(--cream); border-color: var(--ink); }
+.btn:hover:not(.active) { border-color: var(--amber); color: var(--amber-dark); }
+.k-row { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; font-family: var(--font-mono); font-size: var(--fs-sm); }
+.k-row input[type="range"] { flex: 1; accent-color: var(--amber); }
+.k-val { min-width: 2ch; text-align: center; font-weight: 700; color: var(--amber-dark); }
+.metric-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 640px) { .metric-pair { grid-template-columns: 1fr; } }
+.metric-cell { }
+.metric-label { display: flex; justify-content: space-between; font-size: var(--fs-sm); margin-bottom: 8px; }
+.metric-label b { font-family: var(--font-mono); font-size: var(--fs-h3); }
+.metric-track { height: 10px; background: var(--cream3); border-radius: 99px; overflow: hidden; }
+.metric-fill { height: 100%; transition: width var(--t-med); }
+.widget-summary {
+  margin-top: 20px; padding-top: 18px; border-top: 1px dashed var(--border);
+  font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--ink2);
+}
+
+/* ---- prev/next (project convention: paged wayfinding inside the one-file model) ---- */
+.pagenav {
+  display: flex; justify-content: space-between; gap: 16px; margin-top: var(--space-block);
+  font-family: var(--font-sans); font-size: var(--fs-sm);
+}
+.pagenav a { color: var(--ink2); text-decoration: none; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 10px 16px; }
+.pagenav a:hover, .pagenav a:focus-visible { border-color: var(--amber); color: var(--amber-dark); }
+.pagenav .next { margin-left: auto; }
+
+footer { border-top: 1px solid var(--border); padding-block: var(--space-block); }
+footer p { color: var(--ink3); font-size: var(--fs-xs); font-family: var(--font-mono); }
+
+strong.load-bearing { color: var(--amber-dark); }
+em { font-style: italic; }
+
+/* ================================================================
+   v2 additions — the pedagogical engine (Educational HTML Playbook)
+   Everything above this line is the v1 skin, carried over unchanged.
+   ================================================================ */
+
+/* ---- section bookends: advance organizer (Ausubel) + exit (Zeigarnik) ---- */
+.entry {
+  font-family: var(--font-sans); font-size: var(--fs-sm); color: var(--ink2);
+  border-left: var(--bar) solid var(--amber); padding: 2px 0 2px 18px;
+  margin: 0 0 var(--space-block); max-width: 640px;
+}
+.entry b { color: var(--ink); font-weight: 600; }
+.exit {
+  font-family: var(--font-sans); font-size: var(--fs-sm); color: var(--ink3);
+  border-top: 1px dashed var(--border); padding-top: 16px; margin-top: var(--space-block);
+}
+.exit b { color: var(--ink2); font-weight: 600; }
+.exit .thread { color: var(--amber-dark); font-weight: 600; }
+
+/* ---- figures: dual coding. Every figure carries a caption that makes a claim. ---- */
+figure.fig { margin: var(--space-block) 0; }
+figure.fig svg { display: block; width: 100%; height: auto; max-width: 100%; }
+figure.fig figcaption {
+  font-family: var(--font-sans); font-size: var(--fs-sm); color: var(--ink3);
+  margin-top: 12px; line-height: 1.5; max-width: 660px;
+}
+figure.fig figcaption b { color: var(--ink2); font-weight: 600; }
+
+/* SVG utility classes — every colour routes through a token, so dark mode is automatic */
+.s-fill-surface { fill: var(--cream2); }
+.s-fill-deep    { fill: var(--cream3); }
+.s-fill-page    { fill: var(--cream); }
+.s-stroke       { stroke: var(--border); fill: none; stroke-width: 1.5; }
+.s-rule         { stroke: var(--ink3); fill: none; stroke-width: 1.5; }
+.s-arrow        { stroke: var(--ink3); fill: none; stroke-width: 1.5; marker-end: url(#arrowhead); }
+.s-arrow-amber  { stroke: var(--amber); fill: none; stroke-width: 2.5; marker-end: url(#arrowhead-amber); }
+.s-amber   { fill: var(--amber); }
+.s-coral   { fill: var(--coral); }
+.s-green   { fill: var(--green); }
+.s-blue    { fill: var(--blue); }
+.s-amber-t { fill: var(--amber-light); }
+.s-coral-t { fill: var(--coral-light); }
+.s-green-t { fill: var(--green-light); }
+/* Applied to <text> OR to a wrapping <g> — every property here is CSS-inherited,
+   so a group-level class reaches its text children. Do not narrow to `text.x`. */
+.s-lab  { font-family: var(--font-sans); font-size: 12px; fill: var(--ink2); }
+.s-lab-sm { font-family: var(--font-sans); font-size: 10.5px; fill: var(--ink3); }
+.s-num  { font-family: var(--font-mono); font-size: 12px; fill: var(--ink); font-weight: 700; }
+.s-key  { font-family: var(--font-sans); font-size: 12.5px; fill: var(--ink); font-weight: 600; }
+.s-onaccent { font-family: var(--font-sans); font-size: 12px; fill: var(--on-raised); font-weight: 600; }
+/* --amber is a light-ish fill in BOTH themes, so text on it is a fixed dark, not a token. */
+.s-on-amber { font-family: var(--font-sans); font-size: 11px; fill: oklch(0.22 0.03 70); font-weight: 600; }
+.s-badge { font-family: var(--font-mono); font-size: 10px; font-weight: 700; fill: var(--amber-dark); }
+.s-lab-amber { font-family: var(--font-sans); font-size: 12px; fill: var(--amber-dark); font-weight: 600; }
+.s-lab-coral { font-family: var(--font-sans); font-size: 11px; fill: var(--coral-dark); font-weight: 600; }
+.s-lab-green { font-family: var(--font-sans); font-size: 11px; fill: var(--green-dark); font-weight: 600; }
+@media (forced-colors: active) {
+  figure.fig svg { forced-color-adjust: none; }
+}
+
+/* ---- analogy card. Conditional mandate: it MUST name where it breaks. ---- */
+.box.analogy { --box-bg: var(--amber-light); --box-accent: var(--amber); }
+.box.analogy .breaks {
+  margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--amber);
+  font-size: var(--fs-sm); color: var(--ink2);
+}
+.box.analogy .breaks b {
+  font-family: var(--font-mono); font-size: var(--fs-xs); text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--amber-dark); display: block; margin-bottom: 4px;
+}
+
+/* ---- checkpoint: retrieval practice. Generation, not recognition. ---- */
+details.checkpoint {
+  background: var(--blue-light); border: 1px solid var(--border);
+  border-left: var(--bar) solid var(--blue);
+  border-radius: var(--radius); margin: var(--space-block) 0; overflow: hidden;
+}
+details.checkpoint > summary {
+  font-family: var(--font-sans); font-weight: 600; font-size: var(--fs-sm);
+  padding: 16px 20px; cursor: pointer; list-style: none;
+  display: flex; align-items: center; gap: 10px; color: var(--ink);
+}
+details.checkpoint > summary::-webkit-details-marker { display: none; }
+details.checkpoint > summary::before {
+  content: '\25B6'; font-size: 10px; color: var(--blue); transition: transform var(--t-med); flex-shrink: 0;
+}
+details.checkpoint[open] > summary::before { transform: rotate(90deg); }
+details.checkpoint .prompt {
+  padding: 0 20px 4px; font-size: var(--fs-body); color: var(--ink);
+}
+details.checkpoint .prompt p { margin-bottom: 0.8em; }
+details.checkpoint .cue {
+  font-family: var(--font-mono); font-size: var(--fs-xs); text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--blue-dark); padding: 0 20px 14px;
+}
+details.checkpoint .answer {
+  padding: 16px 20px 18px; margin: 0 12px 12px; background: var(--cream);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+}
+details.checkpoint .answer p:last-child { margin-bottom: 0; }
+details.checkpoint .answer .verdict {
+  font-family: var(--font-sans); font-weight: 600; color: var(--ink); display: block; margin-bottom: 6px;
+}
+</style>
+</head>
+<body>
+<!-- LEDGER — v2
+  ENGINE CHANGE (the reason this file exists):
+      v1 was built from "Ram Preferred HTML Style.md", which is the general/reference guide
+      and whose own scope boundary excludes courseware. That guide is a COMPRESSION system:
+      a density budget plus a prose contract whose four rules are all about removing. Built
+      faithfully against it, a teaching lesson comes out as reference-density prose — v1
+      measured 0 diagrams in 6,895 words, 87 words/paragraph (longest 195), 106 em-dashes,
+      0 analogy cards, and no retrieval practice at all.
+      v2 keeps that file's SKIN (tokens, nav, dark mode, a11y — all good, all carried over
+      untouched) and swaps the ENGINE to Educational-HTML-Design-Playbook_v5.2, per the
+      playbook's own §2.1 engine/skin contract.
+
+  Archetype:  Guided Journey (playbook §1.3) — conceptual + sequential, mixed depth.
+              Entry/checkpoint/exit bookends, numbered sections, synthesis recap.
+  Register:   App — plain chapter list, not card grid: one lesson read start to finish.
+  Hues:       4 — amber = emphasis/main path, coral = misconception + risk, green = reality
+              + the lenient metric, blue = reader action (checkpoints only). Over the house
+              style's 3-hue DEFAULT by one: checkpoints are a new semantic class that must
+              never be confused with emphasis or warning, and each hue means exactly one
+              thing on every appearance, which is the rule the ceiling exists to protect.
+  Box types:  6 — warning, raised, analogy, checkpoint, misc-grid, entry/exit bookends
+              (pullquote debits nothing). Over the house style's 4-box DEFAULT: the
+              playbook's dual-coding and retrieval-practice requirements need dedicated
+              components that the reference-document vocabulary does not contain.
+  Figures:    6 inline SVG, chosen via playbook §1.7 (learning goal -> visual):
+              feedback loop, sized bars, funnel, staged flow, cost-annotated funnel,
+              before/after. Every colour routes through a token, so dark mode is automatic.
+              Every caption states what it shows AND what it proves.
+  Widgets:    1 — pass@k vs pass^k explorer, carried over from v1 unchanged.
+  Interactivity: L3 (progressive disclosure) + L5 (self-check) + one L6 (the widget).
+              v1 sat at L2 + L6, skipping L5 entirely; Guided Journey's ceiling is L3+L5.
+  Checkpoints: 6, one per section. Generation, not recognition: the reader must produce an
+              answer before the reveal. Native <details>, so no rAF and no hidden-tab bug.
+  Dark cards: 3, none consecutive.
+  Invented:   the cost-annotated diagnosis funnel (fig 5) — the ordering is empirical AND
+              economic, and no catalogued device shows both axes on one figure.
+  Deviations: em-dash budget cut from v1's 106 to a hard cap of 12, per
+              ABOUT ME/anti-ai-writing-style_v1.md §1.1. Colons and full stops instead.
+              Paragraph target 45-70 words, longest under 110 (v1: 87 avg, 195 longest),
+              per the playbook's cognitive-load rule that wall-of-text is extraneous load.
+              Prev/Next kept from v1 per this project's CLAUDE.md ("paged... prev/next").
+  Content:    frozen. Every fact, number and worked example comes from
+              Outputs/lessons/CCAR-P_Lesson-Domain-4_v1.md. This is a delivery rewrite.
+-->
+<a class="skip-link" href="#main">Skip to content</a>
+<nav class="nav" aria-label="Page navigation">
+  <div class="nav-inner">
+    <a class="nav-home" href="#intro">⌂ Domain 4</a>
+    <div class="nav-links">
+      <a class="nav-link" href="#metrics">Metrics</a>
+      <a class="nav-link" href="#dataset">Dataset</a>
+      <a class="nav-link" href="#change-control">Change control</a>
+      <a class="nav-link" href="#diagnosis">Diagnosis</a>
+      <a class="nav-link" href="#optimization">Optimization</a>
+      <a class="nav-link" href="#monitoring">Monitoring</a>
+      <a class="nav-link" href="#synthesis">Synthesis</a>
+    </div>
+    <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark mode" title="Toggle dark mode">
+      <span aria-hidden="true">🌙</span>
+    </button>
+    <div class="nav-progress"><div class="scrollbar-fill" id="scrollbar-fill"></div></div>
+  </div>
+</nav>
+
+<main id="main" tabindex="-1">
+
+<section id="intro"><div class="container">
+  <div class="eyebrow">CCAR-P · Domain 4 · 16% of the exam</div>
+  <h1>Evaluation, Testing &amp; Optimization</h1>
+  <p class="dek">Every other domain asks whether you can build the thing. This one asks whether you can tell, afterward, that it works, and prove it to someone who will not take your word for it.</p>
+  <div class="meta-row">
+    <span><b>Objectives</b> 6</span>
+    <span><b>Weight</b> 16%</span>
+    <span><b>Source</b> official exam guide v1.0</span>
+  </div>
+
+  <h3>Contents</h3>
+  <nav aria-label="Chapters">
+    <a class="chap" href="#metrics"><span class="num">1</span><span class="body"><strong>What actually makes a metric a metric</strong><em>Accuracy, latency, cost, safety, security: five families, one test</em></span></a>
+    <a class="chap" href="#dataset"><span class="num">2</span><span class="body"><strong>Building an evaluation set that isn't lying to you</strong><em>Composition, stratification, the masking trap, three grading instruments</em></span></a>
+    <a class="chap" href="#change-control"><span class="num">3</span><span class="body"><strong>Change control</strong><em>Treating a prompt like production code</em></span></a>
+    <a class="chap" href="#diagnosis"><span class="num">4</span><span class="body"><strong>Diagnosing what actually broke</strong><em>The diagnosis order, and hallucination's three causes</em></span></a>
+    <a class="chap" href="#optimization"><span class="num">5</span><span class="body"><strong>Making it cheaper and faster without breaking it</strong><em>Caching, cascades, retrieval discipline, streaming</em></span></a>
+    <a class="chap" href="#monitoring"><span class="num">6</span><span class="body"><strong>Watching it in production</strong><em>Attribution, online proxies, alerting, privacy</em></span></a>
+    <a class="chap" href="#synthesis"><span class="num">7</span><span class="body"><strong>How it all runs as one system</strong><em>A year in the life of one claims assistant, and where these reflexes reappear in Domains 3, 5 and 6</em></span></a>
+  </nav>
+
+  <p style="font-family:var(--font-sans);font-size:var(--fs-sm);color:var(--ink3)">Sections 1 to 6 each close with a checkpoint. Answer it before opening the reveal: committing to an answer first is what makes it stick, and it is closer to what the exam will ask of you than re-reading is.</p>
+
+  <p>Here is a meeting you have probably sat in. A team ships an assistant. It demos well, everyone is pleased, and about three months later somebody asks the obvious question: is it actually working?</p>
+
+  <p>The room goes quiet. One person says it feels better since the last prompt change. Another says support tickets are up, though that might be seasonal. Nobody has a number, so the loudest opinion wins.</p>
+
+  <p>That silence is the whole subject of Domain 4. The exam guide lists six objectives and they look like six separate skills. They are one loop, and the loop runs in a direction.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 720 235" role="img" aria-labelledby="fig1-t fig1-d">
+      <title id="fig1-t">The evaluation loop</title>
+      <desc id="fig1-d">Five stages run left to right: define the metric, build the eval set, gate every change, ship to production, diagnose failures. A return arrow runs from diagnose failures back to build the eval set, labelled: production teaches the set a failure nobody imagined. A note under the middle states that optimization happens between gating and production, never below the bar set at step one.</desc>
+      <defs>
+        <marker id="arrowhead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--ink3)"/>
+        </marker>
+        <marker id="arrowhead-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--amber)"/>
+        </marker>
+      </defs>
+
+      <g class="s-fill-surface">
+        <rect x="20"  y="40" width="116" height="66" rx="8"/>
+        <rect x="161" y="40" width="116" height="66" rx="8"/>
+        <rect x="302" y="40" width="116" height="66" rx="8"/>
+        <rect x="443" y="40" width="116" height="66" rx="8"/>
+        <rect x="584" y="40" width="116" height="66" rx="8"/>
+      </g>
+      <g class="s-stroke">
+        <rect x="20"  y="40" width="116" height="66" rx="8"/>
+        <rect x="161" y="40" width="116" height="66" rx="8"/>
+        <rect x="302" y="40" width="116" height="66" rx="8"/>
+        <rect x="443" y="40" width="116" height="66" rx="8"/>
+        <rect x="584" y="40" width="116" height="66" rx="8"/>
+      </g>
+
+      <g>
+        <text class="s-badge" x="32" y="58">1</text><text class="s-badge" x="173" y="58">2</text>
+        <text class="s-badge" x="314" y="58">3</text><text class="s-badge" x="455" y="58">4</text>
+        <text class="s-badge" x="596" y="58">5</text>
+      </g>
+      <g class="s-key" text-anchor="middle">
+        <text x="78"  y="80">Define the<tspan x="78" dy="16">metric</tspan></text>
+        <text x="219" y="80">Build the<tspan x="219" dy="16">eval set</tspan></text>
+        <text x="360" y="80">Gate every<tspan x="360" dy="16">change</tspan></text>
+        <text x="501" y="80">Ship to<tspan x="501" dy="16">production</tspan></text>
+        <text x="642" y="80">Diagnose<tspan x="642" dy="16">failures</tspan></text>
+      </g>
+
+      <g class="s-arrow">
+        <path d="M 139 73 L 156 73"/>
+        <path d="M 280 73 L 297 73"/>
+        <path d="M 421 73 L 438 73"/>
+        <path d="M 562 73 L 579 73"/>
+      </g>
+
+      <text class="s-lab-sm" x="430" y="130" text-anchor="middle">Cheaper and faster happens here, and never below the bar set at step 1.</text>
+
+      <path class="s-arrow-amber" d="M 642 108 L 642 165 L 219 165 L 219 112"/>
+      <text class="s-lab-amber" x="430" y="188" text-anchor="middle">production teaches the set a failure nobody imagined</text>
+    </svg>
+    <figcaption><b>The five stages are the easy part.</b> The amber arrow is the one teams skip, and skipping it is invisible: the machinery still runs, the numbers still arrive, the gates still pass. What stops is learning.</figcaption>
+  </figure>
+
+  <p>Walk it once. You decide what "working" means, as a number with a threshold attached. You build a fixed set of cases to measure that number against. Every change gets gated by that set before it reaches real traffic. When something breaks you diagnose it in a fixed order rather than by hunch.</p>
+
+  <p>Then the arrow that matters. Production shows you a failure nobody on the team had imagined, and that failure becomes a new case in the set.</p>
+
+  <div class="pullquote"><p>An evaluation set built at design time only contains the failures its authors could think of. Production contains the ones they couldn't.</p></div>
+
+  <p>Break that return arrow and you still get numbers, still gate changes, still ship. You are just measuring your own imagination, with increasing precision, forever.</p>
+
+  <h3>What Professional tier adds</h3>
+
+  <p>Foundations asks which evaluation design is technically correct. Professional asks whether you can defend it. Which design is affordable at 200,000 requests a month. Which one survives a regulator asking how you know. How you explain the tradeoff to a stakeholder who thinks "97% accurate" is a complete sentence.</p>
+
+  <p>One structural note. Pass/fail runs on total score with no per-domain floor, so a weak Domain 4 is survivable in the arithmetic. It is not survivable in practice. These same reflexes come back in Domain 3's observability objective, Domain 5's human-in-the-loop validation, and Domain 6's SLA conversations.</p>
+
+  <div class="exit">
+    <b>Next:</b> we start where the loop starts, at step 1. Most of what teams call a metric will not survive the first paragraph.
+  </div>
+</div></section>
+
+<section id="metrics"><div class="container">
+  <h2>1. What actually makes a metric a metric</h2>
+
+  <div class="entry"><b>By the end of this section</b> you will be able to look at any number a team is reporting and say, in one sentence, whether it is a metric or a decoration.</div>
+
+  <p>Try this test on anything a team calls a metric.</p>
+
+  <p><strong class="load-bearing">If the number crossing its threshold would not change what you do, it is decoration.</strong> Most of what teams collect fails immediately. Dashboards are full of it.</p>
+
+  <p>So what does a real one need? Four things. A specific failure being counted, so "quality" is out and "the fraction where the answer contradicts the gold label" is in. A denominator. A named segment of the population it describes. And a threshold declared before anyone saw a result.</p>
+
+  <p>That last one does the most work, and it is the one people skip. Set the bar after the scores come in and you have not set a bar. You have described what you got.</p>
+
+  <h3>Five families, and why they are separate</h3>
+
+  <p>The guide names five. They are separate for a practical reason: they fail in different ways and they get owned by different people.</p>
+
+  <p><b>Accuracy</b> is task fidelity against a ground truth. It is the only family that forces you to decide in advance what "correct" means, because you cannot compare against a label you never wrote.</p>
+
+  <p><b>Latency</b> is not a number. It is a distribution, and the mean is close to useless for an SLA, because the users who give up and leave are sitting in the tail. Report p95 or p99.</p>
+
+  <p>There is a second distinction inside latency worth getting right. Time-to-first-token is what a person watching a cursor experiences as responsiveness. Total completion time is what matters for a batch job nobody is staring at. Confuse them and you will optimize the wrong half of the pipeline.</p>
+
+  <p><b>Cost</b> gets measured per unit of business work, not per token. Tokens are the unit you are billed in and the one unit nobody outside engineering can reason about. "$0.08 per resolved ticket" is a sentence a finance stakeholder can hold you to. "1.4 million tokens a day" is telemetry.</p>
+
+  <p><b>Safety</b> is a rate of policy-violating output over a stated denominator, and the thing to get right is achievability. On an open-ended generative task, a target of zero is not ambitious. It is unreachable.</p>
+
+  <p>Watch what happens the first time you miss it. Nobody re-engineers the system. Everyone quietly agrees the number was aspirational, and from then on it is enforced by nobody. Set a small non-zero rate instead, say under 0.1% of ten thousand outputs flagged for toxicity. Save the hard zero for properties a deterministic check can actually guarantee, like zero outputs containing another person's identifier.</p>
+
+  <p><b>Security</b> is a different axis from safety, and the exam likes this distinction. Safety is about what the model <em>says</em>. Security is about what the system <em>permits</em>: whether an injected instruction inside a retrieved document can reach a tool, whether an agent's credentials are scoped, whether data can leave through a tool call.</p>
+
+  <p>You measure security against an adversarial test suite, not a quality rubric. A system can be perfectly safe and completely insecure at the same time. Two failure modes, two owners.</p>
+
+  <h3>Putting numbers under it</h3>
+  <p>Take an insurance claims assistant. It reads a submitted claim and the retrieved policy documents, drafts a coverage determination, and escalates when the policy is ambiguous. Volume is 12,000 claims a month. A finished metric set for it looks like this.</p>
+
+  <div class="table-wrap"><table>
+    <caption>Claims assistant: finished metric set</caption>
+    <thead><tr><th scope="col">Metric</th><th scope="col">Definition</th><th scope="col">Threshold</th><th scope="col">What it gates</th></tr></thead>
+    <tbody>
+      <tr><td>Determination accuracy</td><td>Matches the adjuster's gold label, per claim type</td><td class="num">≥ 0.95 on every type</td><td>Auto-draft vs. mandatory review</td></tr>
+      <tr><td>Grounding</td><td>Cited span exists verbatim in the source document</td><td class="num">1.00</td><td>Release block</td></tr>
+      <tr><td>Escalation recall</td><td>Genuinely ambiguous claims that got escalated</td><td class="num">≥ 0.98</td><td>Release block</td></tr>
+      <tr><td>Latency (p95)</td><td>Submission to drafted determination</td><td class="num">≤ 6.0 s</td><td>SLA</td></tr>
+      <tr><td>Cost</td><td>Mean cost per claim</td><td class="num">≤ $0.19</td><td>Budget</td></tr>
+      <tr><td>PII containment</td><td>Outputs leaking another claimant's identifier</td><td class="num">0 per 12,000</td><td>Regulatory</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>Now look at what each row is doing, because every one of them is defending against a specific way of being fooled.</p>
+
+  <p>Accuracy carries a per-claim-type clause. Without it, a claim type that is 3% of volume could fail 40% of the time and never disturb the aggregate.</p>
+
+  <p>Grounding and PII are hard zeros, and they are allowed to be, because a deterministic check enforces them. There is nothing probabilistic about whether a quoted span exists in a document.</p>
+
+  <p>Escalation is expressed as recall rather than accuracy. The expensive error here is <em>failing</em> to escalate, and a plain accuracy figure lets a high true-negative rate paper over exactly that.</p>
+
+  <p>Cost is in dollars per claim, because that is the sentence the business sponsor will repeat back to you.</p>
+
+  <details class="checkpoint">
+    <summary>Checkpoint 1 · before you read on</summary>
+    <div class="prompt">
+      <p>A team reports: <em>"Safety incidents: 0 this month."</em> They want to use it as a release gate.</p>
+      <p>Name the two questions that decide whether that number is a metric or a decoration.</p>
+    </div>
+    <div class="cue">Answer first, then open</div>
+    <div class="answer">
+      <span class="verdict">Zero out of what, and was zero reachable?</span>
+      <p><b>The denominator.</b> "0 incidents" over 40 requests and over 40,000 requests are different claims, and only one of them is evidence.</p>
+      <p><b>Achievability.</b> If this is an open-ended generative task, a target of zero was never reachable, so the first miss will quietly retire the gate instead of stopping a release. A hard zero is only legitimate where a deterministic check can enforce it.</p>
+    </div>
+  </details>
+
+  <div class="box warning">
+    <div class="label">How the exam tends to phrase this</div>
+    <p>A scenario hands you a requirement written in adjectives, usually something like "the system needs to be fast, accurate, and safe," then asks which measurement plan you would adopt.</p>
+    <p style="margin:0">The wrong answers cluster predictably. Metrics that are easy to collect rather than decision-relevant, like average response length or tokens per day. A single composite quality score, which sounds tidy and tells you nothing on the day it drops three points. A threshold to be "calibrated once we see baseline performance," which is the after-the-fact bar wearing a lab coat. And a safety metric quietly applied to what is really a security requirement.</p>
+  </div>
+
+  <div class="exit">
+    <b>Where this goes next:</b> you now have a number and a bar. Neither means anything until you have something fixed to measure them against, which is <span class="thread">step 2 of the loop</span> and the longest part of this domain.
+  </div>
+
+  <div class="pagenav"><span></span><a class="next" href="#dataset">Next: Building an evaluation set →</a></div>
+</div></section>
+
+<section id="dataset"><div class="container">
+  <h2>2. Building an evaluation set that isn't lying to you</h2>
+
+  <div class="entry"><b>By the end of this section</b> you will be able to look at an evaluation set and predict which failures it is structurally incapable of reporting.</div>
+
+  <p>This is the longest part of the domain and where the exam's best traps live, so we will go slowly.</p>
+
+  <p>Start from one principle. An eval set is a measuring stick, and a measuring stick only works if it stays the same length.</p>
+
+  <p>Change the cases between runs and a score change tells you nothing, because you can no longer tell "the system got better" from "the test got easier." That has an uncomfortable consequence, and most teams meet it the hard way: your set <em>will</em> go stale, and refreshing it destroys comparability with everything you measured before.</p>
+
+  <p>You handle that by versioning the set and re-baselining deliberately. Not by quietly editing a case in place because it looked wrong to somebody last Tuesday.</p>
+
+  <div class="box analogy">
+    <div class="label">The analogy</div>
+    <p style="margin:0"><b>Refreshing an eval set is changing your test split.</b> You already know you cannot compare a model's accuracy across two different test sets and call the difference progress. Same rule, same reason, and a prompt change is just as capable of overfitting to a fixed set as gradient descent is.</p>
+    <div class="breaks">
+      <b>Where it breaks</b>
+      A test split is usually a random draw, so resampling gets you a comparable one. An eval set is deliberately stratified and hand-verified, so you cannot regenerate an equivalent one on demand. That makes the comparability loss permanent rather than inconvenient, which is exactly why the versioning discipline is stricter here than it is in training.
+    </div>
+  </div>
+
+  <h3>Where the cases come from</h3>
+
+  <p>Real production traces first. Synthetic cases second. Hand-written cases only for failure shapes you have good reason to expect but have not yet seen.</p>
+
+  <p>The reasoning is blunt. The failures you <em>imagine</em> from a spec are not the failures that occur. A set built entirely from a design document encodes its authors' mental model, and the point of evaluation is to test that model against reality rather than confirm it. Treat every imagined case as a hypothesis until a real trace proves the failure exists.</p>
+
+  <p>Here is a number that surprises people. Twenty to fifty hand-verified cases beat several hundred unverified synthetic ones.</p>
+
+  <p>That sounds backwards until you ask what an unverified case contributes. It contributes a score with no information behind it, because you do not know whether its label is correct.</p>
+
+  <p>Put arithmetic on it. Take 500 cases with a 6% label-error rate. Measurable accuracy is now capped at 94%, and nothing you do to the system can move it past that. Teams burn weeks chasing the last six points of a number that was never real.</p>
+
+  <h3>The bias that ruins most eval sets quietly</h3>
+
+  <p>Here is how it happens, and it is nobody's fault in particular. A team collects examples while building the system. They keep the ones that were interesting to look at. They drop the ones that were too messy to bother labelling.</p>
+
+  <p>What is left is a set assembled almost entirely from cases the system already handles. It will report excellent performance while concealing every failure that matters.</p>
+
+  <p>Now the important part. Adding five hundred more cases collected the same way does not fix this. It multiplies the bias tenfold and hands you a tighter confidence interval around a number that was wrong to begin with. <strong class="load-bearing">The fix is compositional, not volumetric.</strong> You rebuild around the segments and failure modes you have to report on.</p>
+
+  <h3>Why natural frequency is the wrong sampling rule</h3>
+
+  <p>Most people bring the same instinct to sampling, and it is exactly backwards: match the eval set to production frequency so the number "represents reality."</p>
+
+  <p>Watch what that does. A document-extraction system runs 78% invoices, 15% purchase orders, 5% credit notes, and 2% handwritten remittance advices. Sample fifty cases at natural frequency.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 720 330" role="img" aria-labelledby="fig2-t fig2-d">
+      <title id="fig2-t">Natural-frequency sampling versus stratified sampling</title>
+      <desc id="fig2-d">Two panels of horizontal bars. Sampled at production frequency across 50 cases: invoices 39, purchase orders 8, credit notes 3, handwritten remittance advices 1. The handwritten bar is a single sliver, annotated: one case cannot produce a rate. Stratified across 135 cases: invoices 40, purchase orders 35, credit notes 30, handwritten 30. The handwritten bar is now full length and annotated: 30 cases makes a 40 percent failure rate visible.</desc>
+
+      <text class="s-key" x="0" y="16">Sampled at production frequency (50 cases)</text>
+      <g class="s-lab" text-anchor="end">
+        <text x="152" y="54">Invoices</text>
+        <text x="152" y="82">Purchase orders</text>
+        <text x="152" y="110">Credit notes</text>
+        <text x="152" y="138">Handwritten</text>
+      </g>
+      <g class="s-fill-deep">
+        <rect x="160" y="40" width="429" height="20" rx="3"/>
+        <rect x="160" y="68" width="88"  height="20" rx="3"/>
+        <rect x="160" y="96" width="33"  height="20" rx="3"/>
+      </g>
+      <rect class="s-coral" x="160" y="124" width="11" height="20" rx="3"/>
+      <g class="s-lab-sm">
+        <text x="597" y="54">39</text>
+        <text x="256" y="82">8</text>
+        <text x="201" y="110">3</text>
+      </g>
+      <text class="s-lab-coral" x="179" y="139">1 case. One case cannot produce a rate.</text>
+
+      <line x1="0" y1="166" x2="720" y2="166" stroke="var(--border)" stroke-width="1"/>
+
+      <text class="s-key" x="0" y="196">Stratified to answer the question you must answer (135 cases)</text>
+      <g class="s-lab" text-anchor="end">
+        <text x="152" y="234">Invoices</text>
+        <text x="152" y="262">Purchase orders</text>
+        <text x="152" y="290">Credit notes</text>
+        <text x="152" y="318">Handwritten</text>
+      </g>
+      <g class="s-fill-deep">
+        <rect x="160" y="220" width="440" height="20" rx="3"/>
+        <rect x="160" y="248" width="385" height="20" rx="3"/>
+        <rect x="160" y="276" width="330" height="20" rx="3"/>
+      </g>
+      <rect class="s-green" x="160" y="304" width="330" height="20" rx="3"/>
+      <g class="s-lab-sm">
+        <text x="608" y="234">40</text>
+        <text x="553" y="262">35</text>
+        <text x="498" y="290">30</text>
+      </g>
+      <text class="s-lab-green" x="498" y="319">30. A 40% failure rate is now visible.</text>
+    </svg>
+    <figcaption><b>The top panel is the one that feels responsible.</b> It mirrors reality, and it is the reason a 40% failure rate on the riskiest 2% of traffic can sit undetected for a year. Representativeness is a property you want in a report, not in a measuring instrument.</figcaption>
+  </figure>
+
+  <p>The handwritten segment gets exactly one case. You cannot measure a failure rate on one case. You cannot even detect a 40% failure rate on one case, because a single pass or a single fail is noise either way.</p>
+
+  <p>If that framing feels familiar, it should. <strong class="load-bearing">This is the class-imbalance problem wearing different clothes.</strong> Nobody trains a classifier on natural frequency and then expects usable minority-class recall. The rare class needs deliberate over-representation, for the same reason and by the same arithmetic. An eval set is no different.</p>
+
+  <p>So build the set to answer the question you have to answer. If you must report accuracy by document type, every type needs enough cases to support a rate, with thirty as a working floor. The rare and expensive segments get <em>over</em>-sampled relative to their traffic share. If you need an aggregate figure afterward, reconstruct it by weighting.</p>
+
+  <div class="box raised">
+    <div class="label">The masking trap</div>
+    <p>An aggregate accuracy of 97% can be hiding a 40% failure rate on a rare document type, because an overall metric averages segment failures away.</p>
+    <p style="margin:0">And the segments it hides are disproportionately the rare, awkward, expensive ones nobody wants to think about. Before anyone reduces human review on the strength of an aggregate number, every segment has to clear the bar independently.</p>
+  </div>
+
+  <p>One more balancing move worth knowing: for every failure your eval set is meant to catch, include a near-miss case where the system behaves correctly and a brittle grader would wrongly flag it. A set built only from failures hides false alarms; a set built only from clean cases hides misses. Aim for roughly equal counts, and treat that as a requirement rather than a nicety as stakes rise.</p>
+
+  <h3>Three instruments, three different jobs</h3>
+
+  <p>When the guide says "mixed methodologies," it is asking whether you know these are three distinct tools rather than one grading pipeline with three settings.</p>
+
+  <p><b>The deterministic check</b> comes first: exact match, schema validation, a regex, a numeric comparison, unit tests against the output, a PII pattern scan. Exact, reproducible, free at any volume, immune to grader error.</p>
+
+  <p>The range of what code can decide is wider than people assume. Schema validity. Whether a cited span exists in the document. Forbidden-field presence. Numeric tolerance. Tool-call ordering. Refusal when refusal was required. All code-checkable.</p>
+
+  <p>Never route something code-checkable to a model grader. Citation validation shows why in one number: asking a model "is this citation accurate?" scores around 38% agreement with ground truth in published evaluation, which is worse than a coin flip. Checking whether the quoted string literally appears in the cited document is exact and free.</p>
+
+  <p><b>The model grader</b> works from a rubric, and it exists for the properties code cannot reach: tone, coherence, whether an answer resolves the question that was asked. Four things separate a trustworthy grader from a decorative one.</p>
+
+  <p>Decompose the rubric into binary sub-criteria rather than a 1-to-5 scale. Nobody can say consistently what separates a 3 from a 4, so that boundary drifts between runs and takes your score with it.</p>
+
+  <p>Use a grader from a different model family than the generator. A same-family grader shows self-preference bias and shares the generator's blind spots, which means the failures it cannot see are precisely the failures the system is most likely to produce.</p>
+
+  <p>Validate it against real human labels before believing anything it reports. Hand-label a sample, run the grader on the same sample, measure agreement. Treat roughly 75% as a starting bar to calibrate from rather than a figure carved anywhere official.</p>
+
+  <p>And know its biases going in. It favours whichever option it saw first. It rewards length whether or not length helped. If only a same-family grader is available, its output gets reported as degraded, never as ground truth.</p>
+
+  <p><b>The human</b> is there for calibration, not grading at scale. Humans establish the labels the deterministic checks compare against, produce the sample the model grader is validated on, and periodically re-audit that grader to catch it drifting.</p>
+
+  <p>One hard limit is worth memorising. If two domain experts would not independently reach the same verdict on a case, no automated grader can be trusted on that case at any threshold. That is not a rubric problem. The case needs re-scoping.</p>
+
+  <p>Put the three together and the order never changes: <strong class="load-bearing">deterministic checks filter, the model grader scales, humans calibrate.</strong></p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 720 268" role="img" aria-labelledby="fig3-t fig3-d">
+      <title id="fig3-t">How the three grading instruments layer</title>
+      <desc id="fig3-d">A three-stage funnel for a support assistant producing 2,000 answers a day. Stage one, deterministic checks, processes all 2,000 at no marginal cost; 110 fail here and never reach the next layer. Stage two, a rubric-based model grader, processes the surviving 1,890 at a fraction of a cent each. Stage three, human review, sees 50 cases a week, stratified across segments and across pass and fail verdicts.</desc>
+
+      <rect class="s-green-t" x="40" y="36" width="640" height="56" rx="8"/>
+      <rect x="40" y="36" width="640" height="56" rx="8" class="s-stroke"/>
+      <text class="s-key" x="58" y="60">Deterministic checks</text>
+      <text class="s-lab-sm" x="58" y="78">exact, reproducible, no marginal cost</text>
+      <text class="s-num" x="662" y="68" text-anchor="end">2,000 / day</text>
+
+      <path class="s-arrow" d="M 360 94 L 360 108"/>
+      <text class="s-lab-coral" x="378" y="107">110 fail here and never reach the next layer</text>
+
+      <rect class="s-amber-t" x="90" y="112" width="540" height="56" rx="8"/>
+      <rect x="90" y="112" width="540" height="56" rx="8" class="s-stroke"/>
+      <text class="s-key" x="108" y="136">Model grader, from a rubric</text>
+      <text class="s-lab-sm" x="108" y="154">binary sub-criteria, different model family</text>
+      <text class="s-num" x="612" y="144" text-anchor="end">1,890 / day</text>
+
+      <path class="s-arrow" d="M 360 170 L 360 184"/>
+
+      <rect class="s-fill-deep" x="185" y="188" width="350" height="56" rx="8"/>
+      <rect x="185" y="188" width="350" height="56" rx="8" class="s-stroke"/>
+      <text class="s-key" x="203" y="212">Human review</text>
+      <text class="s-lab-sm" x="203" y="230">calibration, not grading at scale</text>
+      <text class="s-num" x="517" y="220" text-anchor="end">50 / week</text>
+    </svg>
+    <figcaption><b>Each layer exists to protect the budget of the one below it.</b> The funnel is also the reason the human sample must be stratified across passes as well as failures: sample only the worst-looking cases and you will discover the grader has drifted only after it has been wrong for a month.</figcaption>
+  </figure>
+
+  <p>Those fifty weekly cases get stratified across segments and across pass and fail verdicts, rather than only the worst-looking ones. Track grader-versus-human agreement over time, so nobody finds out about drift the slow way.</p>
+
+  <h3>Shapes that need more than one score</h3>
+
+  <p>Some architectures cannot be graded with a single row, and the exam knows it.</p>
+
+  <p><b>A RAG system needs two:</b> one for retrieval, one for generation. A faithfulness score computed over the wrong passages is a meaningless number, because an answer can be perfectly faithful to material that never addressed the question.</p>
+
+  <p><b>An agent needs two:</b> trajectory (was the right tool called, in a sensible order) and outcome (did the final state satisfy the goal). A correct answer reached by a wrong or irreversible path is still a failure. Picture an agent that deletes a record, then reports the correct value from before the deletion. Grade the outcome alone and that scores as a pass.</p>
+
+  <p><b>A multi-turn system</b> needs you to attribute the <em>first</em> turn that broke rather than the final state, because a late self-correction masks an early defect that will not always self-correct next time.</p>
+
+  <p>One more distinction to have ready, and it is the one people get backwards under time pressure. <code>pass@k</code> counts a success if at least one of k attempts worked. <code>pass^k</code> counts a success only if all k attempts worked.</p>
+
+  <p>The choice is not about difficulty. It is about who catches a bad attempt. If a validator downstream can catch and retry, use pass@k. If every attempt is user-visible or does something in the world, use pass^k.</p>
+
+  <p>An agent that books account changes might use pass@3 at 0.90 or better for task completion, because a validator catches a bad plan before it executes. The row checking "did it confirm before any irreversible action" needs pass^5 at 1.0, because one silent irreversible action out of five tries is one too many.</p>
+
+  <p>Drag the slider below and watch the two formulas separate. Same k, same per-attempt reliability, opposite conclusions.</p>
+
+  <div class="widget" id="k-widget">
+    <h3 class="widget-title" style="margin-top:0">Same k, opposite claims</h3>
+    <p class="widget-hint">Pick how reliable one attempt is, then drag the number of attempts. Watch what "reachable success" and "every single attempt has to land" do to the <em>same</em> k.</p>
+    <div class="btn-row" role="group" aria-label="Per-attempt success rate">
+      <button class="btn" type="button" data-p="0.6">Shaky step · p = 0.60</button>
+      <button class="btn active" type="button" data-p="0.85">Solid step · p = 0.85</button>
+      <button class="btn" type="button" data-p="0.97">Hardened step · p = 0.97</button>
+    </div>
+    <div class="k-row">
+      <span>k = 1</span>
+      <input type="range" id="k-range" min="1" max="10" value="5" aria-describedby="k-summary">
+      <span>k = 10</span>
+      <span class="k-val" id="k-val">5</span>
+    </div>
+    <div class="metric-pair">
+      <div class="metric-cell">
+        <div class="metric-label"><span>pass@k, at least one lands<br><small style="color:var(--ink3)">(a validator can retry)</small></span><b id="pass-at-val" style="color:var(--green-dark)">—</b></div>
+        <div class="metric-track"><div class="metric-fill" id="pass-at-bar" style="background:var(--green)"></div></div>
+      </div>
+      <div class="metric-cell">
+        <div class="metric-label"><span>pass^k, every one lands<br><small style="color:var(--ink3)">(irreversible, world-acting)</small></span><b id="pass-pow-val" style="color:var(--coral-dark)">—</b></div>
+        <div class="metric-track"><div class="metric-fill" id="pass-pow-bar" style="background:var(--coral)"></div></div>
+      </div>
+    </div>
+    <div class="widget-summary" id="k-summary" aria-live="polite"></div>
+  </div>
+
+  <details class="checkpoint">
+    <summary>Checkpoint 2 · before you read on</summary>
+    <div class="prompt">
+      <p>Your evaluation set holds 500 cases. An audit finds that 6% of the labels are wrong.</p>
+      <p>What is the highest accuracy you can ever measure on this set, and what does that mean for the team currently trying to close a gap from 94% to 98%?</p>
+    </div>
+    <div class="cue">Answer first, then open</div>
+    <div class="answer">
+      <span class="verdict">94%, and the team is chasing a number that does not exist.</span>
+      <p>Thirty of the 500 cases are labelled incorrectly. A perfect system is marked wrong on all thirty, so measurable accuracy is capped at 94% no matter what anyone ships.</p>
+      <p>The team is already at the ceiling. Every week spent closing that four-point gap is spent on an artefact of the labels. The fix is to verify the labels, not to improve the system, and this is why twenty to fifty hand-verified cases beat several hundred unverified ones.</p>
+    </div>
+  </details>
+
+  <div class="box warning">
+    <div class="label">How the exam tends to phrase this</div>
+    <p style="margin:0">The favourite shape is a healthy-looking number sitting next to an unhappy reality: 96% accuracy on a 500-case set, and customers keep complaining. The tempting answer is to enlarge the set, because "get more data" is the correct reflex nearly everywhere else in engineering. Here it multiplies whatever bias the set already carried and tightens the confidence interval around a number that was never true. The right answer rebuilds from real production failures and reports by segment.</p>
+  </div>
+
+  <div class="exit">
+    <b>Where this goes next:</b> you have a measuring stick you can defend. <span class="thread">Section 3</span> is about the one rule that makes it worth having, which is that nothing reaches production without passing it first.
+  </div>
+
+  <div class="pagenav"><a class="prev" href="#metrics">← Metrics</a><a class="next" href="#change-control">Next: Change control →</a></div>
+</div></section>
+
+<section id="change-control"><div class="container">
+  <h2>3. Change control, or treating a prompt like production code</h2>
+
+  <div class="entry"><b>By the end of this section</b> you will be able to say why a prompt change that improved every number you looked at can still be unsafe to ship.</div>
+
+  <p>Let me ask you something that sounds trivial. You change one sentence in a prompt. What could that break?</p>
+
+  <p>The honest answer is that you do not know, and you cannot know by reading it. That is not a statement about your carefulness. It is a statement about what a prompt is.</p>
+
+  <p>Think about what you rely on when you change ordinary code. A type system rejects a whole class of mistakes before anything runs. A compiler catches another class. And the change itself is bounded: edit a function body and the blast radius is the callers of that function.</p>
+
+  <p>A prompt has none of the three. No type system. No compiler. And no unit of change smaller than the entire behaviour, because the model conditions on all of it at once.</p>
+
+  <p>So the sentence you added to fix date formatting can move accuracy on a document type you were not thinking about, in a direction nobody predicted, and nothing in your toolchain will mention it.</p>
+
+  <div class="box analogy">
+    <div class="label">The analogy</div>
+    <p style="margin:0"><b>A prompt is a weight matrix you happen to edit by hand.</b> You would never hand-adjust a few weights, eyeball a couple of outputs, and push to production without running the validation set. Editing a prompt is the same operation. It has far better ergonomics, which is exactly what makes it feel like a smaller act than it is.</p>
+    <div class="breaks">
+      <b>Where it breaks</b>
+      A gradient update is continuous and local, so a small step usually produces a small, smooth change in behaviour. A prompt edit is discrete and global: one clause can shift how the model reads the whole instruction and move a segment you never touched. The analogy understates the risk rather than overstating it, which is the useful direction for an analogy to fail in.
+    </div>
+  </div>
+
+  <p><strong class="load-bearing">Measurement is the only safety net, and it runs in a fixed order: regression evaluation, then a controlled A/B, then a staged rollout.</strong></p>
+
+  <p>That order is not a ritual. Each gate exists because the one before it is blind to something.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 720 225" role="img" aria-labelledby="fig4-t fig4-d">
+      <title id="fig4-t">Why the three change-control gates run in this order</title>
+      <desc id="fig4-d">Three gates left to right. Gate one, regression evaluation against the frozen set, proves nothing that worked broke; it cannot tell you how the change behaves on the live distribution at production load, which is why gate two exists. Gate two, a controlled A/B against the current prompt, proves the change wins on metrics declared in advance; it cannot tell you whether the change survives a seasonal pattern or the Monday traffic spike, which is why gate three exists. Gate three is a staged rollout at ten, fifty, then one hundred percent.</desc>
+
+      <g class="s-fill-surface">
+        <rect x="20"  y="40" width="210" height="72" rx="8"/>
+        <rect x="255" y="40" width="210" height="72" rx="8"/>
+        <rect x="490" y="40" width="210" height="72" rx="8"/>
+      </g>
+      <g class="s-stroke">
+        <rect x="20"  y="40" width="210" height="72" rx="8"/>
+        <rect x="255" y="40" width="210" height="72" rx="8"/>
+        <rect x="490" y="40" width="210" height="72" rx="8"/>
+      </g>
+      <g class="s-key">
+        <text x="36"  y="64">1. Regression evaluation</text>
+        <text x="271" y="64">2. Controlled A/B</text>
+        <text x="506" y="64">3. Staged rollout</text>
+      </g>
+      <g class="s-lab-sm">
+        <text x="36"  y="83">against the frozen set</text>
+        <text x="271" y="83">against the current prompt</text>
+        <text x="506" y="83">10%, then 50%, then 100%</text>
+      </g>
+      <g class="s-lab-green">
+        <text x="36"  y="102">Proves: nothing that worked broke.</text>
+        <text x="271" y="102">Proves: it wins on declared metrics.</text>
+        <text x="506" y="102">Proves: it holds under real variety.</text>
+      </g>
+
+      <g class="s-coral-t">
+        <rect x="20"  y="140" width="210" height="64" rx="8"/>
+        <rect x="255" y="140" width="210" height="64" rx="8"/>
+      </g>
+      <g class="s-lab-coral">
+        <text x="36"  y="160">Cannot tell you:</text>
+        <text x="271" y="160">Cannot tell you:</text>
+      </g>
+      <g class="s-lab-sm">
+        <text x="36"  y="177">how it behaves on the live</text>
+        <text x="36"  y="192">distribution, at production load.</text>
+        <text x="271" y="177">whether it survives a seasonal</text>
+        <text x="271" y="192">pattern or the Monday spike.</text>
+      </g>
+
+      <path class="s-arrow-amber" d="M 230 172 C 242 172, 246 76, 252 76"/>
+      <path class="s-arrow-amber" d="M 465 172 C 477 172, 481 76, 487 76"/>
+    </svg>
+    <figcaption><b>Read the amber arrows as the argument.</b> Each gate's blind spot is the next gate's entire reason for existing, which is why you cannot reorder them or quietly drop the middle one. Regression runs first for a second reason as well: an A/B spends real user traffic, and a change that already fails the frozen set has disqualified itself before it earns any.</figcaption>
+  </figure>
+
+  <p>One detail in that first gate is easy to miss. The regression set is also the only place your rare segments get proper coverage, because that is where you deliberately over-sampled them. Live traffic will not do it for you.</p>
+
+  <h3>Making the A/B mean something</h3>
+
+  <p>Five disciplines, and each one has a specific way of being violated by a reasonable person having a busy week.</p>
+
+  <p><b>Change one variable at a time.</b> Swap the prompt <em>and</em> the model <em>and</em> the retrieval depth in a single variant and a win tells you only that the bundle helped. You now have three suspects and no way to isolate which earned it.</p>
+
+  <p><b>Randomize at a stable unit</b> like user or session, never at the request level. Randomize per request and a single conversation flips between prompt versions mid-thread, which corrupts the conversation and the metric together.</p>
+
+  <p><b>Declare the primary metric and the guardrails before the test starts.</b> Guardrails such as latency, cost, or safety rate can only <em>block</em> a change. They can never justify shipping one on their own.</p>
+
+  <p><b>Fix duration and sample size in advance.</b> Then do not peek and stop the moment the numbers look good. Peeking inflates your false-positive rate, and it does so while feeling like ordinary diligence, which is what makes it dangerous.</p>
+
+  <p><b>Report by segment as well as in aggregate.</b> The masking trap from section 2 has not gone anywhere. An A/B reports a mean, and a mean can hide a segment getting worse while the average improves.</p>
+
+  <h3>What this looks like on a real system</h3>
+
+  <p>A support assistant handles 40,000 requests a week. The team wants to add three targeted few-shot examples, to fix two tools the agent keeps confusing.</p>
+
+  <p><b>Gate 1.</b> The regression run on the 400-case set shows tool-selection accuracy on the ambiguous subset climbing from 0.71 to 0.93, with overall accuracy holding steady. Nothing regressed, so the change earns a live test.</p>
+
+  <p><b>Gate 2.</b> The A/B is declared up front. Primary metric is first-contact resolution. Guardrails are p95 latency under 4.0 seconds and cost under $0.11 per resolved ticket. Split 50/50 by user, two weeks, no peeking.</p>
+
+  <p>Resolution moves from 0.82 to 0.86. Latency ticks from 3.4 to 3.6 seconds, inside the guardrail. Cost ticks from $0.094 to $0.099, inside the guardrail. The gain concentrates exactly where predicted and nothing else regresses.</p>
+
+  <p><b>Gate 3.</b> It ships at 10%, then 50%, then 100%.</p>
+
+  <p>Now notice the part that is easy to read past. Those extra tokens were not free. They cost half a cent and two-tenths of a second, and the change shipped anyway. Not because nobody noticed, but because both costs were declared as guardrails in advance and both cleared.</p>
+
+  <details class="checkpoint">
+    <summary>Checkpoint 3 · before you read on</summary>
+    <div class="prompt">
+      <p>A colleague runs one variant that changes the prompt, upgrades the model, and raises retrieval depth from 5 to 10 passages. First-contact resolution improves by four points and the result is statistically clean.</p>
+      <p>What have you actually learned, and what will this cost you in three months?</p>
+    </div>
+    <div class="cue">Answer first, then open</div>
+    <div class="answer">
+      <span class="verdict">You learned that the bundle helped. Nothing more.</span>
+      <p>Three suspects, one result, no way to attribute the gain. That is not a bookkeeping complaint. In three months the model gets deprecated, or the retrieval bill needs cutting, and somebody asks which of the three was carrying the improvement. Nobody can answer, so nothing can safely be removed.</p>
+      <p>Worth noticing: one of the three could be actively hurting while the other two carry the gain, and a clean aggregate win conceals that perfectly.</p>
+    </div>
+  </details>
+
+  <div class="exit">
+    <b>Where this goes next:</b> gates catch changes you made on purpose. <span class="thread">Section 4</span> is about the other kind, when something breaks and nobody changed anything they will admit to.
+  </div>
+
+  <div class="pagenav"><a class="prev" href="#dataset">← Dataset</a><a class="next" href="#diagnosis">Next: Diagnosis →</a></div>
+</div></section>
+
+<section id="diagnosis"><div class="container">
+  <h2>4. Diagnosing what actually broke</h2>
+
+  <div class="entry"><b>By the end of this section</b> you will reach for retrieval before you reach for the model, and be able to explain to a sceptical manager why that is the cheaper move as well as the correct one.</div>
+
+  <p>Something breaks in production. Where do you look first?</p>
+
+  <p>Most engineers reach for the model, and it is worth being honest about why. A model swap is a one-line change, it feels decisive, and it is the part of the stack that feels most like the source of intelligence.</p>
+
+  <p>Here is the empirical fact that should reorganize the instinct. <strong class="load-bearing">When an LLM system degrades, the fault sits in what feeds the model far more often than in the model itself.</strong></p>
+
+  <p>The reason is structural. Every layer upstream poisons everything downstream. Swap the model while retrieval is still broken and you have changed the <em>phrasing</em> of a wrong answer.</p>
+
+  <p>So the order is data and retrieval first, then prompt and context, then model mismatch. And that order is not only empirically right. It is economically right, which is the argument that actually wins the meeting.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 720 250" role="img" aria-labelledby="fig5-t fig5-d">
+      <title id="fig5-t">The diagnosis order, with the cost of each check</title>
+      <desc id="fig5-d">Three layers checked in order. First, data and retrieval: check recall against known-good passage IDs, verify the index, confirm chunking is unchanged. Cost: an afternoon. Second, prompt and context: check the prompt version, what actually reached the context window, whether compaction dropped something. Cost: about a day. Third, model mismatch: cost is a re-benchmark, a re-tune, a cost renegotiation, and re-running every evaluation. A note states that most degradations are resolved at the first layer, and that the cheapest check is also the most likely cause, so the ordering costs nothing to follow.</desc>
+
+      <rect class="s-green-t" x="20" y="34" width="660" height="58" rx="8"/>
+      <rect x="20" y="34" width="660" height="58" rx="8" class="s-stroke"/>
+      <text class="s-badge" x="38" y="54">1</text>
+      <text class="s-key" x="56" y="55">Data and retrieval</text>
+      <text class="s-lab-sm" x="56" y="76">Recall@5 against gold passage IDs. Index complete? Chunking unchanged?</text>
+      <text class="s-lab-green" x="662" y="63" text-anchor="end">an afternoon</text>
+
+      <path class="s-arrow" d="M 350 94 L 350 108"/>
+      <text class="s-lab-sm" x="368" y="107">only if layer 1 is clean</text>
+
+      <rect class="s-amber-t" x="20" y="112" width="660" height="58" rx="8"/>
+      <rect x="20" y="112" width="660" height="58" rx="8" class="s-stroke"/>
+      <text class="s-badge" x="38" y="132">2</text>
+      <text class="s-key" x="56" y="133">Prompt and context</text>
+      <text class="s-lab-sm" x="56" y="154">Which prompt version? What actually reached the window? Did compaction drop it?</text>
+      <text class="s-lab-amber" x="662" y="141" text-anchor="end">about a day</text>
+
+      <path class="s-arrow" d="M 350 172 L 350 186"/>
+      <text class="s-lab-sm" x="368" y="185">only if layers 1 and 2 are clean</text>
+
+      <rect class="s-coral-t" x="20" y="190" width="660" height="58" rx="8"/>
+      <rect x="20" y="190" width="660" height="58" rx="8" class="s-stroke"/>
+      <text class="s-badge" x="38" y="210">3</text>
+      <text class="s-key" x="56" y="211">Model mismatch</text>
+      <text class="s-lab-sm" x="56" y="232">Re-benchmark, re-tune, renegotiate cost, re-run every evaluation you have.</text>
+      <text class="s-lab-coral" x="662" y="219" text-anchor="end">weeks</text>
+    </svg>
+    <figcaption><b>The cheapest check is also the most likely cause.</b> That is a rare and convenient alignment: following the order costs you nothing even when your hunch about the model turns out to be right. Reversing it costs weeks whether or not you were right.</figcaption>
+  </figure>
+
+  <h3>Failure signatures worth memorizing</h3>
+  <div class="table-wrap"><table>
+    <caption>Symptom → most likely layer</caption>
+    <thead><tr><th scope="col">Symptom</th><th scope="col">Layer</th></tr></thead>
+    <tbody>
+      <tr><td>Confidently wrong right after a corpus refresh or re-index</td><td>Retrieval / indexing. The timing tells you.</td></tr>
+      <tr><td>Wrong on one document type, correct elsewhere</td><td>Data coverage / chunking. Segment-shaped, not general.</td></tr>
+      <tr><td>Facts correct, format or steps missing</td><td>Prompt / instructions. The knowledge arrived, the instruction didn't.</td></tr>
+      <tr><td>Format inconsistent across runs despite explicit instructions</td><td>Few-shot needed. Prose has already failed once.</td></tr>
+      <tr><td>Forgets something from two turns ago, short conversation</td><td>Application bug. Stateless API, history not resent.</td></tr>
+      <tr><td>Fails on multi-step reasoning, retrieval and prompt already verified clean</td><td>Model mismatch. The conclusion, not the first move.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Hallucination is three different failures</h3>
+
+  <p>Treat hallucination as one phenomenon and you get one reflexive fix, usually an instruction not to make things up, which addresses none of the actual causes.</p>
+
+  <p>It is three failures wearing one symptom.</p>
+
+  <p><b>Grounding.</b> The context <em>did</em> contain the answer and the model departed from it. Fix: require a citation for every claim, plus a deterministic check that the cited span exists.</p>
+
+  <p><b>Retrieval.</b> Retrieval returned nothing relevant and the model filled the vacuum. Fix: repair retrieval, and add the refusal path that was missing.</p>
+
+  <p><b>Context management.</b> Something was dropped by compaction and the model reconstructed it from nothing. Fix: extract precision-critical facts verbatim rather than summarizing everything uniformly.</p>
+
+  <p>Same symptom, three root causes, three different fixes. And the evidence that tells you which one you have is already in your logs: what was retrieved, what actually reached the context window, and whether the claim has a resolvable source.</p>
+
+  <div class="box raised">
+    <div class="label">Worked case</div>
+    <p>A policy assistant's grounded-answer rate falls from 0.94 to 0.71 over a week. The team's first instinct is a bigger model.</p>
+    <p>Following the order instead: retrieval Recall@5 has collapsed from 0.92 to 0.55. A corpus refresh restructured the headings, the chunker now splits mid-table, and the entitlement tables that answer the most common question class are split across two chunks that each score below the relevance floor.</p>
+    <p style="margin:0">The investigation stops at layer 1. The model was never touched. A bigger model would have produced a more articulate answer built on exactly the same missing passages.</p>
+  </div>
+
+  <p>There is a general lesson under that case. When quality drops sharply and something changed right before it, the thing that changed is your hypothesis.</p>
+
+  <p>Sharp drops have causes. Gradual drift has drivers, and that is a different kind of investigation with a different toolkit.</p>
+
+  <p>The exam's version of this always pairs a symptom with a timeline detail: a corpus refresh, a re-index, a prompt release. <strong class="load-bearing">The timeline detail is the answer key.</strong> The official guide's own sample question follows exactly this shape, where a RAG system turning confidently wrong right after a document refresh points at retrieval and indexing rather than the model.</p>
+
+  <details class="checkpoint">
+    <summary>Checkpoint 4 · before you read on</summary>
+    <div class="prompt">
+      <p>A RAG assistant is fine on Tuesday. A nightly corpus reload runs. On Wednesday morning it is citing clause numbers that do not match the text it quotes, and it sounds completely certain doing it.</p>
+      <p>Name your first three checks, in order, and say what you are deliberately not checking yet.</p>
+    </div>
+    <div class="cue">Answer first, then open</div>
+    <div class="answer">
+      <span class="verdict">All three live at layer 1. The model is not a suspect yet.</span>
+      <p><b>One.</b> Did the re-index actually complete? Compare chunk count against the expected count from source.</p>
+      <p><b>Two.</b> Did the chunking configuration change alongside the refresh?</p>
+      <p><b>Three.</b> Did the embedding model version move between what is recorded in the index and what is running at query time? Nothing errors when this happens, which is what makes it the classic silent killer.</p>
+      <p><b>Not yet:</b> the model, the prompt, and the temperature. Confidence is not evidence of a sampling problem. The model reports whatever it retrieved, faithfully and fluently, and the timing tells you what changed.</p>
+    </div>
+  </details>
+
+  <div class="exit">
+    <b>Where this goes next:</b> so far every move has been about protecting quality. <span class="thread">Section 5</span> is the one where you are asked to make the system cheaper, which is where quality is most often traded away by accident.
+  </div>
+
+  <div class="pagenav"><a class="prev" href="#change-control">← Change control</a><a class="next" href="#optimization">Next: Optimization →</a></div>
+</div></section>
+
+<section id="optimization"><div class="container">
+  <h2>5. Making it cheaper and faster without breaking it</h2>
+
+  <div class="entry"><b>By the end of this section</b> you will know which single lever to reach for when a scenario names latency and cost in the same sentence, and why the obvious alternative is a trap.</div>
+
+  <p>Start with the fact that makes this domain tractable. A token is a line of cost and a line of latency at the same time.</p>
+
+  <p>That coupling is convenient. Cut tokens and you usually help both at once. It also cuts the other way: add context to chase accuracy and you usually hurt both at once.</p>
+
+  <p>Optimization here means moving along that curve deliberately, inside a quality bar you already declared. One rule governs everything else.</p>
+
+  <p><strong class="load-bearing">Measure which stage dominates before optimizing anything.</strong> Halve a stage that is 8% of your latency budget and you have bought 4%. People do this constantly, because the stage they understand best is rarely the stage that is slow.</p>
+
+  <h3>The highest-value lever, by a wide margin</h3>
+
+  <p>Prompt caching. When a large block of content is byte-identical on every request, a system prompt or a policy document or a tool schema, put it first, put whatever varies last, and turn caching on.</p>
+
+  <p>The stable prefix gets reused instead of reprocessed. Time-to-first-token drops, cost drops, and quality is untouched, because nothing about the content changed.</p>
+
+  <p>Per the guide's own sample question, this is the answer whenever a scenario names latency and cost in the same sentence.</p>
+
+  <p>Two things break it silently. The prefix has to be genuinely identical, so a timestamp or session ID rendered into it kills the cache instantly and invisibly. And the static content has to actually come first.</p>
+
+  <h3>The rest of the ladder</h3>
+
+  <p><b>Route by difficulty.</b> Send the routine majority to a smaller, faster model and escalate only the hard minority. Validate the escalation trigger on a labelled set rather than assuming it works.</p>
+
+  <p><b>Retrieval discipline</b> matters more than people expect. Fetching the top 20 passages instead of the top 5 costs tokens on every request <em>and</em> often hurts accuracy, because the extra passages are noise sitting in the middle of the context window where attention is already weakest.</p>
+
+  <p><b>Output shaping.</b> Output tokens are usually the expensive side of the ledger, and they drive latency one generated token at a time.</p>
+
+  <p><b>For long conversations,</b> extract the facts that must stay exact into a structured block and summarize the rest. Uniform summarization is how a specific dollar amount quietly becomes "approximately."</p>
+
+  <p><b>And know what streaming actually buys.</b> It moves time-to-first-token. It does not reduce total completion time and it does not reduce cost. A real win for an interactive chat interface, worth precisely nothing for an overnight batch job.</p>
+
+  <h3>The caching lever, with real numbers</h3>
+
+  <p>A claims assistant sends an 8,000-token static policy preamble on every request. Volume is 200,000 requests a month.</p>
+
+  <p>Without caching, that preamble is billed and reprocessed 200,000 times. Work out what that means: 1.6 billion input tokens a month that are byte-for-byte identical every single time.</p>
+
+  <p>And it is not only a cost line. That preamble sits in front of every request's first token, because it has to be processed before generation can begin.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 720 296" role="img" aria-labelledby="fig6-t fig6-d">
+      <title id="fig6-t">The same preamble, with and without prompt caching</title>
+      <desc id="fig6-d">Without caching, each of 200,000 monthly requests reprocesses an identical 8,000-token policy preamble followed by the small variable part, totalling 1.6 billion identical input tokens a month, all of it ahead of the first generated token. With the static content placed first and caching enabled, the first request processes the preamble once and every later request reads it from cache, so only the small variable portion is processed at full rate. The policy content is unchanged in both cases.</desc>
+
+      <text class="s-key" x="0" y="14">Without caching</text>
+      <g class="s-lab-sm" text-anchor="end">
+        <text x="130" y="44">Request 1</text>
+        <text x="130" y="70">Request 2</text>
+        <text x="130" y="96">Request 3</text>
+      </g>
+      <g class="s-amber">
+        <rect x="140" y="30" width="380" height="20" rx="3"/>
+        <rect x="140" y="56" width="380" height="20" rx="3"/>
+        <rect x="140" y="82" width="380" height="20" rx="3"/>
+        <rect x="524" y="30" width="70" height="20" rx="3"/>
+        <rect x="524" y="56" width="70" height="20" rx="3"/>
+        <rect x="524" y="82" width="70" height="20" rx="3"/>
+      </g>
+      <text class="s-on-amber" x="150" y="44">8,000-token policy preamble, identical every time</text>
+      <text class="s-lab-sm" x="602" y="44">the claim</text>
+      <text class="s-lab-coral" x="140" y="122">1.6 billion identical input tokens a month, all of it ahead of the first generated token.</text>
+
+      <line x1="0" y1="144" x2="720" y2="144" stroke="var(--border)" stroke-width="1"/>
+
+      <text class="s-key" x="0" y="172">Static content first, caching on</text>
+      <g class="s-lab-sm" text-anchor="end">
+        <text x="130" y="202">Request 1</text>
+        <text x="130" y="228">Request 2</text>
+        <text x="130" y="254">Request 3</text>
+      </g>
+      <rect class="s-amber" x="140" y="188" width="380" height="20" rx="3"/>
+      <text class="s-on-amber" x="150" y="202">processed once</text>
+      <g class="s-fill-deep">
+        <rect x="140" y="214" width="380" height="20" rx="3"/>
+        <rect x="140" y="240" width="380" height="20" rx="3"/>
+      </g>
+      <g class="s-stroke">
+        <rect x="140" y="214" width="380" height="20" rx="3"/>
+        <rect x="140" y="240" width="380" height="20" rx="3"/>
+      </g>
+      <g class="s-lab-green">
+        <text x="150" y="228">read from cache, not reprocessed</text>
+        <text x="150" y="254">read from cache, not reprocessed</text>
+      </g>
+      <g class="s-amber">
+        <rect x="524" y="188" width="70" height="20" rx="3"/>
+        <rect x="524" y="214" width="70" height="20" rx="3"/>
+        <rect x="524" y="240" width="70" height="20" rx="3"/>
+      </g>
+      <text class="s-lab-green" x="140" y="280">Same policy content. Nothing removed. Cost and time-to-first-token both fall.</text>
+    </svg>
+    <figcaption><b>Nothing in the policy text changed between the two panels.</b> That is the whole argument, and it is why caching outranks every other lever here: it is the only one that buys cost and latency together without spending any quality to do it.</figcaption>
+  </figure>
+
+  <p>Reorder the static content to the front, enable caching, and the prefix stops being reprocessed. Cost drops, time-to-first-token drops, and the policy content is exactly what it was.</p>
+
+  <div class="box warning">
+    <div class="label">The trap version of this answer</div>
+    <p>Someone proposes cutting the preamble from 8,000 tokens to 3,000 by trimming "the parts we rarely need." It produces a bigger number on the slide.</p>
+    <p>It also removes required policy content from a regulated determination process. That is a compliance regression wearing an optimization's clothes, and it is exactly the trade a Professional-tier item is built to test.</p>
+    <p style="margin:0">The stakeholder sentence for the real fix: <strong class="load-bearing">we reordered the prompt so the unchanging policy text gets cached instead of resent, which cut cost and response time without removing any policy content.</strong> Nobody in that conversation needs to hear the word "token."</p>
+  </div>
+
+  <details class="checkpoint">
+    <summary>Checkpoint 5 · before you read on</summary>
+    <div class="prompt">
+      <p>A team enables streaming on an overnight batch job that summarizes 40,000 documents. They report it as a latency optimization.</p>
+      <p>What actually improved, and what should they have measured first?</p>
+    </div>
+    <div class="cue">Answer first, then open</div>
+    <div class="answer">
+      <span class="verdict">Nothing improved.</span>
+      <p>Streaming moves time-to-first-token. It does not reduce total completion time and it does not reduce cost. For a batch job nobody is watching, time-to-first-token is not a quantity anyone experiences.</p>
+      <p>What they should have done first is the rule that governs this whole section: profile which stage dominates. If retrieval is 70% of the wall clock, no amount of work on generation will show up in the result.</p>
+    </div>
+  </details>
+
+  <div class="exit">
+    <b>Where this goes next:</b> everything so far runs on a fixed set of cases you chose. <span class="thread">Section 6</span> is about the traffic you did not choose, and it is the only place the return arrow from the opening figure actually gets fed.
+  </div>
+
+  <div class="pagenav"><a class="prev" href="#diagnosis">← Diagnosis</a><a class="next" href="#monitoring">Next: Monitoring →</a></div>
+</div></section>
+
+<section id="monitoring"><div class="container">
+  <h2>6. Watching it in production</h2>
+
+  <div class="entry"><b>By the end of this section</b> you will be able to name the two log fields that turn a week-long investigation into a four-minute one.</div>
+
+  <p>An evaluation set tells you what happened on a fixed set of cases. Monitoring tells you what is happening on traffic nobody anticipated.</p>
+
+  <p>One can never substitute for the other, and the reason is worth stating precisely: a frozen input distribution is exactly what makes the eval set a good measuring stick, and exactly what makes it blind to drift.</p>
+
+  <p>Production instrumentation has one organizing requirement. <strong class="load-bearing">Attribution.</strong> A metric moving is useful only if you can say <em>what</em> moved it.</p>
+
+  <h3>What to log</h3>
+
+  <p>The field that matters most is the one people skip: model identifier and prompt version, on every request.</p>
+
+  <p>Without it, a quality change can never be tied back to a release, and every investigation begins as archaeology through a deploy log. With it, the first question in any investigation has an instant answer.</p>
+
+  <p>Alongside it: retrieved document IDs and relevance scores, token counts split by input, output and cache-read, and latency broken out by stage rather than reported as one aggregate number nobody can act on.</p>
+
+  <h3>Cheap proxies that move first</h3>
+
+  <p>Production hands you signals that move before an offline evaluation would notice anything.</p>
+
+  <p>Escalation rate rising usually means the system is meeting more cases it cannot handle. Retry rate rising means outputs are failing some downstream check. Thumbs-down rate rising is a quality regression the deterministic checks do not cover.</p>
+
+  <p>None of these is a quality measurement, and that is exactly why they are worth alerting on. They move first, before anyone has opened the eval harness.</p>
+
+  <p>Run the model grader continuously as well, on a stratified live sample. Not the whole stream, and not only the flagged cases. Novel error patterns show up first in the high-confidence stream, which is precisely where nobody is looking.</p>
+
+  <p>Alert on rates and segments rather than individual events, and favour leading indicators like cache-hit rate over lagging ones like user complaints.</p>
+
+  <h3>A story worth keeping</h3>
+
+  <p>Cost per request triples overnight. Latency climbs almost two seconds. Every quality metric stays completely flat.</p>
+
+  <p>Sit with that combination for a second before reading on, because it is the whole clue. Cost and latency moved together while quality did not move at all.</p>
+
+  <p>That pattern points at the token or caching layer specifically. A genuine change in model behaviour would have disturbed quality too, and it did not.</p>
+
+  <p>The cache-hit-rate panel shows a drop from 0.93 to 0.11 at 2:14am. The prompt-version field shows a release landed at 2:10. Someone had inserted a rendered timestamp into the system preamble for debugging, which made the prefix different on every request and silently killed cache reuse.</p>
+
+  <p>Time to diagnosis: about four minutes, because two fields existed. Without them it is a week of bisecting deploys while finance asks pointed questions.</p>
+
+  <details class="checkpoint">
+    <summary>Checkpoint 6 · before you read on</summary>
+    <div class="prompt">
+      <p>Different system, same shape. Cost per request falls 40% overnight, latency improves, and grounded-answer rate falls from 0.94 to 0.78.</p>
+      <p>Nobody deployed a prompt change. What is your first hypothesis?</p>
+    </div>
+    <div class="cue">Answer first, then open</div>
+    <div class="answer">
+      <span class="verdict">Something is putting less into the context window.</span>
+      <p>Cost and latency improving together points at the token layer, exactly as in the story above. The difference is that quality moved this time, so the token reduction is not free: material that was being used has stopped arriving.</p>
+      <p>Check retrieval first, per section 4's order. A retrieval change that returns fewer or shorter passages produces precisely this signature: cheaper, faster, and less grounded. A silently truncated context or an over-aggressive compaction step produces it too.</p>
+      <p>The general reflex worth keeping: <b>cost and quality moving in opposite directions at the same moment is almost always one change, not two.</b></p>
+    </div>
+  </details>
+
+  <p>One more thing that is easy to treat as an afterthought. Production logs of a real system contain real user data.</p>
+
+  <p>Redact at write time rather than read time, set an actual retention period, and restrict who can read it. In a regulated sector this is not hygiene. It is a control with an auditor's name attached, and any eval sample pulled from those logs inherits the same obligation.</p>
+
+  <div class="exit">
+    <b>Where this goes next:</b> six objectives, six sections. <span class="thread">Section 7</span> runs all of them through a single system across one year, which is the form the exam's hardest items actually take.
+  </div>
+
+  <div class="pagenav"><a class="prev" href="#optimization">← Optimization</a><a class="next" href="#synthesis">Next: Synthesis →</a></div>
+</div></section>
+
+<section id="synthesis"><div class="container">
+  <h2>7. How it all runs as one system</h2>
+
+  <div class="entry"><b>By the end of this section</b> you will have seen all six objectives hand their output to the next one, on a single system, over a year. This is the shape the exam's hardest items take.</div>
+
+  <p>Take that claims assistant through a full year.</p>
+
+  <p><b>Week one.</b> Six metrics, with thresholds agreed with the business sponsor before anyone knows what the system will score. That is the only time the conversation is honest, which is the entire reason for the sequencing.</p>
+
+  <p><b>Weeks two and three.</b> 400 cases pulled from real submitted claims, hand-verified by an adjuster. They are stratified so that the 2% that are handwritten remittance advices get real coverage. That 2% carries 30% of the actual risk, which is the whole argument against sampling at natural frequency.</p>
+
+  <p><b>From then on.</b> Every prompt edit runs the regression set, then a declared A/B, then a staged rollout. No exceptions, including for changes that look obviously safe.</p>
+
+  <p><b>Month four.</b> Grounded-answer rate drops from 0.94 to 0.71.</p>
+
+  <p>The diagnosis order runs as designed. Retrieval first, and retrieval has in fact collapsed following a corpus refresh that broke table chunking. The model is never touched. The fix is a chunking change, verified against the regression set before anything ships.</p>
+
+  <p>Then the step that matters most, and the one that is easiest to skip when everyone is relieved the incident is over. The newly discovered failure mode becomes twelve new cases in the eval set.</p>
+
+  <div class="pullquote"><p>That's the loop actually closing: production just taught the evaluation set something its authors didn't know a month ago.</p></div>
+
+  <p><b>Month five.</b> Profiling shows the policy preamble dominates both cost and time-to-first-token, so it is reordered and cached.</p>
+
+  <p>A separate proposal to also trim it by 5,000 tokens is rejected outright. The removed sections are required by regulation, and the quality bar from week one is not something you renegotiate for a cost saving.</p>
+
+  <p><b>Continuously, underneath all of it.</b> Dashboards tracking accuracy by claim type, escalation rate, cost per claim, cache-hit rate, and grader-versus-human agreement over time. Every surfaced failure is a candidate for the next version of the eval set.</p>
+
+  <div class="box raised">
+    <div class="label">The property worth naming</div>
+    <p>Nothing in that whole year depends on anyone's gut feeling about whether the system "feels" better. Every decision is gated by a number defined before the result was known, and every number can be traced back to a specific layer that produced it.</p>
+  </div>
+
+  <h3>Where these reflexes show up again</h3>
+
+  <p>Domain 4 is not a self-contained skill, and the exam does not treat it as one. Three of its habits reappear under other names.</p>
+
+  <p><b>The golden-query gate in Domain 3.</b> After every re-index, a fixed set of queries with known-correct chunk IDs has to clear a hit-rate bar before promotion. That is a regression set, applied to retrieval instead of to the whole system, and it exists for the same reason: a measuring stick only works if it stays the same length.</p>
+
+  <p><b>The human-review budget in Domain 5.</b> Deciding which cases a person must see is the same stratification problem as section 2. Spend the budget on the rare, high-consequence segment rather than in proportion to volume, or the review is decorative for exactly the cases it was bought to catch.</p>
+
+  <p><b>The SLA conversation in Domain 6.</b> Section 1's insistence on p95 over the mean, and on cost per unit of business work rather than per token, is what makes an SLA defensible in front of someone who is going to sign it.</p>
+
+  <h3>Common misconceptions</h3>
+  <div class="misc-grid">
+    <div class="misc-row myth"><span class="k">The myth</span>A bigger evaluation set is a better evaluation set.</div>
+    <div class="misc-row why"><span class="k">Why it's tempting</span>More data is the correct reflex in almost every other part of engineering.</div>
+    <div class="misc-row reality"><span class="k">The reality</span>Coverage of real failure modes beats count. Enlarging a biased set multiplies the bias and tightens the interval around a wrong number.</div>
+    <div class="misc-row test"><span class="k">The one test</span>Did the new cases come from real production traces, or from collecting more of what the team already thought to write down?</div>
+  </div>
+  <div class="misc-grid">
+    <div class="misc-row myth"><span class="k">The myth</span>97% accuracy means the system is ready to reduce human review.</div>
+    <div class="misc-row why"><span class="k">Why it's tempting</span>97% sounds finished. It is a single, confident, reportable number.</div>
+    <div class="misc-row reality"><span class="k">The reality</span>An aggregate can hide a 40% failure rate on a rare segment. Every segment has to clear the bar independently before oversight is reduced.</div>
+    <div class="misc-row test"><span class="k">The one test</span>Break the number out by segment. If any segment hasn't been checked separately, the 97% hasn't earned its confidence yet.</div>
+  </div>
+  <div class="misc-grid">
+    <div class="misc-row myth"><span class="k">The myth</span>The model started hallucinating, so we need a better model.</div>
+    <div class="misc-row why"><span class="k">Why it's tempting</span>A model swap is a one-line change and feels like the decisive engineering move.</div>
+    <div class="misc-row reality"><span class="k">The reality</span>Diagnose data and retrieval first, then prompt and context, then model mismatch. Hallucination has three distinct causes with three distinct fixes.</div>
+    <div class="misc-row test"><span class="k">The one test</span>Has Recall@5 against gold passages been checked since the last thing that changed? If not, the model isn't cleared as a suspect yet.</div>
+  </div>
+
+  <p style="margin-top:var(--space-block)">That is Domain 4, one of seven in this lesson series. Domain 1 (Solution Design &amp; Architecture) and Domain 2 (Claude Models, Prompting &amp; Context Engineering) are taught but not yet built as HTML in this pattern. Corpus this lesson teaches against: <code>prep with quiz/CCAR-P_Domain-4_v1.md</code>. Source lesson for every fact and figure here: <code>Outputs/lessons/CCAR-P_Lesson-Domain-4_v1.md</code>.</p>
+
+  <div class="pagenav"><a class="prev" href="#monitoring">← Monitoring</a><span></span></div>
+</div></section>
+
+</main>
+
+<footer><div class="container">
+  <p>CCAR-P Prep &middot; Domain 4 of 7 &middot; Claude Certified Architect &ndash; Professional</p>
+</div></footer>
+
+<script>
+(function () {
+  /* ---- theme toggle ---- */
+  var root = document.documentElement;
+  var toggle = document.getElementById('theme-toggle');
+  function isDark() {
+    var t = root.getAttribute('data-theme');
+    if (t) return t === 'dark';
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  function updateToggle() {
+    var dark = isDark();
+    toggle.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+    toggle.querySelector('span').textContent = dark ? '☀️' : '🌙';
+  }
+  toggle.addEventListener('click', function () {
+    var next = isDark() ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('site-theme', next); } catch (e) {}
+    updateToggle();
+  });
+  window.addEventListener('themechange', updateToggle);
+  updateToggle();
+
+  /* ---- scroll progress + active nav link ---- */
+  var fill = document.getElementById('scrollbar-fill');
+  var navH = parseFloat(getComputedStyle(root).getPropertyValue('--nav-h')) || 64;
+  function onScroll() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var p = max > 0 ? (h.scrollTop || document.body.scrollTop) / max : 0;
+    if (fill) fill.style.width = Math.round(p * 100) + '%';
+    var links = document.querySelectorAll('.nav-link[href^="#"]');
+    var cur = '';
+    document.querySelectorAll('main section[id]').forEach(function (s) {
+      if (s.getBoundingClientRect().top <= navH + 4) cur = s.id;
+    });
+    links.forEach(function (l) {
+      l.classList.toggle('active', l.getAttribute('href') === '#' + cur);
+    });
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', function () {
+    navH = parseFloat(getComputedStyle(root).getPropertyValue('--nav-h')) || 64;
+    onScroll();
+  });
+  document.addEventListener('DOMContentLoaded', onScroll);
+  onScroll();
+
+  /* ---- pass@k / pass^k widget ---- */
+  var kRange = document.getElementById('k-range');
+  var kVal = document.getElementById('k-val');
+  var passAtVal = document.getElementById('pass-at-val');
+  var passPowVal = document.getElementById('pass-pow-val');
+  var passAtBar = document.getElementById('pass-at-bar');
+  var passPowBar = document.getElementById('pass-pow-bar');
+  var summary = document.getElementById('k-summary');
+  var pBtns = document.querySelectorAll('#k-widget .btn[data-p]');
+  var p = 0.85;
+
+  function fmtPct(x) { return (x * 100).toFixed(1) + '%'; }
+
+  function render() {
+    var k = parseInt(kRange.value, 10);
+    kVal.textContent = k;
+    var passAt = 1 - Math.pow(1 - p, k);
+    var passPow = Math.pow(p, k);
+    passAtVal.textContent = fmtPct(passAt);
+    passPowVal.textContent = fmtPct(passPow);
+    passAtBar.style.width = (passAt * 100) + '%';
+    passPowBar.style.width = (passPow * 100) + '%';
+    summary.textContent = 'At k = ' + k + ' attempts, p = ' + p.toFixed(2) + ' per attempt: pass@k = ' +
+      fmtPct(passAt) + ' (great if a validator can retry) | pass^k = ' + fmtPct(passPow) +
+      ' (this is why a world-acting or irreversible step needs its own gate, not this one).';
+  }
+
+  kRange.addEventListener('input', render);
+  pBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      pBtns.forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      p = parseFloat(btn.getAttribute('data-p'));
+      render();
+    });
+  });
+  render();
+})();
+</script>
+
+<script>
+/* P1.9b contrast self-test — gated behind ?audit, run nothing unless asked */
+(function () {
+  if (!/[?&]audit\b/.test(location.search)) return;
+  var cx = (function () { var c = document.createElement('canvas'); c.width = c.height = 1;
+                          return c.getContext('2d', { willReadFrequently: true }); })();
+  function px(backdrop, css) {
+    cx.globalCompositeOperation = 'copy';        cx.fillStyle = backdrop; cx.fillRect(0, 0, 1, 1);
+    cx.globalCompositeOperation = 'source-over'; cx.fillStyle = css;      cx.fillRect(0, 0, 1, 1);
+    var d = cx.getImageData(0, 0, 1, 1).data;
+    return [d[0], d[1], d[2]];
+  }
+  var memo = {};
+  function resolve(css) {
+    if (memo[css]) return memo[css];
+    var b = px('#000', css), w = px('#fff', css);
+    var a = 1 - (w[0] - b[0]) / 255;
+    if (a < 0) a = 0; if (a > 1) a = 1;
+    var out = { rgb: a > 0.002 ? [b[0] / a, b[1] / a, b[2] / a] : [0, 0, 0], a: a };
+    memo[css] = out;
+    return out;
+  }
+  function blend(fg, a, bg) { return [fg[0]*a+bg[0]*(1-a), fg[1]*a+bg[1]*(1-a), fg[2]*a+bg[2]*(1-a)]; }
+  function chan(c) { c/=255; return c<=0.03928 ? c/12.92 : Math.pow((c+0.055)/1.055,2.4); }
+  function lum(p) { return 0.2126*chan(p[0])+0.7152*chan(p[1])+0.0722*chan(p[2]); }
+  function ratio(x,y) { var a=lum(x),b=lum(y); if(a<b){var t=a;a=b;b=t;} return (a+0.05)/(b+0.05); }
+  function bgOf(el) {
+    var stack=[], n=el;
+    while (n && n.nodeType===1) {
+      var c = resolve(getComputedStyle(n).backgroundColor);
+      if (c.a>0.004) { stack.push(c); if (c.a>0.995) break; }
+      n = n.parentElement;
+    }
+    var out=[255,255,255];
+    for (var i=stack.length-1;i>=0;i--) out=blend(stack[i].rgb, stack[i].a, out);
+    return out;
+  }
+  function label(el) {
+    var s = el.tagName.toLowerCase();
+    if (el.id) s += '#'+el.id;
+    if (el.className && typeof el.className==='string' && el.className.trim())
+      s += '.'+el.className.trim().split(/\s+/).join('.');
+    return s;
+  }
+  function sweep(mode) {
+    var out=[];
+    Array.prototype.forEach.call(document.querySelectorAll('body *'), function (el) {
+      var owns = Array.prototype.some.call(el.childNodes, function (n) {
+        return n.nodeType===3 && n.textContent.trim().length>1;
+      });
+      if (!owns) return;
+      var cs = getComputedStyle(el);
+      if (cs.display==='none'||cs.visibility==='hidden'||parseFloat(cs.opacity)<0.99) return;
+      var fg = resolve(cs.color);
+      if (fg.a<0.02) return;
+      var bg = bgOf(el);
+      var eff = fg.a>0.995 ? fg.rgb : blend(fg.rgb, fg.a, bg);
+      var r = ratio(eff, bg);
+      var size = parseFloat(cs.fontSize), bold = parseInt(cs.fontWeight,10)>=700;
+      var need = (size>=24 || (size>=18.66 && bold)) ? 3 : 4.5;
+      if (r+0.005<need) out.push({mode:mode, el:label(el), ratio:+r.toFixed(2), need:need,
+                                   text:(el.textContent||'').trim().slice(0,44)});
+    });
+    return out;
+  }
+  var root = document.documentElement, prior = root.getAttribute('data-theme');
+  root.setAttribute('data-theme','light'); var fails = sweep('light');
+  root.setAttribute('data-theme','dark');  fails = fails.concat(sweep('dark'));
+  if (prior) root.setAttribute('data-theme', prior); else root.removeAttribute('data-theme');
+  window.__audit = fails;
+  if (fails.length) { console.error('CONTRAST AUDIT - '+fails.length+' failing'); console.table(fails); }
+  else { console.log('CONTRAST AUDIT - clean in both modes'); }
+})();
+</script>
+</body>
+</html>

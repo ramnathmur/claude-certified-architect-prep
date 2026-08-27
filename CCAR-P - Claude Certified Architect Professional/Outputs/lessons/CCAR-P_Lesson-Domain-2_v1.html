@@ -1,0 +1,1408 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#faf8f3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1f1c19" media="(prefers-color-scheme: dark)">
+<title>CCAR-P Lesson — Domain 2: Claude Models, Prompting &amp; Context Engineering</title>
+<script>
+(function () {
+  var r = document.documentElement;
+  var t = null;
+  try { t = localStorage.getItem('site-theme'); } catch (e) {}
+  var mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+  if (!t && mq && mq.matches) t = 'dark';
+  if (t) r.setAttribute('data-theme', t);
+  if (mq && mq.addEventListener) mq.addEventListener('change', function (e) {
+    var stored = null;
+    try { stored = localStorage.getItem('site-theme'); } catch (err) {}
+    if (stored) return;
+    r.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+    window.dispatchEvent(new Event('themechange'));
+  });
+})();
+</script>
+<style>
+:root {
+  color-scheme: light;
+  --ink:    oklch(0.15 0.01 80);
+  --ink2:   oklch(0.30 0.015 75);
+  --ink3:   oklch(0.47 0.015 75);
+  --cream:  oklch(0.97 0.008 85);
+  --cream2: oklch(0.94 0.012 85);
+  --cream3: oklch(0.91 0.015 80);
+  --border: oklch(0.87 0.012 80);
+
+  --amber:       oklch(0.64 0.14 68);
+  --amber-light: oklch(0.93 0.035 80);
+  --amber-dark:  oklch(0.47 0.11 60);
+  --coral:       oklch(0.55 0.14 30);
+  --coral-light: oklch(0.94 0.025 35);
+  --coral-dark:  oklch(0.45 0.12 30);
+  --green:       oklch(0.50 0.10 150);
+  --green-light: oklch(0.94 0.025 145);
+  --green-dark:  oklch(0.40 0.09 150);
+  --blue:        oklch(0.43 0.09 245);
+  --blue-light:  oklch(0.93 0.025 240);
+  --blue-dark:   oklch(0.38 0.08 245);
+
+  --surface-raised:   oklch(0.15 0.01 80);
+  --on-raised:        oklch(0.97 0.008 85);
+  --on-raised-muted:  oklch(0.97 0.008 85 / 0.74);
+  --on-raised-dim:    oklch(0.97 0.008 85 / 0.6);
+  --on-raised-border: oklch(0.97 0.008 85 / 0.15);
+  --nav-bg:           oklch(0.97 0.008 85 / 0.96);
+
+  --shadow:    0 2px 16px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
+  --radius:    12px;
+  --radius-sm: 8px;
+  --bar:       3px;
+  --focus:     var(--ink);
+  --nav-h:     64px;
+  --maxw:      900px;
+
+  --font-serif: Georgia, 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+  --font-sans:  system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono:  ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+  --font-body-active: var(--font-serif);
+
+  --fs-body: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --fs-sm:   clamp(0.8125rem, 0.78rem + 0.15vw, 0.9375rem);
+  --fs-xs:   clamp(0.6875rem, 0.67rem + 0.1vw, 0.75rem);
+  --fs-h1:   clamp(2rem, 1.4rem + 3vw, 3.375rem);
+  --fs-h2:   clamp(1.5rem, 1.2rem + 1.5vw, 2.125rem);
+  --fs-h3:   clamp(1.25rem, 1.1rem + 0.75vw, 1.5rem);
+  --fs-pull: clamp(1.375rem, 1.15rem + 1.1vw, 1.625rem);
+
+  --space-section: clamp(3rem, 2.5rem + 2.5vw, 4rem);
+  --space-block:   clamp(1.5rem, 1.25rem + 1.25vw, 2.5rem);
+  --space-inline:  clamp(1.25rem, 1rem + 1.25vw, 2rem);
+  --box-pad-sm: 16px;
+  --box-pad:    22px;
+  --box-pad-lg: 30px;
+  --lh-body:    1.7;
+  --lh-heading: 1.2;
+  --t-fast: 0.15s;
+  --t-med:  0.25s;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --ink:    oklch(0.90 0.008 85);
+  --ink2:   oklch(0.78 0.01 80);
+  --ink3:   oklch(0.62 0.01 75);
+  --cream:  oklch(0.15 0.012 75);
+  --cream2: oklch(0.19 0.012 75);
+  --cream3: oklch(0.23 0.015 75);
+  --border: oklch(0.32 0.01 75);
+
+  --amber:       oklch(0.72 0.13 68);
+  --amber-light: oklch(0.24 0.04 70);
+  --amber-dark:  oklch(0.82 0.10 65);
+  --coral:       oklch(0.70 0.13 30);
+  --coral-light: oklch(0.24 0.045 32);
+  --coral-dark:  oklch(0.80 0.10 30);
+  --green:       oklch(0.70 0.11 150);
+  --green-light: oklch(0.23 0.04 148);
+  --green-dark:  oklch(0.80 0.09 150);
+  --blue:        oklch(0.70 0.10 245);
+  --blue-light:  oklch(0.24 0.04 242);
+  --blue-dark:   oklch(0.80 0.08 245);
+
+  --surface-raised:   oklch(0.24 0.012 75);
+  --on-raised:        oklch(0.93 0.008 85);
+  --on-raised-muted:  oklch(0.93 0.008 85 / 0.74);
+  --on-raised-dim:    oklch(0.93 0.008 85 / 0.6);
+  --on-raised-border: oklch(0.93 0.008 85 / 0.15);
+  --nav-bg:           oklch(0.15 0.012 75 / 0.96);
+
+  --shadow:    0 2px 16px rgba(0,0,0,0.3);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-body-active);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
+.container { max-width: var(--maxw); margin-inline: auto; padding-inline: var(--space-inline); }
+
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: var(--radius-sm); }
+:focus:not(:focus-visible) { outline: none; }
+
+.skip-link {
+  position: absolute; left: 8px; top: -100px; z-index: 100;
+  background: var(--cream2); color: var(--ink);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 10px 16px; text-decoration: none;
+  font-family: var(--font-sans); font-size: var(--fs-sm);
+  transition: top var(--t-fast);
+}
+.skip-link:focus { top: 8px; }
+main:focus { outline: none; }
+section[id], h2[id], h3[id] { scroll-margin-top: calc(var(--nav-h) + 12px); }
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --t-fast: 0.01ms; --t-med: 0.01ms; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important; animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important; scroll-behavior: auto !important;
+  }
+}
+@media (forced-colors: active) { :focus-visible { outline: 3px solid Highlight; } }
+
+/* ---- nav ---- */
+.nav {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--nav-bg); backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-inner {
+  max-width: var(--maxw); margin-inline: auto; padding: 0 var(--space-inline);
+  height: var(--nav-h); display: flex; align-items: center; gap: 18px;
+  font-family: var(--font-sans);
+}
+.nav-home { color: var(--ink); text-decoration: none; font-weight: 600; font-size: var(--fs-sm); white-space: nowrap; }
+.nav-links { display: flex; gap: 14px; overflow-x: auto; flex: 1; scrollbar-width: none; }
+.nav-links::-webkit-scrollbar { display: none; }
+.nav-link {
+  color: var(--ink3); text-decoration: none; font-size: var(--fs-xs);
+  font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em;
+  white-space: nowrap; padding: 4px 0; border-bottom: 2px solid transparent;
+}
+.nav-link.active { color: var(--amber-dark); border-bottom-color: var(--amber); }
+.nav-progress { position: absolute; left: 0; bottom: -1px; height: 2px; background: var(--cream2); width: 100%; }
+.scrollbar-fill { height: 2px; background: var(--amber); width: 0%; transition: width var(--t-fast); }
+.theme-toggle {
+  background: none; border: 1px solid var(--border); border-radius: 99px;
+  width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0; font-size: 15px;
+}
+.theme-toggle:hover { border-color: var(--amber); }
+
+main { display: block; }
+section { padding-block: var(--space-section); }
+section + section { border-top: 1px solid var(--border); }
+h1 {
+  font-family: var(--font-serif); font-size: var(--fs-h1); line-height: var(--lh-heading);
+  font-weight: 400; margin: 0 0 10px;
+}
+h2 {
+  font-family: var(--font-serif); font-size: var(--fs-h2); line-height: var(--lh-heading);
+  font-weight: 400; margin: 0 0 var(--space-block);
+}
+h3 {
+  font-family: var(--font-sans); font-size: var(--fs-h3); line-height: var(--lh-heading);
+  font-weight: 600; margin: var(--space-block) 0 12px;
+}
+p { margin: 0 0 1.15em; }
+.eyebrow {
+  font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--amber-dark); margin-bottom: 14px;
+}
+.dek { font-size: var(--fs-pull); color: var(--ink2); font-weight: 400; max-width: 640px; }
+.meta-row {
+  display: flex; flex-wrap: wrap; gap: 10px 22px; margin-top: 22px;
+  font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink3);
+}
+.meta-row b { color: var(--ink); font-weight: 600; }
+
+/* ---- chapter list ---- */
+.chap {
+  display: grid; grid-template-columns: 34px 1fr; gap: 14px; align-items: start;
+  padding: 12px 0; border-top: 1px solid var(--border); text-decoration: none; color: inherit;
+}
+.chap:first-of-type { border-top: none; }
+.chap .num { font-family: var(--font-mono); color: var(--ink3); font-size: var(--fs-sm); padding-top: 2px; }
+.chap .body strong { display: block; font-family: var(--font-sans); font-size: var(--fs-body); }
+.chap .body em { display: block; font-style: normal; color: var(--ink3); font-size: var(--fs-sm); margin-top: 2px; }
+.chap:hover .body strong, .chap:focus-visible .body strong { color: var(--amber-dark); }
+
+/* ---- tables ---- */
+.table-wrap { overflow-x: auto; margin: var(--space-block) 0; }
+table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+caption { text-align: left; font-family: var(--font-sans); font-size: var(--fs-xs); color: var(--ink3);
+  text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+thead th { font-family: var(--font-sans); font-weight: 600; color: var(--ink2);
+  border-bottom: 2px solid var(--border); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.04em; }
+tbody tr:last-child td { border-bottom: none; }
+td.num, th.num { font-family: var(--font-mono); }
+
+/* ---- box family (parameterised base, per house style P1.7) ---- */
+.box {
+  background: var(--box-bg, var(--cream2));
+  border: 1px solid var(--border);
+  border-left: var(--bar) solid var(--box-accent, transparent);
+  border-radius: var(--radius);
+  padding: var(--box-pad);
+  margin: var(--space-block) 0;
+  break-inside: avoid;
+}
+.box.warning { --box-bg: var(--coral-light); --box-accent: var(--coral); }
+.box.raised  { --box-bg: var(--surface-raised); color: var(--on-raised); --box-pad: var(--box-pad-lg); --box-accent: transparent; }
+.box.raised h3 { color: var(--on-raised); }
+.box.raised p, .box.raised li { color: var(--on-raised-muted); }
+.box.raised .label { color: var(--on-raised-dim); }
+@media (forced-colors: active) { .box { border: 2px solid CanvasText; } }
+
+.label {
+  font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 600;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber-dark); margin-bottom: 10px;
+}
+.box.raised .label { color: var(--on-raised-dim); }
+
+/* ---- pullquote ---- */
+.pullquote {
+  border-left: var(--bar) solid var(--amber);
+  padding: 4px 0 4px 26px;
+  margin: var(--space-block) 0;
+  max-width: 640px;
+}
+.pullquote p {
+  font-family: var(--font-serif); font-size: var(--fs-pull); font-style: italic;
+  color: var(--ink2); margin: 0; line-height: 1.5;
+}
+
+/* ---- misconceptions grid ---- */
+.misc-grid { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin: var(--space-block) 0; }
+.misc-row { padding: 14px 20px; border-top: 1px solid var(--border); }
+.misc-row:first-of-type { border-top: none; }
+.misc-row .k {
+  font-family: var(--font-mono); font-weight: 700; font-size: var(--fs-xs);
+  text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 5px;
+}
+.misc-row.myth    { background: var(--coral-light); }
+.misc-row.myth .k { color: var(--coral-dark); }
+.misc-row.why  .k { color: var(--ink3); }
+.misc-row.reality    { background: var(--green-light); }
+.misc-row.reality .k { color: var(--green-dark); }
+.misc-row.test .k    { color: var(--amber-dark); }
+
+/* ---- widget ---- */
+.widget { background: var(--cream2); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--box-pad); margin: var(--space-block) 0; }
+.widget-title { font-family: var(--font-sans); font-weight: 600; font-size: var(--fs-h3); margin-bottom: 6px; }
+.widget-hint { font-size: var(--fs-sm); color: var(--ink3); margin-bottom: 18px; }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+.btn {
+  font-family: var(--font-sans); font-size: var(--fs-sm); font-weight: 600;
+  padding: 8px 16px; border-radius: 99px; border: 1px solid var(--border);
+  background: var(--cream); color: var(--ink2); cursor: pointer;
+}
+.btn.active { background: var(--ink); color: var(--cream); border-color: var(--ink); }
+.btn:hover:not(.active) { border-color: var(--amber); color: var(--amber-dark); }
+.k-row { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; font-family: var(--font-mono); font-size: var(--fs-sm); }
+.k-row input[type="range"] { flex: 1; accent-color: var(--amber); }
+.k-val { min-width: 5ch; text-align: center; font-weight: 700; color: var(--amber-dark); }
+.metric-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 640px) { .metric-pair { grid-template-columns: 1fr; } }
+.metric-cell { }
+.metric-label { display: flex; justify-content: space-between; gap: 10px; font-size: var(--fs-sm); margin-bottom: 8px; }
+.metric-label b { font-family: var(--font-mono); font-size: var(--fs-h3); white-space: nowrap; }
+.metric-track { height: 10px; background: var(--cream3); border-radius: 99px; overflow: hidden; }
+.metric-fill { height: 100%; transition: width var(--t-med); }
+.widget-summary {
+  margin-top: 20px; padding-top: 18px; border-top: 1px dashed var(--border);
+  font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--ink2);
+}
+
+/* ---- prev/next (project convention: paged wayfinding inside the one-file model) ---- */
+.pagenav {
+  display: flex; justify-content: space-between; gap: 16px; margin-top: var(--space-block);
+  font-family: var(--font-sans); font-size: var(--fs-sm);
+}
+.pagenav a { color: var(--ink2); text-decoration: none; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 10px 16px; }
+.pagenav a:hover, .pagenav a:focus-visible { border-color: var(--amber); color: var(--amber-dark); }
+.pagenav .next { margin-left: auto; }
+
+footer { border-top: 1px solid var(--border); padding-block: var(--space-block); }
+footer p { color: var(--ink3); font-size: var(--fs-xs); font-family: var(--font-mono); }
+
+strong.load-bearing { color: var(--amber-dark); }
+em { font-style: italic; }
+
+/* ================================================================
+   v2 additions — the pedagogical engine (Educational HTML Playbook)
+   Everything above this line is the v1 skin, carried over unchanged.
+   ================================================================ */
+
+/* ---- section bookends: advance organizer (Ausubel) + exit (Zeigarnik) ---- */
+.entry {
+  font-family: var(--font-sans); font-size: var(--fs-sm); color: var(--ink2);
+  border-left: var(--bar) solid var(--amber); padding: 2px 0 2px 18px;
+  margin: 0 0 var(--space-block); max-width: 640px;
+}
+.entry b { color: var(--ink); font-weight: 600; }
+.exit {
+  font-family: var(--font-sans); font-size: var(--fs-sm); color: var(--ink3);
+  border-top: 1px dashed var(--border); padding-top: 16px; margin-top: var(--space-block);
+}
+.exit b { color: var(--ink2); font-weight: 600; }
+.exit .thread { color: var(--amber-dark); font-weight: 600; }
+
+/* ---- figures: dual coding. Every figure carries a caption that makes a claim. ---- */
+figure.fig { margin: var(--space-block) 0; }
+figure.fig svg { display: block; width: 100%; height: auto; max-width: 100%; }
+figure.fig figcaption {
+  font-family: var(--font-sans); font-size: var(--fs-sm); color: var(--ink3);
+  margin-top: 12px; line-height: 1.5; max-width: 660px;
+}
+figure.fig figcaption b { color: var(--ink2); font-weight: 600; }
+
+/* SVG utility classes — every colour routes through a token, so dark mode is automatic */
+.s-fill-surface { fill: var(--cream2); }
+.s-fill-deep    { fill: var(--cream3); }
+.s-fill-page    { fill: var(--cream); }
+.s-stroke       { stroke: var(--border); fill: none; stroke-width: 1.5; }
+.s-rule         { stroke: var(--ink3); fill: none; stroke-width: 1.5; }
+.s-arrow        { stroke: var(--ink3); fill: none; stroke-width: 1.5; marker-end: url(#arrowhead); }
+.s-arrow-amber  { stroke: var(--amber); fill: none; stroke-width: 2.5; marker-end: url(#arrowhead-amber); }
+.s-amber   { fill: var(--amber); }
+.s-coral   { fill: var(--coral); }
+.s-green   { fill: var(--green); }
+.s-blue    { fill: var(--blue); }
+.s-amber-t { fill: var(--amber-light); }
+.s-coral-t { fill: var(--coral-light); }
+.s-green-t { fill: var(--green-light); }
+/* Applied to <text> OR to a wrapping <g> — every property here is CSS-inherited,
+   so a group-level class reaches its text children. Do not narrow to `text.x`. */
+.s-lab  { font-family: var(--font-sans); font-size: 12px; fill: var(--ink2); }
+.s-lab-sm { font-family: var(--font-sans); font-size: 10.5px; fill: var(--ink3); }
+.s-num  { font-family: var(--font-mono); font-size: 12px; fill: var(--ink); font-weight: 700; }
+.s-key  { font-family: var(--font-sans); font-size: 12.5px; fill: var(--ink); font-weight: 600; }
+.s-onaccent { font-family: var(--font-sans); font-size: 12px; fill: var(--on-raised); font-weight: 600; }
+/* --amber is a light-ish fill in BOTH themes, so text on it is a fixed dark, not a token. */
+.s-on-amber { font-family: var(--font-sans); font-size: 11px; fill: oklch(0.22 0.03 70); font-weight: 600; }
+.s-badge { font-family: var(--font-mono); font-size: 10px; font-weight: 700; fill: var(--amber-dark); }
+.s-lab-amber { font-family: var(--font-sans); font-size: 12px; fill: var(--amber-dark); font-weight: 600; }
+.s-lab-coral { font-family: var(--font-sans); font-size: 11px; fill: var(--coral-dark); font-weight: 600; }
+.s-lab-green { font-family: var(--font-sans); font-size: 11px; fill: var(--green-dark); font-weight: 600; }
+@media (forced-colors: active) {
+  figure.fig svg { forced-color-adjust: none; }
+}
+
+/* ---- analogy card. Conditional mandate: it MUST name where it breaks. ---- */
+.box.analogy { --box-bg: var(--amber-light); --box-accent: var(--amber); }
+.box.analogy .breaks {
+  margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--amber);
+  font-size: var(--fs-sm); color: var(--ink2);
+}
+.box.analogy .breaks b {
+  font-family: var(--font-mono); font-size: var(--fs-xs); text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--amber-dark); display: block; margin-bottom: 4px;
+}
+
+/* ---- checkpoint: retrieval practice. Generation, not recognition. ---- */
+details.checkpoint {
+  background: var(--blue-light); border: 1px solid var(--border);
+  border-left: var(--bar) solid var(--blue);
+  border-radius: var(--radius); margin: var(--space-block) 0; overflow: hidden;
+}
+details.checkpoint > summary {
+  font-family: var(--font-sans); font-weight: 600; font-size: var(--fs-sm);
+  padding: 16px 20px; cursor: pointer; list-style: none;
+  display: flex; align-items: center; gap: 10px; color: var(--ink);
+}
+details.checkpoint > summary::-webkit-details-marker { display: none; }
+details.checkpoint > summary::before {
+  content: '\25B6'; font-size: 10px; color: var(--blue); transition: transform var(--t-med); flex-shrink: 0;
+}
+details.checkpoint[open] > summary::before { transform: rotate(90deg); }
+details.checkpoint .prompt {
+  padding: 0 20px 4px; font-size: var(--fs-body); color: var(--ink);
+}
+details.checkpoint .prompt p { margin-bottom: 0.8em; }
+details.checkpoint .cue {
+  font-family: var(--font-mono); font-size: var(--fs-xs); text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--blue-dark); padding: 0 20px 14px;
+}
+details.checkpoint .answer {
+  padding: 16px 20px 18px; margin: 0 12px 12px; background: var(--cream);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+}
+details.checkpoint .answer p:last-child { margin-bottom: 0; }
+details.checkpoint .answer .verdict {
+  font-family: var(--font-sans); font-weight: 600; color: var(--ink); display: block; margin-bottom: 6px;
+}
+</style>
+</head>
+<body>
+<!-- LEDGER
+  Built on the Educational HTML Design Playbook v5.2 engine, on the skin shared with Domains
+  3, 4 and 5 v2. No v1 HTML existed for this domain, so this starts from the right engine.
+
+  Archetype:  Guided Journey - entry/checkpoint/exit bookends, numbered sections, recap.
+  Hues:       4 - amber = emphasis/main path, coral = wrong turns + misconceptions "myth",
+              green = correct/reality, blue = reader action (checkpoints only).
+  Box types:  6 - warning, raised, analogy, checkpoint, misc-grid, entry/exit bookends.
+  Figures:    7 inline SVG via playbook 1.7: five levers on three dials; the latency gate
+              disqualifying a candidate before cost is discussed; where each constraint has to
+              live; the routing-accuracy bars (the single most useful figure in this domain,
+              because it shows two plausible fixes gaining nothing); quadratic cumulative token
+              growth; the attention profile across a long input; and the cacheable prefix with
+              its forward invalidation cascade.
+  Widgets:    0 - the arithmetic here is better shown than manipulated, and the playbook's
+              interactivity ladder says climb only when doing teaches what reading cannot.
+  Checkpoints: 5, one per objective. Generation, not recognition. Native <details>.
+  Analogies:  2, AI-native, both with the mandatory where-it-breaks clause. The second one
+              deliberately names the fact that two curves share a shape for different reasons,
+              because conflating them is what makes people blame the model.
+  Targets:    paragraphs under ~70 words with none over 110; em-dashes in prose under 12;
+              every figure caption states what it proves.
+  Content:    frozen. Every fact and number from CCAR-P_Lesson-Domain-2_v1.md.
+-->
+<a class="skip-link" href="#main">Skip to content</a>
+<nav class="nav" aria-label="Page navigation">
+  <div class="nav-inner">
+    <a class="nav-home" href="#intro">&#8962; Domain 2</a>
+    <div class="nav-links">
+      <a class="nav-link" href="#models">Models</a>
+      <a class="nav-link" href="#prompts">System prompts</a>
+      <a class="nav-link" href="#techniques">Techniques</a>
+      <a class="nav-link" href="#context">Context</a>
+      <a class="nav-link" href="#reuse">Reuse</a>
+      <a class="nav-link" href="#synthesis">Synthesis</a>
+    </div>
+    <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark mode" title="Toggle dark mode">
+      <span aria-hidden="true">&#127769;</span>
+    </button>
+    <div class="nav-progress"><div class="scrollbar-fill" id="scrollbar-fill"></div></div>
+  </div>
+</nav>
+
+<main id="main" tabindex="-1">
+
+<section id="intro"><div class="container">
+  <div class="eyebrow">CCAR-P &middot; Domain 2 &middot; 13% of the exam</div>
+  <h1>Claude Models, Prompting &amp; Context Engineering</h1>
+  <p class="dek">Every other domain asks what to build. This one asks what to send.</p>
+  <div class="meta-row">
+    <span><b>Objectives</b> 5</span>
+    <span><b>Weight</b> 13%</span>
+    <span><b>Source</b> official exam guide v1.0</span>
+  </div>
+
+  <h3>Contents</h3>
+  <nav aria-label="Chapters">
+    <a class="chap" href="#models"><span class="num">1</span><span class="body"><strong>Selecting a model</strong><em>Capability headroom as a purchase, and why the latency gate closes first</em></span></a>
+    <a class="chap" href="#prompts"><span class="num">2</span><span class="body"><strong>System prompts and guardrails</strong><em>The only durable authority in a request, and where a rule has to live to exist at all</em></span></a>
+    <a class="chap" href="#techniques"><span class="num">3</span><span class="body"><strong>Prompt techniques</strong><em>Three instruments, three failure modes, and the diagnosis that picks between them</em></span></a>
+    <a class="chap" href="#context"><span class="num">4</span><span class="body"><strong>Context and token management</strong><em>The stateless constraint, quadratic growth, and the middle of a long input</em></span></a>
+    <a class="chap" href="#reuse"><span class="num">5</span><span class="body"><strong>Prompt reuse</strong><em>Caching a prefix, and the organisational failure that modular prompts exist to stop</em></span></a>
+    <a class="chap" href="#synthesis"><span class="num">6</span><span class="body"><strong>One production design, all five</strong><em>An insurer's policy-servicing assistant, and how often one decision served two objectives</em></span></a>
+  </nav>
+
+  <p style="font-family:var(--font-sans);font-size:var(--fs-sm);color:var(--ink3)">Each section closes with a checkpoint. Answer it before opening the reveal.</p>
+
+  <p>An architect who has already chosen the pattern, drawn the boundaries and picked the integration protocol still has to decide, for every call the system makes: which model receives it, what instructions frame it, what examples accompany it, what history rides along, and which parts of all that can be reused rather than rebuilt.</p>
+
+  <p>Those five decisions are the five objectives, and they are not independent. Each one moves the same three dials.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 720 252" role="img" aria-labelledby="fig1-t fig1-d">
+      <title id="fig1-t">Five objectives, five levers, three dials</title>
+      <desc id="fig1-d">Five objectives each act as a lever on the same three dials of quality, latency and cost. Model selection gives capability per call, and pulled wrong it costs unpriced spend and latency at volume, or accuracy below the bar. System prompts and guardrails give durable behavioural authority, and pulled wrong they leave rules that exist somewhere but never reach the model. Prompt techniques give targeted accuracy on a specific failure mode, and pulled wrong they add overhead to tasks that never had that failure. Context optimisation controls tokens spent per call, and pulled wrong it produces either an unaffordable conversation or one that has forgotten something critical. Prompt reuse pays for the same work once instead of many times, and pulled wrong it duplicates tokens and lets behaviour drift across teams.</desc>
+
+      <rect class="s-amber-t" x="466" y="30" width="254" height="94" rx="8"/>
+      <rect class="s-stroke"  x="466" y="30" width="254" height="94" rx="8"/>
+      <text class="s-key" x="593" y="54" text-anchor="middle">Three dials</text>
+      <g class="s-lab" text-anchor="middle">
+        <text x="593" y="78">quality</text>
+        <text x="593" y="98">latency</text>
+        <text x="593" y="118">cost</text>
+      </g>
+
+      <g class="s-fill-surface">
+        <rect x="0" y="14"  width="330" height="30" rx="5"/>
+        <rect x="0" y="50"  width="330" height="30" rx="5"/>
+        <rect x="0" y="86"  width="330" height="30" rx="5"/>
+        <rect x="0" y="122" width="330" height="30" rx="5"/>
+        <rect x="0" y="158" width="330" height="30" rx="5"/>
+      </g>
+      <g class="s-stroke">
+        <rect x="0" y="14"  width="330" height="30" rx="5"/>
+        <rect x="0" y="50"  width="330" height="30" rx="5"/>
+        <rect x="0" y="86"  width="330" height="30" rx="5"/>
+        <rect x="0" y="122" width="330" height="30" rx="5"/>
+        <rect x="0" y="158" width="330" height="30" rx="5"/>
+      </g>
+      <g class="s-lab-sm">
+        <text x="12" y="33">1 &#183; Model selection</text>
+        <text x="12" y="69">2 &#183; System prompts &amp; guardrails</text>
+        <text x="12" y="105">3 &#183; Prompt techniques</text>
+        <text x="12" y="141">4 &#183; Context optimisation</text>
+        <text x="12" y="177">5 &#183; Prompt reuse</text>
+      </g>
+      <g class="s-arrow">
+        <path d="M 334 29 L 462 60"/>
+        <path d="M 334 65 L 462 70"/>
+        <path d="M 334 101 L 462 80"/>
+        <path d="M 334 137 L 462 90"/>
+        <path d="M 334 173 L 462 100"/>
+      </g>
+
+      <text class="s-lab-amber" x="0" y="212">Nearly every question in this domain is a disguised question about which dial the scenario says is binding.</text>
+      <text class="s-lab-sm"    x="0" y="232">Read the constraint the scenario states. Then pull the lever built for it.</text>
+      <text class="s-lab-coral" x="0" y="250">Pull the wrong one and you get a technique that is genuinely good, applied to a failure it cannot touch.</text>
+    </svg>
+    <figcaption><b>Five levers, one set of dials, which is why these objectives interfere with each other.</b> A choice made for cost in section 1 shows up as a latency constraint in section 3 and a caching decision in section 5, and the exam builds items on exactly those couplings.</figcaption>
+  </figure>
+
+  <p>There is a second, quieter through-line, and the distractors in this domain are built around it.</p>
+
+  <p><strong class="load-bearing">Every technique here is a targeted instrument, not a general improvement.</strong></p>
+
+  <p>Few-shot examples fix inconsistency, not ignorance. Chain-of-thought fixes broken derivations, not missing facts. A bigger model fixes capability shortfalls, not attention position. Caching fixes repeated prefixes, not long prompts in general.</p>
+
+  <p>The most common way to get a Domain 2 question wrong is to select a technique that is genuinely good, applied to a failure it cannot touch.</p>
+
+  <div class="exit">
+    <b>Next:</b> the first lever, and the one where "to be safe" turns out to be the wrong instinct.
+  </div>
+</div></section>
+
+<section id="models"><div class="container">
+  <h2>1. Selecting a model</h2>
+
+  <div class="entry"><b>By the end of this section</b> you will treat capability headroom as a purchase that needs a named requirement, and you will apply the latency gate before you look at accuracy.</div>
+
+  <p>Model families ship in capability tiers. Higher tiers reason further across ambiguity, hold longer chains of inference together, and handle instructions that are underspecified. Lower tiers are faster and cheaper per call.</p>
+
+  <p>This lesson names no specific model, size or price, and neither should your reasoning. Tier names and their numbers change on a schedule you do not control, and an architect who has memorised a price list has memorised the one part of the job that expires.</p>
+
+  <p>What does not expire is the selection procedure.</p>
+
+  <p><strong class="load-bearing">A model choice is a purchase of capability headroom, and headroom no requirement demands is cost you pay on every call, forever, for nothing.</strong></p>
+
+  <p>That framing is what makes "use the most capable model, to be safe" an incorrect answer rather than a conservative one. Safety in an architecture is a property you can point at a requirement for. If nobody can name the requirement the headroom serves, it is not safety.</p>
+
+  <p>The problem is real in both directions. A classification service at production volume makes the same call millions of times, so a few hundred milliseconds and a fraction of a cent compound into the dominant line item and the dominant term in p95 latency. A legal-analysis workflow running eighty times a month has no volume pressure at all, and its binding constraint is whether the model can hold a multi-document argument together without dropping a clause.</p>
+
+  <h3>Four inputs, in this order</h3>
+
+  <p><b>Task complexity.</b> How many inference steps, how much ambiguity, how much synthesis across sources. This sets the floor on capability.</p>
+
+  <p><b>The accuracy bar, expressed as a number.</b> Not "high accuracy" but the specific threshold below which the downstream cost of an error exceeds the savings. This is what you benchmark against.</p>
+
+  <p><b>Latency budget.</b> A hard gate. A model that cannot answer inside the budget is disqualified regardless of how accurate it is.</p>
+
+  <p><b>Volume.</b> The multiplier that turns per-call differences into architectural ones.</p>
+
+  <p>Then one non-negotiable step. Benchmark candidates on representative data before committing. Not a vendor benchmark, not a hand-picked set of clean examples, but a sample of actual traffic including the messy tail.</p>
+
+  <h3>Worked example</h3>
+
+  <p>A support platform classifies inbound tickets into one of fourteen routing categories. 40,000 tickets a day. The routing decision is made synchronously while the customer waits on a confirmation screen, and the product team has set a p95 budget of 800ms.</p>
+
+  <p>The team benchmarks two candidates on 2,000 real labelled tickets drawn across a full week, weekend traffic and oddly-worded tail included.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 720 236" role="img" aria-labelledby="fig2-t fig2-d">
+      <title id="fig2-t">Two candidates against a latency gate and an accuracy bar</title>
+      <desc id="fig2-d">A lower-tier model scores 94.1 percent accuracy at about 310 milliseconds p95 at one times relative cost. A higher-tier model scores 96.3 percent at about 1,900 milliseconds at roughly twelve times cost. The latency budget is 800 milliseconds and the accuracy bar is 93 percent. The higher tier misses the latency gate by more than double, which disqualifies it before any cost comparison happens. The lower tier clears both the gate and the bar.</desc>
+
+      <text class="s-key" x="0" y="18">p95 latency against an 800ms gate</text>
+      <text class="s-lab" x="150" y="52" text-anchor="end">Lower tier</text>
+      <rect class="s-green" x="158" y="36" width="72" height="22" rx="3"/>
+      <text class="s-num" x="240" y="53">310 ms</text>
+      <text class="s-lab" x="150" y="88" text-anchor="end">Higher tier</text>
+      <rect class="s-coral" x="158" y="72" width="440" height="22" rx="3"/>
+      <text class="s-num" x="608" y="89">1,900 ms</text>
+      <line x1="344" y1="28" x2="344" y2="104" stroke="var(--coral)" stroke-width="2" stroke-dasharray="5 4"/>
+      <text class="s-lab-coral" x="344" y="118" text-anchor="middle">800 ms gate</text>
+
+      <line x1="0" y1="134" x2="720" y2="134" stroke="var(--border)" stroke-width="1"/>
+
+      <text class="s-key" x="0" y="156">accuracy against a 93% bar</text>
+      <rect class="s-green" x="158" y="168" width="94"  height="18" rx="3"/>
+      <text class="s-num"   x="262" y="182">94.1%</text>
+      <rect class="s-fill-deep" x="158" y="192" width="116" height="18" rx="3"/>
+      <text class="s-num"   x="284" y="206">96.3%</text>
+      <text class="s-lab-sm" x="340" y="182">clears the bar</text>
+      <text class="s-lab-coral" x="340" y="206">already disqualified above, so this never gets weighed</text>
+      <text class="s-lab-sm" x="0" y="232">Cost is 1&#215; against roughly 12&#215;, and the cost comparison never happens either.</text>
+    </svg>
+    <figcaption><b>Two facts settle this before any cost analysis runs.</b> The gate is not a preference that loses to a strong enough accuracy figure; it removes a candidate from the comparison entirely. Reading the accuracy column first is how people talk themselves into a design that cannot ship.</figcaption>
+  </figure>
+
+  <p>Now change one number and watch the answer move. Suppose the accuracy bar is 95.5%, because a misroute means a compliance-sensitive ticket sits in the wrong queue for a day.</p>
+
+  <p>The lower tier no longer clears it. The higher tier does, and still fails the latency gate. So neither candidate is simply the answer, and the design has to change: classify asynchronously and show an optimistic routing state, or run the lower tier first and escalate only the low-confidence minority.</p>
+
+  <p>That escalation design is worth understanding even though it rarely appears as an option. Run the fast model on everything, take the confident labels, and re-run the rest on the higher tier. If 88% come back confident you pay the expensive model on 4,800 calls a day instead of 40,000, and p95 stays near the fast path because the escalated minority does not dominate the 95th percentile.</p>
+
+  <p>The reason that is worth knowing: <strong class="load-bearing">model selection is a choice per call path, not per system, and one system can hold several.</strong></p>
+
+  <details class="checkpoint">
+    <summary>Checkpoint 1 &middot; before you read on</summary>
+    <div class="prompt">
+      <p>A VP asks you to use the most capable available model across a new document-summarisation feature, "so we don't get caught out on quality." The feature runs 300 times a day, internally, with no stated latency requirement.</p>
+      <p>What is the right response, and how does it differ from the same request on the 40,000-a-day classifier?</p>
+    </div>
+    <div class="cue">Answer first, then open</div>
+    <div class="answer">
+      <span class="verdict">Ask what specifically requires it. Then notice the volume changes the stakes, not the principle.</span>
+      <p><b>The principle holds either way:</b> headroom bought without a named requirement is unpriced cost, so the question is always "which part of this task needs the extra capability?" If summarising these documents involves real synthesis across sources, that is a complexity driver and the answer may genuinely be the higher tier.</p>
+      <p><b>What volume changes is the size of the mistake.</b> At 300 calls a day with no latency gate, over-provisioning is a small, recoverable waste. At 40,000 synchronous calls a day it is the dominant line item and it breaks the p95 budget as well.</p>
+      <p>So this is not "always push back." It is: make them name the driver, and let volume tell you how hard to push.</p>
+    </div>
+  </details>
+
+  <div class="box warning">
+    <div class="label">The wrong turns</div>
+    <p><b>"Default to the most capable model, to be safe."</b> It sounds thorough, and nobody was ever criticised in a design review for over-provisioning. It is wrong when the task is bounded, high-volume and latency-gated, because nothing in that shape calls for extra reasoning and the cost compounds on every call.</p>
+    <p><b>"Fine-tune a smaller model."</b> A real and sophisticated lever, deployed one step too early. You have not yet tested whether a base model clears the bar, and base-model evaluation might have closed the question for free.</p>
+    <p><b>Choosing on a published benchmark instead of your own data.</b> Your accuracy bar is defined over your distribution, including the awkward tail your users actually produce.</p>
+    <p style="margin:0"><b>Treating the choice as permanent.</b> Selection gets revisited when the task changes, when volume moves by an order of magnitude, or when a new tier ships. An architecture with a model identifier hard-coded in forty places has made that revisit expensive.</p>
+  </div>
+
+  <div class="exit">
+    <b>Where this goes next:</b> you have picked who receives the call. <span class="thread">Section 2</span> is about what frames it, and about rules that were carefully written down and never reached the model at all.
+  </div>
+
+  <div class="pagenav"><span></span><a class="next" href="#prompts">Next: System prompts &#8594;</a></div>
+</div></section>
+
+<section id="prompts"><div class="container">
+  <h2>2. System prompts and guardrails</h2>
+
+  <div class="entry"><b>By the end of this section</b> you will be able to say, for any rule, whether it belongs in the system prompt, in a template slot, or in code, and why the third one is not optional for some of them.</div>
+
+  <p>The system prompt is the only place in a request with durable authority over the whole conversation.</p>
+
+  <p>Everything else either loses force as the conversation moves on, or never reaches the model at all.</p>
+
+  <p>That second category deserves a beat, because it is the failure architects actually commit. A rule set as an environment variable at deploy time has no path to the model's behaviour.</p>
+
+  <p><strong class="load-bearing">The model sees the bytes in the request. A rule that is not in those bytes does not exist, however carefully it was written down.</strong></p>
+
+  <h3>Three artifacts, commonly conflated</h3>
+
+  <p><b>The system prompt</b> carries persistent behavioural constraints: persona, tone, response format, scope boundaries, refusal conditions, escalation triggers. It is the constitution.</p>
+
+  <p><b>The template</b> is the structure that assembles a request, separating the stable skeleton from the per-request variable slots. It exists so a thousand requests share one authored artifact rather than a thousand string concatenations, and so the stable portion sits where section 5 can cache it.</p>
+
+  <p><b>Guardrails</b> are the constraints defining what the system refuses, escalates, or routes to a human. They are a design decision made when the system prompt is written, not a monitoring feature bolted on after an incident.</p>
+
+  <p>That last distinction carries architectural weight, and it is where Domain 2 hands off to Domain 5.</p>
+
+  <p>A guardrail expressed in a system prompt is a <em>strong default</em>, not an enforcement boundary. It shapes behaviour reliably in the overwhelming majority of cases, and it can be argued with.</p>
+
+  <p>Anything that must <em>never</em> happen needs enforcement outside the model: a tool that is not exposed at all, a code-level check on the tool's arguments, an approval hook.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 720 262" role="img" aria-labelledby="fig3-t fig3-d">
+      <title id="fig3-t">Where each kind of constraint has to live</title>
+      <desc id="fig3-d">Tone, persona and response format belong in the system prompt, because they need authority across every turn. A scope boundary belongs in the system prompt, because it is behavioural and the model needs it to decline gracefully. A refusal boundary or escalation trigger belongs in the system prompt plus a structural signal where possible. Anything that must never occur does not belong in a prompt at all: do not expose the capability, and enforce in code, because a prompt instruction is persuadable and an absent tool is not. Per-request variable data belongs in a template slot positioned last, which keeps the stable prefix stable.</desc>
+
+      <rect class="s-green-t" x="0" y="26" width="470" height="112" rx="8"/>
+      <rect class="s-stroke"  x="0" y="26" width="470" height="112" rx="8"/>
+      <text class="s-key" x="16" y="18">System prompt &#183; durable authority across every turn</text>
+      <g class="s-lab-sm">
+        <text x="16" y="50">Tone, persona, response format</text>
+        <text x="16" y="72">Scope boundary: "only answer questions about X"</text>
+        <text x="16" y="94">Refusal boundaries and escalation triggers</text>
+        <text x="16" y="116">Stated as concrete testable conditions, never as aspirations</text>
+      </g>
+
+      <rect class="s-amber-t" x="486" y="26" width="234" height="112" rx="8"/>
+      <rect class="s-stroke"  x="486" y="26" width="234" height="112" rx="8"/>
+      <text class="s-key" x="502" y="18">Template slot &#183; last</text>
+      <g class="s-lab-sm">
+        <text x="502" y="50">Per-request variable data</text>
+        <text x="502" y="72">The user's message</text>
+        <text x="502" y="94">Retrieved documents</text>
+      </g>
+      <text class="s-lab-amber" x="502" y="120">keeps the stable prefix stable</text>
+
+      <rect class="s-coral-t" x="0" y="158" width="720" height="58" rx="8"/>
+      <rect class="s-stroke"  x="0" y="158" width="720" height="58" rx="8"/>
+      <text class="s-key" x="16" y="150">Not a prompt at all &#183; "this must never occur"</text>
+      <text class="s-lab-sm" x="16" y="182">Do not expose the capability. Enforce in code, on the tool's arguments, or behind an approval hook.</text>
+      <text class="s-lab-coral" x="16" y="204">A prompt instruction is persuadable. An absent tool is not.</text>
+
+      <text class="s-lab-sm" x="0" y="236">Neither layer does the other's job. The prompt makes the right behaviour the default and</text>
+      <text class="s-lab-sm" x="0" y="252">explains it coherently; the code makes the wrong behaviour impossible.</text>
+    </svg>
+    <figcaption><b>The bottom band is the one that decides exam items.</b> Everything above it is a question of authority and decay; the bottom band is a question of what is possible at all, and the two are not points on one scale. An option that answers a "must never" requirement with better prompt wording has answered the wrong band.</figcaption>
+  </figure>
+
+  <h3>Worked example</h3>
+
+  <p>A claims assistant must speak in a specific institutional register, never quote a settlement figure, ask a clarifying question when the policy number is missing rather than guessing, and escalate whenever claim value exceeds a threshold or the customer asks for a human.</p>
+
+  <p>A weak implementation puts the register in the system prompt, the settlement rule in a paragraph of the first user message, and the escalation threshold in a config file the deployment pipeline reads.</p>
+
+  <p>Count what reaches the model. Two of those four rules never do. The settlement rule reaches it once, in turn one, and its authority decays as thirty turns of assistant output accumulate above it.</p>
+
+  <p>The sound implementation puts register, settlement prohibition, clarifying-question rule and escalation triggers all in the system prompt, stated as concrete testable conditions. "When <code>policy_number</code> is absent from the retrieved case record, ask for it before proceeding" beats "be careful about missing information."</p>
+
+  <p>The escalation threshold <em>also</em> exists as a code-level check on the arguments passed to the settlement tool, so a model that talks itself past the instruction still cannot execute the action.</p>
+
+  <h3>How the exam probes it</h3>
+
+  <p><b>The placement question.</b> A behavioural rule is described and you choose where it belongs. The correct answer is the system prompt; the distractors are the first user message, an environment variable, the first assistant message, or a document nobody sends to the model.</p>
+
+  <p><b>The drift scenario.</b> An assistant honours its persona early and stops by turn ten or twelve, in a conversation nowhere near any capacity limit. The root cause is accumulated assistant output diluting the system prompt's relative influence.</p>
+
+  <p>The fixes are structural: replace verbose abstract rules with a small number of concrete examples demonstrating the behaviour, and reinforce at conversation breakpoints. Reaching for a bigger context window here is a category error, because the conversation was never close to full.</p>
+
+  <p><b>The guardrail-layering question,</b> where something must never happen and the options offer a prompt instruction, a log, a confirmation step, and removal of the capability. Removing an unneeded capability beats logging or confirming its use.</p>
+
+  <details class="checkpoint">
+    <summary>Checkpoint 2 &middot; before you read on</summary>
+    <div class="prompt">
+      <p>A team reports that their assistant "keeps forgetting" its required disclaimer by around turn twelve. Conversations average eighteen turns and a few thousand tokens, well inside any window. The disclaimer rule is in the system prompt, written as a paragraph of careful prose.</p>
+      <p>Diagnose it, and say why a larger context window is the wrong instrument.</p>
+    </div>
+    <div class="cue">Answer first, then open</div>
+    <div class="answer">
+      <span class="verdict">Dilution by accumulated assistant output, not capacity.</span>
+      <p>A few thousand tokens is nowhere near a limit, so capacity is ruled out by arithmetic before you think about anything else. What has changed by turn twelve is the <em>ratio</em>: the system prompt is now a small fraction of a request dominated by the model's own prior output.</p>
+      <p><b>Why a bigger window does nothing:</b> it changes how much fits, and the problem was never that things did not fit. This is the same category error as offering a larger window against an attention problem, which section 4 covers.</p>
+      <p><b>The fixes are structural.</b> Replace the careful paragraph with two or three concrete examples demonstrating the disclaimer in use, and reinforce at conversation breakpoints. Concrete beats verbose specifically because models drift on unfalsifiable instructions faster than on demonstrated ones.</p>
+    </div>
+  </details>
+
+  <div class="exit">
+    <b>Where this goes next:</b> section 2 was about durable rules. <span class="thread">Section 3</span> is about targeted repairs, and about diagnosing which repair a symptom actually calls for.
+  </div>
+
+  <div class="pagenav"><a class="prev" href="#models">&#8592; Models</a><a class="next" href="#techniques">Next: Techniques &#8594;</a></div>
+</div></section>
+
+<section id="techniques"><div class="container">
+  <h2>3. Prompt techniques</h2>
+
+  <div class="entry"><b>By the end of this section</b> you will diagnose the failure mode before reaching for an instrument, which is the entire skill this objective tests.</div>
+
+  <p>Three techniques, three distinct failure modes.</p>
+
+  <p><b>Zero-shot</b> is instruction only. It is the default and it is often sufficient. It fails when the instruction, however carefully written, underdetermines the output: two readings both satisfy it, and the model alternates between them across calls.</p>
+
+  <p><b>Few-shot</b> supplies demonstrations, and its mechanism is worth getting exactly right. It is not teaching the model the task, because the model already knows the task.</p>
+
+  <p><strong class="load-bearing">Examples pin down the specific choice the instruction left open:</strong> exact output shape, exactly where a boundary between two categories falls, exactly which tool an ambiguous phrasing maps to.</p>
+
+  <p>Which is why the number of examples matters far less than their placement. Four examples sitting precisely on the ambiguous boundary resolve the ambiguity. Fifteen examples of obvious cases confirm what the model was already getting right, and consume context doing it.</p>
+
+  <div class="box analogy">
+    <div class="label">The analogy</div>
+    <p style="margin:0"><b>Few-shot examples are labelled data, and the same sampling logic applies.</b> You already know you do not improve a classifier by adding more examples of the class it gets right. You add examples near the decision boundary, because that is where the uncertainty lives and where a label carries information. Few-shot selection is that decision made by hand, one prompt at a time.</p>
+    <div class="breaks">
+      <b>Where it breaks</b>
+      With training data, more is generally better once you are sampling sensibly, because gradient descent averages over many examples and the marginal cost of one more is close to nothing. Few-shot has no such forgiveness: every example is re-sent on every call for the life of the system, so the volume-versus-targeting trade is far harsher. The rule is four to six targeted examples, not four hundred, and that ceiling comes from the token bill rather than from anything about learning.
+    </div>
+  </div>
+
+  <p>The working rule: <b>4 to 6 examples targeted at the ambiguous cases, not 10 to 15 easy ones.</b> For a pure format-consistency problem, 3 or 4 examples of the exact required format is usually enough. Where the ambiguity is a judgment call, give each example a stated rationale, because the rationale is what generalises to the ambiguous case you did not think of.</p>
+
+  <p><b>Chain-of-thought</b> asks the model to reason in steps before answering, and its mechanism is that it gives the model tokens in which to perform intermediate computation. A multi-step derivation gets worked rather than guessed.</p>
+
+  <p>It does nothing for a single-step task, because there are no steps to work through. And it is not free: a reasoning cue lengthens the output, output tokens are generated serially, so it adds latency to every call as well as cost.</p>
+
+  <p>A fourth technique is worth carrying because it shows up as both a distractor and an answer. <b>Prefilling</b> supplies the opening of the assistant's message so the model continues from it rather than starting fresh. Its canonical use is suppressing a stereotyped opening. It is a shape control, not a content control.</p>
+
+  <h3>The diagnostic mapping</h3>
+
+  <div class="table-wrap"><table>
+    <caption>Symptom, failure mode, instrument</caption>
+    <thead><tr><th scope="col">Symptom</th><th scope="col">Failure mode</th><th scope="col">Instrument</th></tr></thead>
+    <tbody>
+      <tr><td>Output shape varies across calls despite explicit instructions</td><td>Instruction underdetermines the form</td><td>Few-shot: 3&ndash;4 examples of the exact required format</td></tr>
+      <tr><td>Two categories or tools confused on ambiguous inputs</td><td>Boundary is undefined</td><td>Few-shot: 4&ndash;6 examples on the boundary, each with rationale</td></tr>
+      <tr><td>Multi-step derivation arrives at a wrong final number</td><td>No space to compute intermediates</td><td>Chain-of-thought cue</td></tr>
+      <tr><td>Model does not know a fact</td><td>Missing information</td><td>Retrieval. No prompting technique creates knowledge</td></tr>
+      <tr><td>Model opens every reply with the same filler phrase</td><td>Response shape</td><td>Prefill the opening</td></tr>
+      <tr><td>Model honours a rule early, forgets it by turn twelve</td><td>System-prompt dilution</td><td>Concrete examples over verbose rules; reinforce at breakpoints</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>The fourth row separates architects from prompt tinkerers. A model that lacks a fact will not acquire it from more examples, a stricter instruction, or permission to think step by step. That failure belongs to Domain 3's retrieval design, and recognising when a Domain 2 instrument cannot help is itself a Domain 2 competency.</p>
+
+  <h3>Worked example</h3>
+
+  <p>An agent has two tools. <code>get_customer</code> returns account-level information; <code>lookup_order</code> returns order-level information. Requests like "I need help with my recent purchase" are genuinely ambiguous.</p>
+
+  <p>Measured on a 400-item labelled sample of ambiguous phrasings, here is what four different fixes actually bought.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 720 244" role="img" aria-labelledby="fig4-t fig4-d">
+      <title id="fig4-t">Four fixes for one ambiguous boundary, measured</title>
+      <desc id="fig4-d">Routing accuracy on the ambiguous subset. With instruction only and clear tool descriptions, 71 percent. With the instruction rewritten to be more explicit and detailed, 74 percent, a gain of three points. With twelve few-shot examples of clear unambiguous requests added, 72 percent, which is one point and within noise, while adding tokens to every call. With five few-shot examples placed on the ambiguity, each carrying a one-line rationale, 93 percent, a gain of twenty-two points.</desc>
+
+      <g class="s-lab" text-anchor="end">
+        <text x="272" y="42">Instruction only</text>
+        <text x="272" y="82">Instruction rewritten, more detail</text>
+        <text x="272" y="122">Twelve examples of clear cases</text>
+        <text x="272" y="162">Five examples on the boundary</text>
+      </g>
+      <rect class="s-fill-deep" x="280" y="26"  width="256" height="22" rx="3"/>
+      <rect class="s-coral"     x="280" y="66"  width="266" height="22" rx="3"/>
+      <rect class="s-coral"     x="280" y="106" width="259" height="22" rx="3"/>
+      <rect class="s-green"     x="280" y="146" width="335" height="22" rx="3"/>
+      <g class="s-num">
+        <text x="544" y="43">71%</text>
+      </g>
+      <g class="s-lab-coral" font-family="var(--font-mono)">
+        <text x="554" y="83">74%  (+3)</text>
+        <text x="547" y="123">72%  (+1)</text>
+      </g>
+      <text class="s-lab-green" x="623" y="163" font-family="var(--font-mono)">93%  (+22)</text>
+
+      <line x1="0" y1="186" x2="720" y2="186" stroke="var(--border)" stroke-width="1"/>
+      <text class="s-lab-sm" x="0" y="206">Rewriting the instruction gained three points, because the instruction was never unclear. The boundary genuinely sits between two reasonable readings.</text>
+      <text class="s-lab-sm" x="0" y="224">The twelve examples moved nothing and added tokens to every call: they described cases the agent already routed correctly.</text>
+      <text class="s-lab-green" x="0" y="242">Prose cannot place a boundary as precisely as a demonstration sitting on it.</text>
+    </svg>
+    <figcaption><b>The two middle bars are the ones worth studying, because both are things a careful engineer does.</b> Writing clearer instructions and adding more examples are the two most natural responses to this symptom, and between them they bought four points. The fix was not more effort in either direction; it was placing the effort on the boundary.</figcaption>
+  </figure>
+
+  <p>Now the cost side of chain-of-thought, on the classification service from section 1. Adding a "think step by step" cue to a single-step classification adds roughly 150 output tokens per call.</p>
+
+  <p>At 40,000 calls a day that is six million additional output tokens daily, generated serially, pushing every call's latency against an 800ms gate that was already the binding constraint. Accuracy gain on a single-step task: none worth measuring.</p>
+
+  <p>The technique is sound. The application is not.</p>
+
+  <details class="checkpoint">
+    <summary>Checkpoint 3 &middot; before you read on</summary>
+    <div class="prompt">
+      <p>An extraction step returns correct values but formats dates three different ways across runs, despite an instruction specifying ISO 8601. A colleague proposes adding a chain-of-thought cue so the model "reasons about the format before writing it."</p>
+      <p>Name the failure mode, the right instrument, and the dose.</p>
+    </div>
+    <div class="cue">Answer first, then open</div>
+    <div class="answer">
+      <span class="verdict">Inconsistent form. Few-shot, three or four examples of the exact format.</span>
+      <p>The values are correct, so the model is neither ignorant nor mis-deriving. What varies is the shape, which is the signature of an instruction that underdetermines the output even though it reads as specific.</p>
+      <p><b>Why chain-of-thought is wrong here:</b> formatting a date is single-step. There is no intermediate computation to give room to, so the cue buys latency and output tokens on every call and returns nothing.</p>
+      <p><b>The dose matters too.</b> This is a pure format problem, so three or four examples of the exact required format is enough. The 4-to-6-with-rationales guidance is for judgment boundaries, and rationales would be padding here.</p>
+    </div>
+  </details>
+
+  <div class="box warning">
+    <div class="label">The wrong turns</div>
+    <p><b>"Add more examples."</b> More examples reads as more effort. If they do not sit on the failure boundary they are wasted context and the failure persists unchanged.</p>
+    <p><b>"Refine the instructions further."</b> Nearly free, and it feels like the responsible first move. When instructions have already failed on a consistency problem, more prose is more of the thing that did not work.</p>
+    <p><b>"Chain-of-thought never hurts."</b> It hurts on every single-step call, measured in latency and output tokens, at whatever volume the system runs.</p>
+    <p style="margin:0"><b>Applying a technique uniformly "for consistency."</b> Consistency across features is a real engineering value in code. Applied to prompt techniques it overrides the per-task diagnosis that this entire objective consists of.</p>
+  </div>
+
+  <div class="exit">
+    <b>Where this goes next:</b> <span class="thread">Section 4</span> carries the most conceptual weight in the domain, and it starts from a single fact about the API that most of its failures fall out of.
+  </div>
+
+  <div class="pagenav"><a class="prev" href="#prompts">&#8592; System prompts</a><a class="next" href="#context">Next: Context &#8594;</a></div>
+</div></section>
+
+<section id="context"><div class="container">
+  <h2>4. Context and token management</h2>
+
+  <div class="entry"><b>By the end of this section</b> you will diagnose three different "it forgot something" symptoms apart, and know which layer each one lives in.</div>
+
+  <p>Start from one fact. <strong class="load-bearing">The Claude API is stateless.</strong></p>
+
+  <p>Every call is independent, nothing on the server remembers the previous one, there is no session identifier that restores prior turns, and no server-side conversation store the model consults.</p>
+
+  <p>So everything a conversation appears to remember is something the <em>application</em> re-sent. Continuity is constructed by the client on every single request: the full prior message history goes into the messages array, every time, or the model does not have it.</p>
+
+  <p>Two consequences follow directly, and both are examinable.</p>
+
+  <p><b>Consequence one.</b> Apparent amnesia in a short conversation is an application bug. If the model does not know something the user said two turns ago and the conversation is three turns long, the application did not include the prior messages. It is not a capacity limit, and it is not a missing parameter, because no such parameter exists.</p>
+
+  <p><b>Consequence two.</b> Cost and latency grow quadratically in turn count. This is the part that surprises people, so let us do the arithmetic.</p>
+
+  <p>Suppose each turn adds about 300 tokens to the transcript. On turn <em>N</em>, the request carries roughly 300 × (<em>N</em> − 1) tokens of history plus the new message.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 720 272" role="img" aria-labelledby="fig5-t fig5-d">
+      <title id="fig5-t">Cumulative input tokens against turn count</title>
+      <desc id="fig5-d">At roughly 300 tokens per turn, turn 5 sends about 1,200 input tokens on that turn and about 3,000 cumulatively. Turn 10 sends about 2,700 on the turn and about 13,500 cumulatively. Turn 25 sends about 7,200 on the turn and about 90,000 cumulatively. Turn 50 sends about 14,700 on the turn and about 367,500 cumulatively. Going from 10 turns to 50, five times the turns, costs about twenty-seven times the cumulative input tokens, because the per-turn figure grows linearly while the running total grows with the square of the turn count.</desc>
+
+      <g class="s-lab" text-anchor="end">
+        <text x="112" y="42">Turn 5</text>
+        <text x="112" y="82">Turn 10</text>
+        <text x="112" y="122">Turn 25</text>
+        <text x="112" y="162">Turn 50</text>
+      </g>
+      <g class="s-fill-deep">
+        <rect x="120" y="28"  width="4"   height="20" rx="2"/>
+        <rect x="120" y="68"  width="18"  height="20" rx="2"/>
+        <rect x="120" y="108" width="118" height="20" rx="2"/>
+        <rect x="120" y="148" width="480" height="20" rx="2"/>
+      </g>
+      <g class="s-num">
+        <text x="132" y="44">~3,000</text>
+        <text x="146" y="84">~13,500</text>
+        <text x="246" y="124">~90,000</text>
+        <text x="608" y="164">~367,500</text>
+      </g>
+      <text class="s-lab-sm" x="0" y="16">cumulative input tokens sent so far</text>
+
+      <line x1="0" y1="186" x2="720" y2="186" stroke="var(--border)" stroke-width="1"/>
+      <text class="s-lab-coral" x="0" y="208">Five times the turns costs about twenty-seven times the cumulative tokens.</text>
+      <text class="s-lab-sm"    x="0" y="228">The per-turn figure grows linearly. The running total grows with the square, because turn 50's history includes turn 10's history for the fortieth time.</text>
+      <text class="s-lab-sm"    x="0" y="246">Latency moves the same way for a different reason: the model processes the whole input</text>
+      <text class="s-lab-sm"    x="0" y="262">before the first output token, so time-to-first-token scales with prompt length.</text>
+    </svg>
+    <figcaption><b>The last bar is the argument.</b> A team watching per-turn cost sees a gentle linear climb and concludes the system is behaving; the bill is tracking the bottom bar. When a scenario says latency and cost rise as conversations pass fifty turns, this is the cause, not longer replies and not a database.</figcaption>
+  </figure>
+
+  <div class="box analogy">
+    <div class="label">The analogy</div>
+    <p style="margin:0"><b>You have seen this curve before, in attention's cost in sequence length.</b> Both produce the same quadratic shape, and both punish long things far harder than intuition expects, which makes the curve familiar enough to reason about quickly.</p>
+    <div class="breaks">
+      <b>Where it breaks</b>
+      They are the same shape for entirely different reasons, and the difference is the whole diagnosis. Attention's cost is quadratic <em>within one forward pass</em>, in sequence length, and it is a property of the model. This curve is quadratic <em>across turns</em>, and it is a property of your application resending the transcript. Conflate them and you will go looking for a model or a window to fix a client-side bug. Use the analogy for the intuition about how fast it grows, never for where the fix belongs.
+    </div>
+  </div>
+
+  <h3>Lost in the middle</h3>
+
+  <p>The second structural fact: attention across a long input is not uniform. Content at the beginning and at the end is processed reliably. Content in the middle is attended to less reliably, and the effect grows with input length.</p>
+
+  <p>The practical failure shape: a synthesis task over a long document set produces an output reflecting the opening summary and the closing conclusions accurately, while a critical finding sitting in the middle is simply absent.</p>
+
+  <p>Nothing errors. The output looks complete and reads fluently, which is what makes this failure expensive. It is invisible without ground truth.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 720 244" role="img" aria-labelledby="fig6-t fig6-d">
+      <title id="fig6-t">The attention profile across a long input, and the structural fix</title>
+      <desc id="fig6-d">Across a long input, content at the beginning and at the end is processed reliably while content in the middle is attended to less reliably, and the effect grows with input length. The fix is structural and positional, in three moves ordered by leverage: put a key-findings summary at the very start, so content that must not be missed sits in the position that is reliably read; add explicit section headings throughout, giving the model navigational structure where unstructured prose loses it; and convert verbose prose into structured facts, which shrinks the middle and raises its information density at once. Three wrong fixes are named: shortening the input trades an attention problem for a deletion problem, rotating which source appears first changes who occupies the penalised position without removing it, and a larger context window changes how much fits rather than how attention distributes.</desc>
+
+      <text class="s-lab-sm" x="0" y="16">reliability of attention across one long input</text>
+      <path d="M 0 34 L 60 34 L 130 62 L 300 76 L 420 76 L 590 62 L 660 34 L 720 34"
+            stroke="var(--ink3)" stroke-width="2" fill="none"/>
+      <rect class="s-green-t" x="0"   y="30" width="120" height="52" rx="4"/>
+      <rect class="s-coral-t" x="180" y="30" width="360" height="52" rx="4"/>
+      <rect class="s-green-t" x="600" y="30" width="120" height="52" rx="4"/>
+      <text class="s-lab-green" x="8"   y="98">start: reliable</text>
+      <text class="s-lab-coral" x="360" y="98" text-anchor="middle">the middle: attended less reliably, and it worsens with length</text>
+      <text class="s-lab-green" x="712" y="98" text-anchor="end">end: reliable</text>
+
+      <line x1="0" y1="116" x2="720" y2="116" stroke="var(--border)" stroke-width="1"/>
+
+      <text class="s-key" x="0" y="138">The fix is structural, in order of leverage</text>
+      <g class="s-green-t">
+        <rect x="0"   y="150" width="232" height="44" rx="6"/>
+        <rect x="244" y="150" width="232" height="44" rx="6"/>
+        <rect x="488" y="150" width="232" height="44" rx="6"/>
+      </g>
+      <g class="s-stroke">
+        <rect x="0"   y="150" width="232" height="44" rx="6"/>
+        <rect x="244" y="150" width="232" height="44" rx="6"/>
+        <rect x="488" y="150" width="232" height="44" rx="6"/>
+      </g>
+      <g class="s-lab-sm">
+        <text x="12"  y="168">1 &#183; Key findings at the very start</text>
+        <text x="12"  y="185">move what must not be missed</text>
+        <text x="256" y="168">2 &#183; Section headings throughout</text>
+        <text x="256" y="185">navigational structure</text>
+        <text x="500" y="168">3 &#183; Structured facts, not prose</text>
+        <text x="500" y="185">shrink the middle, raise its density</text>
+      </g>
+
+      <text class="s-lab-coral" x="0" y="220">Not shorter: deciding what to cut risks deleting exactly the mid-document detail that was already being missed.</text>
+      <text class="s-lab-coral" x="0" y="238">Not rotated, and not a bigger window: rotation moves who is penalised; a bigger window changes how much fits, not how attention distributes.</text>
+    </svg>
+    <figcaption><b>Every wrong fix on the bottom two lines is a dimensional answer to a positional problem.</b> Length, order and capacity are all real levers, and none of them touches the shape of the curve. The three green boxes work because they change <em>where</em> the critical content sits rather than how much of it there is.</figcaption>
+  </figure>
+
+  <h3>The hybrid context strategy</h3>
+
+  <p>Given a conversation that will outgrow any budget you set, something has to be compressed. The tested answer is that compression must be <em>non-uniform</em>, because the information in a conversation is not uniform.</p>
+
+  <p><b>Extract precision-critical facts verbatim</b> into a structured block. Amounts, dates, identifiers, agreed terms, allergies, thresholds, account numbers. These go into a compact block included in every prompt, sitting <em>outside</em> the summarised region, and they are never paraphrased.</p>
+
+  <p><b>Summarise low-density discussion.</b> Pleasantries, exploratory back-and-forth, the four turns spent narrowing a question. This is where compression actually pays, because the token-to-meaning ratio is poor.</p>
+
+  <p><b>Keep recent turns verbatim.</b> The current exchange needs full fidelity for the model to respond coherently to what was just said.</p>
+
+  <p>Pure summarisation fails with a specific signature. "The 15% discount I agreed to on the second call" becomes "promotional pricing was discussed." The summary is not wrong. It is unusable, and it is <em>confidently</em> unusable, because nothing downstream signals that a number was lost.</p>
+
+  <p>A pure recency window fails differently: it drops early content wholesale. A fact stated in turn three of a sixty-turn conversation falls out of a last-twenty-turns window entirely, and in some domains that fact is the one that matters most.</p>
+
+  <p>Two properties make the persistent facts block work. It is <b>updated</b> as new facts appear, so it stays current rather than being a snapshot of turn one. And it is <b>positioned outside the summariser's reach</b>, so no future compression pass can degrade it.</p>
+
+  <p>Instructing the summariser to "be sure to preserve numbers" is a weaker design, because it makes correctness depend on the summariser performing perfectly every time rather than on the fact never entering the compressible region.</p>
+
+  <h3>Two adjacent levers</h3>
+
+  <p><b>Trim verbose tool results before they enter context.</b> A single lookup can return forty fields when five are relevant, and every one of those then rides along in every subsequent turn. Instructing the model to "ignore the irrelevant fields" does not help, because the tokens are already spent and the attention cost is already paid.</p>
+
+  <p><b>Isolate verbose exploration in a subagent.</b> When a phase produces a large volume of output that only matters in summary, running it in a subagent that returns a condensed result keeps the main conversation's context available for the work that needs it.</p>
+
+  <p>Both are the same principle at different points: decide what enters context on purpose, rather than letting everything accumulate by default.</p>
+
+  <details class="checkpoint">
+    <summary>Checkpoint 4 &middot; before you read on</summary>
+    <div class="prompt">
+      <p>Three reports land on the same morning. (a) A three-turn conversation where the assistant does not know what the user said in turn one. (b) A fifty-turn conversation where latency and cost have climbed steadily. (c) A single call over forty documents where the output misses one finding that sits in document twenty.</p>
+      <p>Give the cause of each, and name the distractor each one attracts.</p>
+    </div>
+    <div class="cue">Answer first, then open</div>
+    <div class="answer">
+      <span class="verdict">Three different layers. None of them is the context window.</span>
+      <p><b>(a) Missing history in the request.</b> Three turns is nowhere near capacity, so the application is not resending prior messages. <em>The distractor:</em> a session parameter or a vector database, neither of which addresses a client that is not sending what it has.</p>
+      <p><b>(b) Full history resent every call.</b> Cumulative tokens grow with the square of turn count, and time-to-first-token scales with prompt length. <em>The distractor:</em> the model writing longer replies, or a storage problem.</p>
+      <p><b>(c) Lost in the middle.</b> Document twenty is in the penalised region. <em>The distractor:</em> a larger context window, which changes how much fits and not how attention distributes.</p>
+      <p>The pattern worth carrying: <b>"it forgot something" is three different bugs</b>, and the arithmetic on conversation length tells you which one you have before you consider any fix.</p>
+    </div>
+  </details>
+
+  <div class="exit">
+    <b>Where this goes next:</b> you have decided what to send. <span class="thread">Section 5</span> is about not paying for the same thing twice, and it turns on a single word.
+  </div>
+
+  <div class="pagenav"><a class="prev" href="#techniques">&#8592; Techniques</a><a class="next" href="#reuse">Next: Reuse &#8594;</a></div>
+</div></section>
+
+<section id="reuse"><div class="container">
+  <h2>5. Prompt reuse</h2>
+
+  <div class="entry"><b>By the end of this section</b> you will recognise the caching answer from two words in a scenario, and know the four ways teams ship a cache that never hits.</div>
+
+  <p>Prompt caching reuses a <b>stable input prefix</b> across requests. It does not store outputs, and that one word, <em>prefix</em>, explains every rule that follows.</p>
+
+  <p>The mechanism: when a request arrives, the system checks whether the leading portion of the input matches a previously processed prefix. If it does, the processing already done for that portion is reused rather than recomputed. The match is on the prefix, in order, from the first byte.</p>
+
+  <p>Three properties fall straight out of that.</p>
+
+  <p><b>Order matters absolutely.</b> The cacheable region is a prefix, so it must come first. Static content at the front: system prompt, policy text, tool definitions, stable few-shot examples. Variable content at the back: the user's message, retrieved documents, timestamps.</p>
+
+  <p><b>Byte-identity matters.</b> A prefix that differs by one character is a different prefix. A session identifier, a request UUID or a "current time" line injected at the top invalidates the cache on every single call, while looking in the code like an innocuous logging nicety.</p>
+
+  <p><b>Invalidation cascades forward.</b> Change something at position 100 and everything after position 100 is a new prefix, no matter how much of it is unchanged.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 720 250" role="img" aria-labelledby="fig7-t fig7-d">
+      <title id="fig7-t">The cacheable prefix, and how one byte destroys it</title>
+      <desc id="fig7-d">In the correct ordering, static content comes first: the system prompt, policy text, tool definitions and stable few-shot examples form a cacheable prefix, followed by variable content, the user message and retrieved documents. In the broken ordering, a request ID rendered as the first line means the prefix differs on every call and the hit rate is zero, even though everything after it is identical. A note states that invalidation cascades forward from the first changed byte, so the most stable material goes first even within the static region.</desc>
+
+      <text class="s-key" x="0" y="18">Ordered by stability &#183; the prefix is cacheable</text>
+      <rect class="s-green-t" x="0" y="30" width="520" height="34" rx="4"/>
+      <rect class="s-stroke"  x="0" y="30" width="520" height="34" rx="4"/>
+      <rect class="s-fill-deep" x="524" y="30" width="196" height="34" rx="4"/>
+      <rect class="s-stroke"    x="524" y="30" width="196" height="34" rx="4"/>
+      <text class="s-lab-green" x="12" y="51">system prompt &#183; policy &#183; tool definitions &#183; stable examples</text>
+      <text class="s-lab-sm"   x="536" y="51">user message &#183; retrieved docs</text>
+      <text class="s-lab-green" x="0" y="82">reused from the first byte, every call</text>
+      <text class="s-lab-sm"    x="524" y="82">genuinely new work</text>
+
+      <line x1="0" y1="102" x2="720" y2="102" stroke="var(--border)" stroke-width="1"/>
+
+      <text class="s-key" x="0" y="126">One dynamic value at the top &#183; hit rate zero</text>
+      <rect class="s-coral-t"   x="0"  y="138" width="86"  height="34" rx="4"/>
+      <rect class="s-stroke"    x="0"  y="138" width="86"  height="34" rx="4"/>
+      <rect class="s-fill-deep" x="90" y="138" width="430" height="34" rx="4"/>
+      <rect class="s-stroke"    x="90" y="138" width="430" height="34" rx="4"/>
+      <rect class="s-fill-deep" x="524" y="138" width="196" height="34" rx="4"/>
+      <rect class="s-stroke"    x="524" y="138" width="196" height="34" rx="4"/>
+      <text class="s-lab-coral" x="8"   y="159">Request ID</text>
+      <text class="s-lab-sm"   x="102" y="159">the same 8,000 tokens as above, and none of it reused</text>
+      <text class="s-lab-sm"   x="536" y="159">user message</text>
+      <path class="s-arrow-amber" d="M 88 190 L 516 190"/>
+      <text class="s-lab-coral" x="0" y="210">invalidation cascades forward from the first changed byte</text>
+
+      <text class="s-lab-sm" x="0" y="238">Which is why ordering matters within the static region too: put the most stable material first, the least stable static material last.</text>
+    </svg>
+    <figcaption><b>The two rows carry identical content and differ only in what sits at position zero.</b> That is the whole mechanism, and it is why the bug is so easy to ship: the offending line is a logging convenience, it reviews as harmless, and the only metric that would expose it is one nobody is watching.</figcaption>
+  </figure>
+
+  <p>There is an economics wrinkle worth internalising without memorising any number. Writing a prefix into the cache carries a premium over ordinary input processing, and reading from it carries a discount.</p>
+
+  <p>So caching pays once the prefix is reused enough times to amortise the write, and cache entries do not live forever. A low-traffic endpoint may pay the write repeatedly and read rarely. Treat the multipliers and lifetimes as a documentation lookup; own the break-even <em>reasoning</em>.</p>
+
+  <h3>Worked example</h3>
+
+  <p>This is the shape of the guide's own sample question in this domain, so it is worth walking carefully.</p>
+
+  <p>An application sends an identical large preamble on every request: a compliance policy, tool definitions, and a stable block of few-shot examples. Call it 8,000 tokens. The user's message averages 200.</p>
+
+  <p>Without caching, every request processes 8,200 input tokens from scratch. The user's 200 tokens are 2.4% of the work, and the other 97.6% is the same computation performed again.</p>
+
+  <p>With the static preamble ordered first and caching enabled, roughly 200 tokens of genuinely new input get processed. Time-to-first-token drops because prefill over the cached region is skipped, and input cost drops because the reused portion bills at the read rate.</p>
+
+  <p><strong class="load-bearing">Latency and cost move together, which is exactly why "both latency and cost are concerns" is the phrase that flags this answer.</strong></p>
+
+  <div class="box warning">
+    <div class="label">Four bugs people actually ship</div>
+    <p>The template renders <code>Request ID: 7f3a...</code> as the first line of the system prompt. The prefix differs on every call, the hit rate is zero, and the metric that would reveal it is one nobody is watching.</p>
+    <p>Retrieved documents are placed <em>before</em> the policy text, because the assembly code appends them in retrieval order. The policy is no longer a prefix, so the largest stable block in the request is uncacheable.</p>
+    <p>Someone "optimises" by truncating the policy to cut tokens. The token count falls and required policy content is now missing, which is a correctness regression sold as an efficiency win.</p>
+    <p style="margin:0">Someone adds a preliminary call asking the model to summarise the preamble at request time. That adds a round trip, adds its own latency, and risks compressing policy language that needed to be exact, to solve a problem caching solves without any of it.</p>
+  </div>
+
+  <h3>Modular prompts and Skills</h3>
+
+  <p>Caching is reuse <em>within</em> a system. Modular prompts and Skills are reuse <em>across</em> systems and teams, and the failure they address is organisational rather than computational.</p>
+
+  <p>The pattern is familiar. Four teams each maintain their own copy of a system prompt that started as one prompt. Someone edits one copy to fix a tone problem.</p>
+
+  <p>Nine months later the four copies disagree about escalation thresholds, refusal language and output format, nobody can say which is authoritative, and a behaviour change now requires four uncoordinated edits landing at four different times.</p>
+
+  <p><strong class="load-bearing">Copy-paste reuse is reuse that decays from the moment it is created.</strong></p>
+
+  <p>The architectural answer is a versioned, shared, reviewable component: prompt fragments and Skills held in version control, referenced rather than duplicated, changed through review. The property that matters is that a behaviour change becomes one reviewable event with a diff and an author, instead of <em>N</em> silent drifts.</p>
+
+  <p>Skills extend that from prompt text to packaged capability: instructions plus supporting resources, versioned as a unit and loaded when relevant rather than pasted into every prompt.</p>
+
+  <p>That loading-when-relevant property connects to Domain 3's progressive-discovery objective and back to caching. A monolithic prompt carrying every capability's instructions all the time is both a token cost and, if it changes as capabilities are added, a caching liability.</p>
+
+  <p>Modularity has a caching payoff worth making explicit. Splitting a prompt into a stable core and a volatile periphery is the same operation as splitting it into a cacheable prefix and an uncacheable tail. Design the modules along the stability seam and one decision buys both.</p>
+
+  <details class="checkpoint">
+    <summary>Checkpoint 5 &middot; before you read on</summary>
+    <div class="prompt">
+      <p>A team enables prompt caching on a service with a 6,000-token static preamble. Cost does not move. Investigating, you find the preamble is byte-identical across requests and is assembled by code that appends the retrieved context first, then the preamble, then the user message.</p>
+      <p>What is wrong, and why did "byte-identical" mislead them?</p>
+    </div>
+    <div class="cue">Answer first, then open</div>
+    <div class="answer">
+      <span class="verdict">The preamble is identical and it is not a prefix.</span>
+      <p>Caching matches on the leading portion of the input, in order, from the first byte. Retrieved context sits in front of the preamble and changes on every request, so the match fails at position zero and nothing after it is ever reached.</p>
+      <p><b>Why "byte-identical" misled them:</b> it is a necessary condition, not a sufficient one. Being unchanged earns nothing unless the unchanged block is also <em>first</em>. Stability and position are two separate requirements and the team verified one of them.</p>
+      <p><b>The fix is a reordering,</b> not a rewrite: preamble first, retrieved context and user message last, in ascending order of volatility. No content changes at all, which is what makes this the cheapest fix in the domain.</p>
+    </div>
+  </details>
+
+  <div class="exit">
+    <b>Where this goes next:</b> five objectives, one system. <span class="thread">Section 6</span> runs all of them on an insurer's assistant, and the thing to watch for is how often one decision served two objectives.
+  </div>
+
+  <div class="pagenav"><a class="prev" href="#context">&#8592; Context</a><a class="next" href="#synthesis">Next: Synthesis &#8594;</a></div>
+</div></section>
+
+<section id="synthesis"><div class="container">
+  <h2>6. One production design, all five</h2>
+
+  <div class="entry"><b>By the end of this section</b> you will have seen why this domain reads as five objectives and behaves as one.</div>
+
+  <p>An insurer builds a policy-servicing assistant. It answers coverage questions, updates contact details, initiates claims, and escalates anything above a value threshold.</p>
+
+  <p>Roughly 12,000 conversations a day, averaging fourteen turns. Compliance requires a standing policy text on every model call.</p>
+
+  <p><b>Model selection is decided per call path.</b> The intent-classification step at the front of each turn is bounded, high-volume, and sits in front of a user waiting on a screen, so it takes the lowest tier clearing its benchmarked accuracy bar on real transcripts.</p>
+
+  <p>The coverage-reasoning step reads policy language against a described situation and must hold several conditions together, so it takes a higher tier. Its volume is a fraction of the classifier's and its task complexity is the binding constraint. Nobody buys headroom without naming the requirement it serves.</p>
+
+  <p><b>System prompt and guardrails.</b> Register, refusal boundaries, the clarifying-question rule and the escalation triggers live in the system prompt as concrete testable conditions.</p>
+
+  <p>The value threshold for escalation <em>also</em> exists as a code-level check on the claim-initiation tool's arguments, because that one must never be argued past. Capabilities the assistant does not need are not exposed at all rather than exposed and monitored.</p>
+
+  <p><b>Prompt techniques are applied per observed failure.</b> Zero-shot handles most turns. The classifier carries five few-shot examples sitting on the one boundary measurement showed it confusing, "change my address" against "change the address on an open claim", each with a one-line rationale.</p>
+
+  <p>The coverage-reasoning step carries a reasoning cue, because it genuinely derives across multiple conditions. The classifier does not, because it is single-step and the cue would cost latency on all 12,000 conversations a day for nothing.</p>
+
+  <p><b>Context management runs the hybrid strategy.</b> A case-facts block holds policy number, claim ID, amounts, agreed adjustments and current status, updated as facts appear and positioned outside the summarised region.</p>
+
+  <p>Earlier discussion is summarised, the last several turns stay verbatim, and tool results are trimmed to relevant fields before entering context. When a long policy document is read into a call, a key-findings block goes at the top and section headings run throughout, because that document is exactly the shape that loses its middle.</p>
+
+  <p><b>Prompt reuse ties it together.</b> The template puts compliance policy, tool definitions and stable few-shot examples first in a fixed order, forming a cacheable prefix.</p>
+
+  <p>Do the arithmetic on that: at fourteen turns per conversation and 12,000 conversations a day, that prefix would otherwise be reprocessed roughly 168,000 times daily.</p>
+
+  <p>The case-facts block, summarised history, retrieved documents and current user message follow, in ascending order of volatility. The compliance policy and escalation rules are shared, versioned Skills that the claims and servicing teams both reference rather than copy, so a regulatory wording change is one reviewed commit rather than two divergent edits.</p>
+
+  <div class="box raised">
+    <div class="label">The coupling is the point</div>
+    <p>Notice how often one decision served two objectives. Ordering the template by stability served both caching and modularity. Trimming tool results served both token cost and attention quality. Putting the guardrail in the system prompt <em>and</em> in code served both behavioural coherence and enforcement.</p>
+    <p style="margin:0"><strong class="load-bearing">That coupling is why this domain reads as five objectives and behaves as one.</strong></p>
+  </div>
+
+  <h3>Where these reflexes show up again</h3>
+
+  <p><b>Caching meets Domain 4's optimization objective.</b> "Static content first, then enable caching" is the answer whenever latency and cost appear in the same sentence, and it is the same answer in both domains.</p>
+
+  <p><b>The guardrail layering meets Domain 5.</b> Section 2's rule that a "must never" needs a non-persuadable layer is Domain 5's four guardrail layers, with scoped permissions as the strongest.</p>
+
+  <p><b>The missing-fact row meets Domain 3.</b> Recognising that no prompting technique creates knowledge is what routes a problem to retrieval design instead of another week of prompt iteration.</p>
+
+  <h3>Common misconceptions</h3>
+
+  <div class="misc-grid">
+    <div class="misc-row myth"><span class="k">The myth</span>The safest choice is always the largest model.</div>
+    <div class="misc-row why"><span class="k">Why it's tempting</span>It sounds risk-averse, and nobody in a design review has ever been criticised for over-provisioning.</div>
+    <div class="misc-row reality"><span class="k">The reality</span>Model choice is a cost, latency and quality trade argued from a stated requirement. Oversized capability is unpriced cost, not safety.</div>
+    <div class="misc-row test"><span class="k">The one test</span>Name the complexity driver that requires the headroom. If nobody can, it is not safety.</div>
+  </div>
+
+  <div class="misc-grid">
+    <div class="misc-row myth"><span class="k">The myth</span>Claude has some memory across calls by default.</div>
+    <div class="misc-row why"><span class="k">Why it's tempting</span>Conversations plainly do remember things, and the illusion is convincing because the client usually does resend.</div>
+    <div class="misc-row reality"><span class="k">The reality</span>The API has none. All continuity is the application's responsibility to construct and resend on every request.</div>
+    <div class="misc-row test"><span class="k">The one test</span>How long is the conversation? If it is short and something was forgotten, the request was missing it.</div>
+  </div>
+
+  <div class="misc-grid">
+    <div class="misc-row myth"><span class="k">The myth</span>A bigger context window fixes attention problems.</div>
+    <div class="misc-row why"><span class="k">Why it's tempting</span>Both the symptom and the remedy involve long inputs, so the two feel like they belong to the same axis.</div>
+    <div class="misc-row reality"><span class="k">The reality</span>A larger window changes how much fits, not how attention distributes across what is there.</div>
+    <div class="misc-row test"><span class="k">The one test</span>Was the input near the limit? If not, capacity was never the constraint and a bigger window changes nothing.</div>
+  </div>
+
+  <div class="misc-grid">
+    <div class="misc-row myth"><span class="k">The myth</span>Caching means storing the response for reuse.</div>
+    <div class="misc-row why"><span class="k">Why it's tempting</span>That is exactly what caching means in HTTP and in application caching, so the intuition transfers without friction.</div>
+    <div class="misc-row reality"><span class="k">The reality</span>Prompt caching reuses a stable input <em>prefix</em>. It helps on every request sharing a preamble, whatever the user asked.</div>
+    <div class="misc-row test"><span class="k">The one test</span>Is the shared block byte-identical <em>and</em> first? Both conditions, or the hit rate is zero.</div>
+  </div>
+
+  <h3>Quick reference</h3>
+
+  <p><b>Model selection.</b> Task complexity sets the capability floor. Latency budget is a hard gate. The accuracy bar is a number derived from the downstream cost of an error. Volume is the multiplier. Benchmark on representative data before committing. Fine-tuning is not the first move.</p>
+
+  <p><b>System prompts and guardrails.</b> The system prompt is the only durable authority across turns. The first user message decays; environment variables never reach the model. State rules as concrete testable conditions. Anything that must never happen gets enforced outside the model.</p>
+
+  <p><b>Prompt techniques.</b> Diagnose first, then select. Inconsistent form takes 3 to 4 format examples. A confused boundary takes 4 to 6 targeted examples with rationales. A broken multi-step derivation takes a reasoning cue; a single-step task takes none. A missing fact takes retrieval. A stereotyped opening takes a prefill.</p>
+
+  <p><b>Context engineering.</b> Stateless API, full history resent every call. Short-conversation amnesia is missing history, never capacity. Cumulative tokens grow with the square of turn count. Lost in the middle is fixed by position and structure, not by length, rotation or a bigger window. Hybrid strategy: extract precision-critical facts verbatim, summarise low-density discussion, keep recent turns intact, and keep the facts block outside the summarised region.</p>
+
+  <p><b>Prompt reuse.</b> Caching reuses a byte-identical input prefix, never the output. Static first, variable last. Any dynamic value at the top kills the hit rate. Invalidation cascades forward from the first changed byte. It cuts latency and cost together, which is the flag for it. Modular prompts and Skills are versioned, shared and referenced rather than copied.</p>
+
+  <div class="pullquote"><p>Every technique here is a targeted instrument. Read the constraint the scenario states, name the failure mode, and pick the instrument built for that failure, not the one that sounds most thorough.</p></div>
+
+  <p style="margin-top:var(--space-block)">That is Domain 2, one of seven in this lesson series. Source lesson for every fact and figure here: <code>Outputs/lessons/CCAR-P_Lesson-Domain-2_v1.md</code>.</p>
+
+  <div class="pagenav"><a class="prev" href="#reuse">&#8592; Reuse</a><span></span></div>
+</div></section>
+
+</main>
+
+<footer><div class="container">
+  <p>CCAR-P Prep &middot; Domain 2 of 7 &middot; Claude Certified Architect &ndash; Professional</p>
+</div></footer>
+
+<script>
+(function () {
+  /* ---- theme toggle ---- */
+  var root = document.documentElement;
+  var toggle = document.getElementById('theme-toggle');
+  function isDark() {
+    var t = root.getAttribute('data-theme');
+    if (t) return t === 'dark';
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  function updateToggle() {
+    var dark = isDark();
+    toggle.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+    toggle.querySelector('span').textContent = dark ? '☀️' : '🌙';
+  }
+  toggle.addEventListener('click', function () {
+    var next = isDark() ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('site-theme', next); } catch (e) {}
+    updateToggle();
+  });
+  window.addEventListener('themechange', updateToggle);
+  updateToggle();
+
+  /* ---- scroll progress + active nav link ---- */
+  var fill = document.getElementById('scrollbar-fill');
+  var navH = parseFloat(getComputedStyle(root).getPropertyValue('--nav-h')) || 64;
+  function onScroll() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var p = max > 0 ? (h.scrollTop || document.body.scrollTop) / max : 0;
+    if (fill) fill.style.width = Math.round(p * 100) + '%';
+    var links = document.querySelectorAll('.nav-link[href^="#"]');
+    var cur = '';
+    document.querySelectorAll('main section[id]').forEach(function (s) {
+      if (s.getBoundingClientRect().top <= navH + 4) cur = s.id;
+    });
+    links.forEach(function (l) {
+      l.classList.toggle('active', l.getAttribute('href') === '#' + cur);
+    });
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', function () {
+    navH = parseFloat(getComputedStyle(root).getPropertyValue('--nav-h')) || 64;
+    onScroll();
+  });
+  document.addEventListener('DOMContentLoaded', onScroll);
+  onScroll();
+})();
+</script>
+
+<script>
+/* P1.9b contrast self-test — gated behind ?audit, runs nothing unless asked */
+(function () {
+  if (!/[?&]audit\b/.test(location.search)) return;
+  var cx = (function () { var c = document.createElement('canvas'); c.width = c.height = 1;
+                          return c.getContext('2d', { willReadFrequently: true }); })();
+  function px(backdrop, css) {
+    cx.globalCompositeOperation = 'copy';        cx.fillStyle = backdrop; cx.fillRect(0, 0, 1, 1);
+    cx.globalCompositeOperation = 'source-over'; cx.fillStyle = css;      cx.fillRect(0, 0, 1, 1);
+    var d = cx.getImageData(0, 0, 1, 1).data;
+    return [d[0], d[1], d[2]];
+  }
+  var memo = {};
+  function resolve(css) {
+    if (memo[css]) return memo[css];
+    var b = px('#000', css), w = px('#fff', css);
+    var a = 1 - (w[0] - b[0]) / 255;
+    if (a < 0) a = 0; if (a > 1) a = 1;
+    var out = { rgb: a > 0.002 ? [b[0] / a, b[1] / a, b[2] / a] : [0, 0, 0], a: a };
+    memo[css] = out;
+    return out;
+  }
+  function blend(fg, a, bg) { return [fg[0]*a+bg[0]*(1-a), fg[1]*a+bg[1]*(1-a), fg[2]*a+bg[2]*(1-a)]; }
+  function chan(c) { c/=255; return c<=0.03928 ? c/12.92 : Math.pow((c+0.055)/1.055,2.4); }
+  function lum(p) { return 0.2126*chan(p[0])+0.7152*chan(p[1])+0.0722*chan(p[2]); }
+  function ratio(x,y) { var a=lum(x),b=lum(y); if(a<b){var t=a;a=b;b=t;} return (a+0.05)/(b+0.05); }
+  function bgOf(el) {
+    var stack=[], n=el;
+    while (n && n.nodeType===1) {
+      var c = resolve(getComputedStyle(n).backgroundColor);
+      if (c.a>0.004) { stack.push(c); if (c.a>0.995) break; }
+      n = n.parentElement;
+    }
+    var out=[255,255,255];
+    for (var i=stack.length-1;i>=0;i--) out=blend(stack[i].rgb, stack[i].a, out);
+    return out;
+  }
+  function label(el) {
+    var s = el.tagName.toLowerCase();
+    if (el.id) s += '#'+el.id;
+    if (el.className && typeof el.className==='string' && el.className.trim())
+      s += '.'+el.className.trim().split(/\s+/).join('.');
+    return s;
+  }
+  function sweep(mode) {
+    var out=[];
+    Array.prototype.forEach.call(document.querySelectorAll('body *'), function (el) {
+      var owns = Array.prototype.some.call(el.childNodes, function (n) {
+        return n.nodeType===3 && n.textContent.trim().length>1;
+      });
+      if (!owns) return;
+      var cs = getComputedStyle(el);
+      if (cs.display==='none'||cs.visibility==='hidden'||parseFloat(cs.opacity)<0.99) return;
+      var fg = resolve(cs.color);
+      if (fg.a<0.02) return;
+      var bg = bgOf(el);
+      var eff = fg.a>0.995 ? fg.rgb : blend(fg.rgb, fg.a, bg);
+      var r = ratio(eff, bg);
+      var size = parseFloat(cs.fontSize), bold = parseInt(cs.fontWeight,10)>=700;
+      var need = (size>=24 || (size>=18.66 && bold)) ? 3 : 4.5;
+      if (r+0.005<need) out.push({mode:mode, el:label(el), ratio:+r.toFixed(2), need:need,
+                                   text:(el.textContent||'').trim().slice(0,44)});
+    });
+    return out;
+  }
+  var root = document.documentElement, prior = root.getAttribute('data-theme');
+  root.setAttribute('data-theme','light'); var fails = sweep('light');
+  root.setAttribute('data-theme','dark');  fails = fails.concat(sweep('dark'));
+  if (prior) root.setAttribute('data-theme', prior); else root.removeAttribute('data-theme');
+  window.__audit = fails;
+  if (fails.length) { console.error('CONTRAST AUDIT - '+fails.length+' failing'); console.table(fails); }
+  else { console.log('CONTRAST AUDIT - clean in both modes'); }
+})();
+</script>
+</body>
+</html>

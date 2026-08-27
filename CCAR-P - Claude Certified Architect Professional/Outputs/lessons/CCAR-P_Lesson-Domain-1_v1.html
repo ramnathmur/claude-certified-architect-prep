@@ -1,0 +1,1570 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#faf8f3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1f1c19" media="(prefers-color-scheme: dark)">
+<title>CCAR-P Lesson — Domain 1: Solution Design &amp; Architecture</title>
+<script>
+(function () {
+  var r = document.documentElement;
+  var t = null;
+  try { t = localStorage.getItem('site-theme'); } catch (e) {}
+  var mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+  if (!t && mq && mq.matches) t = 'dark';
+  if (t) r.setAttribute('data-theme', t);
+  if (mq && mq.addEventListener) mq.addEventListener('change', function (e) {
+    var stored = null;
+    try { stored = localStorage.getItem('site-theme'); } catch (err) {}
+    if (stored) return;
+    r.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+    window.dispatchEvent(new Event('themechange'));
+  });
+})();
+</script>
+<style>
+:root {
+  color-scheme: light;
+  --ink:    oklch(0.15 0.01 80);
+  --ink2:   oklch(0.30 0.015 75);
+  --ink3:   oklch(0.47 0.015 75);
+  --cream:  oklch(0.97 0.008 85);
+  --cream2: oklch(0.94 0.012 85);
+  --cream3: oklch(0.91 0.015 80);
+  --border: oklch(0.87 0.012 80);
+
+  --amber:       oklch(0.64 0.14 68);
+  --amber-light: oklch(0.93 0.035 80);
+  --amber-dark:  oklch(0.47 0.11 60);
+  --coral:       oklch(0.55 0.14 30);
+  --coral-light: oklch(0.94 0.025 35);
+  --coral-dark:  oklch(0.45 0.12 30);
+  --green:       oklch(0.50 0.10 150);
+  --green-light: oklch(0.94 0.025 145);
+  --green-dark:  oklch(0.40 0.09 150);
+  --blue:        oklch(0.43 0.09 245);
+  --blue-light:  oklch(0.93 0.025 240);
+  --blue-dark:   oklch(0.38 0.08 245);
+
+  --surface-raised:   oklch(0.15 0.01 80);
+  --on-raised:        oklch(0.97 0.008 85);
+  --on-raised-muted:  oklch(0.97 0.008 85 / 0.74);
+  --on-raised-dim:    oklch(0.97 0.008 85 / 0.6);
+  --on-raised-border: oklch(0.97 0.008 85 / 0.15);
+  --nav-bg:           oklch(0.97 0.008 85 / 0.96);
+
+  --shadow:    0 2px 16px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
+  --radius:    12px;
+  --radius-sm: 8px;
+  --bar:       3px;
+  --focus:     var(--ink);
+  --nav-h:     64px;
+  --maxw:      900px;
+
+  --font-serif: Georgia, 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+  --font-sans:  system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono:  ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+  --font-body-active: var(--font-serif);
+
+  --fs-body: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --fs-sm:   clamp(0.8125rem, 0.78rem + 0.15vw, 0.9375rem);
+  --fs-xs:   clamp(0.6875rem, 0.67rem + 0.1vw, 0.75rem);
+  --fs-h1:   clamp(2rem, 1.4rem + 3vw, 3.375rem);
+  --fs-h2:   clamp(1.5rem, 1.2rem + 1.5vw, 2.125rem);
+  --fs-h3:   clamp(1.25rem, 1.1rem + 0.75vw, 1.5rem);
+  --fs-pull: clamp(1.375rem, 1.15rem + 1.1vw, 1.625rem);
+
+  --space-section: clamp(3rem, 2.5rem + 2.5vw, 4rem);
+  --space-block:   clamp(1.5rem, 1.25rem + 1.25vw, 2.5rem);
+  --space-inline:  clamp(1.25rem, 1rem + 1.25vw, 2rem);
+  --box-pad-sm: 16px;
+  --box-pad:    22px;
+  --box-pad-lg: 30px;
+  --lh-body:    1.7;
+  --lh-heading: 1.2;
+  --t-fast: 0.15s;
+  --t-med:  0.25s;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --ink:    oklch(0.90 0.008 85);
+  --ink2:   oklch(0.78 0.01 80);
+  --ink3:   oklch(0.62 0.01 75);
+  --cream:  oklch(0.15 0.012 75);
+  --cream2: oklch(0.19 0.012 75);
+  --cream3: oklch(0.23 0.015 75);
+  --border: oklch(0.32 0.01 75);
+
+  --amber:       oklch(0.72 0.13 68);
+  --amber-light: oklch(0.24 0.04 70);
+  --amber-dark:  oklch(0.82 0.10 65);
+  --coral:       oklch(0.70 0.13 30);
+  --coral-light: oklch(0.24 0.045 32);
+  --coral-dark:  oklch(0.80 0.10 30);
+  --green:       oklch(0.70 0.11 150);
+  --green-light: oklch(0.23 0.04 148);
+  --green-dark:  oklch(0.80 0.09 150);
+  --blue:        oklch(0.70 0.10 245);
+  --blue-light:  oklch(0.24 0.04 242);
+  --blue-dark:   oklch(0.80 0.08 245);
+
+  --surface-raised:   oklch(0.24 0.012 75);
+  --on-raised:        oklch(0.93 0.008 85);
+  --on-raised-muted:  oklch(0.93 0.008 85 / 0.74);
+  --on-raised-dim:    oklch(0.93 0.008 85 / 0.6);
+  --on-raised-border: oklch(0.93 0.008 85 / 0.15);
+  --nav-bg:           oklch(0.15 0.012 75 / 0.96);
+
+  --shadow:    0 2px 16px rgba(0,0,0,0.3);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-body-active);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
+.container { max-width: var(--maxw); margin-inline: auto; padding-inline: var(--space-inline); }
+
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: var(--radius-sm); }
+:focus:not(:focus-visible) { outline: none; }
+
+.skip-link {
+  position: absolute; left: 8px; top: -100px; z-index: 100;
+  background: var(--cream2); color: var(--ink);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 10px 16px; text-decoration: none;
+  font-family: var(--font-sans); font-size: var(--fs-sm);
+  transition: top var(--t-fast);
+}
+.skip-link:focus { top: 8px; }
+main:focus { outline: none; }
+section[id], h2[id], h3[id] { scroll-margin-top: calc(var(--nav-h) + 12px); }
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --t-fast: 0.01ms; --t-med: 0.01ms; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important; animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important; scroll-behavior: auto !important;
+  }
+}
+@media (forced-colors: active) { :focus-visible { outline: 3px solid Highlight; } }
+
+/* ---- nav ---- */
+.nav {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--nav-bg); backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-inner {
+  max-width: var(--maxw); margin-inline: auto; padding: 0 var(--space-inline);
+  height: var(--nav-h); display: flex; align-items: center; gap: 18px;
+  font-family: var(--font-sans);
+}
+.nav-home { color: var(--ink); text-decoration: none; font-weight: 600; font-size: var(--fs-sm); white-space: nowrap; }
+.nav-links { display: flex; gap: 14px; overflow-x: auto; flex: 1; scrollbar-width: none; }
+.nav-links::-webkit-scrollbar { display: none; }
+.nav-link {
+  color: var(--ink3); text-decoration: none; font-size: var(--fs-xs);
+  font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em;
+  white-space: nowrap; padding: 4px 0; border-bottom: 2px solid transparent;
+}
+.nav-link.active { color: var(--amber-dark); border-bottom-color: var(--amber); }
+.nav-progress { position: absolute; left: 0; bottom: -1px; height: 2px; background: var(--cream2); width: 100%; }
+.scrollbar-fill { height: 2px; background: var(--amber); width: 0%; transition: width var(--t-fast); }
+.theme-toggle {
+  background: none; border: 1px solid var(--border); border-radius: 99px;
+  width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0; font-size: 15px;
+}
+.theme-toggle:hover { border-color: var(--amber); }
+
+main { display: block; }
+section { padding-block: var(--space-section); }
+section + section { border-top: 1px solid var(--border); }
+h1 {
+  font-family: var(--font-serif); font-size: var(--fs-h1); line-height: var(--lh-heading);
+  font-weight: 400; margin: 0 0 10px;
+}
+h2 {
+  font-family: var(--font-serif); font-size: var(--fs-h2); line-height: var(--lh-heading);
+  font-weight: 400; margin: 0 0 var(--space-block);
+}
+h3 {
+  font-family: var(--font-sans); font-size: var(--fs-h3); line-height: var(--lh-heading);
+  font-weight: 600; margin: var(--space-block) 0 12px;
+}
+p { margin: 0 0 1.15em; }
+.eyebrow {
+  font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--amber-dark); margin-bottom: 14px;
+}
+.dek { font-size: var(--fs-pull); color: var(--ink2); font-weight: 400; max-width: 640px; }
+.meta-row {
+  display: flex; flex-wrap: wrap; gap: 10px 22px; margin-top: 22px;
+  font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink3);
+}
+.meta-row b { color: var(--ink); font-weight: 600; }
+
+/* ---- chapter list ---- */
+.chap {
+  display: grid; grid-template-columns: 34px 1fr; gap: 14px; align-items: start;
+  padding: 12px 0; border-top: 1px solid var(--border); text-decoration: none; color: inherit;
+}
+.chap:first-of-type { border-top: none; }
+.chap .num { font-family: var(--font-mono); color: var(--ink3); font-size: var(--fs-sm); padding-top: 2px; }
+.chap .body strong { display: block; font-family: var(--font-sans); font-size: var(--fs-body); }
+.chap .body em { display: block; font-style: normal; color: var(--ink3); font-size: var(--fs-sm); margin-top: 2px; }
+.chap:hover .body strong, .chap:focus-visible .body strong { color: var(--amber-dark); }
+
+/* ---- tables ---- */
+.table-wrap { overflow-x: auto; margin: var(--space-block) 0; }
+table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+caption { text-align: left; font-family: var(--font-sans); font-size: var(--fs-xs); color: var(--ink3);
+  text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+thead th { font-family: var(--font-sans); font-weight: 600; color: var(--ink2);
+  border-bottom: 2px solid var(--border); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.04em; }
+tbody tr:last-child td { border-bottom: none; }
+td.num, th.num { font-family: var(--font-mono); }
+
+/* ---- box family (parameterised base, per house style P1.7) ---- */
+.box {
+  background: var(--box-bg, var(--cream2));
+  border: 1px solid var(--border);
+  border-left: var(--bar) solid var(--box-accent, transparent);
+  border-radius: var(--radius);
+  padding: var(--box-pad);
+  margin: var(--space-block) 0;
+  break-inside: avoid;
+}
+.box.warning { --box-bg: var(--coral-light); --box-accent: var(--coral); }
+.box.raised  { --box-bg: var(--surface-raised); color: var(--on-raised); --box-pad: var(--box-pad-lg); --box-accent: transparent; }
+.box.raised h3 { color: var(--on-raised); }
+.box.raised p, .box.raised li { color: var(--on-raised-muted); }
+.box.raised .label { color: var(--on-raised-dim); }
+@media (forced-colors: active) { .box { border: 2px solid CanvasText; } }
+
+.label {
+  font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 600;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber-dark); margin-bottom: 10px;
+}
+.box.raised .label { color: var(--on-raised-dim); }
+
+/* ---- pullquote ---- */
+.pullquote {
+  border-left: var(--bar) solid var(--amber);
+  padding: 4px 0 4px 26px;
+  margin: var(--space-block) 0;
+  max-width: 640px;
+}
+.pullquote p {
+  font-family: var(--font-serif); font-size: var(--fs-pull); font-style: italic;
+  color: var(--ink2); margin: 0; line-height: 1.5;
+}
+
+/* ---- misconceptions grid ---- */
+.misc-grid { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin: var(--space-block) 0; }
+.misc-row { padding: 14px 20px; border-top: 1px solid var(--border); }
+.misc-row:first-of-type { border-top: none; }
+.misc-row .k {
+  font-family: var(--font-mono); font-weight: 700; font-size: var(--fs-xs);
+  text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 5px;
+}
+.misc-row.myth    { background: var(--coral-light); }
+.misc-row.myth .k { color: var(--coral-dark); }
+.misc-row.why  .k { color: var(--ink3); }
+.misc-row.reality    { background: var(--green-light); }
+.misc-row.reality .k { color: var(--green-dark); }
+.misc-row.test .k    { color: var(--amber-dark); }
+
+/* ---- widget ---- */
+.widget { background: var(--cream2); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--box-pad); margin: var(--space-block) 0; }
+.widget-title { font-family: var(--font-sans); font-weight: 600; font-size: var(--fs-h3); margin-bottom: 6px; }
+.widget-hint { font-size: var(--fs-sm); color: var(--ink3); margin-bottom: 18px; }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+.btn {
+  font-family: var(--font-sans); font-size: var(--fs-sm); font-weight: 600;
+  padding: 8px 16px; border-radius: 99px; border: 1px solid var(--border);
+  background: var(--cream); color: var(--ink2); cursor: pointer;
+}
+.btn.active { background: var(--ink); color: var(--cream); border-color: var(--ink); }
+.btn:hover:not(.active) { border-color: var(--amber); color: var(--amber-dark); }
+.k-row { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; font-family: var(--font-mono); font-size: var(--fs-sm); }
+.k-row input[type="range"] { flex: 1; accent-color: var(--amber); }
+.k-val { min-width: 5ch; text-align: center; font-weight: 700; color: var(--amber-dark); }
+.metric-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 640px) { .metric-pair { grid-template-columns: 1fr; } }
+.metric-cell { }
+.metric-label { display: flex; justify-content: space-between; gap: 10px; font-size: var(--fs-sm); margin-bottom: 8px; }
+.metric-label b { font-family: var(--font-mono); font-size: var(--fs-h3); white-space: nowrap; }
+.metric-track { height: 10px; background: var(--cream3); border-radius: 99px; overflow: hidden; }
+.metric-fill { height: 100%; transition: width var(--t-med); }
+.widget-summary {
+  margin-top: 20px; padding-top: 18px; border-top: 1px dashed var(--border);
+  font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--ink2);
+}
+
+/* ---- prev/next (project convention: paged wayfinding inside the one-file model) ---- */
+.pagenav {
+  display: flex; justify-content: space-between; gap: 16px; margin-top: var(--space-block);
+  font-family: var(--font-sans); font-size: var(--fs-sm);
+}
+.pagenav a { color: var(--ink2); text-decoration: none; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 10px 16px; }
+.pagenav a:hover, .pagenav a:focus-visible { border-color: var(--amber); color: var(--amber-dark); }
+.pagenav .next { margin-left: auto; }
+
+footer { border-top: 1px solid var(--border); padding-block: var(--space-block); }
+footer p { color: var(--ink3); font-size: var(--fs-xs); font-family: var(--font-mono); }
+
+strong.load-bearing { color: var(--amber-dark); }
+em { font-style: italic; }
+
+/* ================================================================
+   v2 additions — the pedagogical engine (Educational HTML Playbook)
+   Everything above this line is the v1 skin, carried over unchanged.
+   ================================================================ */
+
+/* ---- section bookends: advance organizer (Ausubel) + exit (Zeigarnik) ---- */
+.entry {
+  font-family: var(--font-sans); font-size: var(--fs-sm); color: var(--ink2);
+  border-left: var(--bar) solid var(--amber); padding: 2px 0 2px 18px;
+  margin: 0 0 var(--space-block); max-width: 640px;
+}
+.entry b { color: var(--ink); font-weight: 600; }
+.exit {
+  font-family: var(--font-sans); font-size: var(--fs-sm); color: var(--ink3);
+  border-top: 1px dashed var(--border); padding-top: 16px; margin-top: var(--space-block);
+}
+.exit b { color: var(--ink2); font-weight: 600; }
+.exit .thread { color: var(--amber-dark); font-weight: 600; }
+
+/* ---- figures: dual coding. Every figure carries a caption that makes a claim. ---- */
+figure.fig { margin: var(--space-block) 0; }
+figure.fig svg { display: block; width: 100%; height: auto; max-width: 100%; }
+figure.fig figcaption {
+  font-family: var(--font-sans); font-size: var(--fs-sm); color: var(--ink3);
+  margin-top: 12px; line-height: 1.5; max-width: 660px;
+}
+figure.fig figcaption b { color: var(--ink2); font-weight: 600; }
+
+/* SVG utility classes — every colour routes through a token, so dark mode is automatic */
+.s-fill-surface { fill: var(--cream2); }
+.s-fill-deep    { fill: var(--cream3); }
+.s-fill-page    { fill: var(--cream); }
+.s-stroke       { stroke: var(--border); fill: none; stroke-width: 1.5; }
+.s-rule         { stroke: var(--ink3); fill: none; stroke-width: 1.5; }
+.s-arrow        { stroke: var(--ink3); fill: none; stroke-width: 1.5; marker-end: url(#arrowhead); }
+.s-arrow-amber  { stroke: var(--amber); fill: none; stroke-width: 2.5; marker-end: url(#arrowhead-amber); }
+.s-amber   { fill: var(--amber); }
+.s-coral   { fill: var(--coral); }
+.s-green   { fill: var(--green); }
+.s-blue    { fill: var(--blue); }
+.s-amber-t { fill: var(--amber-light); }
+.s-coral-t { fill: var(--coral-light); }
+.s-green-t { fill: var(--green-light); }
+/* Applied to <text> OR to a wrapping <g> — every property here is CSS-inherited,
+   so a group-level class reaches its text children. Do not narrow to `text.x`. */
+.s-lab  { font-family: var(--font-sans); font-size: 12px; fill: var(--ink2); }
+.s-lab-sm { font-family: var(--font-sans); font-size: 10.5px; fill: var(--ink3); }
+.s-num  { font-family: var(--font-mono); font-size: 12px; fill: var(--ink); font-weight: 700; }
+.s-key  { font-family: var(--font-sans); font-size: 12.5px; fill: var(--ink); font-weight: 600; }
+.s-onaccent { font-family: var(--font-sans); font-size: 12px; fill: var(--on-raised); font-weight: 600; }
+/* --amber is a light-ish fill in BOTH themes, so text on it is a fixed dark, not a token. */
+.s-on-amber { font-family: var(--font-sans); font-size: 11px; fill: oklch(0.22 0.03 70); font-weight: 600; }
+.s-badge { font-family: var(--font-mono); font-size: 10px; font-weight: 700; fill: var(--amber-dark); }
+.s-lab-amber { font-family: var(--font-sans); font-size: 12px; fill: var(--amber-dark); font-weight: 600; }
+.s-lab-coral { font-family: var(--font-sans); font-size: 11px; fill: var(--coral-dark); font-weight: 600; }
+.s-lab-green { font-family: var(--font-sans); font-size: 11px; fill: var(--green-dark); font-weight: 600; }
+@media (forced-colors: active) {
+  figure.fig svg { forced-color-adjust: none; }
+}
+
+/* ---- analogy card. Conditional mandate: it MUST name where it breaks. ---- */
+.box.analogy { --box-bg: var(--amber-light); --box-accent: var(--amber); }
+.box.analogy .breaks {
+  margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--amber);
+  font-size: var(--fs-sm); color: var(--ink2);
+}
+.box.analogy .breaks b {
+  font-family: var(--font-mono); font-size: var(--fs-xs); text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--amber-dark); display: block; margin-bottom: 4px;
+}
+
+/* ---- checkpoint: retrieval practice. Generation, not recognition. ---- */
+details.checkpoint {
+  background: var(--blue-light); border: 1px solid var(--border);
+  border-left: var(--bar) solid var(--blue);
+  border-radius: var(--radius); margin: var(--space-block) 0; overflow: hidden;
+}
+details.checkpoint > summary {
+  font-family: var(--font-sans); font-weight: 600; font-size: var(--fs-sm);
+  padding: 16px 20px; cursor: pointer; list-style: none;
+  display: flex; align-items: center; gap: 10px; color: var(--ink);
+}
+details.checkpoint > summary::-webkit-details-marker { display: none; }
+details.checkpoint > summary::before {
+  content: '\25B6'; font-size: 10px; color: var(--blue); transition: transform var(--t-med); flex-shrink: 0;
+}
+details.checkpoint[open] > summary::before { transform: rotate(90deg); }
+details.checkpoint .prompt {
+  padding: 0 20px 4px; font-size: var(--fs-body); color: var(--ink);
+}
+details.checkpoint .prompt p { margin-bottom: 0.8em; }
+details.checkpoint .cue {
+  font-family: var(--font-mono); font-size: var(--fs-xs); text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--blue-dark); padding: 0 20px 14px;
+}
+details.checkpoint .answer {
+  padding: 16px 20px 18px; margin: 0 12px 12px; background: var(--cream);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+}
+details.checkpoint .answer p:last-child { margin-bottom: 0; }
+details.checkpoint .answer .verdict {
+  font-family: var(--font-sans); font-weight: 600; color: var(--ink); display: block; margin-bottom: 6px;
+}
+</style>
+</head>
+<body>
+<!-- LEDGER
+  Built directly on the Educational HTML Design Playbook v5.2 engine, on the skin shared with
+  Domains 3, 4 and 5 v2. No v1 HTML existed for this domain, so there was no compression-era
+  build to correct: this is the first HTML for Domain 1 and it starts from the right engine.
+  See memory note lesson-html-route-to-educational-playbook for why that distinction matters.
+
+  Archetype:  Guided Journey - entry/checkpoint/exit bookends, numbered sections, recap.
+  Hues:       4 - amber = emphasis/main path, coral = wrong turns + misconceptions "myth",
+              green = correct/reality, blue = reader action (checkpoints only).
+  Box types:  6 - warning, raised, analogy, checkpoint, misc-grid, entry/exit bookends.
+  Figures:    6 inline SVG via playbook 1.7: the pattern ladder (the domain's organising idea),
+              the four stages with the feedback path closing, the quote decomposition as sized
+              bars with the regulated step marked, workflow vs agent vs hybrid cost, hub-and-
+              spoke with what the coordinator owns, and the two-pass PR decomposition.
+  Widgets:    0 - the cost comparison is a static figure with real arithmetic; nothing here
+              needs manipulating to be understood, and the playbook's interactivity ladder
+              says climb only when doing teaches what reading cannot.
+  Checkpoints: 6, one per objective. Generation, not recognition. Native <details>.
+  Analogies:  2, AI-native, both carrying the mandatory where-it-breaks clause.
+  Targets:    paragraphs under ~70 words with none over 110; em-dashes in prose under 12
+              (anti-ai-writing-style_v1.md 1.1); every figure caption states what it proves.
+  Content:    frozen. Every fact, number and worked example from CCAR-P_Lesson-Domain-1_v1.md.
+-->
+<a class="skip-link" href="#main">Skip to content</a>
+<nav class="nav" aria-label="Page navigation">
+  <div class="nav-inner">
+    <a class="nav-home" href="#intro">&#8962; Domain 1</a>
+    <div class="nav-links">
+      <a class="nav-link" href="#translate">Translate</a>
+      <a class="nav-link" href="#stages">Stages</a>
+      <a class="nav-link" href="#patterns">Patterns</a>
+      <a class="nav-link" href="#multi-agent">Multi-agent</a>
+      <a class="nav-link" href="#decomposition">Decomposition</a>
+      <a class="nav-link" href="#value">Value</a>
+      <a class="nav-link" href="#synthesis">Synthesis</a>
+    </div>
+    <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark mode" title="Toggle dark mode">
+      <span aria-hidden="true">&#127769;</span>
+    </button>
+    <div class="nav-progress"><div class="scrollbar-fill" id="scrollbar-fill"></div></div>
+  </div>
+</nav>
+
+<main id="main" tabindex="-1">
+
+<section id="intro"><div class="container">
+  <div class="eyebrow">CCAR-P &middot; Domain 1 &middot; 17% of the exam</div>
+  <h1>Solution Design &amp; Architecture</h1>
+  <p class="dek">Six objectives that look like six topics. They are one argument, and every step in it constrains the next.</p>
+  <div class="meta-row">
+    <span><b>Objectives</b> 6</span>
+    <span><b>Weight</b> 17%</span>
+    <span><b>Source</b> official exam guide v1.0</span>
+  </div>
+
+  <h3>Contents</h3>
+  <nav aria-label="Chapters">
+    <a class="chap" href="#translate"><span class="num">1</span><span class="body"><strong>Translating a business problem</strong><em>Finding the decision inside the workflow, and the constraint hidden in the setup</em></span></a>
+    <a class="chap" href="#stages"><span class="num">2</span><span class="body"><strong>End-to-end architecture</strong><em>Input, processing, output, and the stage most systems ship without</em></span></a>
+    <a class="chap" href="#patterns"><span class="num">3</span><span class="body"><strong>Choosing a pattern</strong><em>The ladder, enumerability, and what each rung right actually costs</em></span></a>
+    <a class="chap" href="#multi-agent"><span class="num">4</span><span class="body"><strong>Multi-agent systems</strong><em>Hub-and-spoke, and why root causes live in the coordinator</em></span></a>
+    <a class="chap" href="#decomposition"><span class="num">5</span><span class="body"><strong>Decomposition</strong><em>One evaluation criterion per unit, and knowing when to stop splitting</em></span></a>
+    <a class="chap" href="#value"><span class="num">6</span><span class="body"><strong>Business value pillars</strong><em>Five units, and how a named pillar eliminates designs before you compare them</em></span></a>
+    <a class="chap" href="#synthesis"><span class="num">7</span><span class="body"><strong>One design, all six objectives</strong><em>A regional insurer's claims pipeline, and the dependency chain running through it</em></span></a>
+  </nav>
+
+  <p style="font-family:var(--font-sans);font-size:var(--fs-sm);color:var(--ink3)">Each section closes with a checkpoint. Answer it before opening the reveal: committing to an answer is what makes it stick, and it is closer to what the exam will ask of you than re-reading is.</p>
+
+  <p>Seventeen percent is the second-largest weight on this exam. If items track the published weight, that is roughly eleven of the 63, which is enough for Domain 1 alone to move you across or under 720.</p>
+
+  <p>The six objectives look like six separate topics. Read them left to right and they are one argument.</p>
+
+  <div class="pullquote"><p>A business states an outcome. You find the decision inside their workflow that a model can own. You wire that decision into a system with an input boundary, a processing core, an output contract, and a feedback path. You pick the simplest pattern that satisfies the stated requirements. You decompose whatever is still too big to evaluate as one unit. And you express the whole thing in the unit the business will measure it in.</p></div>
+
+  <p>Every step in that chain constrains the next, which is also why this domain's distractors work so well.</p>
+
+  <p><strong class="load-bearing">A wrong answer here is usually a design that is defensible in isolation and unjustified by the requirement the scenario actually stated.</strong></p>
+
+  <p>Foundations tested whether a design was correct. Professional tests whether it survives production, and whether you can defend it to someone holding a budget. Four questions run underneath everything below: what does it cost at volume, what breaks first under real traffic, how do you explain it to a non-engineer, and what does a regulated sector add.</p>
+
+  <h3>The ladder that organises the whole domain</h3>
+
+  <p>One idea sits at the centre of Domain 1, and most of its questions are, underneath the scenario prose, asking you to place a set of requirements on it.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 720 280" role="img" aria-labelledby="fig1-t fig1-d">
+      <title id="fig1-t">The pattern ladder</title>
+      <desc id="fig1-d">Five rungs rising left to right: a plain model call; an augmented LLM, meaning the model plus retrieval, tools or memory; a workflow, meaning fixed steps orchestrated in your code; an agent, where the model decides the path and a loop terminates it; and multi-agent, a coordinator plus specialists. Moving right buys adaptivity and pays in nondeterminism, token volume, latency variance, evaluation difficulty and debugging surface. A note states that the ladder is a cost ladder, not a maturity model, and that you move right only when the rung to the left demonstrably cannot meet a stated requirement.</desc>
+      <defs>
+        <marker id="arrowhead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--ink3)"/>
+        </marker>
+        <marker id="arrowhead-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--amber)"/>
+        </marker>
+      </defs>
+
+      <rect class="s-green-t" x="0"   y="170" width="132" height="46" rx="6"/>
+      <rect class="s-stroke"  x="0"   y="170" width="132" height="46" rx="6"/>
+      <rect class="s-green-t" x="144" y="138" width="132" height="46" rx="6"/>
+      <rect class="s-stroke"  x="144" y="138" width="132" height="46" rx="6"/>
+      <rect class="s-amber-t" x="288" y="106" width="132" height="46" rx="6"/>
+      <rect class="s-stroke"  x="288" y="106" width="132" height="46" rx="6"/>
+      <rect class="s-coral-t" x="432" y="74"  width="132" height="46" rx="6"/>
+      <rect class="s-stroke"  x="432" y="74"  width="132" height="46" rx="6"/>
+      <rect class="s-coral-t" x="576" y="42"  width="132" height="46" rx="6"/>
+      <rect class="s-stroke"  x="576" y="42"  width="132" height="46" rx="6"/>
+
+      <g class="s-key" text-anchor="middle">
+        <text x="66"  y="191">plain call</text>
+        <text x="210" y="159">augmented LLM</text>
+        <text x="354" y="127">workflow</text>
+        <text x="498" y="95">agent</text>
+        <text x="642" y="63">multi-agent</text>
+      </g>
+      <g class="s-lab-sm" text-anchor="middle">
+        <text x="66"  y="207">one prompt</text>
+        <text x="210" y="175">+ retrieval, tools</text>
+        <text x="354" y="143">fixed steps in code</text>
+        <text x="498" y="111">the model picks</text>
+        <text x="642" y="79">coordinator + specialists</text>
+      </g>
+
+      <g class="s-arrow">
+        <path d="M 135 178 L 141 172"/>
+        <path d="M 279 146 L 285 140"/>
+        <path d="M 423 114 L 429 108"/>
+        <path d="M 567 82 L 573 76"/>
+      </g>
+
+      <text class="s-lab-green" x="0" y="234">Each step right buys adaptivity.</text>
+      <text class="s-lab-coral" x="0" y="250">Each step right pays in nondeterminism, tokens, latency variance, evaluation difficulty, and debugging surface.</text>
+      <text class="s-lab-amber" x="0" y="270">Move right only when the rung to the left cannot meet a stated requirement.</text>
+    </svg>
+    <figcaption><b>This is a cost ladder, not a maturity model.</b> Nobody gets a better grade for being on rung five, and the exam is built on that fact. Read the rungs as prices, and the scenario's requirements as the only thing that can authorise paying one.</figcaption>
+  </figure>
+
+  <div class="exit">
+    <b>Next:</b> the ladder cannot help you until you know what decision the system is being built around. That is where the argument starts, and it is where most of the hidden constraints live.
+  </div>
+</div></section>
+
+<section id="translate"><div class="container">
+  <h2>1. Translating a business problem</h2>
+
+  <div class="entry"><b>By the end of this section</b> you will be able to find the one sentence in a scenario that disqualifies half the options, and you will look for it before reading them.</div>
+
+  <p>A business problem arrives as an outcome, never a specification.</p>
+
+  <p>"We take too long to issue quotes." "Our support backlog grows faster than we can hire." "Underwriters spend their week reading PDFs."</p>
+
+  <p>None of those name a system, and none of them can be built. An outcome has no interface.</p>
+
+  <p><strong class="load-bearing">Translation is converting an outcome into a decision: a specific, recurring point in a workflow where someone looks at inputs and produces a judgment.</strong></p>
+
+  <p>Systems get built around decisions. That is why this is its own objective, and it is worth understanding why the previous generation of automation could skip it.</p>
+
+  <p>Rules engines and RPA were pointed at <em>tasks</em>: click here, copy that field, paste it there. That works as long as the input never varies. Language models moved the automatable unit from the task to the judgment, and that made the sourcing question harder. The question stopped being "which clicks repeat" and became "which judgments repeat, and can we see whether they were right."</p>
+
+  <h3>What makes a decision a candidate</h3>
+
+  <p>Four properties argue for it.</p>
+
+  <p><b>Scale exceeds practical human capacity.</b> Volume, frequency or concurrency is past what the team can sustain. Without this you are building an expensive assistant.</p>
+
+  <p><b>The decision is a repeatable pattern with observable feedback.</b> The same shape of judgment recurs, and somebody eventually finds out whether it was right. No feedback surface means no evaluation, and no evaluation means no improvement path.</p>
+
+  <p><b>The context is machine-readable, or can be made so.</b> If the inputs live in a filing cabinet or in an employee's head, the first project is data access, not AI.</p>
+
+  <p><b>Throughput justifies the fixed build cost.</b> Amortisation is a design input rather than an afterthought.</p>
+
+  <h3>Five signals that the stance itself is wrong</h3>
+
+  <p>These matter more than the four above, because the exam hides them in the setup paragraph.</p>
+
+  <p><b>Decisions are irreversible and rare.</b> No learning surface, high blast radius. The worst combination available.</p>
+
+  <p><b>Regulation explicitly requires a human decision-maker.</b> Statutory human-in-the-loop is a constraint, not a preference to be optimised around.</p>
+
+  <p><b>The output is novel-creative judgment with low repeatability.</b> Each output is bespoke, so there is no pattern to match.</p>
+
+  <p><b>The human relationship is the product.</b> Coaching, therapy, relationship-managed sales. Automating the relationship removes the thing being bought.</p>
+
+  <p><b>A human must gate every single iteration.</b> If the user refines, selects or approves inside every loop pass, you are designing an assistive tool. That is a legitimate product. It is not usually the architecture the scenario is asking for, and it changes the value case completely.</p>
+
+  <p>One thing to notice about all five. They rarely apply to a whole workflow. They apply to individual steps inside it, which is why translation almost always produces a split: some steps automated, some drafted then approved, some left alone.</p>
+
+  <h3>Worked example</h3>
+
+  <p>A commercial insurance broker issues quotes. The measured current state: 400 quote requests a week, 22 minutes average handling time, three analysts at roughly 35 productive hours each.</p>
+
+  <p>That is 105 hours of capacity against about 147 hours of work, which is why the backlog is permanent rather than seasonal. Turnaround averages 3.2 business days, and the broker loses business above two days.</p>
+
+  <p>Now decompose the 22 minutes.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 720 242" role="img" aria-labelledby="fig2-t fig2-d">
+      <title id="fig2-t">The 22-minute quote, broken into decisions</title>
+      <desc id="fig2-d">Five steps make up 22 minutes of handling time. Reading the submission and extracting fields takes 9 minutes and is a pure automation fit. Looking up prior claims history takes 3 minutes and is a pure fit. Classifying risk tier takes 4 minutes and is a fit with a caveat, because its feedback arrives only at 12 months via loss ratio, so it needs a proxy signal such as analyst override rate. Pricing and signing the quote takes 4 minutes and is statutorily human, requiring licensed sign-off. Formatting and sending takes 2 minutes and is a pure fit. Automating everything except sign-off takes handling time from 22 minutes to a projected 6.</desc>
+
+      <g class="s-lab" text-anchor="end">
+        <text x="196" y="42">Extract fields</text>
+        <text x="196" y="76">Claims-history lookup</text>
+        <text x="196" y="110">Classify risk tier</text>
+        <text x="196" y="144">Price and sign</text>
+        <text x="196" y="178">Format and send</text>
+      </g>
+      <rect class="s-green" x="204" y="28"  width="198" height="20" rx="3"/>
+      <rect class="s-green" x="204" y="62"  width="66"  height="20" rx="3"/>
+      <rect class="s-amber" x="204" y="96"  width="88"  height="20" rx="3"/>
+      <rect class="s-coral" x="204" y="130" width="88"  height="20" rx="3"/>
+      <rect class="s-green" x="204" y="164" width="44"  height="20" rx="3"/>
+      <g class="s-num">
+        <text x="412" y="43">9 min</text>
+        <text x="280" y="77">3</text>
+        <text x="302" y="111">4</text>
+        <text x="302" y="145">4</text>
+        <text x="258" y="179">2</text>
+      </g>
+      <g class="s-lab-green">
+        <text x="466" y="43">pure fit</text>
+        <text x="322" y="77">pure fit</text>
+        <text x="300" y="179">pure fit</text>
+      </g>
+      <text class="s-lab-amber" x="344" y="111">fit, but feedback arrives at 12 months</text>
+      <text class="s-lab-coral" x="344" y="145">statutory: licensed sign-off</text>
+
+      <line x1="0" y1="200" x2="720" y2="200" stroke="var(--border)" stroke-width="1"/>
+      <text class="s-lab-sm" x="0" y="220">Automate extraction, lookup and a risk-tier recommendation. Present a complete draft for sign-off.</text>
+      <text class="s-num"    x="0" y="238">22 min &#8594; a projected 6. At 400/week that is ~107 hours returned against 105 hours of capacity.</text>
+    </svg>
+    <figcaption><b>The coral bar is the one that decided the architecture.</b> Identifying the regulated step is what determined that this system produces a <em>draft</em> rather than a decision, and that determination was made before any pattern was chosen. Read the table right-to-left: the constraint column drives the design, not the minutes column.</figcaption>
+  </figure>
+
+  <p>The risk-tier step deserves a second look. Its feedback loop is twelve months long, which does not disqualify it. It forces a proxy signal instead, and analyst override rate is the obvious one.</p>
+
+  <p>The backlog disappears, and notice what the value story became: turnaround, not headcount.</p>
+
+  <h3>How the exam probes it</h3>
+
+  <p>The scenario gives you an organisation, a business goal, a workload figure, and one or two constraints buried in the prose. All four options automate something. They differ in <em>which step they target</em>.</p>
+
+  <p>The correct option targets the step that either consumes the stated cost or carries the stated requirement. The distractors target a step that is visible but cheap, or a step the scenario has already told you is constrained.</p>
+
+  <p><strong class="load-bearing">Watch for the constraint sentence.</strong> "Quotes must be signed by a licensed underwriter" is one clause in a paragraph of context, and it invalidates every option that has the model issuing the quote. Professional-tier items hide the disqualifying constraint in the setup rather than in the options.</p>
+
+  <details class="checkpoint">
+    <summary>Checkpoint 1 &middot; before you read on</summary>
+    <div class="prompt">
+      <p>A wealth manager asks whether Claude can handle their client review meetings, which take advisers about four hours a week each. The scenario notes in passing that clients choose this firm for the relationship with their named adviser.</p>
+      <p>What do you automate, and what has that clause just ruled out?</p>
+    </div>
+    <div class="cue">Answer first, then open</div>
+    <div class="answer">
+      <span class="verdict">Automate the preparation, never the interaction.</span>
+      <p>"Clients choose this firm for the relationship" is the wrong-stance signal <em>the human relationship is the product</em>. Automating the meeting removes the thing being bought, so every option that has a model conducting or replacing the review is disqualified by one clause in the setup.</p>
+      <p><b>What is left is still substantial:</b> portfolio summarisation, drafting talking points, assembling performance data, flagging items needing discussion. The adviser walks in prepared instead of spending the morning preparing.</p>
+      <p>Notice the shape, because it recurs: the signal did not apply to the whole workflow, only to one step in it. Translation almost always produces a split rather than a yes or no.</p>
+    </div>
+  </details>
+
+  <div class="box warning">
+    <div class="label">The wrong turns</div>
+    <p><b>Building what was asked for instead of what was wanted.</b> "Can Claude write our quotes?" is a request. "We lose business above two days' turnaround" is the requirement. An option producing beautifully written quotes that does not touch turnaround has solved the request.</p>
+    <p><b>Skipping the baseline.</b> If you cannot state the current cost in a unit, you have nothing to compare against, and section 6 becomes unanswerable later. On the exam this appears as an option proposing to "measure improvement after launch," which is measurement with no before.</p>
+    <p><b>Treating a wrong-stance signal as a challenge to engineer around.</b> When a scenario states a regulatory human-decision requirement, the correct answer accommodates it. An audit log, a confidence threshold, or post-hoc review offered as a substitute for the required human decision is the trap.</p>
+    <p style="margin:0"><b>Automating the relationship</b> when the human contact is the product being sold. The right answer automates the preparation.</p>
+  </div>
+
+  <div class="exit">
+    <b>Where this goes next:</b> you have a decision. <span class="thread">Section 2</span> wires it into a system, and it turns on the one stage most deployed systems never ship.
+  </div>
+
+  <div class="pagenav"><span></span><a class="next" href="#stages">Next: End-to-end architecture &#8594;</a></div>
+</div></section>
+
+<section id="stages"><div class="container">
+  <h2>2. End-to-end architecture</h2>
+
+  <div class="entry"><b>By the end of this section</b> you will be able to look at a working deployed system and say why it will never get any better.</div>
+
+  <p>Four stages, and the fourth is the one people ship without.</p>
+
+  <p><b>Input</b> is the boundary, and three jobs happen there. Acquisition, whether webhook, queue, batch or upload. Validation and normalisation: does this document parse, is this field present, is this file the type it claims. And the trust decision.</p>
+
+  <p>Everything crossing the input boundary from outside your control is untrusted content. That is a prompt-injection surface, and where it enters determines where it must be constrained.</p>
+
+  <p>Input design also fixes what the rest of the system can never recover. Information not captured at the boundary does not exist downstream, at any price.</p>
+
+  <p><b>Processing</b> is the model call plus the deterministic code wrapped around it. The most common design error at this stage is putting work in the model that code does better.</p>
+
+  <p>Arithmetic, lookups, deduplication, sorting, threshold comparison, schema validation. All cheaper, faster and exactly correct in code. The model's job is judgment on unstructured input.</p>
+
+  <p><b>Output</b> is a contract, not a text blob. It has a schema, a destination, a consumer, and an error tolerance, and the consumer determines the shape.</p>
+
+  <p>A downstream service needs parseable structure and a confidence field it can route on. A human reviewer needs the reasoning and the citations. An auditor needs the inputs, the prompt version, and the timestamp. Design for the consumer the scenario names.</p>
+
+  <p><b>Feedback</b> is what makes it a system rather than a script, and it is the stage the exam cares about most, because it is the one most often missing.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 720 240" role="img" aria-labelledby="fig3-t fig3-d">
+      <title id="fig3-t">The four stages, with the feedback path closing</title>
+      <desc id="fig3-d">Four stages run left to right: input, which acquires, validates, normalises and sets the trust boundary; processing, the model call plus deterministic code; output, a contract with a schema, destination, consumer and error tolerance; and feedback, a correctness signal with a named destination. An amber return arrow runs from feedback back into processing, labelled: into the eval set, the prompt, retrieval, thresholds, or model selection. A note states that logging is not feedback, because a log records what happened and not whether it was right.</desc>
+
+      <g class="s-fill-surface">
+        <rect x="0"   y="40" width="164" height="72" rx="8"/>
+        <rect x="186" y="40" width="164" height="72" rx="8"/>
+        <rect x="372" y="40" width="164" height="72" rx="8"/>
+        <rect x="556" y="40" width="164" height="72" rx="8"/>
+      </g>
+      <g class="s-stroke">
+        <rect x="0"   y="40" width="164" height="72" rx="8"/>
+        <rect x="186" y="40" width="164" height="72" rx="8"/>
+        <rect x="372" y="40" width="164" height="72" rx="8"/>
+        <rect x="556" y="40" width="164" height="72" rx="8"/>
+      </g>
+      <g class="s-key" text-anchor="middle">
+        <text x="82"  y="66">Input</text>
+        <text x="268" y="66">Processing</text>
+        <text x="454" y="66">Output</text>
+        <text x="638" y="66">Feedback</text>
+      </g>
+      <g class="s-lab-sm" text-anchor="middle">
+        <text x="82"  y="86">acquire, validate,</text><text x="82"  y="101">normalise, trust</text>
+        <text x="268" y="86">model call plus</text><text x="268" y="101">deterministic code</text>
+        <text x="454" y="86">schema, destination,</text><text x="454" y="101">consumer, tolerance</text>
+        <text x="638" y="86">a correctness signal</text><text x="638" y="101">with a destination</text>
+      </g>
+      <g class="s-arrow">
+        <path d="M 167 76 L 182 76"/>
+        <path d="M 353 76 L 368 76"/>
+        <path d="M 539 76 L 552 76"/>
+      </g>
+
+      <path class="s-arrow-amber" d="M 638 116 L 638 158 L 268 158 L 268 118"/>
+      <text class="s-lab-amber" x="453" y="178" text-anchor="middle">into the eval set &#183; the prompt &#183; retrieval &#183; routing thresholds &#183; model selection</text>
+
+      <text class="s-lab-coral" x="0" y="212">Logging is not feedback. A log records what happened; it does not record whether it was right.</text>
+      <text class="s-lab-sm"    x="0" y="232">A loop is closed only when the signal reaches something that changes behaviour.</text>
+    </svg>
+    <figcaption><b>Three boxes and an arrow, and the arrow is the whole objective.</b> A system without it still works, still produces output, still passes review. It simply cannot improve, which is why the exam's favourite shape here is a deployed system that has been flat for six months.</figcaption>
+  </figure>
+
+  <h3>Feedback, properly</h3>
+
+  <p>Three sources, with very different latencies and costs.</p>
+
+  <p><b>Implicit</b> signals are the reviewer editing a draft, overriding a category, deleting a suggestion. Immediate, and near zero cost, because you already have both versions.</p>
+
+  <p><b>Explicit</b> signals are thumbs up and down, a labelling queue, a correction form. Immediate to days, and they require human effort, so volume is low.</p>
+
+  <p><b>Outcome</b> signals are whether the quote converted, whether the ticket reopened within seven days, what the twelve-month loss ratio was. Free to collect, and they arrive late and confounded.</p>
+
+  <p>Implicit signals are the workhorse, and the reason is worth stating plainly.</p>
+
+  <div class="box analogy">
+    <div class="label">The analogy</div>
+    <p style="margin:0"><b>A reviewer's edit is a labelled training pair you are already paying to produce.</b> The model's output and the human's shipped version are input and corrected output, generated by a person you employ anyway. A system that puts a reviewer in the path and then overwrites the field in place is discarding a labelled dataset it is funding, which is a thing no team would tolerate if it were phrased that way in a budget meeting.</p>
+    <div class="breaks">
+      <b>Where it breaks</b>
+      This data has selection bias baked in, and training data usually does not. You only see corrections on the cases a human actually looked at, so the set over-represents whatever your routing sends to review and under-represents the auto-approved stream entirely. Treat it as a high-value evaluation corpus rather than a representative sample, and keep sampling the auto-approved path separately, or you will tune hard on the segment you were already watching.
+    </div>
+  </div>
+
+  <p>A feedback loop is only closed when the signal reaches something that changes behaviour. So name the destination: the evaluation set, the prompt, the retrieval layer, the routing thresholds, or model selection.</p>
+
+  <h3>Worked example</h3>
+
+  <p>Support ticket triage at 12,000 tickets a month.</p>
+
+  <p><b>Input.</b> A webhook on ticket creation. Attachments extracted to text, and anything that fails extraction routes to a human queue rather than proceeding with empty content. PII redaction runs before the model call, because that requirement is deterministic and pre-model.</p>
+
+  <p>Customer tier and account history are attached at the boundary. That is the architect's decision rather than the model's, it costs nothing there, and it is unrecoverable later.</p>
+
+  <p><b>Processing.</b> Retrieval over the knowledge base scoped to the product line named in the ticket, classification into one of 14 categories, and a drafted first response with citations.</p>
+
+  <p><b>Output.</b> A JSON contract: <code>category</code>, <code>confidence</code>, <code>draft_response</code>, <code>citations[]</code>, <code>suggested_priority</code>, <code>prompt_version</code>. Routing is code, not judgment: at or above threshold auto-assigns, below it goes to a human triager with the draft attached.</p>
+
+  <p><b>Feedback,</b> three signals wired to three destinations.</p>
+
+  <p>Category overrides run at roughly 4%, about 480 a month, and each one is a labelled example. They cluster, so a monthly review of the confusion pairs drives prompt and category-definition changes.</p>
+
+  <p>Edit distance between the draft and what the agent actually sent. High-edit drafts get pulled into the eval set; low-edit drafts confirm the pattern works.</p>
+
+  <p>Reopen rate at seven days, joined back to the original category and confidence. This is the outcome signal, and it catches what the other two cannot: triage that looked confidently correct and resolved the ticket wrongly.</p>
+
+  <p>Now do the arithmetic on that first signal. 480 labelled examples a month is a substantial eval corpus generated for free, and it exists only because the architecture routed the override event somewhere instead of overwriting the field in place.</p>
+
+  <details class="checkpoint">
+    <summary>Checkpoint 2 &middot; before you read on</summary>
+    <div class="prompt">
+      <p>A document classifier has been in production for six months at 89% accuracy. Two people review its output daily and correct what it gets wrong. Accuracy has been 89% every month since launch.</p>
+      <p>Say why it has not moved, and name the cheapest fix.</p>
+    </div>
+    <div class="cue">Answer first, then open</div>
+    <div class="answer">
+      <span class="verdict">The corrections are being made and then thrown away.</span>
+      <p>Two reviewers correcting output daily are generating labelled pairs continuously. If accuracy has not moved in six months, those corrections are ending at the record they fixed. The loop has three stages and no fourth.</p>
+      <p><b>The cheapest fix</b> is capturing the override event rather than only the corrected value, and routing it into the eval set and the prompt. No new model, no new data collection, no new headcount. The data already exists and is being deleted.</p>
+      <p><b>What the distractors will offer:</b> a larger model, more few-shot examples chosen by the team, or a monitoring dashboard. The first two guess at what is wrong; the third measures the flatness more precisely without changing it.</p>
+    </div>
+  </details>
+
+  <div class="box warning">
+    <div class="label">The wrong turns</div>
+    <p><b>Calling logging a feedback loop.</b> Logs answer what the system did. Feedback answers whether it was right, and what changed as a result.</p>
+    <p><b>A human review step whose output is discarded.</b> The single most common real-world gap, and it appears repeatedly as a distractor's blind spot.</p>
+    <p><b>Repairing downstream what the input boundary could have prevented.</b> Adding an output filter to catch a document type the input validator should have rejected. This distractor family is persistently attractive because the downstream fix is easier to describe.</p>
+    <p style="margin:0"><b>Designing the output for yourself instead of the consumer.</b> Rich prose to a service that needs a parseable field, or a bare enum to a human who needs to know why.</p>
+  </div>
+
+  <div class="exit">
+    <b>Where this goes next:</b> you have stages. <span class="thread">Section 3</span> decides what runs inside the processing box, and it is the decision the whole domain is built around.
+  </div>
+
+  <div class="pagenav"><a class="prev" href="#translate">&#8592; Translate</a><a class="next" href="#patterns">Next: Patterns &#8594;</a></div>
+</div></section>
+
+<section id="patterns"><div class="container">
+  <h2>3. Choosing a pattern</h2>
+
+  <div class="entry"><b>By the end of this section</b> you will have a single test that places almost any scenario on the ladder, and you will be able to argue it in both directions.</div>
+
+  <p>Here is the ladder again, with what each rung buys and what it costs.</p>
+
+  <div class="table-wrap"><table>
+    <caption>The five rungs, priced</caption>
+    <thead><tr><th scope="col">Rung</th><th scope="col">What it is</th><th scope="col">Buys you</th><th scope="col">Costs you</th></tr></thead>
+    <tbody>
+      <tr><td><b>Plain call</b></td><td>One prompt, one response</td><td>Structural determinism, lowest latency and cost, trivially evaluable</td><td>Nothing beyond the model's parametric knowledge</td></tr>
+      <tr><td><b>Augmented LLM</b></td><td>Model + retrieval, tools, or memory</td><td>Current and private data; the ability to act</td><td>A retrieval layer to build and evaluate; tool-call latency</td></tr>
+      <tr><td><b>Workflow</b></td><td>Fixed steps orchestrated in code</td><td>Each step separately promptable, testable and model-assignable; predictable cost and latency; gates between steps</td><td>Cannot handle a path you did not enumerate</td></tr>
+      <tr><td><b>Agent</b></td><td>Model chooses the sequence; a loop terminates on a stop condition</td><td>Handles tasks whose path is not knowable in advance</td><td>Nondeterministic cost and latency; harder evaluation; wider blast radius per action</td></tr>
+      <tr><td><b>Multi-agent</b></td><td>Coordinator plus specialists</td><td>Context isolation; parallelism; per-role tool privileges</td><td>Token multiplication; coordination overhead; information loss at every handoff</td></tr>
+    </tbody>
+  </table></div>
+
+  <p><strong class="load-bearing">The discriminator is enumerability.</strong> Can you write down, in advance, the set of paths a request might take?</p>
+
+  <p>If yes, code them. That is a workflow, and it will be cheaper, faster, more testable and easier to debug than an agent doing the same thing.</p>
+
+  <p>If the path depends on what the model discovers partway through, and those discoveries cannot be enumerated, you need an agent.</p>
+
+  <div class="box analogy">
+    <div class="label">The analogy</div>
+    <p style="margin:0"><b>Choosing a rung is choosing a model size, one level up.</b> You already know not to reach for the largest model because it is the newest; you reach for the smallest one that clears the bar, and you make the case with a measurement. The ladder is the same discipline applied to architecture, and it fails the same way: by defaulting to the top of the range because the top sounds like the serious answer.</p>
+    <div class="breaks">
+      <b>Where it breaks</b>
+      A model swap is one parameter you can A/B in an afternoon and reverse just as fast. A rung change is a rewrite: different code, different evaluation strategy, different cost distribution, different debugging surface. So the cost of being wrong is far higher here, which means the decision deserves more scrutiny up front and far less "we can always change it later" than a model choice does.
+    </div>
+  </div>
+
+  <h3>Two clarifications people get wrong in both directions</h3>
+
+  <p><b>A workflow can branch.</b> Routing a request to one of five sub-prompts based on a classification step is still a workflow, because the five branches are enumerated.</p>
+
+  <p>Branching is not agency. The model choosing <em>among enumerated options</em> is a routing workflow. The model choosing <em>what to do next without a fixed menu</em> is an agent.</p>
+
+  <p><b>An agent is not a smarter workflow.</b> It is a workflow whose control flow has been handed to a nondeterministic component. That is the right trade in some cases and a bad trade in most.</p>
+
+  <p>The five named workflow patterns worth having cold: <b>prompt chaining</b> (fixed sequence, each step feeding the next, with optional programmatic gates between); <b>routing</b> (classify, then dispatch to a specialised handler); <b>parallelisation</b> (independent subtasks fanned out and aggregated, either sectioning by aspect or voting for reliability); <b>orchestrator-worker</b> (a controlling step dispatching to workers, with dispatch logic in code); and <b>evaluator-optimiser</b> (a generator and an independent critic, looping until the critic passes).</p>
+
+  <p>That last one earns a warning. An evaluator-optimiser only works if the evaluator is genuinely independent, meaning a separate call that does not see the generator's reasoning. A generator asked to self-review inside the same context has already rationalised its choices, and it will confirm them.</p>
+
+  <h3>The hybrid answer</h3>
+
+  <p>Real systems are rarely on one rung, and the answer the exam rewards is often a workflow handling the enumerated majority with an escape hatch to an agent for the remainder.</p>
+
+  <p>Take invoice processing at 50,000 a month. 96% come from 40 known vendors in stable formats; 4% are one-off, malformed or novel.</p>
+
+  <p>A pure workflow fails on the 4%, dropping 2,000 items a month into a human queue. A pure agent pays agent-grade cost and latency on the 96% that never needed it.</p>
+
+  <p>Now cost all three. Take $3 per million input tokens and $15 per million output tokens. The exact rates change over time; the arithmetic does not.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 720 244" role="img" aria-labelledby="fig4-t fig4-d">
+      <title id="fig4-t">Workflow, agent and hybrid, costed on the same 50,000 invoices</title>
+      <desc id="fig4-d">A pure workflow runs five calls per invoice at roughly 20,000 input and 2,500 output tokens, costing about 9.75 cents per invoice, or 4,875 dollars a month. A pure agent averages nine calls per invoice at roughly 108,000 input and 3,600 output tokens, costing about 37.8 cents per invoice, or 18,900 dollars a month, which is 3.9 times the workflow. The hybrid runs 48,000 invoices on the workflow path and 2,000 on the agent path, costing 5,436 dollars a month, which buys agentic handling of the hard cases for about 11 percent more rather than 288 percent more.</desc>
+
+      <g class="s-lab" text-anchor="end">
+        <text x="160" y="52">Pure workflow</text>
+        <text x="160" y="106">Pure agent</text>
+        <text x="160" y="160">Hybrid</text>
+      </g>
+      <rect class="s-green" x="168" y="34"  width="122" height="26" rx="4"/>
+      <rect class="s-coral" x="168" y="88"  width="472" height="26" rx="4"/>
+      <rect class="s-amber" x="168" y="142" width="136" height="26" rx="4"/>
+      <g class="s-num">
+        <text x="300" y="53">$4,875</text>
+        <text x="650" y="107">$18,900</text>
+        <text x="314" y="161">$5,436</text>
+      </g>
+      <g class="s-lab-sm">
+        <text x="372" y="53">5 calls/invoice &#183; fails on the awkward 4%</text>
+        <text x="168" y="132">9 calls/invoice average &#183; and the cost is a distribution, not a point</text>
+        <text x="386" y="161">48,000 cheap + 2,000 agentic</text>
+      </g>
+
+      <line x1="0" y1="188" x2="720" y2="188" stroke="var(--border)" stroke-width="1"/>
+      <text class="s-lab-green" x="0" y="208">The hybrid buys agentic handling of the hard cases for about 11% more, instead of 288% more.</text>
+      <text class="s-lab-coral" x="0" y="228">The agent's mean understates it: the 95th-percentile invoice might take 20 calls. Budget against the tail.</text>
+    </svg>
+    <figcaption><b>The hybrid is not a compromise between the two above it.</b> It is the design that matches each population to the cheapest rung that handles it, which is why it beats both on cost <em>and</em> on coverage. Latency follows the same shape: five serial steps at ~1.5s each is ~7.5s and predictable, while a nine-call agent averages ~13s with a much longer tail.</figcaption>
+  </figure>
+
+  <p>Against a stated 10-second SLA the workflow passes and the agent fails, and no amount of prompt tuning changes that.</p>
+
+  <h3>How the exam probes it</h3>
+
+  <p>Two mirror-image shapes, and you will see both.</p>
+
+  <p><b>Shape A: the scenario sounds sophisticated and the requirements are enumerable.</b> Prose full of "intelligent," "adaptive" and "end-to-end," over a workload that is five known steps. The correct answer is a workflow, and the agentic option is the distractor that sounds more capable while nothing in the requirements calls for it.</p>
+
+  <p><b>Shape B: the scenario states a requirement the workflow cannot meet.</b> The number of steps is not knowable in advance, the relevant tools are discovered at runtime, the next action depends on what the last one found. Here the agent is correct, and the workflow option is the half-move that handles the enumerated part while silently dropping the requirement that made the task non-enumerable.</p>
+
+  <p>Both directions get tested. Drilling only "do not over-engineer" will lose you Shape B items, which is exactly how a one-directional habit becomes a repeat miss.</p>
+
+  <p>A third shape asks you to justify a choice rather than make it. The correct statement cites a requirement from the scenario; the distractors cite a general virtue such as "agents are more flexible," true in the abstract and unconnected to this scenario.</p>
+
+  <details class="checkpoint">
+    <summary>Checkpoint 3 &middot; before you read on</summary>
+    <div class="prompt">
+      <p>A compliance team wants a system to investigate suspicious transaction alerts. The scenario says an investigator "follows the evidence wherever it leads," pulling different records depending on what each lookup reveals, and that no two investigations take the same path.</p>
+      <p>Which rung, and what specifically in that sentence decided it?</p>
+    </div>
+    <div class="cue">Answer first, then open</div>
+    <div class="answer">
+      <span class="verdict">Agent. "No two investigations take the same path" is the enumerability test failing explicitly.</span>
+      <p>The path depends on what each lookup reveals, and those discoveries cannot be listed in advance. A workflow cannot handle a path nobody enumerated, so the requirement rules out the cheaper rung rather than merely making it less elegant.</p>
+      <p><b>Why this is worth practising:</b> most people drill the over-engineering direction until "workflow" becomes reflex. This is Shape B, where reflex loses the mark. The workflow option here will look responsible and will quietly drop the requirement that made the task non-enumerable.</p>
+      <p><b>What still applies:</b> the agent gets the narrowest tool set that does the job, and there is almost certainly a routine subset of alerts that should never reach it.</p>
+    </div>
+  </details>
+
+  <div class="box warning">
+    <div class="label">The wrong turns</div>
+    <p><b>Agentic by default.</b> The most expensive habit in the field. Agency is a cost centre justified by non-enumerability and by nothing else.</p>
+    <p><b>Workflow by reflex when the scenario has disqualified it.</b> Over-correction is a real failure mode. Read for the sentence saying the path cannot be known in advance.</p>
+    <p><b>Confusing branching with agency.</b> Enumerated branches are still a workflow.</p>
+    <p><b>Reaching for multi-agent when one agent with the right tools suffices.</b> Rung five is not the top of a mountain. It is the rung with the worst cost multiplier and the most information loss.</p>
+    <p style="margin:0"><b>Self-review inside the generator's context.</b> An evaluator that sees the generator's reasoning is not an evaluator.</p>
+  </div>
+
+  <div class="exit">
+    <b>Where this goes next:</b> <span class="thread">Section 4</span> is rung five in detail, and nearly every question about it turns out to be a question about one component.
+  </div>
+
+  <div class="pagenav"><a class="prev" href="#stages">&#8592; Stages</a><a class="next" href="#multi-agent">Next: Multi-agent &#8594;</a></div>
+</div></section>
+
+<section id="multi-agent"><div class="container">
+  <h2>4. Multi-agent systems</h2>
+
+  <div class="entry"><b>By the end of this section</b> you will diagnose a multi-agent failure by looking at the coordinator first, which is where the exam puts nearly all of them.</div>
+
+  <p>Multi-agent systems are hub-and-spoke. One coordinator, several specialist subagents, and no direct communication between subagents. Everything flows through the coordinator.</p>
+
+  <p>That single constraint is the whole design, and it buys four things.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 720 262" role="img" aria-labelledby="fig5-t fig5-d">
+      <title id="fig5-t">Hub-and-spoke, and what the coordinator owns</title>
+      <desc id="fig5-d">A coordinator sits at the centre with four specialist subagents around it. Every line runs between the coordinator and a subagent; there are no lines between subagents, and a note states that subagents never talk to each other. The coordinator owns four things: decomposition, meaning how the problem is partitioned before delegation; context passing, meaning what each subagent receives and in what structure; error handling, meaning structured failure context rather than a bare error string; and termination, meaning stated quality criteria for when the loop stops. A closing note says nearly every multi-agent exam item is about one of those four.</desc>
+
+      <rect class="s-amber-t" x="290" y="96" width="140" height="52" rx="8"/>
+      <rect class="s-stroke"  x="290" y="96" width="140" height="52" rx="8"/>
+      <text class="s-key" x="360" y="120" text-anchor="middle">Coordinator</text>
+      <text class="s-lab-sm" x="360" y="137" text-anchor="middle">the only hub</text>
+
+      <g class="s-fill-surface">
+        <rect x="40"  y="30"  width="150" height="40" rx="6"/>
+        <rect x="530" y="30"  width="150" height="40" rx="6"/>
+        <rect x="40"  y="174" width="150" height="40" rx="6"/>
+        <rect x="530" y="174" width="150" height="40" rx="6"/>
+      </g>
+      <g class="s-stroke">
+        <rect x="40"  y="30"  width="150" height="40" rx="6"/>
+        <rect x="530" y="30"  width="150" height="40" rx="6"/>
+        <rect x="40"  y="174" width="150" height="40" rx="6"/>
+        <rect x="530" y="174" width="150" height="40" rx="6"/>
+      </g>
+      <g class="s-lab-sm" text-anchor="middle">
+        <text x="115" y="54">subagent &#183; own tools</text>
+        <text x="605" y="54">subagent &#183; own tools</text>
+        <text x="115" y="198">subagent &#183; own tools</text>
+        <text x="605" y="198">subagent &#183; own tools</text>
+      </g>
+      <g class="s-rule">
+        <path d="M 190 58 L 292 100"/>
+        <path d="M 530 58 L 428 100"/>
+        <path d="M 190 186 L 292 144"/>
+        <path d="M 530 186 L 428 144"/>
+      </g>
+      <text class="s-lab-coral" x="360" y="238" text-anchor="middle">No line runs between two subagents. Context is isolated by default: a subagent knows only what it was passed.</text>
+      <text class="s-lab-amber" x="360" y="258" text-anchor="middle">The coordinator owns decomposition &#183; context passing &#183; error handling &#183; termination</text>
+    </svg>
+    <figcaption><b>Look at where the lines are, because that is where the failures are.</b> Visibility, uniform error handling, information control and per-role least privilege all come from the same constraint, and so does the domain's most-missed diagnosis: when the output is wrong, the coordinator is the suspect, not the subagent that produced it.</figcaption>
+  </figure>
+
+  <p>Context isolation is simultaneously the main benefit and the main hazard.</p>
+
+  <p>It is why parallel subagents do not pollute each other's reasoning. It is also why a synthesis subagent produces a report with missing citations: it never received the source metadata, because the coordinator passed merged free text instead of a structure separating content from provenance.</p>
+
+  <p>The instinct to fix that by telling the synthesis agent to "remember to cite sources" fails for a mechanical reason. It cannot cite metadata that never reached it.</p>
+
+  <h3>The four things the coordinator owns</h3>
+
+  <p><b>Decomposition.</b> How the problem is partitioned before delegation. Partition explicitly, assigning distinct subtopics or source types, or subagents will overlap and leave gaps.</p>
+
+  <p><b>Context passing.</b> What each subagent receives, in what structure. Content and metadata stay separate so attribution survives aggregation.</p>
+
+  <p><b>Error handling.</b> Subagents return <em>structured</em> failure context: failure type, what was attempted, partial results, viable alternatives. A bare error string gives the coordinator nothing to decide with.</p>
+
+  <p><b>Termination.</b> When the loop stops, which requires stated quality criteria. Without them a refinement loop either stops too early or does not stop.</p>
+
+  <h3>Orchestration strategies</h3>
+
+  <div class="table-wrap"><table>
+    <caption>Four shapes, and when each earns its place</caption>
+    <thead><tr><th scope="col">Strategy</th><th scope="col">Shape</th><th scope="col">Use when</th></tr></thead>
+    <tbody>
+      <tr><td><b>Parallel fan-out</b></td><td>Coordinator dispatches N independent subagents at once, aggregates results</td><td>Subtasks are genuinely independent and wall-clock latency matters</td></tr>
+      <tr><td><b>Sequential chaining</b></td><td>Subagent B's input depends on A's output</td><td>A real dependency exists. Do not serialise independent work</td></tr>
+      <tr><td><b>Iterative refinement</b></td><td>Delegate, synthesise, evaluate for gaps, re-delegate targeted queries, re-synthesise</td><td>Coverage cannot be guaranteed in one pass</td></tr>
+      <tr><td><b>Evaluator-optimiser</b></td><td>Generator plus an independent critic, looping until criteria pass</td><td>Quality is checkable and the first attempt is often insufficient</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>Two mechanical points decide items on their own.</p>
+
+  <p><b>Parallelism requires dispatch in a single coordinator turn.</b> Issuing the same delegations across separate turns runs them sequentially, the design intent is lost, and no error is raised.</p>
+
+  <p><b>Coordinator prompts state goals and quality criteria, never step-by-step procedure.</b> A procedural coordinator prompt produces checklist-shaped, shallow results, because it has converted an adaptive system into a brittle script. The fix for a shallow research coordinator is a goal-oriented rewrite, not more detailed steps and not more subagents.</p>
+
+  <h3>When multi-agent is actually justified</h3>
+
+  <p>Three conditions, and you want at least two present.</p>
+
+  <p><b>Independent parallelisable subtasks</b> where wall-clock time is a stated constraint. <b>Context that would not fit or would interfere</b> in one window: four research threads at 30k tokens each accumulate to 120k in a single agent, with every thread's noise contaminating every other's reasoning. And <b>genuinely different tool privileges per role</b>: a drafting agent that must not have write access, a verification agent that must not have search access.</p>
+
+  <p>If none of those hold, one agent with the right tool set does the job at a fraction of the cost.</p>
+
+  <p>Take a research report over four independent domains. A single agent runs sequentially, with context accumulating to roughly 160k tokens by the final synthesis, and everything it read about domain one still occupying the window while it reasons about domain four.</p>
+
+  <p>The multi-agent version pays for itself on wall clock. If branches take 40, 55, 35 and 50 seconds, you pay about 55 seconds rather than about 180.</p>
+
+  <p>Token cost goes the other way: typically 4 to 5 times the single-agent spend, because context that was shared is now duplicated across isolated agents.</p>
+
+  <p><strong class="load-bearing">Multi-agent trades tokens for latency, isolation and privilege separation. If the scenario names none of those three, the trade is unfunded.</strong></p>
+
+  <h3>How the exam probes it</h3>
+
+  <p>Root-cause questions dominate, and they share one shape: the symptom appears in the <em>output</em> and the answer names something the <em>coordinator</em> did.</p>
+
+  <p>The report misses whole subtopics while every subagent returned correct results, so decomposition was too narrow. Two subagents investigated the same ground, so the coordinator did not partition before delegating, and the fix is partitioning up front rather than deduplication after.</p>
+
+  <p>Citations are wrong or missing, so content and metadata were passed as merged text. Synthesis has coverage gaps, so the coordinator evaluates and re-delegates targeted queries, and it does <em>not</em> hand the synthesis agent a search tool, because that dissolves the least-privilege boundary that justified the architecture.</p>
+
+  <p>A subagent failure killed the whole run, so you need structured error propagation plus a coordinator recovery policy. And human reviewers keep re-asking for information the system already gathered, so the handoff payload was a flag or free text rather than a structured summary that stands alone.</p>
+
+  <div class="box raised">
+    <div class="label">A trap worth memorising</div>
+    <p style="margin:0"><strong class="load-bearing">An empty result is not a failure.</strong> "Zero results found" is a valid and informative finding. A timeout is an access failure requiring a retry decision. Conflating the two produces pointless retries in one direction and lost findings in the other, and the two failure modes look identical in a bare error string.</p>
+  </div>
+
+  <details class="checkpoint">
+    <summary>Checkpoint 4 &middot; before you read on</summary>
+    <div class="prompt">
+      <p>A research system runs a coordinator plus five subagents. The final report is thorough on three topics, silent on two others that were in scope, and every subagent's individual output was checked and found correct.</p>
+      <p>Where is the fault, and what will the tempting fix fail to do?</p>
+    </div>
+    <div class="cue">Answer first, then open</div>
+    <div class="answer">
+      <span class="verdict">Decomposition. The coordinator never delegated the two missing topics.</span>
+      <p>Every subagent returned correct results, which rules the subagents out entirely. Correct answers to the wrong set of questions is a partitioning failure, and partitioning happens before any subagent is invoked.</p>
+      <p><b>The tempting fix is more subagents,</b> and it fails for a mechanical reason: more agents executing the same bad partition produce more of the same gap. You get a longer report with the same two holes.</p>
+      <p><b>The real fix</b> is explicit partitioning up front, and for coverage that cannot be guaranteed in one pass, iterative refinement: synthesise, have the coordinator evaluate for gaps, re-delegate targeted queries, re-synthesise.</p>
+    </div>
+  </details>
+
+  <div class="box warning">
+    <div class="label">The wrong turns</div>
+    <p><b>Fixing the subagent when the coordinator caused the problem.</b> The most common root-cause miss in this domain.</p>
+    <p><b>Instructing rather than configuring.</b> Telling a subagent not to use a tool it possesses is probabilistic. Removing the tool is deterministic. Least privilege means removing the capability, not logging or confirming its use.</p>
+    <p><b>Adding subagents to fix a decomposition problem,</b> or adding more detailed coordinator steps to fix shallow output. The second deepens the rigidity that caused it.</p>
+    <p style="margin:0"><b>Unbounded refinement.</b> A loop without stated sufficiency criteria does not terminate on judgment. It terminates on a limit, which is a different and worse thing.</p>
+  </div>
+
+  <div class="exit">
+    <b>Where this goes next:</b> partitioning keeps appearing, in the coordinator and everywhere else. <span class="thread">Section 5</span> is the technique underneath it, including the half everyone skips.
+  </div>
+
+  <div class="pagenav"><a class="prev" href="#patterns">&#8592; Patterns</a><a class="next" href="#decomposition">Next: Decomposition &#8594;</a></div>
+</div></section>
+
+<section id="decomposition"><div class="container">
+  <h2>5. Decomposition</h2>
+
+  <div class="entry"><b>By the end of this section</b> you will have one rule for where to split and, just as important, one rule for when to stop.</div>
+
+  <p>Decomposition is the technique the other five objectives keep calling.</p>
+
+  <p>Translation decomposes a workflow into steps. Architecture decomposes a system into stages. Pattern selection decomposes a population into the enumerable majority and the awkward remainder. Orchestration decomposes a problem space before delegating.</p>
+
+  <p>Four things go wrong when a task stays too large for one unit of work.</p>
+
+  <p><b>Attention dilutes.</b> A single pass over fourteen files goes deep on some and shallow on others, and you cannot predict which.</p>
+
+  <p><b>Evaluation criteria mix.</b> If one unit is judged on extraction accuracy and tone and completeness at once, a failing score does not tell you what failed.</p>
+
+  <p><b>Partial failure becomes unrecoverable.</b> One monolithic call either succeeds or you redo everything.</p>
+
+  <p><b>There is nowhere to put a gate.</b> Validation, human approval and cost controls need a seam, and a monolith has none.</p>
+
+  <p>The second one gives the rule worth carrying into the exam.</p>
+
+  <div class="pullquote"><p>Split until each unit has one evaluation criterion and one failure mode. Stop when the coordination overhead exceeds the benefit.</p></div>
+
+  <p>Both halves matter, and the second half is the one people skip. Over-decomposition is a real failure: every split adds a handoff, and every handoff loses information that was implicit in the shared context. A ten-step chain where three steps could have been one is three extra opportunities for something to fall out.</p>
+
+  <h3>The five techniques</h3>
+
+  <div class="table-wrap"><table>
+    <caption>Decomposition techniques and what each fits</caption>
+    <thead><tr><th scope="col">Technique</th><th scope="col">Split by</th><th scope="col">Fits</th></tr></thead>
+    <tbody>
+      <tr><td><b>Functional</b></td><td>Stage of the process</td><td>A predictable pipeline: extract, validate, enrich, format</td></tr>
+      <tr><td><b>Aspectual</b></td><td>Dimension of analysis</td><td>Same input, different lenses: a security pass, a performance pass, a style pass</td></tr>
+      <tr><td><b>Data-partition</b></td><td>Chunks of the corpus</td><td>Map-reduce over 200 documents; per-file then cross-file</td></tr>
+      <tr><td><b>Confidence-tier</b></td><td>How hard the case is</td><td>Cheap path for the routine 90%, expensive path for the rest</td></tr>
+      <tr><td><b>Risk-tier</b></td><td>Blast radius</td><td>Reversible actions autonomous; irreversible actions gated</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>The last two are the Professional-tier ones, and it is worth naming why.</p>
+
+  <p><b>Confidence-tier decomposition is where cost control actually lives.</b> Routing by difficulty rather than running every item through the most capable path is the main architectural lever you have on spend.</p>
+
+  <p><b>Risk-tier decomposition is where governance meets architecture.</b> It is the honest answer whenever a scenario mixes routine actions with one action nobody can undo.</p>
+
+  <p>Cutting across all five is the choice between a fixed pipeline and dynamic adaptive decomposition. Fixed when structure is predictable and reproducibility matters. Dynamic when scope is unknown up front and each step depends on what the last one discovered.</p>
+
+  <p>That is the enumerability discriminator from section 3 again, applied to the shape of the plan rather than the shape of the runtime.</p>
+
+  <h3>Worked example</h3>
+
+  <p>A pull request touching 14 files, roughly 800 changed lines.</p>
+
+  <p>Run it as a single pass and three things happen, all predictable. Attention dilutes, so files seven through fourteen get a lighter read than files one through three. Verdicts become inconsistent, with a pattern flagged in one file and approved in another. And cross-file issues get missed, because the model is spending its capacity on local detail.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 720 256" role="img" aria-labelledby="fig6-t fig6-d">
+      <title id="fig6-t">A 14-file pull request, decomposed into two passes</title>
+      <desc id="fig6-d">Pass one runs fourteen independent calls, one per file, each seeing that file's diff plus surrounding context. Its evaluation criterion is local correctness and its failure mode is a missed local bug. These calls run in parallel, so wall clock is one file's latency rather than fourteen. Each produces a structured summary listing issues found, exported symbols changed and dependencies touched. Pass two is a single call over the fourteen structured summaries plus the dependency graph, not the raw diffs. Its evaluation criterion is cross-file consistency and its failure mode is type mismatches, circular dependencies or an interface changed on one side only. A note warns that handing pass two the raw diffs would reintroduce the attention dilution the decomposition existed to remove.</desc>
+
+      <text class="s-key" x="0" y="18">Pass 1 &#183; per file, in parallel</text>
+      <g class="s-green-t">
+        <rect x="0"   y="30" width="42" height="34" rx="4"/><rect x="48"  y="30" width="42" height="34" rx="4"/>
+        <rect x="96"  y="30" width="42" height="34" rx="4"/><rect x="144" y="30" width="42" height="34" rx="4"/>
+        <rect x="192" y="30" width="42" height="34" rx="4"/><rect x="240" y="30" width="42" height="34" rx="4"/>
+        <rect x="288" y="30" width="42" height="34" rx="4"/><rect x="336" y="30" width="42" height="34" rx="4"/>
+        <rect x="384" y="30" width="42" height="34" rx="4"/><rect x="432" y="30" width="42" height="34" rx="4"/>
+        <rect x="480" y="30" width="42" height="34" rx="4"/><rect x="528" y="30" width="42" height="34" rx="4"/>
+        <rect x="576" y="30" width="42" height="34" rx="4"/><rect x="624" y="30" width="42" height="34" rx="4"/>
+      </g>
+      <text class="s-lab-sm" x="0" y="82">criterion: local correctness &#183; failure mode: a missed local bug &#183; wall clock: one file, not fourteen</text>
+
+      <path class="s-arrow-amber" d="M 333 92 L 333 120"/>
+      <text class="s-lab-amber" x="348" y="114">fourteen structured summaries, not fourteen raw diffs</text>
+
+      <text class="s-key" x="0" y="146">Pass 2 &#183; integration, one call</text>
+      <rect class="s-amber-t" x="0" y="158" width="666" height="42" rx="6"/>
+      <rect class="s-stroke"  x="0" y="158" width="666" height="42" rx="6"/>
+      <text class="s-lab-sm" x="16" y="176">issues found &#183; exported symbols changed &#183; dependencies touched &#183; plus the dependency graph</text>
+      <text class="s-lab-sm" x="16" y="192">criterion: cross-file consistency &#183; failure mode: type mismatch, circular dependency, one-sided interface change</text>
+
+      <text class="s-lab-coral" x="0" y="226">Hand pass 2 the raw diffs and you have reintroduced the dilution the decomposition existed to remove.</text>
+      <text class="s-lab-green" x="0" y="246">Two units, two criteria, two failure modes. When quality drops, you know which pass to fix.</text>
+    </svg>
+    <figcaption><b>The summaries are the design, not a convenience.</b> A single pass could never tell you which half of the job degraded, because it had one score covering two different kinds of correctness. Splitting on the criterion, rather than on anything the process happens to be named after, is what buys the diagnosis.</figcaption>
+  </figure>
+
+  <h3>How the exam probes it</h3>
+
+  <p><b>"Which decomposition strategy?"</b> The stem describes the task's scope and you match fixed against adaptive. Open-ended investigation with unknown scope takes adaptive; a templated repeating review takes the fixed pipeline, and there the adaptive option is unnecessary complexity.</p>
+
+  <p><b>"Output is shallow, inconsistent, or misses cross-cutting issues."</b> Diagnose the decomposition. The answer usually adds a separate pass with a different evaluation criterion. A larger model and more detailed instructions are the two distractors.</p>
+
+  <p><b>"Where should the split be?"</b> The right seam is where two different evaluation criteria meet, or where a gate must be inserted. The tempting seam is wherever the process has a natural-sounding name.</p>
+
+  <p><b>Over-decomposition items.</b> Less frequent, and they exist: a design split so finely that context is lost between handoffs, where the correct answer merges steps. If you have only ever drilled "split it up," this reads as counterintuitive and you will miss it.</p>
+
+  <details class="checkpoint">
+    <summary>Checkpoint 5 &middot; before you read on</summary>
+    <div class="prompt">
+      <p>A contract-review pipeline has eleven sequential steps. Reviewers report that the final risk summary often contradicts findings from step three, and that the system "seems to forget" details it clearly extracted earlier.</p>
+      <p>Which way does this one go, and what is the tell?</p>
+    </div>
+    <div class="cue">Answer first, then open</div>
+    <div class="answer">
+      <span class="verdict">Over-decomposition. Merge steps.</span>
+      <p><b>The tell is "forgets details it clearly extracted."</b> The information existed and was lost in transit, which is a handoff problem, not a capability problem. Every split adds a handoff, and every handoff drops whatever was implicit in the shared context.</p>
+      <p>Eleven steps for a contract review is very likely several units that share one evaluation criterion. Apply the rule in both directions: split until each unit has one criterion and one failure mode, and <b>stop</b> when the coordination overhead exceeds the benefit.</p>
+      <p><b>Why this item is worth practising:</b> almost all decomposition drilling runs one way. If your reflex is "add a pass," this scenario takes the mark off you.</p>
+    </div>
+  </details>
+
+  <div class="exit">
+    <b>Where this goes next:</b> five sections of design decisions, and none of them is worth anything until you can state it in the unit the business measures. That is <span class="thread">section 6</span>, and it eliminates designs rather than ranking them.
+  </div>
+
+  <div class="pagenav"><a class="prev" href="#multi-agent">&#8592; Multi-agent</a><a class="next" href="#value">Next: Business value &#8594;</a></div>
+</div></section>
+
+<section id="value"><div class="container">
+  <h2>6. Business value pillars</h2>
+
+  <div class="entry"><b>By the end of this section</b> you will treat a stated SLA as a filter you apply before comparing designs, not as a tiebreaker you apply after.</div>
+
+  <p>The exam guide names five pillars: efficiency, transformation, productivity, cost, and performance SLAs.</p>
+
+  <p>They are not five framings of the same thing. They are five different units, and the one the scenario names determines which architecture is correct.</p>
+
+  <div class="table-wrap"><table>
+    <caption>Five pillars, five units</caption>
+    <thead><tr><th scope="col">Pillar</th><th scope="col">The unit</th><th scope="col">The question it answers</th></tr></thead>
+    <tbody>
+      <tr><td><b>Efficiency</b></td><td>Input per unit of output: minutes per quote, FTE-hours per thousand tickets</td><td>Are we doing the same work with less?</td></tr>
+      <tr><td><b>Transformation</b></td><td>Existence: something not previously done at all</td><td>Are we doing something we could not do before?</td></tr>
+      <tr><td><b>Productivity</b></td><td>Output per person, or share of time on higher-value work</td><td>Are the same people producing more, or better?</td></tr>
+      <tr><td><b>Cost</b></td><td>Unit economics: cost per transaction, total run rate</td><td>What does the solution itself cost to operate?</td></tr>
+      <tr><td><b>Performance SLA</b></td><td>Latency, availability, accuracy, expressed as a commitment</td><td>Does it meet the promise we made?</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>Efficiency and productivity sit close enough together to be worth separating carefully.</p>
+
+  <p>Efficiency reduces the input to a fixed output. Productivity changes what the freed capacity does. The same project reads two ways: "we cut handling time 40%" is efficiency, and "underwriters now spend Friday on broker relationships instead of PDFs" is productivity.</p>
+
+  <p>Which one you lead with depends on who is listening, and the exam does sometimes ask exactly that.</p>
+
+  <p><strong class="load-bearing">Cost is not inference cost.</strong> Total cost includes inference, retrieval infrastructure, human review time, the cost of errors, and maintenance. A design that halves inference cost while doubling human review time has made things worse, and the arithmetic showing it is short.</p>
+
+  <h3>Pillars as architectural constraints</h3>
+
+  <p>This is what makes section 6 an architecture objective rather than a communications one.</p>
+
+  <p><b>A latency SLA constrains the pattern.</b> Say the commitment is p95 under 3 seconds and a single model call runs about 1.5s at p95.</p>
+
+  <p>A five-step serial chain is about 7.5s, so it fails. The same five steps with three of them parallel is roughly 1.5 plus 1.5 plus 1.5, about 4.5s, and it still fails. Move the two enrichment steps off the request path by precomputing at ingest, and the request path is two calls at about 3s, which passes, barely. An agent averaging nine calls is not in the conversation, and its tail is worse than its mean.</p>
+
+  <p>Notice what the SLA did there. It did not rank the designs. It eliminated a rung of the ladder before ranking started.</p>
+
+  <p><b>A cost pillar at volume constrains model selection and decomposition.</b> That is where confidence-tier decomposition earns its place, and where prompt caching and the ordering of static content become architectural rather than cosmetic decisions.</p>
+
+  <p><b>A transformation pillar loosens constraints the others impose.</b> If the business case is that a capability did not previously exist, per-unit efficiency comparison has no denominator. A design that would fail an efficiency test can be correct under a transformation pillar, and the reverse. Read for which pillar the scenario named.</p>
+
+  <h3>Worked example</h3>
+
+  <p>The invoice pipeline again, argued three ways for three audiences. Same system, same numbers.</p>
+
+  <p><b>To the CFO, on cost.</b> Processing cost falls from $4.10 per invoice in fully manual handling to $0.11 in compute plus $0.38 in residual human review, on 50,000 invoices a month. Annual run rate on the platform is roughly $65,000 against about $2.4M in current handling cost.</p>
+
+  <p><b>To the operations director, on efficiency and productivity.</b> Average handling time drops from 11 minutes to under 2. The team of eighteen stops keying invoices and moves to exception handling and vendor disputes, which is the work that was permanently deferred.</p>
+
+  <p><b>To the CIO, on SLA.</b> p95 processing time is 7.5 seconds against a 10-second commitment, with a documented escape route for the 4% taking the agentic path and a human queue behind that.</p>
+
+  <p>Three sentences, three units, one architecture. Producing them is the skill this objective tests, and it is what Domain 6's communication objective builds on.</p>
+
+  <details class="checkpoint">
+    <summary>Checkpoint 6 &middot; before you read on</summary>
+    <div class="prompt">
+      <p>Two designs both work. Design A is more accurate and uses a seven-call agentic loop. Design B is slightly less accurate and uses a three-step workflow. The scenario's second paragraph mentions a contractual commitment to respond within four seconds at p95, and a single call runs about 1.5s.</p>
+      <p>Which one, and at what point in your reading should you have known?</p>
+    </div>
+    <div class="cue">Answer first, then open</div>
+    <div class="answer">
+      <span class="verdict">Design B, and you should have known before reading either option.</span>
+      <p>Seven calls at 1.5s is about 10.5s at p95, against a 4-second commitment. Design A is not a worse choice, it is a disqualified one, and its accuracy advantage never gets weighed because there is nothing to weigh it against.</p>
+      <p><b>The timing point is the real lesson.</b> A stated SLA is a filter you apply to the option set before you start comparing, not a tiebreaker you reach for once two designs look close. Read the setup paragraph for any latency, availability or turnaround number and apply it first.</p>
+      <p><b>The trap</b> is choosing the technically superior design that fails the named pillar. It will be described attractively, and its accuracy figure will be real.</p>
+    </div>
+  </details>
+
+  <div class="box warning">
+    <div class="label">The wrong turns</div>
+    <p><b>Optimising an unnamed pillar.</b> A cost-optimised answer to a latency question is wrong, however elegant.</p>
+    <p><b>Speaking in model metrics to a business audience.</b> Accuracy is an input to the business case, not the business case.</p>
+    <p><b>Counting only inference cost.</b> Human review, error remediation and retrieval infrastructure are part of the number.</p>
+    <p style="margin:0"><b>Leading with efficiency when the value is transformational.</b> A capability that did not exist has no baseline to be efficient against, and forcing one understates the case.</p>
+  </div>
+
+  <div class="exit">
+    <b>Where this goes next:</b> six objectives, one system. <span class="thread">Section 7</span> runs all of them on a single insurer, and the dependency chain running through it is what the exam is testing when it buries a constraint in the setup.
+  </div>
+
+  <div class="pagenav"><a class="prev" href="#decomposition">&#8592; Decomposition</a><a class="next" href="#synthesis">Next: Synthesis &#8594;</a></div>
+</div></section>
+
+<section id="synthesis"><div class="container">
+  <h2>7. One design, all six objectives</h2>
+
+  <div class="entry"><b>By the end of this section</b> you will have seen a single constraint found in objective 1 propagate all the way to the sentence that satisfies a Chief Risk Officer in objective 6.</div>
+
+  <p>A regional insurer wants to cut claims cycle time. 8,000 first-notice-of-loss claims a month, an average of 6.4 days to first decision, 40 handlers.</p>
+
+  <p>The regulatory position: claim <em>denials</em> require a licensed adjuster's decision. Approvals under $2,500 do not. There is a stated 24-hour acknowledgement commitment, currently missed 30% of the time.</p>
+
+  <p><b>Objective 1, translate.</b> The outcome is cycle time. Decomposing the handler's work locates the decisions: intake extraction from a mixed bundle of forms, photos and emails; coverage verification against the policy; severity and complexity triage; and approve or deny.</p>
+
+  <p>Extraction and triage are automated. Coverage verification is retrieval plus deterministic checks. Denial stays human, and the wrong-stance signal that produced that was regulation, not difficulty.</p>
+
+  <p><b>Objective 2, end-to-end.</b> Input: the claim bundle arrives by email or portal, attachments extracted, anything unparseable routed to a human queue rather than proceeding empty, and the policy number validated against the policy system before any model call.</p>
+
+  <p>Output is a JSON contract carrying <code>claim_summary</code>, <code>coverage_status</code>, <code>severity_tier</code>, <code>confidence</code>, <code>recommended_action</code>, <code>citations</code> and <code>prompt_version</code>, designed for two consumers: the routing service and the adjuster.</p>
+
+  <p>Feedback runs on three signals: adjuster overrides of severity tier, edit distance on the claim summary, and reopen-within-30-days as the outcome measure.</p>
+
+  <p><b>Objective 3, pattern.</b> A standard auto claim is enumerable: five steps, every time. That is a workflow. Complex liability claims with multiple parties are not enumerable, because the number of parties, documents and lookups is discovered during the work. Those route to an agent, behind a validation gate deciding which population a claim belongs to.</p>
+
+  <p><b>Objective 4, orchestration.</b> The complex path uses a coordinator with three specialists: document analysis, policy interpretation, precedent lookup. They run in parallel from one coordinator turn, because they are independent and the 24-hour commitment makes wall clock a stated requirement.</p>
+
+  <p>The coordinator partitions explicitly, passes findings as structured content plus metadata so the final summary can cite the clause it relied on, and evaluates the summary for gaps before accepting it. When a claim escalates, the payload is a structured handoff, because the adjuster does not see the transcript.</p>
+
+  <p><b>Objective 5, decomposition.</b> Three splits on three different criteria. A functional split along the pipeline. A confidence-tier split routing simple auto claims down the cheap path. And a risk-tier split putting every denial and every approval above $2,500 behind a human gate regardless of confidence.</p>
+
+  <p>Note where that third seam came from. Regulation set it, not engineering judgment.</p>
+
+  <p><b>Objective 6, value.</b> To the COO: 6.4 days to a projected 1.8, with 24-hour acknowledgement moving from 70% to a designed 98%. To the CFO: about $0.31 per standard claim and $1.20 per complex one, against $47 in current handling cost. To the Chief Risk Officer: no denial is issued without a licensed adjuster's decision, every coverage determination cites the clause it relied on, and the audit trail carries the prompt version used.</p>
+
+  <div class="box raised">
+    <div class="label">The dependency chain is the point</div>
+    <p>Read those six back in order and follow one thread. The regulatory constraint found in objective 1 set the risk-tier seam in objective 5, which set the human gate in objective 2's output routing, which is the sentence that satisfies the Chief Risk Officer in objective 6.</p>
+    <p style="margin:0"><strong class="load-bearing">That chain is what "end-to-end architecture" means, and it is what the exam is testing when it hides a constraint in the setup paragraph.</strong></p>
+  </div>
+
+  <h3>Where these reflexes show up again</h3>
+
+  <p>Three of this domain's habits reappear elsewhere under other names.</p>
+
+  <p><b>The feedback destination meets Domain 4's evaluation loop.</b> Section 2's rule that a signal needs a destination that changes behaviour is the same rule as Domain 4's return arrow from production into the eval set. Same mechanism, same failure when it is missing.</p>
+
+  <p><b>Least privilege meets Domain 3 and Domain 5.</b> "Remove the tool rather than instruct against it" is section 4's coordinator rule, Domain 3's authorization objective, and Domain 5's strongest guardrail layer. Learn it once.</p>
+
+  <p><b>Confidence-tier decomposition meets Domain 4's optimization objective.</b> Routing the routine majority to a cheap path and escalating the hard minority is section 5's cost lever and Domain 4's cascade, described from two different directions.</p>
+
+  <h3>Common misconceptions</h3>
+
+  <div class="misc-grid">
+    <div class="misc-row myth"><span class="k">The myth</span>Agentic is the modern architecture; workflows are legacy.</div>
+    <div class="misc-row why"><span class="k">Why it's tempting</span>Every conference talk and vendor deck is about agents, so the ladder reads as a timeline of what serious teams have moved on to.</div>
+    <div class="misc-row reality"><span class="k">The reality</span>The ladder is a cost ladder, not a maturity ladder. Move right only when a stated requirement makes the left rung impossible.</div>
+    <div class="misc-row test"><span class="k">The one test</span>Point at the sentence in the scenario that the cheaper rung cannot satisfy. If you cannot find one, the cheaper rung is the answer.</div>
+  </div>
+
+  <div class="misc-grid">
+    <div class="misc-row myth"><span class="k">The myth</span>The subagent produced the bad output, so fix the subagent.</div>
+    <div class="misc-row why"><span class="k">Why it's tempting</span>The defect is visible in that subagent's output, and that is where anyone naturally looks first.</div>
+    <div class="misc-row reality"><span class="k">The reality</span>In hub-and-spoke, most output defects trace to coordinator decomposition, context passing, or termination criteria.</div>
+    <div class="misc-row test"><span class="k">The one test</span>Were the subagents' individual outputs correct? If yes, the fault is upstream of all of them.</div>
+  </div>
+
+  <div class="misc-grid">
+    <div class="misc-row myth"><span class="k">The myth</span>Human review in the loop means the system will improve.</div>
+    <div class="misc-row why"><span class="k">Why it's tempting</span>A reviewer correcting output looks exactly like a learning loop, and the corrections are real.</div>
+    <div class="misc-row reality"><span class="k">The reality</span>Only if the correction is captured and routed somewhere. Reviewers whose edits are discarded generate no learning at all.</div>
+    <div class="misc-row test"><span class="k">The one test</span>Name the destination the correction reaches. If the answer is "the record it fixed," the loop is open.</div>
+  </div>
+
+  <div class="misc-grid">
+    <div class="misc-row myth"><span class="k">The myth</span>Cost means inference cost.</div>
+    <div class="misc-row why"><span class="k">Why it's tempting</span>Inference is the line item that is new, itemised, and easy to attribute to the project.</div>
+    <div class="misc-row reality"><span class="k">The reality</span>Total cost includes human review, error remediation, retrieval infrastructure and maintenance. Halving inference while doubling review is a regression.</div>
+    <div class="misc-row test"><span class="k">The one test</span>Add the human minutes to the arithmetic. If the option never mentions them, it has not costed the design.</div>
+  </div>
+
+  <h3>Quick reference</h3>
+
+  <p><b>The ladder.</b> Plain call, augmented LLM, workflow, agent, multi-agent. Move right only on a stated requirement. The discriminator is whether you can enumerate the paths.</p>
+
+  <p><b>Workflow patterns.</b> Prompt chaining, routing, parallelisation (sectioning or voting), orchestrator-worker, evaluator-optimiser. The evaluator must be independent.</p>
+
+  <p><b>Four stages.</b> Input (acquire, validate, normalise, trust boundary), processing (model plus deterministic code), output (schema, destination, consumer, error tolerance), feedback (signal plus a destination that changes behaviour).</p>
+
+  <p><b>Feedback signals.</b> Implicit (edits and overrides, cheapest and best), explicit (labels and ratings), outcome (conversion, reopen, loss ratio, late but decisive).</p>
+
+  <p><b>The coordinator owns</b> decomposition, context passing, error handling and termination criteria. Root causes live there.</p>
+
+  <p><b>Multi-agent is justified by</b> parallelism under a latency requirement, context isolation, or per-role tool privilege. Expect 4 to 5 times the tokens.</p>
+
+  <p><b>Decomposition techniques.</b> Functional, aspectual, data-partition, confidence-tier (the cost lever), risk-tier (the governance lever). Fixed pipeline for known scope; dynamic adaptive for discovered scope.</p>
+
+  <p><b>Granularity rule.</b> One evaluation criterion and one failure mode per unit. Stop when handoff overhead exceeds benefit.</p>
+
+  <p><b>Five value pillars.</b> Efficiency (input per output), transformation (a capability that did not exist), productivity (output per person), cost (total, including human time), performance SLA (a commitment that filters designs before comparison).</p>
+
+  <p style="margin-top:var(--space-block)">That is Domain 1, one of seven in this lesson series. Source lesson for every fact and figure here: <code>Outputs/lessons/CCAR-P_Lesson-Domain-1_v1.md</code>.</p>
+
+  <div class="pagenav"><a class="prev" href="#value">&#8592; Business value</a><span></span></div>
+</div></section>
+
+</main>
+
+<footer><div class="container">
+  <p>CCAR-P Prep &middot; Domain 1 of 7 &middot; Claude Certified Architect &ndash; Professional</p>
+</div></footer>
+
+<script>
+(function () {
+  /* ---- theme toggle ---- */
+  var root = document.documentElement;
+  var toggle = document.getElementById('theme-toggle');
+  function isDark() {
+    var t = root.getAttribute('data-theme');
+    if (t) return t === 'dark';
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  function updateToggle() {
+    var dark = isDark();
+    toggle.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+    toggle.querySelector('span').textContent = dark ? '☀️' : '🌙';
+  }
+  toggle.addEventListener('click', function () {
+    var next = isDark() ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('site-theme', next); } catch (e) {}
+    updateToggle();
+  });
+  window.addEventListener('themechange', updateToggle);
+  updateToggle();
+
+  /* ---- scroll progress + active nav link ---- */
+  var fill = document.getElementById('scrollbar-fill');
+  var navH = parseFloat(getComputedStyle(root).getPropertyValue('--nav-h')) || 64;
+  function onScroll() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var p = max > 0 ? (h.scrollTop || document.body.scrollTop) / max : 0;
+    if (fill) fill.style.width = Math.round(p * 100) + '%';
+    var links = document.querySelectorAll('.nav-link[href^="#"]');
+    var cur = '';
+    document.querySelectorAll('main section[id]').forEach(function (s) {
+      if (s.getBoundingClientRect().top <= navH + 4) cur = s.id;
+    });
+    links.forEach(function (l) {
+      l.classList.toggle('active', l.getAttribute('href') === '#' + cur);
+    });
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', function () {
+    navH = parseFloat(getComputedStyle(root).getPropertyValue('--nav-h')) || 64;
+    onScroll();
+  });
+  document.addEventListener('DOMContentLoaded', onScroll);
+  onScroll();
+})();
+</script>
+
+<script>
+/* P1.9b contrast self-test — gated behind ?audit, runs nothing unless asked */
+(function () {
+  if (!/[?&]audit\b/.test(location.search)) return;
+  var cx = (function () { var c = document.createElement('canvas'); c.width = c.height = 1;
+                          return c.getContext('2d', { willReadFrequently: true }); })();
+  function px(backdrop, css) {
+    cx.globalCompositeOperation = 'copy';        cx.fillStyle = backdrop; cx.fillRect(0, 0, 1, 1);
+    cx.globalCompositeOperation = 'source-over'; cx.fillStyle = css;      cx.fillRect(0, 0, 1, 1);
+    var d = cx.getImageData(0, 0, 1, 1).data;
+    return [d[0], d[1], d[2]];
+  }
+  var memo = {};
+  function resolve(css) {
+    if (memo[css]) return memo[css];
+    var b = px('#000', css), w = px('#fff', css);
+    var a = 1 - (w[0] - b[0]) / 255;
+    if (a < 0) a = 0; if (a > 1) a = 1;
+    var out = { rgb: a > 0.002 ? [b[0] / a, b[1] / a, b[2] / a] : [0, 0, 0], a: a };
+    memo[css] = out;
+    return out;
+  }
+  function blend(fg, a, bg) { return [fg[0]*a+bg[0]*(1-a), fg[1]*a+bg[1]*(1-a), fg[2]*a+bg[2]*(1-a)]; }
+  function chan(c) { c/=255; return c<=0.03928 ? c/12.92 : Math.pow((c+0.055)/1.055,2.4); }
+  function lum(p) { return 0.2126*chan(p[0])+0.7152*chan(p[1])+0.0722*chan(p[2]); }
+  function ratio(x,y) { var a=lum(x),b=lum(y); if(a<b){var t=a;a=b;b=t;} return (a+0.05)/(b+0.05); }
+  function bgOf(el) {
+    var stack=[], n=el;
+    while (n && n.nodeType===1) {
+      var c = resolve(getComputedStyle(n).backgroundColor);
+      if (c.a>0.004) { stack.push(c); if (c.a>0.995) break; }
+      n = n.parentElement;
+    }
+    var out=[255,255,255];
+    for (var i=stack.length-1;i>=0;i--) out=blend(stack[i].rgb, stack[i].a, out);
+    return out;
+  }
+  function label(el) {
+    var s = el.tagName.toLowerCase();
+    if (el.id) s += '#'+el.id;
+    if (el.className && typeof el.className==='string' && el.className.trim())
+      s += '.'+el.className.trim().split(/\s+/).join('.');
+    return s;
+  }
+  function sweep(mode) {
+    var out=[];
+    Array.prototype.forEach.call(document.querySelectorAll('body *'), function (el) {
+      var owns = Array.prototype.some.call(el.childNodes, function (n) {
+        return n.nodeType===3 && n.textContent.trim().length>1;
+      });
+      if (!owns) return;
+      var cs = getComputedStyle(el);
+      if (cs.display==='none'||cs.visibility==='hidden'||parseFloat(cs.opacity)<0.99) return;
+      var fg = resolve(cs.color);
+      if (fg.a<0.02) return;
+      var bg = bgOf(el);
+      var eff = fg.a>0.995 ? fg.rgb : blend(fg.rgb, fg.a, bg);
+      var r = ratio(eff, bg);
+      var size = parseFloat(cs.fontSize), bold = parseInt(cs.fontWeight,10)>=700;
+      var need = (size>=24 || (size>=18.66 && bold)) ? 3 : 4.5;
+      if (r+0.005<need) out.push({mode:mode, el:label(el), ratio:+r.toFixed(2), need:need,
+                                   text:(el.textContent||'').trim().slice(0,44)});
+    });
+    return out;
+  }
+  var root = document.documentElement, prior = root.getAttribute('data-theme');
+  root.setAttribute('data-theme','light'); var fails = sweep('light');
+  root.setAttribute('data-theme','dark');  fails = fails.concat(sweep('dark'));
+  if (prior) root.setAttribute('data-theme', prior); else root.removeAttribute('data-theme');
+  window.__audit = fails;
+  if (fails.length) { console.error('CONTRAST AUDIT - '+fails.length+' failing'); console.table(fails); }
+  else { console.log('CONTRAST AUDIT - clean in both modes'); }
+})();
+</script>
+</body>
+</html>
