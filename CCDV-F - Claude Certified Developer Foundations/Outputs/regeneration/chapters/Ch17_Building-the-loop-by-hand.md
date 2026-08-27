@@ -36,7 +36,7 @@ In production, it found a parameter out of range, proposed a correction, wrote t
 
 The parameter it corrected was a rate limit the customer's application depended on. `validate_config` checked the new value against the schema's allowed range, and the value was inside that range. The check had never been built to ask whether anything downstream still depended on the old one. Within minutes, the customer's application started failing: requests were being throttled at a rate it wasn't built to handle.
 
-The loop did not misfire. It edited, validated, and exited on a pass, which is exactly what an exit condition scoped to "did this file validate" will always do. The gap sat between two states the loop never distinguished: a change proposed, and a change committed to a live environment. Nothing in the build stopped `write_file` from crossing that line unattended, and the ten-iteration cap was never built to catch it, because the cap only watches iteration count. If a tool can take an irreversible action in production, it needs a checkpoint before it runs, and that constraint belongs at the point where the tool surface is scoped.
+The loop edited the file, validated it, and exited on a pass — exactly what an exit condition scoped to "did this file validate" will always do. The gap sat between two states the loop never distinguished: a change proposed, and a change committed to a live environment. Nothing in the build stopped `write_file` from crossing that line unattended, and the ten-iteration cap was never built to catch it, because the cap only watches iteration count. If a tool can take an irreversible action in production, it needs a checkpoint before it runs, and that constraint belongs at the point where the tool surface is scoped.
 
 ## Where the tool list itself becomes the problem
 
@@ -44,7 +44,7 @@ Registering tools correctly is necessary, but a correctly-registered list can st
 
 Over-tooling is the shape that shows up after ship. A tool gets added "just in case" it's needed later, and it sits in the registry from then on, weighed against on every subsequent turn whether or not it's ever called again. It isn't a neutral addition. Selection quality degrades as the registered surface grows, so an unused tool is still a cost the loop pays on every decision, even the ones that never touch it.
 
-The corrective is the same discipline applied one layer earlier than the system prompt: start with the minimum set of tools the task actually requires, and add one only once a specific gap in capability is confirmed, not anticipated. A prompt can only be scoped as tightly as the toolset it has to describe.
+The corrective is the same discipline applied one layer earlier than the system prompt: start with the minimum set of tools the task actually requires, and add one only once a specific gap in capability is confirmed. A prompt can only be scoped as tightly as the toolset it has to describe.
 
 ## Where this chapter's authority stops
 

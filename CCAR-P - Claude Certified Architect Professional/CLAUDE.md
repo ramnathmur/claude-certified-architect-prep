@@ -8,6 +8,19 @@ Preparation for Anthropic's **Claude Certified Architect – Professional** exam
 Sibling folder: `..\CCAR-F - Claude Certified Architect Foundations\` — the Foundations run, passed
 2026-08-18 with 851/720. Its machinery is the template for this one.
 
+## Mock-exam engine
+
+When it's time to build this folder's mock-exam engine, papers, or dashboard, **follow
+`..\sop\SOP_Mock-Exam-Engine_v1.md`** rather than improvising or re-deriving it from scratch. It's the
+extracted, exam-agnostic methodology behind CCDV-F's engine (design stance, item schema, seeding
+approach, dashboard pattern, verification discipline) — read CCDV-F's own `mock-exams/README.md` and
+`GENERATION-INTELLIGENCE.md` too if you want the full worked history behind any rule in the SOP.
+
+**This does not relax the verification rule below.** The SOP governs the engine/mechanism only — the
+template, the item schema, the dashboard, Practice-Mode-by-default. It does not authorize generating a
+single item from this folder's current UNVERIFIED weight table. Build the engine and template with demo
+items only until `EXAM-FACTS_v1.md` has a real VERIFIED table.
+
 ## Output folder
 
 All deliverables go to `Outputs/` in this folder. Never to `C:\Claude Cowork\CLAUDE OUTPUTS\` —

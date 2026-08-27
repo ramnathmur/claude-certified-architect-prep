@@ -56,7 +56,7 @@ Where a subagent sits inside a hierarchy, rather than what it starts with once d
 
 ## What the stem sounds like
 
-A stem naming this chapter says "starts with no memory of the conversation" or "a subtask that doesn't need the full session" for the subagent mechanism, and "what should persist between sessions" or "token cost climbing every session" for memory scope.
+A stem naming this chapter says "starts with no memory of the conversation" or "a subtask that doesn't need the full session" for the subagent mechanism, and "what should persist between sessions" or "token cost climbing every session" for memory scope — check the answer against the four named scopes (in-context, external storage, summarized, stateless), not against how the stem happens to be worded.
 
 ## Self-test
 
