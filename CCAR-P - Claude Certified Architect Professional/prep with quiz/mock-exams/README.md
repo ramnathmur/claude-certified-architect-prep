@@ -19,7 +19,7 @@ The mock-exam engine was built 2026-08-29 and lives here and in `..\`:
 
 | File | What it is |
 |---|---|
-| `CCAR-P_MockTest-TEMPLATE_v1.html` | The exam engine. Practice Mode default, `validateItems()`, multi-response, three exports, mechanized cross-item lesson-collision check. Ships with four demo items — replace the `ITEMS` array and nothing else |
+| `CCAR-P_MockTest-TEMPLATE_v1.html` | The exam engine. Practice Mode default, `validateItems()`, multi-response, three exports, mechanized cross-item lesson-collision check, two-layer per-item feedback (quick verdict, then a corpus-grounded deep dive below it), pass/fail running-accuracy pill. Ships with four demo items — replace the `ITEMS` array and nothing else |
 | `CCAR-P_MockTest-1_v1.html` | Paper 1, generated |
 | `DASHBOARD.html` | Reads `..\DASHBOARD-DATA.jsonl`. Domain weights come from CCAR-P's own `EXAM-FACTS_v1.md` |
 | `..\CCAR-P-Orchestration-Prompt_v2.md` | How a paper is generated |

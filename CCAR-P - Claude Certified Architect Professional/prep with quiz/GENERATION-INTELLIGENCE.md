@@ -269,3 +269,92 @@ tooling, not in the corpus or the exam content — caught only because an indepe
 reverify stage and, separately, an independently-dispatched cost audit were both told explicitly not to
 trust the generating session's own account of what it had done, and to check the artifacts cold. That
 pattern held twice in one paper. It is worth keeping as standing practice, not a one-off.
+
+---
+
+## Session 3 — 2026-08-30 — Deep-dive explanation layer added to the engine
+
+No paper was generated. The engine gained a second per-item explanation layer and a pass/fail running
+accuracy indicator, both in `mock-exams/CCAR-P_MockTest-TEMPLATE_v1.html` so every future paper
+inherits them, and both backfilled into Paper 1. Full detail is in
+`../Outputs/CCAR-P_DeepDive-Grounding-Record_v1.md`. What belongs here is what the *next* generating
+session needs and cannot re-derive cheaply.
+
+### What changed in the engine
+
+- **Item schema gained `deepDive{principle, rightDeep, wrongDeep{}}`** — documented in
+  `CCAR-P-Orchestration-Prompt_v2.md` §5.5, with the render policy in §5.6. Required on every item
+  from Paper 1 onward. `whyRight`/`whyWrong` are unchanged and are not what it replaces.
+- **`validateItems()` gained one presence check**, structurally identical to the `whyWrong` check it
+  sits beside: `principle` and `rightDeep` non-empty, `wrongDeep` holding an entry for every
+  non-correct option and none for a correct one. No existing pass condition was altered. It is a
+  presence check only — grounding cannot be checked from a file that carries no corpus.
+- **`PASS_PCT_THRESHOLD = 620/9`**, the inversion of `estimateScaled()` against the 720 pass line.
+
+### Findings from this session
+
+**F-12 · 13 of 63 Paper 1 items record a `t1Alt` that resolves to no corpus row. — PROMOTED
+(computed check).**
+§5.3's T1 test assumes the alternative answer "is already written down — it is the row of the same
+decision table where the other option wins." For 13 items no such row exists anywhere in the domain
+file, and deleting the recorded `t1Clause` does not surface one: g5, g12, g13, g14, g17, g18, g35,
+g44, g54, g55, g59, g60, g63. **Gate check 12 passes all of them, because it asks only that
+`t1Clause` and `t1Alt` be populated, never that `t1Alt` resolve to a row.** Nothing had read them
+closely enough to notice until a per-item corpus pass was run against every cited section.
+**Six of the thirteen are D2**, which F-01 already flags as the binding supply constraint — a second,
+independent route to the same conclusion. Do not change Paper 1's recorded values; they feed the miss
+history. For Paper 2 onward, resolve `t1Alt` to a named row at authoring time, or pick a different
+`t1Clause`.
+
+**F-13 · A per-domain authoring agent cannot check its own grounding. — PROMOTED (two observations).**
+Seven authoring agents each read only their own corpus file and wrote deep explanations for their own
+items. Two independent grounding passes, given the corpus and the output but never the author's
+reasoning, raised 67 findings between them; 54 were real and were repaired. The recurring failure was
+not invention but *mis-paraphrase*: a decision-table row quoted with a load-bearing precondition
+silently dropped, a misconception attributed to a section that does not carry it, a family named that
+conflicts with the item's own tag. An author asked to check its own grounding reliably finds its own
+paraphrase sufficient. This is the same pattern Session 2 recorded for F-09 and F-10, now on a third
+kind of work.
+
+**F-14 · Some findings are properties of the item, not of the text under review. — OPEN.**
+The second grounding pass was asked to classify each finding FIXABLE or IRREDUCIBLE, and 13 of 34 came
+back IRREDUCIBLE — every one an F-12 case, where no rewrite could name a row the corpus does not
+contain. Without that split, a repair loop rewrites the same honest text every round and never
+converges. Worth building into any future adversarial-review stage; untested beyond this one use.
+
+### Open findings ledger — updated
+
+| id | finding | status | resolves when |
+|---|---|---|---|
+| F-01 | D2 supply stops at ~5 papers | promoted | Ram decides on ~20 new D2 decision rows — **F-12 is a second signal** |
+| F-02 | Community mocks derive from the guide | promoted | — recorded, no action needed |
+| F-03 | Jaccard threshold 0.30 | promoted | Recalibrate before Paper 3 |
+| F-04 | Token rate inverted vs Foundations | promoted | — in force |
+| F-05 | 16 objective assignments are judgement | open | Paper 1 objective breakdown |
+| F-06 | ARCHITECTED cap vs habit 3 | open | ARCHITECTED capture rate over Papers 1–3 |
+| F-07 | TRANSCRIBE cannot do multi-response | promoted | — premise binds; ASSEMBLED resolution superseded, see the note under F-07 |
+| F-08 | TRANSCRIBE key-longest at 84% | promoted | — resolved, AUTHOR mode used |
+| F-09 | No `correct` field on authoring-stage JSON | promoted | — documented, do not reintroduce |
+| F-10 | Lesson-collision check mechanized via `lessonKey` | promoted | — implemented, verify on Paper 2 |
+| F-11 | Real generation cost ~7.7–8M tokens | promoted | Cost fixes are Paper 2's session's call |
+| F-12 | 13 items' `t1Alt` resolves to no corpus row | **promoted** | Resolve `t1Alt` to a named row at authoring time, from Paper 2 |
+| F-13 | Authors cannot grade their own grounding | **promoted** | — standing practice, keep the pass separate |
+| F-14 | FIXABLE vs IRREDUCIBLE finding split | open | Reuse on Paper 2's review stage, then judge |
+
+### Pending decisions for Ram
+
+1. **D2 corpus expansion** (F-01, now also F-12). Blocks Paper 6. Needed by the Paper 4 Insights Round.
+2. **Fidelity-gate script** at Paper 4. Deferred deliberately.
+3. **Cost-optimisation fixes from F-11.** Worth a decision before Paper 2.
+4. **Should gate check 12 resolve `t1Alt` to a row** (F-12), rather than only checking the field is
+   populated? It would have caught all thirteen. It needs corpus access at gate time, which check 1
+   deliberately does not have, so it is a real design change and not a one-line fix.
+
+### Session reflection
+
+The engine's own gate passed Paper 1 on a field it never actually validated. `t1Clause`/`t1Alt` were
+populated on all 63 items and check 12 was satisfied; that thirteen of them pointed at options the
+corpus never makes correct only surfaced because unrelated work — writing an explanation of *why* each
+wrong option is wrong — forced every cited section to be read against every option. A check that
+verifies a field is filled in is not the same as a check that verifies it is true, and the gap between
+those two is invisible until something reads the content.

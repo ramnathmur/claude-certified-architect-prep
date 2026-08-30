@@ -101,6 +101,17 @@ instruction exists yet.
 **Random seed:** 20260829 (facet order, correct-letter shuffle, distractor-family draw — recorded for
 reproducibility, not because the seed carries any meaning).
 
+**Post-generation change, 2026-08-30 — the shipped file is not byte-identical to what the gate table
+below first ran against.** Paper 1 gained a per-item `deepDive` layer (all 63 items, 181 `wrongDeep`
+entries) rendered below the existing quick verdict, and a pass/fail running-accuracy pill. The quick
+feedback was not touched: `whyRight` and `whyWrong` hash identically across all 63 items before and
+after (sha256 `9565ea2b…a679a5`), and no item's `correct[]`, family, letter, or domain/objective/shape
+tagging was altered. The gate was re-run on the changed file — **0 errors, and the same 12
+stem-length warnings**, unchanged from the run recorded below. Grounding provenance, including the 13
+items whose `t1Alt` resolves to no corpus row, is in
+`../Outputs/CCAR-P_DeepDive-Grounding-Record_v1.md`; the engine-level record is
+`GENERATION-INTELLIGENCE.md` Session 3 (F-12, F-13, F-14).
+
 ### Domain quota (matches EXAM-FACTS_v1.md weighting exactly)
 | Domain | Weight | Items |
 |---|---|---|
