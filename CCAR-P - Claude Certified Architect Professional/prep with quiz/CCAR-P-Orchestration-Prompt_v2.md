@@ -40,40 +40,50 @@ generation entry and state which won and why. Do not silently prefer one.
 
 ## Phase 2 — Mode
 
-Two item-sourcing modes. The mode is fixed per paper and is recorded in the generation entry.
+**Every paper runs AUTHOR mode, Paper 1 included. There is no second mode.** Items are written fresh
+from the corpus's decision-table facets. Record the mode in the generation entry anyway, so the field
+stays meaningful if a future paper ever needs a different one.
 
-| Mode | Papers | Item source |
-|---|---|---|
-| **TRANSCRIBE** | Paper 1 only | Options are the corpus's own verbatim text |
-| **AUTHOR** | Papers 2–10 | Items written fresh from the corpus's decision-table facets |
+*(Corrected 2026-08-30. This section previously specified a hybrid — TRANSCRIBE for Paper 1, AUTHOR
+for Papers 2–10 — and set out TRANSCRIBE's construction rules in detail. That plan was proposed on
+2026-08-29 and rejected in full before Paper 1 was generated. The section below is kept rather than
+deleted because the rejection is the reusable finding.)*
 
-Ram's decision, 2026-08-29. Paper 1 gives a clean baseline against material he has already reviewed, so
-a miss on Paper 1 is unambiguously a knowledge gap rather than a generation artefact. From Paper 2 the
-corpus cannot supply enough distinct options — 158 exist and one paper needs 189 — so authoring is the
-only route to a ten-paper series.
+### Why TRANSCRIBE was rejected
 
-### TRANSCRIBE mode, in detail
+TRANSCRIBE would have built each item from one section's `Exam scenario` block: the ✅ line verbatim as
+the key, the two ❌ lines verbatim as distractors, and a third distractor lifted from the `Answer` cell
+of a neighbouring row of the same decision table. Every word on the paper would have been
+corpus-sourced, and a miss would have been unambiguously a knowledge gap rather than a generation
+artefact. The supply check passed: 79 scenarios against a 63-item paper, with every domain holding
+more scenarios than its quota.
 
-Each item is built from one section's `Exam scenario` block:
+It failed on a measurement nobody had taken. **In 84% of the corpus's 79 ready-made scenarios the
+correct option is the longest option; chance is about 33%.** A verbatim paper would have been
+answerable by length alone, without reading most stems. That is recorded as `GENERATION-INTELLIGENCE.md`
+**F-08**, promoted to a computed check, whose closing instruction is explicit: *do not revert to
+TRANSCRIBE for any future paper.*
 
-- **Correct option** — the section's ✅ line, verbatim.
-- **Distractors 1 and 2** — the section's two ❌ lines, verbatim, carrying their existing family tags.
-- **Distractor 3** — the `Answer` cell of a **different row** of the same section's decision table: an
-  action that section states is correct in a *neighbouring* situation, verbatim. This satisfies the T2
-  test by construction and keeps every word on the paper corpus-sourced.
+AUTHOR mode was used for Paper 1 instead, and the same measurement run against the shipped file
+returned a **key-longest rate of 0/63**; one item, g36, ended with the key as its longest option after
+a late content swap — 2%, against a 40% cap and the corpus's own 84% baseline. Paper 1 shipped
+2026-08-30 with all 63 items tagged `source:"AUTHORED"`.
 
-Supply check, run before committing to this mode: 79 scenarios against a 63-item paper, and every
-domain holds more scenarios than its quota (D1 12≥11, D2 9≥8, D3 14≥12, D4 12≥10, D5 11≥9, D6 12≥9,
-D7 9≥4). A full-length 63-item Paper 1 is reachable.
+Two things that argued for AUTHOR from the start now apply to every paper rather than to Papers 2–10:
 
-**The one authored element.** The corpus contains no multiple-response scenario, and multiple-response
-is Ram's largest documented scoring leak. Paper 1 therefore ships **55 TRANSCRIBED + 8 ASSEMBLED**: the
-8 are drawn from sections whose decision table holds two independently-true rows for one situation, and
-their option text is verbatim corpus text while the *combination* is authored. Tag them `ASSEMBLED` in
-the item data so the distinction survives into the miss log.
+- **Option supply.** The corpus holds 158 distinct distractors and one paper needs 189.
+- **Multiple-response.** The corpus contains no multiple-response scenario, and multiple-response is
+  Ram's largest documented scoring leak. The eight multi-response items are authored, drawn from
+  sections whose decision table holds two independently-true rows for one situation (§3.3).
 
-From Paper 2, the section scenarios revert to reference-only: they are each section's canonical worked
-example, and a generated item must produce a **different failure mode** from the one they show.
+**The section scenarios are reference-only on every paper**, Paper 1 included. Each is its section's
+canonical worked example, and a generated item must produce a **different failure mode** from the one
+it shows.
+
+`ASSEMBLED` and `TRANSCRIBED` survive as documented `source` values, in §5.5 here and in the schema
+comment at the head of the template's `ITEMS` array. Nothing needs removing: no paper carries either
+value, and leaving them documented keeps the rejection legible rather than erasing it. `validateItems()`
+is unaffected either way — it checks that `source` is present and never enumerates its values.
 
 ---
 
@@ -264,8 +274,9 @@ clearest single case where mimicking the sibling project actively reduces fideli
 
 Every item carries: `g` · `domain` · `section` · `facet` · `objective` · `shape` · `direction` ·
 `lessonKey` · `format` · `selectN` · `stem` · `opts[{l, t, family}]` · `correct[]` · `whyRight` ·
-`whyWrong{}` · `deepDive{}` · `t1Clause` · `t1Alt` · `source` (TRANSCRIBED / ASSEMBLED / AUTHORED) ·
-`block` · `blockLabel`.
+`whyWrong{}` · `deepDive{}` · `t1Clause` · `t1Alt` · `source` (**AUTHORED on every paper** — the enum
+also carries TRANSCRIBED and ASSEMBLED, both unused since §2 rejected TRANSCRIBE) · `block` ·
+`blockLabel`.
 
 `block` and `blockLabel` stay **dormant and null**. If the guide later confirms shared-scenario blocks,
 papers gain them by populating two fields rather than by a schema migration and a re-tag of the whole
@@ -423,7 +434,7 @@ an unknown share of Exams 7–13's correct answers was template recognition rath
 
 | Paper | Mode | Source | Targeting | Shape policy | What changes |
 |---|---|---|---|---|---|
-| 1 | Practice | TRANSCRIBE | none — diagnostic | 8 shapes, content-varied | Objective floor pass only. Establishes the per-objective baseline |
+| 1 | Practice | AUTHOR | none — diagnostic | 8 shapes, content-varied | Objective floor pass only. Establishes the per-objective baseline. **Generated 2026-08-30** |
 | 2 | Practice | AUTHOR | P1 triples, inverted | same 8 | First Professor's Note consumed |
 | 3 | Practice | AUTHOR | P2 triples | same 8 | **Insights Round 1** after scoring |
 | 4 | Practice | AUTHOR | P3 triples + first habit check | direction-inverted | Habit remedy fires if a family qualifies. Gate script built. D2 expansion decision due |
@@ -443,7 +454,7 @@ before booking.
 
 Append to `EXAM-LOG.md`:
 
-- Mode (TRANSCRIBE / AUTHOR) and which Professor's Note and Insights Round were consumed.
+- Mode — AUTHOR on every paper (§2) — and which Professor's Note and Insights Round were consumed.
 - The quota used, and any confirmed-weakness adjustment with its justification.
 - Sections and facets targeted, with the direction of each retest.
 - Sections deliberately left untargeted.
