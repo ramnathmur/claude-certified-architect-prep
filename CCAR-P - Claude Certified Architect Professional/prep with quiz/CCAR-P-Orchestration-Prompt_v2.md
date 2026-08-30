@@ -264,8 +264,8 @@ clearest single case where mimicking the sibling project actively reduces fideli
 
 Every item carries: `g` · `domain` · `section` · `facet` · `objective` · `shape` · `direction` ·
 `lessonKey` · `format` · `selectN` · `stem` · `opts[{l, t, family}]` · `correct[]` · `whyRight` ·
-`whyWrong{}` · `t1Clause` · `t1Alt` · `source` (TRANSCRIBED / ASSEMBLED / AUTHORED) · `block` ·
-`blockLabel`.
+`whyWrong{}` · `deepDive{}` · `t1Clause` · `t1Alt` · `source` (TRANSCRIBED / ASSEMBLED / AUTHORED) ·
+`block` · `blockLabel`.
 
 `block` and `blockLabel` stay **dormant and null**. If the guide later confirms shared-scenario blocks,
 papers gain them by populating two fields rather than by a schema migration and a re-tag of the whole
@@ -283,6 +283,49 @@ identical `answer` text (Paper 1 shipped two such pairs — D4 §4.11 vs D2 §2.
 per-domain authoring agent can see another domain's output). Before `lessonKey` existed, this check
 required `plan.json`, which is session-scratch and does not survive between sessions — the whole reason
 the check "existed" only as something run by hand at generation time rather than as a durable gate.
+
+**`deepDive`** — added to Paper 1 retroactively, 2026-08-30, and the standard shape from Paper 2
+onward. `whyRight` and `whyWrong` are the paper's quick verdict layer and answer one question: why
+this option wins *this item*. They are unchanged and are not what `deepDive` replaces. `deepDive` is a
+second layer rendered below them, and answers a different question: what general rule is this item an
+instance of, and what would each wrong option have been the right answer to.
+
+| Key | Contents | Length |
+|---|---|---|
+| `principle` | The governing rule, stated at the level the architecture guidance states it — not "why C wins here". Drawn from the cited section's Core Facts **Discriminator / Rule / Order / Granularity** row and from the framing sentence its decision table opens with | 45–75 words |
+| `rightDeep` | The correct answer tied to **the specific decision-table row that fires**. Quote or closely paraphrase that row's Situation, Answer and Why text; do not summarise the section generically. Then name what in the stem makes that row the one that fires | 60–100 words |
+| `wrongDeep{}` | One entry per non-correct letter — the same key set as `whyWrong`, enforced by `validateItems()`. Never "this is the trap". Each entry gives the real mechanism, by one of three routes: **(a)** the decision-table row the option *would* be correct for, named by its Situation text, with what the stem would have to say for it to fire; **(b)** the section's own documented Misconception that the option embodies, quoted or closely paraphrased; **(c)** the failure the section's own Exam scenario bullet already records for that distractor's family | 45–80 words each |
+
+Three rules bind the field:
+
+1. **The `t1Alt` entry is not optional.** Every item already records `t1Clause` — the stem clause whose
+   deletion or inversion makes a different option correct — and `t1Alt`, that option's letter. That
+   reasoning was captured at authoring time and never surfaced to the student. The `wrongDeep` entry
+   for `t1Alt` must take route (a) and name the row where that option wins once the clause is gone.
+2. **Grounding is per item, not per section-read-once.** The item's own cited section is read in full
+   before its `deepDive` is written. A `deepDive` written from memory of what a section "probably"
+   says violates the corpus rule in `../CLAUDE.md` exactly as a fabricated option would.
+3. **A claim the corpus cannot support is not written.** Where a section genuinely lacks the row an
+   option would need, say what the section *does* say and record the shortfall. Do not invent a row.
+
+Authoring is per-domain and parallel, one worker per corpus file, then audited by an independent
+grounding pass that reads only the corpus and the output — never the author's reasoning. The
+authoring pass and the audit pass are separate agents on purpose: an author asked to check its own
+grounding reliably finds its own paraphrase sufficient.
+
+### 5.6 Deep-dive render policy — show every option, not the picked subset
+
+The quick layer filters `whyWrong` to the letters the student actually picked. That is right for a
+verdict. `deepDive` renders **all** of `wrongDeep`, on every item, regardless of what was picked.
+
+The reason is what the two layers are for. Each `wrongDeep` entry names a *different row of the same
+decision table*, so reading all three is reading that section's decision table through the item —
+which is the study value. Filtering to the picked letter would show one distractor's reasoning on a
+missed item and none at all on a correct one; at the pass line most of the paper is answered
+correctly, so the filtered version would deliver least where the student is strongest. Papers 8 and 10
+run Exam Mode and render no per-question feedback at all, so this does not touch dress-rehearsal
+fidelity, and Practice Mode locks an item once answered, so a fuller explanation cannot be used to
+revise the answer.
 
 ---
 
@@ -310,6 +353,14 @@ reintroduce failures in 5–9.
 | 13 | **Targeting satisfied** | Every Professor's Note triple has ≥1 item from the opposite direction; ≥3 triples deliberately untargeted and named |
 
 Report all thirteen with computed values, thresholds, and any fix applied.
+
+**`deepDive` presence rides inside check 1.** No existing pass condition above was altered when the
+field was added. `validateItems()` gained one additional per-item block, structurally identical to the
+`whyWrong` check it sits beside: `principle` and `rightDeep` non-empty, and `wrongDeep` holding an
+entry for every non-correct option and none for a correct one. It is a *presence* check. Whether each
+sentence actually traces to the cited corpus section cannot be checked from the shipped file, which
+carries no corpus — that is the independent grounding audit's job (§5.5), and its findings belong in
+the generation entry alongside the gate table.
 
 **Re-run checks 2, 3, 6 and 10 after any fix that swaps or reorders an item.** A swapped item carries
 its own domain, letter and family, and can reintroduce exactly what the earlier check cleared.

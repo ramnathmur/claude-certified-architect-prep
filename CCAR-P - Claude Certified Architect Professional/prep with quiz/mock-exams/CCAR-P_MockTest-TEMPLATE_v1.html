@@ -52,6 +52,11 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line
 .pill{font-size:12px;padding:3px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:600;}
 .pill.mode{background:var(--ok-soft);color:var(--ok);}
 .pill.mode.exam{background:var(--bad-soft);color:var(--bad);}
+/* Running-accuracy pill, coloured against PASS_PCT_THRESHOLD. The neutral state keeps a
+   transparent 1px border so pass/fail do not shift the nav by 2px when they apply one. */
+.pill.acc{border:1px solid transparent;}
+.pill.acc.pass{background:var(--ok-soft);color:var(--ok);border-color:var(--ok);}
+.pill.acc.fail{background:var(--bad-soft);color:var(--bad);border-color:var(--bad);}
 
 /* header */
 header.doc{padding:34px 0 20px;border-bottom:1px solid var(--line);}
@@ -113,6 +118,28 @@ header.doc .sub{color:var(--mid);font-size:15px;margin:0;}
 .fb .ww b{color:var(--ink);}
 .fb .cite{margin-top:10px;font-size:12px;color:var(--soft);font-family:var(--mono);}
 
+/* deep dive - the second explanation layer. Renders BELOW the quick verdict, as a sibling of
+   .fb rather than inside it, so the quick layer's markup is untouched. Never behind a toggle:
+   it is reached by scrolling. Distinct from .fb by tone (accent-soft, not ok-soft/bad-soft),
+   by its own rule and header, and by the serif principle line. */
+.deep{margin-top:16px;padding:15px 17px 14px;border-radius:6px;background:var(--accent-soft);
+  border:1px solid var(--line);border-left:3px solid var(--accent);font-size:14px;}
+.deep .deep-head{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--accent);
+  font-weight:700;padding-bottom:9px;border-bottom:1px solid var(--line);margin-bottom:12px;}
+.deep h4{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--soft);
+  font-weight:700;margin:15px 0 6px;}
+.deep h4:first-of-type{margin-top:0;}
+.deep p{margin:0;line-height:1.55;color:var(--ink);}
+.deep .principle{font-family:var(--serif);font-size:15.5px;line-height:1.5;}
+.deep .dopt{margin:0 0 9px;padding-left:11px;border-left:2px solid var(--line);color:var(--mid);}
+.deep .dopt:last-of-type{margin-bottom:0;}
+.deep .dopt b{color:var(--ink);font-family:var(--mono);font-size:13px;}
+.deep .dopt.picked{border-left-color:var(--bad);}
+.deep .dopt .flag{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--bad);font-weight:700;}
+.deep .cite{margin-top:12px;padding-top:9px;border-top:1px solid var(--line);
+  font-size:12px;color:var(--soft);font-family:var(--mono);}
+
 /* nav buttons */
 .qnav{display:flex;gap:10px;margin:22px 0;}
 .btn{padding:10px 20px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);
@@ -156,7 +183,7 @@ table.brk td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;}
     <div class="brand">CCAR-P <span>Mock Test TEMPLATE</span></div>
     <span class="pill mode" id="modePill">Practice Mode</span>
     <div class="navspace"></div>
-    <span class="pill hidden" id="accPill">0% so far</span>
+    <span class="pill acc hidden" id="accPill">0% so far</span>
     <span class="timer hidden" id="timer">120:00</span>
   </div>
 </nav>
@@ -253,6 +280,17 @@ function estimateScaled(correct, total){
   return Math.round(100 + 900 * (correct / total));
 }
 
+/* Pass-equivalent RAW-PERCENTAGE threshold for the running-accuracy pill, obtained by inverting
+   estimateScaled() against PASS_SCALED:
+     100 + 900 * (correct/total) >= 720   =>   correct/total >= 620/900 = 31/45
+   as a percentage that is 620/9 = 68.888...%. Computed, never rounded to 69: at 63 items 44
+   correct is 69.84% and passes, 43 is 68.25% and does not, and a rounded 69% threshold would
+   mis-colour any running tally landing between 68.89% and 69%.
+   CCAR-F's Mock 15 derives the identical constant because its estimator is the same formula
+   against the same 720 pass line - 60 items there, 63 here, and the threshold is item-count
+   independent. This is a running indicator over ANSWERED items only, not a predicted result. */
+const PASS_PCT_THRESHOLD = 620/9;
+
 /* ================= ITEMS =================
    DEMO CONTENT - four items written to the measured official style so the engine can be
    verified. Replace wholesale with 63 corpus-generated items.
@@ -281,6 +319,25 @@ function estimateScaled(correct, total){
      whyWrong   {letter: 15-30 words}
      t1Clause   the clause whose deletion changes the answer
      t1Alt      the option that becomes correct without it
+     deepDive   {principle, rightDeep, wrongDeep{letter}} - the SECOND explanation layer, rendered
+                below the quick verdict. whyRight/whyWrong explain why this option wins THIS item;
+                deepDive explains the governing rule the item is an instance of, and grounds every
+                claim in the cited section's own decision table and misconception block.
+                  principle  the rule at the level the architecture guidance states it, drawn from
+                             the section's Core Facts discriminator and its decision table's own
+                             framing sentence. 45-75 words
+                  rightDeep  the correct answer tied to the SPECIFIC decision-table row - its
+                             Situation, Answer and Why text quoted or closely paraphrased, not
+                             summarised generically. 60-100 words
+                  wrongDeep  one entry per non-correct letter, same key set as whyWrong. Each gives
+                             the real mechanism: the decision-table row the option WOULD be correct
+                             for, or the section's own documented misconception it embodies. Never
+                             "this is the trap". 45-80 words each.
+                             The t1Alt option's entry MUST name the row where it wins once t1Clause
+                             is removed or inverted - that reasoning is already recorded in the
+                             item and was previously never shown to the student.
+                Plain text; the renderer escapes it. See section 5.5 and 5.6 of the orchestration
+                prompt. Required on every item from Paper 1 onward; validateItems() enforces it.
      source     "TRANSCRIBED" | "ASSEMBLED" | "AUTHORED" | "DEMO"
      block      null - dormant. Populated only if the guide confirms scenario blocks
      blockLabel null - dormant
@@ -306,6 +363,11 @@ const ITEMS = [
   },
   t1Clause:"Applying capability-scoping principles",
   t1Alt:"D",
+  deepDive:{
+    principle:"Section 3.1's discriminator asks whether a selection failure comes from the size of the decision space or from the quality of the individual descriptions. Its rule is to cut the number of candidate tools first and sharpen descriptions only for the confusable pairs that survive the cut. A tool definition is a fixed per-request tax paid whether the tool is called or not.",
+    rightDeep:"The decision table's first row is this situation: one agent holding twenty or more tools spanning several unrelated roles and misrouting between near-duplicates. Its answer is to split into role-scoped agents of four to six tools each, and its stated reason is that this moves confusable pairs into different agents so the discrimination problem disappears rather than being mitigated. Forty tools drawn from six systems is that row at larger scale, and role scoping is the change that shrinks the candidate set any one request sees.",
+    wrongDeep:{A:"Section 3.1 names three costs every tool imposes: tokens on every request, discrimination difficulty on every turn, and blast radius when misused. Logging changes none of them, because it records a misroute after the selection has already been made. The section does use measurement, but as an argument rather than a fix: its last row answers a request to keep all tools available by pushing back with the per-request token cost and the measured misroute rate.",B:"The decision table's answer is to split by role, not by system, and its stated reason is that splitting moves confusable pairs into different agents. Six multi-mode tools, one per system, leaves every role still facing all six and every near-duplicate capability still reachable from one place, so the fixed per-request tax and the blast radius survive the rename. Section 3.1 rejects the parallel move of rewriting all twenty-two descriptions as improving discrimination without shrinking the decision space.",D:"Every row of section 3.1's decision table answers on one of the two axes its discriminator names, the size of the decision space or the quality of the descriptions: split the agent, expand two descriptions, replace a generic tool with a constrained one, grant a narrow cross-role tool, or price the surface back to the stakeholder. Model capability is neither axis, and the section carries no situation in which it is the answer."}
+  },
   cite:"D3 3.1"
 },
 {
@@ -328,6 +390,11 @@ const ITEMS = [
   },
   t1Clause:"accuracy below 94% triggers manual review",
   t1Alt:"C",
+  deepDive:{
+    principle:"Section 2.1's discriminator sets task complexity and ambiguity against cost and latency at the task's actual operating volume, and its rule is to match model capability to what the task's complexity demands rather than to the model's ceiling. The section names one wrong default outright: always picking the most capable model available. Headroom bought without a stated requirement is unpriced cost, not safety.",
+    rightDeep:"The decision table's first row states this scenario's situation almost word for word, a narrow, bounded, high-volume, latency-gated classification, and answers with the smallest or fastest model that clears the accuracy bar. Its reason is that cost and latency compound at volume while the task does not need frontier reasoning. The section's exam scenario supplies the verb this option carries: benchmarked on representative material before committing. Four hundred thousand calls a day is the volume that makes the row's reasoning binding.",
+    wrongDeep:{B:"This is the wrong default section 2.1 names explicitly, and its third decision row answers the same move at the stakeholder level: push back and ask what specifically requires it, because headroom bought without a requirement is unpriced cost rather than safety. The row that does award the higher-capability model fires on multi-step synthesis across ambiguous sources at low volume, which is the opposite of the situation stated here.",C:"This is what the first decision row reduces to once its accuracy bar is deleted from the stem: the smallest or fastest model, with nothing left for it to clear. With the 94% floor stated, the bar is the constraint the model itself must satisfy, so routing the shortfall into manual review meets the latency half of the row's reasoning and hands the accuracy half to the manual path instead of clearing it.",D:"Section 2.1 answers every one of its three situations by choosing a model against the task's complexity at its actual operating volume. Caching is not one of those answers and appears nowhere in the section, so nothing here establishes that any model meets the stated accuracy bar. The section's own exam scenario makes benchmarking on representative material the step that comes before committing."}
+  },
   cite:"D2 2.1"
 },
 {
@@ -350,6 +417,11 @@ const ITEMS = [
   },
   t1Clause:"while the model version, prompt, and temperature are unchanged",
   t1Alt:"A",
+  deepDive:{
+    principle:"Section 4.10 fixes a diagnosis order, data and retrieval first, then prompt and context, then model mismatch, because each earlier layer poisons everything downstream and checking it is far cheaper. Its fault-layer table adds the discriminator: the layer the symptom's timing and shape point at, not the layer that is quickest to swap. Model mismatch is a conclusion, not an opening move.",
+    rightDeep:"The fault-layer table's first row is this symptom exactly, confidently wrong right after a document refresh or re-index, and it assigns the fault to retrieval and indexing while naming the model, which did not change, as what is not the cause. The section's timeline rule makes the sync the hypothesis: a sharp drop with a change immediately before it means the change is the hypothesis. Its exam scenario names the check itself, measuring Recall@k against gold passage ids and inspecting how the refreshed documents were chunked.",
+    wrongDeep:{A:"The row that assigns this symptom to retrieval names the model as what is not the cause, on the stated ground that it did not change. That exclusion is what the stem's pinned model version, prompt and temperature buy. Section 4.10's model-mismatch row fires on a different signature altogether: broad failure on genuinely multi-step reasoning with retrieval verified and the prompt already clean. Remove the sentence pinning those three and the exclusion goes with it.",C:"Section 4.10's exam scenario rejects almost this move, adding an explicit instruction not to state facts it cannot support, as a repair: it patches the symptom downstream of a data fault and cannot conjure material that was never retrieved. A recency instruction sits at the prompt layer, which the section's order reaches only once data and retrieval have been checked and cleared.",D:"The section places this symptom's fault at the retrieval and indexing layer, and its stated reason for the order is that each earlier layer poisons everything downstream. A reranker acts on what the index returns, so it sits downstream of the layer the timing points at. Section 4.10 rejects the parallel move of swapping in a higher-capability model on the ground that it replaces a component that was never implicated."}
+  },
   cite:"D4 4.10"
 },
 {
@@ -371,6 +443,11 @@ const ITEMS = [
   },
   t1Clause:"the design review requires layered controls rather than a single filter",
   t1Alt:"B",
+  deepDive:{
+    principle:"Section 5.1 names four safety layers, input validation before the call, output filtering after it, scoped permissions, and human approval on consequential actions, and its discriminator asks whether a design has independent layers or one control carrying everything. The four fail independently, so an incident must clear all four, and adding a fifth flavour of one layer adds nothing. Layers are cheap, each a small deterministic check.",
+    rightDeep:"The decision table's first row covers a design resting on one control and answers by adding pre-call input validation, tool scoping, and a human gate on consequential actions, because a single layer is a single point of failure while the other three catch different classes. A and C are two of those four layers rather than two flavours of one. A is the pre-call treatment the section's exam scenario names, validating and delimiting untrusted input before the call; C constrains what the permission layer will let any instruction reach.",
+    wrongDeep:{B:"Section 5.1's exam scenario rejects retraining the output classifier as a half-move, because it improves the one layer that already exists and leaves the design at one layer. An instruction not to follow malicious instructions has the same shape, and the section's second decision row answers it directly: replacing independent checks with a single mechanism is rejected outright, because correlated coverage from one mechanism is what layering exists to avoid. Delete the review's demand for layers and a single filter is what remains on offer.",D:"Section 5.1's exam scenario rejects detailed logging and alerting on unexpected tool calls as the wrong axis, on the stated ground that it is detection rather than prevention and that a log records the action after it happened. Logging retrieved passages for post-incident review is that same control at that same point. The section's failure mode is a miss that nothing behind the bypassed layer catches, and a log sits behind everything."}
+  },
   cite:"D5 5.1"
 }
 ];
@@ -465,8 +542,18 @@ function renderPage(g){
   if(!EXAM_MODE){
     const done = ITEMS.filter(isComplete);
     const right = done.filter(isRight).length;
-    document.getElementById("accPill").textContent =
-      done.length ? Math.round(right/done.length*100)+"% so far" : "0% so far";
+    const acc = document.getElementById("accPill");
+    if(!done.length){
+      acc.textContent = "0% so far";
+      acc.classList.remove("pass","fail");
+    } else {
+      /* Colour on the RAW percentage, display the rounded one. Rounding first would flip the
+         colour for tallies inside half a point of the threshold. */
+      const rawPct = right/done.length*100;
+      acc.textContent = Math.round(rawPct)+"% so far";
+      acc.classList.toggle("pass", rawPct >= PASS_PCT_THRESHOLD);
+      acc.classList.toggle("fail", rawPct <  PASS_PCT_THRESHOLD);
+    }
   }
 }
 
@@ -542,6 +629,47 @@ function paintAnswered(q){
     + '<p class="why">'+esc(q.whyRight)+'</p>'
     + ww
     + '<div class="cite">'+q.cite+' · '+q.facet+' · '+q.objective+' · shape '+q.shape+'</div>'
+    + '</div>'
+    + renderDeep(q);
+}
+
+/* ================= DEEP DIVE =================
+   The second explanation layer, rendered as a SIBLING of .fb so the quick verdict's markup and
+   text are untouched. Reached by scrolling, never gated behind a click.
+
+   It shows ALL wrong options' deep explanations, not only the one the student picked. The quick
+   layer above already filters whyWrong to the picked letter, which is the right behaviour for a
+   verdict. The deep layer is doing a different job: each wrongDeep entry names a DIFFERENT row of
+   the same corpus decision table, so reading all of them is reading that decision table through
+   the item. Filtering it to the picked letter would deliver nothing at all on every item answered
+   correctly - which, at the pass line, is most of the paper. Recorded in
+   CCAR-P-Orchestration-Prompt_v2.md 5.6.
+
+   Renders nothing for an item with no deepDive, so a paper generated before this field existed
+   still opens. */
+function renderDeep(q){
+  const d = q.deepDive;
+  if(!d || !d.principle || !d.rightDeep) return "";
+  const sel = answerOf(q.g);
+  let rows = "";
+  q.opts.forEach(function(o){
+    if(q.correct.indexOf(o.l) >= 0) return;
+    const txt = d.wrongDeep && d.wrongDeep[o.l];
+    if(!txt) return;
+    const picked = sel.indexOf(o.l) >= 0;
+    rows += '<p class="dopt'+(picked?" picked":"")+'"><b>'+o.l+'</b>'
+          + (picked ? ' <span class="flag">picked</span>' : '')
+          + ' &mdash; '+esc(txt)+'</p>';
+  });
+  return '<div class="deep">'
+    + '<div class="deep-head">Going deeper &middot; the principle behind this item</div>'
+    + '<h4>The rule this item is an instance of</h4>'
+    + '<p class="principle">'+esc(d.principle)+'</p>'
+    + '<h4>Why '+q.correct.join(" and ")+' '+(q.correct.length>1?"are":"is")+' right, in full</h4>'
+    + '<p>'+esc(d.rightDeep)+'</p>'
+    + '<h4>What each of the other options would have been right for</h4>'
+    + rows
+    + '<div class="cite">Grounded in '+q.cite+' &middot; every claim above traces to that section</div>'
     + '</div>';
 }
 
@@ -830,6 +958,29 @@ function validateItems(items, opts){
     const fams = (q.opts||[]).filter(function(o){ return q.correct.indexOf(o.l)<0; })
                              .map(function(o){ return o.family; });
     if(new Set(fams).size !== fams.length) E.push(at+": distractors repeat a family");
+
+    /* deep dive - PRESENCE and key-set only. Whether each sentence actually traces to the cited
+       corpus section is a corpus audit and cannot be checked from the shipped file, which carries
+       no corpus. This mirrors the whyWrong check exactly: one entry per non-correct option, none
+       for a correct one. Added with the deepDive field itself; no existing check was altered. */
+    const dd = q.deepDive;
+    if(!dd || typeof dd !== "object"){
+      E.push(at+": missing deepDive");
+    } else {
+      if(!dd.principle) E.push(at+": deepDive.principle is empty");
+      if(!dd.rightDeep) E.push(at+": deepDive.rightDeep is empty");
+      if(!dd.wrongDeep || typeof dd.wrongDeep !== "object"){
+        E.push(at+": deepDive.wrongDeep is missing");
+      } else {
+        (q.opts||[]).forEach(function(o){
+          const isKey = q.correct.indexOf(o.l) >= 0;
+          if(isKey && dd.wrongDeep[o.l])
+            W.push(at+" opt "+o.l+": deepDive.wrongDeep carries an entry for a correct option");
+          if(!isKey && !dd.wrongDeep[o.l])
+            E.push(at+" opt "+o.l+": distractor has no deepDive.wrongDeep");
+        });
+      }
+    }
 
     /* stem */
     const sw = wc(q.stem);
