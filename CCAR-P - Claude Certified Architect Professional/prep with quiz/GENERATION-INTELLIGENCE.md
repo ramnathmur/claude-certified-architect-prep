@@ -124,6 +124,20 @@ ASSEMBLED items use verbatim corpus option text in an authored combination. Tagg
 so the distinction survives into the miss log. Without this, Paper 1 would carry zero practice against
 Ram's largest documented scoring leak.
 
+> **Superseded 2026-08-30 — the finding holds, its Paper 1 conclusion does not.** The paragraph above is
+> Session 1's text, left as written. Its premise is still a live corpus fact and still binds every paper:
+> the corpus holds no multiple-response scenario, so all eight multi-response items must be authored,
+> drawn from sections whose decision table holds two independently-true rows for one situation.
+>
+> What is no longer true is everything downstream of "Paper 1 therefore". **F-08 rejected TRANSCRIBE
+> outright** the next day, so the 55/8 split never happened and the ASSEMBLED escape hatch was never
+> needed — a mode that produces no items needs no exception for the items it cannot produce.
+> **Paper 1 shipped 2026-08-30 with 63/63 items tagged `source:"AUTHORED"` and zero tagged `ASSEMBLED`
+> or `TRANSCRIBED`.** Verified against the shipped file, not against this log.
+>
+> Do not read this finding as an instruction to tag anything `ASSEMBLED`. See F-08, and
+> `CCAR-P-Orchestration-Prompt_v2.md` §2.
+
 ### Coverage trackers — empty until Paper 1
 
 **Facet freshness:** see `FACET-LEDGER.md`. All 351 unused.
@@ -142,7 +156,7 @@ Ram's largest documented scoring leak.
 | F-04 | Token rate inverted vs Foundations | **promoted** | — in force |
 | F-05 | 16 objective assignments are judgement | open | Paper 1 objective breakdown |
 | F-06 | ARCHITECTED cap vs habit 3 | open | ARCHITECTED capture rate over Papers 1–3 |
-| F-07 | TRANSCRIBE cannot do multi-response | **promoted** | — resolved by ASSEMBLED tag |
+| F-07 | TRANSCRIBE cannot do multi-response | **promoted** | — Session 1 resolved it with the ASSEMBLED tag; **superseded 2026-08-30**, see the note under F-07 |
 
 ### Pending decisions for Ram
 
@@ -229,7 +243,7 @@ belong in this file's promotion gate, but skipping them means Paper 2 likely cos
 | F-04 | Token rate inverted vs Foundations | promoted | — in force |
 | F-05 | 16 objective assignments are judgement | open | Paper 1 objective breakdown |
 | F-06 | ARCHITECTED cap vs habit 3 | open | ARCHITECTED capture rate over Papers 1–3 |
-| F-07 | TRANSCRIBE cannot do multi-response | promoted | — resolved by ASSEMBLED tag, moot (F-08 rejected TRANSCRIBE entirely) |
+| F-07 | TRANSCRIBE cannot do multi-response | promoted | — premise still binds (all 8 multi items authored); the ASSEMBLED resolution is moot, F-08 rejected TRANSCRIBE entirely and Paper 1 shipped 63/63 AUTHORED |
 | F-08 | TRANSCRIBE key-longest at 84% | **promoted** | — resolved, AUTHOR mode used |
 | F-09 | No `correct` field on authoring-stage JSON | **promoted** | — documented, do not reintroduce |
 | F-10 | Lesson-collision check mechanized via `lessonKey` | **promoted** | — implemented, verify on Paper 2 |
