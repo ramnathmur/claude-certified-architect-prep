@@ -1,9 +1,12 @@
 # CCAR-P — Twelve-Month Roadmap
 
 **Created:** 2026-08-18, the day CCAR-F was passed (851/720).
-**Status:** Phase 0, **parallel track.** CCDV-F became the active exam on 2026-08-19; this project is
-kept warm rather than paused. Exam guide obtained and reconciled 2026-08-25 — see the provenance
-caveat in `EXAM-FACTS_v1.md`. Only the Path A/B decision below remains open in Phase 0.
+**Status:** Phases 0, 2 and 4 closed; **parallel track.** CCDV-F became the active exam on
+2026-08-19; this project is kept warm rather than paused. Exam guide obtained and reconciled
+2026-08-25 — see the provenance caveat in `EXAM-FACTS_v1.md`. Corpus complete 2026-08-25, mock-exam
+engine built 2026-08-29. Path A/B remains the one open Phase 0 item; Phase 1 (official syllabus) has
+not started. *(Status line corrected 2026-08-29 — it still read "Phase 0" after Phases 2 and 4 had
+completed.)*
 
 > **Revised ordering, 2026-08-19.** Ram is sitting **CCDV-F first**. Phase 1 below still runs, but in
 > CCDV-F-serving order: **Lesson 2 (Enterprise Integration & Production), then Lesson 3 (Responsible
@@ -75,7 +78,8 @@ without colliding with P revision.
       items remain genuinely open (scenario pooling, multi-response scoring), not caveat-blocked
 - [x] Confirm the real domain list and weightings — all seven names and percentages matched the
       community source exactly; `CCAR-P_Domain-N` stub table in the corpus index now carries the
-      confirmed names and weights (files themselves still not created — that's Phase 2)
+      confirmed names and weights. *(Corrected 2026-08-29: this line said the domain files were
+      "still not created" long after Phase 2 completed. All seven exist.)*
 - [ ] Decide Path A or Path B and write the target date into this file
 
 **Nothing else starts until Phase 0 closes.** This is the lesson from Foundations, where a community
@@ -91,7 +95,9 @@ guide's wrong scenario count reached generated practice material.
 ### Phase 2 — Build the corpus (**completed 2026-08-25**, far ahead of the weeks 6–16 estimate)
 - [x] One `CCAR-P_Domain-N_v1.md` per confirmed domain, built the way the Foundations `_v2` files were:
       core facts, decision tables, exam scenarios with ✅/❌, explicit misconceptions — **all seven
-      created, 77 sections, 77 scenarios, 154 tagged distractors.** Counts per domain in
+      created, 78 sections, 79 scenarios, 158 tagged distractors.** *(Counts corrected 2026-08-29
+      by mechanical extraction from the files themselves; the earlier 77/77/154 was a hand tally.)*
+      Counts per domain in
       `prep with quiz/CCAR-P_Corpus-Index_v1.md`
 - [x] Port the Foundations D1/D4/D5 material into the Models/Prompting/Context domain
 - [x] Build the Evaluation domain from the existing Eval Design Blueprint
@@ -114,9 +120,17 @@ guide's wrong scenario count reached generated practice material.
 - [ ] Keep an architecture decision record — it doubles as Solution Design and Stakeholder revision
 - [ ] Everything surprising in production goes into the corpus as a decision rule
 
-### Phase 4 — Mock engine (months 6–10)
-- [ ] Port `CCA-Orchestration-Prompt_v10.md` → `CCAR-P-Orchestration-Prompt_v1.md`, re-quota'd to the
-      confirmed domains
+### Phase 4 — Mock engine (**engine built 2026-08-29**, ahead of the months 6–10 estimate)
+- [x] Port `CCA-Orchestration-Prompt_v10.md` → `CCAR-P-Orchestration-Prompt_v2.md`, re-quota'd to the
+      confirmed domains. v1 ported the feedback loop only; v2 adds the item-fidelity half — see
+      `Outputs/CCAR-P_Mock-Exam-Engine-Audit_v1.md`
+- [x] Supporting ledgers: `CCAR-P_Objective-Map_v1.md` (78 sections → 38 objectives),
+      `FACET-LEDGER.md` (351 facets), `STEM-LEDGER.md` (48 seeded stems, Jaccard calibrated to 0.30),
+      `ARCHETYPE-LEDGER.md` (8 shapes, 8 distractor families), `GENERATION-INTELLIGENCE.md`
+- [x] `mock-exams/CCAR-P_MockTest-TEMPLATE_v1.html` and `mock-exams/DASHBOARD.html`, with
+      `tools/run-gate.js` running fidelity-gate check 1 in Node
+- [ ] **Open, blocks Paper 6:** D2 holds 18 facets against 8 items per paper — 2.2 papers of supply.
+      Needs ~20 more decision-table rows. Ram's decision, due by the Paper 4 Insights Round
 - [ ] Generate and sit papers on the Foundations cadence. Target ≥10 scored papers
 - [ ] `EXAM-LOG.md` per-paper: domain breakdown, per-question misses, Professor's Note
 - [ ] Insights Round every 3 scored papers

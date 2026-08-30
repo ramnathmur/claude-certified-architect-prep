@@ -1,0 +1,897 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#faf8f3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1f1c19" media="(prefers-color-scheme: dark)">
+<title>CCAR-P Lesson — Domain 3: Integration</title>
+<script>
+(function () {
+  var r = document.documentElement;
+  var t = null;
+  try { t = localStorage.getItem('site-theme'); } catch (e) {}
+  var mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+  if (!t && mq && mq.matches) t = 'dark';
+  if (t) r.setAttribute('data-theme', t);
+  if (mq && mq.addEventListener) mq.addEventListener('change', function (e) {
+    var stored = null;
+    try { stored = localStorage.getItem('site-theme'); } catch (err) {}
+    if (stored) return;
+    r.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+    window.dispatchEvent(new Event('themechange'));
+  });
+})();
+</script>
+<style>
+:root {
+  color-scheme: light;
+  --ink:    oklch(0.15 0.01 80);
+  --ink2:   oklch(0.30 0.015 75);
+  --ink3:   oklch(0.47 0.015 75);
+  --cream:  oklch(0.97 0.008 85);
+  --cream2: oklch(0.94 0.012 85);
+  --cream3: oklch(0.91 0.015 80);
+  --border: oklch(0.87 0.012 80);
+
+  --amber:       oklch(0.64 0.14 68);
+  --amber-light: oklch(0.93 0.035 80);
+  --amber-dark:  oklch(0.47 0.11 60);
+  --coral:       oklch(0.55 0.14 30);
+  --coral-light: oklch(0.94 0.025 35);
+  --coral-dark:  oklch(0.45 0.12 30);
+  --green:       oklch(0.50 0.10 150);
+  --green-light: oklch(0.94 0.025 145);
+  --green-dark:  oklch(0.40 0.09 150);
+  --blue:        oklch(0.43 0.09 245);
+  --blue-light:  oklch(0.93 0.025 240);
+  --blue-dark:   oklch(0.38 0.08 245);
+
+  --surface-raised:   oklch(0.15 0.01 80);
+  --on-raised:        oklch(0.97 0.008 85);
+  --on-raised-muted:  oklch(0.97 0.008 85 / 0.74);
+  --on-raised-dim:    oklch(0.97 0.008 85 / 0.6);
+  --on-raised-border: oklch(0.97 0.008 85 / 0.15);
+  --nav-bg:           oklch(0.97 0.008 85 / 0.96);
+
+  --shadow:    0 2px 16px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
+  --radius:    12px;
+  --radius-sm: 8px;
+  --bar:       3px;
+  --focus:     var(--ink);
+  --nav-h:     64px;
+  --maxw:      900px;
+
+  --font-serif: Georgia, 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+  --font-sans:  system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono:  ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+  --font-body-active: var(--font-serif);
+
+  --fs-body: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --fs-sm:   clamp(0.8125rem, 0.78rem + 0.15vw, 0.9375rem);
+  --fs-xs:   clamp(0.6875rem, 0.67rem + 0.1vw, 0.75rem);
+  --fs-h1:   clamp(2rem, 1.4rem + 3vw, 3.375rem);
+  --fs-h2:   clamp(1.5rem, 1.2rem + 1.5vw, 2.125rem);
+  --fs-h3:   clamp(1.25rem, 1.1rem + 0.75vw, 1.5rem);
+  --fs-pull: clamp(1.375rem, 1.15rem + 1.1vw, 1.625rem);
+
+  --space-section: clamp(3rem, 2.5rem + 2.5vw, 4rem);
+  --space-block:   clamp(1.5rem, 1.25rem + 1.25vw, 2.5rem);
+  --space-inline:  clamp(1.25rem, 1rem + 1.25vw, 2rem);
+  --box-pad-sm: 16px;
+  --box-pad:    22px;
+  --box-pad-lg: 30px;
+  --lh-body:    1.7;
+  --lh-heading: 1.2;
+  --t-fast: 0.15s;
+  --t-med:  0.25s;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --ink:    oklch(0.90 0.008 85);
+  --ink2:   oklch(0.78 0.01 80);
+  --ink3:   oklch(0.62 0.01 75);
+  --cream:  oklch(0.15 0.012 75);
+  --cream2: oklch(0.19 0.012 75);
+  --cream3: oklch(0.23 0.015 75);
+  --border: oklch(0.32 0.01 75);
+
+  --amber:       oklch(0.72 0.13 68);
+  --amber-light: oklch(0.24 0.04 70);
+  --amber-dark:  oklch(0.82 0.10 65);
+  --coral:       oklch(0.70 0.13 30);
+  --coral-light: oklch(0.24 0.045 32);
+  --coral-dark:  oklch(0.80 0.10 30);
+  --green:       oklch(0.70 0.11 150);
+  --green-light: oklch(0.23 0.04 148);
+  --green-dark:  oklch(0.80 0.09 150);
+  --blue:        oklch(0.70 0.10 245);
+  --blue-light:  oklch(0.24 0.04 242);
+  --blue-dark:   oklch(0.80 0.08 245);
+
+  --surface-raised:   oklch(0.24 0.012 75);
+  --on-raised:        oklch(0.93 0.008 85);
+  --on-raised-muted:  oklch(0.93 0.008 85 / 0.74);
+  --on-raised-dim:    oklch(0.93 0.008 85 / 0.6);
+  --on-raised-border: oklch(0.93 0.008 85 / 0.15);
+  --nav-bg:           oklch(0.15 0.012 75 / 0.96);
+
+  --shadow:    0 2px 16px rgba(0,0,0,0.3);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.4);
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-body-active);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
+.container { max-width: var(--maxw); margin-inline: auto; padding-inline: var(--space-inline); }
+
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: var(--radius-sm); }
+:focus:not(:focus-visible) { outline: none; }
+
+.skip-link {
+  position: absolute; left: 8px; top: -100px; z-index: 100;
+  background: var(--cream2); color: var(--ink);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 10px 16px; text-decoration: none;
+  font-family: var(--font-sans); font-size: var(--fs-sm);
+  transition: top var(--t-fast);
+}
+.skip-link:focus { top: 8px; }
+main:focus { outline: none; }
+section[id], h2[id], h3[id] { scroll-margin-top: calc(var(--nav-h) + 12px); }
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --t-fast: 0.01ms; --t-med: 0.01ms; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important; animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important; scroll-behavior: auto !important;
+  }
+}
+@media (forced-colors: active) { :focus-visible { outline: 3px solid Highlight; } }
+
+/* ---- nav ---- */
+.nav {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--nav-bg); backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-inner {
+  max-width: var(--maxw); margin-inline: auto; padding: 0 var(--space-inline);
+  height: var(--nav-h); display: flex; align-items: center; gap: 18px;
+  font-family: var(--font-sans);
+}
+.nav-home { color: var(--ink); text-decoration: none; font-weight: 600; font-size: var(--fs-sm); white-space: nowrap; }
+.nav-links { display: flex; gap: 14px; overflow-x: auto; flex: 1; scrollbar-width: none; }
+.nav-links::-webkit-scrollbar { display: none; }
+.nav-link {
+  color: var(--ink3); text-decoration: none; font-size: var(--fs-xs);
+  font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em;
+  white-space: nowrap; padding: 4px 0; border-bottom: 2px solid transparent;
+}
+.nav-link.active { color: var(--amber-dark); border-bottom-color: var(--amber); }
+.nav-progress { position: absolute; left: 0; bottom: -1px; height: 2px; background: var(--cream2); width: 100%; }
+.scrollbar-fill { height: 2px; background: var(--amber); width: 0%; transition: width var(--t-fast); }
+.theme-toggle {
+  background: none; border: 1px solid var(--border); border-radius: 99px;
+  width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0; font-size: 15px;
+}
+.theme-toggle:hover { border-color: var(--amber); }
+
+main { display: block; }
+section { padding-block: var(--space-section); }
+section + section { border-top: 1px solid var(--border); }
+h1 {
+  font-family: var(--font-serif); font-size: var(--fs-h1); line-height: var(--lh-heading);
+  font-weight: 400; margin: 0 0 10px;
+}
+h2 {
+  font-family: var(--font-serif); font-size: var(--fs-h2); line-height: var(--lh-heading);
+  font-weight: 400; margin: 0 0 var(--space-block);
+}
+h3 {
+  font-family: var(--font-sans); font-size: var(--fs-h3); line-height: var(--lh-heading);
+  font-weight: 600; margin: var(--space-block) 0 12px;
+}
+p { margin: 0 0 1.15em; }
+.eyebrow {
+  font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--amber-dark); margin-bottom: 14px;
+}
+.dek { font-size: var(--fs-pull); color: var(--ink2); font-weight: 400; max-width: 640px; }
+.meta-row {
+  display: flex; flex-wrap: wrap; gap: 10px 22px; margin-top: 22px;
+  font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink3);
+}
+.meta-row b { color: var(--ink); font-weight: 600; }
+
+/* ---- chapter list ---- */
+.chap {
+  display: grid; grid-template-columns: 34px 1fr; gap: 14px; align-items: start;
+  padding: 12px 0; border-top: 1px solid var(--border); text-decoration: none; color: inherit;
+}
+.chap:first-of-type { border-top: none; }
+.chap .num { font-family: var(--font-mono); color: var(--ink3); font-size: var(--fs-sm); padding-top: 2px; }
+.chap .body strong { display: block; font-family: var(--font-sans); font-size: var(--fs-body); }
+.chap .body em { display: block; font-style: normal; color: var(--ink3); font-size: var(--fs-sm); margin-top: 2px; }
+.chap:hover .body strong, .chap:focus-visible .body strong { color: var(--amber-dark); }
+
+/* ---- tables ---- */
+.table-wrap { overflow-x: auto; margin: var(--space-block) 0; }
+table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+caption { text-align: left; font-family: var(--font-sans); font-size: var(--fs-xs); color: var(--ink3);
+  text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+thead th { font-family: var(--font-sans); font-weight: 600; color: var(--ink2);
+  border-bottom: 2px solid var(--border); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.04em; }
+tbody tr:last-child td { border-bottom: none; }
+td.num, th.num { font-family: var(--font-mono); }
+
+/* ---- box family (parameterised base, per house style P1.7) ---- */
+.box {
+  background: var(--box-bg, var(--cream2));
+  border: 1px solid var(--border);
+  border-left: var(--bar) solid var(--box-accent, transparent);
+  border-radius: var(--radius);
+  padding: var(--box-pad);
+  margin: var(--space-block) 0;
+  break-inside: avoid;
+}
+.box.warning { --box-bg: var(--coral-light); --box-accent: var(--coral); }
+.box.raised  { --box-bg: var(--surface-raised); color: var(--on-raised); --box-pad: var(--box-pad-lg); --box-accent: transparent; }
+.box.raised h3 { color: var(--on-raised); }
+.box.raised p, .box.raised li { color: var(--on-raised-muted); }
+.box.raised .label { color: var(--on-raised-dim); }
+@media (forced-colors: active) { .box { border: 2px solid CanvasText; } }
+
+.label {
+  font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 600;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber-dark); margin-bottom: 10px;
+}
+.box.raised .label { color: var(--on-raised-dim); }
+
+/* ---- pullquote ---- */
+.pullquote {
+  border-left: var(--bar) solid var(--amber);
+  padding: 4px 0 4px 26px;
+  margin: var(--space-block) 0;
+  max-width: 640px;
+}
+.pullquote p {
+  font-family: var(--font-serif); font-size: var(--fs-pull); font-style: italic;
+  color: var(--ink2); margin: 0; line-height: 1.5;
+}
+
+/* ---- misconceptions grid ---- */
+.misc-grid { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin: var(--space-block) 0; }
+.misc-row { padding: 14px 20px; border-top: 1px solid var(--border); }
+.misc-row:first-of-type { border-top: none; }
+.misc-row .k {
+  font-family: var(--font-mono); font-weight: 700; font-size: var(--fs-xs);
+  text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 5px;
+}
+.misc-row.myth    { background: var(--coral-light); }
+.misc-row.myth .k { color: var(--coral-dark); }
+.misc-row.why  .k { color: var(--ink3); }
+.misc-row.reality    { background: var(--green-light); }
+.misc-row.reality .k { color: var(--green-dark); }
+.misc-row.test .k    { color: var(--amber-dark); }
+
+/* ---- widget ---- */
+.widget { background: var(--cream2); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--box-pad); margin: var(--space-block) 0; }
+.widget-title { font-family: var(--font-sans); font-weight: 600; font-size: var(--fs-h3); margin-bottom: 6px; }
+.widget-hint { font-size: var(--fs-sm); color: var(--ink3); margin-bottom: 18px; }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+.btn {
+  font-family: var(--font-sans); font-size: var(--fs-sm); font-weight: 600;
+  padding: 8px 16px; border-radius: 99px; border: 1px solid var(--border);
+  background: var(--cream); color: var(--ink2); cursor: pointer;
+}
+.btn.active { background: var(--ink); color: var(--cream); border-color: var(--ink); }
+.btn:hover:not(.active) { border-color: var(--amber); color: var(--amber-dark); }
+.k-row { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; font-family: var(--font-mono); font-size: var(--fs-sm); }
+.k-row input[type="range"] { flex: 1; accent-color: var(--amber); }
+.k-val { min-width: 3ch; text-align: center; font-weight: 700; color: var(--amber-dark); }
+.metric-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 640px) { .metric-pair { grid-template-columns: 1fr; } }
+.metric-cell { }
+.metric-label { display: flex; justify-content: space-between; gap: 10px; font-size: var(--fs-sm); margin-bottom: 8px; }
+.metric-label b { font-family: var(--font-mono); font-size: var(--fs-h3); white-space: nowrap; }
+.metric-track { height: 10px; background: var(--cream3); border-radius: 99px; overflow: hidden; }
+.metric-fill { height: 100%; transition: width var(--t-med); }
+.widget-summary {
+  margin-top: 20px; padding-top: 18px; border-top: 1px dashed var(--border);
+  font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--ink2);
+}
+
+/* ---- prev/next (project convention: paged wayfinding inside the one-file model) ---- */
+.pagenav {
+  display: flex; justify-content: space-between; gap: 16px; margin-top: var(--space-block);
+  font-family: var(--font-sans); font-size: var(--fs-sm);
+}
+.pagenav a { color: var(--ink2); text-decoration: none; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 10px 16px; }
+.pagenav a:hover, .pagenav a:focus-visible { border-color: var(--amber); color: var(--amber-dark); }
+.pagenav .next { margin-left: auto; }
+
+footer { border-top: 1px solid var(--border); padding-block: var(--space-block); }
+footer p { color: var(--ink3); font-size: var(--fs-xs); font-family: var(--font-mono); }
+
+strong.load-bearing { color: var(--amber-dark); }
+em { font-style: italic; }
+</style>
+</head>
+<body>
+<!-- LEDGER
+  Register:   App (course / multi-module explainer) — Step 0 row 1, deviated: plain chapter
+              list not card grid, same reasoning as the Domain 4 build — one lesson read
+              start-to-finish, not modules browsed out of order
+  Hues:       3 of 3 — amber = primary/emphasis + "progressive" in the widget, coral =
+              warnings/wrong-turns + misconceptions "myth" + "monolithic" in the widget
+              (cost/waste framing, not a right/wrong framing — Objective 8 is explicit that
+              monolithic is the correct choice below the crossover), green = misconceptions
+              "reality"
+  Box types:  3 of 4 — box.warning, box.raised, misc-grid (pullquote debits nothing).
+              No .analogy: nothing in this domain had an honest analogue worth forcing:
+              admission control, confused-deputy, and namespace discovery are mechanism
+              arguments, not "maps to something already known" arguments.
+  Widgets:    1 of 1 — Surface Cost Crossover (Objective 8). Threshold-Explorer-shaped
+              (drag one parameter, two opposing live-computed metrics) but driven by real
+              token-cost formulas built from the source's own numbers (200 tok/tool,
+              150 tok/namespace-entry, ~7.5 tools/namespace) rather than the catalogued
+              spam-threshold dataset — invented variant, not a reused instance.
+  Hero:       0 — no bespoke illustration; the widget carries the one visual budget item
+  Dark cards: 3, none consecutive (Objective 2's least-privilege rule, Objective 5's
+              refresh-incident diagnosis, the synthesis's interlock statement)
+  Devices:    plain chapter list, box.warning x3, box.raised x3, misc-grid x3, pullquote x1,
+              widget, accessible data tables x5 (latency budget, stratified sampling,
+              four-content-types chunking, retrieval mechanism strong/weak, six-query
+              dispatch)
+  Invented:   Surface Cost Crossover widget (see Widgets row above)
+  Deviations: prose contract followed per teaching-style-lecture-not-socratic memory — no
+              per-objective template, box.warning used three times total rather than once
+              per objective (still restrained relative to eight objectives), matching the
+              spirit of the restraint the Domain 4 build established.
+              Table count is not capped by P1.7 (only box/hue/widget/hero/dark-card rows
+              are); five tables reflects genuine multi-column source data, not padding.
+              Prev/Next links layered on top of the house style's anchor-nav model per this
+              project's own CLAUDE.md ("paged... prev/next"), same as Domain 4.
+-->
+<a class="skip-link" href="#main">Skip to content</a>
+<nav class="nav" aria-label="Page navigation">
+  <div class="nav-inner">
+    <a class="nav-home" href="#intro">⌂ Domain 3</a>
+    <div class="nav-links">
+      <a class="nav-link" href="#tool-bloat">Tool sprawl</a>
+      <a class="nav-link" href="#auth">Auth &amp; authz</a>
+      <a class="nav-link" href="#latency">Latency</a>
+      <a class="nav-link" href="#observability">Observability</a>
+      <a class="nav-link" href="#chunking">Chunking</a>
+      <a class="nav-link" href="#retrieval">Retrieval</a>
+      <a class="nav-link" href="#protocols">Protocols</a>
+      <a class="nav-link" href="#discovery">Discovery</a>
+      <a class="nav-link" href="#synthesis">Synthesis</a>
+    </div>
+    <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark mode" title="Toggle dark mode">
+      <span aria-hidden="true">🌙</span>
+    </button>
+    <div class="nav-progress"><div class="scrollbar-fill" id="scrollbar-fill"></div></div>
+  </div>
+</nav>
+
+<main id="main" tabindex="-1">
+
+<section id="intro"><div class="container">
+  <div class="eyebrow">CCAR-P · Domain 3 · 19% of the exam</div>
+  <h1>Integration</h1>
+  <p class="dek">Domains 1 and 2 test the system you design. This one tests everything that system has to touch that you didn't design — and it carries more exam weight than any other domain.</p>
+  <div class="meta-row">
+    <span><b>Objectives</b> 8</span>
+    <span><b>Weight</b> 19%</span>
+    <span><b>Source</b> official exam guide v1.0</span>
+  </div>
+
+  <h3>Contents</h3>
+  <nav aria-label="Chapters">
+    <a class="chap" href="#tool-bloat"><span class="num">1</span><span class="body"><strong>Tool sprawl and its two costs</strong><em>Tokens, discrimination, and privilege — what a large tool surface actually costs</em></span></a>
+    <a class="chap" href="#auth"><span class="num">2</span><span class="body"><strong>Who is calling, and what may they do</strong><em>The confused-deputy problem, and the single most rewarded reflex in this domain</em></span></a>
+    <a class="chap" href="#latency"><span class="num">3</span><span class="body"><strong>Turning a trade-off into arithmetic</strong><em>Budgeting at p95, streaming, and the reorder-and-cache move</em></span></a>
+    <a class="chap" href="#observability"><span class="num">4</span><span class="body"><strong>Watching a system that doesn't explain itself</strong><em>Traces over logs, and why sampling has to be stratified</em></span></a>
+    <a class="chap" href="#chunking"><span class="num">5</span><span class="body"><strong>What a chunk actually is</strong><em>Structural chunking, indexing as one coupled unit, and the refresh-incident diagnosis</em></span></a>
+    <a class="chap" href="#retrieval"><span class="num">6</span><span class="body"><strong>RAG is not a synonym for vector search</strong><em>Matching mechanism to data shape and query pattern</em></span></a>
+    <a class="chap" href="#protocols"><span class="num">7</span><span class="body"><strong>Who decides what happens next</strong><em>Direct API, MCP, and agent-to-agent — and the cost gradient between them</em></span></a>
+    <a class="chap" href="#discovery"><span class="num">8</span><span class="body"><strong>Loading everything versus loading a map</strong><em>Monolithic and progressive context, and where the two actually cross</em></span></a>
+    <a class="chap" href="#synthesis"><span class="num">9</span><span class="body"><strong>One system, all eight objectives</strong><em>A regional insurer's claims assistant, and the four distractor shapes to check against</em></span></a>
+  </nav>
+
+  <p>One thing before we get into the material, because it should shape how you spend your remaining study time. The exam runs 63 items in 120 minutes, scored on a 100-to-1000 scale against a 720 pass mark, and there's no per-domain floor — you pass or fail on total score alone. Two things about item structure are still genuinely unclear: whether items stand alone or arrive in shared-scenario blocks, and whether multiple-response items carry partial credit. Study as though they don't. That's the more expensive assumption to make, and it's the same habit that already cost you on CCAR-F: losing multiple-response items by being mostly right when the scoring was all-or-nothing.</p>
+
+  <p>Domain 1 and Domain 2 were about the system you design. This domain is about everything that system has to touch that you didn't design: an identity provider someone configured years ago, a document store on its own refresh schedule, a downstream service with a latency profile you don't control. The eight objectives — tool sprawl, auth gaps, latency trade-offs, observability, chunking, retrieval, protocols, discovery — look like a grab bag the first time you read through them. They're not. They're eight versions of one question.</p>
+
+  <div class="pullquote"><p>Every objective in this domain is an admission-control decision: what gets into the model's context, what the model is allowed to reach, what that costs, and what record survives the transaction.</p></div>
+
+  <p>Hold onto that thread as you work through the rest of this lesson. It's why the harder items in this domain often test two objectives at once instead of one, and it's exactly the point of the worked system that closes this lesson out.</p>
+</div></section>
+
+<section id="tool-bloat"><div class="container">
+  <h2>1. Tool sprawl and its two costs</h2>
+
+  <p>Every tool you register costs you twice, and the two costs are usually tracked by different people. The first is tokens: a tool's name, description, and input schema get serialized into the request whether or not that tool ends up being used, so a large tool surface is overhead you pay on every single turn. The second cost is discrimination, and it's the one that actually breaks production systems. Think about how the model picks a tool: it matches descriptions against the request. With five clearly distinct options, that's an easy problem. With twenty, new tools tend to be near-neighbors of ones already there — <code>search_documents</code> sitting beside <code>find_files</code> sitting beside <code>query_knowledge_base</code> — and selection error grows faster than the tool count does, because the number of confusable pairs grows faster too. There's a third cost that only shows up in an incident review: every tool is a privilege, and one the agent doesn't legitimately need is still one it can call if a prompt goes sideways. Blast radius tracks the size of the tool surface, not the size of the workflow you actually intended.</p>
+
+  <h3>Putting numbers under it</h3>
+  <p>Here's what that looks like with real numbers. An internal operations agent accumulated 22 tools over three quarters, one integration at a time. Each definition runs about 180 tokens once its schema is counted, so 22 tools means roughly 4,000 tokens spent describing capabilities before a single word of the actual request arrives. At 40,000 requests a day, that's 160 million tokens daily, most of it irrelevant to whatever the request actually needed. A week of traces showed the damage wasn't spread evenly: misroutes clustered in three confusable pairs — <code>get_customer</code>/<code>get_account</code>, <code>search_tickets</code>/<code>search_knowledge</code>, <code>send_notification</code>/<code>create_alert</code> — at an 11% error rate, against under 2% everywhere else.</p>
+
+  <p>The fix isn't better wording on those six tools. It's decomposition: a customer-lookup agent with 4 tools, a knowledge agent with 3, a notification agent with 3, and each request gets routed to exactly one of them. Tool surface per request drops from 22 to 3 or 4, saving about 3,300 tokens a call, and the confusable pairs end up living in different agents entirely — so the discrimination problem disappears instead of getting patched over. Tightening descriptions is still worth doing. Just do it after the decomposition, on whatever pairs are still confusable inside a single agent.</p>
+
+  <p>There's one case where the exam actually wants a tool <em>added</em> rather than removed: a scoped agent with a genuinely high-frequency cross-role need, where routing every single instance through a coordinator would be pure latency tax. A narrow, scoped exception is the right call there, with complex cases still routed through the coordinator. Strict scoping pushed past its useful point becomes its own failure.</p>
+
+  <h3>Four answers that sound responsible and aren't</h3>
+  <p>Tightening every tool's description is a genuine half-move: it improves discrimination, but it doesn't touch the token cost or the privilege surface. Adding a routing classifier in front of the agent sounds like proper architecture — a dedicated component with one job — but really it just adds a component, a failure mode, and a latency hop to compensate for a configuration problem a smaller tool set would already solve. Keeping every tool "for flexibility" makes the same mistake from the other direction: on a tool surface, flexibility is indistinguishable from ambiguity, and the cost lands on every request regardless of whether that flexibility ever gets used. And merging confusable tools into one general one — <code>get_customer</code> and <code>get_account</code> collapsing into <code>lookup_entity</code> — drops the count in a way that looks like progress. It isn't: the lost precision doesn't disappear, it just moves into parameter selection, where it's harder to catch.</p>
+
+  <div class="pagenav"><span></span><a class="next" href="#auth">Next: Auth &amp; authz →</a></div>
+</div></section>
+
+<section id="auth"><div class="container">
+  <h2>2. Who is calling, and what may they do</h2>
+
+  <p>Most people's mental model of security collapses two separate questions into one: who is calling, and what are they allowed to do. In conventional architecture, those stay two distinct ideas that travel together: identity gets established at the edge, carried down through every layer, and each layer enforces what that identity is allowed to reach. Agentic systems break that quietly. The agent itself runs as a service, and when it calls a tool, that tool is usually invoked with the agent's own credentials, not the user's. Every individual user collapses into one identity at the point where the data actually gets touched. That's the confused-deputy problem: a privileged component acting on behalf of a less-privileged caller, and the caller's own constraints get lost somewhere along the way.</p>
+
+  <h3>Three gaps, in increasing severity</h3>
+  <p>Take an HR assistant serving 4,000 employees — this is what that gap looks like once it's actually live. The document store behind it has three tiers: general policy open to everyone, manager guidance for about 400 people managers, and compensation planning documents for 12 HR business partners. The fast path to a working demo was one service account with read access across all three, and a post-retrieval step that drops any chunk the requesting user isn't entitled to see.</p>
+  <p>The shallow gap is a quality bug. If a compensation document is the strongest match for a manager's query, the filter drops it after ranking, and the user just gets whatever ranked fourth or fifth instead — with no indication why the answer feels weak. The second gap is structural: the filter is application code sitting in one path, and any other path that reaches the index — a debugging endpoint, a batch job, a feature someone writes next quarter without knowing the filter exists — has no authorization at all. The third is the one people miss entirely: traces and logs capture retrieved context <em>before</em> filtering happens, so the observability system ends up holding compensation data under access controls that were never built for it.</p>
+
+  <p>The fix pushes authorization down to the query itself. The user's identity propagates from the edge all the way to the retrieval layer, and the vector search runs with an entitlement filter built into the query — so a document outside the caller's line of business is never a candidate, never ranked, never retrieved, and never written to a trace. Where the store genuinely can't filter at query time, the fallback is separate indexes per entitlement tier: more infrastructure, but the right trade against leaving enforcement sitting in application code.</p>
+
+  <div class="box raised">
+    <div class="label">The reflex worth having cold</div>
+    <p><strong class="load-bearing">Least privilege means the capability doesn't exist — not that someone's watching it.</strong> Logging a privileged action, requiring a confirmation step, restricting it to business hours: these are real controls, and all three are the wrong answer when a scenario tells you a capability isn't needed. They're what you deploy when a privilege is genuinely required and you're managing its risk — not what you deploy instead of removing something that shouldn't be there in the first place. Watch the scenario prose: if it says the agent doesn't need the capability, the answer removes it.</p>
+  </div>
+
+  <div class="box warning">
+    <div class="label">Why the compensating controls still tempt</div>
+    <p style="margin:0">A confirmation step makes sense for something needed but consequential; it's the wrong answer for something not needed at all, and it taxes every legitimate use to guard against a use that shouldn't exist. A business-hours restriction narrows a window, not a privilege — which produces the odd result that the thing you didn't want is perfectly fine at 2pm. And a rule written into the system prompt is probabilistic by nature: a security control that fails 1% of the time across 40,000 daily requests fails 400 times a day, and that isn't a security control at all. When the scenario also names a regulated sector or an audit requirement, the answer that satisfies the auditor is the same one: enforcement provable at the point of access, not just asserted in application logic.</p>
+  </div>
+
+  <div class="pagenav"><a class="prev" href="#tool-bloat">← Tool sprawl</a><a class="next" href="#latency">Next: Latency →</a></div>
+</div></section>
+
+<section id="latency"><div class="container">
+  <h2>3. Turning a trade-off into arithmetic</h2>
+
+  <p>Nearly every mechanism that buys you accuracy spends latency to do it: a bigger model, more retrieved chunks, a reranking pass, a self-critique step. Each one has a real accuracy story and a measurable cost, and what's actually being tested isn't whether you know the trade-off exists — everyone knows that — it's whether you can turn the argument into numbers. "We should use the faster model" is an opinion. "Our p95 budget is 3,000 milliseconds, generation already spends 1,900 of it, and the reranking pass on the table costs 300 for a 4-point recall gain, leaving 260 of slack" is a decision you can defend to a stakeholder and revisit when the SLA changes.</p>
+
+  <p>Two disciplines keep that arithmetic honest. Budget against the tail your SLA actually names — p95 or p99 — because that's where your users experience the system, not the mean a dashboard shows you by default. And separate total latency from perceived latency: streaming moves time-to-first-token dramatically for an interactive chat surface, and does nothing at all for a downstream service that waits for the complete response before it acts. The exam tells you which consumer you have right there in the scenario prose, and it's easy to read straight past it.</p>
+
+  <h3>A budget with real numbers</h3>
+  <p>A document-triage assistant with a contractual p95 of 3,000ms:</p>
+
+  <div class="table-wrap"><table>
+    <caption>Stage-level latency budget at p95</caption>
+    <thead><tr><th scope="col">Stage</th><th scope="col" class="num">p95 (ms)</th></tr></thead>
+    <tbody>
+      <tr><td>Edge, auth, identity propagation</td><td class="num">120</td></tr>
+      <tr><td>Query embedding</td><td class="num">180</td></tr>
+      <tr><td>Vector search (top-20)</td><td class="num">240</td></tr>
+      <tr><td>Cross-encoder rerank (20 → 5)</td><td class="num">300</td></tr>
+      <tr><td>Generation</td><td class="num">1,900</td></tr>
+      <tr><td>Response assembly</td><td class="num">60</td></tr>
+      <tr><td><strong>Total</strong></td><td class="num"><strong>2,800</strong></td></tr>
+    </tbody>
+  </table></div>
+
+  <p>That leaves 200ms of slack, with quality sitting at 91% against a business target of 95%. Three proposals show up. A self-critique pass costs about 1,400ms for a 3-point gain, which pushes the total to 4,200 — 40% over budget. A higher-capability model pushes generation from 1,900 to 2,600, for a total of 3,500 — still over. Retrieving top-50 instead of top-20 and reranking harder costs 90ms in search and 210 in rerank, for a total of 3,100 — marginally over, for a 1.5-point gain. All three genuinely improve accuracy. All three blow the SLA. The trap is treating this as "which accuracy gain is worth the overage," when the real move is finding latency you're already wasting.</p>
+
+  <p>Here's the latency actually being wasted: the static system preamble runs 3,100 tokens, identical on every single request, and currently sits after the retrieved chunks instead of before them. Move it to the front and turn on prompt caching, and you cut both time-to-first-token and per-request cost — and the budget that frees up is exactly enough to fund the higher-capability model inside the original SLA, with a real accuracy gain attached. <strong class="load-bearing">Whenever a scenario names latency and cost together alongside a large, unchanging block of content, look for that reorder-and-cache move before reaching for anything more expensive.</strong></p>
+
+  <div class="box warning">
+    <div class="label">The distractor shapes here</div>
+    <p style="margin:0">Optimizing the mean when the SLA names the tail can look like progress on a dashboard while the actual complaint goes untouched. Treating streaming as a fix for a consumer that isn't interactive changes nothing about total time. Buying more accuracy than the scenario asked for looks thorough. It's actually a cost nobody priced in. Cutting retrieved context to hit a budget pulls out a working mechanism instead of tuning it, and usually costs you more accuracy than the time it saves elsewhere. And caching the model's <em>output</em> is a different mechanism from caching a stable input <em>prefix</em> — an answer that conflates the two has the wrong idea about how the saving actually happens.</p>
+  </div>
+
+  <div class="pagenav"><a class="prev" href="#auth">← Auth &amp; authz</a><a class="next" href="#observability">Next: Observability →</a></div>
+</div></section>
+
+<section id="observability"><div class="container">
+  <h2>4. Watching a system that doesn't explain itself</h2>
+
+  <p>In a deterministic service, a failure and its cause usually sit close together: a stack trace, a status code, a query plan. In an agentic system, the final output is just the last thing in a whole chain of decisions, and it rarely explains itself. A confidently wrong answer looks identical to a confidently right one once all you're looking at is the response. That's why the unit of observability here is the trace, not the log line: which tools got called, with what arguments and what results, what context got retrieved down to the chunk IDs and document versions, where the model chose between branches or a guardrail fired — all tied together by one correlation ID from the original request.</p>
+
+  <p>The objective's own wording — "at scale" — changes the design in three concrete ways. Volume: full-fidelity traces are large, and at 200,000 requests a day and roughly 30KB per trace, that's about 6GB a day, or 2.2TB a year, sitting in a store you actually have to query. Cardinality: a metric labeled with a user ID or session ID explodes the label space and makes the metrics backend slow and expensive, so high-cardinality detail belongs in traces, queried on demand, while metrics stay on low-cardinality dimensions like tool name, model, tenant tier, outcome class. And sensitivity: a trace holds prompts, retrieved documents, and tool payloads — a second copy of your most sensitive data, usually sitting behind access controls that were designed for engineers debugging outages, not for the data itself. It's the same discipline Domain 4 applies to production logs of eval samples; here it's the trace store that inherits the obligation.</p>
+
+  <h3>Why the answer is stratified, not uniform</h3>
+  <p>Take a claims assistant running at that same 200,000 requests a day — it shows you why. Full capture gives you the 6GB-a-day, indefinite-retention problem above. Uniform sampling at 1% drops that to 60MB a day, but it only catches about 20 of the day's 2,000 escalations — nowhere near enough to characterize what's actually failing. Here's what the stratified version looks like instead:</p>
+
+  <div class="table-wrap"><table>
+    <caption>Stratified capture policy</caption>
+    <thead><tr><th scope="col">Stratum</th><th scope="col">Sample rate</th><th scope="col">Rationale</th></tr></thead>
+    <tbody>
+      <tr><td>Requests ending in error or exception</td><td class="num">100%</td><td>Rare and maximally informative</td></tr>
+      <tr><td>Requests escalated to a human</td><td class="num">100%</td><td>The system's own admission of difficulty</td></tr>
+      <tr><td>Requests below confidence threshold</td><td class="num">100%</td><td>Leading indicator of quality drift</td></tr>
+      <tr><td>Requests touching regulated claim data</td><td class="num">100% metadata, redacted payload</td><td>Audit needs the fact of access, not the content</td></tr>
+      <tr><td>Successful routine requests</td><td class="num">2%</td><td>Enough for baseline distributions</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>That lands you around 5 to 7% of requests fully traced, roughly 350MB a day, with every high-information event captured and retention set per stratum instead of one blanket policy. Underneath that, low-cardinality metrics run on 100% of traffic: latency percentiles, tool-call counts by tool name, retrieval hit rate, escalation rate, guardrail-trigger rate, cost per request. Alerting sits on those metrics, not on the traces, and instrumenting per stage rather than only end-to-end is what turns "the system got slow" into "the reranker got slow."</p>
+
+  <p>Two wrong turns keep recurring here. Logging inputs and final outputs at 100% feels complete, and it's what most API gateways hand you for free — but it's the highest-volume, lowest-information capture you can choose. It tells you what happened and nothing about why. Sampling uniformly at a low rate is genuinely the right textbook answer for high-volume, homogeneous traffic, which is exactly why it's tempting here, and exactly why it's wrong: it's calibrated to the common case, and the common case isn't what you're hunting for.</p>
+
+  <div class="pagenav"><a class="prev" href="#latency">← Latency</a><a class="next" href="#chunking">Next: Chunking →</a></div>
+</div></section>
+
+<section id="chunking"><div class="container">
+  <h2>5. What a chunk actually is</h2>
+
+  <p>Model weights hold general knowledge. Your organization's specifics live somewhere else entirely — they change on their own schedule and carry their own access rules. RAG is the pipeline that pulls those specifics into context at request time, and it has five stages where things can go wrong: ingestion, chunking, embedding, indexing, retrieval. Diagnosing a RAG failure really just means figuring out which of the five.</p>
+
+  <p>Take a sentence like "this limit does not apply to renewals," lifted out of the middle of a long policy document with no heading above it. On its own, it means nothing — and that's exactly the failure chunking is supposed to prevent. <strong class="load-bearing">A chunk is the smallest span of a document that still makes sense read completely out of context.</strong> That rules out fixed-size splitting as any kind of default: a flat 512-token window just cuts wherever 512 tokens happens to land — mid-clause, mid-table, mid-function. What it points to instead is document structure: clause boundaries in a policy manual, endpoint boundaries in an API reference, ticket boundaries in a support archive. The structure a human author already imposed is a map of where the real seams are.</p>
+
+  <p>Two refinements make that work in practice. A small overlap — 10 to 15% — is insurance against a key sentence straddling a boundary, not a strategy in its own right. And contextualization, prepending the document title and heading path to the chunk text before it gets embedded, matters more than it looks: putting the heading path into the text itself, not just the metadata, is what would have saved that renewals sentence. It puts the context into the vector itself, where retrieval can actually use it. It's one of the highest-return, least glamorous changes you can make in a RAG pipeline.</p>
+
+  <h3>Four content types, four different answers</h3>
+  <div class="table-wrap"><table>
+    <caption>An insurance operations knowledge base</caption>
+    <thead><tr><th scope="col">Content</th><th scope="col">Chunking approach</th><th scope="col">Why</th></tr></thead>
+    <tbody>
+      <tr><td>Policy manuals (40–200pg, deep headings)</td><td>Clause boundaries, 200–600 tokens, heading path + clause number prepended</td><td>Metadata (policy ID, date, jurisdiction) lets a query filter to the version in force on the claim's date</td></tr>
+      <tr><td>API reference</td><td>One endpoint per chunk, whole</td><td>Splitting parameters from their description produces two useless chunks</td></tr>
+      <tr><td>Support ticket archive</td><td>One ticket per chunk, not one message</td><td>A single message is unanswerable without the problem statement above it and the outcome below it</td></tr>
+      <tr><td>Product specification table (12,000 rows × 40 cols)</td><td>Not embedded at all — exposed as a structured query tool</td><td>"How many products exceed threshold Y" has no vector-space answer, and a row embeds as mostly noise</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>Indexing is where the exam's own sample question lives. An index is one coupled unit made of three things: the chunking scheme, the embedding model, and the vector store. Change any one of them without the others, and the space becomes inconsistent — vectors from a different embedding model land in a different geometry, and similarity scores between them stop meaning anything, even though you can still compute them. The system doesn't error. It just returns confident nonsense.</p>
+
+  <div class="box raised">
+    <div class="label">Worked case — the refresh incident</div>
+    <p>Six weeks after launch, a nightly reload of the policy manuals runs. The next morning, the assistant is confidently citing clause numbers that don't match the text it quotes. <strong>A RAG system that starts returning confident, wrong answers immediately after a document refresh is a retrieval and indexing problem</strong> — not the model, not the prompt, not the temperature. The timing tells you everything you need to know.</p>
+    <p>Run the investigation in a fixed order. First: did the re-index actually complete? Compare chunk count against the expected count from source — a 30% shortfall means a partial run. Second: did the chunking configuration change alongside the refresh? Third: did the embedding model version move? Compare what's recorded in the index against what's actually running at query time — this is the classic silent killer, because nothing errors when it happens. Fourth: did deleted or superseded documents actually leave the index, or are they still ranking as stale vectors? Only after checking all four do you go look at the prompt or the model.</p>
+    <p>In this case, the cause was the embedding version drifting because the ingestion job pulled a floating version tag. The fix pins the version to the index and re-embeds the corpus. The prevention is a validation gate after every re-index: a fixed set of golden queries with known-correct chunk IDs, blocking promotion if the hit rate drops.</p>
+  </div>
+
+  <p>Two tempting wrong answers show up right here. Lowering the temperature to stop confidently-wrong answers sounds right, because "confidently wrong" sounds like a sampling problem — but temperature governs how the model picks tokens, and has nothing to say about which documents got retrieved. Swapping in a more capable model makes the same mistake: a better model reading the wrong document just produces a more articulate wrong answer. And increasing chunk size to give the model more context looks like it addresses the complaint directly, but a larger chunk dilutes the embedding across more topics and lowers precision. Contextualization solves the actual context problem without that dilution.</p>
+
+  <div class="pagenav"><a class="prev" href="#observability">← Observability</a><a class="next" href="#retrieval">Next: Retrieval →</a></div>
+</div></section>
+
+<section id="retrieval"><div class="container">
+  <h2>6. RAG is not a synonym for vector search</h2>
+
+  <p>"RAG" and "vector database" have collapsed into the same idea in casual usage, and that's the source of most retrieval mistakes on this exam. Retrieval strategy is really a choice on two independent axes: what shape the data actually is — prose, structured records, code, tables, entities with relationships, time series — and what the query is actually asking the system to do — look up an identifier, find something semantically similar, filter by attribute, aggregate across records, traverse a relationship. The available mechanisms line up against those two axes unevenly:</p>
+
+  <div class="table-wrap"><table>
+    <caption>Retrieval mechanisms by strength</caption>
+    <thead><tr><th scope="col">Mechanism</th><th scope="col">Strong at</th><th scope="col">Weak at</th></tr></thead>
+    <tbody>
+      <tr><td>Dense / vector</td><td>Paraphrase, conceptual similarity</td><td>Exact tokens: part numbers, error codes, rare terms</td></tr>
+      <tr><td>Lexical / BM25</td><td>Exact terms, identifiers, rare vocabulary</td><td>Paraphrase, queries sharing no vocabulary with the answer</td></tr>
+      <tr><td>Hybrid (fused)</td><td>Corpora and queries mixing both forms</td><td>Cost and complexity when only one form is present</td></tr>
+      <tr><td>Metadata filter + semantic</td><td>Scoping to jurisdiction, tenant, date, entitlement</td><td>Little; usually additive and underused</td></tr>
+      <tr><td>Structured query (SQL)</td><td>Aggregation, counting, joins, exact numerics</td><td>Anything needing semantic understanding of prose</td></tr>
+      <tr><td>Graph traversal</td><td>Multi-hop relationship questions</td><td>Everything else; expensive to build and maintain</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>The dense-retrieval weakness is worth slowing down on, because it's counterintuitive and it's heavily tested. Embedding models compress meaning, and a code like <code>ERR_5521</code> carries almost no distributional meaning: it's rare, it appears in very few contexts, and its vector sits closer to other rare token sequences than to the document that actually explains it — while every article about upgrade errors clusters tightly around the same topic. Ask "why does ERR_5521 happen after upgrade" against a vector index, and you get five thematically perfect articles back, none of which even mention <code>ERR_5521</code>. Lexical search returns the one that does. <strong class="load-bearing">Hybrid retrieval earns its place exactly when a corpus mixes natural-language explanation with exact identifiers, and users query in both forms</strong> — common in support, legal, medical, and engineering content. It isn't universal, though: bolting hybrid onto a corpus of pure narrative prose, queried in plain language, buys you a second index and a fusion step for nothing.</p>
+
+  <p>Two more moves belong in the same toolkit. Filtering before ranking — applying a metadata constraint as part of the query itself, so semantic ranking only runs across the eligible set — is both a precision gain and, tying back to Objective 2, a correctness requirement wherever entitlement is involved. And retrieving wide before reranking narrow: pulling the top 20 to 50 candidates before reranking down to 3 to 5 buys you most of the precision of an expensive search at most of the speed of a cheap one, at the cost of a latency stage that has to fit inside whatever budget Objective 3 set.</p>
+
+  <h3>One router, six query shapes</h3>
+  <p>A field-service assistant over three sources, troubleshooting articles in prose with codes inline, a 45,000-row parts catalog, an equipment hierarchy with supersession relationships, shows the router this implies:</p>
+
+  <div class="table-wrap"><table>
+    <caption>Query shape → retrieval strategy</caption>
+    <thead><tr><th scope="col">Query</th><th scope="col">Shape</th><th scope="col">Strategy</th></tr></thead>
+    <tbody>
+      <tr><td>"Compressor is short-cycling on a model 400"</td><td>Prose, conceptual</td><td>Dense, filtered on model=400</td></tr>
+      <tr><td>"What does ERR_5521 mean"</td><td>Exact identifier</td><td>Lexical</td></tr>
+      <tr><td>"Is part 88-2210J in stock"</td><td>Structured lookup</td><td>SQL, no retrieval</td></tr>
+      <tr><td>"How many model 400 units use a superseded compressor"</td><td>Aggregation over relationships</td><td>SQL joined</td></tr>
+      <tr><td>"What replaced the 88-2210J"</td><td>Relationship traversal</td><td>Graph / FK traversal</td></tr>
+      <tr><td>"Why does the compressor fail after the ERR_5521 sequence"</td><td>Mixed prose + identifier</td><td>Hybrid</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>Picking one strategy across all six would get you the wrong answer four times out of six. The measured payoff on that last row alone justifies the added complexity to a stakeholder in a way "hybrid is best practice" never will: dense-only retrieval hit that query type 34% of the time; hybrid fusion hit it 89%. The wrong turns worth naming here: assuming RAG means vector search, which fails outright on identifiers, aggregations, and relationship queries; building a knowledge graph for what's actually a single-hop foreign-key lookup; and raising top-k until the right document shows up, which floods context and makes the lost-in-the-middle problem worse — when reranking gets you the same intent in a targeted way.</p>
+
+  <div class="pagenav"><a class="prev" href="#chunking">← Chunking</a><a class="next" href="#protocols">Next: Protocols →</a></div>
+</div></section>
+
+<section id="protocols"><div class="container">
+  <h2>7. Who decides what happens next</h2>
+
+  <p>There are three mechanisms for connecting an agent to something outside it, and <strong class="load-bearing">the question that tells them apart is who decides what happens next.</strong> With a direct API or CLI call, your code decides. The sequence is known at design time, it runs whether or not a model is even involved, and the result is deterministic — which makes it the cheapest, fastest, most testable option, and also the most under-used one, because "let the agent decide" is a seductive default even when nothing actually needs deciding. With MCP, the model decides, inside a surface your server exposes: tools, which are actions the model can call; resources, which are read-only content it can consult; and prompts, reusable templates — all discovered at connection time. Its real value is standardization: prefer an existing community server for standard systems like issue trackers or source control, and save custom builds for workflows genuinely unique to your organization. With agent-to-agent, another agent decides. You're handing over a task, not requesting data, and the other side brings back its own context, tools, and judgment as a result rather than a payload — the right call when the work needs reasoning your own agent shouldn't be doing itself.</p>
+
+  <p>The cost climbs in that same order. A direct call is one round-trip. An MCP tool call is a model's decision to make the call, plus the round-trip, plus a result the model then has to interpret. Agent-to-agent is all of that plus an entire second inference loop. Each step up buys you flexibility and spends determinism. One distinction inside MCP is easy to blur: a resource is something the agent looks at without spending a tool call; a tool is something it does. Exposing a content catalog as a resource gives the agent a map without burning a model turn on an exploratory query — which matters directly for the next objective.</p>
+
+  <h3>Five systems, three mechanisms</h3>
+  <p>A claims-processing assistant shows all three mechanisms earning their place on one build. The <strong>claims database</strong>, where the claim ID is already known and there's no decision left for the model to make, gets a direct call in pre-processing — one round-trip, deterministic, and it removes an entire category of "the agent forgot to look up the claim" failures. The <strong>policy document store</strong>, where the agent genuinely has to decide whether and what to search, becomes an MCP tool paired with a resource exposing the catalog. The <strong>fraud scoring service</strong> is deterministic in and out, and has to run on every claim above a threshold, so it stays a direct API call from the orchestration layer rather than a tool — exposing it as a tool would let the model choose not to call it, which is exactly wrong for a control that must always fire. The <strong>issue tracker</strong>, a standard system widely integrated elsewhere, uses an existing community MCP server configured with per-user credential substitution — Objective 2's authorization logic showing up again, this time inside a protocol decision. And <strong>medical necessity review</strong>, which needs clinical reasoning the claims agent has no business holding, plus a determination attributable to the clinical function for audit, goes agent-to-agent: hand over the case, get back a determination with a rationale.</p>
+
+  <p>The wrong turns here all cluster around blurring that decision boundary. Exposing a deterministic, always-run step as a tool so the agent "can decide" introduces non-determinism where there wasn't any, and risks a mandatory step getting skipped. Building a custom MCP server for a standard integration means reimplementing something already maintained, and inheriting its upkeep forever. Reaching for agent-to-agent when a tool call would do pays for a full inference loop to perform what's actually just a function call. And pasting a catalog into the system prompt instead of exposing it as a resource bloats every request with content that goes stale the moment the catalog changes.</p>
+
+  <div class="pagenav"><a class="prev" href="#retrieval">← Retrieval</a><a class="next" href="#discovery">Next: Discovery →</a></div>
+</div></section>
+
+<section id="discovery"><div class="container">
+  <h2>8. Loading everything versus loading a map</h2>
+
+  <p>Monolithic context loads the whole surface up front — every tool definition, every schema, the full document catalog, all of it in the request. Progressive discovery loads a compact map instead, and fetches detail on demand. Three forces push you toward the second option as a surface grows. Token cost gets paid on every request regardless of use. Discrimination degrades with surface size — Objective 1's argument, applied to the whole context instead of just tool count. And long context has an attention gradient: content at the start and end of a long input gets attended to more reliably than content buried in the middle, so a monolithic surface guarantees most of itself ends up sitting in that penalized middle.</p>
+
+  <p>None of that makes progressive discovery free. It adds a round-trip — real latency on the requests that need it — and it introduces a genuine discovery failure mode: the agent can fail to find a capability that actually exists, just because the index entry didn't make it obvious. A monolithic surface at least guarantees visibility, which is why it's still the right answer when the surface is small and stable, when the latency budget can't absorb a round-trip and the surface fits anyway, or when the content is needed on literally every request. In that last case it belongs in the request, and since it's identical every time, it should be ordered first and served from a cached prefix — which is exactly where this objective meets Objective 3.</p>
+
+  <h3>Where the two actually cross</h3>
+  <p>Here are the source numbers: a 60-tool, 8-namespace agent costs 12,000 tokens loaded monolithically (60 × 200 tokens each), versus roughly 2,700 progressively (8 namespace entries at 150 tokens, plus one expansion averaging 7.5 tools). But that's one snapshot. The relationship underneath it holds for any surface size and any namespace granularity — and that's what the widget below actually computes live, rather than just asserting it for a single example.</p>
+
+  <div class="widget" id="sc-widget">
+    <h3 class="widget-title" style="margin-top:0">Two ways to carry a tool surface</h3>
+    <p class="widget-hint">Pick how tightly tools are grouped into namespaces, then drag the total number of tools. Watch loading everything up front and loading a map instead cross over.</p>
+    <div class="btn-row" role="group" aria-label="Namespace granularity">
+      <button class="btn" type="button" data-g="5">Tight · 5 tools/namespace</button>
+      <button class="btn active" type="button" data-g="7.5">Typical · 7.5 tools/namespace</button>
+      <button class="btn" type="button" data-g="12">Broad · 12 tools/namespace</button>
+    </div>
+    <div class="k-row">
+      <span>4 tools</span>
+      <input type="range" id="sc-range" min="4" max="100" value="22" aria-describedby="sc-summary">
+      <span>100 tools</span>
+      <span class="k-val" id="sc-val">22</span>
+    </div>
+    <div class="metric-pair">
+      <div class="metric-cell">
+        <div class="metric-label"><span>Monolithic — everything, every request</span><b id="sc-mono-val" style="color:var(--coral-dark)">—</b></div>
+        <div class="metric-track"><div class="metric-fill" id="sc-mono-bar" style="background:var(--coral)"></div></div>
+      </div>
+      <div class="metric-cell">
+        <div class="metric-label"><span>Progressive — a map, plus one expansion</span><b id="sc-prog-val" style="color:var(--amber-dark)">—</b></div>
+        <div class="metric-track"><div class="metric-fill" id="sc-prog-bar" style="background:var(--amber)"></div></div>
+      </div>
+    </div>
+    <div class="widget-summary" id="sc-summary" aria-live="polite"></div>
+  </div>
+
+  <p>Try moving the granularity buttons and watch what happens to the crossover point, not just to the two costs. Tighter namespaces cross over sooner, because each expansion pulls in less waste. Broader namespaces need more tools before progressive pays for itself, because a single expansion drags in more tools the request never actually wanted. Namespace design is itself a lever you can pull — not just tool count.</p>
+
+  <p>The exam tests this objective in both directions, and the direction people drill less is the one where a small, stable surface with a tight latency budget gets a discovery mechanism proposed anyway — correctly rejected, because below the crossover the round-trip costs more than the tokens it would save. Watch also for content that's identical on every request being framed as a discovery problem when it's actually a caching answer, and for a "list everything" discovery tool the agent has to remember to call first — a half-move that provides the map but makes reaching it probabilistic, when content the agent can simply read is the stronger form.</p>
+
+  <p>The better real-world answer is rarely either pure strategy on its own. When trace analysis on the 60-tool agent showed six tools accounting for 61% of all calls, promoting those six into the base surface brought the base to 2,400 tokens, and meant 61% of requests needed no expansion at all — cheaper in both tokens and latency than either pure version, and justified by measured call distribution instead of picked in the abstract.</p>
+
+  <div class="pagenav"><a class="prev" href="#protocols">← Protocols</a><a class="next" href="#synthesis">Next: Synthesis →</a></div>
+</div></section>
+
+<section id="synthesis"><div class="container">
+  <h2>9. One system, all eight objectives</h2>
+
+  <p>Let's put all eight objectives to work at once. A regional insurer is building a claims assistant for 900 adjusters, 180,000 requests a day, a contractual p95 of 3,000ms, and a seven-year audit requirement on protected claim data — and it shows why the eight objectives don't resolve independently.</p>
+
+  <p>Protocol choices set the shape first. The claim record comes in through a direct API call in pre-processing. The policy store is an MCP tool with a companion resource carrying its catalog. The fraud scorer is a direct API call from the orchestration layer — never a tool. Escalations go through an existing community MCP server for the issue tracker. Medical necessity review is agent-to-agent.</p>
+
+  <p>The first version of the adjuster agent carried all 19 available tools, and showed an 8% misroute rate concentrated in three near-duplicate pairs. So it gets split into three role-scoped agents of 4 to 6 tools each, with one deliberate exception: the claims agent keeps a read-only policy-status check, because it's needed on nearly every turn and the coordinator round-trip was the dominant latency cost. Across those three agents the total surface is 34 tools, restructured as five namespaces, with the seven tools covering 64% of calls promoted into the base — about 2,600 tokens against 6,800 monolithic. The adjuster's identity propagates all the way from the edge to the data layer: the policy store's retrieval query carries an entitlement filter, the issue tracker uses per-user credential substitution, and a review turns up an unused <code>update_claim_status</code> tool that gets removed outright, rather than logged, confirmed, or time-boxed.</p>
+
+  <p>The knowledge layer follows the same discipline. Policy manuals are chunked on clause boundaries with the heading path prepended, the embedding model version is pinned to the index, and every re-index runs 40 golden queries before promotion. The claims-history table is never embedded — it's queried directly. Retrieval over the policy corpus runs hybrid, filtered by metadata before ranking, retrieved at the top 30 and reranked to the top 4, while claims-history questions route straight to SQL. On the latency side, the stage budget lands at 2,750ms against the 3,000ms SLA, with the 250ms of slack there because a 3,400-token static preamble was moved to the front of the request and cached — funding the reranking stage that wouldn't otherwise have fit. Observability closes the loop: one correlation ID from the edge through every downstream call, stratified capture at 100% for errors, escalations, low-confidence paths, and clinical handoffs, 2% for routine successes, with metrics on stage-level latency, retrieval hit rate, and mean retrieval score running across all traffic. That's the same pair of metrics that would have caught Objective 5's embedding-version drift within the hour it happened, instead of the following morning.</p>
+
+  <div class="box raised">
+    <div class="label">The interlock is the point</div>
+    <p>None of those eight decisions sits in isolation. The caching decision funds the reranking stage. The entitlement filter is implemented inside the retrieval query, and it constrains what the observability pipeline is even allowed to store. The tool split changes the exact surface the discovery layer has to cover. A scenario built to test one objective almost always has a second one wired in underneath it, and an answer that only fixes the first one leaves the exam question half-solved.</p>
+  </div>
+
+  <h3>Common misconceptions</h3>
+  <div class="misc-grid">
+    <div class="misc-row myth"><span class="k">The myth</span>Least privilege means monitoring what the agent does with its permissions.</div>
+    <div class="misc-row why"><span class="k">Why it's tempting</span>Logging and confirmation are real, unambiguous security practices that show up in every checklist, so keeping the capability and instrumenting it feels responsible.</div>
+    <div class="misc-row reality"><span class="k">The reality</span>Least privilege means the permission doesn't exist. Logging, confirming, and time-boxing are controls for privileges you've decided to keep — not substitutes for removing one that was never needed.</div>
+    <div class="misc-row test"><span class="k">The one test</span>Does the scenario say the agent doesn't need this capability? If yes, the answer removes it — logging or confirming it is the designated wrong answer.</div>
+  </div>
+  <div class="misc-grid">
+    <div class="misc-row myth"><span class="k">The myth</span>RAG means searching a vector database.</div>
+    <div class="misc-row why"><span class="k">Why it's tempting</span>Vector search is the default in most tooling and the first thing most tutorials show, so it's the mental model that sticks.</div>
+    <div class="misc-row reality"><span class="k">The reality</span>Vector search is one mechanism among several. Exact identifiers want lexical search, aggregation wants SQL, multi-hop relationships want graph traversal — matching mechanism to query shape is the actual skill.</div>
+    <div class="misc-row test"><span class="k">The one test</span>Does the query need an exact code, a count, or a relationship traversal? If so, a vector index was never going to answer it, however it's tuned.</div>
+  </div>
+  <div class="misc-grid">
+    <div class="misc-row myth"><span class="k">The myth</span>A RAG system giving confident wrong answers needs a better model or a lower temperature.</div>
+    <div class="misc-row why"><span class="k">Why it's tempting</span>"Confidently wrong" sounds like a sampling or capability problem, and both are one-line changes with no pipeline work required.</div>
+    <div class="misc-row reality"><span class="k">The reality</span>Temperature governs token selection, not which documents were retrieved. When the degradation lines up with a document refresh or re-index, the fault is in retrieval and indexing — a better model just reads the same wrong passage more articulately.</div>
+    <div class="misc-row test"><span class="k">The one test</span>Did the failure start right after a refresh, re-index, or ingestion change? If the timing lines up, check retrieval against known-good passages before touching the model.</div>
+  </div>
+
+  <div class="box warning">
+    <div class="label">Four distractor shapes worth checking every option against</div>
+    <p style="margin:0"><strong>ARCHITECTED</strong> is the option that sounds most like proper engineering — a routing classifier, a validation layer, a second retrieval hop — and it's wrong because it adds a component to compensate for something a narrower configuration would already solve. <strong>OVERSPEC</strong> delivers more than the scenario asked for, at a cost nobody priced in. <strong>DISCARD</strong> removes a working mechanism instead of adjusting it — cutting retrieved context to hit a latency budget, rather than finding the latency actually being wasted elsewhere. <strong>HALF-MOVE</strong> looks like it addresses the problem — better tool descriptions, a discovery tool the agent must remember to call — and leaves the real decision space or privilege surface untouched. Check every option in this domain against those four before you check whether it merely sounds correct.</p>
+  </div>
+
+  <p style="margin-top:var(--space-block)">That's Domain 3, one of seven in this lesson series. Domain 4 (Evaluation, Testing &amp; Optimization) is also built as HTML in this same pattern; Domains 1 and 2 are taught but not yet built this way. Corpus this lesson teaches against: <code>Outputs/lessons/CCAR-P_Lesson-Domain-3_v1.md</code>.</p>
+
+  <div class="pagenav"><a class="prev" href="#discovery">← Discovery</a><span></span></div>
+</div></section>
+
+</main>
+
+<footer><div class="container">
+  <p>CCAR-P Prep &middot; Domain 3 of 7 &middot; Claude Certified Architect &ndash; Professional</p>
+</div></footer>
+
+<script>
+(function () {
+  /* ---- theme toggle ---- */
+  var root = document.documentElement;
+  var toggle = document.getElementById('theme-toggle');
+  function isDark() {
+    var t = root.getAttribute('data-theme');
+    if (t) return t === 'dark';
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  function updateToggle() {
+    var dark = isDark();
+    toggle.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+    toggle.querySelector('span').textContent = dark ? '☀️' : '🌙';
+  }
+  toggle.addEventListener('click', function () {
+    var next = isDark() ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('site-theme', next); } catch (e) {}
+    updateToggle();
+  });
+  window.addEventListener('themechange', updateToggle);
+  updateToggle();
+
+  /* ---- scroll progress + active nav link ---- */
+  var fill = document.getElementById('scrollbar-fill');
+  var navH = parseFloat(getComputedStyle(root).getPropertyValue('--nav-h')) || 64;
+  function onScroll() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var p = max > 0 ? (h.scrollTop || document.body.scrollTop) / max : 0;
+    if (fill) fill.style.width = Math.round(p * 100) + '%';
+    var links = document.querySelectorAll('.nav-link[href^="#"]');
+    var cur = '';
+    document.querySelectorAll('main section[id]').forEach(function (s) {
+      if (s.getBoundingClientRect().top <= navH + 4) cur = s.id;
+    });
+    links.forEach(function (l) {
+      l.classList.toggle('active', l.getAttribute('href') === '#' + cur);
+    });
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', function () {
+    navH = parseFloat(getComputedStyle(root).getPropertyValue('--nav-h')) || 64;
+    onScroll();
+  });
+  document.addEventListener('DOMContentLoaded', onScroll);
+  onScroll();
+
+  /* ---- Surface Cost Crossover widget ----
+     monolithic(N)    = N * TOK_PER_TOOL
+     progressive(N,G) = (N / G) * TOK_PER_NAMESPACE + G * TOK_PER_TOOL
+     crossover(G)     = (TOK_PER_TOOL * G^2) / (TOK_PER_TOOL * G - TOK_PER_NAMESPACE)
+     Constants taken directly from the source's own worked example (200 tok/tool
+     definition, 150 tok/namespace entry, ~7.5 tools/namespace average). G is clamped
+     to [3, 20] by the three presets, which keeps the crossover denominator safely
+     positive (200*3-150=450) — no divide-by-zero guard needed at these ranges. */
+  var TOK_PER_TOOL = 200, TOK_PER_NAMESPACE = 150;
+  var range = document.getElementById('sc-range');
+  var val = document.getElementById('sc-val');
+  var monoVal = document.getElementById('sc-mono-val');
+  var progVal = document.getElementById('sc-prog-val');
+  var monoBar = document.getElementById('sc-mono-bar');
+  var progBar = document.getElementById('sc-prog-bar');
+  var summary = document.getElementById('sc-summary');
+  var gBtns = document.querySelectorAll('#sc-widget .btn[data-g]');
+  var G = 7.5;
+
+  function render() {
+    var N = parseInt(range.value, 10);
+    val.textContent = N;
+    var mono = N * TOK_PER_TOOL;
+    var prog = (N / G) * TOK_PER_NAMESPACE + G * TOK_PER_TOOL;
+    var max = Math.max(mono, prog, 1);
+    monoBar.style.width = (mono / max * 100) + '%';
+    progBar.style.width = (prog / max * 100) + '%';
+    monoVal.textContent = Math.round(mono).toLocaleString() + ' tok';
+    progVal.textContent = Math.round(prog).toLocaleString() + ' tok';
+    var xover = (TOK_PER_TOOL * G * G) / (TOK_PER_TOOL * G - TOK_PER_NAMESPACE);
+    var cheaper = mono < prog ? 'Monolithic' : (prog < mono ? 'Progressive' : 'Neither — a tie');
+    summary.textContent = 'At ' + N + ' tools grouped ' + G + ' per namespace: monolithic costs ' +
+      Math.round(mono).toLocaleString() + ' tokens every request, progressive costs ' +
+      Math.round(prog).toLocaleString() + '. ' + cheaper + ' is cheaper here. The two cross at about ' +
+      xover.toFixed(1) + ' tools — below that, loading everything up front is genuinely the efficient ' +
+      'choice; above it, the discovery layer starts paying for itself.';
+  }
+
+  range.addEventListener('input', render);
+  gBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      gBtns.forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      G = parseFloat(btn.getAttribute('data-g'));
+      render();
+    });
+  });
+  render();
+})();
+</script>
+
+<script>
+/* P1.9b contrast self-test — gated behind ?audit, runs nothing unless asked */
+(function () {
+  if (!/[?&]audit\b/.test(location.search)) return;
+  var cx = (function () { var c = document.createElement('canvas'); c.width = c.height = 1;
+                          return c.getContext('2d', { willReadFrequently: true }); })();
+  function px(backdrop, css) {
+    cx.globalCompositeOperation = 'copy';        cx.fillStyle = backdrop; cx.fillRect(0, 0, 1, 1);
+    cx.globalCompositeOperation = 'source-over'; cx.fillStyle = css;      cx.fillRect(0, 0, 1, 1);
+    var d = cx.getImageData(0, 0, 1, 1).data;
+    return [d[0], d[1], d[2]];
+  }
+  var memo = {};
+  function resolve(css) {
+    if (memo[css]) return memo[css];
+    var b = px('#000', css), w = px('#fff', css);
+    var a = 1 - (w[0] - b[0]) / 255;
+    if (a < 0) a = 0; if (a > 1) a = 1;
+    var out = { rgb: a > 0.002 ? [b[0] / a, b[1] / a, b[2] / a] : [0, 0, 0], a: a };
+    memo[css] = out;
+    return out;
+  }
+  function blend(fg, a, bg) { return [fg[0]*a+bg[0]*(1-a), fg[1]*a+bg[1]*(1-a), fg[2]*a+bg[2]*(1-a)]; }
+  function chan(c) { c/=255; return c<=0.03928 ? c/12.92 : Math.pow((c+0.055)/1.055,2.4); }
+  function lum(p) { return 0.2126*chan(p[0])+0.7152*chan(p[1])+0.0722*chan(p[2]); }
+  function ratio(x,y) { var a=lum(x),b=lum(y); if(a<b){var t=a;a=b;b=t;} return (a+0.05)/(b+0.05); }
+  function bgOf(el) {
+    var stack=[], n=el;
+    while (n && n.nodeType===1) {
+      var c = resolve(getComputedStyle(n).backgroundColor);
+      if (c.a>0.004) { stack.push(c); if (c.a>0.995) break; }
+      n = n.parentElement;
+    }
+    var out=[255,255,255];
+    for (var i=stack.length-1;i>=0;i--) out=blend(stack[i].rgb, stack[i].a, out);
+    return out;
+  }
+  function label(el) {
+    var s = el.tagName.toLowerCase();
+    if (el.id) s += '#'+el.id;
+    if (el.className && typeof el.className==='string' && el.className.trim())
+      s += '.'+el.className.trim().split(/\s+/).join('.');
+    return s;
+  }
+  function sweep(mode) {
+    var out=[];
+    Array.prototype.forEach.call(document.querySelectorAll('body *'), function (el) {
+      var owns = Array.prototype.some.call(el.childNodes, function (n) {
+        return n.nodeType===3 && n.textContent.trim().length>1;
+      });
+      if (!owns) return;
+      var cs = getComputedStyle(el);
+      if (cs.display==='none'||cs.visibility==='hidden'||parseFloat(cs.opacity)<0.99) return;
+      var fg = resolve(cs.color);
+      if (fg.a<0.02) return;
+      var bg = bgOf(el);
+      var eff = fg.a>0.995 ? fg.rgb : blend(fg.rgb, fg.a, bg);
+      var r = ratio(eff, bg);
+      var size = parseFloat(cs.fontSize), bold = parseInt(cs.fontWeight,10)>=700;
+      var need = (size>=24 || (size>=18.66 && bold)) ? 3 : 4.5;
+      if (r+0.005<need) out.push({mode:mode, el:label(el), ratio:+r.toFixed(2), need:need,
+                                   text:(el.textContent||'').trim().slice(0,44)});
+    });
+    return out;
+  }
+  var root = document.documentElement, prior = root.getAttribute('data-theme');
+  root.setAttribute('data-theme','light'); var fails = sweep('light');
+  root.setAttribute('data-theme','dark');  fails = fails.concat(sweep('dark'));
+  if (prior) root.setAttribute('data-theme', prior); else root.removeAttribute('data-theme');
+  window.__audit = fails;
+  if (fails.length) { console.error('CONTRAST AUDIT - '+fails.length+' failing'); console.table(fails); }
+  else { console.log('CONTRAST AUDIT - clean in both modes'); }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CCAR-P Mock Test — TEMPLATE</title>
+<!--
+  CCAR-P MOCK TEST ENGINE — TEMPLATE v1
+  Built 2026-08-29 from Outputs/CCAR-P_Mock-Exam-Engine-Audit_v1.md Part C.
+
+  TO MAKE A REAL PAPER:
+    1. Replace PAPER_N, KEY, and the ITEMS array. Change nothing else.
+    2. ITEMS must hold 63 items. The four below are DEMO CONTENT and are not
+       corpus-generated - they exist so the engine can be verified before a paper exists.
+    3. Run validateItems() in Node before shipping - see the block at the foot of this file.
+    4. EXAM_MODE stays false unless the paper is Paper 8 or Paper 10.
+
+  DESIGN STANCE: Practice Mode is the default. Exam Mode is a narrow exception for the two
+  dress-rehearsal papers. A faithful port of the Exam Mode mechanism WITHOUT its scope once
+  inverted this default for a whole project - see sop/SOP_Mock-Exam-Engine_v1.md.
+-->
+<style>
+:root{
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  --serif:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --bg:#faf9f7; --card:#fff; --ink:#1c1b19; --mid:#57534e; --soft:#8a857f;
+  --line:#e5e1db; --accent:#7c3f2e; --accent-soft:#f5ede9;
+  --ok:#2f6b46; --ok-soft:#eaf4ee; --bad:#a03225; --bad-soft:#fbeceb;
+  --warn:#8a6d1f; --warn-soft:#fdf6e3;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#1a1917; --card:#232220; --ink:#f0ede8; --mid:#b8b2aa; --soft:#8a857f;
+    --line:#38352f; --accent:#d99a7f; --accent-soft:#2e2521;
+    --ok:#7fc79c; --ok-soft:#1e2b23; --bad:#e89185; --bad-soft:#2e1f1d;
+    --warn:#d9bd6a; --warn-soft:#2b2519;
+  }
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55;}
+.wrap{max-width:860px;margin:0 auto;padding:0 20px 80px;}
+
+/* sticky nav */
+.topnav{position:sticky;top:0;z-index:40;background:var(--bg);border-bottom:1px solid var(--line);}
+.topnav-in{max-width:860px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.brand{font-weight:640;font-size:14px;letter-spacing:.01em;}
+.brand span{color:var(--accent);}
+.navspace{flex:1;}
+.timer{font-family:var(--mono);font-size:14px;font-variant-numeric:tabular-nums;color:var(--mid);}
+.timer.low{color:var(--bad);font-weight:640;}
+.pill{font-size:12px;padding:3px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:600;}
+.pill.mode{background:var(--ok-soft);color:var(--ok);}
+.pill.mode.exam{background:var(--bad-soft);color:var(--bad);}
+
+/* header */
+header.doc{padding:34px 0 20px;border-bottom:1px solid var(--line);}
+header.doc h1{font-family:var(--serif);font-size:30px;line-height:1.2;margin:0 0 8px;font-weight:600;}
+header.doc .sub{color:var(--mid);font-size:15px;margin:0;}
+.demo-banner{margin:18px 0 0;padding:12px 14px;border-left:3px solid var(--warn);background:var(--warn-soft);
+  font-size:13.5px;color:var(--ink);border-radius:0 4px 4px 0;}
+
+/* landing */
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:6px;overflow:hidden;margin:26px 0;}
+.sf{background:var(--card);padding:13px 15px;}
+.sf.wide{grid-column:1/-1;}
+.sf .k{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--soft);margin-bottom:4px;}
+.sf .v{font-size:14.5px;font-weight:560;}
+.sf .v.prose{font-weight:420;font-size:13.5px;color:var(--mid);}
+
+/* progress */
+.progress{margin:22px 0 8px;}
+.pbar{height:4px;background:var(--line);border-radius:2px;overflow:hidden;}
+.pfill{height:100%;background:var(--accent);width:0;transition:width .25s;}
+.progress-meta{display:flex;justify-content:space-between;font-size:12.5px;color:var(--soft);margin-top:6px;}
+.jump-toggle{cursor:pointer;color:var(--accent);user-select:none;}
+.jumpmap{display:none;margin:12px 0 0;padding:12px;border:1px solid var(--line);border-radius:6px;background:var(--card);}
+.jumpmap.open{display:block;}
+.jg{display:flex;flex-wrap:wrap;gap:5px;}
+.jb{width:32px;height:30px;border:1px solid var(--line);border-radius:4px;background:var(--card);color:var(--mid);
+  font-size:12px;cursor:pointer;font-family:var(--mono);}
+.jb.answered{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600;}
+.jb.current{outline:2px solid var(--accent);outline-offset:1px;}
+
+/* question card */
+.qcard{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:26px 26px 22px;margin:22px 0;}
+.qhead{display:flex;align-items:center;gap:9px;margin-bottom:16px;flex-wrap:wrap;}
+.qnum{font-family:var(--mono);font-size:12px;color:var(--soft);}
+.tag{font-size:11px;padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:600;}
+.tag.fmt{background:var(--warn-soft);color:var(--warn);}
+.q-stem{font-family:var(--serif);font-size:18px;line-height:1.5;margin-bottom:20px;}
+.opts{display:flex;flex-direction:column;gap:9px;}
+.opt{display:flex;gap:12px;align-items:flex-start;padding:13px 15px;border:1px solid var(--line);border-radius:6px;
+  background:var(--card);cursor:pointer;text-align:left;font-size:15px;color:var(--ink);font-family:inherit;line-height:1.45;}
+.opt:hover{border-color:var(--accent);}
+.opt .l{font-family:var(--mono);font-size:13px;font-weight:640;color:var(--soft);min-width:16px;padding-top:1px;}
+.opt.sel{border-color:var(--accent);background:var(--accent-soft);}
+.opt.sel .l{color:var(--accent);}
+.opt.right{border-color:var(--ok);background:var(--ok-soft);}
+.opt.right .l{color:var(--ok);}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft);}
+.opt.wrong .l{color:var(--bad);}
+.opt[disabled]{cursor:default;}
+
+/* feedback */
+.fb{margin-top:18px;padding:15px 17px;border-radius:6px;font-size:14.5px;border-left:3px solid;}
+.fb.ok{background:var(--ok-soft);border-color:var(--ok);}
+.fb.no{background:var(--bad-soft);border-color:var(--bad);}
+.fb .verdict{font-weight:640;margin-bottom:7px;}
+.fb .why{margin:0 0 10px;}
+.fb .ww{margin:7px 0 0;padding-top:9px;border-top:1px solid var(--line);font-size:13.5px;color:var(--mid);}
+.fb .ww b{color:var(--ink);}
+.fb .cite{margin-top:10px;font-size:12px;color:var(--soft);font-family:var(--mono);}
+
+/* nav buttons */
+.qnav{display:flex;gap:10px;margin:22px 0;}
+.btn{padding:10px 20px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);
+  font-size:14.5px;font-family:inherit;cursor:pointer;font-weight:520;}
+.btn:hover:not([disabled]){border-color:var(--accent);}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.btn.primary:hover:not([disabled]){opacity:.9;}
+.btn[disabled]{opacity:.4;cursor:not-allowed;}
+.spacer{flex:1;}
+
+/* results */
+.res h2{font-family:var(--serif);font-size:24px;margin:0 0 4px;font-weight:600;}
+.score-big{font-size:46px;font-weight:280;font-family:var(--serif);line-height:1.1;margin:14px 0 2px;}
+.score-scaled{font-size:15px;color:var(--mid);margin-bottom:4px;}
+.verdict-line{font-size:15px;font-weight:600;margin:10px 0 20px;}
+.verdict-line.pass{color:var(--ok);}
+.verdict-line.fail{color:var(--bad);}
+table.brk{width:100%;border-collapse:collapse;margin:18px 0;font-size:14px;}
+table.brk th,table.brk td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);}
+table.brk th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--soft);font-weight:600;}
+table.brk td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;}
+.bar{height:5px;background:var(--line);border-radius:3px;overflow:hidden;min-width:80px;}
+.bar i{display:block;height:100%;background:var(--accent);}
+.exports{display:flex;gap:9px;flex-wrap:wrap;margin:22px 0 8px;}
+.export-box{margin:14px 0;padding:14px;background:var(--card);border:1px solid var(--line);border-radius:6px;
+  font-family:var(--mono);font-size:11.5px;white-space:pre-wrap;word-break:break-word;max-height:340px;overflow:auto;display:none;}
+.export-box.open{display:block;}
+.res-note{font-size:13px;color:var(--soft);margin-top:18px;padding-top:14px;border-top:1px solid var(--line);}
+.hidden{display:none;}
+@media(max-width:600px){
+  .qcard{padding:20px 17px 18px;}
+  .q-stem{font-size:16.5px;}
+  header.doc h1{font-size:24px;}
+}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-in">
+    <div class="brand">CCAR-P <span>Mock Test TEMPLATE</span></div>
+    <span class="pill mode" id="modePill">Practice Mode</span>
+    <div class="navspace"></div>
+    <span class="pill hidden" id="accPill">0% so far</span>
+    <span class="timer hidden" id="timer">120:00</span>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<!-- ============ LANDING ============ -->
+<section id="landing">
+  <header class="doc">
+    <h1>CCAR-P Mock Test — Template</h1>
+    <p class="sub">Claude Certified Architect – Professional · engine template, not a paper</p>
+  </header>
+
+  <div class="demo-banner">
+    <strong>This file is the engine, not an exam.</strong> The four questions below are demo content
+    written to verify that scoring, multi-response handling, the fidelity fields, and the three exports
+    work. They are not drawn from the corpus and must not be sat as practice. A real paper replaces the
+    <code>ITEMS</code> array with 63 corpus-generated items and nothing else.
+  </div>
+
+  <div class="facts">
+    <div class="sf"><div class="k">Real paper length</div><div class="v">63 items · 120 minutes</div></div>
+    <div class="sf"><div class="k">This template</div><div class="v" id="fDemoCount">4 demo items</div></div>
+    <div class="sf"><div class="k">Format split</div><div class="v">55 single · 8 multiple-response</div></div>
+    <div class="sf"><div class="k">Pass line</div><div class="v">720 of 1000 scaled</div></div>
+    <div class="sf"><div class="k">Mode</div><div class="v" id="fMode">Practice — feedback per question</div></div>
+    <div class="sf"><div class="k">Multi-response scoring</div><div class="v">All-or-nothing</div></div>
+    <div class="sf wide"><div class="k">Why all-or-nothing</div><div class="v prose">
+      A stance, not a finding. <code>EXAM-FACTS_v1.md</code> records multi-response scoring as OPEN.
+      Foundations precedent was all-or-nothing and cost eight marks. Every item stores its raw picked
+      set, so all prior papers can be rescored under partial credit if the guide later settles it.
+    </div></div>
+  </div>
+
+  <div class="qnav">
+    <button class="btn primary" onclick="beginExam()">Begin</button>
+    <button class="btn" onclick="runSelfCheck()">Run validateItems()</button>
+  </div>
+  <div class="export-box" id="selfCheckBox"></div>
+</section>
+
+<!-- ============ EXAM ============ -->
+<section id="exam" class="hidden">
+  <div class="progress">
+    <div class="pbar"><div class="pfill" id="pfill"></div></div>
+    <div class="progress-meta">
+      <span id="progCount">0 / 0 answered</span>
+      <span class="jump-toggle" id="jumpToggle" onclick="toggleJumpMap()">&#9656; Jump to question</span>
+    </div>
+    <div class="jumpmap" id="jumpmap"><div class="jg" id="jg"></div></div>
+  </div>
+  <div id="qhost"></div>
+  <div class="qnav">
+    <button class="btn" id="btnBack" onclick="goBack()">&larr; Back</button>
+    <div class="spacer"></div>
+    <button class="btn" id="btnNext" onclick="goNext()">Next &rarr;</button>
+    <button class="btn primary hidden" id="btnSubmit" onclick="submitExam()">Submit paper</button>
+  </div>
+</section>
+
+<!-- ============ RESULTS ============ -->
+<section id="results" class="hidden res"></section>
+
+</div>
+
+<script>
+/* ================= PAPER IDENTITY ================= */
+const PAPER_N   = 0;                    /* 0 = template. A real paper sets its own number. */
+const KEY       = "ccarp-mocktest-template-v1";
+const EXAM_MODE = false;                /* true only for Papers 8 and 10 */
+const TIME_LIMIT_SEC = 120 * 60;
+
+/* ================= FIXED EXAM FACTS ================= */
+/* From ../EXAM-FACTS_v1.md. Never copied from a sibling project. */
+const DOMAIN_NAMES = {
+  D1:"Solution Design & Architecture",
+  D2:"Claude Models, Prompting & Context Engineering",
+  D3:"Integration",
+  D4:"Evaluation, Testing & Optimization",
+  D5:"Governance, Safety & Risk Management",
+  D6:"Stakeholder Communication & Lifecycle Management",
+  D7:"Developer Productivity & Operational Enablement"
+};
+const DOM_ORDER   = ["D1","D2","D3","D4","D5","D6","D7"];
+const DOM_QUOTA   = {D1:11,D2:8,D3:12,D4:10,D5:9,D6:9,D7:4};   /* sums to 63 */
+const PASS_SCALED = 720;
+
+/* Scaled-score estimator. PROJECT ESTIMATE ONLY - not an Anthropic formula.
+   Linear map of percent-correct onto the published 100-1000 band:
+     scaled = 100 + 900 * (correct / total)
+   At 63 items the 720 pass line falls at 44 correct (69.8%). */
+function estimateScaled(correct, total){
+  if(!total) return 100;
+  return Math.round(100 + 900 * (correct / total));
+}
+
+/* ================= ITEMS =================
+   DEMO CONTENT - four items written to the measured official style so the engine can be
+   verified. Replace wholesale with 63 corpus-generated items.
+
+   Schema, per CCAR-P-Orchestration-Prompt_v2.md 5.5:
+     g          item number, sequential from 1
+     domain     D1..D7
+     section    corpus section, e.g. "3.1"
+     facet      facet id from FACET-LEDGER.md, or "M-3.1" for a misconception unit
+     objective  O1.1..O7.3 from CCAR-P_Objective-Map_v1.md
+     shape      S1..S8 from ARCHETYPE-LEDGER.md
+     direction  "normal" | "inverted"
+     lessonKey  the underlying corpus facet's answer text, lowercased, punctuation-stripped,
+                token-sorted (same normalisation as STEM-LEDGER.md's dedup). Populate at assembly
+                time from plan.json's facet.answer. Two items sharing a non-empty lessonKey are
+                testing the identical corpus decision regardless of how differently they are
+                worded - validateItems() rejects this exam-wide (GENERATION-INTELLIGENCE.md F-10).
+                Leave "" if the item has no facet (e.g. a misconception-unit item) rather than
+                omitting the field, so every item can be checked uniformly.
+     format     "single" | "multi"
+     selectN    1 for single, 2 for multi
+     stem       <= 45 words
+     opts       [{l,t,family}] - family null on the correct option(s)
+     correct    array of letters, always an array even when length 1
+     whyRight   35-50 words
+     whyWrong   {letter: 15-30 words}
+     t1Clause   the clause whose deletion changes the answer
+     t1Alt      the option that becomes correct without it
+     source     "TRANSCRIBED" | "ASSEMBLED" | "AUTHORED" | "DEMO"
+     block      null - dormant. Populated only if the guide confirms scenario blocks
+     blockLabel null - dormant
+*/
+const ITEMS = [
+{
+  g:1, domain:"D3", section:"3.1", facet:"F-3.1-01", objective:"O3.1", shape:"S1",
+  direction:"normal", lessonKey:"discovery each progressive require role scope task tools",
+  format:"single", selectN:1, source:"DEMO", block:null, blockLabel:null,
+  stem:"An internal agent exposes 40 tools drawn from six systems, and tool-selection accuracy has fallen as teams added more. Applying capability-scoping principles, which change best restores selection quality?",
+  opts:[
+    {l:"A", t:"Add logging to the rarely-used tools so misuse can be reviewed later", family:"DETECTIVE-FOR-PREVENTIVE"},
+    {l:"B", t:"Merge the 40 tools into six multi-mode tools, one per system", family:"HALF-MOVE"},
+    {l:"C", t:"Scope each role to the tools its tasks require, with progressive discovery for the rest", family:null},
+    {l:"D", t:"Move to a larger model with stronger instruction-following", family:"WRONG-AXIS"}
+  ],
+  correct:["C"],
+  whyRight:"Capability scoping removes tools from the selection surface a given role ever sees, which is the only change that reduces the number of candidates the model chooses between. Progressive discovery keeps the remainder reachable without loading it up front.",
+  whyWrong:{
+    A:"Logging observes misuse after the fact. It leaves the same 40 candidates in front of the model on every call.",
+    B:"Six multi-mode tools preserve the full capability surface behind fewer names, so the selection problem moves rather than shrinks.",
+    D:"Model capability is a different axis from how many candidates the selection step must discriminate between."
+  },
+  t1Clause:"Applying capability-scoping principles",
+  t1Alt:"D",
+  cite:"D3 3.1"
+},
+{
+  g:2, domain:"D2", section:"2.1", facet:"F-2.1-02", objective:"O2.1", shape:"S2",
+  direction:"normal", lessonKey:"benchmark cheapest clears floor model set smallest upward",
+  format:"single", selectN:1, source:"DEMO", block:null, blockLabel:null,
+  stem:"A classification step runs 400,000 times a day with 200 milliseconds of headroom per call, and accuracy below 94% triggers manual review. Which model choice satisfies both constraints?",
+  opts:[
+    {l:"A", t:"Benchmark the smallest model that clears 94% on a held-out set", family:null},
+    {l:"B", t:"Use the most capable model and raise the latency budget", family:"WRONG-AXIS"},
+    {l:"C", t:"Use the fastest model and route low-confidence cases to review", family:"HALF-MOVE"},
+    {l:"D", t:"Cache classification results and reuse them across similar inputs", family:"REPAIR"}
+  ],
+  correct:["A"],
+  whyRight:"Both constraints are stated as hard: a latency ceiling and an accuracy floor. Benchmarking upward from the cheapest model finds the smallest one that clears the floor, which is the only search that satisfies both rather than trading one away.",
+  whyWrong:{
+    B:"Raising the latency budget discards a constraint the scenario states rather than meeting it.",
+    C:"Routing low-confidence cases to review keeps accuracy nominally high while sending volume to the manual path the requirement exists to avoid.",
+    D:"Caching helps repeated inputs. It does not establish that any model meets the accuracy floor on new ones."
+  },
+  t1Clause:"accuracy below 94% triggers manual review",
+  t1Alt:"C",
+  cite:"D2 2.1"
+},
+{
+  g:3, domain:"D4", section:"4.10", facet:"F-4.10-01", objective:"O4.4", shape:"S3",
+  direction:"normal", lessonKey:"indexing retrieval",
+  format:"single", selectN:1, source:"DEMO", block:null, blockLabel:null,
+  stem:"A support assistant begins citing withdrawn policies two days after a scheduled knowledge-base sync, while the model version, prompt, and temperature are unchanged. What should be investigated first?",
+  opts:[
+    {l:"A", t:"Whether the model has silently changed behavior", family:"EVIDENCE-MISMATCH"},
+    {l:"B", t:"Whether the sync removed withdrawn documents from the index", family:null},
+    {l:"C", t:"Whether the prompt should instruct the model to verify recency", family:"HALF-MOVE"},
+    {l:"D", t:"Whether a reranking layer would improve citation precision", family:"ARCHITECTED"}
+  ],
+  correct:["B"],
+  whyRight:"The failure began after a specific data event while the model, prompt, and sampling settings are pinned unchanged. That evidence points at what the sync did to the index, and stale documents surviving a refresh is the ordinary cause of confident citation of withdrawn material.",
+  whyWrong:{
+    A:"The stem states the model version is unchanged, so this is excluded by the evidence given rather than by judgement.",
+    C:"A recency instruction is a mitigation applied on top of an index that is still serving withdrawn documents.",
+    D:"Reranking reorders what retrieval returns. If withdrawn documents are still indexed it reorders them too."
+  },
+  t1Clause:"while the model version, prompt, and temperature are unchanged",
+  t1Alt:"A",
+  cite:"D4 4.10"
+},
+{
+  g:4, domain:"D5", section:"5.1", facet:"F-5.1-03", objective:"O5.1", shape:"S8",
+  direction:"normal", lessonKey:"arguments before data instructions never retrieved schema treat trusted untrusted validate",
+  format:"multi", selectN:2, source:"DEMO", block:null, blockLabel:null,
+  stem:"A regulated workflow must block prompt-injection content arriving through retrieved documents, and the design review requires layered controls rather than a single filter. Select two controls that belong in the design.",
+  opts:[
+    {l:"A", t:"Treat retrieved content as untrusted data, never as instructions", family:null},
+    {l:"B", t:"Instruct the system prompt to ignore malicious instructions", family:"HALF-MOVE"},
+    {l:"C", t:"Validate tool-call arguments against a schema before execution", family:null},
+    {l:"D", t:"Log all retrieved passages for post-incident review", family:"DETECTIVE-FOR-PREVENTIVE"}
+  ],
+  correct:["A","C"],
+  whyRight:"A and C sit at two different layers, which is what layered means here. A governs how retrieved text is interpreted at the boundary; C constrains what any instruction can actually cause the system to do. Neither depends on the model complying with a request.",
+  whyWrong:{
+    B:"An instruction to ignore malicious instructions is enforced by the same model the injection is trying to steer.",
+    D:"Logging establishes what happened afterwards. It is a detective control where the requirement is to block."
+  },
+  t1Clause:"the design review requires layered controls rather than a single filter",
+  t1Alt:"B",
+  cite:"D5 5.1"
+}
+];
+
+/* ================= STATE ================= */
+let state = load();
+let currentG = null, jumpMapOpen = false, timerHandle = null;
+
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return {answers:{}, times:{}, started:null, submitted:false, elapsed:0};
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function itemCount(){ return ITEMS.length; }
+function findItem(g){ return ITEMS.find(function(x){ return x.g===g; }); }
+function answerOf(g){ const a = state.answers[g]; return Array.isArray(a) ? a : (a ? [a] : []); }
+function sameSet(a,b){
+  if(a.length!==b.length) return false;
+  const s = a.slice().sort().join(","), t = b.slice().sort().join(",");
+  return s===t;
+}
+function isRight(q){ const a = answerOf(q.g); return a.length>0 && sameSet(a, q.correct); }
+function isComplete(q){ return answerOf(q.g).length === q.selectN; }
+function answeredCount(){ return ITEMS.filter(isComplete).length; }
+
+/* ================= FLOW ================= */
+function beginExam(){
+  if(!state.started){ state.started = Date.now(); save(); }
+  document.getElementById("landing").classList.add("hidden");
+  document.getElementById("exam").classList.remove("hidden");
+  document.getElementById("timer").classList.remove("hidden");
+  if(EXAM_MODE){
+    document.getElementById("modePill").textContent = "Exam Mode";
+    document.getElementById("modePill").classList.add("exam");
+  } else {
+    document.getElementById("accPill").classList.remove("hidden");
+  }
+  startTimer();
+  let first = 1;
+  for(let i=0;i<ITEMS.length;i++){ if(!isComplete(ITEMS[i])){ first = ITEMS[i].g; break; } }
+  goToQuestion(first);
+}
+
+function startTimer(){
+  if(timerHandle) return;
+  timerHandle = setInterval(function(){
+    const el = Math.floor((Date.now() - state.started)/1000);
+    state.elapsed = el;
+    const left = Math.max(0, TIME_LIMIT_SEC - el);
+    const m = String(Math.floor(left/60)).padStart(2,"0"), s = String(left%60).padStart(2,"0");
+    const t = document.getElementById("timer");
+    t.textContent = m+":"+s;
+    if(left < 600) t.classList.add("low");
+    if(left === 0 && !state.submitted) submitExam();
+  }, 1000);
+}
+
+function toggleJumpMap(){
+  jumpMapOpen = !jumpMapOpen;
+  document.getElementById("jumpmap").classList.toggle("open", jumpMapOpen);
+  document.getElementById("jumpToggle").innerHTML = (jumpMapOpen ? "&#9662;" : "&#9656;") + " Jump to question";
+}
+function renderJumpMap(){
+  document.getElementById("jg").innerHTML = ITEMS.map(function(q){
+    const cls = "jb" + (isComplete(q) ? " answered" : "") + (q.g===currentG ? " current" : "");
+    return '<button class="'+cls+'" onclick="goToQuestion('+q.g+')">'+q.g+'</button>';
+  }).join("");
+}
+
+function goToQuestion(g){
+  if(state.times[g]===undefined) state.times[g] = 0;
+  currentG = g;
+  renderPage(g);
+  renderJumpMap();
+  updateNav();
+  window.scrollTo({top:0, behavior:"instant"});
+}
+function goNext(){ if(currentG < itemCount()) goToQuestion(currentG+1); }
+function goBack(){ if(currentG > 1) goToQuestion(currentG-1); }
+
+function renderPage(g){
+  const q = findItem(g);
+  document.getElementById("qhost").innerHTML = renderQ(q);
+  if(!EXAM_MODE && isComplete(q)) paintAnswered(q);
+  const pct = Math.round(answeredCount()/itemCount()*100);
+  document.getElementById("pfill").style.width = pct+"%";
+  document.getElementById("progCount").textContent = answeredCount()+" / "+itemCount()+" answered";
+  if(!EXAM_MODE){
+    const done = ITEMS.filter(isComplete);
+    const right = done.filter(isRight).length;
+    document.getElementById("accPill").textContent =
+      done.length ? Math.round(right/done.length*100)+"% so far" : "0% so far";
+  }
+}
+
+function renderQ(q){
+  const sel = answerOf(q.g);
+  const fmtTag = q.format==="multi"
+    ? '<span class="tag fmt">Select '+q.selectN+'</span>' : '';
+  return '<div class="qcard">'
+    + '<div class="qhead">'
+    +   '<span class="qnum">Q'+q.g+' of '+itemCount()+'</span>'
+    +   '<span class="tag">'+q.domain+'</span>'
+    +   fmtTag
+    + '</div>'
+    + '<div class="q-stem">'+esc(q.stem)+'</div>'
+    + '<div class="opts" id="opts">'
+    +   q.opts.map(function(o){
+          const on = sel.indexOf(o.l)>=0 ? " sel" : "";
+          return '<button class="opt'+on+'" data-l="'+o.l+'" onclick="pick('+q.g+',\''+o.l+'\')">'
+               + '<span class="l">'+o.l+'</span><span>'+esc(o.t)+'</span></button>';
+        }).join("")
+    + '</div>'
+    + '<div id="fb"></div>'
+    + '</div>';
+}
+
+function pick(g, letter){
+  const q = findItem(g);
+  if(!EXAM_MODE && isComplete(q)) return;          /* locked once answered in Practice Mode */
+  let sel = answerOf(g);
+  if(q.selectN === 1){
+    sel = [letter];
+  } else {
+    const i = sel.indexOf(letter);
+    if(i >= 0) sel.splice(i,1);
+    else if(sel.length < q.selectN) sel.push(letter);
+    else return;                                    /* already at selectN */
+  }
+  state.answers[g] = sel;
+  save();
+  renderPage(g);
+  renderJumpMap();
+  updateNav();
+}
+
+function paintAnswered(q){
+  const sel = answerOf(q.g);
+  document.querySelectorAll("#opts .opt").forEach(function(el){
+    const l = el.getAttribute("data-l");
+    el.setAttribute("disabled","");
+    if(q.correct.indexOf(l) >= 0) el.classList.add("right");
+    else if(sel.indexOf(l) >= 0) el.classList.add("wrong");
+  });
+  const ok = isRight(q);
+  const wrongPicked = sel.filter(function(l){ return q.correct.indexOf(l)<0; });
+  const missed = q.correct.filter(function(l){ return sel.indexOf(l)<0; });
+  let verdict;
+  if(ok) verdict = "Correct";
+  else if(wrongPicked.length===0) verdict = "Incomplete — scored as wrong (all-or-nothing)";
+  else verdict = "Incorrect";
+
+  let ww = "";
+  Object.keys(q.whyWrong).forEach(function(l){
+    if(sel.indexOf(l) >= 0) ww += '<div class="ww"><b>'+l+'</b> — '+esc(q.whyWrong[l])+'</div>';
+  });
+  /* The "missed" line is multi-response feedback. On a single-answer item it restates the
+     verdict line, so it is suppressed there. */
+  if(missed.length && q.format === "multi")
+    ww += '<div class="ww"><b>Missed</b> — you did not select '+missed.join(" and ")+'.</div>';
+
+  document.getElementById("fb").innerHTML =
+    '<div class="fb '+(ok?"ok":"no")+'">'
+    + '<div class="verdict">'+verdict+' · answer '+q.correct.join(" + ")+'</div>'
+    + '<p class="why">'+esc(q.whyRight)+'</p>'
+    + ww
+    + '<div class="cite">'+q.cite+' · '+q.facet+' · '+q.objective+' · shape '+q.shape+'</div>'
+    + '</div>';
+}
+
+function updateNav(){
+  document.getElementById("btnBack").disabled = (currentG === 1);
+  const last = (currentG === itemCount());
+  document.getElementById("btnNext").classList.toggle("hidden", last);
+  document.getElementById("btnSubmit").classList.toggle("hidden", !last);
+}
+
+/* ================= SCORING ================= */
+function scoreReport(){
+  const singles = ITEMS.filter(function(q){ return q.format==="single"; });
+  const multis  = ITEMS.filter(function(q){ return q.format==="multi"; });
+  const correct = ITEMS.filter(isRight).length;
+  const byDomain = {}, byObjective = {}, byShape = {}, byFamily = {};
+  DOM_ORDER.forEach(function(d){ byDomain[d] = [0,0]; });
+  ITEMS.forEach(function(q){
+    if(!byDomain[q.domain]) byDomain[q.domain] = [0,0];
+    byDomain[q.domain][1]++;
+    if(isRight(q)) byDomain[q.domain][0]++;
+    if(!byObjective[q.objective]) byObjective[q.objective] = [0,0];
+    byObjective[q.objective][1]++;
+    if(isRight(q)) byObjective[q.objective][0]++;
+    if(!byShape[q.shape]) byShape[q.shape] = [0,0];
+    byShape[q.shape][1]++;
+    if(isRight(q)) byShape[q.shape][0]++;
+    if(!isRight(q)){
+      answerOf(q.g).forEach(function(l){
+        if(q.correct.indexOf(l) >= 0) return;
+        const o = q.opts.find(function(x){ return x.l===l; });
+        const f = (o && o.family) || "UNTAGGED";
+        byFamily[f] = (byFamily[f]||0) + 1;
+      });
+    }
+  });
+  const domsWithItems = DOM_ORDER.filter(function(d){ return byDomain[d][1] > 0; });
+  let weakest = null, weakPct = 2, tied = false;
+  domsWithItems.forEach(function(d){
+    const p = byDomain[d][0]/byDomain[d][1];
+    if(p < weakPct - 1e-9){ weakPct = p; weakest = d; tied = false; }
+    else if(Math.abs(p - weakPct) < 1e-9){ tied = true; }
+  });
+  return {
+    correct:correct, total:ITEMS.length,
+    scaled: estimateScaled(correct, ITEMS.length),
+    single:[singles.filter(isRight).length, singles.length],
+    multi:[multis.filter(isRight).length, multis.length],
+    byDomain:byDomain, byObjective:byObjective, byShape:byShape, byFamily:byFamily,
+    weakest: tied ? "tied" : weakest,
+    seconds: state.elapsed || 0
+  };
+}
+
+function submitExam(){
+  state.submitted = true; save();
+  if(timerHandle){ clearInterval(timerHandle); timerHandle = null; }
+  const r = scoreReport();
+  const pass = r.scaled >= PASS_SCALED;
+  const pctBar = function(a,b){ return b ? Math.round(a/b*100) : 0; };
+
+  let domRows = DOM_ORDER.filter(function(d){ return r.byDomain[d][1]>0; }).map(function(d){
+    const c = r.byDomain[d][0], n = r.byDomain[d][1], p = pctBar(c,n);
+    return '<tr><td>'+d+' — '+DOMAIN_NAMES[d]+'</td><td class="n">'+c+' / '+n+'</td>'
+         + '<td class="n">'+p+'%</td><td><div class="bar"><i style="width:'+p+'%"></i></div></td></tr>';
+  }).join("");
+
+  let objRows = Object.keys(r.byObjective).sort().map(function(o){
+    const c = r.byObjective[o][0], n = r.byObjective[o][1];
+    const flag = c===0 ? ' style="color:var(--bad);font-weight:640"' : '';
+    return '<tr><td'+flag+'>'+o+'</td><td class="n">'+c+' / '+n+'</td></tr>';
+  }).join("");
+
+  let shapeRows = Object.keys(r.byShape).sort().map(function(s){
+    const c = r.byShape[s][0], n = r.byShape[s][1];
+    return '<tr><td>'+s+'</td><td class="n">'+c+' / '+n+'</td><td class="n">'+pctBar(c,n)+'%</td></tr>';
+  }).join("");
+
+  const famKeys = Object.keys(r.byFamily).sort(function(a,b){ return r.byFamily[b]-r.byFamily[a]; });
+  let famRows = famKeys.length
+    ? famKeys.map(function(f){ return '<tr><td>'+f+'</td><td class="n">'+r.byFamily[f]+'</td></tr>'; }).join("")
+    : '<tr><td colspan="2" style="color:var(--soft)">No distractors captured.</td></tr>';
+
+  document.getElementById("exam").classList.add("hidden");
+  document.getElementById("timer").classList.add("hidden");
+  document.getElementById("accPill").classList.add("hidden");
+  const el = document.getElementById("results");
+  el.classList.remove("hidden");
+  el.innerHTML =
+    '<h2>Result</h2>'
+  + '<div class="score-big">'+r.correct+' <span style="font-size:22px;color:var(--soft)">/ '+r.total+'</span></div>'
+  + '<div class="score-scaled">Estimated scaled score <strong>'+r.scaled+'</strong> · pass line '+PASS_SCALED+'</div>'
+  + '<div class="verdict-line '+(pass?"pass":"fail")+'">'+(pass?"Above the pass line":"Below the pass line")+'</div>'
+
+  + '<table class="brk"><thead><tr><th>Format</th><th>Correct</th><th>%</th><th></th></tr></thead><tbody>'
+  +   '<tr><td>Single-answer</td><td class="n">'+r.single[0]+' / '+r.single[1]+'</td><td class="n">'+pctBar(r.single[0],r.single[1])+'%</td><td></td></tr>'
+  +   '<tr><td>Multiple-response (all-or-nothing)</td><td class="n">'+r.multi[0]+' / '+r.multi[1]+'</td><td class="n">'+pctBar(r.multi[0],r.multi[1])+'%</td><td></td></tr>'
+  + '</tbody></table>'
+
+  + '<h3 style="font-family:var(--serif);font-size:18px;margin:26px 0 0">Domain</h3>'
+  + '<table class="brk"><thead><tr><th>Domain</th><th>Correct</th><th>%</th><th></th></tr></thead><tbody>'+domRows+'</tbody></table>'
+  + '<p style="font-size:13px;color:var(--soft);margin:-8px 0 0">Weakest: <strong>'+(r.weakest||"n/a")+'</strong>. '
+  + 'There is no per-domain floor on this exam — pass/fail is total scaled score only.</p>'
+
+  + '<h3 style="font-family:var(--serif);font-size:18px;margin:26px 0 0">Objective</h3>'
+  + '<p style="font-size:13px;color:var(--soft);margin:4px 0 0">Any objective at 0 is highlighted. Six came back at 0% on the real CCAR-F paper.</p>'
+  + '<table class="brk"><thead><tr><th>Objective</th><th>Correct</th></tr></thead><tbody>'+objRows+'</tbody></table>'
+
+  + '<h3 style="font-family:var(--serif);font-size:18px;margin:26px 0 0">Shape</h3>'
+  + '<table class="brk"><thead><tr><th>Shape</th><th>Correct</th><th>%</th></tr></thead><tbody>'+shapeRows+'</tbody></table>'
+
+  + '<h3 style="font-family:var(--serif);font-size:18px;margin:26px 0 0">Which distractor family captured you</h3>'
+  + '<p style="font-size:13px;color:var(--soft);margin:4px 0 0">A family recurring across two consecutive papers is a habit, not a gap, and needs a different remedy.</p>'
+  + '<table class="brk"><thead><tr><th>Family</th><th>Times</th></tr></thead><tbody>'+famRows+'</tbody></table>'
+
+  + '<div class="exports">'
+  +   '<button class="btn" onclick="toggleBox(\'boxJson\')">Results JSON</button>'
+  +   '<button class="btn" onclick="toggleBox(\'boxDash\')">DASHBOARD-DATA line</button>'
+  +   '<button class="btn" onclick="toggleBox(\'boxLog\')">EXAM-LOG miss table</button>'
+  +   '<button class="btn" onclick="restartExam()">Restart</button>'
+  + '</div>'
+  + '<div class="export-box" id="boxJson"></div>'
+  + '<div class="export-box" id="boxDash"></div>'
+  + '<div class="export-box" id="boxLog"></div>'
+  + '<div class="res-note">The scaled score is a project estimate — <code>100 + 900 × (correct / total)</code> — '
+  + 'not an Anthropic formula. Record the real figures in <code>EXAM-LOG.md</code>, which is the only file '
+  + 'in this project that carries standing.</div>';
+
+  document.getElementById("boxJson").textContent = buildResultsJson(r);
+  document.getElementById("boxDash").textContent = buildDashLine(r);
+  document.getElementById("boxLog").textContent  = buildLogStub(r);
+  window.scrollTo({top:0, behavior:"instant"});
+}
+
+function toggleBox(id){
+  const b = document.getElementById(id);
+  ["boxJson","boxDash","boxLog"].forEach(function(x){
+    if(x!==id) document.getElementById(x).classList.remove("open");
+  });
+  b.classList.toggle("open");
+}
+
+function buildResultsJson(r){
+  return JSON.stringify({
+    paper_n: PAPER_N,
+    mode: EXAM_MODE ? "exam" : "practice",
+    total_correct: r.correct, total_questions: r.total,
+    estimated_scaled: r.scaled, total_seconds: r.seconds,
+    single_answer: r.single, multi_response: r.multi,
+    domain_scores: r.byDomain, objective_scores: r.byObjective,
+    shape_scores: r.byShape, family_capture: r.byFamily,
+    items: ITEMS.map(function(q){
+      return {
+        g:q.g, domain:q.domain, section:q.section, facet:q.facet, objective:q.objective,
+        shape:q.shape, direction:q.direction, format:q.format, selectN:q.selectN,
+        picked: answerOf(q.g),          /* raw set - enables retroactive partial-credit rescoring */
+        correct: q.correct,
+        right: isRight(q),
+        seconds: state.times[q.g] || null,
+        t1Clause: q.t1Clause
+      };
+    })
+  }, null, 1);
+}
+
+function buildDashLine(r){
+  const today = new Date().toISOString().slice(0,10);
+  return JSON.stringify({
+    paper_n: PAPER_N, format: "FULL63", generated_date: null, attempted_date: today,
+    score_source: "results-json", total_correct: r.correct, total_questions: r.total,
+    estimated_scaled: r.scaled, total_seconds: r.seconds,
+    single_answer: r.single, multi_response: r.multi,
+    domain_scores: r.byDomain, weakest_domain: r.weakest,
+    confirmed_weakness: null, insight_round_due: false,
+    mode: EXAM_MODE ? "exam" : "practice"
+  });
+}
+
+function buildLogStub(r){
+  let out = "| Q | Domain § | Facet | Obj | Shape | Format | Time | Picked | Correct | Family | Why wrong |\n";
+  out    += "|---|---|---|---|---|---|---|---|---|---|---|\n";
+  ITEMS.filter(function(q){ return !isRight(q); }).forEach(function(q){
+    const picked = answerOf(q.g);
+    const fams = picked.filter(function(l){ return q.correct.indexOf(l)<0; }).map(function(l){
+      const o = q.opts.find(function(x){ return x.l===l; });
+      return (o && o.family) || "UNTAGGED";
+    });
+    out += "| "+q.g+" | "+q.domain+" §"+q.section+" | "+q.facet+" | "+q.objective+" | "+q.shape
+        +  " | "+(q.format==="multi" ? "multi-"+q.selectN : "single")
+        +  " | "+(state.times[q.g] || "?")+"s | "+(picked.join("+")||"—")+" | "+q.correct.join("+")
+        +  " | "+(fams.join(", ")||"—")+" |  |\n";
+  });
+  if(out.split("\n").length <= 3) out += "| — | — | — | — | — | — | — | — | — | — | No misses. |\n";
+  out += "\nConfirmed-weakness check runs on SINGLE-ANSWER items only. Weakest single-answer domain: ";
+  const s = {};
+  ITEMS.filter(function(q){ return q.format==="single"; }).forEach(function(q){
+    if(!s[q.domain]) s[q.domain]=[0,0];
+    s[q.domain][1]++; if(isRight(q)) s[q.domain][0]++;
+  });
+  let w=null, wp=2, tie=false;
+  Object.keys(s).forEach(function(d){
+    const p=s[d][0]/s[d][1];
+    if(p<wp-1e-9){wp=p;w=d;tie=false;} else if(Math.abs(p-wp)<1e-9){tie=true;}
+  });
+  out += (tie ? "tied (records as confirmed_weakness: false)" : (w||"n/a"));
+  return out;
+}
+
+function restartExam(){
+  if(!confirm("Clear all answers and start this paper again?")) return;
+  state = {answers:{}, times:{}, started:null, submitted:false, elapsed:0};
+  save();
+  location.reload();
+}
+
+/* ================= FIDELITY: validateItems() =================
+   Gate check 1. Runs here for convenience and in Node before shipping - see the block below.
+   Returns {errors:[], warnings:[], stats:{}}. A paper ships only on errors.length === 0. */
+function validateItems(items, opts){
+  opts = opts || {};
+  const expect = opts.expectCount || null;
+  const E = [], W = [];
+  const seen = {};
+  const wc = function(s){ return String(s).trim().split(/\s+/).length; };
+
+  if(expect && items.length !== expect) E.push("item count is "+items.length+", expected "+expect);
+
+  const domTally = {}, objTally = {}, letterTally = {A:0,B:0,C:0,D:0}, famTally = {};
+  const shapeTally = {}, pairTally = {}, lessonTally = {};
+  let singles = 0, multis = 0, tokenOpts = 0, totalOpts = 0;
+
+  items.forEach(function(q, i){
+    const at = "item "+(q.g!==undefined ? "g"+q.g : "#"+i);
+
+    if(q.g !== i+1) E.push(at+": g is not sequential from 1");
+    if(seen[q.g]) E.push(at+": duplicate g");
+    seen[q.g] = true;
+
+    ["domain","section","facet","objective","shape","direction","format","stem","whyRight","t1Clause","source"]
+      .forEach(function(f){ if(!q[f]) E.push(at+": missing "+f); });
+
+    if(!DOMAIN_NAMES[q.domain]) E.push(at+": unknown domain "+q.domain);
+    domTally[q.domain] = (domTally[q.domain]||0)+1;
+    objTally[q.objective] = (objTally[q.objective]||0)+1;
+    shapeTally[q.shape] = (shapeTally[q.shape]||0)+1;
+
+    if(!Array.isArray(q.correct) || q.correct.length===0) E.push(at+": correct must be a non-empty array");
+    if(q.format==="single"){
+      singles++;
+      if(q.selectN !== 1) E.push(at+": single-answer item with selectN "+q.selectN);
+      if(q.correct.length !== 1) E.push(at+": single-answer item with "+q.correct.length+" correct options");
+      if(q.correct.length===1) letterTally[q.correct[0]] = (letterTally[q.correct[0]]||0)+1;
+    } else if(q.format==="multi"){
+      multis++;
+      if(q.selectN !== q.correct.length) E.push(at+": selectN "+q.selectN+" but "+q.correct.length+" correct");
+      if(!/select\s+(two|three|\d)/i.test(q.stem)) E.push(at+": multi-response stem does not state its count");
+      const pair = q.correct.slice().sort().join("");
+      pairTally[pair] = (pairTally[pair]||0)+1;
+    } else {
+      E.push(at+": format must be 'single' or 'multi'");
+    }
+
+    /* options */
+    if(!Array.isArray(q.opts) || q.opts.length !== 4) E.push(at+": expected 4 options");
+    const lens = [];
+    (q.opts||[]).forEach(function(o){
+      totalOpts++;
+      const n = wc(o.t);
+      lens.push(n);
+      if(n > 20) E.push(at+" opt "+o.l+": option is "+n+" words, cap is 20");
+      if(/`|--[a-z]/.test(o.t)) tokenOpts++;
+      const isKey = q.correct.indexOf(o.l) >= 0;
+      if(isKey && o.family) W.push(at+" opt "+o.l+": correct option carries a family tag");
+      if(!isKey){
+        if(!o.family) E.push(at+" opt "+o.l+": distractor has no family");
+        else famTally[o.family] = (famTally[o.family]||0)+1;
+        if(!q.whyWrong || !q.whyWrong[o.l]) E.push(at+" opt "+o.l+": distractor has no whyWrong");
+      }
+    });
+    if(lens.length){
+      const spread = Math.max.apply(null,lens) - Math.min.apply(null,lens);
+      if(spread > 8) E.push(at+": option word spread is "+spread+", cap is 8");
+    }
+
+    /* distractor family variety */
+    const fams = (q.opts||[]).filter(function(o){ return q.correct.indexOf(o.l)<0; })
+                             .map(function(o){ return o.family; });
+    if(new Set(fams).size !== fams.length) E.push(at+": distractors repeat a family");
+
+    /* stem */
+    const sw = wc(q.stem);
+    if(sw > 45) E.push(at+": stem is "+sw+" words, cap is 45");
+    if(sw < 28 || sw > 40) W.push(at+": stem is "+sw+" words, outside the 28-40 band");
+
+    /* T1 */
+    if(!q.t1Alt) E.push(at+": t1Alt not recorded");
+    if(q.t1Alt && q.correct.indexOf(q.t1Alt) >= 0) E.push(at+": t1Alt names an already-correct option");
+
+    /* lesson collision - two items independently testing the same underlying corpus decision,
+       worded differently. No per-domain author can see this; it is only visible exam-wide.
+       GENERATION-INTELLIGENCE.md F-10. lessonKey is optional (misconception-unit items may have
+       none) so an empty string never collides with itself. */
+    if(q.lessonKey){
+      (lessonTally[q.lessonKey] = lessonTally[q.lessonKey] || []).push(q.g);
+    }
+
+    /* dormant fields */
+    if(q.block !== null || q.blockLabel !== null)
+      W.push(at+": block fields are populated - confirm the guide settled the block question first");
+  });
+
+  /* lesson collision, exam-wide - always checked, not gated behind expect===63 */
+  Object.keys(lessonTally).forEach(function(k){
+    const gs = lessonTally[k];
+    if(gs.length > 1){
+      E.push("items g"+gs.join(", g")+" share lessonKey \""+k+"\" - same underlying corpus decision tested more than once");
+    }
+  });
+
+  /* paper-level */
+  if(expect === 63){
+    if(singles !== 55) E.push("single-answer count is "+singles+", expected 55");
+    if(multis !== 8)  E.push("multi-response count is "+multis+", expected 8");
+    DOM_ORDER.forEach(function(d){
+      const got = domTally[d]||0;
+      if(got !== DOM_QUOTA[d]) E.push("domain "+d+" has "+got+" items, quota is "+DOM_QUOTA[d]);
+    });
+    ["A","B","C","D"].forEach(function(l){
+      const n = letterTally[l]||0;
+      if(n < 12 || n > 16) E.push("correct-answer letter "+l+" appears "+n+" times, band is 12-16");
+    });
+    Object.keys(pairTally).forEach(function(p){
+      if(pairTally[p] > 2) E.push("multi-response pair "+p+" appears "+pairTally[p]+" times, cap is 2");
+    });
+    const totalDistractors = totalOpts - items.reduce(function(a,q){ return a+q.correct.length; },0);
+    Object.keys(famTally).forEach(function(f){
+      if(famTally[f] > Math.floor(totalDistractors*0.25))
+        E.push("family "+f+" is "+famTally[f]+" of "+totalDistractors+" distractors, cap is 25%");
+    });
+    if((famTally["EVIDENCE-MISMATCH"]||0) < 15) E.push("EVIDENCE-MISMATCH is "+(famTally["EVIDENCE-MISMATCH"]||0)+", floor is 15");
+    if((famTally["DETECTIVE-FOR-PREVENTIVE"]||0) < 9) E.push("DETECTIVE-FOR-PREVENTIVE is "+(famTally["DETECTIVE-FOR-PREVENTIVE"]||0)+", floor is 9");
+    if((famTally["ARCHITECTED"]||0) > 19) E.push("ARCHITECTED is "+(famTally["ARCHITECTED"]||0)+", ceiling is 19");
+    Object.keys(objTally).forEach(function(o){
+      if(objTally[o] > 3) E.push("objective "+o+" has "+objTally[o]+" items, cap is 3");
+    });
+    if(Object.keys(objTally).length !== 38)
+      E.push("objectives covered: "+Object.keys(objTally).length+" of 38");
+    Object.keys(shapeTally).forEach(function(s){
+      if(shapeTally[s] < 4 || shapeTally[s] > 11)
+        W.push("shape "+s+" appears "+shapeTally[s]+" times, target band is 4-11");
+    });
+  }
+  const tokenRate = totalOpts ? tokenOpts/totalOpts : 0;
+  if(tokenRate > 0.15) E.push("inline code/config tokens in "+Math.round(tokenRate*100)+"% of options, cap is 15%");
+
+  return {errors:E, warnings:W, stats:{
+    items:items.length, singles:singles, multis:multis,
+    domains:domTally, objectives:Object.keys(objTally).length,
+    letters:letterTally, families:famTally, shapes:shapeTally,
+    tokenRatePct: Math.round(tokenRate*1000)/10
+  }};
+}
+
+function runSelfCheck(){
+  const r = validateItems(ITEMS, {expectCount:null});
+  const box = document.getElementById("selfCheckBox");
+  box.classList.add("open");
+  box.textContent =
+    "validateItems() — template self-check (4 demo items, paper-level checks skipped)\n\n"
+  + (r.errors.length ? "ERRORS ("+r.errors.length+")\n  " + r.errors.join("\n  ") : "ERRORS: none")
+  + "\n\n"
+  + (r.warnings.length ? "WARNINGS ("+r.warnings.length+")\n  " + r.warnings.join("\n  ") : "WARNINGS: none")
+  + "\n\nSTATS\n" + JSON.stringify(r.stats, null, 1);
+}
+
+/* per-question timing */
+setInterval(function(){
+  if(currentG !== null && !state.submitted && state.started){
+    state.times[currentG] = (state.times[currentG] || 0) + 1;
+  }
+}, 1000);
+
+document.getElementById("fDemoCount").textContent = ITEMS.length + " demo items";
+document.getElementById("fMode").textContent = EXAM_MODE
+  ? "Exam — no feedback until submit" : "Practice — feedback per question";
+if(EXAM_MODE){
+  document.getElementById("modePill").textContent = "Exam Mode";
+  document.getElementById("modePill").classList.add("exam");
+}
+
+/* ================= NODE EXPORT =================
+   Gate check 1 runs in a Node vm against the SHIPPED file, not against a copy of the array.
+   Use the committed runner rather than an inline command:
+
+     node tools/run-gate.js mock-exams/CCAR-P_MockTest-1_v1.html 63
+
+   It exits 0 on a clean paper and 1 on any error, so it drops straight into a shell gate.
+
+   Do not write the extraction inline with a literal opening script tag in the command - this
+   comment lives INSIDE the script block, so any such literal splits the file at the wrong place
+   and silently truncates the extracted source. That is why the runner is a committed file and
+   why the tag is built by concatenation inside it.
+
+   The SOP records that the browser preview may not see a file written in the current session at
+   all, so the Node run is the authoritative check, not the page's own button. */
+if(typeof module !== "undefined" && module.exports){
+  module.exports = {ITEMS:ITEMS, validateItems:validateItems};
+}
+</script>
+</body>
+</html>

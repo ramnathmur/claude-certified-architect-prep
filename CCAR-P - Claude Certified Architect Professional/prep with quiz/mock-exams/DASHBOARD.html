@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CCAR-P Progress Dashboard</title>
+<!--
+  CCAR-P PROGRESS DASHBOARD
+  Built 2026-08-29. Reads DASHBOARD-DATA.jsonl, which is the machine-readable MIRROR of
+  EXAM-LOG.md. EXAM-LOG.md is authoritative; nothing here overrides it.
+
+  Domain codes and weights come from CCAR-P's own EXAM-FACTS_v1.md. Never from a sibling project -
+  a dashboard that inherited a sibling's DOMAIN_WEIGHTS is a documented failure mode.
+
+  USAGE: paste the JSONL contents into the box, or drop the file on the page. The file is not
+  fetched automatically because a local page cannot read a sibling file without a server.
+-->
+<style>
+:root{
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  --serif:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --bg:#faf9f7; --card:#fff; --ink:#1c1b19; --mid:#57534e; --soft:#8a857f;
+  --line:#e5e1db; --accent:#7c3f2e; --accent-soft:#f5ede9;
+  --ok:#2f6b46; --ok-soft:#eaf4ee; --bad:#a03225; --bad-soft:#fbeceb;
+  --warn:#8a6d1f; --warn-soft:#fdf6e3;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#1a1917; --card:#232220; --ink:#f0ede8; --mid:#b8b2aa; --soft:#8a857f;
+    --line:#38352f; --accent:#d99a7f; --accent-soft:#2e2521;
+    --ok:#7fc79c; --ok-soft:#1e2b23; --bad:#e89185; --bad-soft:#2e1f1d;
+    --warn:#d9bd6a; --warn-soft:#2b2519;
+  }
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55;}
+.wrap{max-width:1000px;margin:0 auto;padding:0 20px 80px;}
+.topnav{position:sticky;top:0;z-index:40;background:var(--bg);border-bottom:1px solid var(--line);}
+.topnav-in{max-width:1000px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.brand{font-weight:640;font-size:14px;}
+.brand span{color:var(--accent);}
+.navspace{flex:1;}
+.tabs{display:flex;gap:4px;}
+.tab{padding:5px 12px;border-radius:5px;font-size:13px;cursor:pointer;color:var(--mid);border:1px solid transparent;}
+.tab.on{background:var(--accent-soft);color:var(--accent);border-color:var(--accent);font-weight:600;}
+header.doc{padding:32px 0 18px;border-bottom:1px solid var(--line);}
+header.doc h1{font-family:var(--serif);font-size:29px;margin:0 0 6px;font-weight:600;}
+header.doc .sub{color:var(--mid);font-size:15px;margin:0;}
+.note{margin:18px 0;padding:12px 14px;border-left:3px solid var(--accent);background:var(--accent-soft);
+  font-size:13.5px;border-radius:0 4px 4px 0;}
+.note.warn{border-color:var(--warn);background:var(--warn-soft);}
+textarea{width:100%;min-height:130px;font-family:var(--mono);font-size:12px;padding:12px;
+  border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);resize:vertical;}
+.btn{padding:9px 18px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);
+  font-size:14px;font-family:inherit;cursor:pointer;font-weight:520;}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.btn:hover{opacity:.9;}
+.row{display:flex;gap:9px;margin:12px 0;flex-wrap:wrap;}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:6px;overflow:hidden;margin:22px 0;}
+.c{background:var(--card);padding:14px 16px;}
+.c .k{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--soft);margin-bottom:5px;}
+.c .v{font-size:22px;font-weight:300;font-family:var(--serif);}
+.c .v small{font-size:13px;color:var(--soft);font-family:var(--sans);}
+.c .v.pass{color:var(--ok);} .c .v.fail{color:var(--bad);}
+h2.sec{font-family:var(--serif);font-size:20px;margin:30px 0 10px;font-weight:600;}
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin:12px 0;}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--soft);font-weight:600;}
+td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;}
+.bar{height:5px;background:var(--line);border-radius:3px;overflow:hidden;min-width:70px;}
+.bar i{display:block;height:100%;background:var(--accent);}
+.bar i.low{background:var(--bad);} .bar i.high{background:var(--ok);}
+.spark{display:flex;align-items:flex-end;gap:3px;height:60px;margin:10px 0;}
+.spark div{flex:1;background:var(--accent-soft);border-top:2px solid var(--accent);min-height:2px;border-radius:2px 2px 0 0;}
+.spark div.pass{background:var(--ok-soft);border-color:var(--ok);}
+.empty{padding:34px;text-align:center;color:var(--soft);border:1px dashed var(--line);border-radius:6px;margin:20px 0;}
+.panel{display:none;} .panel.on{display:block;}
+.pill{font-size:11px;padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:600;}
+.pill.exam{background:var(--bad-soft);color:var(--bad);}
+.pill.tied{background:var(--warn-soft);color:var(--warn);}
+@media(max-width:640px){ .wrap{padding:0 14px 60px;} header.doc h1{font-size:23px;} }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-in">
+    <div class="brand">CCAR-P <span>Dashboard</span></div>
+    <div class="navspace"></div>
+    <div class="tabs">
+      <div class="tab on" data-p="overview" onclick="showPanel('overview',this)">Overview</div>
+      <div class="tab" data-p="domains" onclick="showPanel('domains',this)">Domains</div>
+      <div class="tab" data-p="papers" onclick="showPanel('papers',this)">Papers</div>
+      <div class="tab" data-p="data" onclick="showPanel('data',this)">Data</div>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+<header class="doc">
+  <h1>CCAR-P Progress Dashboard</h1>
+  <p class="sub">Claude Certified Architect – Professional · 63 items · 120 minutes · pass 720 of 1000</p>
+</header>
+
+<div class="note">
+  <strong>This is a mirror, not the record.</strong> <code>EXAM-LOG.md</code> is the only file in this
+  project that carries standing. Everything here is computed from <code>DASHBOARD-DATA.jsonl</code>,
+  which is written from that log. If the two disagree, the log is right.
+</div>
+
+<!-- ============ OVERVIEW ============ -->
+<section class="panel on" id="p-overview">
+  <div id="ovBody"></div>
+</section>
+
+<!-- ============ DOMAINS ============ -->
+<section class="panel" id="p-domains">
+  <div id="domBody"></div>
+</section>
+
+<!-- ============ PAPERS ============ -->
+<section class="panel" id="p-papers">
+  <div id="paperBody"></div>
+</section>
+
+<!-- ============ DATA ============ -->
+<section class="panel" id="p-data">
+  <h2 class="sec">Load data</h2>
+  <p style="font-size:14px;color:var(--mid)">
+    Paste the contents of <code>../DASHBOARD-DATA.jsonl</code> below, or drop the file anywhere on this
+    page. A local page cannot read a sibling file without a server, so this step is manual by design.
+  </p>
+  <textarea id="raw" placeholder='{"paper_n": 1, "format": "FULL63", ...}'></textarea>
+  <div class="row">
+    <button class="btn primary" onclick="loadFromBox()">Load</button>
+    <button class="btn" onclick="loadSample()">Load worked sample</button>
+    <button class="btn" onclick="clearAll()">Clear</button>
+  </div>
+  <div id="loadMsg" style="font-size:13.5px;margin-top:8px"></div>
+</section>
+
+</div>
+
+<script>
+/* ---- exam facts, from CCAR-P's own EXAM-FACTS_v1.md ---- */
+const DOMAIN_NAMES = {
+  D1:"Solution Design & Architecture",
+  D2:"Claude Models, Prompting & Context Engineering",
+  D3:"Integration",
+  D4:"Evaluation, Testing & Optimization",
+  D5:"Governance, Safety & Risk Management",
+  D6:"Stakeholder Communication & Lifecycle Management",
+  D7:"Developer Productivity & Operational Enablement"
+};
+const DOM_ORDER   = ["D1","D2","D3","D4","D5","D6","D7"];
+const DOM_WEIGHTS = {D1:17,D2:13,D3:19,D4:16,D5:14,D6:14,D7:7};
+const DOM_QUOTA   = {D1:11,D2:8,D3:12,D4:10,D5:9,D6:9,D7:4};
+const PASS_SCALED = 720;
+const TARGET_PAPERS = 10;
+
+const LSKEY = "ccarp-dashboard-v1";
+let rows = [];
+
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function pct(a,b){ return b ? Math.round(a/b*100) : 0; }
+
+function showPanel(id, el){
+  document.querySelectorAll(".panel").forEach(p=>p.classList.remove("on"));
+  document.getElementById("p-"+id).classList.add("on");
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("on"));
+  if(el) el.classList.add("on");
+}
+
+function parseJsonl(text){
+  const out = [], bad = [];
+  text.split("\n").forEach(function(line, i){
+    const t = line.trim();
+    if(!t) return;
+    try{ out.push(JSON.parse(t)); }
+    catch(e){ bad.push(i+1); }
+  });
+  return {rows:out, bad:bad};
+}
+
+/* attempted papers, sorted by attempt date - never by paper_n */
+function attempted(){
+  return rows.filter(r => r.attempted_date && r.total_correct !== null)
+             .sort((a,b) => String(a.attempted_date).localeCompare(String(b.attempted_date)));
+}
+
+function render(){
+  renderOverview();
+  renderDomains();
+  renderPapers();
+}
+
+function renderOverview(){
+  const host = document.getElementById("ovBody");
+  const at = attempted();
+  if(!rows.length){
+    host.innerHTML = '<div class="empty">No data loaded.<br><br>'
+      + 'Open the <strong>Data</strong> tab and paste <code>DASHBOARD-DATA.jsonl</code>, '
+      + 'or load the worked sample to see the layout.</div>';
+    return;
+  }
+  if(!at.length){
+    host.innerHTML = '<div class="empty">'+rows.length+' paper'+(rows.length>1?"s":"")+' generated, none sat yet.<br><br>'
+      + 'Scores appear here once a paper is attempted and its line is updated in place.</div>';
+    return;
+  }
+  const last = at[at.length-1];
+  const best = at.reduce((a,b)=> (b.estimated_scaled||0) > (a.estimated_scaled||0) ? b : a);
+  const mean = Math.round(at.reduce((s,r)=>s+(r.estimated_scaled||0),0)/at.length);
+  const passes = at.filter(r=>(r.estimated_scaled||0) >= PASS_SCALED).length;
+
+  let singleC=0, singleN=0, multiC=0, multiN=0;
+  at.forEach(r=>{
+    if(r.single_answer){ singleC+=r.single_answer[0]; singleN+=r.single_answer[1]; }
+    if(r.multi_response){ multiC+=r.multi_response[0]; multiN+=r.multi_response[1]; }
+  });
+
+  const spark = at.map(r=>{
+    const s = r.estimated_scaled||0;
+    const h = Math.max(2, Math.round((s-100)/900*60));
+    const cls = s>=PASS_SCALED ? " class='pass'" : "";
+    return '<div'+cls+' style="height:'+h+'px" title="Paper '+r.paper_n+' — '+s+'"></div>';
+  }).join("");
+
+  host.innerHTML =
+    '<div class="cards">'
+  + '<div class="c"><div class="k">Papers sat</div><div class="v">'+at.length+' <small>of '+TARGET_PAPERS+'</small></div></div>'
+  + '<div class="c"><div class="k">Latest scaled</div><div class="v '+((last.estimated_scaled>=PASS_SCALED)?"pass":"fail")+'">'+(last.estimated_scaled||"—")+'</div></div>'
+  + '<div class="c"><div class="k">Best</div><div class="v">'+(best.estimated_scaled||"—")+'</div></div>'
+  + '<div class="c"><div class="k">Mean</div><div class="v">'+mean+'</div></div>'
+  + '<div class="c"><div class="k">Above 720</div><div class="v">'+passes+' <small>of '+at.length+'</small></div></div>'
+  + '</div>'
+
+  + '<h2 class="sec">Scaled score by attempt</h2>'
+  + '<p style="font-size:13px;color:var(--soft);margin:0">Ordered by attempt date, never by paper number. '
+  + 'Green bars are above the 720 line.</p>'
+  + '<div class="spark">'+spark+'</div>'
+
+  + '<h2 class="sec">Where the marks go</h2>'
+  + '<table><thead><tr><th>Format</th><th>Correct</th><th>%</th><th></th></tr></thead><tbody>'
+  + '<tr><td>Single-answer</td><td class="n">'+singleC+' / '+singleN+'</td><td class="n">'+pct(singleC,singleN)+'%</td>'
+  +   '<td><div class="bar"><i style="width:'+pct(singleC,singleN)+'%"></i></div></td></tr>'
+  + '<tr><td>Multiple-response <span class="pill">all-or-nothing</span></td><td class="n">'+multiC+' / '+multiN+'</td>'
+  +   '<td class="n">'+pct(multiC,multiN)+'%</td>'
+  +   '<td><div class="bar"><i class="'+(pct(multiC,multiN)<pct(singleC,singleN)?"low":"")+'" style="width:'+pct(multiC,multiN)+'%"></i></div></td></tr>'
+  + '</tbody></table>'
+  + (multiN && pct(multiC,multiN) < pct(singleC,singleN) - 10
+      ? '<div class="note warn"><strong>The multi-response gap is real.</strong> Multiple-response accuracy is '
+        + (pct(singleC,singleN)-pct(multiC,multiN)) + ' points below single-answer. On Foundations eight misses were '
+        + 'majority-right answers scored zero, and that looked like a knowledge gap until the formats were split out. '
+        + 'The confirmed-weakness check runs on single-answer items only for exactly this reason.</div>'
+      : '')
+
+  + '<h2 class="sec">Confirmed weakness</h2>'
+  + renderWeakness(at);
+}
+
+function renderWeakness(at){
+  if(at.length < 2) return '<p style="font-size:14px;color:var(--mid)">Needs two attempted papers.</p>';
+  const a = at[at.length-2], b = at[at.length-1];
+  const wa = a.weakest_domain, wb = b.weakest_domain;
+  const tied = (wa==="tied" || wb==="tied");
+  const same = wa && wb && wa===wb && !tied;
+  return '<table><thead><tr><th>Paper</th><th>Attempted</th><th>Weakest</th></tr></thead><tbody>'
+    + '<tr><td>Paper '+a.paper_n+'</td><td class="n">'+a.attempted_date+'</td><td>'
+    +   (wa==="tied" ? '<span class="pill tied">tied</span>' : esc(wa||"—"))+'</td></tr>'
+    + '<tr><td>Paper '+b.paper_n+'</td><td class="n">'+b.attempted_date+'</td><td>'
+    +   (wb==="tied" ? '<span class="pill tied">tied</span>' : esc(wb||"—"))+'</td></tr>'
+    + '</tbody></table>'
+    + '<div class="note'+(same?"":" warn")+'">'
+    + (same
+        ? '<strong>Confirmed weakness: '+esc(wb)+'.</strong> Same domain unambiguously weakest on the two most '
+          + 'recent papers by attempt date. Raise its quota by 2 to 4 items on the next paper and lower the '
+          + 'strongest by the same, then revert.'
+        : '<strong>Not confirmed.</strong> ' + (tied
+            ? 'A tie fails the bar and records as false.'
+            : 'The two most recent papers name different weakest domains.'))
+    + '</div>';
+}
+
+function renderDomains(){
+  const host = document.getElementById("domBody");
+  const at = attempted();
+  if(!at.length){ host.innerHTML = '<div class="empty">No scored papers yet.</div>'; return; }
+  const agg = {};
+  DOM_ORDER.forEach(d => agg[d] = [0,0]);
+  at.forEach(r=>{
+    if(!r.domain_scores) return;
+    Object.keys(r.domain_scores).forEach(d=>{
+      const v = r.domain_scores[d];
+      if(!Array.isArray(v)) return;                 /* schema rule 2: always [correct, of] */
+      if(!agg[d]) agg[d] = [0,0];
+      agg[d][0] += v[0]; agg[d][1] += v[1];
+    });
+  });
+  const rowsHtml = DOM_ORDER.map(d=>{
+    const c = agg[d][0], n = agg[d][1], p = pct(c,n);
+    const cls = p < 60 ? "low" : (p >= 80 ? "high" : "");
+    return '<tr><td>'+d+' — '+DOMAIN_NAMES[d]+'</td>'
+      + '<td class="n">'+DOM_WEIGHTS[d]+'%</td><td class="n">'+DOM_QUOTA[d]+'</td>'
+      + '<td class="n">'+c+' / '+n+'</td><td class="n">'+p+'%</td>'
+      + '<td><div class="bar"><i class="'+cls+'" style="width:'+p+'%"></i></div></td></tr>';
+  }).join("");
+  host.innerHTML =
+    '<h2 class="sec">Domain performance, all attempted papers</h2>'
+  + '<p style="font-size:13px;color:var(--soft);margin:0">There is <strong>no per-domain floor</strong> on this exam. '
+  + 'Pass or fail is decided on total scaled score only. Domain percentages steer study, not the verdict.</p>'
+  + '<table><thead><tr><th>Domain</th><th>Weight</th><th>Items/paper</th><th>Correct</th><th>%</th><th></th></tr></thead>'
+  + '<tbody>'+rowsHtml+'</tbody></table>';
+}
+
+function renderPapers(){
+  const host = document.getElementById("paperBody");
+  if(!rows.length){ host.innerHTML = '<div class="empty">No data loaded.</div>'; return; }
+  const sorted = rows.slice().sort((a,b)=>{
+    if(a.attempted_date && b.attempted_date) return String(a.attempted_date).localeCompare(String(b.attempted_date));
+    if(a.attempted_date) return -1;
+    if(b.attempted_date) return 1;
+    return (a.paper_n||0)-(b.paper_n||0);
+  });
+  const body = sorted.map(r=>{
+    const sat = !!r.attempted_date;
+    const s = r.estimated_scaled;
+    return '<tr>'
+      + '<td>Paper '+r.paper_n+' '+(r.mode==="exam"?'<span class="pill exam">exam</span>':'<span class="pill">practice</span>')+'</td>'
+      + '<td class="n">'+(r.generated_date||"—")+'</td>'
+      + '<td class="n">'+(r.attempted_date||"not sat")+'</td>'
+      + '<td class="n">'+(sat ? r.total_correct+" / "+r.total_questions : "—")+'</td>'
+      + '<td class="n" style="'+(sat ? (s>=PASS_SCALED?"color:var(--ok);font-weight:640":"color:var(--bad)") : "")+'">'+(sat ? s : "—")+'</td>'
+      + '<td class="n">'+(r.total_seconds ? Math.round(r.total_seconds/60)+" min" : "—")+'</td>'
+      + '<td>'+(r.weakest_domain==="tied" ? '<span class="pill tied">tied</span>' : esc(r.weakest_domain||"—"))+'</td>'
+      + '</tr>';
+  }).join("");
+  const due = attempted().length > 0 && attempted().length % 3 === 0;
+  host.innerHTML =
+    '<h2 class="sec">Papers</h2>'
+  + '<p style="font-size:13px;color:var(--soft);margin:0">Sorted by attempt date. Papers are sat out of order, '
+  + 'so paper number is never the chronology.</p>'
+  + '<table><thead><tr><th>Paper</th><th>Generated</th><th>Attempted</th><th>Score</th><th>Scaled</th><th>Time</th><th>Weakest</th></tr></thead>'
+  + '<tbody>'+body+'</tbody></table>'
+  + (due ? '<div class="note"><strong>Insights Round due.</strong> '+attempted().length+' scored papers — a multiple of three. '
+         + 'Look across the window for trends no single paper shows.</div>' : '');
+}
+
+/* ---- loading ---- */
+function loadFromBox(){
+  const txt = document.getElementById("raw").value;
+  const p = parseJsonl(txt);
+  const msg = document.getElementById("loadMsg");
+  if(!p.rows.length){
+    msg.innerHTML = '<span style="color:var(--bad)">Nothing parsed.'
+      + (p.bad.length ? ' Malformed line'+(p.bad.length>1?"s":"")+': '+p.bad.join(", ")+'.' : '')+'</span>';
+    return;
+  }
+  rows = p.rows;
+  try{ localStorage.setItem(LSKEY, txt); }catch(e){}
+  msg.innerHTML = '<span style="color:var(--ok)">Loaded '+rows.length+' paper'+(rows.length>1?"s":"")+'.'
+    + (p.bad.length ? ' Skipped malformed line'+(p.bad.length>1?"s":"")+': '+p.bad.join(", ")+'.' : '')+'</span>';
+  render();
+}
+
+function clearAll(){
+  rows = []; document.getElementById("raw").value = "";
+  try{ localStorage.removeItem(LSKEY); }catch(e){}
+  document.getElementById("loadMsg").textContent = "Cleared.";
+  render();
+}
+
+/* A worked sample so the layout can be checked before any paper exists.
+   Clearly labelled - these are not Ram's scores. */
+function loadSample(){
+  const sample = [
+   {paper_n:1,format:"FULL63",generated_date:"2026-09-02",attempted_date:"2026-09-04",score_source:"results-json",
+    total_correct:41,total_questions:63,estimated_scaled:686,total_seconds:6480,
+    single_answer:[39,55],multi_response:[2,8],
+    domain_scores:{D1:[7,11],D2:[5,8],D3:[8,12],D4:[7,10],D5:[5,9],D6:[6,9],D7:[3,4]},
+    weakest_domain:"D5",confirmed_weakness:null,insight_round_due:false,mode:"practice"},
+   {paper_n:2,format:"FULL63",generated_date:"2026-09-08",attempted_date:"2026-09-10",score_source:"results-json",
+    total_correct:46,total_questions:63,estimated_scaled:757,total_seconds:6120,
+    single_answer:[43,55],multi_response:[3,8],
+    domain_scores:{D1:[9,11],D2:[6,8],D3:[9,12],D4:[8,10],D5:[5,9],D6:[7,9],D7:[2,4]},
+    weakest_domain:"D5",confirmed_weakness:true,insight_round_due:false,mode:"practice"},
+   {paper_n:3,format:"FULL63",generated_date:"2026-09-14",attempted_date:null,score_source:null,
+    total_correct:null,total_questions:63,estimated_scaled:null,total_seconds:null,
+    single_answer:null,multi_response:null,domain_scores:null,weakest_domain:null,
+    confirmed_weakness:null,insight_round_due:false,mode:"practice"}
+  ];
+  document.getElementById("raw").value = sample.map(r=>JSON.stringify(r)).join("\n");
+  loadFromBox();
+  document.getElementById("loadMsg").innerHTML +=
+    ' <strong style="color:var(--warn)">This is a worked sample, not real data.</strong>';
+}
+
+/* drop a file anywhere */
+document.addEventListener("dragover", e=>{ e.preventDefault(); });
+document.addEventListener("drop", function(e){
+  e.preventDefault();
+  const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if(!f) return;
+  const fr = new FileReader();
+  fr.onload = function(){ document.getElementById("raw").value = fr.result; loadFromBox(); showPanel("overview", document.querySelector('.tab[data-p="overview"]')); };
+  fr.readAsText(f);
+});
+
+/* restore last paste */
+try{
+  const saved = localStorage.getItem(LSKEY);
+  if(saved){ document.getElementById("raw").value = saved; const p = parseJsonl(saved); rows = p.rows; }
+}catch(e){}
+render();
+</script>
+</body>
+</html>

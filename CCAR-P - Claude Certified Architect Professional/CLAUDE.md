@@ -8,18 +8,35 @@ Preparation for Anthropic's **Claude Certified Architect – Professional** exam
 Sibling folder: `..\CCAR-F - Claude Certified Architect Foundations\` — the Foundations run, passed
 2026-08-18 with 851/720. Its machinery is the template for this one.
 
-## Mock-exam engine
+## Mock-exam engine — **built 2026-08-29**
 
-When it's time to build this folder's mock-exam engine, papers, or dashboard, **follow
-`..\sop\SOP_Mock-Exam-Engine_v1.md`** rather than improvising or re-deriving it from scratch. It's the
-extracted, exam-agnostic methodology behind CCDV-F's engine (design stance, item schema, seeding
-approach, dashboard pattern, verification discipline) — read CCDV-F's own `mock-exams/README.md` and
-`GENERATION-INTELLIGENCE.md` too if you want the full worked history behind any rule in the SOP.
+`prep with quiz/CCAR-P-Orchestration-Prompt_v2.md` is the authority for how a paper is generated.
+Read it before generating, auditing, or changing any paper. It supersedes v1, which ported the
+Foundations feedback loop and left the item-fidelity half behind — the reasoning is in
+`Outputs/CCAR-P_Mock-Exam-Engine-Audit_v1.md`.
 
-**This does not relax the verification rule below.** The SOP governs the engine/mechanism only — the
-template, the item schema, the dashboard, Practice-Mode-by-default. It does not authorize generating a
-single item from this folder's current UNVERIFIED weight table. Build the engine and template with demo
-items only until `EXAM-FACTS_v1.md` has a real VERIFIED table.
+The engine's parts: the orchestration prompt · four ledgers (`CCAR-P_Objective-Map_v1.md`,
+`FACET-LEDGER.md`, `STEM-LEDGER.md`, `ARCHETYPE-LEDGER.md`) · `GENERATION-INTELLIGENCE.md` ·
+`mock-exams/CCAR-P_MockTest-TEMPLATE_v1.html` · `mock-exams/DASHBOARD.html` · `tools/run-gate.js`.
+
+`..\sop\SOP_Mock-Exam-Engine_v1.md` remains the exam-agnostic methodology behind the engine. Where
+the orchestration prompt and the SOP differ, **the orchestration prompt wins for this exam** — it was
+written against CCAR-P's own guide and corpus, and two of its rules deliberately invert the SOP's
+sibling-derived defaults.
+
+### Two decisions recorded, both Ram's, 2026-08-29
+
+1. **Item sourcing is hybrid.** Paper 1 runs TRANSCRIBE mode — options are the corpus's own verbatim
+   text — so a Paper 1 miss is unambiguously a knowledge gap and not a generation artefact. Papers
+   2–10 run AUTHOR mode, because 158 corpus distractors cannot fill the 189 slots one paper needs.
+   This settles SOP §3.3 for this project.
+2. **The objective map lives outside the corpus.** `CCAR-P_Objective-Map_v1.md` assigns all 78
+   sections to the 38 official objectives without editing a single domain file, so corpus section
+   numbering and content stay exactly as reviewed.
+
+**The verification rule below still binds.** `EXAM-FACTS_v1.md`'s VERIFIED table now carries the real
+weights and item count (promoted 2026-08-25, with the S3-mirror provenance caveat attached), which is
+what makes generation legitimate. Nothing may still be generated from the UNVERIFIED table.
 
 ## Output folder
 

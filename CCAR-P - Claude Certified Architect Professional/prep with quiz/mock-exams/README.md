@@ -7,10 +7,25 @@ overrides them.
 
 ## Status
 
-**No official paper exists yet.** CCAR-P's own corpus (`CCAR-P_Domain-N_v1.md` files) has not been
-built — the project is still in Phase 0/1 per `..\..\ROADMAP.md`. A real paper is Phase 4 work, drawn
-from that corpus once it exists, at the confirmed 17/13/19/16/14/14/7 domain weighting in
-`..\..\EXAM-FACTS_v1.md`.
+**No paper generated yet, but nothing is blocking one.**
+
+*(Corrected 2026-08-29. This section previously said the corpus "has not been built" and the project was
+"still in Phase 0/1". Both were stale: all seven `CCAR-P_Domain-N_v1.md` files were completed
+2026-08-25 — 78 sections, 79 scenarios, 158 tagged distractors — and Phase 0 closed the same day.)*
+
+The mock-exam engine was built 2026-08-29 and lives here and in `..\`:
+
+| File | What it is |
+|---|---|
+| `CCAR-P_MockTest-TEMPLATE_v1.html` | The exam engine. Practice Mode default, `validateItems()`, multi-response, three exports. Ships with four demo items — replace the `ITEMS` array and nothing else |
+| `DASHBOARD.html` | Reads `..\DASHBOARD-DATA.jsonl`. Domain weights come from CCAR-P's own `EXAM-FACTS_v1.md` |
+| `..\CCAR-P-Orchestration-Prompt_v2.md` | How a paper is generated. Supersedes v1 |
+| `..\FACET-LEDGER.md` · `..\STEM-LEDGER.md` · `..\ARCHETYPE-LEDGER.md` · `..\CCAR-P_Objective-Map_v1.md` | The four ledgers the generator reads and rebuilds |
+| `..\tools\run-gate.js` | Fidelity-gate check 1, run in Node against the shipped file |
+
+Paper 1 is generable now, in TRANSCRIBE mode, at the confirmed 17/13/19/16/14/14/7 weighting —
+11/8/12/10/9/9/4 items. See `..\Outputs\CCAR-P_Mock-Exam-Engine-Audit_v1.md` for why the engine is
+shaped the way it is.
 
 **What's here instead:** three **external, unofficial** practice sets —
 `CCAR-P_ExternalMock-1_v1.html`, `-2_v1.html`, `-3_v1.html` — imported 2026-08-25 at Ram's request from
