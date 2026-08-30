@@ -4,7 +4,11 @@ Preparation project for Anthropic's **Claude Certified Architect – Professiona
 **CCAR-P**. Started 2026-08-18, the day CCAR-F was passed with 851 against a 720 pass line.
 
 **Status:** parallel track — kept warm while **CCDV-F is the active exam** (decided 2026-08-19).
-**Current phase:** Phase 0 — blocked on the official exam guide. See `ROADMAP.md`.
+**Current phase:** Phases 0, 2 and 4 closed. Official guide obtained and reconciled 2026-08-25, corpus
+complete the same day, mock-exam engine built 2026-08-29, Paper 1 generated 2026-08-30 (not yet sat).
+See `ROADMAP.md` for the live stage.
+*(Corrected 2026-08-30 via `/sync-up` — this line previously said "Phase 0 — blocked" three weeks
+after Phase 0 actually closed.)*
 
 > **What "warm" means in practice.** The official video path runs alongside CCDV-F prep, but in a
 > deliberate order: **Lesson 2 (Enterprise Integration & Production, 158 min) and Lesson 3
@@ -61,8 +65,10 @@ reproduced here:
 
 ## What is deliberately not here yet
 
-**Superseded, 2026-08-26 (via `/sync-up`).** This section described the state before Phase 0 closed.
-Since 2026-08-25: the official guide is obtained and reconciled (verified with a documented provenance
-caveat — see `EXAM-FACTS_v1.md`), and all seven domain files are built (77 sections, 77 scenarios, 154
-tagged distractors, per `ROADMAP.md`'s Phase 2). What's still genuinely missing: no mock paper has been
-generated or sat, and only Domains 1–4 of 7 have been taught/read so far.
+**Superseded, 2026-08-30 (via `/sync-up`; first corrected 2026-08-26).** This section described the
+state before Phase 0 closed. Since 2026-08-25: the official guide is obtained and reconciled (verified
+with a documented provenance caveat — see `EXAM-FACTS_v1.md`), and all seven domain files are built
+(78 sections, 79 scenarios, 158 tagged distractors, per `CCAR-P_Corpus-Index_v1.md` and `ROADMAP.md`'s
+Phase 2). Since 2026-08-30: the mock-exam engine is built and Paper 1 is generated (63 items, full
+AUTHOR mode, `prep with quiz/mock-exams/CCAR-P_MockTest-1_v1.html`), not yet sat. What's still
+genuinely missing: only Domains 1–4 of 7 have been taught/read so far.

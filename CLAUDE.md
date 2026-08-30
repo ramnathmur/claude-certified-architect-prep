@@ -17,7 +17,7 @@ mock-exam engine. Nothing at this root carries exam content.
 | Folder | Exam | Status |
 |---|---|---|
 | `CCAR-F - Claude Certified Architect Foundations/` | Architect – Foundations | ✅ Passed 2026-08-18, 851/720. Renewal due 2027-08-18 |
-| `CCAR-P - Claude Certified Architect Professional/` | Architect – Professional | Parallel track — kept warm |
+| `CCAR-P - Claude Certified Architect Professional/` | Architect – Professional | Parallel track — kept warm. Phases 0/2/4 closed, mock-exam engine built 2026-08-29, Paper 1 generated 2026-08-30 — see its own `ROADMAP.md` for the live stage |
 | `CCAO-F - Claude Certified Associate Foundations/` | Associate – Foundations | Deferred |
 | `CCDV-F - Claude Certified Developer Foundations/` | Developer – Foundations | ⭐ **ACTIVE — next exam.** Guide v1.0 filed, Phase 0 closed. All 34 course chapters authored 2026-08-25 — see its own `ROADMAP.md` for the live stage |
 

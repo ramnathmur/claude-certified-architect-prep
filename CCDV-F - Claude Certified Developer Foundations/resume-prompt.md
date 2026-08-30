@@ -47,20 +47,22 @@ what `334382f` already pushed.
   53-item mocks, no miss log. The regeneration plan's own §2.2 still flags "the design as written
   offers one practice paper" as an open risk — worth resurfacing to Ram before mock generation starts,
   since Part III's acceptance test assumes real instrumentation exists.
-- **No HTML for chapters 15–34.** The established method (one author agent per chapter, `<style>`/
-  `<script>` copied verbatim from `Ch10_The-loop-your-code-owns.html`, section-by-section spec given up
-  front, browser-verified after) is proven across 1–14 and should port directly — see DV-01 (incremental
-  writes, not one large `Write`) before attempting any of these, several are 3,000+ words.
+- **No HTML for chapters 19–34.** *(Corrected 2026-08-30 via `/sync-up` — chapters 15–18 were in fact
+  converted the same morning this file was written, 06:04–06:20, four chapters after this file's own
+  05:41 timestamp; ROADMAP.md already records this correctly.)* The established method (one author
+  agent per chapter, `<style>`/`<script>` copied verbatim from `Ch10_The-loop-your-code-owns.html`,
+  section-by-section spec given up front, browser-verified after) is proven across 1–18 and should port
+  directly — see DV-01 (incremental writes, not one large `Write`) before attempting any of these,
+  several are 3,000+ words.
 - **Chapter 13's markdown source is still missing its self-test Answers section** (small, pre-existing,
   independent of everything above — the HTML has a derived key, the markdown doesn't).
 - **Whether chapters 16–34 ever get an independent review is closed, not open** — Ram declined it
   2026-08-25. Don't re-raise it as a pending decision; if circumstances change later, that's a fresh
   ask, not a resumption of an old one.
-- **`GENERATION-INTELLIGENCE.md` was not touched by the doc-sync that produced this file.** Its DV-09
-  entry ("the corpus gate blocks paper generation, no domain files exist") is stale in framing — the
-  corpus source changed from planned domain files to chapter self-tests back on 2026-08-22, and
-  chapters now exist. Check it before trusting it verbatim; nobody has gone back to close or rewrite
-  that entry.
+- **DV-09 in `GENERATION-INTELLIGENCE.md` has since been closed.** *(Corrected 2026-08-30 via
+  `/sync-up` — this note warned the entry was stale and unrewritten; GENERATION-INTELLIGENCE.md was
+  in fact edited after this file was written the same day and DV-09 is now explicitly marked CLOSED,
+  with the premise-changed-not-fixed-as-written explanation already in place.)* No action needed.
 - **No index/hub page** for `Outputs/regeneration/html/`. Not asked for; don't build one unprompted.
 
 ## Next action
@@ -68,8 +70,9 @@ what `334382f` already pushed.
 No single next action is forced the way chapter 15's authoring was — the course is complete. Two
 independent tracks are both plausible and neither blocks the other:
 
-1. **HTML conversion for chapters 15–34**, in batches the same size as the 11–14 batch (four chapters
-   per parallel dispatch worked well), reusing the exact template and verification method.
+1. **HTML conversion for chapters 19–34** (15–18 done, see above), in batches the same size as the
+   11–14 batch (four chapters per parallel dispatch worked well), reusing the exact template and
+   verification method.
 2. **Stage 9 instrumentation** — build the 30-item diagnostic and the mock-assembly logic that draws
    from each chapter's own self-test items (the corpus source, per the 2026-08-22 supersession of the
    old domain-file plan). This also raises a real question worth putting to Ram rather than assuming:

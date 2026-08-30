@@ -535,5 +535,7 @@ Each section's `Exam scenario` block is that section's canonical worked example.
 produce a **different failure mode** from it. On Foundations this single instruction caught 9 of 15
 draft questions in one block before they reached the coordinator.
 
-The one exception is TRANSCRIBE mode on Paper 1, where these scenarios are the item source by design.
-From Paper 2 they revert to reference-only.
+A hybrid plan once made Paper 1 an exception (TRANSCRIBE mode, these scenarios as the direct item
+source) — rejected 2026-08-29/30 after measurement showed the corpus's own correct answers run
+longest 84% of the time. Every paper, including Paper 1, is authored fresh; canonical scenarios stay
+reference-only from Paper 1 onward.

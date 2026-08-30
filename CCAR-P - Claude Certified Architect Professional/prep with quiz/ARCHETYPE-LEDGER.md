@@ -1,6 +1,6 @@
 # CCAR-P Archetype Ledger — v1
 
-**Built:** 2026-08-29 · **Instances:** none yet. Paper 1 populates the instance tables.
+**Built:** 2026-08-29 · **Instances:** Paper 1 populated both instance tables 2026-08-30 (63 shape rows, 8-family tally). Rebuilt from the shipped HTML, not from a session's own account.
 
 Two taxonomies live here. **Shapes** are how an item is put together — the rhetorical form of the stem
 and what it asks the candidate to do. **Families** are how a distractor is wrong. An item has one shape

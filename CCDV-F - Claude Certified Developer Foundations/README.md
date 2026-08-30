@@ -4,11 +4,14 @@ Preparation project for Anthropic's **Claude Certified Developer – Foundations
 **CCDV-F**, $125. Started 2026-08-19.
 
 **Status:** ⭐ **ACTIVE — this is Ram's next exam**, decided 2026-08-19.
-**Current phase:** **Phase 1.** Phase 0 closed 2026-08-19 — the official guide (v1.0, July 2026) is
-filed at `sources/CCDV-F_Official-Exam-Guide_v1.0.pdf` and fully reconciled. **Phases 2–4's build/
-corpus/mock-paper work now runs through `Outputs/regeneration/CCDV-F_Regeneration-Plan_v1.md` instead
-— see `ROADMAP.md` for how the two relate.** Part I of the regenerated material (chapters 1–5) is
-delivered and gate-verified as of 2026-08-22.
+**Current phase:** **Stage 9 of the regeneration plan.** Phase 0 closed 2026-08-19 — the official guide
+(v1.0, July 2026) is filed at `sources/CCDV-F_Official-Exam-Guide_v1.0.pdf` and fully reconciled.
+**Phases 2–4's build/corpus/mock-paper work runs through `Outputs/regeneration/CCDV-F_Regeneration-Plan_v1.md`
+instead — see `ROADMAP.md` for how the two relate.** All 34 chapters authored 2026-08-25 (Stage 6
+complete); Mock Paper 1 generated 2026-08-25, not yet sat.
+*(Corrected 2026-08-30 via `/sync-up` — this line said "Phase 1" a full session after ROADMAP.md
+caught and fixed the identical bug on 2026-08-26; this file was edited in that same session but the
+line was missed.)*
 **Pacing:** no target date. The plan gates on evidence, phase by phase.
 **Alongside:** CCAR-P is kept warm — its Integration and Responsible-AI lessons feed this exam and are
 front-loaded for that reason.
@@ -49,7 +52,7 @@ CCDV-F - Claude Certified Developer Foundations/
     ├── DASHBOARD-SCHEMA.md            the jsonl contract
     ├── CCDV-F_Corpus-Index_v1.md      corpus index + reconciliation checklist
     ├── CCDV-F_Domain-Template_v1.md   the shape every domain file must take
-    ├── CCDV-F_Domain-1..8_v1.md       domain corpus (not created until Phase 0 closes)
+    ├── CCDV-F_Domain-1..8_v1.md       superseded 2026-08-22 — not created, not planned; see below
     ├── CCDV-F-Orchestration-Prompt_v1.md   mock-exam generator
     └── mock-exams/                    generated papers
 ```
@@ -74,11 +77,12 @@ assistant in the room, and no amount of reading substitutes for having written i
 
 ## What is not here yet
 
-**Superseded, 2026-08-26 (via `/sync-up`).** This section described the state as of 2026-08-22. Since
-then: all 34 course chapters are authored (2026-08-25, each carrying its own self-test items as the
-question corpus) and Mock Paper 1 has been generated (2026-08-25, not yet sat) — see `ROADMAP.md` for
-the live stage. What's still genuinely missing: chapters 15–34 have not been converted to HTML yet,
-and no mock paper has been sat or scored.
+**Superseded, 2026-08-30 (via `/sync-up`; first corrected 2026-08-26).** This section described the
+state as of 2026-08-22. Since then: all 34 course chapters are authored (2026-08-25, each carrying its
+own self-test items as the question corpus) and Mock Paper 1 has been generated (2026-08-25, not yet
+sat) — see `ROADMAP.md` for the live stage. Chapters 1–18 have HTML builds (15–18 converted 2026-08-25).
+What's still genuinely missing: chapters 19–34 have not been converted to HTML yet, and no mock paper
+has been sat or scored.
 
 Three things the guide settled that change how the corpus gets built:
 
