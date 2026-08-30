@@ -24,12 +24,14 @@ the orchestration prompt and the SOP differ, **the orchestration prompt wins for
 written against CCAR-P's own guide and corpus, and two of its rules deliberately invert the SOP's
 sibling-derived defaults.
 
-### Two decisions recorded, both Ram's, 2026-08-29
+### Two decisions recorded, both Ram's, 2026-08-29/30
 
-1. **Item sourcing is hybrid.** Paper 1 runs TRANSCRIBE mode — options are the corpus's own verbatim
-   text — so a Paper 1 miss is unambiguously a knowledge gap and not a generation artefact. Papers
-   2–10 run AUTHOR mode, because 158 corpus distractors cannot fill the 189 slots one paper needs.
-   This settles SOP §3.3 for this project.
+1. **Item sourcing is full AUTHOR mode for every paper, including Paper 1.** A hybrid plan (Paper 1
+   TRANSCRIBE, Papers 2–10 AUTHOR) was proposed first, but measurement showed the corpus's 79
+   ready-made scenarios have the correct answer as the longest option 84% of the time — a verbatim
+   Paper 1 would have been answerable by length alone, chance is ~33%. TRANSCRIBE was rejected
+   entirely; Paper 1 shipped 2026-08-30 in AUTHOR mode, 0/63 key-longest above chance. This settles
+   SOP §3.3 for this project.
 2. **The objective map lives outside the corpus.** `CCAR-P_Objective-Map_v1.md` assigns all 78
    sections to the 38 official objectives without editing a single domain file, so corpus section
    numbering and content stay exactly as reviewed.

@@ -106,13 +106,14 @@ guide's wrong scenario count reached generated practice material.
 - [x] **Companion lessons** — `Outputs/lessons/CCAR-P_Lesson-Domain-N_v1.md`, seven long-form
       teaching files (~64,150 words) covering all 38 objectives. Not a question source; the domain
       files remain the only permitted origin for generated questions
-- [x] **HTML builds** — Domains 3 and 4 also built as paged HTML lessons in `Outputs/lessons/`,
-      following the house style playbook (`my blueprints/Ram Preferred HTML Style.md`). Domains 1, 2,
-      5, 6, 7 remain markdown-only.
+- [x] **HTML builds** — all seven domains now built as paged HTML lessons in `Outputs/lessons/`,
+      following the house style playbook (`my blueprints/Ram Preferred HTML Style.md`).
+      *(Corrected 2026-08-30 via `/sync-up` — this previously said only Domains 3 and 4 were built.)*
 
 > **Partially studied — updated 2026-08-26 (via `/sync-up`).** Domains 1, 2, 3, and 4 of 7 have now
 > been taught in chat across sessions (3 and 4 also read via their HTML builds). Domains 5, 6, and 7
-> remain unread. No mock paper has been generated or sat.
+> remain unread. **Paper 1 generated 2026-08-30 (63 items, full AUTHOR mode), not yet sat.**
+> *(Corrected 2026-08-30 — this previously said "no mock paper has been generated or sat.")*
 
 ### Phase 3 — Production exposure (months 3–8, Path B only)
 - [ ] Take one Claude system at Infosys from design to production: integration, evals, safety

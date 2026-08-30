@@ -7,25 +7,28 @@ overrides them.
 
 ## Status
 
-**No paper generated yet, but nothing is blocking one.**
+**Paper 1 generated 2026-08-30, not yet sat.** `CCAR-P_MockTest-1_v1.html`, 63 items, full AUTHOR mode.
 
-*(Corrected 2026-08-29. This section previously said the corpus "has not been built" and the project was
-"still in Phase 0/1". Both were stale: all seven `CCAR-P_Domain-N_v1.md` files were completed
-2026-08-25 — 78 sections, 79 scenarios, 158 tagged distractors — and Phase 0 closed the same day.)*
+*(Corrected 2026-08-30 via `/sync-up`. This section previously said "no paper generated yet" and named
+TRANSCRIBE as Paper 1's mode — both stale. A hybrid TRANSCRIBE/AUTHOR plan was proposed, then rejected
+in full: the corpus's 79 ready-made scenarios have the correct answer as the longest option 84% of the
+time, which would have made a verbatim Paper 1 answerable by length alone. Every paper, including
+Paper 1, runs full AUTHOR mode.)*
 
 The mock-exam engine was built 2026-08-29 and lives here and in `..\`:
 
 | File | What it is |
 |---|---|
-| `CCAR-P_MockTest-TEMPLATE_v1.html` | The exam engine. Practice Mode default, `validateItems()`, multi-response, three exports. Ships with four demo items — replace the `ITEMS` array and nothing else |
+| `CCAR-P_MockTest-TEMPLATE_v1.html` | The exam engine. Practice Mode default, `validateItems()`, multi-response, three exports, mechanized cross-item lesson-collision check. Ships with four demo items — replace the `ITEMS` array and nothing else |
+| `CCAR-P_MockTest-1_v1.html` | Paper 1, generated |
 | `DASHBOARD.html` | Reads `..\DASHBOARD-DATA.jsonl`. Domain weights come from CCAR-P's own `EXAM-FACTS_v1.md` |
-| `..\CCAR-P-Orchestration-Prompt_v2.md` | How a paper is generated. Supersedes v1 |
+| `..\CCAR-P-Orchestration-Prompt_v2.md` | How a paper is generated |
 | `..\FACET-LEDGER.md` · `..\STEM-LEDGER.md` · `..\ARCHETYPE-LEDGER.md` · `..\CCAR-P_Objective-Map_v1.md` | The four ledgers the generator reads and rebuilds |
 | `..\tools\run-gate.js` | Fidelity-gate check 1, run in Node against the shipped file |
 
-Paper 1 is generable now, in TRANSCRIBE mode, at the confirmed 17/13/19/16/14/14/7 weighting —
-11/8/12/10/9/9/4 items. See `..\Outputs\CCAR-P_Mock-Exam-Engine-Audit_v1.md` for why the engine is
-shaped the way it is.
+Paper 2 onward runs the same AUTHOR-mode process. See `..\Outputs\CCAR-P_Mock-Exam-Engine-Audit_v1.md`
+for why the engine is shaped the way it is, and `..\EXAM-LOG.md`'s Paper 1 entry for the fidelity-gate
+result and generation notes.
 
 **What's here instead:** three **external, unofficial** practice sets —
 `CCAR-P_ExternalMock-1_v1.html`, `-2_v1.html`, `-3_v1.html` — imported 2026-08-25 at Ram's request from

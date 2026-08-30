@@ -18,7 +18,7 @@ not copied here.
 |---|---|---|
 | `mock-exams/CCAR-P_ExternalMock-1/2/3_v1.html` | 45 | Community-authored, permanently outside the `MockTest-N` sequence, and Ram may sit them. A generated stem that collides with one teaches nothing new |
 | `sources/CCAR-P_Official-Exam-Guide_v1.0.pdf` §8 | 3 | Ram has read these. They are the style reference, so a stem that reproduces one is measuring recall of the guide |
-| Generated CCAR-P papers | 0 | None exist yet. Every shipped paper appends its 63 stems here |
+| Generated CCAR-P papers | 63 | Paper 1, appended 2026-08-30 (see below). Every shipped paper appends its 63 stems here |
 
 ## Threshold, calibrated rather than inherited
 

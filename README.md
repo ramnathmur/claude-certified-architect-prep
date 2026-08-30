@@ -6,7 +6,7 @@ self-contained with its own exam facts, roadmap, corpus and mock-exam engine.
 | Folder | Exam | Price | Status |
 |---|---|---|---|
 | [`CCAR-F - Claude Certified Architect Foundations`](CCAR-F%20-%20Claude%20Certified%20Architect%20Foundations/) | Claude Certified Architect – Foundations | $125 | ✅ **Passed 2026-08-18, 851/720**, first attempt. Renewal due 2027-08-18 |
-| [`CCAR-P - Claude Certified Architect Professional`](CCAR-P%20-%20Claude%20Certified%20Architect%20Professional/) | Claude Certified Architect – Professional | $175 | Parallel track — kept warm, Integration + Safety lessons front-loaded |
+| [`CCAR-P - Claude Certified Architect Professional`](CCAR-P%20-%20Claude%20Certified%20Architect%20Professional/) | Claude Certified Architect – Professional | $175 | Parallel track — kept warm, Integration + Safety lessons front-loaded. Phases 0/2/4 closed, mock-exam engine built 2026-08-29, Paper 1 generated 2026-08-30 — see its own `ROADMAP.md` for the live stage |
 | [`CCAO-F - Claude Certified Associate Foundations`](CCAO-F%20-%20Claude%20Certified%20Associate%20Foundations/) | Claude Certified Associate – Foundations | $99 | Deferred — whether to sit it at all is still open |
 | [`CCDV-F - Claude Certified Developer Foundations`](CCDV-F%20-%20Claude%20Certified%20Developer%20Foundations/) | Claude Certified Developer – Foundations | $125 | ⭐ **ACTIVE — next exam.** **Phase 0 closed 2026-08-19**, guide v1.0 filed and reconciled. All 34 course chapters authored 2026-08-25 — see its own `ROADMAP.md` for the live stage |
 
