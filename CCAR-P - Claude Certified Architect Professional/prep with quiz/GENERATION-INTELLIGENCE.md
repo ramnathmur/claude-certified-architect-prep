@@ -358,3 +358,189 @@ corpus never makes correct only surfaced because unrelated work — writing an e
 wrong option is wrong — forced every cited section to be read against every option. A check that
 verifies a field is filled in is not the same as a check that verifies it is true, and the gap between
 those two is invisible until something reads the content.
+
+---
+
+## Session 4 — 2026-08-30 — Paper 2 generation failed outright; `deepDive` demoted after independent audit
+
+No paper shipped this session. Attempted Paper 2 generation with a redesigned pipeline (inline
+`deepDive`, one grounding pass instead of four stages, Agent tool instead of Workflow — the F-11 cost
+fixes) and it failed completely: of 7 parallel per-domain authoring dispatches, only the smallest (D7,
+4 items) succeeded; all 6 others (D1-D6, 8-12 items each) failed with an identical `"stream watchdog"`
+stall and zero partial output, including on retry for four of them. Ram asked for an independent,
+arms-length audit rather than another self-directed patch — full detail in
+`Outputs/CCAR-P_Mock-Exam-Generation-Cost-Audit_v1.md` and this session's `resume-prompt.md`. What
+belongs here is the decision the audit produced and what the next generating session needs to know.
+
+### Findings from this session
+
+**F-15 · `deepDive` was the single largest, least-evidenced cost addition in the engine, and the
+project's own grounding record already shows it overreaches the corpus. — PROMOTED (Ram's explicit
+decision, 2026-08-30, after an independent cold audit).**
+Unlike every other mechanism in `CCAR-P-Orchestration-Prompt_v2.md` — each traceable to a specific,
+named, measured failure (the objective floor pass to CCAR-F's six 0% objectives, the letter pre-plan to
+a real same-letter block, the inline-token ceiling to the official guide's 0/12 rate) — `deepDive` has
+no such citation anywhere in the project; it does not appear once in the original 91KB
+`Outputs/CCAR-P_Mock-Exam-Engine-Audit_v1.md`. It roughly triples per-item prose (500-700 words vs.
+80-140 for the existing `whyRight`/`whyWrong` layer) and requires its own dedicated grounding-audit
+pipeline. `CCAR-P_DeepDive-Grounding-Record_v1.md` already documented, before this session, that 28 of
+Paper 1's 63 items (44%) hit a real grounding shortfall in this layer alone — 13 flatly IRREDUCIBLE
+(F-12/F-14). Separately, today's failure data shows item-count-per-dispatch (not corpus file size)
+cleanly separates the one success from all six failures — see the cost-audit report's table. **Decision:
+`deepDive` is demoted from a mandatory generation-time field to a deferred, miss-driven Phase 9
+addition.** A freshly generated item now ships `deepDive: null`; Phase 9 (§ orchestration prompt, "After
+the sitting") generates it only for items actually missed, at that same small scale, independently
+grounding-audited at that scale rather than all 63 up front. Mechanics: `CCAR-P-Orchestration-Prompt_v2.md`
+§5.5/§5.6/Phase 9 updated in place (correction kept alongside the original text, same convention as the
+TRANSCRIBE-rejection note in §2); `validateItems()` in both the template and any already-copied Paper 2
+file changed so `deepDive: null` is not an error unless the caller passes `opts.requireDeepDive`.
+**Paper 1 is not touched — it already shipped its `deepDive` layer and keeps it.**
+
+**F-16 · Dispatch granularity, not corpus size, predicted today's failures. — PROMOTED (computed check,
+in the audit report).**
+Cross-checking today's 7 dispatches against their corpus file size and item count: D2 had the
+*smallest* corpus file (15,564 bytes) of all seven and still failed; D7's corpus file was not the
+smallest and it succeeded. Item count is what cleanly separates the outcome — D7 was asked for 4 items
+and succeeded; every domain asked for 8-12 items failed, without exception, across two attempts each
+for four of them. This does not prove a specific infrastructure root cause (the controlled isolation
+test — one mid-size domain dispatched alone — was never run), but it is a strong, reproducible signal
+that a single authoring turn should not be asked to produce a full domain's worth of items in one
+uninterrupted, unpersisted turn. **Decision: from Paper 2 onward, split each domain's authoring dispatch
+into sub-batches of roughly 5-6 items, each persisted to its own file immediately on completion**,
+instead of one file written per domain at the very end. Domain-level parallelism itself is unchanged and
+still spec-mandated (§5.5: "one worker per corpus file") — only the unit of work *inside* that changed.
+This is a process choice, not a spec change, so it is not reflected in the orchestration prompt itself.
+
+### Open findings ledger — updated
+
+| id | finding | status | resolves when |
+|---|---|---|---|
+| F-01 | D2 supply stops at ~5 papers | promoted | Ram decides on ~20 new D2 decision rows — F-12 is a second signal |
+| F-11 | Real generation cost ~7.7-8M tokens | promoted | Attempted fix this session (inline deepDive, one grounding pass, Agent not Workflow) did NOT resolve it — generation failed outright instead. F-15/F-16 are the corrected fix |
+| F-12 | 13 items' `t1Alt` resolves to no corpus row | promoted | Still applies to Paper 1; Paper 2 onward still must resolve `t1Alt` to a named row at authoring time regardless of the `deepDive` timing change |
+| F-13 | Authors cannot grade their own grounding | promoted | — standing practice; still applies once Phase 9 grounding-audits a miss set |
+| F-14 | FIXABLE vs IRREDUCIBLE finding split | open | Reuse whenever Phase 9 runs its grounding audit on a miss set |
+| F-15 | `deepDive` demoted to deferred Phase 9 addition | **promoted** | Implemented this session — engine and spec both updated |
+| F-16 | Dispatch granularity (not corpus size) predicted today's failures | **promoted** | Sub-batch dispatch (~5-6 items) adopted this session; re-verify it actually prevents stalls on the retry |
+
+### Pending decisions for Ram
+
+1. **D2 corpus expansion** (F-01, F-12). Blocks Paper 6. Needed by the Paper 4 Insights Round.
+2. **Fidelity-gate script** at Paper 4. Deferred deliberately.
+3. ~~Cost-optimisation fixes from F-11~~ — attempted this session, insufficient on its own; superseded
+   by F-15/F-16.
+4. Should gate check 12 resolve `t1Alt` to a row (F-12)? Still open, unrelated to this session's changes.
+5. **Untested: whether sub-batch dispatch (F-16) actually eliminates the stall, or whether it recurs
+   even at ~5-6 items per turn.** If it recurs at that size too, the driver is not item count/output
+   length after all, and the investigation needs to look at infrastructure directly (see the cost audit
+   report's §2.2 for the controlled test that was never run).
+
+### Session reflection
+
+Two rationalizations of the same underlying problem (generation cost/reliability) happened back to
+back: F-11's cost-optimisation fixes were proposed, implemented this session, and failed to prevent an
+outright generation failure — worse than Paper 1's own experience, which at least finished. What broke
+the pattern was not more self-directed tuning but stopping and dispatching a genuinely independent
+review with explicit permission to conclude the design itself was wrong, briefed on exactly what to be
+skeptical of (including this same session's own resume-prompt.md). It found something neither prior
+pass had named: `deepDive` itself, added without the evidentiary discipline every other mechanism in
+this project is held to, was the largest cost and the thing already shown (before this session) to
+outrun the corpus in 44% of a shipped paper. The lesson worth keeping: when an attempted fix to a
+measured problem fails again, the next move is not a third self-authored patch — it is a cold,
+independently-briefed audit that is explicitly told not to defer to the fixing session's own framing.
+
+---
+
+## Session 5 — 2026-08-31 — Paper 2 generated on the redesigned pipeline
+
+`mock-exams/CCAR-P_MockTest-2_v1.html`. Continuation of Session 4's work, same day. Full narrative
+(the failed first attempt, the audit, the two fixes) is in `EXAM-LOG.md`'s Paper 2 entry — this session
+covers only what the *next* generating session needs from actually finishing on the redesigned shape.
+
+### Findings from this session
+
+**F-17 · The sub-batch dispatch fix (F-16) held completely — 13 of 13 dispatches succeeded, zero
+failures. — PROMOTED (computed check).**
+12 replacement sub-batches (5-6 items each, `deepDive:null`) covering D1-D6 were dispatched; all 12
+eventually succeeded, joining D7 (already valid from the failed first attempt) for a clean 13-for-13.
+10 finished in 11.5-17 minutes; 2 (D2-batch1, D4-batch1) took ~38-39 minutes but still completed —
+notably, this did NOT repeat the first attempt's pattern where "running long" (D4/D6 at 41+ minutes)
+was itself a precursor to failure. **Open question for Paper 3:** is the ~2x-3x runtime variance on 2
+of 12 batches meaningful (something about those specific batches) or just normal variance at this
+scale? Untested. If a future paper's batches start running consistently long without failing, that is
+a cost signal worth measuring, separate from the stall question F-16 addressed.
+
+**F-18 · The lesson-collision check (F-10) needs a minimum-token floor, discovered on first use with
+real full-length Paper 2 stems. — PROMOTED (computed check, fixed same session).**
+Computing `lessonKey` from each item's raw corpus answer text surfaced 3 collision groups on first
+assembly. Two were false positives: `"Reject"` and `"Synchronous"` are each the literal, terse
+Answer-column text for multiple, semantically unrelated decision-table rows across different sections
+(and in D7's case, even within the same section, for genuinely different reasons) — a 1-2 content-word
+answer is not a reliable duplicate-decision signal. Fix: `lessonKey` returns `""` (not compared) when
+the normalised answer has fewer than 3 content-word tokens, rather than either falsely flagging or
+silently trusting a misleading short key. This is NOT yet in the committed gate (deliberately deferred
+to Paper 4 per the standing decision), but should be built into whatever script Paper 4 produces. The
+third collision (g44/g37, `"application not resending history"`) was a genuine duplicate and was fixed
+by repointing g44 to a different facet — the check did exactly what F-10 designed it to do.
+
+**F-19 · The distractor-family cap needs enforcement at assembly time regardless of dispatch shape —
+confirmed again, this time under sub-batching. — PROMOTED (computed check, fixed same session).**
+First assembly had WRONG-AXIS at 52 of 181 distractors against a 45 cap (25%) — 12 independently
+authored sub-batches each defaulted to WRONG-AXIS as a safe choice with no visibility into the
+paper-wide total (the same structural risk Paper 1's per-domain-not-paper-wide authoring already
+carried; sub-batching didn't introduce this, it just didn't remove it either). Fixed by relabelling 10
+distractors to a family their own `whyWrong` reasoning already supported better — no content rewrite
+needed, confirming the original prose was fine and only the bookkeeping tag was wrong. **This is the
+second time in two papers a central, assembly-time check caught something no individual authoring
+agent could see** (the first being Paper 1's cross-domain `lessonKey` collision) — the pattern is
+reliable enough to treat as a standing expectation, not a one-off: budget an assembly-stage family-cap
+check into every future paper's plan, not just a hope that per-batch minimums add up correctly.
+
+**F-20 · Running the grounding audit BEFORE the generation entry is written, in the same session,
+produced a large improvement in `t1Alt` resolution rate. — PROMOTED (computed check).**
+58 of 63 items (92%) had their `t1Clause`/`t1Alt` pair independently verified to resolve to a real
+corpus row, up from Paper 1's discovered-after-shipping rate of 50/63 (79%, F-12). The mechanism is
+simple: Paper 1's grounding audit happened in a *later* session, after Paper 1 was already recorded as
+generated with unverified `t1Alt` claims; this paper's audit ran before the generation entry was
+written, so all 14 raised findings were fixed-or-documented before anything shipped. **Do not defer the
+grounding audit to "later" on a future paper** — it belongs inside the same generation session, as a
+hard gate before Phase 8 close-out, not an optional follow-up.
+
+### Open findings ledger — updated
+
+| id | finding | status | resolves when |
+|---|---|---|---|
+| F-01 | D2 supply stops at ~5 papers | promoted | Ram decides on ~20 new D2 decision rows — now also evidenced by 3 of this paper's 5 IRREDUCIBLE T1 exceptions landing in D2 |
+| F-10 | Cross-domain lesson-collision check | promoted | Still holds; F-18 refines it with a minimum-token floor |
+| F-12 | `t1Alt` resolving to no corpus row | promoted | Paper 2 rate improved to 58/63 (92%) via same-session grounding audit (F-20); 5 documented IRREDUCIBLE exceptions remain (3 in D2, 1 in D3, 1 in D5) |
+| F-15 | `deepDive` demoted to deferred Phase 9 addition | promoted | Held for the whole paper; 0 items needed it at generation time |
+| F-16 | Dispatch granularity fix | **promoted, confirmed** | 13/13 succeeded on the redesigned shape — see F-17 for the residual runtime-variance question |
+| F-17 | Sub-batch runtime variance (2 of 12 took ~3x longer, still succeeded) | open | Watch on Paper 3; may just be normal variance |
+| F-18 | `lessonKey` needs a minimum-token floor to avoid false collisions | **promoted** | Fixed in the assembly script this session; fold into the Paper 4 gate-mechanization work |
+| F-19 | Family-cap check must run at assembly time regardless of dispatch shape | **promoted, confirmed a second time** | Standing expectation now, budget it into every future paper's close-out |
+| F-20 | Same-session grounding audit materially improves `t1Alt` resolution rate | **promoted** | Standing practice — do not defer to a later session |
+
+### Pending decisions for Ram
+
+1. **D2 corpus expansion** (F-01, F-12). Blocks Paper 6. Now has a third independent signal (3 of this
+   paper's 5 IRREDUCIBLE exceptions are D2). Needed by the Paper 4 Insights Round at the latest.
+2. **Fidelity-gate script** at Paper 4 — now with two more things to fold in when it's built: the
+   `lessonKey` minimum-token floor (F-18) and the family-cap assembly-time check (F-19), both already
+   proven as one-off scripts this paper.
+3. Should gate check 12 resolve `t1Alt` to a row, mechanically, rather than only checking the field is
+   populated? Still open. This paper's 92% resolution rate was achieved by a grounding-audit agent
+   pass, not a mechanized check — the gap F-12 originally identified (a check that verifies presence
+   is not the same as a check that verifies truth) is narrowed by process this paper, not closed by
+   tooling.
+
+### Session reflection
+
+The redesigned pipeline (F-15, F-16) was validated by actually finishing, not just by argument: 63/63
+items authored, 0 gate errors, 92% `t1Alt` resolution before shipping rather than discovered after.
+But two of the three assembly-time problems found this paper (the `lessonKey` false positives, the
+family-cap violation) were NOT predicted by the cost audit or by either redesign decision — they only
+surfaced because the paper was actually assembled and checked centrally, the same way F-10's original
+lesson-collision finding only surfaced because a coordinating pass compared every item pairwise. The
+standing lesson across both papers now: distributed authoring (whether 7 full-domain agents or 12
+sub-batches) reliably produces excellent per-item content and reliably misses paper-wide properties no
+individual agent can see — plan for a real assembly-and-check stage every time, not a formality.

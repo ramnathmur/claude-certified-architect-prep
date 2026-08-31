@@ -276,7 +276,8 @@ Every item carries: `g` · `domain` · `section` · `facet` · `objective` · `s
 `lessonKey` · `format` · `selectN` · `stem` · `opts[{l, t, family}]` · `correct[]` · `whyRight` ·
 `whyWrong{}` · `deepDive{}` · `t1Clause` · `t1Alt` · `source` (**AUTHORED on every paper** — the enum
 also carries TRANSCRIBED and ASSEMBLED, both unused since §2 rejected TRANSCRIBE) · `block` ·
-`blockLabel`.
+`blockLabel`. **`deepDive` ships as `null` at generation time from Paper 2 onward — see the correction
+at the head of the `deepDive` entry below.**
 
 `block` and `blockLabel` stay **dormant and null**. If the guide later confirms shared-scenario blocks,
 papers gain them by populating two fields rather than by a schema migration and a re-tag of the whole
@@ -295,8 +296,37 @@ per-domain authoring agent can see another domain's output). Before `lessonKey` 
 required `plan.json`, which is session-scratch and does not survive between sessions — the whole reason
 the check "existed" only as something run by hand at generation time rather than as a durable gate.
 
-**`deepDive`** — added to Paper 1 retroactively, 2026-08-30, and the standard shape from Paper 2
-onward. `whyRight` and `whyWrong` are the paper's quick verdict layer and answer one question: why
+**`deepDive`** — added to Paper 1 retroactively, 2026-08-30.
+
+> **Corrected 2026-08-30, same day, after a Paper 2 generation attempt failed outright and an
+> independent cold audit was run at Ram's request** (`Outputs/CCAR-P_Mock-Exam-Generation-Cost-Audit_v1.md`).
+> The paragraph below — "the standard shape from Paper 2 onward... required on every item" — is kept
+> for the record but is **no longer the operative rule**. Unlike every other mechanism in this document,
+> `deepDive` was added with no cited evidence of a measured failure it fixes, it roughly triples the
+> per-item authoring and grounding-audit burden, and the project's own grounding record already shows it
+> overreaches the corpus in 44% of Paper 1's items (28/63 — `CCAR-P_DeepDive-Grounding-Record_v1.md`,
+> 13 flatly IRREDUCIBLE per F-14). Combined with dispatch-granularity evidence from today's failed Paper
+> 2 attempt (every domain asked for >4 items in one uninterrupted authoring turn failed; the only
+> success was the smallest), the audit's recommendation — accepted by Ram the same day — is:
+>
+> **`deepDive` is now a DEFERRED, miss-driven Phase 9 addition, not a generation-time requirement.**
+> A freshly generated paper ships every item with `deepDive: null`. After Ram sits the paper, Phase 9
+> generates `principle`/`rightDeep`/`wrongDeep` only for the items he actually missed (typically a
+> minority of 63), patched into the already-shipped HTML, then independently grounding-audited at that
+> same small scale — not all 63 up front. An on-demand "explain this one more deeply" trigger for a
+> correctly-answered item is optional, same small single-item dispatch. This does not touch the 13-check
+> fidelity gate's pass/fail meaning (§ Phase 6) and does not affect Exam Mode, which never rendered
+> per-question feedback anyway. `validateItems()` no longer hard-errors on a missing `deepDive` by
+> default — see the Phase 6 note below.
+>
+> **Paper 1 is not touched by this correction.** Its `deepDive` layer already shipped and stays; this
+> changes what Paper 2 onward ships at generation time, not what Paper 1 already has.
+>
+> The schema, the length bands, and the render policy documented below remain the exact shape Phase 9
+> produces once an item is missed — nothing about *what* `deepDive` contains changed, only *when* it is
+> produced and for how many items.
+
+`whyRight` and `whyWrong` are the paper's quick verdict layer and answer one question: why
 this option wins *this item*. They are unchanged and are not what `deepDive` replaces. `deepDive` is a
 second layer rendered below them, and answers a different question: what general rule is this item an
 instance of, and what would each wrong option have been the right answer to.
@@ -365,13 +395,14 @@ reintroduce failures in 5–9.
 
 Report all thirteen with computed values, thresholds, and any fix applied.
 
-**`deepDive` presence rides inside check 1.** No existing pass condition above was altered when the
-field was added. `validateItems()` gained one additional per-item block, structurally identical to the
-`whyWrong` check it sits beside: `principle` and `rightDeep` non-empty, and `wrongDeep` holding an
-entry for every non-correct option and none for a correct one. It is a *presence* check. Whether each
-sentence actually traces to the cited corpus section cannot be checked from the shipped file, which
-carries no corpus — that is the independent grounding audit's job (§5.5), and its findings belong in
-the generation entry alongside the gate table.
+**`deepDive` presence is no longer gated at check 1, as of the 2026-08-30 correction (see §5.5).**
+`validateItems()`'s `deepDive` block — `principle`/`rightDeep` non-empty, `wrongDeep` holding an entry
+for every non-correct option and none for a correct one — now runs only when the caller explicitly asks
+for it (`opts.requireDeepDive`), and downgrades to a warning otherwise. A Paper 2-onward item shipping
+`deepDive: null` at generation time is not a check-1 failure. Once an item's `deepDive` is populated
+(Phase 9, miss-driven), the same presence/key-set block still applies to it. Whether each sentence
+actually traces to the cited corpus section cannot be checked from the shipped file, which carries no
+corpus — that is the independent grounding audit's job, run at Phase-9 scale, not at generation time.
 
 **Re-run checks 2, 3, 6 and 10 after any fix that swaps or reorders an item.** A swapped item carries
 its own domain, letter and family, and can reintroduce exactly what the earlier check cleared.
@@ -472,15 +503,23 @@ prose self-report and recovered only one of them.
 
 1. Score from the results JSON. Split single-answer from multiple-response.
 2. Log every miss with the full field set in §9.1 below.
-3. Run the confirmed-weakness check against the paper attempted immediately before this one **by date**,
+3. **Generate `deepDive` for every missed item, added 2026-08-30 (§5.5 correction).** For each item in
+   the miss table: read its cited section in full, then write `principle`/`rightDeep`/`wrongDeep{}` to
+   the same length bands and grounding rules §5.5 already specifies, and patch it into the shipped
+   HTML's `ITEMS` array (that item's `deepDive` moves from `null` to the populated object; nothing else
+   on the item changes). Then run one independent grounding-audit pass sized to just this missed set —
+   not the whole 63 — reading only the corpus and the patched output. Optionally, on request, do the
+   same for any correctly-answered item Ram wants explained further. Skip this step entirely if nothing
+   was missed.
+4. Run the confirmed-weakness check against the paper attempted immediately before this one **by date**,
    on **single-answer items only**. A tie records `false`.
-4. Classify each miss by capturing distractor family. Families that recur are habits and need §7.1
+5. Classify each miss by capturing distractor family. Families that recur are habits and need §7.1
    rule 4, not more of the same testing.
-5. Note pace. Misses slower than the paper average are decision errors, not time pressure — on
+6. Note pace. Misses slower than the paper average are decision errors, not time pressure — on
    Foundations every miss cluster turned out to be considered-and-wrong.
-6. Write the Professor's Note for the next paper, ranked by evidence strength.
-7. If this scoring brings the count to a multiple of 3, run an Insights Round.
-8. Append a session entry to `GENERATION-INTELLIGENCE.md`.
+7. Write the Professor's Note for the next paper, ranked by evidence strength.
+8. If this scoring brings the count to a multiple of 3, run an Insights Round.
+9. Append a session entry to `GENERATION-INTELLIGENCE.md`.
 
 ### 9.1 Per-miss fields
 

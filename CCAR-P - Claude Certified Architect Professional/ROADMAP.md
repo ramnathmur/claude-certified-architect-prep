@@ -114,6 +114,15 @@ guide's wrong scenario count reached generated practice material.
 > been taught in chat across sessions (3 and 4 also read via their HTML builds). Domains 5, 6, and 7
 > remain unread. **Paper 1 generated 2026-08-30 (63 items, full AUTHOR mode), not yet sat.**
 > *(Corrected 2026-08-30 — this previously said "no mock paper has been generated or sat.")*
+>
+> **Paper 2 generated 2026-08-30/31.** Confirmed as an untargeted second diagnostic (Paper 1 unscored).
+> First generation attempt (7 full-domain parallel dispatches with inline `deepDive`) failed 6-of-7; an
+> independent cost/failure audit (`Outputs/CCAR-P_Mock-Exam-Generation-Cost-Audit_v1.md`) found
+> `deepDive` unevidenced and oversized dispatches as the cause, both fixed (`deepDive` deferred to a
+> miss-driven Phase 9 step; authoring split into 5-6-item sub-batches). Redesigned pipeline then went
+> 13-for-13 with zero failures. **Fully generated, assembled, grounding-audited, and gate-clean —
+> `mock-exams/CCAR-P_MockTest-2_v1.html`, 0 gate errors, 5 documented IRREDUCIBLE T1 exceptions (down
+> from Paper 1's 13). Not yet sat.**
 
 ### Phase 3 — Production exposure (months 3–8, Path B only)
 - [ ] Take one Claude system at Infosys from design to production: integration, evals, safety

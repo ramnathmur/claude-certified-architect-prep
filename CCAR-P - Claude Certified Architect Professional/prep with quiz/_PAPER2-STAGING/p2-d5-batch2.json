@@ -1,0 +1,138 @@
+[
+  {
+    "g": 47,
+    "domain": "D5",
+    "section": "5.8",
+    "facet": "F-5.8-02",
+    "objective": "O5.3",
+    "shape": "S2",
+    "direction": "normal",
+    "lessonKey": "",
+    "factAnswerRaw": "Human, regardless of confidence",
+    "format": "single",
+    "selectN": 1,
+    "stem": "A claims assistant serving 15,000 claims a day auto-approves any decision above 92% model-reported confidence, including denials sent to policyholders and unable to be withdrawn. An audit found self-reported confidence does not track accuracy. What should the routing rule require?",
+    "opts": [
+      { "l": "A", "t": "Route every denial to human review regardless of confidence, since the action is irreversible and externally visible to the policyholder.", "family": null },
+      { "l": "B", "t": "Continuously sample a portion of the auto-approved stream on a schedule to confirm the confidence threshold remains accurate.", "family": "OVERSPEC" },
+      { "l": "C", "t": "Continue auto-approving based on the model's self-reported confidence score, since it is inexpensive to compute at high volume.", "family": "EVIDENCE-MISMATCH" },
+      { "l": "D", "t": "Remove the confidence threshold and send every decision to human review, regardless of consequence.", "family": "DISCARD" }
+    ],
+    "correct": ["A"],
+    "whyRight": "Denials sent to policyholders are irreversible and externally visible, which the domain treats as an absolute trigger for human review regardless of confidence. Confidence measures the model's likely correctness; it does not supply accountability for an action that cannot be undone once it reaches the customer.",
+    "whyWrong": {
+      "B": "Sampling the auto-approved stream checks whether a threshold is still calibrated; it does not stop a specific irreversible denial from reaching the policyholder before review.",
+      "C": "The audit already showed self-reported confidence does not track accuracy, so it cannot serve as the basis for auto-approving an action that cannot be reversed.",
+      "D": "Routing every decision to a human ignores that most of the 15,000 daily claims are reversible and does not target review capacity at the irreversible ones."
+    },
+    "t1Clause": "including denials sent to policyholders and unable to be withdrawn",
+    "t1Alt": "B",
+    "deepDive": null,
+    "source": "AUTHORED",
+    "block": null,
+    "blockLabel": null,
+    "cite": "D5 5.8"
+  },
+  {
+    "g": 48,
+    "domain": "D5",
+    "section": "5.3",
+    "facet": "F-5.3-03",
+    "objective": "O5.4",
+    "shape": "S8",
+    "direction": "normal",
+    "lessonKey": "",
+    "factAnswerRaw": "Reject as the control",
+    "format": "single",
+    "selectN": 1,
+    "stem": "A HIPAA-covered healthcare client requires that patient identifiers never reach the model's inference endpoint. The team proposes a nightly job that redacts identifiers from stored request logs after each call completes. What should the control be instead?",
+    "opts": [
+      { "l": "A", "t": "Direct the model with a prompt instruction to avoid repeating identifiers, treating this as a preference rather than a rule.", "family": "WRONG-AXIS" },
+      { "l": "B", "t": "Run the redaction job immediately after each call instead of nightly, so stored logs are cleaned faster.", "family": "REPAIR" },
+      { "l": "C", "t": "Reject the redaction job as the control, and de-identify or tokenise identifiers in the pipeline before the call.", "family": null },
+      { "l": "D", "t": "Stop sending any request containing a patient identifier to the model, and route those cases to manual handling.", "family": "DISCARD" }
+    ],
+    "correct": ["C"],
+    "whyRight": "The requirement is absolute, so it needs a deterministic control that fires before the identifiers leave the network. Redacting stored logs afterward only cleans the record; it does nothing to the request that already reached the inference endpoint, which is the actual boundary the requirement protects.",
+    "whyWrong": {
+      "A": "A prompt instruction fits a preference, but the requirement stated here is absolute; the instruction is evaluated after identifiers are already in the request, not before.",
+      "B": "Running the job more often still acts on logs already written after the call; it never touches the request itself, so identifiers still reach the inference endpoint every time.",
+      "D": "Diverting every identifier-bearing request to manual handling abandons the automated pipeline the task depends on, where de-identification before the call would have kept it running."
+    },
+    "t1Clause": "requires that patient identifiers never reach the model's inference endpoint",
+    "t1Alt": "A",
+    "deepDive": null,
+    "source": "AUTHORED",
+    "block": null,
+    "blockLabel": null,
+    "cite": "D5 5.3"
+  },
+  {
+    "g": 49,
+    "domain": "D5",
+    "section": "5.10",
+    "facet": "F-5.10-03",
+    "objective": "O5.5",
+    "shape": "S6",
+    "direction": "normal",
+    "lessonKey": "",
+    "factAnswerRaw": "Rebalance to equal N per group",
+    "format": "single",
+    "selectN": 1,
+    "stem": "An eligibility-screening model serving 180,000 applicants a year is evaluated on a test set sampled proportionally to population share. One subgroup is only 4% of applicants, too few to detect a meaningful accuracy gap. What should the evaluation design require?",
+    "opts": [
+      { "l": "A", "t": "Remove the subgroup attribute from the model's input so evaluation outcomes cannot be tied to it.", "family": "DISCARD" },
+      { "l": "B", "t": "Draw an equal number of cases from each subgroup, instead of weighting the sample by each group's population size.", "family": null },
+      { "l": "C", "t": "Choose a single fairness metric to optimise for and document the rationale, rather than changing how the set is sampled.", "family": "WRONG-AXIS" },
+      { "l": "D", "t": "Keep the proportional sample, and have reviewers manually re-check every low-confidence case from the small subgroup after scoring.", "family": "REPAIR" }
+    ],
+    "correct": ["B"],
+    "whyRight": "Proportional sampling gives the smallest subgroup the fewest cases, which is exactly where statistical power is weakest and the risk of an undetected gap is highest. An adequately sized, roughly equal sample per subgroup is what lets the evaluation actually detect a disparity if one exists.",
+    "whyWrong": {
+      "A": "Dropping the attribute removes the ability to measure the gap at all, while proxy signals correlated with the subgroup remain in the input and keep influencing outcomes.",
+      "C": "Choosing a fairness metric resolves a conflict between two metrics; it does nothing about a sample too small to measure any metric reliably for this subgroup.",
+      "D": "Manual re-checks add scrutiny after scoring but do not change the evaluation set itself, so the measured accuracy gap for the subgroup stays statistically undetectable."
+    },
+    "t1Clause": "One subgroup is only 4% of applicants, too few to detect a meaningful accuracy gap",
+    "t1Alt": "C",
+    "deepDive": null,
+    "source": "AUTHORED",
+    "block": null,
+    "blockLabel": null,
+    "cite": "D5 5.10"
+  },
+  {
+    "g": 50,
+    "domain": "D5",
+    "section": "5.11",
+    "facet": "F-5.11-04",
+    "objective": "O5.5",
+    "shape": "S1",
+    "direction": "normal",
+    "lessonKey": "",
+    "factAnswerRaw": "Add a contestation route with a queue and a status field",
+    "format": "single",
+    "selectN": 1,
+    "stem": "An automated system auto-declines 6,000 loan applications a month with no route for an applicant to challenge or escalate the decision to a person. Declines are consequential and final once issued. What is missing from the system's design?",
+    "opts": [
+      { "l": "A", "t": "Attach a model-generated explanation to each declined application describing why it was declined, for the applicant to read.", "family": "WRONG-AXIS" },
+      { "l": "B", "t": "Post a disclosure at the point of interaction stating that an automated system made the decision.", "family": "HALF-MOVE" },
+      { "l": "C", "t": "Set up a periodic audit of a random sample of declined applications to check for concerning patterns.", "family": "OVERSPEC" },
+      { "l": "D", "t": "Add a contestation route, a queue and a status field, so a declined applicant can escalate to a person.", "family": null }
+    ],
+    "correct": ["D"],
+    "whyRight": "The decision is consequential and final, with no way for the affected person to reach a human. Contestability has to be designed in, so a queue and a status field give the applicant an actual route to escalate rather than leaving the decline as the last word.",
+    "whyWrong": {
+      "A": "A generated explanation may help the applicant understand the outcome, but it gives no route to escalate or have the decision reconsidered by a person.",
+      "B": "Disclosure tells the applicant an automated system was involved; it says nothing about how to challenge or escalate the specific decision that was made.",
+      "C": "Sampling declined applications for patterns supports oversight of the system generally; it gives this individual applicant no route to contest their own decision."
+    },
+    "t1Clause": "with no route for an applicant to challenge or escalate the decision to a person",
+    "t1Alt": "B",
+    "deepDive": null,
+    "source": "AUTHORED",
+    "block": null,
+    "blockLabel": null,
+    "cite": "D5 5.11"
+  }
+]

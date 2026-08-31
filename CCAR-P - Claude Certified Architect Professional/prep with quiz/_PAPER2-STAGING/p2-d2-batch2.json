@@ -1,0 +1,138 @@
+[
+  {
+    "g": 16,
+    "domain": "D2",
+    "section": "2.4",
+    "facet": "F-2.4-02",
+    "objective": "O2.3",
+    "shape": "S4",
+    "direction": "normal",
+    "lessonKey": "",
+    "factAnswerRaw": "Don't add a reasoning cue",
+    "format": "single",
+    "selectN": 1,
+    "stem": "An alerting pipeline assigns one severity label to 2 million alerts a day in a single classification step. A latency budget caps processing under 200 milliseconds per alert. An engineer proposes adding a step-by-step reasoning cue for consistency.",
+    "opts": [
+      {"l": "A", "t": "Add the cue regardless, to keep every feature in the pipeline using the same prompting pattern.", "family": "ARCHITECTED"},
+      {"l": "B", "t": "Add four to six few-shot examples demonstrating the correct severity label for representative alerts.", "family": "WRONG-AXIS"},
+      {"l": "C", "t": "Leave the prompt as is for now, and add the cue only if accuracy is later observed to drop.", "family": "REPAIR"},
+      {"l": "D", "t": "Skip the cue - the task has no intermediate steps, so it adds cost and latency without improving accuracy.", "family": null}
+    ],
+    "correct": ["D"],
+    "whyRight": "The classification step has one stage - assigning a single label - so there is no chain of intermediate reasoning for a step-by-step cue to improve. At 2 million alerts a day under a 200-millisecond budget, the added reasoning tokens cost latency and money for no accuracy gain.",
+    "whyWrong": {
+      "A": "Consistency is not a stated requirement, and a single-step task gains nothing from the cue - the extra reasoning tokens only add cost and latency at high volume.",
+      "B": "Few-shot examples fix format or routing ambiguity; this task already produces one correct label per alert, so the technique doesn't address whether a reasoning cue is needed.",
+      "C": "This reacts to a problem only after it appears in production, instead of matching the technique to the task's single-step shape from the start, as the budget requires."
+    },
+    "t1Clause": "in a single classification step",
+    "t1Alt": "A",
+    "deepDive": null,
+    "source": "AUTHORED",
+    "block": null,
+    "blockLabel": null,
+    "cite": "D2 2.4"
+  },
+  {
+    "g": 17,
+    "domain": "D2",
+    "section": "2.3",
+    "facet": "F-2.3-03",
+    "objective": "O2.3",
+    "shape": "S1",
+    "direction": "normal",
+    "lessonKey": "",
+    "factAnswerRaw": "Reject",
+    "format": "single",
+    "selectN": 1,
+    "stem": "A routing assistant occasionally mislabels support tickets that mention two overlapping issues, despite explicit written instructions. Ahead of a compliance review, a team proposes adding 15 examples of straightforward, single-issue tickets to the prompt. What should the team do instead?",
+    "opts": [
+      {"l": "A", "t": "Add 3-4 examples showing the exact required format for a ticket's assigned label.", "family": "WRONG-AXIS"},
+      {"l": "B", "t": "Reject the proposal; add 4-6 examples targeting the two-issue tickets that are actually causing the mislabeling.", "family": null},
+      {"l": "C", "t": "Reject the proposal, and rewrite the system prompt instructions to state the labeling rule more explicitly.", "family": "REPAIR"},
+      {"l": "D", "t": "Exclude the two-issue tickets from the example set entirely, since their correct label is genuinely unclear.", "family": "DISCARD"}
+    ],
+    "correct": ["B"],
+    "whyRight": "The 15 proposed examples are all clear-cut cases that already classify correctly; they never touch the overlapping-issue tickets actually causing errors. Targeting 4-6 examples at exactly those ambiguous cases fixes the failure directly, matching the guidance to target ambiguous cases rather than add volume of easy ones.",
+    "whyWrong": {
+      "A": "Examples of the required format fix formatting inconsistency, not this problem - the labels are already correctly formatted, just wrong on tickets with overlapping issues.",
+      "C": "The written instructions are already explicit and already failing; rewriting them again doesn't fix a consistency problem that targeted examples are built to solve.",
+      "D": "Removing the hardest cases from the example set abandons exactly the tickets the classifier needs to learn, instead of fixing how it handles them."
+    },
+    "t1Clause": "occasionally mislabels support tickets that mention two overlapping issues",
+    "t1Alt": "A",
+    "deepDive": null,
+    "source": "AUTHORED",
+    "block": null,
+    "blockLabel": null,
+    "cite": "D2 2.3"
+  },
+  {
+    "g": 18,
+    "domain": "D2",
+    "section": "2.5",
+    "facet": "F-2.5-02",
+    "objective": "O2.4",
+    "shape": "S3",
+    "direction": "normal",
+    "lessonKey": "",
+    "factAnswerRaw": "Full history resent every call - more turns means more tokens",
+    "format": "single",
+    "selectN": 1,
+    "stem": "In a support chat, latency and token cost rise as a conversation passes 50 turns, though replies stay a similar length and the transcript stays under the model's context limit. The finance team wants the cause of the rising bill.",
+    "opts": [
+      {"l": "A", "t": "The conversation has grown large enough to exceed the model's context window.", "family": "EVIDENCE-MISMATCH"},
+      {"l": "B", "t": "The application is failing to include earlier turns in the message history sent with each call.", "family": "WRONG-AXIS"},
+      {"l": "C", "t": "The application resends the complete conversation transcript on every call, so token volume grows as the turn count grows.", "family": null},
+      {"l": "D", "t": "Configure an alert that notifies the team once a conversation exceeds 50 turns.", "family": "OVERSPEC"}
+    ],
+    "correct": ["C"],
+    "whyRight": "The API is stateless, so every call resends the full transcript. As turn count grows, the resent transcript grows too, so token volume, processing time, and cost all grow in step with turn count - exactly the pattern described, with response length and context usage held constant.",
+    "whyWrong": {
+      "A": "The transcript is explicitly stated to remain under the model's context limit, so an exhausted context window cannot be the driver of the rising latency and cost here.",
+      "B": "This diagnosis fits a short conversation losing an early fact, not this one - omitting history would shrink token volume, not drive costs up as turns accumulate.",
+      "D": "An alert only reports that the threshold was crossed; it does not reduce the per-call token volume driving the cost and latency growth, so the underlying mechanism stays unfixed."
+    },
+    "t1Clause": "as a conversation passes 50 turns",
+    "t1Alt": "B",
+    "deepDive": null,
+    "source": "AUTHORED",
+    "block": null,
+    "blockLabel": null,
+    "cite": "D2 2.5"
+  },
+  {
+    "g": 19,
+    "domain": "D2",
+    "section": "2.9",
+    "facet": "F-2.9-01",
+    "objective": "O2.5",
+    "shape": "S8",
+    "direction": "normal",
+    "lessonKey": "",
+    "factAnswerRaw": "Consolidate into versioned, shared modular prompts/Skills",
+    "format": "single",
+    "selectN": 1,
+    "stem": "Five engineering pods in a 40-person org each maintain a near-identical copy of a customer support system prompt. Behavior has begun to diverge across pods, and compliance requires every change traceable to one reviewed source. What should the org do?",
+    "opts": [
+      {"l": "A", "t": "Consolidate into a single versioned, shared prompt/Skill, with a review process the pods actually follow.", "family": null},
+      {"l": "B", "t": "Enable prompt caching on the shared system prompt content to cut latency and cost across pods.", "family": "WRONG-AXIS"},
+      {"l": "C", "t": "Let each pod keep maintaining its own copy of the prompt, to preserve local flexibility.", "family": "HALF-MOVE"},
+      {"l": "D", "t": "Set up a shared chat channel where pods can ask each other about prompt differences as they arise.", "family": "REPAIR"}
+    ],
+    "correct": ["A"],
+    "whyRight": "Consolidating the duplicated prompts into one versioned, shared component turns a behavior change into a single reviewable event instead of pods drifting silently apart. Pairing it with a review process pods actually use satisfies compliance's traceability requirement directly, at the scale of a multi-pod organization.",
+    "whyWrong": {
+      "B": "Prompt caching addresses latency and cost for a stable input prefix; it does nothing to stop the pods' prompts from silently drifting apart, which is the stated problem.",
+      "C": "Preserving each pod's own copy is exactly the setup causing the divergence; it leaves the compliance requirement for one traceable, reviewed source completely unaddressed.",
+      "D": "A chat channel offers reactive, one-off answers to questions; it is not a durable, versioned artifact, so drift continues between conversations."
+    },
+    "t1Clause": "Behavior has begun to diverge across pods, and compliance requires every change traceable to one reviewed source",
+    "t1Alt": "B",
+    "deepDive": null,
+    "source": "AUTHORED",
+    "block": null,
+    "blockLabel": null,
+    "cite": "D2 2.9"
+  }
+]

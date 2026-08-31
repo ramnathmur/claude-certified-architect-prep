@@ -1,6 +1,6 @@
 # CCAR-P Archetype Ledger — v1
 
-**Built:** 2026-08-29 · **Instances:** Paper 1 populated both instance tables 2026-08-30 (63 shape rows, 8-family tally). Rebuilt from the shipped HTML, not from a session's own account.
+**Built:** 2026-08-29 · **Instances:** Paper 1 populated both instance tables 2026-08-30 (63 shape rows, 8-family tally); Paper 2 appended 2026-08-31 (63 more shape rows, 8-family tally). Rebuilt from the shipped HTML files, not from a session's own account.
 
 Two taxonomies live here. **Shapes** are how an item is put together — the rhetorical form of the stem
 and what it asks the candidate to do. **Families** are how a distractor is wrong. An item has one shape
@@ -127,6 +127,69 @@ approved re-frames are recorded here at ban time.
 | S3 | 7.3 | F-7.3-01 | normal | 1 | shipped | |
 | S3 | 7.8 | F-7.8-01 | normal | 1 | shipped | |
 | S3 | 7.1 | F-7.1-01 | normal | 1 | shipped | |
+| S1 | 1.1 | F-1.1-03 | normal | 2 | shipped | |
+| S6 | 1.2 | F-1.2-03 | normal | 2 | shipped | |
+| S4 | 1.9 | F-1.9-04 | normal | 2 | shipped | |
+| S1 | 1.5 | F-1.5-02 | normal | 2 | shipped | |
+| S8 | 1.10 | F-1.10-02 | normal | 2 | shipped | |
+| S5 | 1.3 | F-1.3-04 | normal | 2 | shipped | |
+| S1 | 1.4 | F-1.4-04 | normal | 2 | shipped | |
+| S1 | 1.7 | F-1.7-04 | normal | 2 | shipped | |
+| S4 | 1.8 | F-1.8-04 | normal | 2 | shipped | |
+| S1 | 1.11 | F-1.11-03 | normal | 2 | shipped | |
+| S1 | 1.12 | F-1.12-02 | normal | 2 | shipped | |
+| S5 | 2.1 | F-2.1-02 | normal | 2 | shipped | |
+| S5 | 2.1 | F-2.1-03 | normal | 2 | shipped | |
+| S8 | 2.2 | F-2.2-02 | normal | 2 | shipped | |
+| S2 | 2.2 | F-2.2-04 | normal | 2 | shipped | |
+| S4 | 2.4 | F-2.4-02 | normal | 2 | shipped | |
+| S1 | 2.3 | F-2.3-03 | normal | 2 | shipped | |
+| S6 | 2.5 | F-2.5-02 | normal | 2 | shipped | |
+| S8 | 2.9 | F-2.9-01 | normal | 2 | shipped | |
+| S4 | 3.1 | F-3.1-03 | normal | 2 | shipped | |
+| S1 | 3.2 | F-3.2-02 | normal | 2 | shipped | |
+| S5 | 3.4 | F-3.4-04 | normal | 2 | shipped | |
+| S2 | 3.3 | F-3.3-02 | normal | 2 | shipped | |
+| S1 | 3.5 | F-3.5-02 | normal | 2 | shipped | |
+| S6 | 3.7 | F-3.7-03 | normal | 2 | shipped | |
+| S1 | 3.11 | F-3.11-04 | normal | 2 | shipped | |
+| S1 | 3.12 | F-3.12-04 | normal | 2 | shipped | |
+| S1 | 3.13 | F-3.13-02 | normal | 2 | shipped | |
+| S2 | 3.10 | F-3.10-01 | normal | 2 | shipped | |
+| S1 | 3.9 | F-3.9-03 | normal | 2 | shipped | |
+| S1 | 3.14 | F-3.14-03 | normal | 2 | shipped | |
+| S3 | 4.2 | F-4.2-03 | normal | 2 | shipped | |
+| S1 | 4.6 | F-4.6-05 | normal | 2 | shipped | |
+| S1 | 4.7 | F-4.7-03 | normal | 2 | shipped | |
+| S6 | 4.8 | F-4.8-04 | normal | 2 | shipped | |
+| S2 | 4.9 | F-4.9-03 | normal | 2 | shipped | |
+| S4 | 4.10 | F-4.10-06 | normal | 2 | shipped | |
+| S1 | 4.11 | F-4.11-06 | normal | 2 | shipped | |
+| S1 | 4.11 | F-4.11-05 | normal | 2 | shipped | |
+| S1 | 4.12 | F-4.12-02 | normal | 2 | shipped | |
+| S1 | 4.12 | F-4.12-07 | normal | 2 | shipped | |
+| S2 | 5.1 | F-5.1-03 | normal | 2 | shipped | |
+| S1 | 5.9 | F-5.9-02 | normal | 2 | shipped | |
+| S3 | 5.6 | F-5.6-03 | normal | 2 | shipped | |
+| S1 | 5.7 | F-5.7-03 | normal | 2 | shipped | |
+| S2 | 5.5 | F-5.5-03 | normal | 2 | shipped | |
+| S2 | 5.8 | F-5.8-02 | normal | 2 | shipped | |
+| S8 | 5.3 | F-5.3-03 | normal | 2 | shipped | |
+| S6 | 5.10 | F-5.10-03 | normal | 2 | shipped | |
+| S1 | 5.11 | F-5.11-04 | normal | 2 | shipped | |
+| S7 | 6.1 | F-6.1-02 | normal | 2 | shipped | |
+| S7 | 6.2 | F-6.2-02 | normal | 2 | shipped | |
+| S7 | 6.4 | F-6.4-02 | normal | 2 | shipped | |
+| S7 | 6.6 | F-6.6-04 | normal | 2 | shipped | |
+| S1 | 6.11 | F-6.11-01 | normal | 2 | shipped | |
+| S7 | 6.9 | F-6.9-03 | normal | 2 | shipped | |
+| S6 | 6.10 | F-6.10-02 | normal | 2 | shipped | |
+| S7 | 6.8 | F-6.8-02 | normal | 2 | shipped | |
+| S7 | 6.12 | F-6.12-04 | normal | 2 | shipped | |
+| S7 | 7.1 | F-7.1-02 | normal | 2 | shipped | |
+| S4 | 7.5 | F-7.5-07 | normal | 2 | shipped | |
+| S2 | 7.8 | F-7.8-05 | normal | 2 | shipped | |
+| S3 | 7.5 | F-7.5-06 | normal | 2 | shipped | |
 
 ---
 
@@ -185,6 +248,7 @@ Rebuilt from shipped papers, never from a generating session's own tally.
 | paper | HALF-MOVE | WRONG-AXIS | REPAIR | DISCARD | ARCHITECTED | OVERSPEC | EVIDENCE-MISMATCH | DETECTIVE-FOR-PREVENTIVE |
 |---|---|---|---|---|---|---|---|---|
 | 1 | 38 | 34 | 21 | 21 | 16 | 11 | 23 | 17 |
+| 2 | 38 | 42 | 16 | 28 | 11 | 13 | 22 | 11 |
 
 ---
 

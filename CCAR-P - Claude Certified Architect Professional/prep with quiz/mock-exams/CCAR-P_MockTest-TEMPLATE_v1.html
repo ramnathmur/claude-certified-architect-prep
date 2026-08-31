@@ -959,13 +959,19 @@ function validateItems(items, opts){
                              .map(function(o){ return o.family; });
     if(new Set(fams).size !== fams.length) E.push(at+": distractors repeat a family");
 
-    /* deep dive - PRESENCE and key-set only. Whether each sentence actually traces to the cited
-       corpus section is a corpus audit and cannot be checked from the shipped file, which carries
-       no corpus. This mirrors the whyWrong check exactly: one entry per non-correct option, none
-       for a correct one. Added with the deepDive field itself; no existing check was altered. */
+    /* deep dive - PRESENCE and key-set only, and OPTIONAL as of 2026-08-30 (orchestration prompt
+       §5.5 correction, after CCAR-P_Mock-Exam-Generation-Cost-Audit_v1.md). A freshly generated item
+       ships deepDive:null; Phase 9 populates it later, only for items actually missed. null is not an
+       error unless the caller explicitly passes opts.requireDeepDive (e.g. auditing a Phase-9 patch
+       pass where every item in that batch is expected to have one). When deepDive IS present, it must
+       still be well-formed - this mirrors the whyWrong check exactly: one entry per non-correct
+       option, none for a correct one. Whether each sentence actually traces to the cited corpus
+       section is a corpus audit and cannot be checked from the shipped file, which carries no corpus. */
     const dd = q.deepDive;
-    if(!dd || typeof dd !== "object"){
-      E.push(at+": missing deepDive");
+    if(dd === null || dd === undefined){
+      if(opts.requireDeepDive) E.push(at+": missing deepDive (requireDeepDive is set)");
+    } else if(typeof dd !== "object"){
+      E.push(at+": deepDive is present but not an object");
     } else {
       if(!dd.principle) E.push(at+": deepDive.principle is empty");
       if(!dd.rightDeep) E.push(at+": deepDive.rightDeep is empty");
