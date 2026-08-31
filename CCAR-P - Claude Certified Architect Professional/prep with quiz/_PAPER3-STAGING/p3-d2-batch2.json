@@ -1,0 +1,134 @@
+{
+  "items": [
+    {
+      "g": 16,
+      "domain": "D2",
+      "section": "2.8",
+      "facet": "M-2.8",
+      "objective": "O2.5",
+      "shape": "S2",
+      "direction": "normal",
+      "format": "single",
+      "selectN": 1,
+      "stem": "A pipeline sends an identical multi-thousand-token policy preamble before a short, unique customer question on every request. Latency and per-request token cost are both rising as volume grows, and the preamble never changes between calls. What should the team do?",
+      "opts": [
+        {"l": "A", "t": "Keep the preamble first and unchanged, and enable prompt caching so the identical prefix is reused across requests.", "family": null},
+        {"l": "B", "t": "Cache each generated response keyed by the customer's question, and replay it whenever that exact question recurs.", "family": "EVIDENCE-MISMATCH"},
+        {"l": "C", "t": "Move the preamble into a few-shot example block placed after the customer's question.", "family": "WRONG-AXIS"},
+        {"l": "D", "t": "Shorten the preamble's wording to reduce its token count on every request.", "family": "DISCARD"}
+      ],
+      "whyRight": "Ordering the identical preamble first creates a stable, byte-identical prefix that prompt caching can reuse across requests, cutting both time-to-first-token and token cost together. Caching reuses the cached input prefix, not any stored output, so no separate response-storage mechanism is needed to capture the saving.",
+      "whyWrong": {
+        "B": "The preamble is cached because it's identical across calls; each customer question is described as unique, so a response cache keyed on it almost never hits.",
+        "C": "Few-shot blocks target output formatting, not prefix stability; placing the preamble after the varying question also breaks the ordering caching depends on.",
+        "D": "Shortening the preamble risks cutting required policy content, and still leaves latency and cost unaddressed since no caching mechanism gets enabled."
+      },
+      "deepDive": null,
+      "t1Clause": "the preamble never changes between calls",
+      "t1Alt": "D",
+      "source": "AUTHORED",
+      "block": null,
+      "blockLabel": null,
+      "factAnswerRaw": ""
+    },
+    {
+      "g": 17,
+      "domain": "D2",
+      "section": "2.2",
+      "facet": "M-2.2",
+      "objective": "O2.2",
+      "shape": "S2",
+      "direction": "normal",
+      "format": "single",
+      "selectN": 1,
+      "stem": "A team needs a compliance disclaimer in every model response, and wants new engineers to find the rule without reading the whole codebase. The rule currently lives only on the team's internal wiki page. What should the team do?",
+      "opts": [
+        {"l": "A", "t": "Add the disclaimer instruction to the system prompt, and keep the wiki page as a pointer to where it's enforced.", "family": null},
+        {"l": "B", "t": "Leave the rule on the wiki page; documenting it there is enough for the model to follow it.", "family": "WRONG-AXIS"},
+        {"l": "C", "t": "Move the rule into the first user message sent each session, and delete the wiki page.", "family": "HALF-MOVE"},
+        {"l": "D", "t": "Add the rule as a code comment inside the function that assembles the prompt, and remove it from the wiki.", "family": "DISCARD"}
+      ],
+      "whyRight": "The system prompt is the only location with durable authority across the whole conversation, so it satisfies the compliance requirement, while the wiki page pointing to it keeps the rule discoverable to new engineers without requiring a codebase read.",
+      "whyWrong": {
+        "B": "Documentation reaches engineers, not the model; nothing in the pipeline surfaces wiki content to Claude unless it is placed inside the system prompt itself.",
+        "C": "A first user message loses authority once the conversation moves past that turn, and deleting the wiki page also drops the discoverability requirement entirely.",
+        "D": "A code comment inside the assembly function is never sent to the model, so it has no effect on behavior at all, just like the earlier wiki page."
+      },
+      "deepDive": null,
+      "t1Clause": "needs a compliance disclaimer in every model response",
+      "t1Alt": "C",
+      "source": "AUTHORED",
+      "block": null,
+      "blockLabel": null,
+      "factAnswerRaw": ""
+    },
+    {
+      "g": 18,
+      "domain": "D2",
+      "section": "2.4",
+      "facet": "M-2.4",
+      "objective": "O2.3",
+      "shape": "S1",
+      "direction": "normal",
+      "format": "single",
+      "selectN": 1,
+      "stem": "The team enforces a rule: match each prompt technique to the task's actual shape, not to codebase convenience. A single-step classification endpoint serving 2 million calls a day prepends a 'think step by step' cue, matching the pipeline's multi-step summarization endpoint. What should change?",
+      "opts": [
+        {"l": "A", "t": "Keep the cue for consistency across all endpoints in the pipeline.", "family": "ARCHITECTED"},
+        {"l": "B", "t": "Keep the cue, and only remove it if accuracy is later observed to drop.", "family": "REPAIR"},
+        {"l": "C", "t": "Remove the cue; a single-step classification task gains no accuracy benefit from it, only added latency and cost.", "family": null},
+        {"l": "D", "t": "Replace the cue with a multi-shot example set instead, so the endpoint keeps a reasoning aid.", "family": "WRONG-AXIS"}
+      ],
+      "whyRight": "The endpoint is single-step; the named rule ties technique choice to task shape, not to matching other endpoints. A reasoning cue adds latency and token cost on a task with no steps to reason through, so removing it is the only option that satisfies the stated principle.",
+      "whyWrong": {
+        "A": "Consistency across endpoints is not the stated principle; matching technique to each task's own shape is, and this single-step task's shape doesn't call for a reasoning cue.",
+        "B": "Waiting for an observed accuracy drop treats a known mismatch reactively instead of matching the technique to the task's shape from the outset, as the rule requires.",
+        "D": "Swapping one prompting technique for another still ignores that this single-step task needs no reasoning aid at all; the fix addresses the wrong axis entirely."
+      },
+      "deepDive": null,
+      "t1Clause": "single-step classification endpoint",
+      "t1Alt": "A",
+      "source": "AUTHORED",
+      "block": null,
+      "blockLabel": null,
+      "factAnswerRaw": ""
+    },
+    {
+      "g": 19,
+      "domain": "D2",
+      "section": "2.7",
+      "facet": "M-2.7",
+      "objective": "O2.4",
+      "shape": "S2",
+      "direction": "normal",
+      "format": "single",
+      "selectN": 1,
+      "stem": "A long-running assistance session must stay within a fixed context-token budget, and a safety-critical dosage figure mentioned early in the conversation must remain exact for the rest of the session. What should the application do to the conversation history?",
+      "opts": [
+        {"l": "A", "t": "Summarize the entire conversation history uniformly to fit the token budget.", "family": "REPAIR"},
+        {"l": "B", "t": "Extract the dosage figure into a structured block, summarize the rest, and keep the most recent turns verbatim.", "family": null},
+        {"l": "C", "t": "Keep only the most recent portion of the conversation within the token budget.", "family": "DISCARD"},
+        {"l": "D", "t": "Route the full history through a second model call that produces a shorter paraphrase before every turn.", "family": "ARCHITECTED"}
+      ],
+      "whyRight": "This single change satisfies both constraints at once: extracting the dosage figure into a structured block keeps it exact, summarizing the rest compresses the history toward the token budget, and verbatim recent turns preserve immediate context without a trade-off.",
+      "whyWrong": {
+        "A": "Uniform summarization compresses everything equally, so the dosage figure degrades into vague paraphrase, exactly the precision-critical information the session must keep exact.",
+        "C": "The dosage figure was mentioned early and falls outside the retained window, so it is dropped entirely rather than preserved.",
+        "D": "An extra model call to paraphrase the history still risks compressing the dosage figure into an inexact approximation, and adds latency the budget doesn't call for."
+      },
+      "deepDive": null,
+      "t1Clause": "a safety-critical dosage figure mentioned early in the conversation must remain exact",
+      "t1Alt": "A",
+      "source": "AUTHORED",
+      "block": null,
+      "blockLabel": null,
+      "factAnswerRaw": ""
+    }
+  ],
+  "notes": [
+    "g16: T1 and T2 likely IRREDUCIBLE. Section 2.8's decision table has exactly one situation (three 'Same situation' answer rows, one correct); there is no neighbouring situation with a different correct answer, so t1Alt=D and the EVIDENCE-MISMATCH/WRONG-AXIS/DISCARD distractors are best-attempt only, not table-grounded resolutions. Flagging for the grounding audit per brief guidance on D2's thinner sections.",
+    "g17: T2 likely unresolved. Section 2.2's decision table has four situations but only one correct answer value ('System prompt') across all of them — the first-user-message and env-var/code-comment rows are never marked correct anywhere in the table, so no distractor here can be a genuine neighbour-correct action. T1 does resolve cleanly to a real row: inverting 'in every model response' to 'only in the first response of the session' makes option C (first user message) the substantively correct action, matching the table's row 2 characterization.",
+    "g18: T1 and T2 both resolve cleanly to real rows in section 2.4's decision table (single-step vs multi-step task situations) — no IRREDUCIBLE flag needed.",
+    "g19: T1 and T2 likely IRREDUCIBLE, same structural cause as g16 — section 2.7's decision table has exactly one situation with one correct hybrid-extraction answer and two always-wrong variants, so no neighbouring situation exists to ground a T2 distractor or a T1 inversion in a different real row. t1Alt=A is a best-attempt logical inversion (no precision-critical fact present), not a labeled table row."
+  ]
+}

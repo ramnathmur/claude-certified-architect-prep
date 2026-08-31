@@ -1,0 +1,4226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CCAR-P Mock Test 3</title>
+<!--
+  CCAR-P MOCK TEST 3 — Practice Mode, AUTHOR mode, untargeted diagnostic (Papers 1 and 2 both
+  generated but neither sat/scored at generation time -- confirmed with Ram before generating,
+  per Outputs/CCAR-P_Paper-3-4-Generation-Prompt_v1.md §2).
+  Generated 2026-08-31 from mock-exams/CCAR-P_MockTest-TEMPLATE_v1.html per
+  prep with quiz/CCAR-P-Orchestration-Prompt_v2.md. 63 items, all source:"AUTHORED".
+
+  deepDive ships null on every item (orchestration prompt §5.5 correction, 2026-08-30) --
+  populated later, only for items Ram actually misses, once the paper is scored (Phase 9).
+
+  D2 note: Domain 2's decision-table facet supply is nearly exhausted after Papers 1-2 (18
+  facets total, 16 already used). 6 of D2's 8 items on this paper draw on a section's
+  Misconception block instead of a decision-table row, per Phase 4 rule 5 of the orchestration
+  prompt -- expected, documented behaviour (GENERATION-INTELLIGENCE.md F-01), not a defect.
+
+  Fidelity gate: node tools/run-gate.js mock-exams/CCAR-P_MockTest-3_v1.html 63 - see EXAM-LOG.md
+  for the full 13-check result.
+
+  DESIGN STANCE: Practice Mode is the default. Exam Mode is a narrow exception for the two
+  dress-rehearsal papers. A faithful port of the Exam Mode mechanism WITHOUT its scope once
+  inverted this default for a whole project - see sop/SOP_Mock-Exam-Engine_v1.md.
+-->
+<style>
+:root{
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  --serif:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --bg:#faf9f7; --card:#fff; --ink:#1c1b19; --mid:#57534e; --soft:#8a857f;
+  --line:#e5e1db; --accent:#7c3f2e; --accent-soft:#f5ede9;
+  --ok:#2f6b46; --ok-soft:#eaf4ee; --bad:#a03225; --bad-soft:#fbeceb;
+  --warn:#8a6d1f; --warn-soft:#fdf6e3;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#1a1917; --card:#232220; --ink:#f0ede8; --mid:#b8b2aa; --soft:#8a857f;
+    --line:#38352f; --accent:#d99a7f; --accent-soft:#2e2521;
+    --ok:#7fc79c; --ok-soft:#1e2b23; --bad:#e89185; --bad-soft:#2e1f1d;
+    --warn:#d9bd6a; --warn-soft:#2b2519;
+  }
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55;}
+.wrap{max-width:860px;margin:0 auto;padding:0 20px 80px;}
+
+/* sticky nav */
+.topnav{position:sticky;top:0;z-index:40;background:var(--bg);border-bottom:1px solid var(--line);}
+.topnav-in{max-width:860px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.brand{font-weight:640;font-size:14px;letter-spacing:.01em;}
+.brand span{color:var(--accent);}
+.navspace{flex:1;}
+.timer{font-family:var(--mono);font-size:14px;font-variant-numeric:tabular-nums;color:var(--mid);}
+.timer.low{color:var(--bad);font-weight:640;}
+.pill{font-size:12px;padding:3px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:600;}
+.pill.mode{background:var(--ok-soft);color:var(--ok);}
+.pill.mode.exam{background:var(--bad-soft);color:var(--bad);}
+/* Running-accuracy pill, coloured against PASS_PCT_THRESHOLD. The neutral state keeps a
+   transparent 1px border so pass/fail do not shift the nav by 2px when they apply one. */
+.pill.acc{border:1px solid transparent;}
+.pill.acc.pass{background:var(--ok-soft);color:var(--ok);border-color:var(--ok);}
+.pill.acc.fail{background:var(--bad-soft);color:var(--bad);border-color:var(--bad);}
+
+/* header */
+header.doc{padding:34px 0 20px;border-bottom:1px solid var(--line);}
+header.doc h1{font-family:var(--serif);font-size:30px;line-height:1.2;margin:0 0 8px;font-weight:600;}
+header.doc .sub{color:var(--mid);font-size:15px;margin:0;}
+.demo-banner{margin:18px 0 0;padding:12px 14px;border-left:3px solid var(--warn);background:var(--warn-soft);
+  font-size:13.5px;color:var(--ink);border-radius:0 4px 4px 0;}
+
+/* landing */
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:6px;overflow:hidden;margin:26px 0;}
+.sf{background:var(--card);padding:13px 15px;}
+.sf.wide{grid-column:1/-1;}
+.sf .k{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--soft);margin-bottom:4px;}
+.sf .v{font-size:14.5px;font-weight:560;}
+.sf .v.prose{font-weight:420;font-size:13.5px;color:var(--mid);}
+
+/* progress */
+.progress{margin:22px 0 8px;}
+.pbar{height:4px;background:var(--line);border-radius:2px;overflow:hidden;}
+.pfill{height:100%;background:var(--accent);width:0;transition:width .25s;}
+.progress-meta{display:flex;justify-content:space-between;font-size:12.5px;color:var(--soft);margin-top:6px;}
+.jump-toggle{cursor:pointer;color:var(--accent);user-select:none;}
+.jumpmap{display:none;margin:12px 0 0;padding:12px;border:1px solid var(--line);border-radius:6px;background:var(--card);}
+.jumpmap.open{display:block;}
+.jg{display:flex;flex-wrap:wrap;gap:5px;}
+.jb{width:32px;height:30px;border:1px solid var(--line);border-radius:4px;background:var(--card);color:var(--mid);
+  font-size:12px;cursor:pointer;font-family:var(--mono);}
+.jb.answered{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600;}
+.jb.current{outline:2px solid var(--accent);outline-offset:1px;}
+
+/* question card */
+.qcard{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:26px 26px 22px;margin:22px 0;}
+.qhead{display:flex;align-items:center;gap:9px;margin-bottom:16px;flex-wrap:wrap;}
+.qnum{font-family:var(--mono);font-size:12px;color:var(--soft);}
+.tag{font-size:11px;padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:600;}
+.tag.fmt{background:var(--warn-soft);color:var(--warn);}
+.q-stem{font-family:var(--serif);font-size:18px;line-height:1.5;margin-bottom:20px;}
+.opts{display:flex;flex-direction:column;gap:9px;}
+.opt{display:flex;gap:12px;align-items:flex-start;padding:13px 15px;border:1px solid var(--line);border-radius:6px;
+  background:var(--card);cursor:pointer;text-align:left;font-size:15px;color:var(--ink);font-family:inherit;line-height:1.45;}
+.opt:hover{border-color:var(--accent);}
+.opt .l{font-family:var(--mono);font-size:13px;font-weight:640;color:var(--soft);min-width:16px;padding-top:1px;}
+.opt.sel{border-color:var(--accent);background:var(--accent-soft);}
+.opt.sel .l{color:var(--accent);}
+.opt.right{border-color:var(--ok);background:var(--ok-soft);}
+.opt.right .l{color:var(--ok);}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft);}
+.opt.wrong .l{color:var(--bad);}
+.opt[disabled]{cursor:default;}
+
+/* feedback */
+.fb{margin-top:18px;padding:15px 17px;border-radius:6px;font-size:14.5px;border-left:3px solid;}
+.fb.ok{background:var(--ok-soft);border-color:var(--ok);}
+.fb.no{background:var(--bad-soft);border-color:var(--bad);}
+.fb .verdict{font-weight:640;margin-bottom:7px;}
+.fb .why{margin:0 0 10px;}
+.fb .ww{margin:7px 0 0;padding-top:9px;border-top:1px solid var(--line);font-size:13.5px;color:var(--mid);}
+.fb .ww b{color:var(--ink);}
+.fb .cite{margin-top:10px;font-size:12px;color:var(--soft);font-family:var(--mono);}
+
+/* deep dive - the second explanation layer. Renders BELOW the quick verdict, as a sibling of
+   .fb rather than inside it, so the quick layer's markup is untouched. Never behind a toggle:
+   it is reached by scrolling. Distinct from .fb by tone (accent-soft, not ok-soft/bad-soft),
+   by its own rule and header, and by the serif principle line. */
+.deep{margin-top:16px;padding:15px 17px 14px;border-radius:6px;background:var(--accent-soft);
+  border:1px solid var(--line);border-left:3px solid var(--accent);font-size:14px;}
+.deep .deep-head{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--accent);
+  font-weight:700;padding-bottom:9px;border-bottom:1px solid var(--line);margin-bottom:12px;}
+.deep h4{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--soft);
+  font-weight:700;margin:15px 0 6px;}
+.deep h4:first-of-type{margin-top:0;}
+.deep p{margin:0;line-height:1.55;color:var(--ink);}
+.deep .principle{font-family:var(--serif);font-size:15.5px;line-height:1.5;}
+.deep .dopt{margin:0 0 9px;padding-left:11px;border-left:2px solid var(--line);color:var(--mid);}
+.deep .dopt:last-of-type{margin-bottom:0;}
+.deep .dopt b{color:var(--ink);font-family:var(--mono);font-size:13px;}
+.deep .dopt.picked{border-left-color:var(--bad);}
+.deep .dopt .flag{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--bad);font-weight:700;}
+.deep .cite{margin-top:12px;padding-top:9px;border-top:1px solid var(--line);
+  font-size:12px;color:var(--soft);font-family:var(--mono);}
+
+/* nav buttons */
+.qnav{display:flex;gap:10px;margin:22px 0;}
+.btn{padding:10px 20px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);
+  font-size:14.5px;font-family:inherit;cursor:pointer;font-weight:520;}
+.btn:hover:not([disabled]){border-color:var(--accent);}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.btn.primary:hover:not([disabled]){opacity:.9;}
+.btn[disabled]{opacity:.4;cursor:not-allowed;}
+.spacer{flex:1;}
+
+/* results */
+.res h2{font-family:var(--serif);font-size:24px;margin:0 0 4px;font-weight:600;}
+.score-big{font-size:46px;font-weight:280;font-family:var(--serif);line-height:1.1;margin:14px 0 2px;}
+.score-scaled{font-size:15px;color:var(--mid);margin-bottom:4px;}
+.verdict-line{font-size:15px;font-weight:600;margin:10px 0 20px;}
+.verdict-line.pass{color:var(--ok);}
+.verdict-line.fail{color:var(--bad);}
+table.brk{width:100%;border-collapse:collapse;margin:18px 0;font-size:14px;}
+table.brk th,table.brk td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);}
+table.brk th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--soft);font-weight:600;}
+table.brk td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;}
+.bar{height:5px;background:var(--line);border-radius:3px;overflow:hidden;min-width:80px;}
+.bar i{display:block;height:100%;background:var(--accent);}
+.exports{display:flex;gap:9px;flex-wrap:wrap;margin:22px 0 8px;}
+.export-box{margin:14px 0;padding:14px;background:var(--card);border:1px solid var(--line);border-radius:6px;
+  font-family:var(--mono);font-size:11.5px;white-space:pre-wrap;word-break:break-word;max-height:340px;overflow:auto;display:none;}
+.export-box.open{display:block;}
+.res-note{font-size:13px;color:var(--soft);margin-top:18px;padding-top:14px;border-top:1px solid var(--line);}
+.hidden{display:none;}
+@media(max-width:600px){
+  .qcard{padding:20px 17px 18px;}
+  .q-stem{font-size:16.5px;}
+  header.doc h1{font-size:24px;}
+}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-in">
+    <div class="brand">CCAR-P <span>Mock Test 3</span></div>
+    <span class="pill mode" id="modePill">Practice Mode</span>
+    <div class="navspace"></div>
+    <span class="pill acc hidden" id="accPill">0% so far</span>
+    <span class="timer hidden" id="timer">120:00</span>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<!-- ============ LANDING ============ -->
+<section id="landing">
+  <header class="doc">
+    <h1>CCAR-P Mock Test 3</h1>
+    <p class="sub">Claude Certified Architect – Professional · untargeted diagnostic</p>
+  </header>
+
+  <div class="demo-banner">
+    <strong>Paper 3 — another untargeted diagnostic.</strong> 63 items generated from the CCAR-P
+    corpus at the confirmed 17/13/19/16/14/14/7 weighting, one item for each of the 38 official
+    objectives. Papers 1 and 2 were both generated but not yet sat when this paper was built, so
+    no Professor's Note exists yet to target from — Ram confirmed generating another diagnostic
+    rather than pausing to sit an existing paper first. Practice Mode, so feedback arrives per
+    question.
+  </div>
+
+  <div class="facts">
+    <div class="sf"><div class="k">Length</div><div class="v">63 items · 120 minutes</div></div>
+    <div class="sf"><div class="k">Objectives covered</div><div class="v" id="fDemoCount">38 of 38</div></div>
+    <div class="sf"><div class="k">Format split</div><div class="v">55 single · 8 multiple-response</div></div>
+    <div class="sf"><div class="k">Pass line</div><div class="v">720 of 1000 scaled</div></div>
+    <div class="sf"><div class="k">Mode</div><div class="v" id="fMode">Practice — feedback per question</div></div>
+    <div class="sf"><div class="k">Multi-response scoring</div><div class="v">All-or-nothing</div></div>
+    <div class="sf wide"><div class="k">Why all-or-nothing</div><div class="v prose">
+      A stance, not a finding. <code>EXAM-FACTS_v1.md</code> records multi-response scoring as OPEN.
+      Foundations precedent was all-or-nothing and cost eight marks. Every item stores its raw picked
+      set, so all prior papers can be rescored under partial credit if the guide later settles it.
+    </div></div>
+  </div>
+
+  <div class="qnav">
+    <button class="btn primary" onclick="beginExam()">Begin</button>
+    <button class="btn" onclick="runSelfCheck()">Run validateItems()</button>
+  </div>
+  <div class="export-box" id="selfCheckBox"></div>
+</section>
+
+<!-- ============ EXAM ============ -->
+<section id="exam" class="hidden">
+  <div class="progress">
+    <div class="pbar"><div class="pfill" id="pfill"></div></div>
+    <div class="progress-meta">
+      <span id="progCount">0 / 0 answered</span>
+      <span class="jump-toggle" id="jumpToggle" onclick="toggleJumpMap()">&#9656; Jump to question</span>
+    </div>
+    <div class="jumpmap" id="jumpmap"><div class="jg" id="jg"></div></div>
+  </div>
+  <div id="qhost"></div>
+  <div class="qnav">
+    <button class="btn" id="btnBack" onclick="goBack()">&larr; Back</button>
+    <div class="spacer"></div>
+    <button class="btn" id="btnNext" onclick="goNext()">Next &rarr;</button>
+    <button class="btn primary hidden" id="btnSubmit" onclick="submitExam()">Submit paper</button>
+  </div>
+</section>
+
+<!-- ============ RESULTS ============ -->
+<section id="results" class="hidden res"></section>
+
+</div>
+
+<script>
+/* ================= PAPER IDENTITY ================= */
+const PAPER_N   = 3;
+const KEY       = "ccarp-mocktest-3-v1";
+const EXAM_MODE = false;                /* true only for Papers 8 and 10 */
+const TIME_LIMIT_SEC = 120 * 60;
+
+/* ================= FIXED EXAM FACTS ================= */
+/* From ../EXAM-FACTS_v1.md. Never copied from a sibling project. */
+const DOMAIN_NAMES = {
+  D1:"Solution Design & Architecture",
+  D2:"Claude Models, Prompting & Context Engineering",
+  D3:"Integration",
+  D4:"Evaluation, Testing & Optimization",
+  D5:"Governance, Safety & Risk Management",
+  D6:"Stakeholder Communication & Lifecycle Management",
+  D7:"Developer Productivity & Operational Enablement"
+};
+const DOM_ORDER   = ["D1","D2","D3","D4","D5","D6","D7"];
+const DOM_QUOTA   = {D1:11,D2:8,D3:12,D4:10,D5:9,D6:9,D7:4};   /* sums to 63 */
+const PASS_SCALED = 720;
+
+/* Scaled-score estimator. PROJECT ESTIMATE ONLY - not an Anthropic formula.
+   Linear map of percent-correct onto the published 100-1000 band:
+     scaled = 100 + 900 * (correct / total)
+   At 63 items the 720 pass line falls at 44 correct (69.8%). */
+function estimateScaled(correct, total){
+  if(!total) return 100;
+  return Math.round(100 + 900 * (correct / total));
+}
+
+/* Pass-equivalent RAW-PERCENTAGE threshold for the running-accuracy pill, obtained by inverting
+   estimateScaled() against PASS_SCALED:
+     100 + 900 * (correct/total) >= 720   =>   correct/total >= 620/900 = 31/45
+   as a percentage that is 620/9 = 68.888...%. Computed, never rounded to 69: at 63 items 44
+   correct is 69.84% and passes, 43 is 68.25% and does not, and a rounded 69% threshold would
+   mis-colour any running tally landing between 68.89% and 69%.
+   CCAR-F's Mock 15 derives the identical constant because its estimator is the same formula
+   against the same 720 pass line - 60 items there, 63 here, and the threshold is item-count
+   independent. This is a running indicator over ANSWERED items only, not a predicted result. */
+const PASS_PCT_THRESHOLD = 620/9;
+
+/* ================= ITEMS =================
+   63 items, AUTHORED, Paper 3 -- generated per prep with quiz/_PAPER3-STAGING/plan.json.
+
+   Schema, per CCAR-P-Orchestration-Prompt_v2.md 5.5:
+     g          item number, sequential from 1
+     domain     D1..D7
+     section    corpus section, e.g. "3.1"
+     facet      facet id from FACET-LEDGER.md, or "M-3.1" for a misconception unit
+     objective  O1.1..O7.3 from CCAR-P_Objective-Map_v1.md
+     shape      S1..S8 from ARCHETYPE-LEDGER.md
+     direction  "normal" | "inverted"
+     lessonKey  the underlying corpus facet's answer text, lowercased, punctuation-stripped,
+                token-sorted (same normalisation as STEM-LEDGER.md's dedup). Populate at assembly
+                time from plan.json's facet.answer. Two items sharing a non-empty lessonKey are
+                testing the identical corpus decision regardless of how differently they are
+                worded - validateItems() rejects this exam-wide (GENERATION-INTELLIGENCE.md F-10).
+                Leave "" if the item has no facet (e.g. a misconception-unit item) rather than
+                omitting the field, so every item can be checked uniformly.
+     format     "single" | "multi"
+     selectN    1 for single, 2 for multi
+     stem       <= 45 words
+     opts       [{l,t,family}] - family null on the correct option(s)
+     correct    array of letters, always an array even when length 1
+     whyRight   35-50 words
+     whyWrong   {letter: 15-30 words}
+     t1Clause   the clause whose deletion changes the answer
+     t1Alt      the option that becomes correct without it
+     deepDive   {principle, rightDeep, wrongDeep{letter}} - the SECOND explanation layer, rendered
+                below the quick verdict. whyRight/whyWrong explain why this option wins THIS item;
+                deepDive explains the governing rule the item is an instance of, and grounds every
+                claim in the cited section's own decision table and misconception block.
+                  principle  the rule at the level the architecture guidance states it, drawn from
+                             the section's Core Facts discriminator and its decision table's own
+                             framing sentence. 45-75 words
+                  rightDeep  the correct answer tied to the SPECIFIC decision-table row - its
+                             Situation, Answer and Why text quoted or closely paraphrased, not
+                             summarised generically. 60-100 words
+                  wrongDeep  one entry per non-correct letter, same key set as whyWrong. Each gives
+                             the real mechanism: the decision-table row the option WOULD be correct
+                             for, or the section's own documented misconception it embodies. Never
+                             "this is the trap". 45-80 words each.
+                             The t1Alt option's entry MUST name the row where it wins once t1Clause
+                             is removed or inverted - that reasoning is already recorded in the
+                             item and was previously never shown to the student.
+                Plain text; the renderer escapes it. See section 5.5 and 5.6 of the orchestration
+                prompt. Required on every item from Paper 1 onward; validateItems() enforces it.
+     source     "TRANSCRIBED" | "ASSEMBLED" | "AUTHORED" | "DEMO"
+     block      null - dormant. Populated only if the guide confirms scenario blocks
+     blockLabel null - dormant
+*/
+const ITEMS = [
+{
+  "g": 1,
+  "domain": "D1",
+  "section": "1.1",
+  "facet": "F-1.1-02",
+  "objective": "O1.1",
+  "shape": "S6",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "An underwriting step carries no licensing requirement, but success is measured by loss ratio, not final until claims mature twelve months later. The program owner needs a performance view before quarterly review. What should the team do?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Delay automating the step until twelve months of loss-ratio data confirm it performs as intended.",
+    "family": "WRONG-AXIS"
+   },
+   {
+    "l": "B",
+    "t": "Automate the step now and track a fast proxy — override or reopen rate — until loss ratio matures.",
+    "family": null
+   },
+   {
+    "l": "C",
+    "t": "Automate the step, but report performance only for the subset of claims that have already closed.",
+    "family": "HALF-MOVE"
+   },
+   {
+    "l": "D",
+    "t": "Route the step to a licensed underwriter for sign-off, with the model preparing a draft recommendation.",
+    "family": "EVIDENCE-MISMATCH"
+   }
+  ],
+  "whyRight": "The step's own fit signals already support automation; only the outcome metric is slow to arrive, and the stem states no licensing requirement blocks it. A fast proxy — override or reopen rate — gives a defensible interim reading before loss ratio matures.",
+  "whyWrong": {
+   "A": "Feedback latency calls for a proxy signal, not a delay; the step's fit signals already support automating it now, before the loss ratio matures.",
+   "C": "Restricting reporting to already-closed claims abandons the majority still open; the proxy signal, not a narrower scope, is what supplies the missing interim measurement.",
+   "D": "The step carries no licensing requirement, so routing it to a licensed underwriter for sign-off answers a condition the stem explicitly rules out."
+  },
+  "deepDive": null,
+  "t1Clause": "carries no licensing requirement",
+  "t1Alt": "D",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "automate override proxy rate reopen signal",
+  "correct": [
+   "B"
+  ],
+  "cite": "D1 1.1"
+ },
+ {
+  "g": 2,
+  "domain": "D1",
+  "section": "1.10",
+  "facet": "F-1.10-03",
+  "objective": "O1.2",
+  "shape": "S4",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A document-processing pipeline must complete a compliance redaction step before a document enters the search index; auditors require this order hold on every run, not just typically. Which mechanism should enforce it?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "A programmatic precondition that blocks indexing until the redaction step returns a completion signal.",
+    "family": null
+   },
+   {
+    "l": "B",
+    "t": "A JSON output contract carrying an explicit confidence field for the downstream service to route on.",
+    "family": "WRONG-AXIS"
+   },
+   {
+    "l": "C",
+    "t": "Strengthened system-prompt instructions directing the model to always redact documents before indexing them.",
+    "family": "REPAIR"
+   },
+   {
+    "l": "D",
+    "t": "Few-shot examples demonstrating the correct redact-then-index sequence for the model to imitate.",
+    "family": "HALF-MOVE"
+   }
+  ],
+  "whyRight": "Step ordering here is a correctness requirement, not a typical case; only a programmatic precondition enforces it deterministically every run. Prompt instructions, few-shot examples, and output-routing contracts all leave room for the sequence to be skipped.",
+  "whyWrong": {
+   "B": "A confidence field helps a downstream service route on the model's output; it does nothing to guarantee redaction actually runs before indexing occurs.",
+   "C": "Prompt instructions are probabilistic; a rule stated clearly enough still fails on the runs where the ordering matters most, which is what auditors require against.",
+   "D": "Examples raise the odds the model imitates the correct order; they do not guarantee it, and a guarantee is what an audited sequencing requirement needs."
+  },
+  "deepDive": null,
+  "t1Clause": "must complete a compliance redaction step before a document enters the search index; auditors require this order hold on every run",
+  "t1Alt": "B",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "b blocking precondition programmatic returns until",
+  "correct": [
+   "A"
+  ],
+  "cite": "D1 1.10"
+ },
+ {
+  "g": 3,
+  "domain": "D1",
+  "section": "1.3",
+  "facet": "F-1.3-02",
+  "objective": "O1.3",
+  "shape": "S5",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A support system classifies each incoming ticket into one of five known categories, then dispatches to a category-specific handler. Roughly 40,000 tickets arrive daily, and the team is evaluating an agent framework. Which pattern fits the requirement?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "A single agent that decides at runtime which handler each ticket needs.",
+    "family": "ARCHITECTED"
+   },
+   {
+    "l": "B",
+    "t": "A workflow that routes each classified ticket to its matching handler.",
+    "family": null
+   },
+   {
+    "l": "C",
+    "t": "A coordinator dispatching to five specialist subagents, one per category.",
+    "family": "OVERSPEC"
+   },
+   {
+    "l": "D",
+    "t": "A single large prompt handling every category's logic in one call.",
+    "family": "DISCARD"
+   }
+  ],
+  "whyRight": "The five categories are known and enumerable, so the routing decision belongs in code; a workflow dispatches each classified ticket to its handler at a fraction of the cost and latency variance any agentic or multi-agent alternative would add across all 40,000 daily tickets.",
+  "whyWrong": {
+   "A": "Runtime discovery is the cost that funds an agent, and nothing here is undiscovered; the five categories are already enumerated, so an agent adds variance for no stated benefit.",
+   "C": "Splitting five known branches across a coordinator and five subagents multiplies token spend roughly 4-5x for a routing decision that a single workflow already handles cleanly.",
+   "D": "One monolithic call mixing five categories' logic dilutes attention across all of them at once, where the workflow's separate handlers keep each category's logic isolated."
+  },
+  "deepDive": null,
+  "t1Clause": "one of five known categories",
+  "t1Alt": "A",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "pattern routing workflow",
+  "correct": [
+   "B"
+  ],
+  "cite": "D1 1.3"
+ },
+ {
+  "g": 4,
+  "domain": "D1",
+  "section": "1.6",
+  "facet": "F-1.6-02",
+  "objective": "O1.4",
+  "shape": "S1",
+  "direction": "normal",
+  "format": "multi",
+  "selectN": 2,
+  "stem": "In a hub-and-spoke multi-agent system, the coordinator owns decomposition and must partition the space before delegating. On a fixed token budget, two subagents investigated the same source cluster, each returning correct results. Which two actions fix the root cause? Select two.",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Have the coordinator partition the research space into non-overlapping segments before dispatching any subagent.",
+    "family": null
+   },
+   {
+    "l": "B",
+    "t": "Give the coordinator an explicit map assigning each subagent a distinct segment of the space.",
+    "family": null
+   },
+   {
+    "l": "C",
+    "t": "Add a deduplication pass after the subagents return, to merge overlapping findings.",
+    "family": "REPAIR"
+   },
+   {
+    "l": "D",
+    "t": "Add structured error propagation so one subagent's failure no longer terminates the whole run.",
+    "family": "WRONG-AXIS"
+   }
+  ],
+  "whyRight": "Two subagents covering the same ground traces to the coordinator's decomposition, not to either subagent's execution — both returned correct results. Partitioning the space before delegating and mapping each subagent to a distinct segment both fix that upstream cause directly.",
+  "whyWrong": {
+   "C": "Deduplicating after the subagents return treats the symptom once tokens are already spent; it does not stop the coordinator from assigning overlapping ground on the next run.",
+   "D": "Structured error propagation prevents one subagent's crash from ending the run; nothing here failed — both subagents returned correct results, they simply covered the same ground."
+  },
+  "deepDive": null,
+  "t1Clause": "two subagents investigated the same source cluster",
+  "t1Alt": "D",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "before coordinator delegating did partition space",
+  "correct": [
+   "A",
+   "B"
+  ],
+  "cite": "D1 1.6"
+ },
+ {
+  "g": 5,
+  "domain": "D1",
+  "section": "1.11",
+  "facet": "F-1.11-02",
+  "objective": "O1.5",
+  "shape": "S1",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A code-security review runs per-file local scans, then a synthesis pass surfaces cross-file vulnerabilities; only structured summaries should cross that seam. Under a fixed audit deadline, the synthesis pass now receives the raw diff of all 40 files. What should change?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Give the synthesis pass a larger context window so it can process all 40 raw diffs at once.",
+    "family": "DISCARD"
+   },
+   {
+    "l": "B",
+    "t": "Instruct the synthesis pass's prompt to carefully cross-reference all 40 raw diffs for consistency.",
+    "family": "REPAIR"
+   },
+   {
+    "l": "C",
+    "t": "Merge the local-scan and synthesis passes into one combined pass over all 40 files.",
+    "family": "WRONG-AXIS"
+   },
+   {
+    "l": "D",
+    "t": "Replace the raw diffs with each file's structured local-scan summary as the integration pass's input.",
+    "family": null
+   }
+  ],
+  "whyRight": "The seam between local scans and synthesis is defined to carry structured summaries; raw diffs reintroduce exactly the attention dilution the two-pass split existed to remove. Swapping in each file's structured summary restores the seam without adding a bigger model, a second pass, or more prose.",
+  "whyWrong": {
+   "A": "A larger context window still processes 40 raw diffs at once; capacity was never the constraint, and dilution persists at any window size until the input itself changes.",
+   "B": "Prompt instructions asking the synthesis pass to cross-reference more carefully still hand it 40 raw diffs to dilute its attention across; the input format is the defect, not the instructions.",
+   "C": "Merging the two passes recreates the single monolithic review the two-pass split was designed to prevent; the defect here is the seam's data format, not too many stages."
+  },
+  "deepDive": null,
+  "t1Clause": "runs per-file local scans, then a synthesis pass",
+  "t1Alt": "C",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "file instead pass per structured summaries",
+  "correct": [
+   "D"
+  ],
+  "cite": "D1 1.11"
+ },
+ {
+  "g": 6,
+  "domain": "D1",
+  "section": "1.12",
+  "facet": "F-1.12-03",
+  "objective": "O1.6",
+  "shape": "S2",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "Total cost — inference plus human review time — is the named pillar for a pipeline classifying 200,000 items monthly. A redesign halves per-call inference cost using a smaller model, but doubles the volume routed to human reviewers. What should the team do?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Approve the redesign; a smaller model is a clear efficiency win regardless of downstream review load.",
+    "family": "EVIDENCE-MISMATCH"
+   },
+   {
+    "l": "B",
+    "t": "Approve the redesign, and add a monitoring dashboard tracking the growing human review backlog.",
+    "family": "REPAIR"
+   },
+   {
+    "l": "C",
+    "t": "Approve the redesign, and hire additional reviewers to absorb the doubled review volume.",
+    "family": "HALF-MOVE"
+   },
+   {
+    "l": "D",
+    "t": "Reject the redesign; total cost rises because the extra human review time outweighs the inference savings.",
+    "family": null
+   }
+  ],
+  "whyRight": "Total cost is the named pillar, and it includes both inference and human review time, not inference alone. Halving inference spend while doubling reviewer volume moves the metric the wrong way overall, so the redesign is a net regression that should be rejected outright.",
+  "whyWrong": {
+   "A": "Efficiency on the inference side is only half of the named pillar; the doubled human review time is the other half, and it grows faster than the model savings shrink.",
+   "B": "A dashboard shows the review backlog growing; it does not lower total cost, which is still rising because the underlying trade was never reversed.",
+   "C": "Hiring reviewers to absorb the doubled volume adds its own cost on top of the trade already made, moving total cost further in the wrong direction, not back down."
+  },
+  "deepDive": null,
+  "t1Clause": "doubles the volume routed to human reviewers",
+  "t1Alt": "A",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "",
+  "correct": [
+   "D"
+  ],
+  "cite": "D1 1.12"
+ },
+ {
+  "g": 7,
+  "domain": "D1",
+  "section": "1.2",
+  "facet": "F-1.2-02",
+  "objective": "O1.1",
+  "shape": "S6",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A logistics lead wants an agent built to triage delivery-exception tickets, a task the team has performed manually for years, ahead of a planned support-team expansion. No measurement of current per-ticket resolution time exists. What should happen first?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Build the triage agent now, then survey the support team's satisfaction with it after a few months.",
+    "family": "HALF-MOVE"
+   },
+   {
+    "l": "B",
+    "t": "Measure current per-ticket resolution time before committing to a design, then design against that baseline.",
+    "family": null
+   },
+   {
+    "l": "C",
+    "t": "Deploy the agent with full logging, then derive the historical resolution-time baseline retrospectively from its own logs.",
+    "family": "REPAIR"
+   },
+   {
+    "l": "D",
+    "t": "Skip baseline measurement and argue transformation, since triage assistance is a capability the team has never had.",
+    "family": "EVIDENCE-MISMATCH"
+   }
+  ],
+  "whyRight": "A design chosen without a measured baseline cannot be compared or defended once built. Per-ticket resolution time is the business unit the value case must be written in, and it must be captured before design work begins, not estimated afterward.",
+  "whyWrong": {
+   "A": "This delivers the requested agent while leaving the actual pain point — measured turnaround — unmeasured, so the project still has no baseline to defend its value against.",
+   "C": "This reconstructs downstream, from the new agent's own logs, a measurement the pre-project step could have captured cleanly and cheaply before any design began.",
+   "D": "The team has triaged these tickets manually for years, so an efficiency baseline exists to measure; transformation framing applies only when no prior capability existed at all."
+  },
+  "deepDive": null,
+  "t1Clause": "a task the team has performed manually for years",
+  "t1Alt": "D",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "before committing design measure",
+  "correct": [
+   "B"
+  ],
+  "cite": "D1 1.2"
+ },
+ {
+  "g": 8,
+  "domain": "D1",
+  "section": "1.9",
+  "facet": "F-1.9-02",
+  "objective": "O1.2",
+  "shape": "S1",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "An architecture closes the loop only when a correctness signal reaches a destination that changes system behaviour. A claims-triage design document diagrams input validation, model processing, and output formatting, then goes to the compliance officer for sign-off. Which component is missing?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "An observability layer logging every request and response for audit purposes.",
+    "family": "WRONG-AXIS"
+   },
+   {
+    "l": "B",
+    "t": "A routing rule sending the signal to the retrieval and indexing layer for reprocessing.",
+    "family": "EVIDENCE-MISMATCH"
+   },
+   {
+    "l": "C",
+    "t": "The feedback path, so a correctness signal can reach a destination that changes future system behaviour.",
+    "family": null
+   },
+   {
+    "l": "D",
+    "t": "A confidence-threshold routing layer directing low-confidence outputs to human review.",
+    "family": "ARCHITECTED"
+   }
+  ],
+  "whyRight": "The architecture names input, processing, and output but omits the fourth stage: a mechanism that routes a correctness signal — an override, a rating, an outcome — back to something that changes future behaviour, such as the evaluation set or the retrieval layer.",
+  "whyWrong": {
+   "A": "Logging every request and response records what happened, not whether it was correct; it satisfies observability, not the correctness signal the missing stage requires.",
+   "B": "Nothing in the design document indicates a citation or retrieval defect; routing to the retrieval layer answers a different, unstated failure rather than the generic missing stage.",
+   "D": "A confidence-threshold layer sounds like the more rigorous design, but it routes existing output rather than supplying the missing mechanism that changes future behaviour."
+  },
+  "deepDive": null,
+  "t1Clause": "diagrams input validation, model processing, and output formatting",
+  "t1Alt": "B",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "feedback missing path what",
+  "correct": [
+   "C"
+  ],
+  "cite": "D1 1.9"
+ },
+ {
+  "g": 9,
+  "domain": "D1",
+  "section": "1.4",
+  "facet": "F-1.4-02",
+  "objective": "O1.3",
+  "shape": "S5",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A compliance team must produce the same six-section risk review, in the same order, for every loan submission an auditor samples monthly. An architect proposes an agent that adapts its approach per file. Which design fits the requirement?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "An agent with adaptive planning that discovers what needs checking as it explores each submission.",
+    "family": "ARCHITECTED"
+   },
+   {
+    "l": "B",
+    "t": "One large prompt producing the entire review at once without section-by-section structure.",
+    "family": "DISCARD"
+   },
+   {
+    "l": "C",
+    "t": "A fixed pipeline that produces the same six sections in the same order for every submission.",
+    "family": null
+   },
+   {
+    "l": "D",
+    "t": "The fixed six-section pipeline plus a supervising agent added to double-check cross-submission consistency afterward.",
+    "family": "OVERSPEC"
+   }
+  ],
+  "whyRight": "The six sections, their order, and the trigger are identical for every submission, so the path is fully enumerable; a fixed pipeline is cheaper, faster, and reproducible for an auditor who must find the same structure every time.",
+  "whyWrong": {
+   "A": "Adaptive planning is funded by scope that must be discovered during work; here every submission already follows the same known six-section structure, so nothing funds the multiplier.",
+   "B": "A single undifferentiated pass dilutes attention across six distinct evaluation criteria at once, the opposite of the section-by-section structure the review requires.",
+   "D": "The fixed pipeline is already deterministic and reproducible; adding a supervising agent buys consistency checking the structure already guarantees, at extra cost and latency."
+  },
+  "deepDive": null,
+  "t1Clause": "the same six-section risk review, in the same order, for every loan submission",
+  "t1Alt": "A",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "chaining fixed pipeline prompt",
+  "correct": [
+   "C"
+  ],
+  "cite": "D1 1.4"
+ },
+ {
+  "g": 10,
+  "domain": "D1",
+  "section": "1.8",
+  "facet": "F-1.8-01",
+  "objective": "O1.4",
+  "shape": "S4",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A claims coordinator must verify a customer's identity, coverage eligibility, and prior claims history — three independent checks — before issuing a decision within a two-hour turnaround commitment. Subagents currently run one check at a time. Which topology fits?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Chain the three checks sequentially, since Step B's result depends on what Step A discovered.",
+    "family": "EVIDENCE-MISMATCH"
+   },
+   {
+    "l": "B",
+    "t": "Dispatch all three checks in parallel from a single coordinator turn, then synthesise the results.",
+    "family": null
+   },
+   {
+    "l": "C",
+    "t": "Dispatch the three checks in parallel, but issue each from a separate coordinator turn to keep them auditable.",
+    "family": "HALF-MOVE"
+   },
+   {
+    "l": "D",
+    "t": "Run an iterative refinement loop — dispatch one check, evaluate for gaps, then dispatch the next based on what's missing.",
+    "family": "WRONG-AXIS"
+   }
+  ],
+  "whyRight": "The three checks are independent, so serialising them wastes wall-clock time the two-hour commitment cannot spare; issuing all three from one coordinator turn lets them run concurrently, with wall clock set by the longest branch instead of their sum.",
+  "whyWrong": {
+   "A": "The stem states the three checks are independent; treating coverage eligibility as dependent on identity contradicts that and serialises work that could run concurrently.",
+   "C": "Parallelism requires the delegations to be issued in a single coordinator turn; spreading them across separate turns runs them sequentially in practice, with no error raised.",
+   "D": "All three checks and their scope are already known; an iterative gap-discovery loop is built for coverage that cannot be guaranteed up front, which is not this case."
+  },
+  "deepDive": null,
+  "t1Clause": "identity, coverage eligibility, and prior claims history — three independent checks",
+  "t1Alt": "A",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "fan out parallel single synthesise then turn",
+  "correct": [
+   "B"
+  ],
+  "cite": "D1 1.8"
+ },
+ {
+  "g": 11,
+  "domain": "D1",
+  "section": "1.11",
+  "facet": "F-1.11-04",
+  "objective": "O1.5",
+  "shape": "S5",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A support agent's workflow drafts response emails, updates ticket status, and issues account refunds up to $500, which the payment processor cannot reverse once confirmed. The finance team wants one seam reflecting each action's risk. Where should it cut?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Split by confidence tier: route routine-looking refund requests through automatically, and send ambiguous-looking ones for review.",
+    "family": "WRONG-AXIS"
+   },
+   {
+    "l": "B",
+    "t": "Split by process stage: one unit handles drafting and updates, a separate unit handles all refund issuance end to end.",
+    "family": "HALF-MOVE"
+   },
+   {
+    "l": "C",
+    "t": "Split by risk tier — drafting and status updates proceed autonomously; refunds are gated behind a required approval step.",
+    "family": null
+   },
+   {
+    "l": "D",
+    "t": "Merge all three actions into a single unit so shared context isn't lost across a handoff.",
+    "family": "DISCARD"
+   }
+  ],
+  "whyRight": "Blast radius, not confidence, sets this seam: drafting emails and updating ticket status are reversible and can run autonomously, while a refund the payment processor cannot undo needs a gate a human approves before execution, whatever the confidence level.",
+  "whyWrong": {
+   "A": "Confidence tier is the cost lever for case difficulty; it doesn't change that a confident-looking refund is still irreversible once the payment processor confirms it.",
+   "B": "Separating by process stage doesn't itself gate the irreversible refund step; issuance could still execute autonomously without the approval the stated risk requires.",
+   "D": "Merging removes the seam that lets drafting and status updates proceed freely while isolating the one action that needs a gate before it executes."
+  },
+  "deepDive": null,
+  "t1Clause": "which the payment processor cannot reverse once confirmed",
+  "t1Alt": "A",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "autonomous gated irreversible reversible risk split tier",
+  "correct": [
+   "C"
+  ],
+  "cite": "D1 1.11"
+ },
+ {
+  "g": 12,
+  "domain": "D2",
+  "section": "2.1",
+  "facet": "M-2.1",
+  "objective": "O2.1",
+  "shape": "S5",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "An engineering lead wants to route 40,000 low-ambiguity invoice approvals daily through the largest available model under a 300ms latency budget, arguing greater capability is always the safer choice before the quarterly finance audit. What is the correct response?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Approve the largest available model outright, since greater capability is inherently the safer default regardless of the task.",
+    "family": "ARCHITECTED"
+   },
+   {
+    "l": "B",
+    "t": "Push back and ask what specifically requires that level of model capability before evaluating any option.",
+    "family": "EVIDENCE-MISMATCH"
+   },
+   {
+    "l": "C",
+    "t": "Benchmark representative invoices first, then select the smallest, fastest model that still clears the accuracy bar.",
+    "family": null
+   },
+   {
+    "l": "D",
+    "t": "Deploy the largest model into production now, and downgrade later only if a cost audit flags it.",
+    "family": "REPAIR"
+   }
+  ],
+  "whyRight": "The task's own specifics — 40,000 low-ambiguity invoices daily under a 300ms latency budget — already supply a stated driver, and it argues against extra capability, not for it. Model choice is a cost-latency-quality trade-off argued from the task's actual requirement; oversized capability here is unpriced cost, not safety.",
+  "whyWrong": {
+   "A": "This restates the exact misconception the section warns against: model choice is a cost-latency-quality trade-off, not a default-to-largest safety rule regardless of task shape.",
+   "B": "Pushing back fits only when no complexity driver is stated. Here volume, ambiguity, and latency budget are already given, so benchmarking is the next step, not more questioning.",
+   "D": "Deploying the largest model first and only reconsidering after an audit flags excess cost treats an avoidable expense as a problem to patch later, not prevent upfront."
+  },
+  "deepDive": null,
+  "t1Clause": "40,000 low-ambiguity invoice approvals daily under a 300ms latency budget",
+  "t1Alt": "B",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "",
+  "correct": [
+   "C"
+  ],
+  "cite": "D2 2.1"
+ },
+ {
+  "g": 13,
+  "domain": "D2",
+  "section": "2.2",
+  "facet": "F-2.2-03",
+  "objective": "O2.2",
+  "shape": "S2",
+  "direction": "normal",
+  "format": "multi",
+  "selectN": 2,
+  "stem": "A fintech support bot must apply a refund-disclosure phrasing rule on every turn, with the wording tracked in version control before next quarter's compliance review. An engineer proposes an environment variable instead. Select two practices that satisfy both requirements.",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Write the phrasing rule into the system prompt so it governs the model's output on every turn.",
+    "family": null
+   },
+   {
+    "l": "B",
+    "t": "Set the exact wording as a deployment environment variable, the same value the engineer already proposed.",
+    "family": "WRONG-AXIS"
+   },
+   {
+    "l": "C",
+    "t": "Track the approved wording as versioned text in the codebase, changed only through a reviewed pull request.",
+    "family": null
+   },
+   {
+    "l": "D",
+    "t": "Log every phrasing variant the bot emits in production, so legal can review actual outputs after each release.",
+    "family": "DETECTIVE-FOR-PREVENTIVE"
+   }
+  ],
+  "whyRight": "A durable rule must live in the system prompt — the only location with authority across every turn — while an environment variable never reaches model behavior at all. Tracking the approved wording as versioned, reviewed text keeps the compliance-review requirement satisfiable without redeploying infrastructure.",
+  "whyWrong": {
+   "B": "An environment variable is infrastructure configuration set at deploy time; it never reaches the model at all, so it has no effect on what the bot actually says.",
+   "D": "This audits what already happened instead of fixing what happens next; the requirement is a phrasing rule enforced going forward, not a log reviewed after each release."
+  },
+  "deepDive": null,
+  "t1Clause": "before next quarter's compliance review",
+  "t1Alt": "D",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "",
+  "correct": [
+   "A",
+   "C"
+  ],
+  "cite": "D2 2.2, 2.9"
+ },
+ {
+  "g": 14,
+  "domain": "D2",
+  "section": "2.3",
+  "facet": "F-2.3-02",
+  "objective": "O2.3",
+  "shape": "S1",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "Company policy states few-shot examples must target the specific ambiguous cases causing failures, not simply add volume. A routing agent handling 12,000 requests daily still misroutes messages mentioning both 'cancel' and 'refund' between two tools. Which fix follows the policy?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Add 10–15 examples covering a wide range of clear-cut, unambiguous requests unrelated to the cancel-refund overlap.",
+    "family": "HALF-MOVE"
+   },
+   {
+    "l": "B",
+    "t": "Add 3–4 examples showing the exact required output format for refund confirmations.",
+    "family": "EVIDENCE-MISMATCH"
+   },
+   {
+    "l": "C",
+    "t": "Add 4–6 few-shot examples that specifically show correct routing for messages mentioning both 'cancel' and 'refund'.",
+    "family": null
+   },
+   {
+    "l": "D",
+    "t": "Fine-tune a dedicated routing model on historical tickets before testing whether targeted examples alone resolve it.",
+    "family": "ARCHITECTED"
+   }
+  ],
+  "whyRight": "The failure is routing ambiguity, not a formatting or instruction-clarity problem: the agent already confuses two specific tools on messages naming both actions. The stated principle is to target 4–6 examples exactly at that ambiguity, not add volume, format-specific examples, or a heavier model change.",
+  "whyWrong": {
+   "A": "This adds volume of clear-cut cases the agent already handles correctly. The policy explicitly rejects this kind of proposal — it never touches the specific cancel-refund ambiguity actually causing the failure.",
+   "B": "The stated failure is misrouting between two tools, not inconsistent output formatting. Format-specific examples fix a different symptom and leave the cancel-refund ambiguity untouched.",
+   "D": "Fine-tuning is a legitimate lever, but it's the expensive answer to a problem a handful of targeted examples might already solve — the policy calls for testing that first."
+  },
+  "deepDive": null,
+  "t1Clause": "still misroutes messages mentioning both 'cancel' and 'refund'",
+  "t1Alt": "B",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "4 6 add ambiguity exactly examples targeted",
+  "correct": [
+   "C"
+  ],
+  "cite": "D2 2.3"
+ },
+ {
+  "g": 15,
+  "domain": "D2",
+  "section": "2.6",
+  "facet": "M-2.6",
+  "objective": "O2.4",
+  "shape": "S2",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A due-diligence agent synthesizes 40-page vendor contracts under a token budget finance won't raise, and reviewers keep missing risk clauses buried mid-document. Someone proposes truncating each contract to its first two pages to save tokens. What is the correct fix?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Approve the truncation to the first two pages — a shorter prompt is the safer way to control token cost.",
+    "family": "DISCARD"
+   },
+   {
+    "l": "B",
+    "t": "Rotate which contract section appears first across different runs, so the missed clauses vary rather than repeat.",
+    "family": "HALF-MOVE"
+   },
+   {
+    "l": "C",
+    "t": "Keep the current format, and add a manual reviewer pass over each contract's middle section after every run.",
+    "family": "DETECTIVE-FOR-PREVENTIVE"
+   },
+   {
+    "l": "D",
+    "t": "Restructure the input with a key-findings summary and explicit section headings first, instead of shortening it.",
+    "family": null
+   }
+  ],
+  "whyRight": "The risk clauses are lost because of where they sit in a long input, not because the input is too long. Restructuring — findings first, explicit headings — fixes the attention pattern directly, while shortening risks cutting exactly the clauses reviewers are already missing.",
+  "whyWrong": {
+   "A": "Nothing establishes that risk clauses only ever appear on the first two pages; truncating risks discarding exactly the mid-document content reviewers are already missing, not saving cost safely.",
+   "B": "Rotating which section appears first only changes whose content lands in the penalized middle position each run — it never fixes the underlying attention pattern causing the misses.",
+   "C": "Manual review after every run detects the missed clauses without fixing why the agent misses them, and doesn't scale against a fixed token budget the finance team already capped."
+  },
+  "deepDive": null,
+  "t1Clause": "risk clauses buried mid-document",
+  "t1Alt": "A",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "",
+  "correct": [
+   "D"
+  ],
+  "cite": "D2 2.6"
+ },
+ {
+  "g": 16,
+  "domain": "D2",
+  "section": "2.8",
+  "facet": "M-2.8",
+  "objective": "O2.5",
+  "shape": "S2",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A pipeline sends an identical multi-thousand-token policy preamble before a short, unique customer question on every request. Latency and per-request token cost are both rising as volume grows, and the preamble never changes between calls. What should the team do?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Keep the preamble first and unchanged, and enable prompt caching so the identical prefix is reused across requests.",
+    "family": null
+   },
+   {
+    "l": "B",
+    "t": "Cache each generated response keyed by the customer's question, and replay it whenever that exact question recurs.",
+    "family": "EVIDENCE-MISMATCH"
+   },
+   {
+    "l": "C",
+    "t": "Move the preamble into a few-shot example block placed after the customer's question.",
+    "family": "WRONG-AXIS"
+   },
+   {
+    "l": "D",
+    "t": "Shorten the preamble's wording to reduce its token count on every request.",
+    "family": "DISCARD"
+   }
+  ],
+  "whyRight": "Ordering the identical preamble first creates a stable, byte-identical prefix that prompt caching can reuse across requests, cutting both time-to-first-token and token cost together. Caching reuses the cached input prefix, not any stored output, so no separate response-storage mechanism is needed to capture the saving.",
+  "whyWrong": {
+   "B": "The preamble is cached because it's identical across calls; each customer question is described as unique, so a response cache keyed on it almost never hits.",
+   "C": "Few-shot blocks target output formatting, not prefix stability; placing the preamble after the varying question also breaks the ordering caching depends on.",
+   "D": "Shortening the preamble risks cutting required policy content, and still leaves latency and cost unaddressed since no caching mechanism gets enabled."
+  },
+  "deepDive": null,
+  "t1Clause": "the preamble never changes between calls",
+  "t1Alt": "D",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "",
+  "correct": [
+   "A"
+  ],
+  "cite": "D2 2.8"
+ },
+ {
+  "g": 17,
+  "domain": "D2",
+  "section": "2.2",
+  "facet": "M-2.2",
+  "objective": "O2.2",
+  "shape": "S2",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A team needs a compliance disclaimer in every model response, and wants new engineers to find the rule without reading the whole codebase. The rule currently lives only on the team's internal wiki page. What should the team do?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Add the disclaimer instruction to the system prompt, and keep the wiki page as a pointer to where it's enforced.",
+    "family": null
+   },
+   {
+    "l": "B",
+    "t": "Leave the rule on the wiki page; documenting it there is enough for the model to follow it.",
+    "family": "WRONG-AXIS"
+   },
+   {
+    "l": "C",
+    "t": "Move the rule into the first user message sent each session, and delete the wiki page.",
+    "family": "HALF-MOVE"
+   },
+   {
+    "l": "D",
+    "t": "Add the rule as a code comment inside the function that assembles the prompt, and remove it from the wiki.",
+    "family": "DISCARD"
+   }
+  ],
+  "whyRight": "The system prompt is the only location with durable authority across the whole conversation, so it satisfies the compliance requirement, while the wiki page pointing to it keeps the rule discoverable to new engineers without requiring a codebase read.",
+  "whyWrong": {
+   "B": "Documentation reaches engineers, not the model; nothing in the pipeline surfaces wiki content to Claude unless it is placed inside the system prompt itself.",
+   "C": "A first user message loses authority once the conversation moves past that turn, and deleting the wiki page also drops the discoverability requirement entirely.",
+   "D": "A code comment inside the assembly function is never sent to the model, so it has no effect on behavior at all, just like the earlier wiki page."
+  },
+  "deepDive": null,
+  "t1Clause": "needs a compliance disclaimer in every model response",
+  "t1Alt": "C",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "",
+  "correct": [
+   "A"
+  ],
+  "cite": "D2 2.2"
+ },
+ {
+  "g": 18,
+  "domain": "D2",
+  "section": "2.4",
+  "facet": "M-2.4",
+  "objective": "O2.3",
+  "shape": "S1",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "The team enforces a rule: match each prompt technique to the task's actual shape, not to codebase convenience. A single-step classification endpoint serving 2 million calls a day prepends a 'think step by step' cue, matching the pipeline's multi-step summarization endpoint. What should change?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Keep the cue for consistency across all endpoints in the pipeline.",
+    "family": "ARCHITECTED"
+   },
+   {
+    "l": "B",
+    "t": "Keep the cue, and only remove it if accuracy is later observed to drop.",
+    "family": "REPAIR"
+   },
+   {
+    "l": "C",
+    "t": "Remove the cue; a single-step classification task gains no accuracy benefit from it, only added latency and cost.",
+    "family": null
+   },
+   {
+    "l": "D",
+    "t": "Replace the cue with a multi-shot example set instead, so the endpoint keeps a reasoning aid.",
+    "family": "WRONG-AXIS"
+   }
+  ],
+  "whyRight": "The endpoint is single-step; the named rule ties technique choice to task shape, not to matching other endpoints. A reasoning cue adds latency and token cost on a task with no steps to reason through, so removing it is the only option that satisfies the stated principle.",
+  "whyWrong": {
+   "A": "Consistency across endpoints is not the stated principle; matching technique to each task's own shape is, and this single-step task's shape doesn't call for a reasoning cue.",
+   "B": "Waiting for an observed accuracy drop treats a known mismatch reactively instead of matching the technique to the task's shape from the outset, as the rule requires.",
+   "D": "Swapping one prompting technique for another still ignores that this single-step task needs no reasoning aid at all; the fix addresses the wrong axis entirely."
+  },
+  "deepDive": null,
+  "t1Clause": "single-step classification endpoint",
+  "t1Alt": "A",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "",
+  "correct": [
+   "C"
+  ],
+  "cite": "D2 2.4"
+ },
+ {
+  "g": 19,
+  "domain": "D2",
+  "section": "2.7",
+  "facet": "M-2.7",
+  "objective": "O2.4",
+  "shape": "S2",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A long-running assistance session must stay within a fixed context-token budget, and a safety-critical dosage figure mentioned early in the conversation must remain exact for the rest of the session. What should the application do to the conversation history?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Summarize the entire conversation history uniformly to fit the token budget.",
+    "family": "REPAIR"
+   },
+   {
+    "l": "B",
+    "t": "Extract the dosage figure into a structured block, summarize the rest, and keep the most recent turns verbatim.",
+    "family": null
+   },
+   {
+    "l": "C",
+    "t": "Keep only the most recent portion of the conversation within the token budget.",
+    "family": "DISCARD"
+   },
+   {
+    "l": "D",
+    "t": "Route the full history through a second model call that produces a shorter paraphrase before every turn.",
+    "family": "ARCHITECTED"
+   }
+  ],
+  "whyRight": "This single change satisfies both constraints at once: extracting the dosage figure into a structured block keeps it exact, summarizing the rest compresses the history toward the token budget, and verbatim recent turns preserve immediate context without a trade-off.",
+  "whyWrong": {
+   "A": "Uniform summarization compresses everything equally, so the dosage figure degrades into vague paraphrase, exactly the precision-critical information the session must keep exact.",
+   "C": "The dosage figure was mentioned early and falls outside the retained window, so it is dropped entirely rather than preserved.",
+   "D": "An extra model call to paraphrase the history still risks compressing the dosage figure into an inexact approximation, and adds latency the budget doesn't call for."
+  },
+  "deepDive": null,
+  "t1Clause": "a safety-critical dosage figure mentioned early in the conversation must remain exact",
+  "t1Alt": "A",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "",
+  "correct": [
+   "B"
+  ],
+  "cite": "D2 2.7"
+ },
+ {
+  "g": 20,
+  "domain": "D3",
+  "section": "3.1",
+  "facet": "F-3.1-02",
+  "objective": "O3.1",
+  "shape": "S4",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A role-scoped support agent already carries five tools after an earlier split, but two — one updates ticket status, one reassigns it — are still confused on 9% of 50,000 monthly tickets. What should the team change first?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Add a system-prompt instruction telling the agent which of the two tools to prefer for ambiguous requests.",
+    "family": "WRONG-AXIS"
+   },
+   {
+    "l": "B",
+    "t": "Remove one of the two confusable tools from the agent's tool set.",
+    "family": "DISCARD"
+   },
+   {
+    "l": "C",
+    "t": "Split the agent into two smaller role-scoped agents, moving the confused pair into its own group.",
+    "family": "ARCHITECTED"
+   },
+   {
+    "l": "D",
+    "t": "Expand both tool descriptions with input formats, explicit boundaries, and when-not-to-use guidance.",
+    "family": null
+   }
+  ],
+  "whyRight": "With only two tools inside an already-scoped agent, the decision space cannot be reduced further; the confusable pair is resolved by sharpening the tool definitions themselves — input formats, explicit boundaries, and when-not-to-use guidance — the correct lever at this scale.",
+  "whyWrong": {
+   "A": "A system-prompt preference is a probabilistic instruction layered over the same ambiguous definitions; it does not change what the two tools actually say about themselves, so the misroute rate persists.",
+   "B": "Removing one tool eliminates a capability the workflow still needs; the agent already has only five tools, so the problem is discrimination between two of them, not surplus tool count.",
+   "C": "Splitting a five-tool agent over one confusable pair adds a second agent and a coordination hop to solve a problem that tightening two descriptions already resolves at this scale."
+  },
+  "deepDive": null,
+  "t1Clause": "already carries five tools after an earlier split",
+  "t1Alt": "C",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "both boundaries descriptions expand formats input use when",
+  "correct": [
+   "D"
+  ],
+  "cite": "D3 3.1"
+ },
+ {
+  "g": 21,
+  "domain": "D3",
+  "section": "3.2",
+  "facet": "F-3.2-03",
+  "objective": "O3.2",
+  "shape": "S8",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A billing agent holds full record-deletion rights, but the only workflow using them is refund processing, which deletes records already marked closed, roughly 200 times a week. Which change should a security review require?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Remove the capability entirely from the agent's tool set.",
+    "family": "DISCARD"
+   },
+   {
+    "l": "B",
+    "t": "Keep the broad capability and add a confirmation prompt plus audit logging for every use.",
+    "family": "DETECTIVE-FOR-PREVENTIVE"
+   },
+   {
+    "l": "C",
+    "t": "Replace the broad capability with a narrow one scoped to the specific case that needs it.",
+    "family": null
+   },
+   {
+    "l": "D",
+    "t": "Keep the broad capability but restrict its use to business hours.",
+    "family": "WRONG-AXIS"
+   }
+  ],
+  "whyRight": "Only one workflow needs deletion, and only for a narrow, already-defined case; replacing the broad capability with one scoped to that case removes the excess privilege entirely rather than layering confirmation or a time window around it.",
+  "whyWrong": {
+   "A": "Refund processing genuinely needs deletion for closed records; removing the capability entirely breaks that workflow instead of narrowing it to the case that actually requires it.",
+   "B": "Confirmation and logging monitor use of a still-broad deletion right; the scenario names one narrow legitimate case, so the fix is narrowing the capability, not adding oversight to it.",
+   "D": "A business-hours restriction narrows a time window, not the privilege itself; deletion of closed refund records would still be possible at 9am for any record, which the scenario doesn't require."
+  },
+  "deepDive": null,
+  "t1Clause": "the only workflow using them is refund processing, which deletes records already marked closed",
+  "t1Alt": "B",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "broad capability case narrow one replace scoped",
+  "correct": [
+   "C"
+  ],
+  "cite": "D3 3.2"
+ },
+ {
+  "g": 22,
+  "domain": "D3",
+  "section": "3.4",
+  "facet": "F-3.4-02",
+  "objective": "O3.3",
+  "shape": "S5",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A pipeline already orders static content first with caching enabled and has no further slack against its contractual 3,000ms p95 SLA; a proposed new reasoning step would add 600ms to reach a required accuracy target. What should the architect do?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Look for wasted latency in the current pipeline ordering and caching before deciding.",
+    "family": "EVIDENCE-MISMATCH"
+   },
+   {
+    "l": "B",
+    "t": "Reject the change as proposed, or reopen the SLA explicitly with the stakeholder before shipping.",
+    "family": null
+   },
+   {
+    "l": "C",
+    "t": "Raise the SLA target unilaterally to accommodate the change without consulting the stakeholder.",
+    "family": "OVERSPEC"
+   },
+   {
+    "l": "D",
+    "t": "Ship the change and add alerting so the team is notified if production latency breaches the SLA.",
+    "family": "DETECTIVE-FOR-PREVENTIVE"
+   }
+  ],
+  "whyRight": "With no slack left and a stated contractual SLA, absorbing a further 600ms is not the architect's call to make alone; the change is rejected as proposed or the SLA itself is reopened explicitly with the stakeholder who owns it.",
+  "whyWrong": {
+   "A": "The pipeline already orders static content first with caching enabled and the stem states no further slack exists, so searching for wasted latency again has nothing left to recover.",
+   "C": "Raising the SLA unilaterally buys the accuracy feature by breaking a contractual figure that was stated, without the business decision the scenario requires before that number moves.",
+   "D": "Alerting on a breach after shipping detects the SLA violation once it is already happening in production, rather than preventing it by deciding the trade-off before the change ships."
+  },
+  "deepDive": null,
+  "t1Clause": "already orders static content first with caching enabled",
+  "t1Alt": "A",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "explicitly reject reopen sla stakeholder",
+  "correct": [
+   "B"
+  ],
+  "cite": "D3 3.4"
+ },
+ {
+  "g": 23,
+  "domain": "D3",
+  "section": "3.6",
+  "facet": "F-3.6-02",
+  "objective": "O3.4",
+  "shape": "S1",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "Observability doctrine holds that a trace should explain why an output was produced, not only that one was. A pipeline's p95 latency has regressed and the team can see only total end-to-end time, at 90,000 requests a day. What should they add?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Instrument tool calls and retrieved-context details with document versions, the standard fix for diagnosing wrong answers.",
+    "family": "WRONG-AXIS"
+   },
+   {
+    "l": "B",
+    "t": "Increase end-to-end request log retention so more historical timing data is available.",
+    "family": "HALF-MOVE"
+   },
+   {
+    "l": "C",
+    "t": "Add a user-facing control so people can report responses that feel slow.",
+    "family": "REPAIR"
+   },
+   {
+    "l": "D",
+    "t": "Add per-stage timing so which stage's latency grew becomes visible.",
+    "family": null
+   }
+  ],
+  "whyRight": "Only total end-to-end time is captured, so nothing distinguishes a slow reranker from a slow retrieval call; per-stage timing turns the vague complaint that the system got slower into the specific stage that actually regressed.",
+  "whyWrong": {
+   "A": "Tool-call and retrieved-context instrumentation diagnoses why an answer was wrong, not why a request got slower; the stated failure is a latency regression, not an accuracy problem.",
+   "B": "More retained end-to-end timing is still only one number per request; it cannot show which stage inside that total grew, so the regression stays undiagnosed.",
+   "C": "A feedback control reacts to complaints after users notice slowness; it captures no diagnostic data about which stage regressed and depends on someone reporting it."
+  },
+  "deepDive": null,
+  "t1Clause": "p95 latency has regressed",
+  "t1Alt": "A",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "add per stage timing",
+  "correct": [
+   "D"
+  ],
+  "cite": "D3 3.6"
+ },
+ {
+  "g": 24,
+  "domain": "D3",
+  "section": "3.8",
+  "facet": "F-3.8-02",
+  "objective": "O3.5",
+  "shape": "S4",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A developer-support agent answers questions from a REST API reference where each endpoint occupies one section combining its description, parameters and example, serving 15,000 queries a day. How should the reference be chunked for retrieval?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Chunk each endpoint's description, parameters and example together as one whole chunk.",
+    "family": null
+   },
+   {
+    "l": "B",
+    "t": "Chunk on numbered clause boundaries, carrying clause number and heading path as metadata.",
+    "family": "EVIDENCE-MISMATCH"
+   },
+   {
+    "l": "C",
+    "t": "Apply uniform 512-token windows with a small overlap across the whole reference.",
+    "family": "WRONG-AXIS"
+   },
+   {
+    "l": "D",
+    "t": "Skip embedding the reference and expose it only as a structured query tool.",
+    "family": "DISCARD"
+   }
+  ],
+  "whyRight": "Each endpoint's description and parameters form one self-contained unit that already matches the document's own structure; splitting them across chunks produces a parameter list with no explanation and a description with no parameters, both unusable alone.",
+  "whyWrong": {
+   "B": "The reference is organized as one section per endpoint with no numbered clauses; a clause-boundary scheme has nothing in this document's structure to attach to.",
+   "C": "Fixed windows treat chunk size as the decision when the real decision is where the boundary falls, risking a cut through the parameter table.",
+   "D": "The reference is prose-like documentation suited to embedding and semantic search; skipping embedding to force a structured-query tool discards a mechanism that already fits this content."
+  },
+  "deepDive": null,
+  "t1Clause": "each endpoint occupies one section combining its description, parameters and example",
+  "t1Alt": "B",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "chunk endpoint per whole",
+  "correct": [
+   "A"
+  ],
+  "cite": "D3 3.8"
+ },
+ {
+  "g": 25,
+  "domain": "D3",
+  "section": "3.11",
+  "facet": "F-3.11-02",
+  "objective": "O3.6",
+  "shape": "S4",
+  "direction": "normal",
+  "format": "multi",
+  "selectN": 2,
+  "stem": "A field-support platform serves troubleshooting prose queries, part-number lookups embedded in that same prose, and 'total units shipped to region Y this quarter' questions against a linked shipment table, at 40,000 queries daily. Select two correct decisions.",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Build a knowledge graph over the part catalog so identifier lookups traverse relationships between parts.",
+    "family": "ARCHITECTED"
+   },
+   {
+    "l": "B",
+    "t": "Add lexical retrieval alongside dense search and fuse the rankings for the part-number lookups embedded in prose.",
+    "family": null
+   },
+   {
+    "l": "C",
+    "t": "Embed the shipment table so the region-quarter total is retrieved by semantic similarity like the other sources.",
+    "family": "WRONG-AXIS"
+   },
+   {
+    "l": "D",
+    "t": "Route the region-quarter total query to a structured query against the shipment table rather than retrieval.",
+    "family": null
+   }
+  ],
+  "whyRight": "Hybrid retrieval matches the part-number lookups because rare identifiers carry near-noise vectors that lexical matching resolves; the region-quarter total is aggregation, which has no vector-space answer, so it belongs to a structured query against the shipment table.",
+  "whyWrong": {
+   "A": "Graph traversal answers relationship questions like part supersession; the part-number lookups here are exact-match identifiers inside prose, which is a lexical-matching gap, not a relationship to traverse.",
+   "C": "Embedding a relational table for a counting question spreads meaning across rows with no vector-space answer to aggregation; structured query against the source is required instead."
+  },
+  "deepDive": null,
+  "t1Clause": "'total units shipped to region Y this quarter' questions against a linked shipment table",
+  "t1Alt": "A",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "",
+  "correct": [
+   "B",
+   "D"
+  ],
+  "cite": "D3 3.11"
+ },
+ {
+  "g": 26,
+  "domain": "D3",
+  "section": "3.13",
+  "facet": "F-3.13-03",
+  "objective": "O3.7",
+  "shape": "S4",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "An internal assistant only needs document-store search for policy-detail questions; a mandatory search on every turn would add roughly 400ms of latency that most turns don't need. How should search be exposed to the agent?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Call the document-store search API directly in a pre-processing step before every model turn",
+    "family": "WRONG-AXIS"
+   },
+   {
+    "l": "B",
+    "t": "Delegate the search decision to a separate retrieval agent that independently decides when to query and returns results",
+    "family": "ARCHITECTED"
+   },
+   {
+    "l": "C",
+    "t": "Expose document search as an MCP tool the agent calls only when the conversation requires it",
+    "family": null
+   },
+   {
+    "l": "D",
+    "t": "Expose the document catalog as an MCP resource so the agent can browse available content before querying",
+    "family": "EVIDENCE-MISMATCH"
+   }
+  ],
+  "whyRight": "The decision to search depends on what the conversation actually needs, so it belongs to the model rather than a fixed pipeline step; an MCP tool lets the agent call search only on the turns that require it, sparing the rest the 400ms cost.",
+  "whyWrong": {
+   "A": "A pre-processing call runs before every turn regardless of need, imposing the 400ms cost on the majority of requests the scenario says do not require search.",
+   "B": "A dedicated retrieval agent adds an inference loop, its own latency, and a second accountability boundary to perform what is a single conversational tool decision.",
+   "D": "A resource only lets the agent read what content exists; it gives no way to actually run a search, which the scenario states some questions require."
+  },
+  "deepDive": null,
+  "t1Clause": "search is needed only for policy-detail questions, not on every turn",
+  "t1Alt": "A",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "",
+  "correct": [
+   "C"
+  ],
+  "cite": "D3 3.13"
+ },
+ {
+  "g": 27,
+  "domain": "D3",
+  "section": "3.14",
+  "facet": "F-3.14-02",
+  "objective": "O3.8",
+  "shape": "S1",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "Progressive discovery is meant to spare requests the token cost of tools they don't need. A 60-tool namespace index makes every call pay one discovery round-trip regardless, and trace data show six tools account for 61% of all calls. Which change serves that principle?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Promote the six high-frequency tools into the base surface so they skip the discovery round-trip",
+    "family": null
+   },
+   {
+    "l": "B",
+    "t": "Add a second discovery layer that pre-fetches the six tools' definitions in parallel with the first round-trip",
+    "family": "REPAIR"
+   },
+   {
+    "l": "C",
+    "t": "Remove the 54 least-used tools so the namespace index shrinks and the round-trip returns faster",
+    "family": "DISCARD"
+   },
+   {
+    "l": "D",
+    "t": "Load all 60 tool definitions into the base context so every request skips the discovery round-trip",
+    "family": "WRONG-AXIS"
+   }
+  ],
+  "whyRight": "Trace data show six tools carry 61% of calls, so promoting them into the base surface removes the round-trip for the traffic that pays it most, while the remaining 54 tools stay behind the namespace index where the round-trip is cheap relative to their rare use.",
+  "whyWrong": {
+   "B": "A parallel pre-fetch layer still pays the round-trip's machinery on every request; it hides the cost rather than removing it for the traffic that dominates the call volume.",
+   "C": "Removing the 54 rarely-used tools deletes capabilities the systems still require, to fix a round-trip speed problem that promoting the six high-frequency tools already solves.",
+   "D": "Loading all 60 definitions reintroduces the full token tax the index exists to avoid; it is the right move only for a small, stable surface, not this one."
+  },
+  "deepDive": null,
+  "t1Clause": "a 60-tool namespace index spanning 8 systems (a large surface)",
+  "t1Alt": "D",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "base into promote six surface those",
+  "correct": [
+   "A"
+  ],
+  "cite": "D3 3.14"
+ },
+ {
+  "g": 28,
+  "domain": "D3",
+  "section": "3.1",
+  "facet": "F-3.1-04",
+  "objective": "O3.1",
+  "shape": "S4",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A billing agent needs a customer's account tier on 90% of its requests; today it messages a coordinator, which forwards the request to a separate accounts agent and returns the answer, adding a round-trip to nearly every turn. What should change?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Split the billing agent into two smaller role-scoped agents, moving account-tier lookups into their own group.",
+    "family": "ARCHITECTED"
+   },
+   {
+    "l": "B",
+    "t": "Give the billing agent a narrowly scoped tool that reads only the customer's account tier",
+    "family": null
+   },
+   {
+    "l": "C",
+    "t": "Leave the coordinator hand-off unchanged, since a single shared coordinator keeps overall routing simpler",
+    "family": "EVIDENCE-MISMATCH"
+   },
+   {
+    "l": "D",
+    "t": "Expose the account tier lookup as a general-purpose tool available to every agent in the system",
+    "family": "OVERSPEC"
+   }
+  ],
+  "whyRight": "A single lookup needed on nearly every turn is exactly the sanctioned exception: a narrowly scoped cross-role tool removes the coordinator round-trip from the common case, while genuinely complex or unrelated needs still route through the coordinator as before.",
+  "whyWrong": {
+   "A": "Splitting into two agents adds another hop and another agent to maintain, for a single high-frequency lookup that a narrow tool grant already resolves without any restructuring.",
+   "C": "The stem states the round-trip lands on 90% of requests; calling that acceptable because routing 'stays simple' ignores the cost the scenario has already quantified.",
+   "D": "A tool visible to every agent widens the decision space for all of them, reintroducing the exact misrouting risk role-scoping exists to prevent, for a need only billing has."
+  },
+  "deepDive": null,
+  "t1Clause": "needs a customer's account tier (one specific lookup, not tool sprawl)",
+  "t1Alt": "A",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "cross give narrowly role scoped tool",
+  "correct": [
+   "B"
+  ],
+  "cite": "D3 3.1"
+ },
+ {
+  "g": 29,
+  "domain": "D3",
+  "section": "3.3",
+  "facet": "F-3.3-03",
+  "objective": "O3.2",
+  "shape": "S2",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A team integrates with a third-party ticketing system through one shared service token. Compliance requires every action be attributable to the employee who took it, and security requires that a departing employee's access can be revoked without affecting anyone else. What satisfies both?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Substitute per-user credentials for the shared token so each employee's actions and access are individually identifiable and revocable",
+    "family": null
+   },
+   {
+    "l": "B",
+    "t": "Keep the shared token and log which employee initiated each request through the application layer",
+    "family": "DETECTIVE-FOR-PREVENTIVE"
+   },
+   {
+    "l": "C",
+    "t": "Provision one service token per entitlement tier, shared by every employee within that tier",
+    "family": "HALF-MOVE"
+   },
+   {
+    "l": "D",
+    "t": "Add a system-prompt instruction directing the agent to record which employee initiated each ticketing action",
+    "family": "WRONG-AXIS"
+   }
+  ],
+  "whyRight": "Per-user credential substitution satisfies both stated constraints in a single change: each employee's actions carry a distinct, attributable identity, and revoking one departing employee's credential does not touch anyone else's continued access to the integration.",
+  "whyWrong": {
+   "B": "Logging records who likely acted after the request already succeeded under the shared identity; it does not give each employee a distinct, revocable credential.",
+   "C": "Grouping by tier narrows attribution to a tier, not an individual, and revoking one departing employee's access still disrupts everyone left in that same tier.",
+   "D": "Instructing the agent to record who initiated each action via the system prompt is a probabilistic ask that treats an identity and access problem as instruction-following."
+  },
+  "deepDive": null,
+  "t1Clause": "security requires revocation without affecting anyone else",
+  "t1Alt": "B",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "credential one per rather service shared substitution than token user",
+  "correct": [
+   "A"
+  ],
+  "cite": "D3 3.3"
+ },
+ {
+  "g": 30,
+  "domain": "D3",
+  "section": "3.5",
+  "facet": "F-3.5-03",
+  "objective": "O3.3",
+  "shape": "S1",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "The team's SLA is defined at p95, and the stated principle is to measure against the percentile the SLA names. A dashboard shows mean latency down 30% since a recent change, yet complaints about slow responses persist. What should the team do next?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Measure and optimize p95/p99 latency, since the SLA and the complaints both live in the tail",
+    "family": null
+   },
+   {
+    "l": "B",
+    "t": "Report the mean-latency improvement to stakeholders as evidence the SLA is being met",
+    "family": "EVIDENCE-MISMATCH"
+   },
+   {
+    "l": "C",
+    "t": "Enable streaming so users perceive each response arriving sooner, without changing total latency",
+    "family": "WRONG-AXIS"
+   },
+   {
+    "l": "D",
+    "t": "Investigate and fix the specific slow requests causing the complaints on a case-by-case basis",
+    "family": "REPAIR"
+   }
+  ],
+  "whyRight": "The SLA is defined at p95, and the complaints track the tail, not the average; a mean can improve while the slowest requests stay just as slow, so p95/p99 is the metric that actually reflects what users experience.",
+  "whyWrong": {
+   "B": "Mean latency improving while complaints persist is itself evidence the tail is still slow; the stem already states user complaints have not decreased.",
+   "C": "Streaming changes only the time to the first token, not the p95 total latency the SLA is defined against, so the tail causing complaints can remain slow.",
+   "D": "Fixing individual slow requests one at a time does not establish or track the percentile metric the SLA is actually defined against, so the pattern will recur."
+  },
+  "deepDive": null,
+  "t1Clause": "the SLA is defined at p95 (a formal percentile target is in play)",
+  "t1Alt": "C",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "measure optimize p95 p99",
+  "correct": [
+   "A"
+  ],
+  "cite": "D3 3.5"
+ },
+ {
+  "g": 31,
+  "domain": "D3",
+  "section": "3.7",
+  "facet": "F-3.7-02",
+  "objective": "O3.4",
+  "shape": "S6",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A team runs 200,000 requests/day and already captures 100% of errors and escalations for diagnosis. They also want to detect gradual regressions in typical response quality over time and need a stable baseline distribution for comparison. How should routine successful requests be sampled?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Take a small uniform random sample of routine successful requests; baselines only need enough volume to stay statistically stable",
+    "family": null
+   },
+   {
+    "l": "B",
+    "t": "Trace 100% of routine successes in addition to the existing error and escalation capture",
+    "family": "OVERSPEC"
+   },
+   {
+    "l": "C",
+    "t": "Skip sampling routine successes entirely, since errors and escalations already provide full diagnostic coverage",
+    "family": "DISCARD"
+   },
+   {
+    "l": "D",
+    "t": "Label each routine success trace with the requesting user's ID so regressions can be traced to specific accounts",
+    "family": "WRONG-AXIS"
+   }
+  ],
+  "whyRight": "A baseline only needs to be statistically stable, not exhaustive; a small uniform sample of routine successes gives that stability at a fraction of the cost, while errors, escalations and low-confidence paths already get full capture separately.",
+  "whyWrong": {
+   "B": "Full capture of routine successes at 200,000 requests a day multiplies storage cost for no gain, since a stable baseline needs only enough volume to be representative, not every request.",
+   "C": "Error and escalation traces show what failure looks like, but say nothing about what normal, healthy requests look like, which is exactly what a regression baseline needs to compare against.",
+   "D": "Per-user identifiers make metrics high-cardinality and expensive at this volume; that need belongs on traces, and a baseline distribution never required per-account granularity in the first place."
+  },
+  "deepDive": null,
+  "t1Clause": "200,000 requests/day (a high-volume system)",
+  "t1Alt": "B",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "routine sample small successes uniform",
+  "correct": [
+   "A"
+  ],
+  "cite": "D3 3.7"
+ },
+ {
+  "g": 32,
+  "domain": "D4",
+  "section": "4.1",
+  "facet": "F-4.1-02",
+  "objective": "O4.1",
+  "shape": "S6",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A product sponsor asks that the pass threshold for a new support-ticket deflection feature be 'calibrated once we see baseline numbers' from the first week in production, with a board review scheduled before wider rollout. What should the evaluation team do?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Calibrate the pass threshold after the first week of production data, then lock it before the board review.",
+    "family": "ARCHITECTED"
+   },
+   {
+    "l": "B",
+    "t": "Re-anchor the threshold to a small non-zero rate, since this is an open-ended, model-judged property.",
+    "family": "WRONG-AXIS"
+   },
+   {
+    "l": "C",
+    "t": "Track the deflection rate for two weeks without setting any threshold, then bring the raw numbers to the board.",
+    "family": "DISCARD"
+   },
+   {
+    "l": "D",
+    "t": "Reject the proposal and set the threshold now, anchored to the success criterion or the process it replaces.",
+    "family": null
+   }
+  ],
+  "whyRight": "The stakeholder is asking for the same trap the section warns against: a bar set after the numbers land only describes the result. The team should set the threshold now, anchored to the success criterion or the process it replaces, and log any later change as a deliberate revision.",
+  "whyWrong": {
+   "A": "Setting the bar after the first week of data is the deferred-calibration request restated with a deadline; a post-hoc bar only ever gets revised downward once inconvenient.",
+   "B": "No open-ended 0% bar was proposed here; the actual ask is about timing, not the numeric value, so re-anchoring to a small non-zero rate answers a question nobody raised.",
+   "C": "Tracking the rate without ever setting a threshold discards the requirement outright; a finished metric needs a named failure, denominator, segment, and threshold agreed before results arrive."
+  },
+  "deepDive": null,
+  "t1Clause": "be 'calibrated once we see baseline numbers' from the first week in production",
+  "t1Alt": "B",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "decision later now recorded reject revise set",
+  "correct": [
+   "D"
+  ],
+  "cite": "D4 4.1"
+ },
+ {
+  "g": 33,
+  "domain": "D4",
+  "section": "4.3",
+  "facet": "F-4.3-02",
+  "objective": "O4.2",
+  "shape": "S6",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "An assistant's 500-case evaluation set reports 96% accuracy, yet the support team logs steady customer complaints. Ahead of the quarterly review, an engineer proposes expanding the same set to 2,000 cases collected the same way. What should the team do?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Approve the expansion — 2,000 cases collected the same way will look more defensible at the review.",
+    "family": "HALF-MOVE"
+   },
+   {
+    "l": "B",
+    "t": "Generate the extra cases with the same model that serves production, to hold down labeling costs.",
+    "family": "DISCARD"
+   },
+   {
+    "l": "C",
+    "t": "Cut the set to the 40 most recently hand-verified cases and present those as the new baseline.",
+    "family": "WRONG-AXIS"
+   },
+   {
+    "l": "D",
+    "t": "Reject the expansion — the same sampling process at four times the scale still narrows around a wrong number.",
+    "family": null
+   }
+  ],
+  "whyRight": "Nothing about scale fixes a set that already omits the failure classes customers are hitting. Four times the cases collected the same way produces four times the bias and a tighter, still-wrong interval — the defect is composition, and only rebuilding from real production failures addresses it.",
+  "whyWrong": {
+   "A": "More cases collected by the same process only tighten the interval around the same biased number; the set's composition, not its count, is why complaints keep coming.",
+   "B": "The serving model's own competence and phrasing distribution become the ground truth, guaranteeing the added cases contain nothing the model cannot already handle.",
+   "C": "This set's problem is missing failure coverage, not unverified labels; cutting to 40 cases here throws away the little signal the set already has."
+  },
+  "deepDive": null,
+  "t1Clause": "500-case evaluation set reports 96% accuracy, yet the support team logs steady customer complaints",
+  "t1Alt": "C",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "",
+  "correct": [
+   "D"
+  ],
+  "cite": "D4 4.3"
+ },
+ {
+  "g": 34,
+  "domain": "D4",
+  "section": "4.9",
+  "facet": "F-4.9-04",
+  "objective": "O4.3",
+  "shape": "S3",
+  "direction": "normal",
+  "format": "multi",
+  "selectN": 2,
+  "stem": "A team runs a controlled A/B test on a prompt change and sits at day 4 of a planned 14-day run. The primary metric already looks favourable, but the variant breached the declared p95 latency guardrail. Select two required actions.",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Continue the test through its full declared 14-day duration instead of stopping early on the favourable read.",
+    "family": null
+   },
+   {
+    "l": "B",
+    "t": "Do not ship, because one high-value segment regressed twelve points while the aggregate metric improved.",
+    "family": "WRONG-AXIS"
+   },
+   {
+    "l": "C",
+    "t": "Extend the run past its declared 14-day duration until the latency guardrail is no longer breached, then ship.",
+    "family": "OVERSPEC"
+   },
+   {
+    "l": "D",
+    "t": "Do not ship the variant, since it breached the p95 latency guardrail declared before the test began.",
+    "family": null
+   }
+  ],
+  "whyRight": "The test is only four days into a planned fourteen, so a favourable early read must not stop it — the stopping rule runs to the declared duration regardless of interim numbers. Guardrails only block: a breached latency guardrail forces no-ship no matter what the primary metric shows.",
+  "whyWrong": {
+   "B": "No segment data of any kind appears in this run; the twelve-point regression is real for a different situation in this section, but nothing here supports invoking it.",
+   "C": "Extending the run past its declared length does not undo a guardrail breach, and guardrails exist precisely to block shipment regardless of how much longer the test runs."
+  },
+  "deepDive": null,
+  "t1Clause": "the variant breached the p95 latency guardrail declared before the test began",
+  "t1Alt": "B",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "",
+  "correct": [
+   "A",
+   "D"
+  ],
+  "cite": "D4 4.9"
+ },
+ {
+  "g": 35,
+  "domain": "D4",
+  "section": "4.10",
+  "facet": "F-4.10-02",
+  "objective": "O4.4",
+  "shape": "S4",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A support assistant answers accurately across most document types but is reliably wrong on scanned PDF contracts, while performing well on the rest of the corpus. A director proposes upgrading to a larger, three-times-costlier model. What should the team check first?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Move to the larger, three-times-costlier model, since a broad accuracy failure usually signals insufficient model capability.",
+    "family": "DISCARD"
+   },
+   {
+    "l": "B",
+    "t": "Check how the scanned PDF contracts are parsed, chunked, and indexed compared with the rest of the corpus.",
+    "family": null
+   },
+   {
+    "l": "C",
+    "t": "Add a system-prompt instruction telling the assistant to answer scanned contracts more carefully.",
+    "family": "REPAIR"
+   },
+   {
+    "l": "D",
+    "t": "Add few-shot examples demonstrating the correct answer format for every document type in the corpus.",
+    "family": "EVIDENCE-MISMATCH"
+   }
+  ],
+  "whyRight": "The failure is confined to one document type while the rest of the corpus is answered correctly, which points at how that specific type is parsed, chunked, and indexed — not at a general capability gap the model carries everywhere.",
+  "whyWrong": {
+   "A": "The failure is narrow, confined to one document type, not the broad multi-step reasoning breakdown a genuine model-capability gap produces; the costlier model was never implicated.",
+   "C": "An instruction to be more careful cannot recover content that was never correctly parsed or indexed in the first place; it patches downstream of the actual fault.",
+   "D": "Nothing here describes inconsistent formatting across runs; the stated symptom is being wrong on one document type, which few-shot formatting examples do not address."
+  },
+  "deepDive": null,
+  "t1Clause": "reliably wrong on scanned PDF contracts, while performing well on the rest of the corpus",
+  "t1Alt": "A",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "chunking coverage data",
+  "correct": [
+   "B"
+  ],
+  "cite": "D4 4.10"
+ },
+ {
+  "g": 36,
+  "domain": "D4",
+  "section": "4.11",
+  "facet": "F-4.11-01",
+  "objective": "O4.5",
+  "shape": "S1",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A compliance-mandated policy preamble is sent unchanged on every request to a customer assistant, and both p95 latency and the monthly token bill are over target. The preamble cannot be shortened without legal sign-off. What should the team do?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Truncate the preamble to the sections used most often and pursue legal sign-off for the cut afterward.",
+    "family": "DISCARD"
+   },
+   {
+    "l": "B",
+    "t": "Reorder the request so the static preamble comes first and enable prompt caching on that stable prefix.",
+    "family": null
+   },
+   {
+    "l": "C",
+    "t": "Enable response streaming so the answer appears sooner and the latency figures come down.",
+    "family": "WRONG-AXIS"
+   },
+   {
+    "l": "D",
+    "t": "Summarize the preamble with an extra model call at request time to shorten what gets sent.",
+    "family": "ARCHITECTED"
+   }
+  ],
+  "whyRight": "The preamble is identical on every request, so caching that stable prefix reuses it at a fraction of the cost and latency without dropping a single mandated word. Ordering static content first is what makes the prefix cacheable at all.",
+  "whyWrong": {
+   "A": "Cutting compliance-mandated language is a regression the requirement forbids, not a saving, and pursuing sign-off after the cut has already shipped inverts the actual approval order.",
+   "C": "Streaming only changes when tokens appear on screen; it does not reduce total completion time or the token bill the stem says is over target.",
+   "D": "Summarizing at request time adds a full extra model invocation with its own cost and latency, and risks degrading the precision of mandated policy language."
+  },
+  "deepDive": null,
+  "t1Clause": "The preamble cannot be shortened without legal sign-off",
+  "t1Alt": "A",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "caching content enable first order prompt static",
+  "correct": [
+   "B"
+  ],
+  "cite": "D4 4.11"
+ },
+ {
+  "g": 37,
+  "domain": "D4",
+  "section": "4.12",
+  "facet": "F-4.12-03",
+  "objective": "O4.6",
+  "shape": "S1",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A weekly dashboard reports only overall accuracy holding flat. Logs carry no regulated or personal data, but one high-volume segment is suspected of failing beneath that trend. What should the team add?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Reconfigure alerting to trigger on segment-level rates rather than on every individual error.",
+    "family": "WRONG-AXIS"
+   },
+   {
+    "l": "B",
+    "t": "Expand stratified sampling of the high-confidence automated stream feeding the quality grading pipeline.",
+    "family": "DISCARD"
+   },
+   {
+    "l": "C",
+    "t": "Redact identifying fields at write time, set a retention window, and restrict dashboard access.",
+    "family": "EVIDENCE-MISMATCH"
+   },
+   {
+    "l": "D",
+    "t": "Add per-segment breakdowns to the dashboard so each segment's trend is visible independently.",
+    "family": null
+   }
+  ],
+  "whyRight": "The dashboard's defect is that it reports only an aggregate, exactly the masking pattern this section warns against: a flat overall number can conceal a segment failing well below bar. Per-segment breakdowns are the only option that restores segment-level visibility to the report itself.",
+  "whyWrong": {
+   "A": "Alerting cadence is a different control than dashboard reporting; the stem describes a reporting gap, not events firing individually, so this targets the wrong layer.",
+   "B": "The stated gap is reporting granularity on an already-produced number, not which cases enter the grading pipeline; expanding sampling coverage doesn't add a segment view.",
+   "C": "The stem states the logs carry no regulated or personal data, so redaction and retention controls address a risk this scenario never raises."
+  },
+  "deepDive": null,
+  "t1Clause": "Logs carry no regulated or personal data",
+  "t1Alt": "C",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "add breakdowns per segment",
+  "correct": [
+   "D"
+  ],
+  "cite": "D4 4.12"
+ },
+ {
+  "g": 38,
+  "domain": "D4",
+  "section": "4.1",
+  "facet": "F-4.1-03",
+  "objective": "O4.1",
+  "shape": "S6",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A financial-services team is replacing a manual claims-review process that a compliance director confirms currently runs at a measured 8% error rate across 40,000 claims processed monthly. Before launch, how should the new system's pass bar for that error rate be set?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Defer setting the bar until the new system's own baseline scores are available, then calibrate against them.",
+    "family": "HALF-MOVE"
+   },
+   {
+    "l": "B",
+    "t": "Set the bar at 0 per N, since this is treated as a deterministic property.",
+    "family": "EVIDENCE-MISMATCH"
+   },
+   {
+    "l": "C",
+    "t": "Re-anchor the bar to a small non-zero rate such as 0.1%, since zero is unreachable.",
+    "family": "DISCARD"
+   },
+   {
+    "l": "D",
+    "t": "Set the new system's pass bar to beat the manual process's measured 8% error rate.",
+    "family": null
+   }
+  ],
+  "whyRight": "The process being replaced already has a measured real-world error rate, which is the strongest available anchor for a bar. The replacement's pass bar should be tied to and required to beat that 8%, not set independently of the process it succeeds.",
+  "whyWrong": {
+   "A": "Setting the bar only after the new system's own results are in describes what happened rather than gating the decision; the 8% baseline was available before launch.",
+   "B": "Zero per N applies to a deterministic property like a forbidden PII field, not a statistical error rate on a process already measured at 8%.",
+   "C": "An arbitrary small rate discards the process's own measured 8% baseline, which is a stronger and more relevant anchor than an unrelated placeholder figure."
+  },
+  "deepDive": null,
+  "t1Clause": "currently runs at a measured 8% error rate",
+  "t1Alt": "C",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "8 bar beating tied",
+  "correct": [
+   "D"
+  ],
+  "cite": "D4 4.1"
+ },
+ {
+  "g": 39,
+  "domain": "D4",
+  "section": "4.5",
+  "facet": "F-4.5-02",
+  "objective": "O4.2",
+  "shape": "S6",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A legal-research assistant cites statute sections in every answer; compliance counsel needs proof each citation is drawn precisely from the statute text, not merely phrased in a formal register, before a filing deadline. Which instrument should validate each citation?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Score citations against a detailed grading rubric using a model judge.",
+    "family": "ARCHITECTED"
+   },
+   {
+    "l": "B",
+    "t": "Run a deterministic check that each cited span exists verbatim in the source document.",
+    "family": null
+   },
+   {
+    "l": "C",
+    "t": "Compute a lexical overlap score between each citation and its claimed source passage.",
+    "family": "HALF-MOVE"
+   },
+   {
+    "l": "D",
+    "t": "Route a sample of cited outputs to human reviewers for spot-checking.",
+    "family": "WRONG-AXIS"
+   }
+  ],
+  "whyRight": "Citation validity is exact and machine-decidable: either the string appears verbatim in the source document or it does not. A deterministic check settles it precisely and for free, where a model judge has been measured at roughly chance-level accuracy on this property.",
+  "whyWrong": {
+   "A": "A rubric-scored model judge introduces grader error into a property code can settle exactly; judges have been measured at roughly chance on citation validity.",
+   "C": "A lexical overlap score is a similarity measure, not an existence check; a citation can score high on overlap while never appearing verbatim in the source.",
+   "D": "Human review is the calibration instrument for this section, not the scaling one; spending it on an exact check the code already settles wastes the scarcest resource."
+  },
+  "deepDive": null,
+  "t1Clause": "not merely phrased in a formal register",
+  "t1Alt": "A",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "check deterministic string verbatim",
+  "correct": [
+   "B"
+  ],
+  "cite": "D4 4.5"
+ },
+ {
+  "g": 40,
+  "domain": "D4",
+  "section": "4.9",
+  "facet": "F-4.9-06",
+  "objective": "O4.3",
+  "shape": "S3",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A prompt-change A/B test completes its full declared 14-day run with no guardrail breach. The aggregate primary metric improves 1.5 points, but the segment carrying the highest support-ticket volume regresses 12 points. What should the team do?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Ship the change now that the full declared run is complete and no guardrail was breached.",
+    "family": "HALF-MOVE"
+   },
+   {
+    "l": "B",
+    "t": "Continue monitoring through another full cycle before deciding, since an early favourable read should not be trusted.",
+    "family": "EVIDENCE-MISMATCH"
+   },
+   {
+    "l": "C",
+    "t": "Do not ship on the aggregate result; investigate why the highest-volume segment regressed before deciding.",
+    "family": null
+   },
+   {
+    "l": "D",
+    "t": "Ship the change to every segment except the one that regressed, leaving its rollout for later.",
+    "family": "REPAIR"
+   }
+  ],
+  "whyRight": "Segment masking applies to A/B results exactly as it does to accuracy: a 1.5-point aggregate gain sitting on top of a 12-point regression in the highest-volume segment can still be a net harm to most affected users. The team must attribute the split before deciding, not average over it.",
+  "whyWrong": {
+   "A": "A completed run with no guardrail breach is necessary but not sufficient; the stem's own segment-level result still needs to be read before shipping.",
+   "B": "This is the right move at day 4 of a 14-day run — but this run already completed its full declared duration; no early read remains to distrust.",
+   "D": "Carving out the regressed segment ships everywhere else without ever explaining the regression, so the same masked harm can recur in the next release."
+  },
+  "deepDive": null,
+  "t1Clause": "the segment carrying the highest support-ticket volume regresses 12 points",
+  "t1Alt": "A",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "aggregate do ship",
+  "correct": [
+   "C"
+  ],
+  "cite": "D4 4.9"
+ },
+ {
+  "g": 41,
+  "domain": "D4",
+  "section": "4.10",
+  "facet": "F-4.10-03",
+  "objective": "O4.4",
+  "shape": "S4",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A customer-support assistant retrieves the correct policy passages and states accurate facts, but omits the numbered remediation steps compliance mandates. Retrieval Recall@k is verified at target and the facts check out. What is the most likely fix layer?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Escalate to a higher-capability model to produce more thorough, complete responses.",
+    "family": "DISCARD"
+   },
+   {
+    "l": "B",
+    "t": "Re-index the corpus and re-verify retrieval chunk boundaries.",
+    "family": "EVIDENCE-MISMATCH"
+   },
+   {
+    "l": "C",
+    "t": "Add explicit formatting instructions specifying the required steps to the system prompt.",
+    "family": null
+   },
+   {
+    "l": "D",
+    "t": "Add few-shot examples demonstrating the required response format.",
+    "family": "WRONG-AXIS"
+   }
+  ],
+  "whyRight": "The facts are accurate and retrieval already clears its bar, which rules out the data and retrieval layer entirely. The missing element is a required output structure, which this order of diagnosis assigns to the prompt and instruction layer, not to the model.",
+  "whyWrong": {
+   "A": "Retrieval is already verified and the facts are correct, so nothing implicates the model; escalating discards a component that was never shown to be at fault.",
+   "B": "The stem already states Recall@k is verified at target, so the retrieval layer is cleared; re-indexing targets a layer the evidence has already ruled out.",
+   "D": "Few-shot examples fix formatting that stays inconsistent despite explicit instructions; here the steps are missing outright, so a plain instruction fix comes first."
+  },
+  "deepDive": null,
+  "t1Clause": "Retrieval Recall@k is verified at target and the facts check out",
+  "t1Alt": "B",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "",
+  "correct": [
+   "C"
+  ],
+  "cite": "D4 4.10"
+ },
+ {
+  "g": 42,
+  "domain": "D5",
+  "section": "5.2",
+  "facet": "F-5.2-02",
+  "objective": "O5.1",
+  "shape": "S8",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A finance-operations agent can initiate wire transfers to external vendor accounts, needed for only a small share of its weekly tasks; an erroneous transfer is difficult to reverse and could trigger regulatory notification. How should the capability be structured?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Have the model emit a structured transfer request that a separate service holding the credential validates and executes.",
+    "family": null
+   },
+   {
+    "l": "B",
+    "t": "Keep the transfer credential in the agent's environment and log every invocation for the finance team to audit.",
+    "family": "DETECTIVE-FOR-PREVENTIVE"
+   },
+   {
+    "l": "C",
+    "t": "Keep the credential in the agent's environment but require a confirmation step before the transfer executes.",
+    "family": "HALF-MOVE"
+   },
+   {
+    "l": "D",
+    "t": "Remove the transfer capability entirely, since wire transfers carry too much regulatory risk for an agent to initiate.",
+    "family": "DISCARD"
+   }
+  ],
+  "whyRight": "The agent needs the transfer capability only occasionally, and a wrong transfer is hard to reverse, so privilege has to stay outside the model while the capability remains available. The model proposes; a separate service holding the credential validates and executes, keeping consequential misuse out of the model's hands.",
+  "whyWrong": {
+   "B": "Logging records a wire transfer after it already executed. The task states the transfer is difficult to reverse, so detecting misuse after the fact does not prevent the harm.",
+   "C": "A confirmation step leaves the credential and the capability inside the agent's environment, and the safeguard's strength depends entirely on who is confirming and how carefully.",
+   "D": "The agent genuinely needs the capability for part of its weekly workload; removing it entirely breaks a task the design still has to support."
+  },
+  "deepDive": null,
+  "t1Clause": "an erroneous transfer is difficult to reverse and could trigger regulatory notification",
+  "t1Alt": "B",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "credential emits executes holding model request separate service structured validates",
+  "correct": [
+   "A"
+  ],
+  "cite": "D5 5.2"
+ },
+ {
+  "g": 43,
+  "domain": "D5",
+  "section": "5.6",
+  "facet": "F-5.6-01",
+  "objective": "O5.2",
+  "shape": "S3",
+  "direction": "normal",
+  "format": "multi",
+  "selectN": 2,
+  "stem": "A ten-step compliance-summary pipeline verifies retrieved documents before the compliance officer's weekly sign-off. Each step tests at 96% alone, yet finished summaries are accurate only two times in three, and errors began the week the corpus was reindexed. Select two.",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Check the pinned model version and run the regression set to confirm a version change.",
+    "family": "EVIDENCE-MISMATCH"
+   },
+   {
+    "l": "B",
+    "t": "Investigate the retrieval pipeline — chunk boundaries, embedding version, and index freshness.",
+    "family": null
+   },
+   {
+    "l": "C",
+    "t": "Insert deterministic validation checkpoints mid-chain to interrupt the compounding across the ten steps.",
+    "family": null
+   },
+   {
+    "l": "D",
+    "t": "Add an instruction directing the pipeline to rely only on verified context before summarizing.",
+    "family": "REPAIR"
+   }
+  ],
+  "whyRight": "Both symptoms trace to a pipeline, not the model. The reindex timing points at retrieval — chunk boundaries, embedding version, index freshness — and the per-step accuracy explains the compounding drop; inserting checkpoints mid-chain interrupts it rather than depending on ten sequential steps each staying error-free.",
+  "whyWrong": {
+   "A": "The reindex timing points directly at retrieval — chunk boundaries, embedding version, and index freshness — not a version change; a version check answers a question this timing evidence does not raise.",
+   "D": "An instruction to rely on verified context does not fix wrong context from a stale index, and it does nothing to interrupt the ten-step compounding."
+  },
+  "deepDive": null,
+  "t1Clause": "errors began the week the corpus was reindexed",
+  "t1Alt": "A",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "",
+  "correct": [
+   "B",
+   "C"
+  ],
+  "cite": "D5 5.6"
+ },
+ {
+  "g": 44,
+  "domain": "D5",
+  "section": "5.8",
+  "facet": "F-5.8-03",
+  "objective": "O5.3",
+  "shape": "S2",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "An extraction system auto-approves high-confidence, low-consequence outputs at 40,000 documents a day. Leadership wants assurance the auto-approve threshold remains accurate without adding reviewer headcount. Which approach satisfies both?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Route a random 10 percent sample of every output to review, regardless of confidence or consequence.",
+    "family": "WRONG-AXIS"
+   },
+   {
+    "l": "B",
+    "t": "Continuously audit a small random sample of the auto-approved stream on a fixed schedule.",
+    "family": null
+   },
+   {
+    "l": "C",
+    "t": "Review 100 percent of auto-approved outputs until confidence in the threshold is firmly established.",
+    "family": "OVERSPEC"
+   },
+   {
+    "l": "D",
+    "t": "Expand review coverage only when reviewers happen to flag a concern during their shift.",
+    "family": "DISCARD"
+   }
+  ],
+  "whyRight": "The auto-approve threshold needs its own ongoing check, separate from routing new items by confidence and consequence. A continuous small sample audited on a schedule measures the unsupervised path directly, catching drift early while adding only a fraction of full review's headcount.",
+  "whyWrong": {
+   "A": "Uniform sampling across every output encounters rare, costly cases only in proportion to their rarity, and it duplicates review effort the confidence-and-consequence routing already directs elsewhere.",
+   "C": "Full review of every auto-approved item restores the headcount the auto-approve threshold exists to save, and it names no exit criterion for returning to sampled monitoring.",
+   "D": "Coverage that depends on a reviewer noticing something during an unrelated shift has no fixed cadence and cannot demonstrate the threshold is still calibrated."
+  },
+  "deepDive": null,
+  "t1Clause": "40,000 documents a day",
+  "t1Alt": "C",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "approved audited auto continuous sample schedule small stream",
+  "correct": [
+   "B"
+  ],
+  "cite": "D5 5.8"
+ },
+ {
+  "g": 45,
+  "domain": "D5",
+  "section": "5.4",
+  "facet": "F-5.4-02",
+  "objective": "O5.4",
+  "shape": "S8",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A clinical documentation assistant drafts visit narratives for a hospital's 40-physician practice, sending each transcript directly to the model endpoint with patient names, dates of birth, and medical record numbers intact. Which change brings the pipeline into HIPAA alignment?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Strip direct identifiers before the call, send the de-identified narrative, and reattach and log access locally.",
+    "family": null
+   },
+   {
+    "l": "B",
+    "t": "Add a system-prompt instruction directing the assistant never to repeat identifiers it receives in the transcript.",
+    "family": "REPAIR"
+   },
+   {
+    "l": "C",
+    "t": "Treat the narratives as already de-identified, since the practice's records system strips identifiers before export.",
+    "family": "EVIDENCE-MISMATCH"
+   },
+   {
+    "l": "D",
+    "t": "Continue sending full transcripts, but deploy the model only in an environment authorized for federal use.",
+    "family": "WRONG-AXIS"
+   }
+  ],
+  "whyRight": "HIPAA binds what leaves the covered boundary, not what happens to it afterward. Stripping direct identifiers before the call keeps protected health information inside the boundary; the de-identified narrative and a local re-identification map let the practice reattach and log access without ever transmitting PHI.",
+  "whyWrong": {
+   "B": "A prompt instruction is evaluated only after identifiers are already in the outbound request; it depends on the assistant behaving correctly rather than preventing the transmission.",
+   "C": "The stem states the identifiers are intact when sent, not stripped at export; treating the narrative as already de-identified contradicts what the scenario itself describes.",
+   "D": "FedRAMP governs where federal processing may run; this practice's requirement is what leaves the boundary in the payload, which an authorized deployment environment does not address."
+  },
+  "deepDive": null,
+  "t1Clause": "sending each transcript directly to the model endpoint with patient names, dates of birth, and medical record numbers intact",
+  "t1Alt": "C",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "access before call direct identifiers locally log narrative reattach send strip",
+  "correct": [
+   "A"
+  ],
+  "cite": "D5 5.4"
+ },
+ {
+  "g": 46,
+  "domain": "D5",
+  "section": "5.11",
+  "facet": "F-5.11-01",
+  "objective": "O5.5",
+  "shape": "S7",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A financial-services regulator opens an inquiry into why an automated system declined a specific loan applicant last quarter, and asks the team to explain the decision within 10 business days. What should the team provide?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Re-run the case and have the model generate a fresh explanation of its reasoning for the regulator.",
+    "family": "REPAIR"
+   },
+   {
+    "l": "B",
+    "t": "Provide the system prompt and the model card describing how the system generally makes decisions.",
+    "family": "HALF-MOVE"
+   },
+   {
+    "l": "C",
+    "t": "Commission an independent third-party audit of the entire model's fairness before responding to the inquiry.",
+    "family": "OVERSPEC"
+   },
+   {
+    "l": "D",
+    "t": "Retrieve the stored decision trace for that applicant — the inputs used, evidence retrieved, model version, score, and threshold.",
+    "family": null
+   }
+  ],
+  "whyRight": "The regulator needs what actually determined this applicant's outcome, not a fresh account of it. The stored trace — the inputs used, retrieved evidence, model and prompt version, the score, and the threshold in force — reconstructs the real decision path within the response window.",
+  "whyWrong": {
+   "A": "A fresh explanation is generated after the fact by the same non-deterministic process that produced the decision, and it can be confidently wrong about what actually happened.",
+   "B": "The prompt and model card describe how the system behaves in general; neither says anything about the input, evidence, or threshold that produced this applicant's specific outcome.",
+   "C": "A fairness audit answers a broader question than the one the regulator asked and cannot be completed inside a 10-day inquiry window; it does not account for this decision."
+  },
+  "deepDive": null,
+  "t1Clause": "A financial-services regulator opens an inquiry",
+  "t1Alt": "A",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "fields produce rule score stored threshold trace used versions",
+  "correct": [
+   "D"
+  ],
+  "cite": "D5 5.11"
+ },
+ {
+  "g": 47,
+  "domain": "D5",
+  "section": "5.2",
+  "facet": "F-5.2-03",
+  "objective": "O5.1",
+  "shape": "S8",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A support agent runs a tag-update tool on thousands of tickets a day; a mistaken tag is fixed by re-editing it, and no downstream system depends on the tag being accurate in real time. Which control fits the tool's risk?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Remove the tag-update tool and require a person to edit every tag by hand.",
+    "family": "DISCARD"
+   },
+   {
+    "l": "B",
+    "t": "Require a human to approve every tag edit before the agent applies it.",
+    "family": "ARCHITECTED"
+   },
+   {
+    "l": "C",
+    "t": "Keep the tag-update tool in the agent's toolset and log every edit for later review.",
+    "family": null
+   },
+   {
+    "l": "D",
+    "t": "Add an hourly rate limit on how many tag edits the agent can make.",
+    "family": "OVERSPEC"
+   }
+  ],
+  "whyRight": "The capability is used routinely, misuse only mis-tags a ticket, and re-editing fully reverses it, so removal would break the task and a human gate would spend approval capacity where the consequence does not justify it; logging matches the risk the section describes.",
+  "whyWrong": {
+   "A": "Removal fits a tool the task never needs; here the agent needs tag edits on every ticket, so removing it breaks the workflow rather than matching the actual risk.",
+   "B": "A human-approval gate suits capabilities where misuse is consequential; here each mistake is a reversible re-edit with no downstream dependency, so the gate spends capacity the risk does not require.",
+   "D": "A rate limit bounds how often edits happen, not what a mistaken edit costs; volume was never the stated risk, so the limit leaves the actual consequence question unaddressed."
+  },
+  "deepDive": null,
+  "t1Clause": "a mistaken tag is fixed by re-editing it, and no downstream system depends on the tag being accurate in real time",
+  "t1Alt": "B",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "add keep logging tool",
+  "correct": [
+   "C"
+  ],
+  "cite": "D5 5.2"
+ },
+ {
+  "g": 48,
+  "domain": "D5",
+  "section": "5.6",
+  "facet": "F-5.6-02",
+  "objective": "O5.2",
+  "shape": "S3",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A support assistant loses track of a detail given two turns earlier, in a six-turn exchange inside the context window; neither the code nor the model version changed this week, and the fix is due within a two-day SLA. What is the right next step?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Confirm whether the conversation exceeded the model's context window.",
+    "family": "EVIDENCE-MISMATCH"
+   },
+   {
+    "l": "B",
+    "t": "Check whether the pinned model version changed this week.",
+    "family": "WRONG-AXIS"
+   },
+   {
+    "l": "C",
+    "t": "Confirm whether the application is resending the full prior conversation history with each call.",
+    "family": null
+   },
+   {
+    "l": "D",
+    "t": "Add a running summary of the conversation to the prompt at the start of each turn.",
+    "family": "REPAIR"
+   }
+  ],
+  "whyRight": "The symptom is application-side: a short exchange inside the context window with no model or code change loses a detail from two turns back, which points at whether the app is resending full history with each call rather than a model or retrieval fault.",
+  "whyWrong": {
+   "A": "The stem states the exchange stays inside the context window, so a length-based cause is already ruled out by the given evidence; the symptom points at the application layer instead.",
+   "B": "This check fits a situation where behaviour changed with no code deployment; the stem already confirms the version was stable, so the drift it would test for is ruled out.",
+   "D": "Summarising the conversation may mask the symptom without diagnosing it; if the history genuinely is not resent, later turns still lose the earlier context the summary did not capture."
+  },
+  "deepDive": null,
+  "t1Clause": "neither the code nor the model version changed this week",
+  "t1Alt": "B",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "application history resending",
+  "correct": [
+   "C"
+  ],
+  "cite": "D5 5.6"
+ },
+ {
+  "g": 49,
+  "domain": "D5",
+  "section": "5.8",
+  "facet": "F-5.8-04",
+  "objective": "O5.3",
+  "shape": "S2",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A claims team handles 25,000 submissions a day; the review staff can manually check at most 2,000 a day, and every high-value claim error must be caught before payout. A manager proposes reviewing all 25,000 by hand. What replaces this plan?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Cap the number of claims accepted each day so the review staff can check all of them.",
+    "family": "DISCARD"
+   },
+   {
+    "l": "B",
+    "t": "Continuously sample a small percentage of submissions and audit them on a schedule.",
+    "family": "OVERSPEC"
+   },
+   {
+    "l": "C",
+    "t": "Auto-approve high-confidence, low-value claims and route every high-value or low-confidence claim to the review staff.",
+    "family": null
+   },
+   {
+    "l": "D",
+    "t": "Have staff manually review every submission; at this volume, full review is still the safer baseline.",
+    "family": "EVIDENCE-MISMATCH"
+   }
+  ],
+  "whyRight": "The volume makes blanket review unstaffable, and the consequence requirement means some errors cannot be missed, so routing on both variables at once auto-approves what is safe and sends every high-value or uncertain claim to the review capacity that actually exists.",
+  "whyWrong": {
+   "A": "Capping accepted volume discards a stated business requirement instead of fixing the review policy; the constraint is to review well at the given volume, not shrink it.",
+   "B": "Sampling measures whether an existing auto-approval threshold still holds; used as the primary routing mechanism, it lets high-value errors through in proportion to their rarity, not their cost.",
+   "D": "Full manual review is correct only when volume is genuinely low; at 25,000 submissions a day against 2,000 daily capacity, it is the unstaffable option the volume figure rules out."
+  },
+  "deepDive": null,
+  "t1Clause": "a claims team handles 25,000 submissions a day",
+  "t1Alt": "D",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "",
+  "correct": [
+   "C"
+  ],
+  "cite": "D5 5.8"
+ },
+ {
+  "g": 50,
+  "domain": "D5",
+  "section": "5.4",
+  "facet": "F-5.4-03",
+  "objective": "O5.4",
+  "shape": "S8",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "An agency's production system runs in a FedRAMP Moderate-authorised environment. Engineers want to swap in a newly released model mid-contract because it scores higher on their benchmark suite, but that release has not completed authorisation at the required impact level. What should the team do?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Deploy the new model now and add enhanced monitoring and logging around its outputs.",
+    "family": "ARCHITECTED"
+   },
+   {
+    "l": "B",
+    "t": "Strip direct identifiers from requests before sending them to the new model, and continue routing production traffic to it.",
+    "family": "WRONG-AXIS"
+   },
+   {
+    "l": "C",
+    "t": "Keep the current authorised model in production and pursue authorisation for the new release separately.",
+    "family": null
+   },
+   {
+    "l": "D",
+    "t": "Deploy the new model and add alerts that flag any regulated data it processes for review.",
+    "family": "DETECTIVE-FOR-PREVENTIVE"
+   }
+  ],
+  "whyRight": "FedRAMP authorises the environment, not the model or its payload; the new release cannot process this agency's workload until its own authorisation at the required impact level completes, so production keeps running on the model that already clears that bar.",
+  "whyWrong": {
+   "A": "Authorisation is a status of the environment itself; monitoring and logging added on top of an unauthorised deployment observe the exposure without closing it, and confer no authorisation.",
+   "B": "FedRAMP binds where processing happens, not what the request contains; stripping identifiers changes the payload but the new model still runs outside an environment authorised for this workload.",
+   "D": "Alerts confirm regulated data reached an unauthorised environment after the fact; the requirement is that the processing never happens there, not that the crossing gets flagged for later review."
+  },
+  "deepDive": null,
+  "t1Clause": "that release has not completed authorisation at the required impact level",
+  "t1Alt": "A",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "authorised data environment keep model out route through unavailable",
+  "correct": [
+   "C"
+  ],
+  "cite": "D5 5.4"
+ },
+ {
+  "g": 51,
+  "domain": "D6",
+  "section": "6.3",
+  "facet": "F-6.3-02",
+  "objective": "O6.1",
+  "shape": "S7",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A payments risk lead must approve how the fraud-review threshold is tuned before checkout rollout. A false rejection blocks a legitimate customer's payment; a missed fraud case is caught and reversed the next business day. Which threshold policy should the architect recommend?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Return to discovery to re-price both error directions before making any threshold decision.",
+    "family": "DISCARD"
+   },
+   {
+    "l": "B",
+    "t": "Optimize the model for the highest overall accuracy across both error types on the evaluation set.",
+    "family": "WRONG-AXIS"
+   },
+   {
+    "l": "C",
+    "t": "Bias the threshold toward recall and route flagged cases to human review before blocking any payment.",
+    "family": "EVIDENCE-MISMATCH"
+   },
+   {
+    "l": "D",
+    "t": "Bias the threshold toward precision, accepting more missed fraud cases to avoid blocking legitimate payments.",
+    "family": null
+   }
+  ],
+  "whyRight": "The false rejection is irreversible at the moment of checkout, while a missed fraud case is caught and reversed the next day; the threshold should minimize the costlier, unrecoverable error rather than treat both directions as equally acceptable.",
+  "whyWrong": {
+   "A": "The stem already prices both directions — irreversible versus next-day recoverable — so returning to discovery discards evidence already given instead of acting on it.",
+   "B": "A flat accuracy target weights both error directions equally, but the stem states one direction is irreversible and the other recoverable.",
+   "C": "This is correct only when missed fraud is the costlier error; here false rejection is the irreversible, costlier one, so recall-biasing optimizes the wrong direction."
+  },
+  "deepDive": null,
+  "t1Clause": "a missed fraud case is caught and reversed the next business day",
+  "t1Alt": "C",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "action bias higher precision set threshold toward",
+  "correct": [
+   "D"
+  ],
+  "cite": "D6 6.3"
+ },
+ {
+  "g": 52,
+  "domain": "D6",
+  "section": "6.4",
+  "facet": "F-6.4-03",
+  "objective": "O6.2",
+  "shape": "S7",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A CFO is deciding whether to renew a document-processing contract and needs a defensible number before the board meeting. The architect currently declines to quote any accuracy figure, citing wide variance across document types. What should the architect do instead?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Report figures segmented by document type, the measurement method, and the end-to-end outcome including human review.",
+    "family": null
+   },
+   {
+    "l": "B",
+    "t": "Report a single blended accuracy figure, since it is honest given the stated method and evaluation set.",
+    "family": "EVIDENCE-MISMATCH"
+   },
+   {
+    "l": "C",
+    "t": "Report only the underlying model's classification accuracy, since that is the metric the CFO originally asked about.",
+    "family": "HALF-MOVE"
+   },
+   {
+    "l": "D",
+    "t": "Decline to provide any figure until the sponsor accepts that accuracy depends on document type.",
+    "family": "DISCARD"
+   }
+  ],
+  "whyRight": "The CFO has a budget decision to make and cannot make it on a qualitative answer; segmented figures with the measurement basis and end-to-end outcome, including the human-review step, give a defensible number to plan against.",
+  "whyWrong": {
+   "B": "The stem states performance varies sharply by document type, so a single blended figure is contradicted by the evidence already given, not merely imprecise.",
+   "C": "This states a real figure but omits the human-review step and the end-to-end outcome, which is what the CFO's budget decision actually depends on.",
+   "D": "The CFO's renewal decision needs a number to plan against; declining to quantify is not acceptable even though the underlying variability claim is true."
+  },
+  "deepDive": null,
+  "t1Clause": "citing wide variance across document types",
+  "t1Alt": "B",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "",
+  "correct": [
+   "A"
+  ],
+  "cite": "D6 6.4"
+ },
+ {
+  "g": 53,
+  "domain": "D6",
+  "section": "6.10",
+  "facet": "F-6.10-01",
+  "objective": "O6.3",
+  "shape": "S6",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "After a polished pre-launch demo, a sponsor now assumes the system performs at that level for all incoming volume and is building next quarter's staffing plan on that assumption. What should the architect put in place before rollout?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Establish a recurring review that reports real performance on real production inputs against the agreed acceptance criteria.",
+    "family": null
+   },
+   {
+    "l": "B",
+    "t": "Send a detailed written memo to the sponsor explaining the system's real performance and current limitations.",
+    "family": "HALF-MOVE"
+   },
+   {
+    "l": "C",
+    "t": "Restructure users' ad hoc feedback into a structured log of input, output, expected output, and reviewer feeding the evaluation set.",
+    "family": "WRONG-AXIS"
+   },
+   {
+    "l": "D",
+    "t": "Have the sponsor formally accept the demo's results as the system's expected production baseline going forward.",
+    "family": "DISCARD"
+   }
+  ],
+  "whyRight": "Expectations re-inflate after every demonstration, so a one-time correction cannot hold against continuous drift; only a recurring measurement against agreed criteria keeps the sponsor's plan anchored to real production performance rather than a single favorable demo.",
+  "whyWrong": {
+   "B": "A memo corrects today's understanding but expectations re-inflate at the next demonstration; the table treats a one-time correction as necessary, not sufficient, against continuous drift.",
+   "C": "This is the right fix for scattered chat-channel complaints, but the stem describes overconfidence from a clean demo, not ungathered failure reports.",
+   "D": "This locks in a single favorable measurement as a standing commitment instead of establishing the recurring review that continuous expectation drift actually requires."
+  },
+  "deepDive": null,
+  "t1Clause": "After a polished pre-launch demo",
+  "t1Alt": "C",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "against agreed criteria establish inputs performance real recurring review showing",
+  "correct": [
+   "A"
+  ],
+  "cite": "D6 6.10"
+ },
+ {
+  "g": 54,
+  "domain": "D6",
+  "section": "6.7",
+  "facet": "F-6.7-02",
+  "objective": "O6.4",
+  "shape": "S3",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A model-tier decision was recorded a year ago under a strict latency ceiling that has since been relaxed by the platform team. The evaluation numbers and the rejected alternatives from that decision are unchanged. What should the architect check first?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Schedule a walkthrough session where the original architects explain their reasoning to the questioning team.",
+    "family": "HALF-MOVE"
+   },
+   {
+    "l": "B",
+    "t": "Re-run the original latency and quality benchmark from scratch on the current infrastructure.",
+    "family": "DISCARD"
+   },
+   {
+    "l": "C",
+    "t": "Move immediately to a higher-capability model, since the ceiling that constrained the original choice no longer applies.",
+    "family": "ARCHITECTED"
+   },
+   {
+    "l": "D",
+    "t": "Retrieve the decision record's stated constraint and re-evaluate the original trade-off now that the ceiling has moved.",
+    "family": null
+   }
+  ],
+  "whyRight": "The record exists for exactly this moment: when a driving constraint changes, checking what was recorded against the new condition is the fastest way to tell whether the original decision still holds, before any component is re-built.",
+  "whyWrong": {
+   "A": "A walkthrough transfers the reasoning once to whoever attends, but it goes stale immediately and gives the team nothing durable to check the next time a constraint moves.",
+   "B": "This discards a year of recorded evaluation numbers and rebuilds them before checking whether the ceiling change even affects the original trade-off.",
+   "C": "This spends money on a capability upgrade before confirming, against the recorded trade-off, whether the relaxed ceiling actually changes which tier is warranted."
+  },
+  "deepDive": null,
+  "t1Clause": "The evaluation numbers and the rejected alternatives from that decision are unchanged",
+  "t1Alt": "B",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "against check constraint evaluate re recorded",
+  "correct": [
+   "D"
+  ],
+  "cite": "D6 6.7"
+ },
+ {
+  "g": 55,
+  "domain": "D6",
+  "section": "6.11",
+  "facet": "F-6.11-02",
+  "objective": "O6.5",
+  "shape": "S7",
+  "direction": "normal",
+  "format": "multi",
+  "selectN": 2,
+  "stem": "A successful pilot served 60 users: a 1-in-500 failure occurred twice across 200 cases, and human review absorbed 12% of pilot volume. Before recommending rollout to 1,200 users, select two points the architect's report to sponsor leadership must include.",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Rate limits and infrastructure capacity for 1,200-user volume are necessary and should headline the report as the binding constraint.",
+    "family": "HALF-MOVE"
+   },
+   {
+    "l": "B",
+    "t": "The report should recommend a higher-capability model ahead of rollout to preempt the wider input variety at scale.",
+    "family": "ARCHITECTED"
+   },
+   {
+    "l": "C",
+    "t": "The 1-in-500 failure rate should be planned for as a routine, several-times-daily event at full volume.",
+    "family": null
+   },
+   {
+    "l": "D",
+    "t": "The 12% human-review load should be converted into a staffing line sized for 1,200-user volume.",
+    "family": null
+   }
+  ],
+  "whyRight": "Both are pilot-to-scale assumptions that break at higher volume: a rare failure becomes routine at scale, and human review invisible in the pilot must become an explicit staffing line before the budget is approved by leadership.",
+  "whyWrong": {
+   "A": "Capacity planning is necessary but the table explicitly treats it as the visible constraint, not the binding one — the input-distribution risk is what actually determines whether rollout succeeds.",
+   "B": "This spends on a bigger model before anyone has characterised the inputs at 1,200-user volume, skipping the assumption audit the report is meant to deliver."
+  },
+  "deepDive": null,
+  "t1Clause": "human review absorbed 12% of pilot volume",
+  "t1Alt": "A",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "",
+  "correct": [
+   "C",
+   "D"
+  ],
+  "cite": "D6 6.11"
+ },
+ {
+  "g": 56,
+  "domain": "D6",
+  "section": "6.3",
+  "facet": "F-6.3-03",
+  "objective": "O6.1",
+  "shape": "S7",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A compliance team asks an architect to commit a fraud-triage model to \"95% accuracy\" before the next audit, without stating whether a missed case or a false alarm costs more. What should happen before a threshold is set?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Return to discovery and price both error directions before setting any threshold.",
+    "family": null
+   },
+   {
+    "l": "B",
+    "t": "Bias the model toward recall and route every flagged case to human review.",
+    "family": "HALF-MOVE"
+   },
+   {
+    "l": "C",
+    "t": "Commit to the 95% target, since both error directions are likely low-cost and easily corrected.",
+    "family": "EVIDENCE-MISMATCH"
+   },
+   {
+    "l": "D",
+    "t": "Benchmark several candidate models against the 95% figure to find the one that reaches it most reliably.",
+    "family": "WRONG-AXIS"
+   }
+  ],
+  "whyRight": "The sponsor has stated a number but not which error direction costs more; a flat accuracy target cannot encode that asymmetry, so pricing both directions and letting the ratio set the threshold and review placement comes before any commitment is made.",
+  "whyWrong": {
+   "B": "Biasing toward recall is correct once the asymmetry is known and priced; here neither direction's cost has been established, so the direction chosen is a guess.",
+   "C": "The stem states the costs are unstated, not that they are low; assuming both directions are cheap contradicts what the compliance team actually said.",
+   "D": "A benchmark produces a number before there is a target error cost to interpret it against, the same gap a bare accuracy figure already has."
+  },
+  "deepDive": null,
+  "t1Clause": "without stating whether a missed case or a false alarm costs more",
+  "t1Alt": "B",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "both directions discovery price return",
+  "correct": [
+   "A"
+  ],
+  "cite": "D6 6.3"
+ },
+ {
+  "g": 57,
+  "domain": "D6",
+  "section": "6.6",
+  "facet": "F-6.6-02",
+  "objective": "O6.2",
+  "shape": "S7",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A product lead confirms the disputed-claims segment carries no regulator attestation requirement, yet a fifth of cases still route to a reviewer even as model accuracy keeps improving. What should the architect tell them?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Explain that AI systems are probabilistic and human review remains a safety best practice for this segment.",
+    "family": "HALF-MOVE"
+   },
+   {
+    "l": "B",
+    "t": "Say the system cannot verify its own output against ground truth, and that better evaluation data could close it.",
+    "family": null
+   },
+   {
+    "l": "C",
+    "t": "Commit to removing the reviewer once accuracy on this segment crosses a stated threshold.",
+    "family": "OVERSPEC"
+   },
+   {
+    "l": "D",
+    "t": "Refuse to remove the reviewer, citing the segment's regulatory attestation requirement, and quantify what the segment is worth.",
+    "family": "EVIDENCE-MISMATCH"
+   }
+  ],
+  "whyRight": "The segment's limit is that the system cannot verify its own output against ground truth, not a missing attestation; naming that distinction points to the actual remedy, richer evaluation data, instead of a generic caution or a false regulatory citation.",
+  "whyWrong": {
+   "A": "This is true of AI systems generally but names nothing specific; the stakeholder still cannot tell whether this segment is closable or a standing limit.",
+   "C": "Accuracy improving is not the same as having verified ground truth; committing to a threshold promises a guarantee the missing evaluation data does not yet support.",
+   "D": "The stem states no regulator attestation applies to this segment; citing one as the reason for keeping the reviewer contradicts the fact already given."
+  },
+  "deepDive": null,
+  "t1Clause": "carries no regulator attestation requirement",
+  "t1Alt": "D",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "against cannot cases check ground output own say so system these truth",
+  "correct": [
+   "B"
+  ],
+  "cite": "D6 6.6"
+ },
+ {
+  "g": 58,
+  "domain": "D6",
+  "section": "6.10",
+  "facet": "F-6.10-03",
+  "objective": "O6.3",
+  "shape": "S6",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A support team has logged the input, the output, the expected output, and a reviewer's note for every user-reported failure in a shared tracker for six months, but the pre-release evaluation set has not grown since launch. What does this represent?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "A working feedback loop, since every case already carries an input, an output, and a reviewer's note.",
+    "family": "EVIDENCE-MISMATCH"
+   },
+   {
+    "l": "B",
+    "t": "Restructure this as a loop that captures input, output, expected output, and reviewer, then feeds the evaluation set.",
+    "family": "WRONG-AXIS"
+   },
+   {
+    "l": "C",
+    "t": "Sufficient, because a named product owner already reviews the tracker weekly and can act on trends.",
+    "family": "DISCARD"
+   },
+   {
+    "l": "D",
+    "t": "A broken loop: the system stays measured against an evaluation set that diverges further from production inputs every week.",
+    "family": null
+   }
+  ],
+  "whyRight": "The tracker already captures each case's input, output, expected output, and reviewer note, so the defect is not structural; the loop is broken because none of that captured detail is feeding the evaluation set, which keeps aging against a population the system no longer sees.",
+  "whyWrong": {
+   "A": "The stem states the evaluation set has not grown since launch; calling the arrangement working directly contradicts that stated fact.",
+   "B": "That rebuild is the fix when nothing is being captured yet; here input, output, expected output, and reviewer notes already exist, and the missing link is the feed to the evaluation set.",
+   "C": "A weekly review of the tracker is not the same mechanism as growing the evaluation set; the two remain disconnected regardless of how often anyone reads the tracker."
+  },
+  "deepDive": null,
+  "t1Clause": "the expected output",
+  "t1Alt": "B",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "",
+  "correct": [
+   "D"
+  ],
+  "cite": "D6 6.10"
+ },
+ {
+  "g": 59,
+  "domain": "D6",
+  "section": "6.7",
+  "facet": "F-6.7-03",
+  "objective": "O6.4",
+  "shape": "S3",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "Nine months after a document-extraction pipeline shipped, a team weighs replacing the model with a larger-context version; the only record is a component diagram and inventory, and the latency budget is unchanged. What should they check first?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Check whether the alternatives, trade-offs, and constraint behind the model choice were ever recorded at all.",
+    "family": null
+   },
+   {
+    "l": "B",
+    "t": "Check the recorded latency ceiling that drove the original choice, and re-evaluate the decision against it.",
+    "family": "EVIDENCE-MISMATCH"
+   },
+   {
+    "l": "C",
+    "t": "Commission a more detailed component diagram and an updated service inventory before deciding.",
+    "family": "ARCHITECTED"
+   },
+   {
+    "l": "D",
+    "t": "Ship the larger-context model now, and audit a sample of outputs after the change to confirm nothing broke.",
+    "family": "DETECTIVE-FOR-PREVENTIVE"
+   }
+  ],
+  "whyRight": "A diagram and an inventory show what the system is, not why the model tier was chosen; before swapping it, the team needs to know whether the alternatives, trade-offs, and constraint behind that choice were ever written down.",
+  "whyWrong": {
+   "B": "Nothing in the record shows a latency ceiling was ever captured; there is no recorded constraint for this option to check against.",
+   "C": "More detail in the diagram and inventory still describes what the system is; it does not supply the missing reasoning behind the original choice.",
+   "D": "Shipping first and auditing outputs afterward risks a regression the missing rationale might have flagged in advance, on a change already worth pausing to check."
+  },
+  "deepDive": null,
+  "t1Clause": "the only record is a component diagram and inventory",
+  "t1Alt": "B",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "",
+  "correct": [
+   "A"
+  ],
+  "cite": "D6 6.7"
+ },
+ {
+  "g": 60,
+  "domain": "D7",
+  "section": "7.2",
+  "facet": "F-7.2-05+F-7.2-09",
+  "objective": "O7.1",
+  "shape": "S3",
+  "direction": "normal",
+  "format": "multi",
+  "selectN": 2,
+  "stem": "A 40-engineer healthcare platform's test-only convention began leaking into application code after a recent directory reorganization, though the model version is unchanged. Separately, a security rule for one command must hold on every call regardless of prompt wording. Select two configurations satisfying both requirements.",
+  "opts": [
+   {
+    "l": "A",
+    "t": "A `.claude/rules/` entry scoped by a glob for the test directories, so the convention loads only for matching paths.",
+    "family": null
+   },
+   {
+    "l": "B",
+    "t": "A `deny` rule for that command in `settings.json` permissions, enforced by Claude Code regardless of any prompt.",
+    "family": null
+   },
+   {
+    "l": "C",
+    "t": "A firm instruction added to the skill body telling it never to touch application code or run that command.",
+    "family": "REPAIR"
+   },
+   {
+    "l": "D",
+    "t": "Scope `allowed-tools` in the skill's frontmatter to exclude application-code paths and that command.",
+    "family": "WRONG-AXIS"
+   }
+  ],
+  "whyRight": "The convention's leak into application code and the security rule's need to hold unconditionally are two separate gaps: a `.claude/rules/` glob confines the convention to matching test paths, and a `deny` rule enforces the security rule regardless of any prompt. Neither substitutes for the other.",
+  "whyWrong": {
+   "C": "A firm instruction in the skill body competes with everything else in context and can be missed on any run, unlike a rules-file glob or a deny rule.",
+   "D": "`allowed-tools` governs which tools the skill may touch; it does not scope a convention to matching paths or make a rule hold regardless of what a prompt says."
+  },
+  "deepDive": null,
+  "t1Clause": "a security rule for one command must hold on every call regardless of prompt wording",
+  "t1Alt": "D",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "",
+  "correct": [
+   "A",
+   "B"
+  ],
+  "cite": "D7 7.2"
+ },
+ {
+  "g": 61,
+  "domain": "D7",
+  "section": "7.3",
+  "facet": "F-7.3-02",
+  "objective": "O7.2",
+  "shape": "S5",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A fintech startup's new payment-gateway integration must follow the gateway's fixed authentication rules, but three valid ways exist to receive transaction updates, each with different infrastructure cost, pending the compliance lead's approval. Which approach should the team take?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Start implementing the polling approach directly, and switch to plan mode only if it proves too costly to maintain.",
+    "family": "HALF-MOVE"
+   },
+   {
+    "l": "B",
+    "t": "Adopt a standing rule that every integration in the codebase goes through plan mode and written approval, single-endpoint fixes included.",
+    "family": "OVERSPEC"
+   },
+   {
+    "l": "C",
+    "t": "Treat the integration as fully spec-determined and implement directly, since the gateway's documentation fixes the required behavior.",
+    "family": "EVIDENCE-MISMATCH"
+   },
+   {
+    "l": "D",
+    "t": "Use plan mode to explore the three transaction-update approaches and present a design for approval before implementing.",
+    "family": null
+   }
+  ],
+  "whyRight": "The transaction-update mechanism is not fixed by the gateway's documentation — three valid approaches remain, each carrying a different infrastructure cost — so the approach itself is still the decision being made. Plan mode explores that decision and produces a design the compliance lead can approve before implementation begins.",
+  "whyWrong": {
+   "A": "Starting with polling and switching to plan mode later means structural choices are already made before any deliberation, and reactive switching after implementation is underway costs more than planning upfront.",
+   "B": "A blanket rule requiring plan mode and written approval for every integration, single-endpoint fixes included, taxes routine changes to control a risk that exists only here.",
+   "C": "The stem states three valid ways exist to receive transaction updates, so the documentation does not fix the required behavior; treating it as spec-determined contradicts that stated fact."
+  },
+  "deepDive": null,
+  "t1Clause": "but three valid ways exist to receive transaction updates",
+  "t1Alt": "C",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "",
+  "correct": [
+   "D"
+  ],
+  "cite": "D7 7.3"
+ },
+ {
+  "g": 62,
+  "domain": "D7",
+  "section": "7.8",
+  "facet": "F-7.8-06+F-7.8-07",
+  "objective": "O7.3",
+  "shape": "S8",
+  "direction": "normal",
+  "format": "multi",
+  "selectN": 2,
+  "stem": "A regulated payments firm's monorepo has teams whose own settings occasionally include a narrower allow rule for a dangerous command; the org's deny must still win. The restriction must also survive a developer editing their own local settings. Select two configurations.",
+  "opts": [
+   {
+    "l": "A",
+    "t": "A hook that logs every attempt to run the command, for the team to review any bypass afterward.",
+    "family": "DETECTIVE-FOR-PREVENTIVE"
+   },
+   {
+    "l": "B",
+    "t": "A stronger, more explicit prohibition of the command restated across every project CLAUDE.md file the teams maintain.",
+    "family": "REPAIR"
+   },
+   {
+    "l": "C",
+    "t": "A `deny` rule for the pattern — a matching deny wins over a matching allow regardless of specificity.",
+    "family": null
+   },
+   {
+    "l": "D",
+    "t": "Managed enterprise policy settings, since nothing below it in the precedence order can be overridden locally.",
+    "family": null
+   }
+  ],
+  "whyRight": "Two independent facts guarantee both requirements: a matching `deny` always wins over a matching `allow` regardless of specificity, and managed enterprise policy sits above every local settings file in precedence, so nothing a developer edits locally can override it. Either gap alone leaves the restriction incomplete.",
+  "whyWrong": {
+   "A": "A logging hook records that the command ran; it does not stop it, and answers neither the specificity question nor the local-override question.",
+   "B": "Restating the prohibition more forcefully in CLAUDE.md shapes what Claude tries to do; it does not change what Claude Code allows, and prose holds no precedence tier at all."
+  },
+  "deepDive": null,
+  "t1Clause": "the org's deny must still win",
+  "t1Alt": "A",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "",
+  "correct": [
+   "C",
+   "D"
+  ],
+  "cite": "D7 7.8"
+ },
+ {
+  "g": 63,
+  "domain": "D7",
+  "section": "7.2",
+  "facet": "F-7.2-03",
+  "objective": "O7.1",
+  "shape": "S3",
+  "direction": "normal",
+  "format": "single",
+  "selectN": 1,
+  "stem": "A compliance-audit skill scans hundreds of configuration files for a specific historical vulnerability pattern before writing its final report, and the exploration step is consistently crowding the report itself out of context. The model version has not changed. What should change?",
+  "opts": [
+   {
+    "l": "A",
+    "t": "Move to a more capable model with a larger context window, since the historical-pattern search is inherently complex.",
+    "family": "DISCARD"
+   },
+   {
+    "l": "B",
+    "t": "Set `context: fork` so the exploration step runs in an isolated subagent context and only its result returns.",
+    "family": null
+   },
+   {
+    "l": "C",
+    "t": "Add an instruction to the skill telling it to keep its exploration notes brief before drafting the report.",
+    "family": "REPAIR"
+   },
+   {
+    "l": "D",
+    "t": "Scope `allowed-tools` in the skill's frontmatter to remove the tool it does not need for this task.",
+    "family": "WRONG-AXIS"
+   }
+  ],
+  "whyRight": "The skill's exploration step is what floods context before the report can be written, and `context: fork` runs that step in an isolated subagent context so only its result returns to the main task. Neither the model nor the skill's tool list caused this pollution.",
+  "whyWrong": {
+   "A": "The model version has not changed, and a larger window does not remove the exploration output already filling it; this is a missing configuration boundary, not a capability limit.",
+   "C": "Asking the skill to keep its notes brief asks the model to simulate isolation through instruction alone, competing with everything else in context instead of actually imposing a boundary.",
+   "D": "Removing an unneeded tool governs what the skill may touch, not how much exploration output the model produces before the report; the crowding continues even with a narrower tool list."
+  },
+  "deepDive": null,
+  "t1Clause": "is consistently crowding the report itself out of context",
+  "t1Alt": "D",
+  "source": "AUTHORED",
+  "block": null,
+  "blockLabel": null,
+  "lessonKey": "context fork set",
+  "correct": [
+   "B"
+  ],
+  "cite": "D7 7.2"
+ }
+];
+
+/* ================= STATE ================= */
+let state = load();
+let currentG = null, jumpMapOpen = false, timerHandle = null;
+
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return {answers:{}, times:{}, started:null, submitted:false, elapsed:0};
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function itemCount(){ return ITEMS.length; }
+function findItem(g){ return ITEMS.find(function(x){ return x.g===g; }); }
+function answerOf(g){ const a = state.answers[g]; return Array.isArray(a) ? a : (a ? [a] : []); }
+function sameSet(a,b){
+  if(a.length!==b.length) return false;
+  const s = a.slice().sort().join(","), t = b.slice().sort().join(",");
+  return s===t;
+}
+function isRight(q){ const a = answerOf(q.g); return a.length>0 && sameSet(a, q.correct); }
+function isComplete(q){ return answerOf(q.g).length === q.selectN; }
+function answeredCount(){ return ITEMS.filter(isComplete).length; }
+
+/* ================= FLOW ================= */
+function beginExam(){
+  if(!state.started){ state.started = Date.now(); save(); }
+  document.getElementById("landing").classList.add("hidden");
+  document.getElementById("exam").classList.remove("hidden");
+  document.getElementById("timer").classList.remove("hidden");
+  if(EXAM_MODE){
+    document.getElementById("modePill").textContent = "Exam Mode";
+    document.getElementById("modePill").classList.add("exam");
+  } else {
+    document.getElementById("accPill").classList.remove("hidden");
+  }
+  startTimer();
+  let first = 1;
+  for(let i=0;i<ITEMS.length;i++){ if(!isComplete(ITEMS[i])){ first = ITEMS[i].g; break; } }
+  goToQuestion(first);
+}
+
+function startTimer(){
+  if(timerHandle) return;
+  timerHandle = setInterval(function(){
+    const el = Math.floor((Date.now() - state.started)/1000);
+    state.elapsed = el;
+    const left = Math.max(0, TIME_LIMIT_SEC - el);
+    const m = String(Math.floor(left/60)).padStart(2,"0"), s = String(left%60).padStart(2,"0");
+    const t = document.getElementById("timer");
+    t.textContent = m+":"+s;
+    if(left < 600) t.classList.add("low");
+    if(left === 0 && !state.submitted) submitExam();
+  }, 1000);
+}
+
+function toggleJumpMap(){
+  jumpMapOpen = !jumpMapOpen;
+  document.getElementById("jumpmap").classList.toggle("open", jumpMapOpen);
+  document.getElementById("jumpToggle").innerHTML = (jumpMapOpen ? "&#9662;" : "&#9656;") + " Jump to question";
+}
+function renderJumpMap(){
+  document.getElementById("jg").innerHTML = ITEMS.map(function(q){
+    const cls = "jb" + (isComplete(q) ? " answered" : "") + (q.g===currentG ? " current" : "");
+    return '<button class="'+cls+'" onclick="goToQuestion('+q.g+')">'+q.g+'</button>';
+  }).join("");
+}
+
+function goToQuestion(g){
+  if(state.times[g]===undefined) state.times[g] = 0;
+  currentG = g;
+  renderPage(g);
+  renderJumpMap();
+  updateNav();
+  window.scrollTo({top:0, behavior:"instant"});
+}
+function goNext(){ if(currentG < itemCount()) goToQuestion(currentG+1); }
+function goBack(){ if(currentG > 1) goToQuestion(currentG-1); }
+
+function renderPage(g){
+  const q = findItem(g);
+  document.getElementById("qhost").innerHTML = renderQ(q);
+  if(!EXAM_MODE && isComplete(q)) paintAnswered(q);
+  const pct = Math.round(answeredCount()/itemCount()*100);
+  document.getElementById("pfill").style.width = pct+"%";
+  document.getElementById("progCount").textContent = answeredCount()+" / "+itemCount()+" answered";
+  if(!EXAM_MODE){
+    const done = ITEMS.filter(isComplete);
+    const right = done.filter(isRight).length;
+    const acc = document.getElementById("accPill");
+    if(!done.length){
+      acc.textContent = "0% so far";
+      acc.classList.remove("pass","fail");
+    } else {
+      /* Colour on the RAW percentage, display the rounded one. Rounding first would flip the
+         colour for tallies inside half a point of the threshold. */
+      const rawPct = right/done.length*100;
+      acc.textContent = Math.round(rawPct)+"% so far";
+      acc.classList.toggle("pass", rawPct >= PASS_PCT_THRESHOLD);
+      acc.classList.toggle("fail", rawPct <  PASS_PCT_THRESHOLD);
+    }
+  }
+}
+
+function renderQ(q){
+  const sel = answerOf(q.g);
+  const fmtTag = q.format==="multi"
+    ? '<span class="tag fmt">Select '+q.selectN+'</span>' : '';
+  return '<div class="qcard">'
+    + '<div class="qhead">'
+    +   '<span class="qnum">Q'+q.g+' of '+itemCount()+'</span>'
+    +   '<span class="tag">'+q.domain+'</span>'
+    +   fmtTag
+    + '</div>'
+    + '<div class="q-stem">'+esc(q.stem)+'</div>'
+    + '<div class="opts" id="opts">'
+    +   q.opts.map(function(o){
+          const on = sel.indexOf(o.l)>=0 ? " sel" : "";
+          return '<button class="opt'+on+'" data-l="'+o.l+'" onclick="pick('+q.g+',\''+o.l+'\')">'
+               + '<span class="l">'+o.l+'</span><span>'+esc(o.t)+'</span></button>';
+        }).join("")
+    + '</div>'
+    + '<div id="fb"></div>'
+    + '</div>';
+}
+
+function pick(g, letter){
+  const q = findItem(g);
+  if(!EXAM_MODE && isComplete(q)) return;          /* locked once answered in Practice Mode */
+  let sel = answerOf(g);
+  if(q.selectN === 1){
+    sel = [letter];
+  } else {
+    const i = sel.indexOf(letter);
+    if(i >= 0) sel.splice(i,1);
+    else if(sel.length < q.selectN) sel.push(letter);
+    else return;                                    /* already at selectN */
+  }
+  state.answers[g] = sel;
+  save();
+  renderPage(g);
+  renderJumpMap();
+  updateNav();
+}
+
+function paintAnswered(q){
+  const sel = answerOf(q.g);
+  document.querySelectorAll("#opts .opt").forEach(function(el){
+    const l = el.getAttribute("data-l");
+    el.setAttribute("disabled","");
+    if(q.correct.indexOf(l) >= 0) el.classList.add("right");
+    else if(sel.indexOf(l) >= 0) el.classList.add("wrong");
+  });
+  const ok = isRight(q);
+  const wrongPicked = sel.filter(function(l){ return q.correct.indexOf(l)<0; });
+  const missed = q.correct.filter(function(l){ return sel.indexOf(l)<0; });
+  let verdict;
+  if(ok) verdict = "Correct";
+  else if(wrongPicked.length===0) verdict = "Incomplete — scored as wrong (all-or-nothing)";
+  else verdict = "Incorrect";
+
+  let ww = "";
+  Object.keys(q.whyWrong).forEach(function(l){
+    if(sel.indexOf(l) >= 0) ww += '<div class="ww"><b>'+l+'</b> — '+esc(q.whyWrong[l])+'</div>';
+  });
+  /* The "missed" line is multi-response feedback. On a single-answer item it restates the
+     verdict line, so it is suppressed there. */
+  if(missed.length && q.format === "multi")
+    ww += '<div class="ww"><b>Missed</b> — you did not select '+missed.join(" and ")+'.</div>';
+
+  document.getElementById("fb").innerHTML =
+    '<div class="fb '+(ok?"ok":"no")+'">'
+    + '<div class="verdict">'+verdict+' · answer '+q.correct.join(" + ")+'</div>'
+    + '<p class="why">'+esc(q.whyRight)+'</p>'
+    + ww
+    + '<div class="cite">'+q.cite+' · '+q.facet+' · '+q.objective+' · shape '+q.shape+'</div>'
+    + '</div>'
+    + renderDeep(q);
+}
+
+/* ================= DEEP DIVE =================
+   The second explanation layer, rendered as a SIBLING of .fb so the quick verdict's markup and
+   text are untouched. Reached by scrolling, never gated behind a click.
+
+   It shows ALL wrong options' deep explanations, not only the one the student picked. The quick
+   layer above already filters whyWrong to the picked letter, which is the right behaviour for a
+   verdict. The deep layer is doing a different job: each wrongDeep entry names a DIFFERENT row of
+   the same corpus decision table, so reading all of them is reading that decision table through
+   the item. Filtering it to the picked letter would deliver nothing at all on every item answered
+   correctly - which, at the pass line, is most of the paper. Recorded in
+   CCAR-P-Orchestration-Prompt_v2.md 5.6.
+
+   Renders nothing for an item with no deepDive, so a paper generated before this field existed
+   still opens. */
+function renderDeep(q){
+  const d = q.deepDive;
+  if(!d || !d.principle || !d.rightDeep) return "";
+  const sel = answerOf(q.g);
+  let rows = "";
+  q.opts.forEach(function(o){
+    if(q.correct.indexOf(o.l) >= 0) return;
+    const txt = d.wrongDeep && d.wrongDeep[o.l];
+    if(!txt) return;
+    const picked = sel.indexOf(o.l) >= 0;
+    rows += '<p class="dopt'+(picked?" picked":"")+'"><b>'+o.l+'</b>'
+          + (picked ? ' <span class="flag">picked</span>' : '')
+          + ' &mdash; '+esc(txt)+'</p>';
+  });
+  return '<div class="deep">'
+    + '<div class="deep-head">Going deeper &middot; the principle behind this item</div>'
+    + '<h4>The rule this item is an instance of</h4>'
+    + '<p class="principle">'+esc(d.principle)+'</p>'
+    + '<h4>Why '+q.correct.join(" and ")+' '+(q.correct.length>1?"are":"is")+' right, in full</h4>'
+    + '<p>'+esc(d.rightDeep)+'</p>'
+    + '<h4>What each of the other options would have been right for</h4>'
+    + rows
+    + '<div class="cite">Grounded in '+q.cite+' &middot; every claim above traces to that section</div>'
+    + '</div>';
+}
+
+function updateNav(){
+  document.getElementById("btnBack").disabled = (currentG === 1);
+  const last = (currentG === itemCount());
+  document.getElementById("btnNext").classList.toggle("hidden", last);
+  document.getElementById("btnSubmit").classList.toggle("hidden", !last);
+}
+
+/* ================= SCORING ================= */
+function scoreReport(){
+  const singles = ITEMS.filter(function(q){ return q.format==="single"; });
+  const multis  = ITEMS.filter(function(q){ return q.format==="multi"; });
+  const correct = ITEMS.filter(isRight).length;
+  const byDomain = {}, byObjective = {}, byShape = {}, byFamily = {};
+  DOM_ORDER.forEach(function(d){ byDomain[d] = [0,0]; });
+  ITEMS.forEach(function(q){
+    if(!byDomain[q.domain]) byDomain[q.domain] = [0,0];
+    byDomain[q.domain][1]++;
+    if(isRight(q)) byDomain[q.domain][0]++;
+    if(!byObjective[q.objective]) byObjective[q.objective] = [0,0];
+    byObjective[q.objective][1]++;
+    if(isRight(q)) byObjective[q.objective][0]++;
+    if(!byShape[q.shape]) byShape[q.shape] = [0,0];
+    byShape[q.shape][1]++;
+    if(isRight(q)) byShape[q.shape][0]++;
+    if(!isRight(q)){
+      answerOf(q.g).forEach(function(l){
+        if(q.correct.indexOf(l) >= 0) return;
+        const o = q.opts.find(function(x){ return x.l===l; });
+        const f = (o && o.family) || "UNTAGGED";
+        byFamily[f] = (byFamily[f]||0) + 1;
+      });
+    }
+  });
+  const domsWithItems = DOM_ORDER.filter(function(d){ return byDomain[d][1] > 0; });
+  let weakest = null, weakPct = 2, tied = false;
+  domsWithItems.forEach(function(d){
+    const p = byDomain[d][0]/byDomain[d][1];
+    if(p < weakPct - 1e-9){ weakPct = p; weakest = d; tied = false; }
+    else if(Math.abs(p - weakPct) < 1e-9){ tied = true; }
+  });
+  return {
+    correct:correct, total:ITEMS.length,
+    scaled: estimateScaled(correct, ITEMS.length),
+    single:[singles.filter(isRight).length, singles.length],
+    multi:[multis.filter(isRight).length, multis.length],
+    byDomain:byDomain, byObjective:byObjective, byShape:byShape, byFamily:byFamily,
+    weakest: tied ? "tied" : weakest,
+    seconds: state.elapsed || 0
+  };
+}
+
+function submitExam(){
+  state.submitted = true; save();
+  if(timerHandle){ clearInterval(timerHandle); timerHandle = null; }
+  const r = scoreReport();
+  const pass = r.scaled >= PASS_SCALED;
+  const pctBar = function(a,b){ return b ? Math.round(a/b*100) : 0; };
+
+  let domRows = DOM_ORDER.filter(function(d){ return r.byDomain[d][1]>0; }).map(function(d){
+    const c = r.byDomain[d][0], n = r.byDomain[d][1], p = pctBar(c,n);
+    return '<tr><td>'+d+' — '+DOMAIN_NAMES[d]+'</td><td class="n">'+c+' / '+n+'</td>'
+         + '<td class="n">'+p+'%</td><td><div class="bar"><i style="width:'+p+'%"></i></div></td></tr>';
+  }).join("");
+
+  let objRows = Object.keys(r.byObjective).sort().map(function(o){
+    const c = r.byObjective[o][0], n = r.byObjective[o][1];
+    const flag = c===0 ? ' style="color:var(--bad);font-weight:640"' : '';
+    return '<tr><td'+flag+'>'+o+'</td><td class="n">'+c+' / '+n+'</td></tr>';
+  }).join("");
+
+  let shapeRows = Object.keys(r.byShape).sort().map(function(s){
+    const c = r.byShape[s][0], n = r.byShape[s][1];
+    return '<tr><td>'+s+'</td><td class="n">'+c+' / '+n+'</td><td class="n">'+pctBar(c,n)+'%</td></tr>';
+  }).join("");
+
+  const famKeys = Object.keys(r.byFamily).sort(function(a,b){ return r.byFamily[b]-r.byFamily[a]; });
+  let famRows = famKeys.length
+    ? famKeys.map(function(f){ return '<tr><td>'+f+'</td><td class="n">'+r.byFamily[f]+'</td></tr>'; }).join("")
+    : '<tr><td colspan="2" style="color:var(--soft)">No distractors captured.</td></tr>';
+
+  document.getElementById("exam").classList.add("hidden");
+  document.getElementById("timer").classList.add("hidden");
+  document.getElementById("accPill").classList.add("hidden");
+  const el = document.getElementById("results");
+  el.classList.remove("hidden");
+  el.innerHTML =
+    '<h2>Result</h2>'
+  + '<div class="score-big">'+r.correct+' <span style="font-size:22px;color:var(--soft)">/ '+r.total+'</span></div>'
+  + '<div class="score-scaled">Estimated scaled score <strong>'+r.scaled+'</strong> · pass line '+PASS_SCALED+'</div>'
+  + '<div class="verdict-line '+(pass?"pass":"fail")+'">'+(pass?"Above the pass line":"Below the pass line")+'</div>'
+
+  + '<table class="brk"><thead><tr><th>Format</th><th>Correct</th><th>%</th><th></th></tr></thead><tbody>'
+  +   '<tr><td>Single-answer</td><td class="n">'+r.single[0]+' / '+r.single[1]+'</td><td class="n">'+pctBar(r.single[0],r.single[1])+'%</td><td></td></tr>'
+  +   '<tr><td>Multiple-response (all-or-nothing)</td><td class="n">'+r.multi[0]+' / '+r.multi[1]+'</td><td class="n">'+pctBar(r.multi[0],r.multi[1])+'%</td><td></td></tr>'
+  + '</tbody></table>'
+
+  + '<h3 style="font-family:var(--serif);font-size:18px;margin:26px 0 0">Domain</h3>'
+  + '<table class="brk"><thead><tr><th>Domain</th><th>Correct</th><th>%</th><th></th></tr></thead><tbody>'+domRows+'</tbody></table>'
+  + '<p style="font-size:13px;color:var(--soft);margin:-8px 0 0">Weakest: <strong>'+(r.weakest||"n/a")+'</strong>. '
+  + 'There is no per-domain floor on this exam — pass/fail is total scaled score only.</p>'
+
+  + '<h3 style="font-family:var(--serif);font-size:18px;margin:26px 0 0">Objective</h3>'
+  + '<p style="font-size:13px;color:var(--soft);margin:4px 0 0">Any objective at 0 is highlighted. Six came back at 0% on the real CCAR-F paper.</p>'
+  + '<table class="brk"><thead><tr><th>Objective</th><th>Correct</th></tr></thead><tbody>'+objRows+'</tbody></table>'
+
+  + '<h3 style="font-family:var(--serif);font-size:18px;margin:26px 0 0">Shape</h3>'
+  + '<table class="brk"><thead><tr><th>Shape</th><th>Correct</th><th>%</th></tr></thead><tbody>'+shapeRows+'</tbody></table>'
+
+  + '<h3 style="font-family:var(--serif);font-size:18px;margin:26px 0 0">Which distractor family captured you</h3>'
+  + '<p style="font-size:13px;color:var(--soft);margin:4px 0 0">A family recurring across two consecutive papers is a habit, not a gap, and needs a different remedy.</p>'
+  + '<table class="brk"><thead><tr><th>Family</th><th>Times</th></tr></thead><tbody>'+famRows+'</tbody></table>'
+
+  + '<div class="exports">'
+  +   '<button class="btn" onclick="toggleBox(\'boxJson\')">Results JSON</button>'
+  +   '<button class="btn" onclick="toggleBox(\'boxDash\')">DASHBOARD-DATA line</button>'
+  +   '<button class="btn" onclick="toggleBox(\'boxLog\')">EXAM-LOG miss table</button>'
+  +   '<button class="btn" onclick="restartExam()">Restart</button>'
+  + '</div>'
+  + '<div class="export-box" id="boxJson"></div>'
+  + '<div class="export-box" id="boxDash"></div>'
+  + '<div class="export-box" id="boxLog"></div>'
+  + '<div class="res-note">The scaled score is a project estimate — <code>100 + 900 × (correct / total)</code> — '
+  + 'not an Anthropic formula. Record the real figures in <code>EXAM-LOG.md</code>, which is the only file '
+  + 'in this project that carries standing.</div>';
+
+  document.getElementById("boxJson").textContent = buildResultsJson(r);
+  document.getElementById("boxDash").textContent = buildDashLine(r);
+  document.getElementById("boxLog").textContent  = buildLogStub(r);
+  window.scrollTo({top:0, behavior:"instant"});
+}
+
+function toggleBox(id){
+  const b = document.getElementById(id);
+  ["boxJson","boxDash","boxLog"].forEach(function(x){
+    if(x!==id) document.getElementById(x).classList.remove("open");
+  });
+  b.classList.toggle("open");
+}
+
+function buildResultsJson(r){
+  return JSON.stringify({
+    paper_n: PAPER_N,
+    mode: EXAM_MODE ? "exam" : "practice",
+    total_correct: r.correct, total_questions: r.total,
+    estimated_scaled: r.scaled, total_seconds: r.seconds,
+    single_answer: r.single, multi_response: r.multi,
+    domain_scores: r.byDomain, objective_scores: r.byObjective,
+    shape_scores: r.byShape, family_capture: r.byFamily,
+    items: ITEMS.map(function(q){
+      return {
+        g:q.g, domain:q.domain, section:q.section, facet:q.facet, objective:q.objective,
+        shape:q.shape, direction:q.direction, format:q.format, selectN:q.selectN,
+        picked: answerOf(q.g),          /* raw set - enables retroactive partial-credit rescoring */
+        correct: q.correct,
+        right: isRight(q),
+        seconds: state.times[q.g] || null,
+        t1Clause: q.t1Clause
+      };
+    })
+  }, null, 1);
+}
+
+function buildDashLine(r){
+  const today = new Date().toISOString().slice(0,10);
+  return JSON.stringify({
+    paper_n: PAPER_N, format: "FULL63", generated_date: null, attempted_date: today,
+    score_source: "results-json", total_correct: r.correct, total_questions: r.total,
+    estimated_scaled: r.scaled, total_seconds: r.seconds,
+    single_answer: r.single, multi_response: r.multi,
+    domain_scores: r.byDomain, weakest_domain: r.weakest,
+    confirmed_weakness: null, insight_round_due: false,
+    mode: EXAM_MODE ? "exam" : "practice"
+  });
+}
+
+function buildLogStub(r){
+  let out = "| Q | Domain § | Facet | Obj | Shape | Format | Time | Picked | Correct | Family | Why wrong |\n";
+  out    += "|---|---|---|---|---|---|---|---|---|---|---|\n";
+  ITEMS.filter(function(q){ return !isRight(q); }).forEach(function(q){
+    const picked = answerOf(q.g);
+    const fams = picked.filter(function(l){ return q.correct.indexOf(l)<0; }).map(function(l){
+      const o = q.opts.find(function(x){ return x.l===l; });
+      return (o && o.family) || "UNTAGGED";
+    });
+    out += "| "+q.g+" | "+q.domain+" §"+q.section+" | "+q.facet+" | "+q.objective+" | "+q.shape
+        +  " | "+(q.format==="multi" ? "multi-"+q.selectN : "single")
+        +  " | "+(state.times[q.g] || "?")+"s | "+(picked.join("+")||"—")+" | "+q.correct.join("+")
+        +  " | "+(fams.join(", ")||"—")+" |  |\n";
+  });
+  if(out.split("\n").length <= 3) out += "| — | — | — | — | — | — | — | — | — | — | No misses. |\n";
+  out += "\nConfirmed-weakness check runs on SINGLE-ANSWER items only. Weakest single-answer domain: ";
+  const s = {};
+  ITEMS.filter(function(q){ return q.format==="single"; }).forEach(function(q){
+    if(!s[q.domain]) s[q.domain]=[0,0];
+    s[q.domain][1]++; if(isRight(q)) s[q.domain][0]++;
+  });
+  let w=null, wp=2, tie=false;
+  Object.keys(s).forEach(function(d){
+    const p=s[d][0]/s[d][1];
+    if(p<wp-1e-9){wp=p;w=d;tie=false;} else if(Math.abs(p-wp)<1e-9){tie=true;}
+  });
+  out += (tie ? "tied (records as confirmed_weakness: false)" : (w||"n/a"));
+  return out;
+}
+
+function restartExam(){
+  if(!confirm("Clear all answers and start this paper again?")) return;
+  state = {answers:{}, times:{}, started:null, submitted:false, elapsed:0};
+  save();
+  location.reload();
+}
+
+/* ================= FIDELITY: validateItems() =================
+   Gate check 1. Runs here for convenience and in Node before shipping - see the block below.
+   Returns {errors:[], warnings:[], stats:{}}. A paper ships only on errors.length === 0. */
+function validateItems(items, opts){
+  opts = opts || {};
+  const expect = opts.expectCount || null;
+  const E = [], W = [];
+  const seen = {};
+  const wc = function(s){ return String(s).trim().split(/\s+/).length; };
+
+  if(expect && items.length !== expect) E.push("item count is "+items.length+", expected "+expect);
+
+  const domTally = {}, objTally = {}, letterTally = {A:0,B:0,C:0,D:0}, famTally = {};
+  const shapeTally = {}, pairTally = {}, lessonTally = {};
+  let singles = 0, multis = 0, tokenOpts = 0, totalOpts = 0;
+
+  items.forEach(function(q, i){
+    const at = "item "+(q.g!==undefined ? "g"+q.g : "#"+i);
+
+    if(q.g !== i+1) E.push(at+": g is not sequential from 1");
+    if(seen[q.g]) E.push(at+": duplicate g");
+    seen[q.g] = true;
+
+    ["domain","section","facet","objective","shape","direction","format","stem","whyRight","t1Clause","source"]
+      .forEach(function(f){ if(!q[f]) E.push(at+": missing "+f); });
+
+    if(!DOMAIN_NAMES[q.domain]) E.push(at+": unknown domain "+q.domain);
+    domTally[q.domain] = (domTally[q.domain]||0)+1;
+    objTally[q.objective] = (objTally[q.objective]||0)+1;
+    shapeTally[q.shape] = (shapeTally[q.shape]||0)+1;
+
+    if(!Array.isArray(q.correct) || q.correct.length===0) E.push(at+": correct must be a non-empty array");
+    if(q.format==="single"){
+      singles++;
+      if(q.selectN !== 1) E.push(at+": single-answer item with selectN "+q.selectN);
+      if(q.correct.length !== 1) E.push(at+": single-answer item with "+q.correct.length+" correct options");
+      if(q.correct.length===1) letterTally[q.correct[0]] = (letterTally[q.correct[0]]||0)+1;
+    } else if(q.format==="multi"){
+      multis++;
+      if(q.selectN !== q.correct.length) E.push(at+": selectN "+q.selectN+" but "+q.correct.length+" correct");
+      if(!/select\s+(two|three|\d)/i.test(q.stem)) E.push(at+": multi-response stem does not state its count");
+      const pair = q.correct.slice().sort().join("");
+      pairTally[pair] = (pairTally[pair]||0)+1;
+    } else {
+      E.push(at+": format must be 'single' or 'multi'");
+    }
+
+    /* options */
+    if(!Array.isArray(q.opts) || q.opts.length !== 4) E.push(at+": expected 4 options");
+    const lens = [];
+    (q.opts||[]).forEach(function(o){
+      totalOpts++;
+      const n = wc(o.t);
+      lens.push(n);
+      if(n > 20) E.push(at+" opt "+o.l+": option is "+n+" words, cap is 20");
+      if(/`|--[a-z]/.test(o.t)) tokenOpts++;
+      const isKey = q.correct.indexOf(o.l) >= 0;
+      if(isKey && o.family) W.push(at+" opt "+o.l+": correct option carries a family tag");
+      if(!isKey){
+        if(!o.family) E.push(at+" opt "+o.l+": distractor has no family");
+        else famTally[o.family] = (famTally[o.family]||0)+1;
+        if(!q.whyWrong || !q.whyWrong[o.l]) E.push(at+" opt "+o.l+": distractor has no whyWrong");
+      }
+    });
+    if(lens.length){
+      const spread = Math.max.apply(null,lens) - Math.min.apply(null,lens);
+      if(spread > 8) E.push(at+": option word spread is "+spread+", cap is 8");
+    }
+
+    /* distractor family variety */
+    const fams = (q.opts||[]).filter(function(o){ return q.correct.indexOf(o.l)<0; })
+                             .map(function(o){ return o.family; });
+    if(new Set(fams).size !== fams.length) E.push(at+": distractors repeat a family");
+
+    /* deep dive - PRESENCE and key-set only, and OPTIONAL as of 2026-08-30 (orchestration prompt
+       §5.5 correction, after CCAR-P_Mock-Exam-Generation-Cost-Audit_v1.md). A freshly generated item
+       ships deepDive:null; Phase 9 populates it later, only for items actually missed. null is not an
+       error unless the caller explicitly passes opts.requireDeepDive (e.g. auditing a Phase-9 patch
+       pass where every item in that batch is expected to have one). When deepDive IS present, it must
+       still be well-formed - this mirrors the whyWrong check exactly: one entry per non-correct
+       option, none for a correct one. Whether each sentence actually traces to the cited corpus
+       section is a corpus audit and cannot be checked from the shipped file, which carries no corpus. */
+    const dd = q.deepDive;
+    if(dd === null || dd === undefined){
+      if(opts.requireDeepDive) E.push(at+": missing deepDive (requireDeepDive is set)");
+    } else if(typeof dd !== "object"){
+      E.push(at+": deepDive is present but not an object");
+    } else {
+      if(!dd.principle) E.push(at+": deepDive.principle is empty");
+      if(!dd.rightDeep) E.push(at+": deepDive.rightDeep is empty");
+      if(!dd.wrongDeep || typeof dd.wrongDeep !== "object"){
+        E.push(at+": deepDive.wrongDeep is missing");
+      } else {
+        (q.opts||[]).forEach(function(o){
+          const isKey = q.correct.indexOf(o.l) >= 0;
+          if(isKey && dd.wrongDeep[o.l])
+            W.push(at+" opt "+o.l+": deepDive.wrongDeep carries an entry for a correct option");
+          if(!isKey && !dd.wrongDeep[o.l])
+            E.push(at+" opt "+o.l+": distractor has no deepDive.wrongDeep");
+        });
+      }
+    }
+
+    /* stem */
+    const sw = wc(q.stem);
+    if(sw > 45) E.push(at+": stem is "+sw+" words, cap is 45");
+    if(sw < 28 || sw > 40) W.push(at+": stem is "+sw+" words, outside the 28-40 band");
+
+    /* T1 */
+    if(!q.t1Alt) E.push(at+": t1Alt not recorded");
+    if(q.t1Alt && q.correct.indexOf(q.t1Alt) >= 0) E.push(at+": t1Alt names an already-correct option");
+
+    /* lesson collision - two items independently testing the same underlying corpus decision,
+       worded differently. No per-domain author can see this; it is only visible exam-wide.
+       GENERATION-INTELLIGENCE.md F-10. lessonKey is optional (misconception-unit items may have
+       none) so an empty string never collides with itself. */
+    if(q.lessonKey){
+      (lessonTally[q.lessonKey] = lessonTally[q.lessonKey] || []).push(q.g);
+    }
+
+    /* dormant fields */
+    if(q.block !== null || q.blockLabel !== null)
+      W.push(at+": block fields are populated - confirm the guide settled the block question first");
+  });
+
+  /* lesson collision, exam-wide - always checked, not gated behind expect===63 */
+  Object.keys(lessonTally).forEach(function(k){
+    const gs = lessonTally[k];
+    if(gs.length > 1){
+      E.push("items g"+gs.join(", g")+" share lessonKey \""+k+"\" - same underlying corpus decision tested more than once");
+    }
+  });
+
+  /* paper-level */
+  if(expect === 63){
+    if(singles !== 55) E.push("single-answer count is "+singles+", expected 55");
+    if(multis !== 8)  E.push("multi-response count is "+multis+", expected 8");
+    DOM_ORDER.forEach(function(d){
+      const got = domTally[d]||0;
+      if(got !== DOM_QUOTA[d]) E.push("domain "+d+" has "+got+" items, quota is "+DOM_QUOTA[d]);
+    });
+    ["A","B","C","D"].forEach(function(l){
+      const n = letterTally[l]||0;
+      if(n < 12 || n > 16) E.push("correct-answer letter "+l+" appears "+n+" times, band is 12-16");
+    });
+    Object.keys(pairTally).forEach(function(p){
+      if(pairTally[p] > 2) E.push("multi-response pair "+p+" appears "+pairTally[p]+" times, cap is 2");
+    });
+    const totalDistractors = totalOpts - items.reduce(function(a,q){ return a+q.correct.length; },0);
+    Object.keys(famTally).forEach(function(f){
+      if(famTally[f] > Math.floor(totalDistractors*0.25))
+        E.push("family "+f+" is "+famTally[f]+" of "+totalDistractors+" distractors, cap is 25%");
+    });
+    if((famTally["EVIDENCE-MISMATCH"]||0) < 15) E.push("EVIDENCE-MISMATCH is "+(famTally["EVIDENCE-MISMATCH"]||0)+", floor is 15");
+    if((famTally["DETECTIVE-FOR-PREVENTIVE"]||0) < 9) E.push("DETECTIVE-FOR-PREVENTIVE is "+(famTally["DETECTIVE-FOR-PREVENTIVE"]||0)+", floor is 9");
+    if((famTally["ARCHITECTED"]||0) > 19) E.push("ARCHITECTED is "+(famTally["ARCHITECTED"]||0)+", ceiling is 19");
+    Object.keys(objTally).forEach(function(o){
+      if(objTally[o] > 3) E.push("objective "+o+" has "+objTally[o]+" items, cap is 3");
+    });
+    if(Object.keys(objTally).length !== 38)
+      E.push("objectives covered: "+Object.keys(objTally).length+" of 38");
+    Object.keys(shapeTally).forEach(function(s){
+      if(shapeTally[s] < 4 || shapeTally[s] > 11)
+        W.push("shape "+s+" appears "+shapeTally[s]+" times, target band is 4-11");
+    });
+  }
+  const tokenRate = totalOpts ? tokenOpts/totalOpts : 0;
+  if(tokenRate > 0.15) E.push("inline code/config tokens in "+Math.round(tokenRate*100)+"% of options, cap is 15%");
+
+  return {errors:E, warnings:W, stats:{
+    items:items.length, singles:singles, multis:multis,
+    domains:domTally, objectives:Object.keys(objTally).length,
+    letters:letterTally, families:famTally, shapes:shapeTally,
+    tokenRatePct: Math.round(tokenRate*1000)/10
+  }};
+}
+
+function runSelfCheck(){
+  const r = validateItems(ITEMS, {expectCount:null});
+  const box = document.getElementById("selfCheckBox");
+  box.classList.add("open");
+  box.textContent =
+    "validateItems() — template self-check (4 demo items, paper-level checks skipped)\n\n"
+  + (r.errors.length ? "ERRORS ("+r.errors.length+")\n  " + r.errors.join("\n  ") : "ERRORS: none")
+  + "\n\n"
+  + (r.warnings.length ? "WARNINGS ("+r.warnings.length+")\n  " + r.warnings.join("\n  ") : "WARNINGS: none")
+  + "\n\nSTATS\n" + JSON.stringify(r.stats, null, 1);
+}
+
+/* per-question timing */
+setInterval(function(){
+  if(currentG !== null && !state.submitted && state.started){
+    state.times[currentG] = (state.times[currentG] || 0) + 1;
+  }
+}, 1000);
+
+document.getElementById("fDemoCount").textContent = new Set(ITEMS.map(function(x){return x.objective;})).size + " of 38";
+document.getElementById("fMode").textContent = EXAM_MODE
+  ? "Exam — no feedback until submit" : "Practice — feedback per question";
+if(EXAM_MODE){
+  document.getElementById("modePill").textContent = "Exam Mode";
+  document.getElementById("modePill").classList.add("exam");
+}
+
+/* ================= NODE EXPORT =================
+   Gate check 1 runs in a Node vm against the SHIPPED file, not against a copy of the array.
+   Use the committed runner rather than an inline command:
+
+     node tools/run-gate.js mock-exams/CCAR-P_MockTest-1_v1.html 63
+
+   It exits 0 on a clean paper and 1 on any error, so it drops straight into a shell gate.
+
+   Do not write the extraction inline with a literal opening script tag in the command - this
+   comment lives INSIDE the script block, so any such literal splits the file at the wrong place
+   and silently truncates the extracted source. That is why the runner is a committed file and
+   why the tag is built by concatenation inside it.
+
+   The SOP records that the browser preview may not see a file written in the current session at
+   all, so the Node run is the authoritative check, not the page's own button. */
+if(typeof module !== "undefined" && module.exports){
+  module.exports = {ITEMS:ITEMS, validateItems:validateItems};
+}
+</script>
+</body>
+</html>

@@ -3,8 +3,10 @@
 **The single source of truth for Ram's standing on CCAR-P.** No other file in this project carries
 scores. If one starts to, delete it.
 
-**Status:** **Paper 1 generated 2026-08-30, not yet sat. Paper 2 generated 2026-08-31, not yet sat.**
-`mock-exams/CCAR-P_MockTest-1_v1.html` · `mock-exams/CCAR-P_MockTest-2_v1.html`.
+**Status:** **Paper 1 generated 2026-08-30, not yet sat. Paper 2 generated 2026-08-31, not yet sat.
+Paper 3 generated 2026-08-31, not yet sat.**
+`mock-exams/CCAR-P_MockTest-1_v1.html` · `mock-exams/CCAR-P_MockTest-2_v1.html` ·
+`mock-exams/CCAR-P_MockTest-3_v1.html`.
 
 *(Corrected 2026-08-29: this line previously read "Blocked on Phase 0" for four days after Phase 0
 closed, and briefly said generation would run in TRANSCRIBE mode. Both are superseded below — Ram
@@ -401,6 +403,181 @@ sat, per Phase 9. Structural items to carry forward regardless of score:
   accumulating.
 - **Re-verify the sub-batch dispatch fix holds** on Paper 3's generation — if a repeat run also needs
   12+ small dispatches to avoid stalling, that is itself worth a line in the next Insights Round.
+
+---
+
+## Paper 3 — GENERATED 2026-08-31, not yet attempted
+
+**File:** `mock-exams/CCAR-P_MockTest-3_v1.html`
+**Mode:** AUTHOR (63/63 items authored fresh from corpus facets and, for D2, misconception units).
+**Professor's Note / Insights Round consumed:** none — Papers 1 and 2 are both generated but neither
+is scored yet, so Paper 3 is **another explicitly untargeted diagnostic**, confirmed with Ram before
+generation started (he chose to generate a third paper now rather than pause to sit an existing one
+first). No targeting triples exist to satisfy or deliberately leave untargeted.
+**deepDive:** every item ships `deepDive: null`, per the standing Paper 2-onward rule.
+
+### What actually happened during generation
+
+1. **Facet freshness was computed from the shipped HTML directly, not from `FACET-LEDGER.md`'s own
+   "used" column** — per §3d of `Outputs/CCAR-P_Paper-3-4-Generation-Prompt_v1.md`, which flags that
+   column as having at least one known gap. A Node script loaded Papers 1 and 2's `ITEMS` arrays the
+   same way `tools/run-gate.js` does and extracted every `facet` string actually shipped; that set,
+   not the ledger, was the exclusion list for Paper 3's central plan.
+2. **D2's misconception-unit fallback (Phase 4 rule 5) fired for the first time.** D2 holds only 18
+   decision-table facets against an 8-item/paper quota (F-01); after Papers 1-2 consumed 16 of them,
+   only 2 fresh facets remained (§2.2's and §2.3's). The other 6 of D2's 8 items this paper are built
+   from a section's `Misconception` block instead — M-2.1, M-2.2, M-2.4, M-2.6, M-2.7, M-2.8 — spread
+   across 8 of D2's 9 sections with no section repeated. This is expected, mechanized behaviour the
+   engine was specifically built to support (the D2 supply note's "Papers 1-5 reachable via direction
+   doubling + misconception units" plan), not a corpus failure. M-2.3, M-2.5, M-2.9 remain in reserve
+   for Papers 4-5; the D2 corpus-expansion decision (F-01) is still not due until the Paper 4 Insights
+   Round, but this paper is the first hard evidence the fallback mechanism actually works in practice.
+3. **The redesigned sub-batch pipeline held a third time — 13 of 13 dispatches succeeded, zero
+   failures**, matching Paper 2's clean run exactly (D1×2, D2×2, D3×2, D4×2, D5×2, D6×2, D7×1
+   sub-batches of 4-6 items each). No stalls, no retries needed. F-16/F-17's dispatch-granularity fix
+   is now confirmed across two consecutive full generations, not a one-off.
+4. **Assembly-stage checks caught three real, paper-wide problems no individual sub-batch could see**
+   (F-19's pattern held a third time):
+   - **ARCHITECTED at 20/181 distractors against the 19 cap.** Fixed by relabelling one distractor
+     (D5 g49-D) to `EVIDENCE-MISMATCH`, matching what its own `whyWrong` text already argued — no
+     content rewrite, same as every prior instance of this fix.
+   - **Two genuine cross-item content collisions**, both found by the stem-Jaccard check, not the
+     `lessonKey` check (0 `lessonKey` collisions this paper): (a) **g55 (D6 §6.11, multi) scored 0.349
+     against Paper 2's own g55** — both items independently combined §6.11's "40 users → 800 users"
+     and "12% human review" facts with near-identical numbers; fixed by changing Paper 3's g55 to a
+     60-user → 1,200-user pilot instead, preserving the same ratio and the facets' own genuine numbers
+     (1-in-500 failure, 200 cases, 12%) untouched. (b) **g34 and g40 (both D4 §4.9) scored 0.356 against
+     each other, within this paper** — g34's multi-response answer already tested the "guardrail
+     breach → do not ship" row (F-4.9-05) as one of its two correct options, and g40 independently
+     tested the identical row as its own single-answer item; fixed by repointing g40 to the unused
+     F-4.9-06 row (aggregate-vs-segment masking) instead, a genuinely different D4 decision. Both fixes
+     re-verified below threshold (0.295 and 0.271 respectively) after the edit.
+   - A first attempt at the ARCHITECTED fix (relabelling D5 g47-B to `DETECTIVE-FOR-PREVENTIVE` to
+     backfill the floor after g40's rewrite removed g40's own old `DETECTIVE-FOR-PREVENTIVE` tag) was
+     itself **wrong** — see finding 6 below.
+5. **The independent grounding audit (7 fresh agents, one per domain, blind to the authors' own
+   reasoning) ran before this entry was written, per F-20**, and found more than either prior paper:
+   - **8 formal `t1Alt`-does-not-resolve findings, classified IRREDUCIBLE** — g2, g5, g11 (D1); g13,
+     g17 (D2); g25 (D3); g36 (D4); g55 (D6, the same item fixed for the content collision above, on a
+     separate axis). This is higher than Paper 2's 5 and closer to Paper 1's 13, despite the
+     same-session-audit practice that produced Paper 2's improvement — see finding 4 below for the
+     likely reason. All 8 were re-verified as genuinely unsupported by any real corpus row, not just
+     under-checked; documented rather than force-resolved, per Phase 6/9's standing rule.
+   - **11 FIXABLE findings, all corrected before shipping:** a citation gap (D2 g13 — its correct
+     option rests partly on §2.9, not only its cited §2.2), three `t1Clause`/`t1Alt` misdirections (D3
+     g22; D5 g45), two option-wording mismatches against the corpus's actual stated granularity (D3
+     g20, g28 — "single-tool agent" reworded to match the corpus's own "4-6 tools each"), one
+     fabricated stem-claim in a distractor's `whyWrong` (D5 g43), one internally-inconsistent
+     `whyWrong` (D6 g51), one item whose stem was missing a field the corpus's own four-part definition
+     requires (D6 g58 — added "the expected output" to the tracked-fields list), a stale numeric
+     leftover from the g55 collision fix (D6 g55's `whyWrong.B` still said "800-user" after the stem
+     changed to 1,200), and two `facet` fields that pointed at the reject-row for one of the item's own
+     distractors instead of either row the multi-response item actually tests (D7 g60, g62).
+   - Several additional low-confidence, non-blocking notes (D3 g29/g31, D5 g42/g44/g48/g49/g54, D2
+     g14/g15) — cross-section reasoning borrowed for a distractor's flavour text, or a family-tag
+     shape debatable but not wrong. None contradicts a corpus fact; documented, not fixed, consistent
+     with how the audit's own authors classified them as secondary.
+6. **The D5 audit caught this session's own error** — the ARCHITECTED-fix relabel of D5 g47's option B
+   to `DETECTIVE-FOR-PREVENTIVE` (step 4 above) was checked against the audit's own contrast case
+   (D5 g42's genuinely correct `DETECTIVE-FOR-PREVENTIVE` distractor) and found backwards: a
+   pre-execution approval gate is a preventive control, not a detective one. g47-B was reverted to
+   `ARCHITECTED` (its original, honest label), and D6 g59-D — "ship now, audit a sample of outputs
+   afterward" — was relabelled to `DETECTIVE-FOR-PREVENTIVE` instead, a genuine after-the-fact-detection
+   case confirmed against the same contrast pair. Worth keeping as a standing caution: a family-cap fix
+   made without grounding-audit review is exactly the kind of change the audit exists to catch, and did.
+
+### Domain quota (matches EXAM-FACTS_v1.md weighting exactly)
+| Domain | Weight | Items |
+|---|---|---|
+| D1 Solution Design & Architecture | 17% | 11 |
+| D2 Claude Models, Prompting & Context Engineering | 13% | 8 |
+| D3 Integration | 19% | 12 |
+| D4 Evaluation, Testing & Optimization | 16% | 10 |
+| D5 Governance, Safety & Risk Management | 14% | 9 |
+| D6 Stakeholder Communication & Lifecycle Management | 14% | 9 |
+| D7 Developer Productivity & Operational Enablement | 7% | 4 |
+| **Total** | 100% | **63** |
+
+### Objective and section coverage
+All **38 of 38** official objectives covered (floor pass of 1 item each, plus a discretionary pass,
+cap 3/objective, actual max 2). 49 distinct sections drawn from, spread across the domain — D2 drew on
+8 of its 9 sections (only §2.9 untouched among sections with any facet/misconception left) precisely
+because of the misconception-unit fallback documented above.
+
+### Fidelity gate — full result
+Computed by `tools/run-gate.js` against the shipped file with `expectCount:63`, plus the same
+supplementary one-off scripts Paper 2 used for the checks the mechanized gate doesn't yet cover
+(deliberately deferred to Paper 4's gate-mechanization work).
+
+| # | Check | Result |
+|---|---|---|
+| 1 | `validateItems()` structural | **PASS** — 63 items, sequential `g`, every non-key option has `whyWrong`, every item has `whyRight`, all 8 multi-response stems state their count (3 needed a rewrite from "which two" / "select the two" phrasing to a literal "select two" match), `deepDive:null` accepted without error |
+| 2 | Domain quota | **PASS** — exact match, table above |
+| 3 | Per-item domain vs citation | **PASS** — no domain/citation mismatch surfaced by any of the 7 independent grounding-audit passes, each of which read every item's own cited section directly |
+| 4 | Cited sections exist | **PASS** — every section drawn from `CCAR-P_Objective-Map_v1.md`'s real section list; every grounding auditor read the cited section directly and found it, including the 6 D2 misconception-unit items' `Misconception` blocks |
+| 5 | Objective coverage | **PASS** — 38/38, max 2 per objective (cap is 3) |
+| 6 | Correct-answer letter tally | **PASS** — A14 / B13 / C14 / D14, matches the §5.1 pre-plan exactly (Paper 3's short letter is B, per the D→C→B→A rotation) |
+| 7 | Multi-response pairs | **PASS** — AB×2, CD×2, AC×1, BD×1, AD×1, BC×1 across the 8 multi items; no pair exceeds the cap of 2; all 8 stems state "Select two" |
+| 8 | Style budget | **PASS** on hard caps (stem ≤45 after 1 fix from 47, option ≤20 after 1 fix from 21, spread ≤8). 21 items sit outside the 28-40 soft band (median exactly 40, max 45) — a larger deviation than Paper 2's 7, worth watching but not a gate failure since the band is explicitly provisional guidance, not a cap |
+| 9 | Framing and token rate | **PASS** — 0 invented company/product/persona names (every author explicitly checked this; no finding raised by any grounding audit). Inline code/config tokens: 6 of 252 options (2.4%, cap 15%), all in D7 where the content is inherently about Claude Code configuration mechanisms; confirmed 0 in D1/D5/D6 by direct scan |
+| 10 | Distractor families | **PASS** — WRONG-AXIS 38, HALF-MOVE 24, DISCARD 30, EVIDENCE-MISMATCH 29 (floor 15), REPAIR 20, ARCHITECTED 19 (ceiling 19, exact), OVERSPEC 12, DETECTIVE-FOR-PREVENTIVE 9 (floor 9, exact), of 181 total distractors, cap 47 each. Required a same-session self-correction — see finding 6 above |
+| 11 | Dedup | **PASS after 2 real fixes** — 0 stem pairs ≥0.30 Jaccard after fixing g55 (was 0.349 vs Paper 2's own g55, now 0.295) and g34/g40 (was 0.356 within-paper, now 0.271). 0 `lessonKey` collisions. 0 `(section, facet, shape)` triples used more than twice across Papers 1-3 |
+| 12 | Professional-tier floor | **PASS with 8 documented IRREDUCIBLE exceptions** (g2, g5, g11, g13, g17, g25, g36, g55 — see finding 5 above). All other 55 items' `t1Clause`/`t1Alt` pairs were independently verified, by a cold grounding pass that had not seen the authoring reasoning, to resolve to a real, nameable corpus row |
+| 13 | Targeting satisfied | **N/A** — no Professor's Note exists yet; Papers 1 and 2 are both unscored |
+
+**t1Alt resolution rate: 55/63 (87%) verified resolving to a real corpus row** before shipping — lower
+than Paper 2's 92% (58/63) but the audit that measured it was also more thorough (Paper 3 used the same
+one-audit-per-domain shape, but every auditor was instructed to check every item's `t1Alt` regardless of
+whether the author had already flagged it, rather than prioritizing flagged items). Still well above
+Paper 1's discovered-after-shipping 79%, and — critically — found and resolved-or-documented in this
+same generation session, per F-20.
+
+### Confirmed-weakness check
+N/A — no prior SCORED paper exists (Papers 1 and 2 are both generated but not yet sat).
+
+### Findings
+Ranked by evidence strength — process/engine findings, not corpus-content findings, so they belong in
+`GENERATION-INTELLIGENCE.md` Session 6 in full; summarized here for the record:
+1. **The `t1Alt` IRREDUCIBLE rate rose to 8/63 (13%) despite the same-session-audit discipline that
+   lowered Paper 2's rate — the driver looks like which specific facets got drawn, not a process
+   regression.** 3 of the 8 are in D1, a facet-rich domain (62 facets) with no supply pressure,
+   spanning two different sections (§1.10, §1.11 ×2) that simply don't carry a row supporting the
+   claimed pivot. This extends F-14's original point (some findings are a property of the item, not
+   the checking) — facet-rich domains are not immune, and the rate may be closer to a corpus-wide
+   baseline than Paper 2's 8% suggested.
+2. **A same-session fix made to satisfy a mechanized cap, without grounding-audit review, was itself
+   wrong** (finding 6 above) — caught only because the audit's own contrast pair (a genuinely correct
+   `DETECTIVE-FOR-PREVENTIVE` distractor elsewhere in the same domain) made the mislabel visible. Worth
+   a standing caution for any future paper: a family-tag fix applied to satisfy a cap, not because a
+   grounding pass confirmed the label, should be treated as provisional until the grounding audit runs.
+3. **Extracting facet freshness from the shipped HTML rather than trusting `FACET-LEDGER.md`'s own
+   "used" column (per §3d) is now standing practice, confirmed working** — the ledger's known gap did
+   not propagate into this paper's plan.
+4. **D2's misconception-unit fallback is now proven in practice, not just planned** — 6 of 8 D2 items
+   this paper are misconception-unit items, built and grounding-audited exactly like facet-based items,
+   with no structural problems the fallback itself introduced (both D2 IRREDUCIBLE findings, g13 and
+   g17, trace to the underlying section's thin table structure, not to the misconception-unit format).
+5. **Dispatch granularity (~5-6 items per turn) held a third consecutive time, 13/13, zero stalls** —
+   F-16/F-17 can now be treated as settled rather than provisional.
+
+### Pace
+N/A — not yet attempted.
+
+### Professor's Note — Intent for Paper 4
+Paper 3, like Papers 1 and 2, is a diagnostic with no prior scored paper to target — there is still no
+Professor's Note to consume for Paper 4 either, unless Papers 1-3 get sat and scored before Paper 4 is
+generated. Structural items to carry forward regardless of score:
+- **Decide on the D2 corpus expansion** (F-01, F-12, now with a third D2-specific signal — this
+  paper's misconception-unit fallback firing for the first time) — still due by the Paper 4 Insights
+  Round, and Paper 4 itself is the paper the orchestration prompt names for the gate-mechanization work
+  and the D2 decision surfacing, per §5 of `Outputs/CCAR-P_Paper-3-4-Generation-Prompt_v1.md`.
+- **Watch the `t1Alt` IRREDUCIBLE rate on Paper 4** — if it stays near 8/63 rather than reverting toward
+  Paper 2's 5/63, that is evidence the rate is closer to a real corpus-wide baseline than a fixable
+  process defect, worth raising at the Paper 4 Insights Round alongside the D2 decision.
+- **A separate, unrelated defect was found and flagged (not fixed) while building this paper**: Paper
+  2's own shipped landing page still shows the TEMPLATE's placeholder title and demo-content banner
+  instead of real Paper 2 content — spawned as its own background task rather than fixed here, since it
+  is out of Paper 3's scope.
 
 ---
 

@@ -123,6 +123,17 @@ guide's wrong scenario count reached generated practice material.
 > 13-for-13 with zero failures. **Fully generated, assembled, grounding-audited, and gate-clean —
 > `mock-exams/CCAR-P_MockTest-2_v1.html`, 0 gate errors, 5 documented IRREDUCIBLE T1 exceptions (down
 > from Paper 1's 13). Not yet sat.**
+>
+> **Paper 3 generated 2026-08-31.** Another untargeted diagnostic — Papers 1 and 2 were still both
+> unscored when generated, confirmed with Ram before proceeding. Redesigned pipeline held a third
+> consecutive time, 13-for-13. D2's facet supply ran out mid-paper for the first time — 6 of D2's 8
+> items are built from a section's Misconception block instead of a decision-table row, the planned
+> fallback (Phase 4 rule 5) firing as designed, not a failure. Assembly found and fixed two genuine
+> cross-item content collisions (one against Paper 2's own g55, one within the paper) and an ARCHITECTED
+> family-cap overage. **Fully generated, assembled, grounding-audited, and gate-clean —
+> `mock-exams/CCAR-P_MockTest-3_v1.html`, 0 gate errors, 8 documented IRREDUCIBLE T1 exceptions (up
+> from Paper 2's 5 — see `GENERATION-INTELLIGENCE.md` F-24, still being watched, not yet understood as
+> either a fixable defect or a real corpus-wide baseline). Not yet sat.**
 
 ### Phase 3 — Production exposure (months 3–8, Path B only)
 - [ ] Take one Claude system at Infosys from design to production: integration, evals, safety

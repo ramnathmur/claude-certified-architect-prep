@@ -544,3 +544,113 @@ lesson-collision finding only surfaced because a coordinating pass compared ever
 standing lesson across both papers now: distributed authoring (whether 7 full-domain agents or 12
 sub-batches) reliably produces excellent per-item content and reliably misses paper-wide properties no
 individual agent can see — plan for a real assembly-and-check stage every time, not a formality.
+
+---
+
+## Session 6 — 2026-08-31 — Paper 3 generated on the redesigned pipeline, third consecutive clean run
+
+`mock-exams/CCAR-P_MockTest-3_v1.html`. Untargeted third diagnostic (Papers 1 and 2 both generated but
+neither sat by the time this session ran, confirmed with Ram before generating). Full detail is in
+`EXAM-LOG.md`'s Paper 3 entry — this session covers only what the *next* generating session needs.
+
+### Findings from this session
+
+**F-21 · Facet freshness computed from shipped HTML, not from `FACET-LEDGER.md`'s own "used" column,
+is now standing practice and worked cleanly. — PROMOTED (implemented and verified this session).**
+Per §3d of `Outputs/CCAR-P_Paper-3-4-Generation-Prompt_v1.md`, a script loaded Papers 1 and 2's
+`ITEMS` arrays the same way `tools/run-gate.js` does and extracted every shipped `facet` string
+directly, rather than trusting the ledger's own "used" column (documented as having at least one gap).
+This is what surfaced that D2 had only 2 fresh decision-table facets left, not an approximate "getting
+low" — an exact count the ledger's own bookkeeping could not be trusted to give.
+
+**F-22 · The D2 misconception-unit fallback (Phase 4 rule 5) fired for the first time and worked as
+designed. — PROMOTED (implemented and grounding-audited this session).** 6 of D2's 8 items this paper
+are built from a section's `Misconception` block instead of a decision-table row (M-2.1, M-2.2, M-2.4,
+M-2.6, M-2.7, M-2.8), spread across 8 of D2's 9 sections. The independent grounding audit found no
+structural problem the fallback format itself introduced — the 2 D2 IRREDUCIBLE findings both trace to
+the underlying section's thin table, the same root cause as prior papers' D2 findings, not to
+misconception-unit items being harder to ground. This was the F-01 supply-note's planned mechanism
+(direction-doubling → misconception units → corpus expansion), confirmed working on the first paper
+where fresh facets actually ran out.
+
+**F-23 · Dispatch granularity (F-16/F-17) held a third consecutive time, 13/13, zero stalls, zero
+retries. — PROMOTED, now settled rather than provisional.** No batch this paper ran unusually long
+(unlike Paper 2's two ~38-39 minute batches) or needed a retry. Three clean runs at this shape is
+enough to stop treating it as an open question for future papers' planning.
+
+**F-24 · The `t1Alt` IRREDUCIBLE rate rose to 8/63 (13%), from Paper 2's 5/63 (8%), despite the same
+same-session-audit discipline that produced Paper 2's improvement. — PROMOTED (computed check).**
+3 of the 8 are in D1, a facet-rich domain (62 facets, no supply pressure), across two different
+sections. This means facet-rich domains are not immune to producing an IRREDUCIBLE T1 case — which
+facet a section's decision table happens to yield for a given draw matters more than that domain's
+overall supply health. Extends F-14's original point (some findings are a property of the item, not
+of how carefully it's checked). **Open question for Paper 4:** does the rate hold near 8/63, revert
+toward Paper 2's 5/63, or is there enough data after a third data point to estimate a real baseline?
+
+**F-25 · A same-session fix applied to satisfy a mechanized cap, without grounding-audit review, was
+itself wrong — caught only because the audit ran before the generation entry was written (F-20's
+discipline held for exactly the case it exists to catch). — PROMOTED (computed check, this session).**
+Assembly found `DETECTIVE-FOR-PREVENTIVE` had dropped from 9 to 8 (a byproduct of rewriting an item to
+fix a content collision, which removed that item's own DETECTIVE-FOR-PREVENTIVE-tagged distractor).
+The fix applied at assembly time — relabelling a different item's distractor to restore the floor —
+turned out, on independent audit, to be backwards: a pre-execution approval gate is a preventive
+control, not a detective one. The audit's own contrast case (a different item's genuinely correct use
+of the same family tag, in the same domain) is what made the error visible. Reverted, then fixed
+honestly by relabelling a distractor that actually fits the family's definition (ship now, detect via
+audit afterward, instead of preventing before). **Standing caution: treat any family-tag relabel made
+solely to satisfy a cap as provisional until the grounding audit confirms it — do not assume a cap-fix
+is self-evidently correct just because it makes the numbers work.**
+
+### Open findings ledger — updated
+
+| id | finding | status | resolves when |
+|---|---|---|---|
+| F-01 | D2 supply stops at ~5 papers | promoted | Ram decides on ~20 new D2 decision rows — **now also evidenced by the misconception-unit fallback actually firing (F-22), the mechanism F-01 predicted would be needed by this point** |
+| F-10 | Cross-domain lesson-collision check | promoted | Held a third time — 0 `lessonKey` collisions this paper; the 2 real collisions found (F-26) were caught by the stem-Jaccard check instead |
+| F-12 | `t1Alt` resolving to no corpus row | promoted | Paper 3 rate: 55/63 (87%) — see F-24, the IRREDUCIBLE count rose from Paper 2 |
+| F-15 | `deepDive` demoted to deferred Phase 9 addition | promoted | Held for a third full paper; 0 items needed it at generation time |
+| F-16/F-17 | Dispatch granularity fix | **promoted, now settled** | 13/13 succeeded a third consecutive time (F-23) — stop treating as provisional |
+| F-19 | Family-cap check must run at assembly time regardless of dispatch shape | **promoted, confirmed a third time** | Held again this paper (ARCHITECTED over cap, fixed by 1 relabel) — but see F-25, a cap-driven relabel still needs audit review |
+| F-20 | Same-session grounding audit materially improves `t1Alt` resolution rate | promoted | Held again — and this paper is the first time the audit also caught the *generating session's own* error (F-25), not just authoring errors |
+| F-21 | Facet freshness from shipped HTML, not the ledger's "used" column | **promoted** | Standing practice from this paper forward |
+| F-22 | D2 misconception-unit fallback fires and works | **promoted** | First real use, grounding-audited clean |
+| F-23 | Dispatch granularity settled at 3/3 clean runs | **promoted, settled** | No longer an open question |
+| F-24 | `t1Alt` IRREDUCIBLE rate variance across papers (5/63 to 8/63) | open | Watch on Paper 4; may indicate a real baseline rather than a defect |
+| F-25 | Cap-driven family relabels need audit review, not just arithmetic | **promoted** | Standing caution for every future paper's assembly stage |
+| F-26 | Two real cross-item content collisions found only by stem-Jaccard, not `lessonKey` | **promoted** | See detail below — both fixed this session |
+
+**F-26 · Two genuine content collisions surfaced by the stem-Jaccard check even though `lessonKey`
+found zero collisions this paper.** (a) Paper 3's own g55 (D6 §6.11, multi) scored 0.349 against Paper
+2's own g55 — independently, both items combined the same section's "40 users → 800 users" and "12%
+human review" facts with the same numbers. (b) Within Paper 3, g34 and g40 (both D4 §4.9) scored 0.356
+against each other — g34's multi-response answer and g40's single-answer item independently tested the
+identical "latency guardrail breach → do not ship" row. Both fixed (see `EXAM-LOG.md`'s Paper 3 entry
+for the exact changes) and re-verified below threshold. **This means `lessonKey` and stem-Jaccard catch
+different failure modes and both need to run at assembly — `lessonKey` catches two items resting on
+the identical underlying answer text; stem-Jaccard catches two items built from overlapping *numbers
+and phrasing* even when the underlying facet differs.** Worth folding both into the Paper 4
+gate-mechanization work explicitly as complementary, not redundant, checks.
+
+### Pending decisions for Ram
+
+1. **D2 corpus expansion** (F-01, F-12, F-22). Blocks Paper 6. Now has direct evidence the
+   misconception-unit fallback is the active mechanism, not just a contingency plan — worth surfacing
+   plainly at the Paper 4 Insights Round.
+2. **Fidelity-gate script** at Paper 4 — now with three things to fold in: the `lessonKey`
+   minimum-token floor (F-18), the family-cap assembly-time check (F-19), and the stem-Jaccard
+   cross-paper + within-paper collision check (F-26), all proven as one-off scripts across two papers
+   now.
+3. Should gate check 12 resolve `t1Alt` to a row, mechanically? Still open. Paper 3's resolution rate
+   (87%) is lower than Paper 2's (92%) despite using the same audit process, which argues the gap is
+   partly about which facets get drawn each paper, not solely about process rigor (F-24).
+
+### Session reflection
+
+Three consecutive papers on the redesigned pipeline (13/13, 13/13, 13/13) settles F-16/F-17 as a fixed
+part of how this engine runs, not a fragile fix. But this session's most useful finding wasn't about
+authoring at all — it was that the *orchestrating session's own* assembly-time fix (the family-tag
+relabel, F-25) was wrong, and the same grounding-audit discipline built to catch authoring errors
+caught it too, for the same reason: independent, skeptical, blind to the reasoning that produced the
+thing being checked. The practice generalizes further than "audit what the sub-agents wrote" — it
+should audit *this session's own* patches as well, whenever one is made to satisfy a mechanized number
+rather than because a specific piece of grounding was checked.

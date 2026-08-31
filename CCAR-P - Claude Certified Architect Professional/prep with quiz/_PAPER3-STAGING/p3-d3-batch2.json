@@ -1,0 +1,194 @@
+{
+  "items": [
+    {
+      "g": 26,
+      "domain": "D3",
+      "section": "3.13",
+      "facet": "F-3.13-03",
+      "objective": "O3.7",
+      "shape": "S4",
+      "direction": "normal",
+      "format": "single",
+      "selectN": 1,
+      "stem": "An internal assistant only needs document-store search for policy-detail questions; a mandatory search on every turn would add roughly 400ms of latency that most turns don't need. How should search be exposed to the agent?",
+      "opts": [
+        {"l": "A", "t": "Call the document-store search API directly in a pre-processing step before every model turn", "family": "WRONG-AXIS"},
+        {"l": "B", "t": "Delegate the search decision to a separate retrieval agent that independently decides when to query and returns results", "family": "ARCHITECTED"},
+        {"l": "C", "t": "Expose document search as an MCP tool the agent calls only when the conversation requires it", "family": null},
+        {"l": "D", "t": "Expose the document catalog as an MCP resource so the agent can browse available content before querying", "family": "EVIDENCE-MISMATCH"}
+      ],
+      "whyRight": "The decision to search depends on what the conversation actually needs, so it belongs to the model rather than a fixed pipeline step; an MCP tool lets the agent call search only on the turns that require it, sparing the rest the 400ms cost.",
+      "whyWrong": {
+        "A": "A pre-processing call runs before every turn regardless of need, imposing the 400ms cost on the majority of requests the scenario says do not require search.",
+        "B": "A dedicated retrieval agent adds an inference loop, its own latency, and a second accountability boundary to perform what is a single conversational tool decision.",
+        "D": "A resource only lets the agent read what content exists; it gives no way to actually run a search, which the scenario states some questions require."
+      },
+      "deepDive": null,
+      "t1Clause": "search is needed only for policy-detail questions, not on every turn",
+      "t1Alt": "A",
+      "source": "AUTHORED",
+      "block": null,
+      "blockLabel": null,
+      "factAnswerRaw": "MCP tool"
+    },
+    {
+      "g": 27,
+      "domain": "D3",
+      "section": "3.14",
+      "facet": "F-3.14-02",
+      "objective": "O3.8",
+      "shape": "S1",
+      "direction": "normal",
+      "format": "single",
+      "selectN": 1,
+      "stem": "Progressive discovery is meant to spare requests the token cost of tools they don't need. A 60-tool namespace index makes every call pay one discovery round-trip regardless, and trace data show six tools account for 61% of all calls. Which change serves that principle?",
+      "opts": [
+        {"l": "A", "t": "Promote the six high-frequency tools into the base surface so they skip the discovery round-trip", "family": null},
+        {"l": "B", "t": "Add a second discovery layer that pre-fetches the six tools' definitions in parallel with the first round-trip", "family": "REPAIR"},
+        {"l": "C", "t": "Remove the 54 least-used tools so the namespace index shrinks and the round-trip returns faster", "family": "DISCARD"},
+        {"l": "D", "t": "Load all 60 tool definitions into the base context so every request skips the discovery round-trip", "family": "WRONG-AXIS"}
+      ],
+      "whyRight": "Trace data show six tools carry 61% of calls, so promoting them into the base surface removes the round-trip for the traffic that pays it most, while the remaining 54 tools stay behind the namespace index where the round-trip is cheap relative to their rare use.",
+      "whyWrong": {
+        "B": "A parallel pre-fetch layer still pays the round-trip's machinery on every request; it hides the cost rather than removing it for the traffic that dominates the call volume.",
+        "C": "Removing the 54 rarely-used tools deletes capabilities the systems still require, to fix a round-trip speed problem that promoting the six high-frequency tools already solves.",
+        "D": "Loading all 60 definitions reintroduces the full token tax the index exists to avoid; it is the right move only for a small, stable surface, not this one."
+      },
+      "deepDive": null,
+      "t1Clause": "a 60-tool namespace index spanning 8 systems (a large surface)",
+      "t1Alt": "D",
+      "source": "AUTHORED",
+      "block": null,
+      "blockLabel": null,
+      "factAnswerRaw": "Promote those six into the base surface"
+    },
+    {
+      "g": 28,
+      "domain": "D3",
+      "section": "3.1",
+      "facet": "F-3.1-04",
+      "objective": "O3.1",
+      "shape": "S4",
+      "direction": "normal",
+      "format": "single",
+      "selectN": 1,
+      "stem": "A billing agent needs a customer's account tier on 90% of its requests; today it messages a coordinator, which forwards the request to a separate accounts agent and returns the answer, adding a round-trip to nearly every turn. What should change?",
+      "opts": [
+        {"l": "A", "t": "Split the billing agent into two smaller role-scoped agents, one dedicated only to tier lookups", "family": "ARCHITECTED"},
+        {"l": "B", "t": "Give the billing agent a narrowly scoped tool that reads only the customer's account tier", "family": null},
+        {"l": "C", "t": "Leave the coordinator hand-off unchanged, since a single shared coordinator keeps overall routing simpler", "family": "EVIDENCE-MISMATCH"},
+        {"l": "D", "t": "Expose the account tier lookup as a general-purpose tool available to every agent in the system", "family": "OVERSPEC"}
+      ],
+      "whyRight": "A single lookup needed on nearly every turn is exactly the sanctioned exception: a narrowly scoped cross-role tool removes the coordinator round-trip from the common case, while genuinely complex or unrelated needs still route through the coordinator as before.",
+      "whyWrong": {
+        "A": "Splitting into two agents adds another hop and another agent to maintain, for a single high-frequency lookup that a narrow tool grant already resolves without any restructuring.",
+        "C": "The stem states the round-trip lands on 90% of requests; calling that acceptable because routing 'stays simple' ignores the cost the scenario has already quantified.",
+        "D": "A tool visible to every agent widens the decision space for all of them, reintroducing the exact misrouting risk role-scoping exists to prevent, for a need only billing has."
+      },
+      "deepDive": null,
+      "t1Clause": "needs a customer's account tier (one specific lookup, not tool sprawl)",
+      "t1Alt": "A",
+      "source": "AUTHORED",
+      "block": null,
+      "blockLabel": null,
+      "factAnswerRaw": "Give it a narrowly scoped cross-role tool"
+    },
+    {
+      "g": 29,
+      "domain": "D3",
+      "section": "3.3",
+      "facet": "F-3.3-03",
+      "objective": "O3.2",
+      "shape": "S2",
+      "direction": "normal",
+      "format": "single",
+      "selectN": 1,
+      "stem": "A team integrates with a third-party ticketing system through one shared service token. Compliance requires every action be attributable to the employee who took it, and security requires that a departing employee's access can be revoked without affecting anyone else. What satisfies both?",
+      "opts": [
+        {"l": "A", "t": "Substitute per-user credentials for the shared token so each employee's actions and access are individually identifiable and revocable", "family": null},
+        {"l": "B", "t": "Keep the shared token and log which employee initiated each request through the application layer", "family": "DETECTIVE-FOR-PREVENTIVE"},
+        {"l": "C", "t": "Provision one service token per entitlement tier, shared by every employee within that tier", "family": "HALF-MOVE"},
+        {"l": "D", "t": "Add a system-prompt instruction directing the agent to record which employee initiated each ticketing action", "family": "WRONG-AXIS"}
+      ],
+      "whyRight": "Per-user credential substitution satisfies both stated constraints in a single change: each employee's actions carry a distinct, attributable identity, and revoking one departing employee's credential does not touch anyone else's continued access to the integration.",
+      "whyWrong": {
+        "B": "Logging records who likely acted after the request already succeeded under the shared identity; it does not give each employee a distinct, revocable credential.",
+        "C": "Grouping by tier narrows attribution to a tier, not an individual, and revoking one departing employee's access still disrupts everyone left in that same tier.",
+        "D": "Instructing the agent to record who initiated each action via the system prompt is a probabilistic ask that treats an identity and access problem as instruction-following."
+      },
+      "deepDive": null,
+      "t1Clause": "security requires revocation without affecting anyone else",
+      "t1Alt": "B",
+      "source": "AUTHORED",
+      "block": null,
+      "blockLabel": null,
+      "factAnswerRaw": "Per-user credential substitution rather than one shared service token"
+    },
+    {
+      "g": 30,
+      "domain": "D3",
+      "section": "3.5",
+      "facet": "F-3.5-03",
+      "objective": "O3.3",
+      "shape": "S1",
+      "direction": "normal",
+      "format": "single",
+      "selectN": 1,
+      "stem": "The team's SLA is defined at p95, and the stated principle is to measure against the percentile the SLA names. A dashboard shows mean latency down 30% since a recent change, yet complaints about slow responses persist. What should the team do next?",
+      "opts": [
+        {"l": "A", "t": "Measure and optimize p95/p99 latency, since the SLA and the complaints both live in the tail", "family": null},
+        {"l": "B", "t": "Report the mean-latency improvement to stakeholders as evidence the SLA is being met", "family": "EVIDENCE-MISMATCH"},
+        {"l": "C", "t": "Enable streaming so users perceive each response arriving sooner, without changing total latency", "family": "WRONG-AXIS"},
+        {"l": "D", "t": "Investigate and fix the specific slow requests causing the complaints on a case-by-case basis", "family": "REPAIR"}
+      ],
+      "whyRight": "The SLA is defined at p95, and the complaints track the tail, not the average; a mean can improve while the slowest requests stay just as slow, so p95/p99 is the metric that actually reflects what users experience.",
+      "whyWrong": {
+        "B": "Mean latency improving while complaints persist is itself evidence the tail is still slow; the stem already states user complaints have not decreased.",
+        "C": "Streaming changes only the time to the first token, not the p95 total latency the SLA is defined against, so the tail causing complaints can remain slow.",
+        "D": "Fixing individual slow requests one at a time does not establish or track the percentile metric the SLA is actually defined against, so the pattern will recur."
+      },
+      "deepDive": null,
+      "t1Clause": "the SLA is defined at p95 (a formal percentile target is in play)",
+      "t1Alt": "C",
+      "source": "AUTHORED",
+      "block": null,
+      "blockLabel": null,
+      "factAnswerRaw": "Measure and optimize p95/p99"
+    },
+    {
+      "g": 31,
+      "domain": "D3",
+      "section": "3.7",
+      "facet": "F-3.7-02",
+      "objective": "O3.4",
+      "shape": "S6",
+      "direction": "normal",
+      "format": "single",
+      "selectN": 1,
+      "stem": "A team runs 200,000 requests/day and already captures 100% of errors and escalations for diagnosis. They also want to detect gradual regressions in typical response quality over time and need a stable baseline distribution for comparison. How should routine successful requests be sampled?",
+      "opts": [
+        {"l": "A", "t": "Take a small uniform random sample of routine successful requests; baselines only need enough volume to stay statistically stable", "family": null},
+        {"l": "B", "t": "Trace 100% of routine successes in addition to the existing error and escalation capture", "family": "OVERSPEC"},
+        {"l": "C", "t": "Skip sampling routine successes entirely, since errors and escalations already provide full diagnostic coverage", "family": "DISCARD"},
+        {"l": "D", "t": "Label each routine success trace with the requesting user's ID so regressions can be traced to specific accounts", "family": "WRONG-AXIS"}
+      ],
+      "whyRight": "A baseline only needs to be statistically stable, not exhaustive; a small uniform sample of routine successes gives that stability at a fraction of the cost, while errors, escalations and low-confidence paths already get full capture separately.",
+      "whyWrong": {
+        "B": "Full capture of routine successes at 200,000 requests a day multiplies storage cost for no gain, since a stable baseline needs only enough volume to be representative, not every request.",
+        "C": "Error and escalation traces show what failure looks like, but say nothing about what normal, healthy requests look like, which is exactly what a regression baseline needs to compare against.",
+        "D": "Per-user identifiers make metrics high-cardinality and expensive at this volume; that need belongs on traces, and a baseline distribution never required per-account granularity in the first place."
+      },
+      "deepDive": null,
+      "t1Clause": "200,000 requests/day (a high-volume system)",
+      "t1Alt": "B",
+      "source": "AUTHORED",
+      "block": null,
+      "blockLabel": null,
+      "factAnswerRaw": "A small uniform sample of routine successes"
+    }
+  ],
+  "notes": [
+    "g29 (F-3.3-03): t1Alt=B is a best-effort T1 resolution — dropping the stated revocation constraint leaves only attribution, where application-layer logging could be argued adequate — but it doesn't map cleanly to a distinct row in 3.3's own Decision Axis table (that table's other rows are about document-store entitlement filtering, a different flavor from this credential/attribution facet). T2 is solid (option C reuses 3.3's Row 2 'separate indexes per entitlement tier' mechanism, misapplied at tier- rather than user-granularity). Flagging T1 as a likely soft/IRREDUCIBLE case for the grounding audit.",
+    "g31 (F-3.7-02): t1Alt=B is grounded in 3.7's Core Facts 'Cost dimension' row (full-fidelity capture only becomes prohibitive at six-figure request volumes) rather than a literal alternate row in the Decision Axis table itself, since that table's rows are all framed for the high-volume case. Flagging as a softer T1 resolution for audit awareness, though the underlying logic is directly stated in the section's Core Facts."
+  ]
+}
