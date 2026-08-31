@@ -654,3 +654,171 @@ caught it too, for the same reason: independent, skeptical, blind to the reasoni
 thing being checked. The practice generalizes further than "audit what the sub-agents wrote" — it
 should audit *this session's own* patches as well, whenever one is made to satisfy a mechanized number
 rather than because a specific piece of grounding was checked.
+
+---
+
+## Session 7 — 2026-08-31 — Paper 4 generated, direction inversion begins, heaviest audit-fix cycle yet
+
+`mock-exams/CCAR-P_MockTest-4_v1.html`. Untargeted fourth diagnostic (Papers 1-3 all generated but
+none sat by the time this session ran, confirmed with Ram before generating). Ram also confirmed
+the D2 facet-supply decision before any D2 item was authored: direction-inverted reuse for the
+remaining 5 items after the 3 unused misconception units. Full detail is in `EXAM-LOG.md`'s Paper 4
+entry — this session covers only what the *next* generating session needs.
+
+### Findings from this session
+
+**F-27 · Direction inversion (§7.2) fires for the first time and mostly works, but the audit caught
+one of Ram's own approved D2 slots failing its own genuineness test. — PROMOTED WITH CAVEAT.** 17
+items shipped `direction: "inverted"` across all 8 shapes. 16 of 17 were confirmed genuine
+inversions by the independent audit (a real, different correct answer from the section's
+normal-direction lesson, not a reworded restate). The 17th — D2 §2.8's reuse-inverted item, one of
+the five slots Ram's approved D2 mechanism produced — was found to be a cosmetic restate of Paper
+1's own already-shipped item at the same facet. **This means "Ram approved the mechanism" and "every
+instance of the mechanism is actually genuine" are separate claims, and only the audit can verify
+the second one.** Reworked into a genuine inversion (irreconcilable regulator-vs-caching conflict)
+before shipping. Standing practice for Paper 5 onward: every direction-inverted item, D2's
+reuse-mechanism ones especially, needs the audit to explicitly check "is the correct answer's text
+genuinely different from the anchor facet's own answer," not just "does the shape's inversion
+definition apply in the abstract."
+
+**F-28 · The independent grounding audit overturned an author's own IRREDUCIBLE self-assessment for
+the first time. — PROMOTED (first occurrence, high-value).** D2 §2.2's reuse-inverted item (g13) was
+flagged by its own sub-batch author as IRREDUCIBLE, citing the same absolute-rule structure that made
+Paper 2's g14/g15 genuinely unresolvable in that section. The independent D2 auditor read the item
+cold, without seeing that self-assessment, and concluded T1 **does** resolve — weakly, but really —
+once one specific option's wording is made to state its no-op function explicitly rather than
+implicitly. Applied exactly as the audit recommended; the item now passes T1 rather than joining the
+IRREDUCIBLE list. **This is the clearest evidence this project has produced that the audit's value is
+specifically being blind to the author's own reasoning, not merely re-checking the author's
+arithmetic** — a competent author can talk themselves into "this can't resolve" the same way a
+competent auditor can talk themselves into a false pass; the fix is having a second reader who never
+saw the first reader's framing, in both directions.
+
+**F-29 · A smaller-scale version of D2's supply problem exists in D7's section 7.2. — NEW, open.**
+The independent D7 audit, asked to specifically compare this paper's 7.2 multi-response item against
+all three prior papers' D7 items, found it structurally duplicated Paper 1's own g60 at the same two
+facets (`allowed-tools` scoping + `context:fork`) — same two-part mechanism pairing, same two-part
+problem shape, differing only in renamed nouns. The root cause: section 7.2 has only two positive
+mechanism rows to pair for a genuine 2-of-4 multi-response item (Phase 3.3's "≥2 independently-true
+rows" requirement), so any two papers drawing a 7.2 multi-response item will tend to converge on the
+same pairing. Reworked with substantially different surface details this time, but the underlying
+constraint isn't fixed by that — it will recur. Unlike D2 (18 facets total, no headroom anywhere),
+D7 has 39 facets and plenty of headroom elsewhere; this is narrowly about section 7.2's own
+multi-response supply, not a domain-wide crisis. **Watch whether this recurs on Paper 5's 7.2
+multi-response item (if D7 draws one again) before deciding whether it needs its own remedy.**
+
+**F-30 · A shared authoring brief can omit a schema field the mechanized gate doesn't require either,
+and the resulting defect is invisible everywhere except the rendered page. — PROMOTED, validates the
+browser-click step as load-bearing.** This paper's own `p4-shared-brief.md` item schema didn't list
+`cite` (present in every prior paper's brief and in the TEMPLATE's own render code) — an omission in
+this session's own brief-authoring, not a sub-batch error. The gap passed `validateItems()` (didn't
+require `cite`), passed the family/dedup/objective checks (none of them read `cite`), and was only
+found by opening the shipped file in a browser and reading the feedback footer, which showed
+"undefined" on every single question. Fixed by adding `cite` to all 63 items and, more durably, to
+`validateItems()`'s required-field list in the TEMPLATE itself, so a future paper's own brief omission
+(if one happens again) fails the mechanized gate instead of needing a human to notice the word
+"undefined" on screen. **This is now the single clearest concrete argument this project has for why
+§4f/Phase 6 step 9's "open it in a browser and click through it" is not ceremonial** — every other
+check in the 13-check table would have passed this paper as-is.
+
+**F-31 · `ARCHETYPE-LEDGER.md`'s own shape-budget (hard floor 4, hard ceiling 11) is not one of the
+13 numbered gate checks and was violated, unnoticed, on at least one prior paper. — NEW, needs a
+decision.** Checking this paper's own facet-supply data pull against Papers 1-3's actual shipped
+shape tallies (via `prior-papers-analysis.json`) surfaced that Paper 2 shipped S8 at 12 items (over
+the stated ceiling of 11) and S7 at 3 (under the stated floor of 4) — a real violation of the
+archetype ledger's own stated budget that was never caught or fixed, because no numbered gate check
+covers it. This paper caught its own version of the same risk before dispatch (a raw draw put S1 at
+15 and S8 at 3) and fixed it, but only because this session happened to compute and print the shape
+tally before authoring started, not because any check requires it. **Open decision for Ram: should
+shape-budget compliance become gate check 14, formally, or is Paper 2's already-shipped violation
+accepted as a known, unfixed historical fact (papers are not retroactively edited once shipped, per
+standing practice)?** Either way, future papers should keep computing and verifying this tally
+pre-dispatch, since it is now known to fail silently otherwise.
+
+**F-32 · Gate mechanization (checks 10/11) landed this paper, per the orchestration prompt's own
+Phase 6 milestone, and caught its own construction bug before shipping. — PROMOTED.** A first draft
+of the family-cap check computed the EVIDENCE-MISMATCH/DETECTIVE-FOR-PREVENTIVE/ARCHITECTED
+thresholds as live percentages of the paper's actual distractor count (181, since multi-response
+items carry 2 distractors instead of 3) rather than the orchestration prompt's fixed numbers
+(15/9/19/47, calibrated once against a 189-distractor baseline). `Math.ceil(181 × 0.05) = 10` would
+have failed a paper sitting exactly at the correct floor of 9 — caught by running the new check
+against this paper's own data before trusting it. **Standing lesson for any future gate-mechanization
+work: a threshold stated as "≥9 (5%)" in prose means the fixed number is the actual rule and the
+percentage is descriptive provenance, not a formula to recompute against a varying total.**
+
+A second bug in the same mechanization surfaced from ordinary re-use, not construction: re-running
+the gate after Phase 8's ledger rebuild (which appends the paper's own stems/shape-rows to
+`STEM-LEDGER.md`/`ARCHETYPE-LEDGER.md`) produced 64 false "duplicate" errors — every item scored a
+guaranteed 1.000 Jaccard against its own now-appended ledger row. Fixed by having the gate parse the
+paper number from the filename and exclude that paper's own already-appended rows from both the
+stem-Jaccard and triple-reuse comparisons. **The gate is now safe to re-run at any point in the
+Phase 6→8 sequence, before or after the ledger rebuild — a real robustness gap the original
+mechanization didn't anticipate, since it was only ever run once, pre-rebuild, on Papers 1-3's
+one-off scripts.**
+
+**F-33 · The `t1Alt` IRREDUCIBLE rate reached 62/63 (98%), the best of any paper so far, but the
+comparison is confounded and should not be read as a trend. — UPDATES F-24, still open.** Paper 4's
+single IRREDUCIBLE case (g63) is the lowest count yet (Papers 1-3: 13, 5, 8). But this paper also
+received by far the heaviest fix cycle of any paper so far — 7 independent domain audits (versus the
+usual practice) plus three separate correction rounds after the first fix pass introduced its own new
+errors (a letter-position break, a family-duplicate, a word-cap overrun). The rate improvement is
+real but it measures "how much correction effort this paper received," not necessarily "how sound the
+underlying authoring got." **F-24's open question — does the IRREDUCIBLE rate reflect a real
+corpus-wide baseline near 5-13%, or is it mostly a function of how much audit-and-fix effort a given
+paper gets — is still open, and this paper's result muddies rather than resolves it.**
+
+### Open findings ledger — updated
+
+| id | finding | status | resolves when |
+|---|---|---|---|
+| F-01 | D2 supply stops at ~5 papers | promoted | **Now overdue — see pending decisions below. Paper 4 already needed the direction-inverted-reuse fallback for 5 of 8 items, and one failed its genuineness test on first attempt (F-27)** |
+| F-10 | Cross-domain lesson-collision check | promoted | Held a fourth time — 0 `lessonKey` collisions this paper |
+| F-12 | `t1Alt` resolving to no corpus row | promoted | Paper 4 rate: 62/63 (98%) — see F-33, confounded by an unusually heavy fix cycle, not a clean trend point |
+| F-15 | `deepDive` demoted to deferred Phase 9 addition | promoted | Held for a fourth full paper; 0 items needed it at generation time |
+| F-16/F-17 | Dispatch granularity fix | promoted, settled | 13/13 succeeded a fourth consecutive time, zero stalls |
+| F-18 | `lessonKey` minimum-token floor (exclude answers under 3 content words) | promoted | Held cleanly — 3 short generic answer strings ("Insufficient" ×3, misconception-unit blanks) correctly excluded, 0 false-positive collisions |
+| F-19 | Family-cap check must run at assembly time regardless of dispatch shape | promoted, confirmed a fourth time | Needed 2 rounds this paper (2 assembly-time relabels, then 3 more mid-audit-fix relabels) — see F-25's caution, which held again |
+| F-20 | Same-session grounding audit materially improves `t1Alt` resolution rate | promoted | Held again, and this time also overturned an author's own IRREDUCIBLE call (F-28) — the strongest form of the finding yet |
+| F-21 | Facet freshness from shipped HTML, not the ledger's "used" column | promoted, settled | Fourth consecutive paper using this method |
+| F-22 | D2 misconception-unit fallback fires and works | promoted | Fired again cleanly for M-2.3/M-2.5/M-2.9 |
+| F-23 | Dispatch granularity settled at 3/3 clean runs | promoted, settled | Now 4/4 |
+| F-24 | `t1Alt` IRREDUCIBLE rate variance across papers | open | See F-33 — Paper 4's 98% doesn't resolve this, it adds a confounded data point |
+| F-25 | Cap-driven family relabels need audit review, not just arithmetic | promoted, confirmed a second time | Held again this paper across both rounds of relabelling |
+| F-26 | `lessonKey` and stem-Jaccard catch different collision types, both needed | promoted | Confirmed again — g49's collision this paper was caught by stem-Jaccard only, 0 `lessonKey` hits |
+| F-27 | Direction inversion mostly genuine on first attempt, but needs per-instance audit | **new, promoted** | 16/17 genuine on first pass; the 17th (D2 reuse-inverted) needed audit-driven rework |
+| F-28 | Independent audit can and did overturn an author's own IRREDUCIBLE call | **new, promoted** | First occurrence, D2/g13 — audit's blindness to the author's reasoning is the mechanism, not incidental |
+| F-29 | D7 §7.2's multi-response supply is structurally thin, D2-like on a smaller scale | **new, open** | Watch whether a future paper's 7.2 multi-response item also duplicates a prior pairing |
+| F-30 | A schema field a brief omits and the gate doesn't require is invisible except on the rendered page | **new, promoted** | Validates the browser-click step; `cite` now added to `validateItems()`'s required fields |
+| F-31 | Archetype ledger's own shape-budget floor/ceiling isn't a numbered gate check and was violated unnoticed on Paper 2 | **new, open** | Needs Ram's decision — formalize as check 14, or accept as an unfixed historical fact |
+| F-32 | Gate mechanization (checks 10/11) landed, caught a percentage-vs-fixed-threshold bug before shipping | **new, promoted** | `tools/run-gate.js` now covers checks 1, 10, 11 |
+| F-33 | `t1Alt` IRREDUCIBLE rate hit 98% but the result is confounded by fix-cycle intensity | **new, open** | Updates F-24; watch Paper 5's rate under normal (not heavily audited) conditions |
+
+### Pending decisions for Ram
+
+1. **D2 corpus expansion (F-01) is now overdue, not merely "due before Paper 6."** Paper 4 needed
+   the direction-inverted-reuse fallback for 5 of 8 items and one instance failed its own genuineness
+   test on first attempt (F-27). Paper 5 likely has one more inverted slot per D2 facet before the
+   supply is genuinely, fully spent — worth deciding before Paper 5 is generated, not after.
+2. **Should `ARCHETYPE-LEDGER.md`'s shape-budget floor/ceiling become a formal, numbered gate check
+   (F-31)?** It is currently enforced only by whichever session happens to compute the tally before
+   dispatch — Paper 2 shipped a real violation (S8 at 12, S7 at 3) that no check ever caught.
+3. **Should the D7 §7.2 multi-response supply thinness (F-29) get its own tracking, the way D2's did
+   via `FACET-LEDGER.md`'s supply note?** One data point so far; a second occurrence on Paper 5 or
+   later would justify it.
+4. **`t1Alt` resolution mechanization (Session 6's pending item 3) is still open** — Paper 4's 98%
+   rate is the best yet but is explicitly confounded by fix-cycle intensity (F-33), so it does not by
+   itself argue for or against mechanizing the check.
+
+### Session reflection
+
+This was the first paper where the independent grounding audit did more than catch grounding errors
+in what the sub-batches wrote — it overturned one author's own honest IRREDUCIBLE self-assessment
+(F-28) and caught one of Ram's own approved mechanisms failing its genuineness test on a specific
+instance (F-27), while this session's own rework of the audit's findings introduced three further
+mechanical errors (a letter-position break, a duplicate family tag, a word-cap overrun) that were
+only caught by re-running the same mechanized gate rather than by inspection. The standing lesson
+generalizes past "audit the sub-agents" and even past Session 6's "audit this session's own
+assembly-time patches too": every fix, at every stage, from every source — sub-batch author,
+independent auditor, or the orchestrating session itself — is provisional until it has been run back
+through the same mechanized checks everyone else's work goes through. No one's fix, including the
+fix to a fix, gets a pass on inspection alone.
