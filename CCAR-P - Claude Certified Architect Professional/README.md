@@ -5,7 +5,8 @@ Preparation project for Anthropic's **Claude Certified Architect – Professiona
 
 **Status:** parallel track — kept warm while **CCDV-F is the active exam** (decided 2026-08-19).
 **Current phase:** Phases 0, 2 and 4 closed. Official guide obtained and reconciled 2026-08-25, corpus
-complete the same day, mock-exam engine built 2026-08-29, Paper 1 generated 2026-08-30 (not yet sat).
+complete the same day, mock-exam engine built 2026-08-29, Papers 1-5 generated (Paper 5 most recent,
+2026-09-02; D2 corpus expanded 21 rows the same day, closing its facet-supply crisis), none yet sat.
 See `ROADMAP.md` for the live stage.
 *(Corrected 2026-08-30 via `/sync-up` — this line previously said "Phase 0 — blocked" three weeks
 after Phase 0 actually closed.)*
@@ -69,6 +70,8 @@ reproduced here:
 state before Phase 0 closed. Since 2026-08-25: the official guide is obtained and reconciled (verified
 with a documented provenance caveat — see `EXAM-FACTS_v1.md`), and all seven domain files are built
 (78 sections, 79 scenarios, 158 tagged distractors, per `CCAR-P_Corpus-Index_v1.md` and `ROADMAP.md`'s
-Phase 2). Since 2026-08-30: the mock-exam engine is built and Paper 1 is generated (63 items, full
-AUTHOR mode, `prep with quiz/mock-exams/CCAR-P_MockTest-1_v1.html`), not yet sat. What's still
-genuinely missing: only Domains 1–4 of 7 have been taught/read so far.
+Phase 2). Since 2026-08-30: the mock-exam engine is built. **Updated 2026-09-02** — this previously
+stopped at Paper 4; Papers 1-5 are now generated (63 items each, full AUTHOR mode,
+`prep with quiz/mock-exams/CCAR-P_MockTest-{1,2,3,4,5}_v1.html`), none yet sat. D2's decision-table
+corpus was also expanded (21 new rows) on 2026-09-02, closing the facet-supply crisis flagged since
+Phase 2. What's still genuinely missing: only Domains 1–4 of 7 have been taught/read so far.

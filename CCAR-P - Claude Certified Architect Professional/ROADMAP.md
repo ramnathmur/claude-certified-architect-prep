@@ -134,6 +134,35 @@ guide's wrong scenario count reached generated practice material.
 > `mock-exams/CCAR-P_MockTest-3_v1.html`, 0 gate errors, 8 documented IRREDUCIBLE T1 exceptions (up
 > from Paper 2's 5 — see `GENERATION-INTELLIGENCE.md` F-24, still being watched, not yet understood as
 > either a fixable defect or a real corpus-wide baseline). Not yet sat.**
+>
+> **Paper 4 generated 2026-08-31 — direction inversion begins.** A fourth untargeted diagnostic
+> (Papers 1-3 still unscored, confirmed with Ram before generating). D2's facet supply is now fully
+> exhausted (0 of 18 facets fresh) — per Ram's approved decision, 3 of D2's 8 items draw on the last
+> unused misconception units and 5 reuse an already-shipped facet as an anchor but test the inverted
+> direction, per the orchestration prompt's Papers 4-7 shape policy (17 items paper-wide ship
+> `direction:"inverted"`, >=2 per shape across all 8 shapes). Fidelity-gate checks 10 and 11 (family
+> caps, stem-Jaccard dedup) are now mechanized in `tools/run-gate.js`, not one-off scripts. The
+> independent 7-domain grounding audit found materially more than any prior paper — including
+> overturning an author's own IRREDUCIBLE self-assessment for the first time, and catching one of the
+> five D2 reuse-inversion slots as a cosmetic restate of Paper 1's own already-shipped lesson (reworked
+> before shipping). **Fully generated, assembled, grounding-audited, and gate-clean —
+> `mock-exams/CCAR-P_MockTest-4_v1.html`, 0 gate errors, 1 documented IRREDUCIBLE T1 exception (the
+> lowest yet, though `GENERATION-INTELLIGENCE.md` F-33 flags this as confounded by an unusually heavy
+> audit-fix cycle, not necessarily a clean trend). Not yet sat.**
+>
+> **Paper 5 generated 2026-09-02 — D2 corpus expansion implemented, heaviest audit-fix cycle yet.** A
+> fifth untargeted diagnostic (Papers 1-4 still unscored, confirmed with Ram before generating). Ram
+> chose to expand D2's corpus rather than continue the reuse-inversion fallback: 21 new decision-table
+> rows added across all 9 D2 sections (18 → 39 facets), closing the supply crisis flagged since Phase
+> 2. D2 needed zero fallback mechanism this paper as a result. Gate check 14 (shape-budget floor/
+> ceiling) is now mechanized, per Ram's decision. The independent 7-domain grounding audit found more
+> than any prior paper — including one confirmed cosmetic-restate direction-inversion and two items
+> resting on a mechanism this session's own planning had invented with no support in the corpus,
+> concentrated in Domain 5 — all reworked before shipping; see `GENERATION-INTELLIGENCE.md` F-36.
+> **Fully generated, assembled, grounding-audited, and gate-clean —
+> `mock-exams/CCAR-P_MockTest-5_v1.html`, 0 gate errors, 0 documented IRREDUCIBLE T1 exceptions (a
+> first for this series, though `GENERATION-INTELLIGENCE.md` F-38 flags this as confounded by the
+> heaviest audit-fix cycle of any paper so far, not a clean improvement). Not yet sat.**
 
 ### Phase 3 — Production exposure (months 3–8, Path B only)
 - [ ] Take one Claude system at Infosys from design to production: integration, evals, safety
@@ -150,8 +179,10 @@ guide's wrong scenario count reached generated practice material.
       `ARCHETYPE-LEDGER.md` (8 shapes, 8 distractor families), `GENERATION-INTELLIGENCE.md`
 - [x] `mock-exams/CCAR-P_MockTest-TEMPLATE_v1.html` and `mock-exams/DASHBOARD.html`, with
       `tools/run-gate.js` running fidelity-gate check 1 in Node
-- [ ] **Open, blocks Paper 6:** D2 holds 18 facets against 8 items per paper — 2.2 papers of supply.
-      Needs ~20 more decision-table rows. Ram's decision, due by the Paper 4 Insights Round
+- [x] **D2 corpus expansion — done 2026-09-02, per Ram's decision.** 21 new decision-table rows added
+      across all 9 D2 sections (18 → 39 facets), closing the supply crisis that had fully exhausted
+      D2's facets after Paper 4 (see `GENERATION-INTELLIGENCE.md` F-01/F-34). D2 needed zero fallback
+      mechanism for Paper 5; re-check remaining supply before Paper 7 or 8
 - [ ] Generate and sit papers on the Foundations cadence. Target ≥10 scored papers
 - [ ] `EXAM-LOG.md` per-paper: domain breakdown, per-question misses, Professor's Note
 - [ ] Insights Round every 3 scored papers

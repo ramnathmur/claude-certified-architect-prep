@@ -822,3 +822,157 @@ assembly-time patches too": every fix, at every stage, from every source — sub
 independent auditor, or the orchestrating session itself — is provisional until it has been run back
 through the same mechanized checks everyone else's work goes through. No one's fix, including the
 fix to a fix, gets a pass on inspection alone.
+
+---
+
+## Session 8 — 2026-09-02 — Paper 5 generated, D2 corpus expansion implemented, heaviest audit-fix cycle yet
+
+`mock-exams/CCAR-P_MockTest-5_v1.html`. Fifth untargeted diagnostic (Papers 1-4 all generated but
+none sat by the time this session ran, confirmed with Ram before generating, despite the generation
+prompt naming this the strongest case yet for pausing to sit one first). Ram confirmed three
+decisions before any content was authored: the D2 corpus-expansion mechanism (see below), proceeding
+untargeted, and formalizing the shape-budget check (F-31) as gate check 14. Full detail is in
+`EXAM-LOG.md`'s Paper 5 entry — this session covers only what the *next* generating session needs.
+
+### Findings from this session
+
+**F-34 · D2's corpus expansion closed the series' longest-standing structural risk. — RESOLVES F-01.**
+21 new decision-table rows were added to `CCAR-P_Domain-2_v1.md` across all 9 sections (D2: 18 → 39
+facets), per Ram's decision. D2 needed zero fallback mechanism this paper — the first time since
+Paper 2 that every D2 item, including its 3 direction-inverted ones, came from a genuinely fresh
+facet. **F-01 is resolved, not merely deferred** — re-check remaining D2 supply before Paper 7 or 8,
+but Papers 6 and likely 7 are reachable on the expanded corpus without further intervention.
+
+**F-35 · A direction-override can land on a misconception-fallback slot without any mechanized check
+catching it, and did — three times in one paper. — NEW, promoted, needs a process fix.** The central
+plan's `DIRECTION_OVERRIDES` list was written assuming three specific (domain, section) targets
+would draw a fresh facet; the freshness-greedy algorithm instead placed all three (D1 §1.4, D4 §4.9,
+D6 §6.4) on that section's misconception-unit fallback, since those sections' own facets were already
+exhausted. The shared brief states misconception items never invert (a stated wrong belief has no
+clean "opposite direction"), so this was a genuine plan/brief conflict — not caught by `finalize-
+plan.js`'s own sanity assertions, and not caught by `validateItems()` either, since the schema has no
+rule against it. **All three sub-batch agents caught the conflict themselves and flagged it for
+confirmation rather than silently picking an interpretation** — the same honest-flagging behavior
+F-20's same-session-audit discipline was built to reward, now showing up at the sub-batch level too.
+Resolution: kept as direction-inverted, treating the misconception id as a fresh scenario anchor;
+the independent audit confirmed all three genuinely differ from their section's normal lesson.
+**Process fix for Paper 6 onward: check `plan-raw.json`'s `kind` field for every `DIRECTION_OVERRIDES`
+target before finalizing the plan**, so this interaction is anticipated rather than discovered after
+dispatch.
+
+**F-36 · The independent grounding audit confirmed a cosmetic restate and found two IRREDUCIBLE-as-
+constructed items resting on an invented mechanism — all three concentrated in one domain. — NEW,
+open, names a session-specific weak point.** D5's g44 (reuse-inverted, anchor F-5.8-01) was found to
+teach the identical lesson its anchor's own normal-direction scenario already teaches — the exact
+cosmetic-restate failure mode F-27/F-28 exist to catch. Separately, D5's g45 and g49 both rested on a
+mechanism this session's own planning-stage `invGuidance` invented (a "scoped infrastructure-layer
+exception" for g45; a FedRAMP "scoped exception" for g49) that does not exist anywhere in either
+cited corpus section — g49's case is sharper still, since the section's own Misconception block
+explicitly forecloses it. **This is not evidence D5's corpus is thinner than its siblings** — it is
+evidence that *this session's own* D5 inversion guidance was drafted from a paraphrased sense of the
+section's theme rather than a directly-quoted row, three separate times. All three were fully
+reworked (g44 re-anchored on the section's genuine opposite-lesson row; g45 rebuilt around the
+section's real classify→de-identify→re-associate→audit mechanism; g49 flipped to normal direction
+with the correct answer moved to the option the corpus actually supports). **Standing lesson for any
+future paper's `invGuidance` drafting: quote the specific row the inversion targets, don't paraphrase
+the section's general theme** — the gap between "sounds right for this section" and "traces to an
+actual row" is exactly where all three of these originated.
+
+**F-37 · Merging independently-produced fix batches can silently reintroduce already-fixed
+violations and revert unrelated already-applied fixes on the same item — confirmed for the first
+time at fix-cycle scale, not just single-edit scale. — NEW, promoted, extends F-25.** Two distinct
+failure shapes, both caught only by re-running the full gate after the merge: (1) a family-cap
+violation and a duplicate-family tag that had already been fixed earlier in this same session
+reappeared after merging five domains' independently-produced fix outputs, because one domain's fix
+(D5 g49's rework) retagged an option to a family that pushed the paper-wide `ARCHITECTED` count back
+over its ceiling; (2) one fix agent's full-item rewrite (D7 g62) correctly applied its own assigned
+fix but silently reverted a *different*, already-applied fix (an earlier stem-Jaccard rework) on the
+same item, because reconstructing the full item object from partial context lost track of an edit
+made outside that agent's own assigned scope. **F-25's lesson — a cap-driven fix needs grounding-
+audit review, not just arithmetic — now generalizes further: a fix produced by an independent agent
+working from a snapshot of an item can silently undo a fix applied to that same item by a different
+process, and the only reliable catch is re-running the complete mechanized gate after every merge,
+never trusting an individual fix's own self-report of what changed.**
+
+**F-38 · The `t1Alt` IRREDUCIBLE rate reached 0/63 for the first time, but the comparison is more
+confounded than any prior paper's. — UPDATES F-24/F-33, still open.** Zero documented Professional-
+tier exceptions is a first for this series. But this paper also received the heaviest correction
+cycle of any paper so far — 17 of 63 items were touched by the independent audit's own findings,
+more than double Paper 4's previous high-water mark (7 audit-driven reworks). **F-24's open
+question — is the IRREDUCIBLE rate a real corpus-wide baseline, or mostly a function of audit-and-
+fix effort — is now even less resolved than after Paper 4**: a 0% rate achieved via the heaviest
+correction cycle yet is the strongest possible evidence for the "mostly a function of effort" reading,
+not against it.
+
+**F-39 · Gate check 14 (shape-budget, F-31) is mechanized and already caught what it was built to
+catch. — NEW, promoted.** `tools/run-gate.js` now enforces the hard floor 4 / ceiling 11 per shape as
+a numbered check. The same S1-overflow pattern Paper 4 hit (raw freshness draw concentrating too many
+items in one shape) recurred in this paper's own raw draw and was rebalanced pre-dispatch, exactly as
+Paper 4's session did by hand — the check itself then passed cleanly once the rebalance was in place,
+confirming the mechanization works but does not remove the need to compute the tally before dispatch,
+only to catch it if that step is skipped.
+
+### Open findings ledger — updated
+
+| id | finding | status | resolves when |
+|---|---|---|---|
+| F-01 | D2 supply stops at ~5 papers | **resolved** | Corpus expanded 2026-09-01 (F-34); re-check supply before Paper 7 or 8 |
+| F-10 | Cross-domain lesson-collision check | promoted | Held a fifth time — 0 `lessonKey` collisions this paper (after 6 recomputes from audit-fix content changes) |
+| F-12 | `t1Alt` resolving to no corpus row | promoted | Paper 5 rate: 63/63 (100%) — see F-38, the most confounded data point yet |
+| F-15 | `deepDive` demoted to deferred Phase 9 addition | promoted | Held for a fifth full paper; 0 items needed it at generation time |
+| F-16/F-17 | Dispatch granularity fix | promoted, settled | 13/13 succeeded a fifth consecutive time, zero stalls |
+| F-18 | `lessonKey` minimum-token floor | promoted | Held; also correctly handled a `\|\|`-joined compound answer string (D1 g6) without producing a false collision |
+| F-19 | Family-cap check must run at assembly time regardless of dispatch shape | promoted, confirmed a fifth time | Needed 2 rounds at assembly plus 2 more after the audit-fix merge — see F-37, the heaviest round-count yet |
+| F-20 | Same-session grounding audit materially improves `t1Alt` resolution rate | promoted | Held again; also the first paper where sub-batch *authors themselves* (not just the audit) caught and honestly flagged a planning-stage conflict (F-35) |
+| F-21 | Facet freshness from shipped HTML, not the ledger's "used" column | promoted, settled | Fifth consecutive paper using this method |
+| F-22 | D2 misconception-unit fallback fires and works | promoted, now dormant | Not needed this paper — D2's corpus expansion (F-34) removed the need; keep the mechanism documented in case a future domain hits the same wall |
+| F-23 | Dispatch granularity settled at 4/4 clean runs | promoted, settled | Now 5/5 |
+| F-24 | `t1Alt` IRREDUCIBLE rate variance across papers | open | See F-38 — 0/63 this paper, the most confounded point in the series so far |
+| F-25 | Cap-driven family relabels need audit review, not just arithmetic | promoted, confirmed a third time, extended | F-37 generalizes this to independently-merged fix batches, not just single-session relabels |
+| F-26 | `lessonKey` and stem-Jaccard catch different collision types, both needed | promoted | Confirmed again — this paper's 7 stem-Jaccard collisions were all caught by that check specifically, 0 by `lessonKey` |
+| F-27 | Direction inversion mostly genuine on first attempt, but needs per-instance audit | promoted | This paper: 1 of 17 originally-planned inversions (D5 g44) failed genuineness on first attempt — comparable rate to Paper 4's 1-of-17 |
+| F-28 | Independent audit can and did overturn an author's own IRREDUCIBLE call | promoted | No new instance this paper, but the underlying mechanism (audit blind to author reasoning) is what caught F-36's three D5 findings |
+| F-29 | D7 §7.2's multi-response supply is structurally thin, D2-like on a smaller scale | open, confirmed a second time | Recurred exactly as flagged after Paper 4 — same mechanism pairing as Papers 1 and 4, judged distinct enough in illustration this time. Now 3 data points; still open whether it needs its own remedy |
+| F-30 | A schema field a brief omits and the gate doesn't require is invisible except on the rendered page | promoted, settled | `cite` held correctly across all 63 items and every audit-fix rework this paper |
+| F-31 | Archetype ledger's own shape-budget floor/ceiling isn't a numbered gate check | **resolved** | Formalized as gate check 14 this paper (F-39) |
+| F-32 | Gate mechanization (checks 10/11) — fixed threshold vs live-percentage bug | promoted, settled | Held; no recurrence |
+| F-33 | `t1Alt` IRREDUCIBLE rate hit 98% but confounded by fix-cycle intensity | superseded | See F-38 — Paper 5 reached 100%, even more confounded |
+| F-34 | D2 corpus expansion (21 new rows) closed the series' longest-standing structural risk | **new, resolves F-01** | D2 needed zero fallback this paper; re-check supply before Paper 7 or 8 |
+| F-35 | A direction-override can land on a misconception-fallback slot unnoticed by any mechanized check | **new, promoted, needs a process fix** | Check `plan-raw.json`'s `kind` field before finalizing `DIRECTION_OVERRIDES` for Paper 6 onward |
+| F-36 | Independent audit confirmed a cosmetic restate and 2 invented-mechanism IRREDUCIBLE items, all in one domain | **new, open** | Ground every `invGuidance` in a quoted corpus row, not a paraphrased theme, for D5 specifically on Paper 6 |
+| F-37 | Merging independently-produced fix batches can silently reintroduce fixed violations or revert unrelated fixes | **new, promoted, extends F-25** | Always re-run the full gate after merging fix batches from multiple agents, never trust an individual fix's own self-report |
+| F-38 | `t1Alt` IRREDUCIBLE rate hit 0/63, the most confounded data point yet | **new, updates F-24/F-33** | Still open — watch whether a lighter-correction paper ever reaches a comparably low rate |
+| F-39 | Gate check 14 (shape-budget) mechanized, caught the same pattern F-31 first found | **new, promoted** | `tools/run-gate.js` now covers checks 1, 10, 11, 14 |
+
+### Pending decisions for Ram
+
+1. **D5's `invGuidance` drafting needs tighter grounding discipline for Paper 6** (F-36) — not a
+   corpus problem, a planning-stage one. Consider requiring every D5 inversion guidance to quote its
+   target row verbatim before dispatch, the same way the shared brief already requires for reuse-
+   inverted anchors.
+2. **Should the plan-finalization step formally validate `kind` before accepting a
+   `DIRECTION_OVERRIDES` target (F-35), rather than relying on sub-batch authors to catch the
+   conflict by hand?** This worked three times by luck of honest flagging; a mechanized check would
+   remove the luck.
+3. **D7 §7.2's supply thinness (F-29) now has 3 data points** (Papers 1, 4, 5) at the same mechanism
+   pairing. Worth deciding whether this needs its own tracking note in `FACET-LEDGER.md`, the way
+   D2's did, even at D7's much smaller scale.
+4. **`t1Alt` resolution mechanization (open since Session 6) is still unresolved** — Paper 5's 100%
+   rate is the best yet but is, by its own session's account, the most confounded reading so far.
+
+### Session reflection
+
+This session's defining pattern was scale: every mechanism this project has built to catch a
+specific failure — the independent audit's blindness to authoring reasoning, the standing rule that
+a fix is provisional until re-gated, the sub-batch dispatch model's own honest-flagging norm — was
+exercised harder than in any prior paper, and each one earned its keep. The audit caught a confirmed
+cosmetic restate and two invented mechanisms concentrated in a single domain, which says more about
+this session's own D5 planning than about the corpus. The heaviest-yet post-audit fix cycle then
+produced its own new failure mode at a scale not seen before: merging five *independently correct*
+fix batches reintroduced two already-fixed violations and one fix silently reverted a different,
+unrelated fix on the same item — a hazard specific to parallelizing repair work that a single-agent
+fix pass would not have hit. Both were caught, in both cases, by nothing more sophisticated than
+running the complete mechanized gate one more time after the merge and trusting its output over any
+individual agent's own account of what it changed. The standing lesson from Session 7 — no one's fix,
+including the fix to a fix, gets a pass on inspection alone — turns out to also cover no one's *merge*
+of many fixes.

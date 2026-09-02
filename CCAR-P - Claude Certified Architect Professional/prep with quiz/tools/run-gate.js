@@ -9,6 +9,10 @@
  * logic into the committed gate so a future paper doesn't need to recreate it. Checks 2-9, 12-13
  * are unchanged one-off/manual checks; folding them in is future work, not done here.
  *
+ * Check 14 (shape-budget floor 4 / ceiling 11, ARCHETYPE-LEDGER.md) added at Paper 5, per Ram's
+ * decision — formalizes GENERATION-INTELLIGENCE.md's F-31, open since Paper 4. Paper 2 shipped
+ * a real, unnoticed violation (S8 at 12, S7 at 3) that nothing ever caught before this.
+ *
  *   node tools/run-gate.js mock-exams/CCAR-P_MockTest-1_v1.html 63
  *
  * Extracts the shipped paper's script block, runs it in a vm with a DOM stub, and calls the
@@ -212,13 +216,31 @@ if (expectCount) {
     console.log("ARCHETYPE-LEDGER.md not found at " + archetypePath + " — skipped");
   }
 
+  console.log("\n--- Check 14: shape-budget floor 4 / ceiling 11 (ARCHETYPE-LEDGER.md) ---");
+  // Formalized as a numbered gate check at Paper 5, per Ram's decision (GENERATION-INTELLIGENCE.md
+  // F-31, pending since Paper 4). ARCHETYPE-LEDGER.md's own per-paper shape budget was never a
+  // numbered check before this and shipped one real, unnoticed violation on Paper 2 (S8 at 12,
+  // over the ceiling; S7 at 3, under the floor) -- every paper since has had to remember to
+  // compute and eyeball this tally by hand before dispatch. This closes that gap permanently.
+  const shapeTally = {};
+  gate.items.forEach((it) => { if (it.shape) shapeTally[it.shape] = (shapeTally[it.shape] || 0) + 1; });
+  console.log("shape tally:", JSON.stringify(shapeTally));
+  const shapeIssues = [];
+  for (const s of ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8"]) {
+    const n = shapeTally[s] || 0;
+    if (n < 4) shapeIssues.push(`${s} at ${n}, below hard floor 4`);
+    if (n > 11) shapeIssues.push(`${s} at ${n}, above hard ceiling 11`);
+  }
+  if (shapeIssues.length) extraErrors.push(...shapeIssues.map((i) => `shape-budget: ${i}`));
+  console.log(shapeIssues.length ? "shape-budget issues found (see below)" : "shape budget: PASS, all 8 shapes in [4, 11]");
+
   if (extraErrors.length) {
-    console.log("\nEXTRA-CHECK ERRORS (10/11):", extraErrors.length);
+    console.log("\nEXTRA-CHECK ERRORS (10/11/14):", extraErrors.length);
     extraErrors.forEach((e) => console.log("  - " + e));
   }
 }
 
 const finalFail = r.errors.length > 0 || extraErrors.length > 0;
-console.log("\n" + (finalFail ? "OVERALL RESULT: FAIL" : "OVERALL RESULT: PASS (checks 1, 10, 11 clear)"));
+console.log("\n" + (finalFail ? "OVERALL RESULT: FAIL" : "OVERALL RESULT: PASS (checks 1, 10, 11, 14 clear)"));
 
 process.exit(finalFail ? 1 : 0);
