@@ -117,13 +117,12 @@
       s.textContent = S.read[id] ? 'Read' : (m && m.written ? 'Written' : 'Not written yet');
       s.classList.toggle('on', !!S.read[id]);
     });
-    var c = $('#cont');
-    if (c) {
+    $$('.ctarow').forEach(function (c) {
       var ok = S.last && S.last !== 'start' && byId[S.last];
-      var a = $('a', c), note = $('#ctanote');
-      if (ok) { a.setAttribute('href', '#/' + S.last); var mm = meta[S.last]; a.textContent = 'Continue at ' + (mm.kind === 'obj' ? mm.oid : mm.title); note.textContent = mm.kind === 'obj' ? mm.title : 'Where you left off.'; }
+      var a = $('a', c), note = $('.ctanote', c);
+      if (ok) { var mm = meta[S.last]; a.setAttribute('href', '#/' + S.last); a.textContent = 'Continue at ' + (mm.kind === 'obj' ? mm.oid : mm.title); note.textContent = mm.kind === 'obj' ? mm.title : 'Where you left off.'; }
       else { a.setAttribute('href', '#/o1.1'); a.textContent = 'Start with O1.1'; note.textContent = 'First of 38 sheets, in guide order.'; }
-    }
+    });
   }
   doc.addEventListener('click', function (e) {
     var b = e.target.closest ? e.target.closest('[data-read]') : null;
@@ -141,6 +140,31 @@
     }, { threshold: 0.5 });
     $$('.endmark').forEach(function (m) { io.observe(m); });
   }
+
+  /* ---------- start page reveals ---------- */
+  (function () {
+    var tag = $('#tagline');
+    if (tag) {
+      tag.setAttribute('aria-label', tag.textContent);
+      tag.innerHTML = tag.textContent.split(/(\s+)/).map(function (t) { return /^\s+$/.test(t) ? t : '<span class="w" aria-hidden="true">' + esc(t) + '</span>'; }).join('');
+    }
+    var words = $$('.tagline .w'), revs = $$('.rv');
+    if (!('IntersectionObserver' in window)) { words.forEach(function (w) { w.classList.add('on'); }); revs.forEach(function (r) { r.classList.add('in'); }); return; }
+    var order = 0, wio = new IntersectionObserver(function (es) {
+      es.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        var el = en.target; wio.unobserve(el);
+        el.style.transitionDelay = (order++ % 12) * 60 + 'ms';
+        el.classList.add('on');
+      });
+      order = 0;
+    }, { rootMargin: '0px 0px -35% 0px' });
+    words.forEach(function (w) { wio.observe(w); });
+    var rio = new IntersectionObserver(function (es) {
+      es.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('in'); rio.unobserve(en.target); } });
+    }, { threshold: 0.08 });
+    revs.forEach(function (r) { rio.observe(r); });
+  })();
 
   /* ---------- sheet index ---------- */
   var drawer = $('#drawer'), btnIndex = $('#btn-index');
