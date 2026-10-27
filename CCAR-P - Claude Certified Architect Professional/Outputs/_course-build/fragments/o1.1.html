@@ -1,0 +1,234 @@
+<div class="chapter">
+<div class="main">
+
+<p>The sales director of a commercial insurance broker asks, "Can Claude write our quotes?" The broker issues 400 quotes a week, and each one takes an underwriter 22 minutes on average. An underwriter is a person who decides whether to accept an insurance risk and at what price. The week holds <span class="num" data-calc="400*22" data-expect="8800">8,800</span> minutes of quote work, about <span class="num" data-calc="400*22/60" data-round="0" data-expect="147">147</span> hours.</p>
+
+<p>Three underwriters have about 35 productive hours a week each, <span class="num" data-calc="3*35" data-expect="105">105</span> hours between them, so the team is about <span class="num" data-calc="400*22/60-3*35" data-round="0" data-expect="42">42</span> hours a week short and quotes wait. Turnaround, the time from a request arriving to the quote going out, averages 3.2 business days, and the broker loses business on any quote that takes longer than 2 days.</p>
+
+<p>Before anyone picks a design, each step of the work needs scoring for what a model can own (§1.1), and today's cost needs writing down in a unit the business already uses (§1.2).</p>
+
+<section class="concept" id="c1.1" data-src="1.1" data-terms="decision unit of automation fit signals wrong-stance signals per step workflow granularity regulated licensed human sign-off proxy signal override rate reopen rate loss ratio relationship draft decompose underwriter">
+<h3>Score every step on its own<span class="sec">§1.1</span></h3>
+
+<p>What you automate inside a workflow, the chain of steps from a request to a result, is a <dfn data-def="A recurring point in a workflow where someone reads inputs and forms a judgment. It is the unit of automation; an outcome and a task are not.">decision</dfn>: a recurring point where someone reads inputs and forms a judgment. An outcome such as "quote faster" is too broad to build, and a task such as copying a field into another system involves no judgment.</p>
+
+<p>Four <dfn data-def="Four properties that favour automating a step: scale beyond human capacity, a repeatable pattern with observable feedback, machine-readable context, and volume that repays the cost of building.">fit signals</dfn> favour automating a step. More cases arrive than people can handle. The same kind of judgment recurs, and someone eventually sees whether it was right. That result is the feedback. The inputs are in a form a machine can read. The volume is high enough to repay the cost of building.</p>
+
+<p>Five <dfn data-def="Five properties of a step that show handing the decision itself to the model is the wrong stance: irreversible and rare, a regulation requiring a human decision-maker, novel creative output of low repeatability, the human relationship as the product, and a human gating every iteration.">wrong-stance signals</dfn> show that handing the decision itself to the model is the wrong stance. The decision is irreversible and rare. A regulation requires a human decision-maker. The output is novel and creative, with low repeatability. The human relationship is the product. A human must gate every iteration, which means approving each pass before the next begins.</p>
+
+<p>Apply the signals to one step at a time, never to the whole workflow. A workflow almost never scores the same all the way through, and the split that results is the design. The broker's process has five steps, and the figure scores each one.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 288" role="img" aria-labelledby="f11a-t f11a-d">
+<title id="f11a-t">The 22-minute quote, scored one step at a time</title>
+<desc id="f11a-d">Five rows, one for each step of the broker's quote process, with the minutes the step takes, when its result becomes visible, whether it is regulated, and the verdict. Reading the submission (9 minutes) and looking up claims history (3) are automated. Classifying the risk tier (4) is automated with a proxy signal, because its outcome arrives only at 12 months. Pricing and signing (4) is regulated, so the human decides and the model prepares the draft. Formatting and sending (2) also fits and is left as it is in this example.</desc>
+<text class="s" x="2" y="14">Step</text>
+<text class="s" x="152" y="14">Minutes per quote</text>
+<text class="s" x="262" y="14">Feedback arrives</text>
+<text class="s" x="366" y="14">Regulated</text>
+<text class="s" x="434" y="14">Verdict</text>
+<path class="ln" d="M2 20H614"/>
+<text class="b" x="2" y="41">Read the submission</text>
+<text class="s" x="2" y="57">extract the fields</text>
+<rect class="bb" x="152" y="33" width="54" height="20"/>
+<text class="m" x="212" y="48">9 min</text>
+<text class="m" x="262" y="48">At once</text>
+<text class="m" x="366" y="48">No</text>
+<rect class="bb" x="434" y="28" width="180" height="34"/>
+<text class="m tc" x="524" y="49">Automate</text>
+<path class="ls" d="M2 66H614"/>
+<text class="b" x="2" y="85">Look up claims history</text>
+<text class="s" x="2" y="101">two systems</text>
+<rect class="bb" x="152" y="77" width="18" height="20"/>
+<text class="m" x="176" y="92">3 min</text>
+<text class="m" x="262" y="92">At once</text>
+<text class="m" x="366" y="92">No</text>
+<rect class="bb" x="434" y="72" width="180" height="34"/>
+<text class="m tc" x="524" y="93">Automate</text>
+<path class="ls" d="M2 110H614"/>
+<text class="b" x="2" y="129">Classify the risk tier</text>
+<text class="s" x="2" y="145">from the extracted profile</text>
+<rect class="bb" x="152" y="121" width="24" height="20"/>
+<text class="m" x="182" y="136">4 min</text>
+<text class="m" x="262" y="136">At 12 months</text>
+<text class="m" x="366" y="136">No</text>
+<rect class="bb" x="434" y="116" width="180" height="34"/>
+<text class="m tc" x="524" y="137">Automate, add a proxy signal</text>
+<path class="ls" d="M2 154H614"/>
+<text class="b" x="2" y="173">Price and sign</text>
+<text class="s" x="2" y="189">licensed sign-off</text>
+<rect class="by" x="152" y="165" width="24" height="20"/>
+<text class="m" x="182" y="180">4 min</text>
+<text class="m" x="262" y="180">Not rated here</text>
+<text class="b" x="366" y="180">Yes</text>
+<rect class="by" x="434" y="160" width="180" height="34"/>
+<text class="m tc" x="524" y="181">Human decides, model drafts</text>
+<path class="ls" d="M2 198H614"/>
+<text class="b" x="2" y="224">Format and send</text>
+<rect class="fl" x="152" y="209" width="12" height="20"/>
+<text class="m" x="170" y="224">2 min</text>
+<text class="m" x="262" y="224">At once</text>
+<text class="m" x="366" y="224">No</text>
+<rect class="fl" x="434" y="204" width="180" height="34"/>
+<text class="m tc" x="524" y="225">Also a fit; left as is here</text>
+<text class="b" x="2" y="262">Automated: 9 + 3 + 4 = <tspan data-calc="9+3+4" data-expect="16">16</tspan> of <tspan data-calc="9+3+4+4+2" data-expect="22">22</tspan> minutes</text>
+<text class="s" x="2" y="278">Left with the underwriter: 4 + 2 = <tspan data-calc="4+2" data-expect="6">6</tspan> minutes, a projection</text>
+</svg>
+</div>
+<figcaption>Read across a row for the minutes the step takes, when its result shows, whether it is regulated, and what happens to it.</figcaption>
+</figure>
+
+<p>Classifying the risk tier, which places a risk in a band, is the slow-feedback case. The loss ratio, claims paid against premiums earned, shows whether a tier was right only after 12 months. A slow result does not rule a step out. It needs a <dfn data-def="A fast measure that stands in for a slow one, such as the rate at which underwriters override the model's output instead of a loss ratio that arrives after 12 months.">proxy signal</dfn>, a fast measure that stands in for the slow one. How often underwriters override the model's tier is one, because it shows the day someone disagrees.</p>
+
+<p>Pricing and signing is the regulated step. The quote needs a licensed underwriter's signature, so the model prepares a complete draft and the underwriter decides. That step holds 4 of the 22 minutes. The three automated steps hold <span class="num" data-calc="9+3+4" data-expect="16">16</span>, or <span class="num" data-calc="16/22*100" data-round="0" data-expect="73">73</span>% of the total, and a verdict of "not a fit" for the whole workflow would give those up.</p>
+
+<p>Where the human relationship is the product, as in relationship-managed sales, the model prepares the conversation and a person holds it.</p>
+
+<ul class="rules" aria-label="Decision rules for scoring each step">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-1.1-01"><span class="when">A step is high-volume and machine-readable, and its correctness is visible immediately</span><span class="then">Automate the step.<span class="why">All four fit signals are present.</span></span></li>
+<li data-facet="F-1.1-02"><span class="when">A step's outcome feedback arrives 12 months later, for example a loss ratio</span><span class="then">Automate it, with a proxy signal such as the override rate or the reopen rate (the share of resolved tickets that come back).<span class="why">Long feedback latency needs a fast surrogate, not disqualification.</span></span></li>
+<li data-facet="F-1.1-03"><span class="when">A step requires a decision that a licence or the law assigns to a person</span><span class="then">The human decides, and the model prepares the draft.<span class="why">Regulation is a boundary, not a constraint to engineer around.</span></span></li>
+<li data-facet="F-1.1-04"><span class="when">A whole workflow is judged "not a fit" because one step is regulated</span><span class="then">Reject that judgment. Decompose first: split the workflow into steps and score each.<span class="why">Per-step scoring is the technique. Whole-workflow scoring loses the automatable majority.</span></span></li>
+<li data-facet="F-1.1-05"><span class="when">The human relationship is the product being sold</span><span class="then">Automate the preparation, not the interaction.<span class="why">Removing the relationship removes the value.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: the broker's week in numbers</summary>
+<div>
+<p>This is a worked example, not a corpus rule. The design automates the three steps worth 9 + 3 + 4 = <span class="num" data-calc="9+3+4" data-expect="16">16</span> minutes a quote. That leaves 22 minus 16 = <span class="num" data-calc="22-9-3-4" data-expect="6">6</span> minutes, made up of 4 for pricing and signing and 2 for formatting and sending.</p>
+<p>Across 400 quotes a week, the automated steps remove 400 × 16 = <span class="num" data-calc="400*16" data-expect="6400">6,400</span> minutes of human work, about <span class="num" data-calc="400*16/60" data-round="0" data-expect="107">107</span> hours. The underwriters' remaining work is 400 × 6 = <span class="num" data-calc="400*6" data-expect="2400">2,400</span> minutes, or <span class="num" data-calc="400*6/60" data-expect="40">40</span> hours, against the 105 they have.</p>
+<p>The 6 minutes is a projection. Whether turnaround falls below 2 days is a separate question, and only a measurement against the baseline in §1.2 can answer it.</p>
+</div>
+</details>
+</section>
+
+<section class="concept" id="c1.2" data-src="1.2" data-terms="baseline value unit business unit request requirement mechanism binding constraint turnaround measure before after launch transformation no baseline minutes per item FTE-hours dollars per transaction retrospective">
+<h3>Fix the baseline and the unit before you design<span class="sec">§1.2</span></h3>
+
+<p>A request names a mechanism, and the pain behind it names the requirement. The director asks for quotes written by Claude, while the pain is a turnaround of 3.2 days with business lost beyond 2 days. The target is turnaround. Quality of prose is not the <dfn data-def="The factor that actually limits a result. Improving any other factor leaves the result where it is.">binding constraint</dfn>, the factor that actually limits the result.</p>
+
+<p>Before designing, state what the process costs today in a <dfn data-def="The business unit in which value is stated, such as minutes per item, FTE-hours per 1,000 items, dollars per transaction or days of turnaround.">value unit</dfn>, a unit the business already uses: minutes per item, FTE-hours (hours of full-time-equivalent staff time) per 1,000 items, dollars per transaction, or days of turnaround. That statement is the <dfn data-def="The current cost of a process, stated in a value unit and measured before design begins. Every later claim of improvement is compared with it.">baseline</dfn>. For the broker it reads 22 minutes and 3.2 business days per quote, and the business case is written in that sentence.</p>
+
+<p>Without a baseline no design can be compared with another and no value can be reported. The system ships and works, and nobody can show it helped. An improvement that was never measured cannot be defended to the person who funded it.</p>
+
+<p>If no baseline exists, measure the current process before committing to a design. A plan to "measure the improvement after launch" produces a number with nothing before it to compare with.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 236" role="img" aria-labelledby="f11b-t f11b-d">
+<title id="f11b-t">Where the baseline sits on the project timeline</title>
+<desc id="f11b-d">Three lanes share one timeline with three phases: before design, design and build, and after launch. In the first lane the current process is measured before design, the design targets turnaround, and after launch the same measures are taken again and compared with the baseline. In the second lane the tool is built as requested and measured only after launch, which gives a number with no before. In the third lane the tool is built as requested and a baseline is derived afterwards from the new system's own logs.</desc>
+<text class="s tc" x="191" y="14">Before design</text>
+<text class="s tc" x="323" y="14">Design and build</text>
+<text class="s tc" x="507" y="14">After launch</text>
+<path class="ls dash" d="M388 22V206"/>
+<text class="b tc" x="388" y="226">Launch</text>
+<text class="b tb2" x="2" y="46">Baseline first</text>
+<text class="s" x="2" y="62">then design</text>
+<rect class="bb" x="132" y="28" width="118" height="44"/>
+<text class="m tc" x="191" y="47">Measure today</text>
+<text class="m tc" x="191" y="63">22 min, 3.2 days</text>
+<path class="lb" d="M252 50H268" marker-end="url(#ah-b)"/>
+<rect class="bx" x="270" y="28" width="106" height="44"/>
+<text class="m tc" x="323" y="47">Design for</text>
+<text class="m tc" x="323" y="63">turnaround</text>
+<path class="lb" d="M378 50H398" marker-end="url(#ah-b)"/>
+<rect class="bb" x="400" y="28" width="214" height="44"/>
+<text class="m tc" x="507" y="47">Measure again in the same units</text>
+<text class="m tc" x="507" y="63">and compare with the baseline</text>
+<text class="b tr" x="2" y="110">After launch only</text>
+<text class="s" x="2" y="126">no baseline taken</text>
+<rect class="ls dash" x="132" y="92" width="118" height="44"/>
+<text class="s tr tc" x="191" y="118">no baseline</text>
+<rect class="bx" x="270" y="92" width="106" height="44"/>
+<text class="m tc" x="323" y="111">Build the tool</text>
+<text class="m tc" x="323" y="127">as requested</text>
+<path class="lr" d="M378 114H398" marker-end="url(#ah-r)"/>
+<rect class="br" x="400" y="92" width="214" height="44"/>
+<text class="m tc" x="507" y="111">Measure after launch</text>
+<text class="m tc" x="507" y="127">a number with no before</text>
+<text class="b tr" x="2" y="174">Rebuilt later</text>
+<text class="s" x="2" y="190">from the logs</text>
+<rect class="ls dash" x="132" y="156" width="118" height="44"/>
+<text class="s tr tc" x="191" y="182">no baseline</text>
+<rect class="bx" x="270" y="156" width="106" height="44"/>
+<text class="m tc" x="323" y="175">Build the tool</text>
+<text class="m tc" x="323" y="191">as requested</text>
+<path class="lr" d="M378 178H398" marker-end="url(#ah-r)"/>
+<rect class="br" x="400" y="156" width="214" height="44"/>
+<text class="m tc" x="507" y="175">Derive the before from the</text>
+<text class="m tc" x="507" y="191">new system's own logs</text>
+</svg>
+</div>
+<figcaption>The blue lane records the before first, so the later measurement has something to compare with. In the red lanes the before is missing, or rebuilt after launch from the new system's own logs.</figcaption>
+</figure>
+
+<p>One case has no baseline to find: a capability that never existed. A per-unit comparison needs a per-unit figure from before, and a new capability has none, so there is no efficiency baseline. The value is argued as transformation, one of the five value pillars, the kinds of business value that <a href="#/o1.6">objective 1.6</a> lists.</p>
+
+<ul class="rules" aria-label="Decision rules for the baseline and the value unit">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-1.2-01"><span class="when">The request is "can Claude write our quotes", and the stated pain is a 3.2-day turnaround that loses business above 2 days</span><span class="then">Target the turnaround. Quality of prose is not the binding constraint.<span class="why">The requirement is the metric named in the pain, not the mechanism named in the request.</span></span></li>
+<li data-facet="F-1.2-02"><span class="when">No baseline is available for the current process</span><span class="then">Measure it before committing to a design.<span class="why">A design chosen without a baseline cannot be defended or compared.</span></span></li>
+<li data-facet="F-1.2-03"><span class="when">The proposal is to "measure the improvement after launch"</span><span class="then">Reject it.<span class="why">Measurement with no before produces a number with nothing to compare it to.</span></span></li>
+<li data-facet="F-1.2-04"><span class="when">The capability did not previously exist at all</span><span class="then">No efficiency baseline exists, so argue transformation.<span class="why">A per-unit comparison has no denominator, because there is no earlier cost per unit.</span></span></li>
+</ul>
+</section>
+
+<section class="bites" id="b-o1.1">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide says its exam items are written against the objectives, and it gives this one a single line. Its three samples cover Domains 3, 2 and 4, so Domain 1 has no official sample. The shapes below come from this project's scenario set, not from Anthropic, and the <a href="#/traps">Trap families</a> page defines each label.</p>
+
+<p><span class="lbl">Inference</span>Expect options that all automate something and differ in which step they target, with the disqualifying constraint placed in the setup of the stem.</p>
+
+<p class="stem">A broker wants faster quotes. One step in its process requires a licensed underwriter's signature.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Automate the extraction, the lookup and a risk-tier recommendation. Hand the licensed underwriter a complete draft to sign, and state the value as turnaround time.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-overspec">OVERSPEC</a>Automate the whole quote, sign-off included, with an audit log and a confidence threshold for oversight. The scenario requires a human decision-maker, and no threshold satisfies that requirement. The option puts a monitoring guarantee where the required person should be.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-wrong-axis">WRONG-AXIS</a>Declare the workflow unsuitable for automation because of the regulated step. It applies the wrong-stance test to the whole workflow, when the technique is to decompose it and score each step.</span></li>
+</ul>
+
+<p class="stem">A stakeholder asks for an AI drafting tool. The stated pain is turnaround time.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Baseline the handling time per item and the turnaround in days, then design against the turnaround requirement.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>Build the drafting tool as requested and measure satisfaction after launch. It delivers the requested mechanism, leaves the stated requirement untouched, and gives nothing to measure it against.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-repair">REPAIR</a>Instrument the deployed system with dashboards and derive the baseline afterwards from its own logs. It reconstructs after the fact a measurement that could have been captured cleanly before the project started.</span></li>
+</ul>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>A broker's quotes take 3.2 days and it loses business above 2. One step needs a licensed underwriter's signature. What do you measure first, and what do you automate?</span></summary>
+<div class="ans">
+<p>Measure the baseline first: minutes per quote and days of turnaround, because turnaround is the requirement. Then score the steps one by one. Automate extraction, lookup and a risk-tier recommendation, use the override rate as a proxy while the tier waits 12 months for its outcome, and give the underwriter a complete draft to sign.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<p>This is the first objective in the guide, so it leans on no earlier one.</p>
+<ul>
+<li><a href="#/o1.2/c1.9">O1.2</a>, §1.9: the override rate used here as a proxy is a feedback signal there, and it counts only when it reaches something that changes behaviour.</li>
+<li><a href="#/o1.2/c1.10">O1.2</a>, §1.10: the draft handed to the underwriter is an output with a human consumer. Inference: §1.10's rule to put the reasoning beside the verdict applies to it.</li>
+<li><a href="#/o1.3">O1.3</a>, §1.3: the pattern is chosen after the steps are scored. Five known steps in the same order is the corpus's row for a workflow.</li>
+<li><a href="#/o1.5">O1.5</a>, §1.11: "decompose first" here means scoring steps. §1.11 says how fine to cut: one evaluation criterion and one failure mode per unit.</li>
+<li><a href="#/o1.6">O1.6</a>, §1.12: the baseline is the before that the five value pillars are stated against, and the new-capability rule returns there as transformation.</li>
+<li><a href="#/o5.3">O5.3</a>, §5.8: the licensed sign-off is one case of a human in the loop, and §5.8 is about routing work to one.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 1, first objective, and section 8 for the absence of a Domain 1 sample. Course corpus §1.1 and §1.2. The broker's figures are an illustrative case from this project's own lesson material, and every derived number was recomputed. No live-document check was needed: the chapter states decision rules and no product facts.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>The unit of automation is a recurring decision inside a workflow. Score each step, never the whole workflow.</li>
+<li>Four fit signals: scale past human capacity, a repeatable pattern with observable feedback, machine-readable context, volume that repays the build. Five wrong-stance signals: irreversible and rare, regulation requiring a human, novel low-repeatability output, the relationship as the product, a human gating every iteration.</li>
+<li>Slow feedback, such as a 12-month loss ratio, still means automate. Add a fast proxy: the override rate or the reopen rate.</li>
+<li>A licensed or statutory decision stays human, and the model prepares the draft. One regulated step does not make the whole workflow a non-fit. If the relationship is the product, automate the preparation.</li>
+<li>A request names a mechanism and the pain names the requirement. Design against the metric the pain names.</li>
+<li>Baseline first, in a business unit: minutes per item, FTE-hours per 1,000, dollars per transaction, days of turnaround. Measuring after launch has no before. A capability that never existed has no efficiency baseline, so argue transformation.</li>
+</ol>
+</aside>
+</div>

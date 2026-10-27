@@ -1,0 +1,141 @@
+<div class="chapter">
+<div class="main">
+
+<p>A year after a claims system went live, a new engineer asks why the routing step runs on the smaller model. The latency ceiling has just been raised from 3 seconds to 6, and the bigger model is tempting. The original team has moved on. The code shows which model is used, and it does not show why, or whether the reason still holds.</p>
+
+<p>The reader who asks that question is the person documentation exists for. They are not asking what the system does, since the code says that. They are asking why it is like this and whether they may change it. What would the record have to contain to answer?</p>
+
+<section class="concept" id="c6.7" data-src="6.7" data-terms="architecture decision record adr decision alternatives trade-offs constraints evaluation numbers reopen condition constraint expiry component diagram walkthrough chosen design">
+<h3>Record why, so the decision can be reopened<span class="sec">§6.7</span></h3>
+
+<p>The corpus discriminator is whether a reader who was not present can tell a constraint that mattered from a preference. An architecture decision record has four parts: the decision, the alternatives considered, the trade-offs, and the constraints that drove the choice. For an AI system, also record the evaluation numbers the decision rested on and the condition that reopens it.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 176" role="img" aria-labelledby="f64a-t f64a-d">
+<title id="f64a-t">The four parts of a decision record, filled in for the routing model</title>
+<desc id="f64a-d">Four boxes in a two by two grid. The decision: the smaller model runs the routing step. The alternatives: the larger model reached 88.0 percent against 86.7 percent on a 400-claim stratified set. The trade-offs: it spends 1.3 points of accuracy and buys 2.1 seconds of latency. The constraints: a 3-second latency ceiling, and the decision reopens if the ceiling moves.</desc>
+<rect class="bx" x="2" y="10" width="300" height="70"/>
+<text class="b" x="14" y="32">The decision</text><text class="m" x="14" y="54">The smaller model runs the</text><text class="m" x="14" y="70">routing step.</text>
+<rect class="bx" x="316" y="10" width="298" height="70"/>
+<text class="b" x="328" y="32">The alternatives</text><text class="m" x="328" y="54">The larger model: 88.0% against</text><text class="m" x="328" y="70">86.7% on a 400-claim stratified set.</text>
+<rect class="bx" x="2" y="92" width="300" height="70"/>
+<text class="b" x="14" y="114">The trade-offs</text><text class="m" x="14" y="136">Spends 1.3 points of accuracy,</text><text class="m" x="14" y="152">buys 2.1 seconds of latency.</text>
+<rect class="bb" x="316" y="92" width="298" height="70"/>
+<text class="b tb2" x="328" y="114">The constraints</text><text class="m" x="328" y="136">A 3-second latency ceiling.</text><text class="m" x="328" y="152">Reopen if the ceiling moves.</text>
+</svg>
+</div>
+<figcaption>The blue box is the one that expires. Without it, the next reader cannot tell whether the ceiling was a fact or a taste.</figcaption>
+</figure>
+
+<p>A record of the chosen design answers "what". Only the alternatives, the trade-offs and the driving constraints answer "why, and may I change it". When a model-tier choice is made under a latency ceiling, record the decision, the rejected options with their numbers, the trade-off and the ceiling. When the ceiling moves, the decision can be reopened on evidence. Constraints expire, and an unrecorded one makes the decision impossible to reopen.</p>
+
+<p>If a year-old decision is questioned after a constraint changed, check the recorded constraint and re-evaluate against it, which is the moment the record exists for. A detailed component diagram and inventory is insufficient alone, since diagrams answer "what" and carry no reasoning. A recorded walkthrough is insufficient alone as well. It transfers knowledge once, and it goes stale on the first change.</p>
+
+<ul class="rules" aria-label="Decision rules for architecture decision records">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-6.7-01"><span class="when">Documenting a model-tier choice made under a latency ceiling</span><span class="then">Record the decision, the rejected options with their numbers, the trade-off and the ceiling.<span class="why">When the ceiling moves, the decision can be reopened on evidence.</span></span></li>
+<li data-facet="F-6.7-02"><span class="when">A year-old decision is questioned after a constraint changed</span><span class="then">Check the recorded constraint and re-evaluate against it.<span class="why">The record exists for exactly this moment.</span></span></li>
+<li data-facet="F-6.7-03"><span class="when">The team proposes a detailed component diagram and inventory as the documentation</span><span class="then">Insufficient alone.<span class="why">Diagrams answer "what", and they carry no reasoning.</span></span></li>
+<li data-facet="F-6.7-04"><span class="when">The team proposes a recorded architecture walkthrough</span><span class="then">Insufficient alone.<span class="why">It transfers knowledge once and goes stale on the first change.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: why the numbers belong in the record</summary>
+<div>
+<p>This is a worked example, not a corpus rule, and the figures are invented. The larger model scored 1.3 points higher on a 400-claim set, which is <span class="num" data-calc="400*1.3%" data-expect="5.2">5.2</span> claims. A successor who knows that can judge whether the gap is real, and a record that says only "the larger model was better" cannot be re-run.</p>
+<p>The 2.1 seconds also has a price. At 40,000 requests a day it adds <span class="num" data-calc="40000*2.1" data-expect="84000">84,000</span> seconds of waiting, about <span class="num" data-calc="84000/3600" data-round="1" data-expect="23.3">23.3</span> hours a day. With the ceiling raised to 6 seconds the cost may now be affordable, and the record tells the successor which two numbers to measure again.</p>
+</div>
+</details>
+</section>
+
+<section class="concept" id="c6.8" data-src="6.8" data-terms="implementation guidance receiving team interface contracts configuration rationale failure modes gating tests regression onboarding overview handover decision record">
+<h3>Give the receiving team what lets them change it safely<span class="sec">§6.8</span></h3>
+
+<p>The corpus discriminator is whether the receiving team can build and change the system without reconstructing the architect's reasoning. Implementation guidance holds four things: interface contracts, the rationale behind configuration values, the failure modes with the response to each, and the tests that must pass before a change ships. It is distinct from the decision record, which explains why the design is as it is.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 168" role="img" aria-labelledby="f64b-t f64b-d">
+<title id="f64b-t">What implementation guidance holds, and what it gates</title>
+<desc id="f64b-d">Four boxes in a row: interface contracts, the rationale for each configuration value, failure modes with the response to each, and the tests that must pass before a change ships. A bar below says a prompt or model change ships only after the named tests pass.</desc>
+<rect class="bb" x="2" y="10" width="138" height="84"/>
+<text class="b tc tb2" x="71" y="32">Contracts</text><text class="m tc" x="71" y="54">what each interface</text><text class="m tc" x="71" y="70">takes and returns</text>
+<rect class="bb" x="160" y="10" width="138" height="84"/>
+<text class="b tc tb2" x="229" y="32">Rationale</text><text class="m tc" x="229" y="54">why each setting</text><text class="m tc" x="229" y="70">has its value</text>
+<rect class="bb" x="318" y="10" width="138" height="84"/>
+<text class="b tc tb2" x="387" y="32">Failure modes</text><text class="m tc" x="387" y="54">each known failure</text><text class="m tc" x="387" y="70">and the response</text>
+<rect class="bb" x="476" y="10" width="138" height="84"/>
+<text class="b tc tb2" x="545" y="32">Gating tests</text><text class="m tc" x="545" y="54">tests that must pass</text><text class="m tc" x="545" y="70">before a change ships</text>
+<path class="ln" d="M545 96V114" marker-end="url(#ah-b)"/>
+<rect class="by" x="2" y="116" width="612" height="44"/>
+<text class="m" x="14" y="134">A prompt or model change ships only after the named tests pass.</text><text class="s" x="14" y="150">An overview orients a reader and gates nothing.</text>
+</svg>
+</div>
+<figcaption>The four boxes are artifacts a team can act on. The yellow bar is the working rule they add up to.</figcaption>
+</figure>
+
+<p>If another team will extend the pipeline, give them interface contracts, configuration rationale, failure modes and gating tests, so that they can change it safely without the original team. If a prompt or model change is proposed after handover, name the regression tests that must pass first in the guidance. That prevents a silent behavioural regression from shipping.</p>
+
+<p>An onboarding overview document is a supplement and not a substitute, since it orients a reader and does not gate a change. Configuration values documented without their rationale are insufficient, because a value without its reason is changed by the next person who finds it inconvenient.</p>
+
+<ul class="rules" aria-label="Decision rules for implementation guidance">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-6.8-01"><span class="when">Another team will extend the pipeline</span><span class="then">Interface contracts, configuration rationale, failure modes and gating tests.<span class="why">They can change it safely without the original team.</span></span></li>
+<li data-facet="F-6.8-02"><span class="when">A prompt or model change is proposed after handover</span><span class="then">Regression tests that must pass first, named in the guidance.<span class="why">It prevents a silent behavioural regression from shipping.</span></span></li>
+<li data-facet="F-6.8-03"><span class="when">The team asks for an onboarding overview document instead</span><span class="then">A supplement and not a substitute.<span class="why">It orients a reader, and does not gate a change.</span></span></li>
+<li data-facet="F-6.8-04"><span class="when">Configuration values are documented without their rationale</span><span class="then">Insufficient.<span class="why">A value without its reason is changed by the next person who finds it inconvenient.</span></span></li>
+</ul>
+</section>
+
+<section class="bites" id="b-o6.4">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide's three samples sit in Domains 2, 3 and 4, so none of them is a sample for this domain. The scenarios below come from this project's own set, and the <a href="#/traps">Trap families</a> page defines each label. <span class="lbl">Inference</span>Expect options that look thorough and describe the system, and one that records reasoning or gates change.</p>
+
+<p class="stem">The documentation for a design that another team will maintain has to be specified.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Record the decision, the alternatives considered, the trade-offs accepted and the constraints that drove the choice.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-architected">ARCHITECTED</a>Produce a full description of the chosen architecture with detailed component diagrams. It is more effort and more pages, and it misses the content that makes the design safe to change.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>Record a walkthrough session with the original architects. It is a one-time transfer to whoever watches it, and it is stale the first time the system changes.</span></li>
+</ul>
+
+<p class="stem">An internal team will take over extending a delivered Claude system.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Provide interface contracts, the rationale behind each configuration value, the known failure modes with the response to each, and the tests that must pass before any change ships.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-architected">ARCHITECTED</a>Provide a thorough narrative overview of how the system works end to end. It reads as complete documentation and gates nothing.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-repair">REPAIR</a>Provide the repository with well-commented code, and offer to answer questions in a shared channel. It is reactive support in place of a durable artifact, and it evaporates when the original team is reassigned.</span></li>
+</ul>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>A year on, someone asks why the smaller model was chosen, and a second team is about to extend the pipeline. What does each of them need from the documentation?</span></summary>
+<div class="ans">
+<p>The questioner needs a decision record: the decision, the alternatives with their numbers, the trade-offs and the constraint, here the latency ceiling, so the choice can be reopened when the ceiling moves. The second team needs implementation guidance: interface contracts, the reason for each configuration value, the failure modes with responses, and named tests that must pass before any prompt or model change ships.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li><a href="#/o4.3/c4.9">O4.3</a>, §4.9: the regression set and the release path are the tests that the guidance names as gating a change.</li>
+<li><a href="#/o4.6/c4.12">O4.6</a>, §4.12: the prompt version and model identifier on every request are what let a metric be tied to a recorded decision.</li>
+<li><a href="#/o3.3/c3.4">O3.3</a>, §3.4: a latency ceiling and a stage table are the kind of constraint and numbers the record holds.</li>
+<li><a href="#/o6.1/c6.2">O6.1</a>, §6.2: the signed acceptance criterion is one of the constraints the record cites.</li>
+<li><a href="#/o6.5">O6.5</a>, §6.11 and §6.12: handoff, monitoring and iteration come next. Inference: both artifacts travel with the handover.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 6, fourth objective. Course corpus §6.7 and §6.8. No live-document check was needed: the chapter states documentation rules and no product facts. The model scores, the 3-second ceiling, the 2.1 seconds and the request volume are invented for illustration.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>A decision record has four parts: the decision, the alternatives, the trade-offs and the constraints that drove it. For an AI system, add the evaluation numbers and the condition that reopens the decision.</li>
+<li>Constraints expire, and an unrecorded one makes the decision impossible to reopen. When a constraint changes, check the record and re-evaluate against it.</li>
+<li>A component diagram answers "what" and a recorded walkthrough goes stale. Neither is sufficient alone.</li>
+<li>Implementation guidance holds interface contracts, configuration rationale, failure modes with responses, and tests that must pass before a change ships.</li>
+<li>An onboarding overview is a supplement. Code and a question channel are not a handover.</li>
+</ol>
+</aside>
+</div>

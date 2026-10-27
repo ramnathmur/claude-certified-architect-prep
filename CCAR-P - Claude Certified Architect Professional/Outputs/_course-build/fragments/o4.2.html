@@ -1,0 +1,273 @@
+<div class="chapter">
+<div class="main">
+
+<p>An extraction system reads four types of document, and its evaluation set reports <span class="num" data-calc="0.78*99+0.15*98+0.05*90+0.02*60" data-round="1" data-expect="97.6">97.6</span>% overall accuracy. The four types make up 78%, 15%, 5% and 2% of traffic, and they score 99%, 98%, 90% and 60%. The 2% type fails 40% of the time. The team proposes to auto-process everything the model is confident about, and customers keep reporting errors the dashboard cannot see.</p>
+
+<p>The evaluation set has only 50 cases. At natural frequency the rarest type gets <span class="num" data-calc="50*2%" data-expect="1">1</span> of them, and one case cannot measure a rate. The figures are illustrative. Six corpus sections cover what went wrong: what is in the set, how it is reported, who grades it, how far the grader can be trusted, which layers it scores, and how repeated attempts are counted.</p>
+
+<section class="concept" id="c4.3" data-src="4.3" data-terms="evaluation dataset composition coverage count production traces synthetic hand-verified should-fire shouldn't-fire provisional set repair recompose enlarge bias">
+<h3>Fix the composition of the set before its size<span class="sec">§4.3</span></h3>
+
+<p>A set built from cases the system already handles overstates performance. Source them in order: real production traces first, then synthetic cases, then hand-written cases for failures that are expected and not yet seen. A working set of 20 to 50 hand-verified cases beats hundreds of unverified synthetic ones. Keep roughly equal numbers of should-fire cases, where the check ought to trigger, and shouldn't-fire cases, where it ought to stay quiet.</p>
+
+<p>The corpus discriminator is whether the set's composition or its size is the defect. A set that is missing failure modes is never repaired by adding more of what it already contains. A 500-case set reports 96% while customers still report failures: rebuild it from real production failures and report by segment. Expanding it to 2,000 cases drawn the same way multiplies the bias and tightens the interval around a wrong number.</p>
+
+<p>Unverified cases add a score and no information, so 600 synthetic cases with an unknown label error rate are cut to 40 hand-verified ones. A set of only failure cases hides false alarms, and a set of only clean cases hides misses, so add the matching cases to each.</p>
+<p>For a genuinely new capability with no production traces, hand-write cases and label the whole set provisional. Failure modes taken from the spec are hypotheses until real traces confirm them.</p>
+
+<ul class="rules" aria-label="Decision rules for dataset composition">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-4.3-01"><span class="when">A 500-case set reports 96%, and customers still report failures</span><span class="then">Rebuild from real production failures and report by segment.<span class="why">The set omits the failure classes that are occurring.</span></span></li>
+<li data-facet="F-4.3-02"><span class="when">Same situation, with a proposal to expand to 2,000 cases drawn the same way</span><span class="then">Reject.<span class="why">It is the same sampling process, four times the bias, and a tighter interval on a wrong number.</span></span></li>
+<li data-facet="F-4.3-03"><span class="when">The set has 600 unverified synthetic cases with an unknown label error rate</span><span class="then">Cut to 40 hand-verified cases.<span class="why">An unverified case adds a score without adding information.</span></span></li>
+<li data-facet="F-4.3-04"><span class="when">The set contains only failure cases</span><span class="then">Add matched shouldn't-fire cases.<span class="why">An all-negative set hides false alarms.</span></span></li>
+<li data-facet="F-4.3-05"><span class="when">The set contains only clean cases</span><span class="then">Add should-fire cases per known failure mode.<span class="why">An all-positive set hides misses.</span></span></li>
+<li data-facet="F-4.3-06"><span class="when">A genuinely new capability, and no production traces exist yet</span><span class="then">Hand-write cases, and label the whole set provisional until real traces confirm the failure modes.<span class="why">Spec-derived failure modes are hypotheses, not findings.</span></span></li>
+</ul>
+</section>
+
+<section class="concept" id="c4.4" data-src="4.4" data-terms="stratified reporting aggregate accuracy mask segment natural frequency over-sample rare segment confidence threshold automated stream stratified random sample oversight">
+<h3>Report by segment, because an aggregate hides the failing one<span class="sec">§4.4</span></h3>
+
+<p>An aggregate of 97% can conceal a 40% failure rate on a rare segment. Build the evaluation set to answer per-segment questions and not to mirror production frequency. Over-sample the rare, high-cost segments relative to their share of traffic. A segment needs enough cases to support a rate, about 30 as a working floor, and one case is not enough. </p>
+<p>Inference: a report on four segments therefore needs about 120 cases, more than the working size of 20 to 50 in §4.3, which is the minimum for a first hand-verified set.</p>
+<p>An over-sampled set stops mirroring traffic, so its overall figure differs from the production figure. A single production number needs the segments re-weighted by traffic share.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 214" role="img" aria-labelledby="f42a-t f42a-d">
+<title id="f42a-t">An aggregate accuracy that hides one failing document type</title>
+<desc id="f42a-d">Four document types with their traffic share, accuracy and number of cases in a 50-case set at natural frequency. Type A, 78 percent of traffic, 99 percent accurate, 39 cases. Type B, 15 percent, 98 percent, 7.5 cases. Type C, 5 percent, 90 percent, 2.5 cases. Type D, 2 percent, 60 percent, 1 case, drawn in red. A dashed line marks the overall accuracy of 97.6 percent, which sits at the bars for types A and B, above type C and far above type D.</desc>
+<text class="s" x="2" y="14">Type</text><text class="s" x="64" y="14">Share</text><text class="s" x="110" y="14">Accuracy</text><text class="s" x="500" y="14">Expected cases</text>
+<text class="m" x="2" y="43">Type A</text><text class="m" x="64" y="43">78%</text>
+<rect class="bb" x="110" y="26" width="297" height="24"/><text class="m" x="413" y="43">99%</text><text class="m" x="500" y="43"><tspan data-calc="50*78%" data-expect="39">39</tspan> cases</text>
+<text class="m" x="2" y="79">Type B</text><text class="m" x="64" y="79">15%</text>
+<rect class="bb" x="110" y="62" width="294" height="24"/><text class="m" x="410" y="79">98%</text><text class="m" x="500" y="79"><tspan data-calc="50*15%" data-expect="7.5">7.5</tspan> cases</text>
+<text class="m" x="2" y="115">Type C</text><text class="m" x="64" y="115">5%</text>
+<rect class="bb" x="110" y="98" width="270" height="24"/><text class="m" x="386" y="115">90%</text><text class="m" x="500" y="115"><tspan data-calc="50*5%" data-expect="2.5">2.5</tspan> cases</text>
+<text class="m" x="2" y="151">Type D</text><text class="m" x="64" y="151">2%</text>
+<rect class="br" x="110" y="134" width="180" height="24"/><text class="m tr" x="296" y="151">60%</text><text class="m tr" x="500" y="151">1 case</text>
+<path class="ln dash" d="M402.8 20V164"/>
+<text class="m tc" x="402.8" y="180">overall 97.6%</text>
+<text class="s" x="2" y="204">A rate needs about 30 cases per segment. At natural frequency the 2% type gets one.</text>
+</svg>
+</div>
+<figcaption>The dashed line is the number on the dashboard. Types A and B sit at it, type C is lower, and the red bar that matters is far below it with one case behind it.</figcaption>
+</figure>
+
+<p>The gate on reducing oversight is that every segment clears the bar independently, and not the weighted average. If a team proposes auto-processing everything above an aggregate confidence threshold, analyse accuracy by document type and field first. The aggregate averages away the segment that fails 40% of the time.</p>
+
+<p>The same logic runs live. For an ongoing audit of an automated path, take a stratified random sample across document types and field categories, since novel error patterns surface first in the high-confidence stream. Reviewing only the lowest-confidence extractions leaves the automated path unmeasured where volume is highest. Sampling only the most common document type under-samples the worst segments by construction.</p>
+
+<ul class="rules" aria-label="Decision rules for stratified reporting">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-4.4-01"><span class="when">A 50-case set, with a document mix of 78/15/5/2 across four types</span><span class="then">Rebuild with enough cases per type to support a rate.<span class="why">At natural frequency the 2% segment gets one case, and one case cannot measure a rate.</span></span></li>
+<li data-facet="F-4.4-02"><span class="when">Team proposes auto-processing everything above an aggregate confidence threshold</span><span class="then">Analyse accuracy by document type and field first.<span class="why">The aggregate averages away the segment that fails 40% of the time.</span></span></li>
+<li data-facet="F-4.4-03"><span class="when">Ongoing audit of an automated extraction path</span><span class="then">A stratified random sample across document types and field categories.<span class="why">Novel error patterns surface first in the high-confidence stream.</span></span></li>
+<li data-facet="F-4.4-04"><span class="when">Proposal to review only the lowest-confidence extractions</span><span class="then">Reject as the sole audit.<span class="why">The automated path goes unmeasured exactly where volume is highest.</span></span></li>
+<li data-facet="F-4.4-05"><span class="when">Proposal to sample only the most common document type</span><span class="then">Reject.<span class="why">It under-samples the worst-performing segments by construction.</span></span></li>
+</ul>
+</section>
+
+<section class="concept" id="c4.5" data-src="4.5" data-terms="grader selection deterministic checks model grader human calibration schema verbatim citation pii scan binary rubric faithfulness overlap adjudication solvability">
+<h3>Use code wherever the answer is exact<span class="sec">§4.5</span></h3>
+
+<p>Layer the graders in order. Deterministic code checks filter first, a model grader scales the judgement of subjective quality, and humans calibrate periodically. The corpus discriminator is whether the property has an exact, machine-decidable answer. If it does, a model grader is a strictly worse instrument, however good its rubric.</p>
+
+<p>Code reaches schema validity, field match, numeric comparison, regular expressions, forbidden-pattern and PII scans, execution against tests, tool-call ordering, refusal when required, and the existence of a citation span. Check citations with a verbatim string comparison and not a model grader, since judges are near chance on citation validity. The corpus cites roughly 38% as the score judges reach on citation validity in studies, a figure not checked here.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 204" role="img" aria-labelledby="f42b-t f42b-d">
+<title id="f42b-t">Three layers of grading and the check on the middle one</title>
+<desc id="f42b-d">Three boxes in a row. Code checks come first and handle schema validity, verbatim citation spans, PII and pattern scans, and tests and tool order. The model grader comes second and handles tone and faithfulness, using binary sub-criteria and a model from another family. Humans come third and label ground truth and calibrate the grader, and do not grade at scale. An arrow from the humans back to the model grader is labelled the agreement check, with about 75 percent as a starting bar. A note says a property code can decide exactly never goes to a model grader.</desc>
+<rect class="bb" x="2" y="14" width="186" height="104"/>
+<text class="b tc tb2" x="95" y="36">Code checks</text>
+<text class="m tc" x="95" y="58">schema validity</text><text class="m tc" x="95" y="74">verbatim citation span</text><text class="m tc" x="95" y="90">PII and pattern scan</text><text class="m tc" x="95" y="106">tests, tool order</text>
+<rect class="bx" x="214" y="14" width="186" height="104"/>
+<text class="b tc" x="307" y="36">Model grader</text>
+<text class="m tc" x="307" y="58">tone, faithfulness</text><text class="m tc" x="307" y="74">binary sub-criteria</text><text class="m tc" x="307" y="90">a different model family</text>
+<rect class="bx" x="426" y="14" width="186" height="104"/>
+<text class="b tc" x="519" y="36">Humans</text>
+<text class="m tc" x="519" y="58">label ground truth</text><text class="m tc" x="519" y="74">calibrate the grader</text><text class="m tc" x="519" y="90">not grading at scale</text>
+<path class="ln" d="M190 66H212" marker-end="url(#ah)"/><path class="ln" d="M402 66H424" marker-end="url(#ah)"/>
+<path class="lb" d="M519 120V146H307V122" marker-end="url(#ah-b)"/>
+<text class="s tc" x="413" y="164">agreement check: about 75% as a starting bar</text>
+<text class="s" x="2" y="196">A property that code can decide exactly never goes to a model grader.</text>
+</svg>
+</div>
+<figcaption>Each layer takes what the one before it cannot decide. The return arrow is the check that keeps the middle layer honest.</figcaption>
+</figure>
+
+<p>Subjective properties go to a model grader. "The answer must be in the right register for a regulated communication" takes a model grader with a binary rubric, since no code check reaches tone. "The summary must be faithful to the source" takes a model grader for faithfulness, with an overlap metric as a cheap floor, and the overlap metric alone is not enough. </p>
+<p>A human's job is to label ground truth and to calibrate the grader.</p>
+
+<p>The corpus sets one solvability bar. If two domain experts would not independently reach the same verdict, no automated grader is trustworthy at any threshold. Where two adjusters disagree on the verdict, use human adjudication and re-scope the evaluation row, because unstable ground truth defeats every automated grader.</p>
+
+<ul class="rules" aria-label="Decision rules for grader selection">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-4.5-01"><span class="when">"Every output must be valid JSON matching this schema"</span><span class="then">Deterministic schema validation.<span class="why">It is exact, free and reproducible.</span></span></li>
+<li data-facet="F-4.5-02"><span class="when">"Every cited passage must exist verbatim in the cited document"</span><span class="then">A deterministic verbatim string check.<span class="why">Judges are near chance on citation validity.</span></span></li>
+<li data-facet="F-4.5-03"><span class="when">"No output may contain another customer's account identifier"</span><span class="then">A deterministic pattern or field scan.<span class="why">It is enforceable as a hard zero.</span></span></li>
+<li data-facet="F-4.5-04"><span class="when">"The answer must be in the right register for a regulated communication"</span><span class="then">A model grader with a binary rubric.<span class="why">No code check reaches tone.</span></span></li>
+<li data-facet="F-4.5-05"><span class="when">"The summary must be faithful to the source"</span><span class="then">A model grader for faithfulness, with an overlap metric as a cheap floor.<span class="why">Faithfulness is semantic, and the overlap metric alone is not sufficient.</span></span></li>
+<li data-facet="F-4.5-06"><span class="when">Ambiguous cases where two adjusters disagree on the verdict</span><span class="then">Human adjudication, and re-scope the evaluation row.<span class="why">Unstable ground truth defeats every automated grader.</span></span></li>
+</ul>
+</section>
+
+<section class="concept" id="c4.6" data-src="4.6" data-terms="model-graded evaluation binary sub-criteria out-of-family grader grader-human agreement self-preference position verbosity bias calibration degraded drift">
+<h3>Measure the grader before believing its scores<span class="sec">§4.6</span></h3>
+
+<p>Write a model-graded rubric as binary sub-criteria, where the whole output passes only if every hard criterion passes. A 1 to 5 scale hides mid-scale uncertainty, drifts between runs, needs larger samples and aggregates poorly. The grader must come from a different model family than the generator. A same-family grader brings self-preference bias and shared blind spots, and the failures it cannot see are the generator's own.</p>
+
+<p>The discriminator is whether the grader itself has been measured. An unvalidated grader's scores describe the grader and not the system. Before believing any score, hand-label a sample and measure agreement between grader and human, with about 75% as a starting bar and not a settled constant. For a new tone grader, hand-label 20 to 50 cases, run the grader, compute agreement, then decide.</p>
+
+<p>Several cases follow from that. An agreement of 0.62, meaning 62%, calls for rebuilding the criterion as binary sub-criteria and re-validating, because a fuzzy scalar is the most common cause of low agreement. </p>
+<p>If agreement is still below the bar after rework and no deterministic fallback exists, drop the row and record why. If only a same-family grader is available, use it, mark the row degraded, and never report it as ground truth. A grader six months in production with no re-audit needs periodic human calibration again.</p>
+
+<p>The known biases are position (favouring the first or last option), verbosity (rewarding length) and self-preference. The guards are to randomise and swap the order of options and aggregate both runs, to use binary criteria that control for length, and to use an out-of-family grader.</p>
+
+<ul class="rules" aria-label="Decision rules for model-graded evaluation">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-4.6-01"><span class="when">A new model grader is proposed for tone and helpfulness</span><span class="then">Hand-label 20 to 50 cases, run the grader, compute agreement, then decide.<span class="why">The grader is the measuring instrument and has not been calibrated.</span></span></li>
+<li data-facet="F-4.6-02"><span class="when">Agreement measured at 0.62</span><span class="then">Rebuild the criterion as binary sub-criteria and re-validate before use.<span class="why">A fuzzy scalar is the most common cause of low agreement.</span></span></li>
+<li data-facet="F-4.6-03"><span class="when">Agreement is still below the bar after rework, and no deterministic fallback exists</span><span class="then">Drop the row and record why.<span class="why">An untrustworthy grader shipped as validated is worse than no row.</span></span></li>
+<li data-facet="F-4.6-04"><span class="when">Only a same-family grader is available</span><span class="then">Use it but mark the row degraded, and never report it as ground truth.<span class="why">Self-preference bias and shared blind spots.</span></span></li>
+<li data-facet="F-4.6-05"><span class="when">The grader has been in production six months and was never re-audited</span><span class="then">Resume periodic human calibration.<span class="why">Agreement drifts, and a grader that was trusted is not permanently trusted.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: what a 40-case agreement check can and cannot show</summary>
+<div>
+<p>This is a worked example, not a corpus rule, and its counts are invented. A team hand-labels 40 cases and the grader agrees with the human on 31. That is <span class="num" data-calc="31/40*100" data-expect="77.5">77.5</span>% agreement, above a starting bar of 75%. If it agrees on 25, the figure is <span class="num" data-calc="25/40*100" data-expect="62.5">62.5</span>%, below the bar.</p>
+<p>With 40 cases, one case moves the figure by <span class="num" data-calc="1/40*100" data-expect="2.5">2.5</span> points. Inference: a 20 to 50 case sample therefore works as a screen. It separates a grader that is clearly poor from one that is plausible, and it cannot settle a close call, which is why the corpus calls the bar a starting point.</p>
+</div>
+</details>
+</section>
+
+<section class="concept" id="c4.7" data-src="4.7" data-terms="two-layer evaluation rag retrieval generation recall@k context precision faithfulness answer relevancy trajectory outcome multi-turn first failing turn blended score">
+<h3>Grade each layer, so a blended score cannot hide the broken one<span class="sec">§4.7</span></h3>
+
+<p>A RAG system has two layers. Retrieval is scored with Recall@k (the share of the gold passages found in the top k results) and context precision, against gold passage IDs. Generation is scored with faithfulness (whether the answer follows its sources) and answer relevancy. Both layers must clear their own bar. A single blended score is a defect.</p>
+
+<p>Faithfulness computed over the wrong passages means nothing, and retrieval is the more common failure. With Recall@5 of 0.55 and faithfulness of 0.97, read both bars: the system fails on retrieval, because high faithfulness to the wrong passages is not quality.</p>
+
+<p>An agentic system has two layers as well: the trajectory, meaning the tool selection and step order, and the outcome, meaning the final state and task completion. A correct result reached by a wrong or irreversible path is a failure. An agent that completes the task but deleted a record on the way fails the trajectory row. An agent with correct tools in the correct order and the wrong final state fails the outcome row.</p>
+
+<p>For multi-turn systems, attribute the first failing turn and not only the final state. An assistant that recovers by turn 6 from a turn-2 error still reports the turn-2 failure, since a late correction masks a defect that will not always correct itself.</p>
+
+<ul class="rules" aria-label="Decision rules for two-layer evaluation">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-4.7-01"><span class="when">A RAG assistant with one overall quality score, and a regression that cannot be located</span><span class="then">Split into retrieval and generation rows.<span class="why">The blended score cannot say which layer moved.</span></span></li>
+<li data-facet="F-4.7-02"><span class="when">Retrieval Recall@5 = 0.55, generation faithfulness = 0.97</span><span class="then">Both bars are read, and the system fails on retrieval.<span class="why">High faithfulness to the wrong passages is not quality.</span></span></li>
+<li data-facet="F-4.7-03"><span class="when">An agent completes the task but deleted a record on the way</span><span class="then">Fail.<span class="why">The trajectory row exists precisely for this.</span></span></li>
+<li data-facet="F-4.7-04"><span class="when">An agent selects the correct tools in the correct order but the final state is wrong</span><span class="then">Fail.<span class="why">The outcome row exists precisely for this.</span></span></li>
+<li data-facet="F-4.7-05"><span class="when">A multi-turn assistant recovers by turn 6 from a turn-2 error</span><span class="then">Report the turn-2 failure.<span class="why">A late correction masks a defect that will not always self-correct.</span></span></li>
+</ul>
+</section>
+
+<section class="concept" id="c4.8" data-src="4.8" data-terms="reliability aggregation pass@k pass^k reachable success retry validator irreversible action hard gate confirmation user-visible">
+<h3>Count attempts by what a failed one costs<span class="sec">§4.8</span></h3>
+
+<p><code>pass@k</code> passes when at least one of k attempts succeeds, so it measures reachable success. <code>pass^k</code> passes only when all k attempts succeed, so it measures reliability. The discriminator is whether a failed attempt is absorbed by a downstream check or reaches the world.</p>
+
+<p>Use <code>pass@k</code> where a validator or a test catches failures and triggers a retry, such as code generation with a test runner that reruns on failure, or a tool call behind a schema validator that retries on rejection. Use <code>pass^k</code> where every attempt is visible to a user or acts in the world: an answer shown directly to a customer has no retry, so each attempt is the product.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 148" role="img" aria-labelledby="f42c-t f42c-d">
+<title id="f42c-t">Five attempts at a confirmation gate, scored two ways</title>
+<desc id="f42c-d">Five boxes for five attempts at a gate that must halt for a human before an irreversible action. The first attempt halted and is blue. The other four acted silently and are red. Below, pass at 5 passes because at least one attempt halted. Pass to the 5 fails because four attempts acted without confirmation. A note says a gate before an irreversible action is graded pass to the k equals 1.0.</desc>
+<text class="s tc" x="34" y="18">Attempt 1</text><text class="s tc" x="106" y="18">Attempt 2</text><text class="s tc" x="178" y="18">Attempt 3</text><text class="s tc" x="250" y="18">Attempt 4</text><text class="s tc" x="322" y="18">Attempt 5</text>
+<rect class="bb" x="2" y="26" width="64" height="44"/><text class="m tc" x="34" y="53">halted</text>
+<rect class="br" x="74" y="26" width="64" height="44"/><text class="m tc" x="106" y="53">acted</text>
+<rect class="br" x="146" y="26" width="64" height="44"/><text class="m tc" x="178" y="53">acted</text>
+<rect class="br" x="218" y="26" width="64" height="44"/><text class="m tc" x="250" y="53">acted</text>
+<rect class="br" x="290" y="26" width="64" height="44"/><text class="m tc" x="322" y="53">acted</text>
+<rect class="by" x="380" y="26" width="234" height="44"/>
+<text class="m" x="392" y="44">A gate before an irreversible</text><text class="m" x="392" y="60">action is graded pass^k = 1.0</text>
+<text class="m" x="2" y="96">pass@5 passes: at least one attempt halted for a human</text>
+<text class="m tr" x="2" y="116">pass^5 fails: four attempts acted without confirmation</text>
+<text class="s" x="2" y="140">The gate fired on one attempt in five. Only pass^k reports that.</text>
+</svg>
+</div>
+<figcaption>The same five attempts pass under pass@5 and fail under pass^5. For a control that must hold every time, only the second reading is honest.</figcaption>
+</figure>
+
+<p>Any step that takes an irreversible action is a gate, whatever the aggregate score says. An agent that must confirm with a human before an irreversible action is graded <code>pass^k</code> = 1.0, since one silent irreversible action in k attempts is a failed control. Reject a confirmation gate reported as <code>pass@5 = 1.0</code>, because a gate that fires once in five attempts would score as passing.</p>
+
+<ul class="rules" aria-label="Decision rules for pass@k and pass^k">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-4.8-01"><span class="when">Code generation with a test runner that reruns on failure</span><span class="then"><code>pass@k</code>.<span class="why">The test runner absorbs failures, so reachable success is what matters.</span></span></li>
+<li data-facet="F-4.8-02"><span class="when">A tool call behind a schema validator that retries on rejection</span><span class="then"><code>pass@k</code>.<span class="why">It has the same structure.</span></span></li>
+<li data-facet="F-4.8-03"><span class="when">An agent must confirm with a human before any irreversible action</span><span class="then"><code>pass^k</code> = 1.0.<span class="why">One silent irreversible action in k attempts is a failed control.</span></span></li>
+<li data-facet="F-4.8-04"><span class="when">Every generated answer is shown directly to a customer</span><span class="then"><code>pass^k</code>.<span class="why">There is no retry, and each attempt is the product.</span></span></li>
+<li data-facet="F-4.8-05"><span class="when">A confirmation gate is reported as <code>pass@5 = 1.0</code></span><span class="then">Reject the framing.<span class="why">A gate that fires once in five attempts would score as passing.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: the same system under both readings</summary>
+<div>
+<p>This is a worked example, not a corpus rule. Suppose a step succeeds on 90% of attempts and attempts are independent, which is an assumption. The chance that at least one of five attempts succeeds is 1 minus 0.1 five times over, which is <span class="num" data-calc="(1-0.1*0.1*0.1*0.1*0.1)*100" data-round="3" data-expect="99.999">99.999</span>%. The chance that all five succeed is 0.9 five times over, which is <span class="num" data-calc="0.9*0.9*0.9*0.9*0.9*100" data-round="1" data-expect="59">59.0</span>%.</p>
+<p>The same step is nearly certain to succeed at least once in five tries, yet all five succeed only 59% of the time. Behind a retrying validator the first number is the one that matters. In front of a customer, or on a step that acts in the world, the second is.</p>
+</div>
+</details>
+</section>
+
+<section class="bites" id="b-o4.2">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide's one Domain 4 sample asks where to look first when a RAG system returns confident, wrong answers after a document refresh. It is worked through in <a href="#/o4.4">O4.4</a> and <a href="#/o3.5">O3.5</a>, so this objective has no official sample. The shapes below come from this project's own scenario set, and the <a href="#/traps">Trap families</a> page defines each label. <span class="lbl">Inference</span>Expect options that look like rigour and fail on composition, segment, instrument or aggregation.</p>
+
+<p class="stem">An evaluation set scores 96% while production complaints continue.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Rebuild the evaluation set from real production failures, stratified by segment, and report accuracy per segment.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>Expand the set from 500 to 2,000 cases using the same collection process. More data is the right reflex almost everywhere else, and here it scales the sampling bias.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-discard">DISCARD</a>Generate the additional cases with the same model that serves production. It replaces human-verified grounding with the model's own competence, so the set can hold nothing the model cannot already do.</span></li>
+</ul>
+
+<p class="stem">A team proposes an LLM-graded rubric for "output conforms to the required JSON schema and cites only real document sections".</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Route both properties to deterministic checks, schema validation and a verbatim citation-span check, and reserve the model grader for the subjective criteria.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-architected">ARCHITECTED</a>Build a detailed grading rubric and have a model score both properties. An elaborate rubric reads as rigorous, and it brings grader error into two properties that code settles exactly and for free.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-wrong-axis">WRONG-AXIS</a>Have humans review a sample of outputs for schema and citation errors. Humans are the calibration instrument and not the scaling one, so this spends the scarcest resource on the cheapest check.</span></li>
+</ul>
+
+<p><span class="lbl">Design shape</span>Four more shapes come from the corpus. A 97% extraction system proposes auto-processing everything above the aggregate confidence threshold. The answer analyses accuracy by document type first, and auto-processes only segments with independently validated accuracy. Using the aggregate for a per-segment decision is <a class="fam" href="#/traps/f-wrong-axis">WRONG-AXIS</a>, and trusting raw self-reported confidence is <a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>.</p>
+<p>A team reports 4.2 out of 5 from a same-family grader. The answer rebuilds the rubric as binary sub-criteria, switches to an out-of-family grader and validates against a hand-labelled sample. Reporting the 4.2 with a bar of 4.0 is <a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>, and enlarging the sample from 100 to 1,000 is <a class="fam" href="#/traps/f-wrong-axis">WRONG-AXIS</a>, because the defect is the grader.</p>
+<p>A RAG system's single quality metric drops. The answer splits the evaluation into a retrieval row and a generation row, each with its own bar. A better rubric on the blended score is <a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>, and a larger model is <a class="fam" href="#/traps/f-discard">DISCARD</a>.</p>
+<p>An agent that issues refunds must confirm with a human first. The answer grades the gate as <code>pass^k</code>. Grading it as <code>pass@k</code> is <a class="fam" href="#/traps/f-wrong-axis">WRONG-AXIS</a>, and demanding <code>pass^k = 1.0</code> on every row is <a class="fam" href="#/traps/f-overspec">OVERSPEC</a>, since a retrying validator sits behind task completion.</p>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>An evaluation set of 500 cases scores 96% and customers still complain, and someone proposes 2,000 more cases from the same source. Separately, a model grader scores a summary task. How do you handle the set, the grader and a refund agent's confirmation step?</span></summary>
+<div class="ans">
+<p>Rebuild the set from real production failures and report by segment, because more cases from the same source only repeat the bias. Validate the grader against 20 to 50 hand-labelled cases before trusting it, use binary criteria, and take a grader from another model family. Grade the confirmation step as <code>pass^k</code>, since one silent refund in k attempts is a failed control.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li><a href="#/o4.1/c4.1">O4.1</a>, §4.1: the metrics defined there are what these datasets and graders measure. A hard zero is allowed only where a deterministic check enforces it, which is this chapter's code-first rule.</li>
+<li><a href="#/o3.6/c3.12">O3.6</a>, §3.12: Recall@k is the retrieval row here, and reranking and depth are the levers when that row fails.</li>
+<li><a href="#/o4.3">O4.3</a>, §4.9: regression and A/B testing run on the datasets and graders built here.</li>
+<li><a href="#/o4.4">O4.4</a>, §4.10: diagnosis checks data and retrieval before the model, and the retrieval row is the one that measures that layer.</li>
+<li><a href="#/o5.3">O5.3</a>, §5.8: human-in-the-loop routing is where the adjudicated and calibrated human work from §4.5 and §4.6 is used.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 4, second objective. Course corpus §4.3 to §4.8. No live-document check was needed: the chapter states evaluation-design rules and no product facts. The document mix, the accuracies, the agreement counts and the 90% success rate are invented for illustration. The figures of roughly 38% for judges on citation validity and about 75% as a starting agreement bar are the corpus's own, and neither was checked against a source here.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>Fix the composition before the size: real traces first, 20 to 50 hand-verified cases, balanced should-fire and shouldn't-fire. A bigger set drawn the same way is the same bias.</li>
+<li>Report by segment. Over-sample rare, high-cost segments to about 30 cases each, and let every segment clear the bar before oversight is reduced.</li>
+<li>Code first for anything exact: schema, verbatim citations, PII. A model grader for tone and faithfulness. Humans label and calibrate.</li>
+<li>Validate a model grader against 20 to 50 hand-labelled cases, with binary criteria and a different model family. Mark a same-family grader degraded and re-audit periodically.</li>
+<li>Grade RAG as retrieval plus generation and agents as trajectory plus outcome, and attribute the first failing turn.</li>
+<li><code>pass@k</code> where a retry absorbs failure, <code>pass^k</code> where an attempt is visible or acts in the world, and any irreversible-action gate is <code>pass^k</code> = 1.0.</li>
+</ol>
+</aside>
+</div>

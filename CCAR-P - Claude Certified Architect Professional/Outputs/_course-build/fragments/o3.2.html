@@ -1,0 +1,175 @@
+<div class="chapter">
+<div class="main">
+
+<p>An HR assistant serves 4,000 employees. Its document store holds three tiers: general policy for all staff, manager guidance for about 400 people managers, and compensation planning for 12 HR business partners, which is <span class="num" data-calc="12/4000*100" data-expect="0.3">0.3</span>% of staff. The figures are illustrative. A review finds two gaps.</p>
+
+<p>The first is a <code>delete_document</code> tool that no workflow uses.</p>
+
+<p>The second is that every search runs under one service account with read access to all three tiers, and a filter drops restricted chunks after the search. When an ordinary employee asks about pay bands, the compensation plan ranks first, the filter removes it, and the answer is built from the chunks ranked fourth and fifth. The plan's text has still been in the model's context and in the trace store.</p>
+
+<section class="concept" id="c3.2" data-src="3.2" data-terms="least privilege removal compensating control logging confirmation time window rate limit narrow capability audit needed capability scenario states">
+<h3>Remove the capability when the scenario says it is not needed<span class="sec">§3.2</span></h3>
+
+<p>Least privilege means the capability does not exist. <dfn data-def="A control wrapped around a privilege you have decided to keep, such as logging, a confirmation prompt, a time-window restriction or a rate limit.">Compensating controls</dfn> are logging, confirmation prompts, time-window restrictions and rate limits. They are correct when the privilege is genuinely required and its risk must be managed. They are wrong when the scenario states that the capability is not needed. The tell is in the scenario's wording: if it says the agent does not need the capability, remove it.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 216" role="img" aria-labelledby="f32a-t f32a-d">
+<title id="f32a-t">Deciding whether to remove a capability or control it</title>
+<desc id="f32a-d">A question box on the left asks whether a workflow needs the capability. Three arrows lead to three outcomes on the right. If it is not needed, remove it from the tool set. If it is needed and consequential, keep it with human confirmation and audit logging. If it is needed for one narrow case only, replace it with a narrow capability scoped to that case. A note says audit logging is added on top when compliance needs proof of who did what, and never replaces removal.</desc>
+<rect class="bx" x="2" y="76" width="150" height="56"/>
+<text class="m tc" x="77" y="100">Does a workflow</text>
+<text class="m tc" x="77" y="118">need the capability?</text>
+<rect class="bb" x="232" y="8" width="382" height="52"/>
+<text class="b" x="244" y="28">Not needed: remove it</text>
+<text class="m" x="244" y="48">The privilege is the gap. Nothing else closes it.</text>
+<rect class="bx" x="232" y="76" width="382" height="52"/>
+<text class="b" x="244" y="96">Needed but consequential: keep it</text>
+<text class="m" x="244" y="116">Add human confirmation and audit logging.</text>
+<rect class="bx" x="232" y="144" width="382" height="52"/>
+<text class="b" x="244" y="164">Needed for one narrow case: narrow it</text>
+<text class="m" x="244" y="184">Replace the broad capability with one scoped to that case.</text>
+<path class="lb" d="M154 96L230 38" marker-end="url(#ah-b)"/>
+<path class="ln" d="M154 104H230" marker-end="url(#ah)"/>
+<path class="ln" d="M154 112L230 168" marker-end="url(#ah)"/>
+<text class="s" x="2" y="212">Audit logging goes on top when compliance needs proof of who did what. It never replaces removal.</text>
+</svg>
+</div>
+<figcaption>Start from the question on the left. Only the first outcome closes the gap by taking the privilege away. The other two manage a privilege that is being kept.</figcaption>
+</figure>
+
+<p>Take an agent that holds a write or delete capability no workflow uses. Remove it from the tool set. The privilege is the gap, and nothing else closes it. Logging records afterwards that the unwanted action happened and never prevents it. Restricting the capability to business hours narrows a time window and leaves the privilege whole, so the unwanted action is acceptable at 2 pm.</p>
+
+<p>When a workflow genuinely requires a consequential capability, keep it and add human confirmation and audit logging. Confirmation is the right control for an action that is needed and consequential. When the capability is needed only for one narrow case, replace the broad one with a narrow capability scoped to that case, since narrowing the privilege beats gating the broad one.</p>
+
+<p>Compliance may require proof of who did what. Add audit logging for that, together with removal of unneeded privileges. Logging satisfies an audit requirement and is no substitute for scoping.</p>
+
+<ul class="rules" aria-label="Decision rules for least privilege">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-3.2-01"><span class="when">Agent holds a write or delete capability no workflow uses</span><span class="then">Remove it from the tool set.<span class="why">The privilege is the gap, and nothing else closes it.</span></span></li>
+<li data-facet="F-3.2-02"><span class="when">Agent needs a consequential capability that a workflow genuinely requires</span><span class="then">Keep it and add human confirmation and audit logging.<span class="why">Confirmation is the right control for needed-but-consequential actions.</span></span></li>
+<li data-facet="F-3.2-03"><span class="when">Agent needs a capability only for a specific narrow case</span><span class="then">Replace the broad capability with a narrow one scoped to that case.<span class="why">Narrowing the privilege beats gating the broad one.</span></span></li>
+<li data-facet="F-3.2-04"><span class="when">Compliance requires proof of who did what</span><span class="then">Audit logging, in addition to removal of unneeded privileges.<span class="why">Logging is an audit requirement, not a substitute for scoping.</span></span></li>
+</ul>
+</section>
+
+<section class="concept" id="c3.3" data-src="3.3" data-terms="authentication authorization service account identity propagation entitlement filter retrieval query post-retrieval filtering separate indexes per-user credential system prompt rule deterministic confused deputy audit trace">
+<h3>Enforce entitlement in the query, as the user<span class="sec">§3.3</span></h3>
+
+<p>Authentication establishes who is calling. Authorization establishes what that caller may reach. The default gap in an agent system is that the agent calls tools under its own service credential, so the user's entitlements are stripped at the tool boundary. Every user collapses into one identity at the point where data is reached.</p>
+<p>Security people call this the confused deputy: a privileged component acting for a less privileged caller whose limits were lost on the way.</p>
+
+<p>The corpus discriminator is whether entitlement is enforced in the query or after the content has been retrieved. When it is enforced afterwards, restricted content enters context and the trace store even though it is filtered out of the answer. </p>
+<p>Auditors require enforcement that can be proved at the point of access. A filter in the query is enforced where the data is reached, under the propagated identity, while a filter in application code is only asserted.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 216" role="img" aria-labelledby="f32b-t f32b-d">
+<title id="f32b-t">Filtering after retrieval compared with filtering in the query</title>
+<desc id="f32b-d">Two rows of four boxes. In the top row, filtering after retrieval: a search runs under one service account, the compensation plan ranks first, the filter drops it but it was already in context and in the trace, and the answer is built from chunks ranked fourth and fifth. In the bottom row, entitlement in the query: the user's identity propagates to the retrieval layer, the query carries the entitlement filter, restricted chunks are never candidates, ranked or traced, and the answer comes from the best entitled chunks.</desc>
+<text class="b tr" x="2" y="16">Filter after retrieval</text>
+<rect class="bx" x="2" y="24" width="138" height="62"/>
+<text class="m tc" x="71" y="50">Search runs under</text><text class="m tc" x="71" y="68">one service account</text>
+<rect class="br" x="160" y="24" width="138" height="62"/>
+<text class="m tc" x="229" y="50">Compensation plan</text><text class="m tc" x="229" y="68">ranks first</text>
+<rect class="br" x="318" y="24" width="138" height="62"/>
+<text class="m tc" x="387" y="44">Filter drops it;</text><text class="m tc" x="387" y="60">already in context</text><text class="m tc" x="387" y="76">and in the trace</text>
+<rect class="bx" x="476" y="24" width="138" height="62"/>
+<text class="m tc" x="545" y="50">Answer built from</text><text class="m tc" x="545" y="68">ranks 4 and 5</text>
+<path class="ln" d="M142 55H158" marker-end="url(#ah)"/><path class="ln" d="M300 55H316" marker-end="url(#ah)"/><path class="ln" d="M458 55H474" marker-end="url(#ah)"/>
+<text class="b tb2" x="2" y="126">Entitlement in the query</text>
+<rect class="bb" x="2" y="134" width="138" height="62"/>
+<text class="m tc" x="71" y="154">User identity</text><text class="m tc" x="71" y="170">propagates to the</text><text class="m tc" x="71" y="186">retrieval layer</text>
+<rect class="bb" x="160" y="134" width="138" height="62"/>
+<text class="m tc" x="229" y="160">Query carries the</text><text class="m tc" x="229" y="178">entitlement filter</text>
+<rect class="bb" x="318" y="134" width="138" height="62"/>
+<text class="m tc" x="387" y="154">Restricted chunks</text><text class="m tc" x="387" y="170">are never candidates,</text><text class="m tc" x="387" y="186">ranked or traced</text>
+<rect class="bx" x="476" y="134" width="138" height="62"/>
+<text class="m tc" x="545" y="160">Answer from the</text><text class="m tc" x="545" y="178">best entitled chunks</text>
+<path class="lb" d="M142 165H158" marker-end="url(#ah-b)"/><path class="lb" d="M300 165H316" marker-end="url(#ah-b)"/><path class="lb" d="M458 165H474" marker-end="url(#ah-b)"/>
+</svg>
+</div>
+<figcaption>The top row removes the restricted chunk after it has entered context. The bottom row never retrieves it, so it cannot reach the context, the ranking or the trace.</figcaption>
+</figure>
+
+<p>With a multi-tier document store, one service account and post-retrieval filtering, propagate the user's identity and apply an entitlement filter as part of the retrieval query. Restricted chunks are then never candidates, never ranked and never traced.</p>
+
+<p>If the vector store cannot filter at query time, keep separate indexes per entitlement tier and route each request by the caller's tier. That takes more infrastructure, and enforcement becomes structural and no longer depends on a code path.</p>
+
+<p>A shared third-party integration may need each action attributable to the person who took it, which the corpus calls the operator. Substitute a per-user credential for the one shared service token, because both attribution and revocation need a per-user identity.</p>
+
+<p>If someone proposes a system-prompt rule stating what the agent may not access, reject it. Prompt-level rules are probabilistic, and security enforcement must be deterministic.</p>
+
+<ul class="rules" aria-label="Decision rules for authorization enforcement">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-3.3-01"><span class="when">Multi-tier document store, one service account, post-retrieval filtering</span><span class="then">Propagate user identity and apply an entitlement filter as part of the retrieval query.<span class="why">Restricted chunks are never candidates, never ranked, never traced.</span></span></li>
+<li data-facet="F-3.3-02"><span class="when">The vector store cannot filter at query time</span><span class="then">Separate indexes per entitlement tier, routed by caller tier.<span class="why">It is more infrastructure, but enforcement is structural rather than dependent on a code path.</span></span></li>
+<li data-facet="F-3.3-03"><span class="when">A shared third-party integration where actions must be attributable to the operator</span><span class="then">Per-user credential substitution rather than one shared service token.<span class="why">Attribution and revocation both require a per-user identity.</span></span></li>
+<li data-facet="F-3.3-04"><span class="when">Someone proposes a system-prompt rule stating what the agent may not access</span><span class="then">Reject.<span class="why">Prompt-level rules are probabilistic, and security enforcement must be deterministic.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: three gaps in the filter-after design, and the cost of a probabilistic rule</summary>
+<div>
+<p>This is a worked example, not a corpus rule, and its figures are invented. The post-retrieval filter in the opening has three gaps. It spoils answers: when a restricted chunk ranks first, the filter drops it and the answer rests on lower-ranked material, with no sign to the user that this happened.</p>
+<p>It lives in application code, so any path to the index that bypasses that code has no authorization at all, such as a debugging endpoint or a batch summarising job. And the trace store holds chunks that were filtered out of the answer, in a system whose own access controls were never designed for compensation data.</p>
+<p>A system-prompt rule has a cost in numbers too. A control that holds 99% of the time fails <span class="num" data-calc="40000*1%" data-expect="400">400</span> times a day at 40,000 requests a day. A deterministic filter in the query has no such failure rate.</p>
+</div>
+</details>
+</section>
+
+<section class="bites" id="b-o3.2">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide's Sample 1 is this chapter's least-privilege question. A support agent can read tickets, draft replies, issue refunds and delete user accounts, and staff only ever need to read tickets and draft replies. The question asks which change best reduces risk, applying least privilege. The answer removes the refund and delete tools from the agent's configuration.</p>
+<p>The guide's reason is that least privilege removes capabilities the role does not require, which eliminates the attack surface rather than monitoring or guarding it. Adding logging and adding a confirmation prompt are detective or compensating controls. Swapping in a larger model has nothing to do with authorization scope. This project tags the logging and the confirmation prompt <a class="fam" href="#/traps/f-detective-for-preventive">DETECTIVE-FOR-PREVENTIVE</a>. The <a href="#/traps">Trap families</a> page defines each label below.</p>
+
+<p>The corpus words the same rule as its own scenario:</p>
+
+<p class="stem">An agent has a capability the scenario states it does not require.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Remove the capability from the agent's configuration.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>Keep it and log every use for audit review. Logging records afterwards that the unwanted thing happened and never prevents it.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-wrong-axis">WRONG-AXIS</a>Keep it but restrict it to business hours. It narrows a time window and leaves the privilege whole.</span></li>
+</ul>
+
+<p class="stem">A multi-user assistant reaches a tiered document store under a single service account and filters restricted results out of the answer.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Propagate the requesting user's identity to the retrieval layer and apply the entitlement filter inside the query.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-repair">REPAIR</a>Keep post-retrieval filtering and add a second review pass over the drafted answer. It fixes downstream what the query could have prevented upstream, and the restricted content is already in context and in traces.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-wrong-axis">WRONG-AXIS</a>Add an instruction to the system prompt telling the agent which tiers it may cite. This treats an access-control problem as an instruction-following problem.</span></li>
+</ul>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>An agent has a delete tool that no workflow uses, and the team proposes logging every delete. Separately, a RAG assistant searches under one service account and drops restricted chunks from the answer. What do you recommend in each case?</span></summary>
+<div class="ans">
+<p>Remove the delete tool. The scenario says nothing needs it, so logging would only record a misuse after it happened. For the assistant, propagate the user's identity to retrieval and put the entitlement filter in the query, so restricted chunks are never retrieved, ranked or traced. Filtering the answer is too late, because the content has already reached context and the traces.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li><a href="#/o3.1/c3.1">O3.1</a>, §3.1: blast radius is the third cost of a tool. Splitting an agent into role-scoped agents shrinks that surface the same way removal does here.</li>
+<li><a href="#/o3.5/c3.10">O3.5</a>, §3.10: separate indexes per entitlement tier are an index design, and a refresh has to keep every tier's index consistent with its source.</li>
+<li><a href="#/o3.4">O3.4</a>, §3.6: observability stores what was retrieved, which is why a restricted chunk in a trace is a second leak beyond the answer.</li>
+<li><a href="#/o1.2/c1.10">O1.2</a>, §1.10: a rule that must always hold is enforced in code, since a prompt cannot guarantee it. The system-prompt rejection here is the same principle.</li>
+<li><a href="#/o7.1">O7.1</a>, §7.8: hooks and permission rules are the deterministic layer in Claude Code.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 3, second objective, and section 8, Sample 1 with its rationale, summarised above. Course corpus §3.2 and §3.3. No live-document check was needed: the chapter states access-control rules and no product facts. The employee counts, the ranks and the request volume are invented for illustration.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>Least privilege means the capability does not exist. If the scenario says it is not needed, remove it. Logging, confirmation, time windows and rate limits manage a privilege you keep.</li>
+<li>Needed and consequential: keep it with human confirmation and audit logging. Needed for a narrow case: replace it with a narrow capability.</li>
+<li>Logging serves an audit requirement alongside removal and never substitutes for it.</li>
+<li>An agent on a service account collapses every user into one identity. Propagate the user's identity and put the entitlement filter in the retrieval query.</li>
+<li>If the store cannot filter at query time, use separate indexes per tier. Use per-user credentials where actions must be attributable.</li>
+<li>A system-prompt rule about access is probabilistic. Security enforcement must be deterministic.</li>
+</ol>
+</aside>
+</div>

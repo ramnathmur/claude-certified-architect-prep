@@ -1,0 +1,195 @@
+<div class="chapter">
+<div class="main">
+
+<p>A healthcare client requires that patient identifiers never leave its network. The team adds a line to the system prompt: "do not repeat or store patient identifiers". Evaluation shows the assistant obeys it 99.4% of the time. At 50,000 requests a day, that leaves <span class="num" data-calc="50000*0.6%" data-expect="300">300</span> replies a day that repeat an identifier. The figures are illustrative.</p>
+
+<p>The larger problem comes before the reply. All 50,000 requests have already carried the identifiers to the inference endpoint, and the instruction is read after they arrived. The requirement was that the data never leave, and no measured rate can turn that into a guarantee. What kind of control can?</p>
+
+<section class="concept" id="c5.3" data-src="5.3" data-terms="compliance boundary enforcement de-identify tokenise re-associate audit the crossing system-prompt instruction nightly redaction tendency guarantee deterministic pre-boundary">
+<h3>Fire the control before the data crosses the boundary<span class="sec">§5.3</span></h3>
+
+<p>A required control cannot depend on the model behaving correctly, because probabilistic behaviour does not produce a guarantee. The pattern is to classify, then de-identify or tokenise before the call, then re-associate locally and audit the crossing. </p>
+<p>The boundary is the edge of the system or network the data is permitted to stay in, such as the client's own network. The timing test is blunt: a control that acts after the request is assembled is too late, because the crossing has already happened.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 192" role="img" aria-labelledby="f54a-t f54a-d">
+<title id="f54a-t">De-identifying before the boundary, and where a prompt instruction acts</title>
+<desc id="f54a-d">A top row of boxes runs left to right across a dashed network boundary. A record with identifiers is classified, then de-identified or tokenised, with the map staying inside. The boundary follows. The inference endpoint on the far side sees tokens and not identifiers. A bottom row returns from the endpoint to a re-associate-locally box and then to an audit-the-crossing box. A red note says a system-prompt instruction acts on the far side, after the crossing.</desc>
+<text class="s" x="234" y="22">the map stays inside</text>
+<rect class="bx" x="2" y="30" width="110" height="52"/><text class="m tc" x="57" y="52">Record with</text><text class="m tc" x="57" y="68">identifiers</text>
+<rect class="bx" x="128" y="30" width="90" height="52"/><text class="m tc" x="173" y="60">Classify</text>
+<rect class="bb" x="234" y="30" width="118" height="52"/><text class="m tc" x="293" y="52">De-identify or</text><text class="m tc" x="293" y="68">tokenise</text>
+<path class="ln" d="M114 56H126" marker-end="url(#ah)"/><path class="ln" d="M220 56H232" marker-end="url(#ah)"/><path class="ln" d="M354 56H386" marker-end="url(#ah-b)"/>
+<path class="lr dash" d="M370 12V178"/>
+<rect class="pl" x="320" y="174" width="100" height="14"/><text class="s tr tc" x="370" y="185">network boundary</text>
+<rect class="bx" x="388" y="30" width="226" height="52"/><text class="b tc" x="501" y="52">Inference endpoint</text><text class="m tc" x="501" y="70">sees tokens, not identifiers</text>
+<path class="ln" d="M501 84V100H293V116" marker-end="url(#ah)"/>
+<rect class="bb" x="234" y="118" width="118" height="52"/><text class="m tc" x="293" y="140">Re-associate</text><text class="m tc" x="293" y="156">locally</text>
+<rect class="bx" x="128" y="118" width="90" height="52"/><text class="m tc" x="173" y="140">Audit the</text><text class="m tc" x="173" y="156">crossing</text>
+<path class="ln" d="M232 144H220" marker-end="url(#ah)"/>
+<text class="s tr" x="388" y="136">A system-prompt instruction acts</text><text class="s tr" x="388" y="152">here, after the crossing.</text>
+</svg>
+</div>
+<figcaption>The blue box fires on the near side of the dashed line, so the identifiers never reach the endpoint. The red note marks where a prompt instruction would act.</figcaption>
+</figure>
+
+<p>Inference: in free-text narratives, finding the identifiers can itself rely on a detector that can miss, so the design keeps the re-identification map and the audit inside the boundary. The corpus point stands: the control acts before the call and does not depend on the main model complying.</p>
+
+<p>Three things fail to turn a tendency into a guarantee: high measured accuracy, documented residual risk, and a larger model. </p>
+<p>If regulated identifiers must never reach the inference endpoint, de-identify or tokenise in the pipeline before the call. A system-prompt instruction to ignore identifiers is rejected, since it is evaluated after the identifiers are in the request and depends on compliance. Nightly redaction of stored logs is rejected as the control, because it fixes the record and not the transmission.</p>
+
+<p>The reverse case also exists. A strong preference, such as the tone wanted in redactions, is a tendency, and a prompt instruction is the fitting mechanism for it.</p>
+
+<ul class="rules" aria-label="Decision rules for compliance boundary enforcement">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-5.3-01"><span class="when">Regulated identifiers must never reach the inference endpoint</span><span class="then">De-identify or tokenise in the pipeline before the call.<span class="why">It is deterministic, fires before transmission and is independent of model behaviour.</span></span></li>
+<li data-facet="F-5.3-02"><span class="when">Same requirement, and the proposal is a system-prompt instruction to ignore identifiers</span><span class="then">Reject.<span class="why">It is evaluated after the identifiers are already in the request, and depends on compliance.</span></span></li>
+<li data-facet="F-5.3-03"><span class="when">Same requirement, and the proposal is nightly redaction of stored logs</span><span class="then">Reject as the control.<span class="why">It fixes the record and not the transmission.</span></span></li>
+<li data-facet="F-5.3-04"><span class="when">The requirement is a strong preference rather than an absolute (for example, the preferred tone in redactions)</span><span class="then">A prompt instruction is appropriate.<span class="why">The requirement is a tendency, so a tendency-shaped mechanism fits.</span></span></li>
+</ul>
+</section>
+
+<section class="concept" id="c5.4" data-src="5.4" data-terms="regulatory regimes gdpr hipaa fedramp payload deployment environment purpose minimisation erasure derived data protected health information authorised environment impact level">
+<h3>Ask which constraint binds: the payload or the environment<span class="sec">§5.4</span></h3>
+
+<p>The corpus names what each regime forces into the design. GDPR covers the personal data of people in the EU. HIPAA covers protected health information in the US. FedRAMP covers cloud services used by US federal agencies. GDPR and HIPAA mostly constrain what is in the request, and FedRAMP mostly constrains where the request may be processed. This is the course corpus's reading of each regime and not legal advice.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 190" role="img" aria-labelledby="f54b-t f54b-d">
+<title id="f54b-t">What each regime forces into the design</title>
+<desc id="f54b-d">Three boxes. GDPR: purpose declared first, minimise the payload, erasure reaches every store, endpoint region permitted, and an account of automated decisions. HIPAA: de-identify before PHI leaves, or bring the processor inside, minimum necessary excerpt, audit trails on PHI access, and the key stays inside the boundary. FedRAMP: authorised environment, the right impact level, limits on topology and models, documented controls and continuous monitoring. A label under the first two says they mostly bind the payload, and a label under the third says it binds the environment.</desc>
+<rect class="bb" x="2" y="10" width="188" height="134"/>
+<text class="b tc tb2" x="96" y="32">GDPR</text>
+<text class="m tc" x="96" y="54">purpose declared first</text><text class="m tc" x="96" y="72">minimise the payload</text><text class="m tc" x="96" y="90">erasure reaches every store</text><text class="m tc" x="96" y="108">endpoint region permitted</text><text class="m tc" x="96" y="126">account for automated calls</text>
+<rect class="bb" x="214" y="10" width="188" height="134"/>
+<text class="b tc tb2" x="308" y="32">HIPAA</text>
+<text class="m tc" x="308" y="54">de-identify before PHI leaves</text><text class="m tc" x="308" y="72">or bring the processor inside</text><text class="m tc" x="308" y="90">minimum necessary excerpt</text><text class="m tc" x="308" y="108">audit trails on PHI access</text><text class="m tc" x="308" y="126">key stays inside the boundary</text>
+<rect class="bx" x="426" y="10" width="188" height="134"/>
+<text class="b tc" x="520" y="32">FedRAMP</text>
+<text class="m tc" x="520" y="54">authorised environment</text><text class="m tc" x="520" y="72">at the right impact level</text><text class="m tc" x="520" y="90">limits topology and models</text><text class="m tc" x="520" y="108">documented controls</text><text class="m tc" x="520" y="126">continuous monitoring</text>
+<path class="ls" d="M2 154H402M426 154H614"/>
+<text class="s tc" x="202" y="172">Mostly bind the payload: what is in the request</text>
+<text class="s tc" x="520" y="172">Binds the environment</text>
+</svg>
+</div>
+<figcaption>The two blue boxes shape what is sent. The plain box shapes where it can be processed, and no setting inside an unauthorised environment changes that.</figcaption>
+</figure>
+
+<p>Three further points from the corpus complete the picture. GDPR also requires being able to account for automated decisions that affect a person. HIPAA allows the processor to be brought inside the covered boundary under agreement, as an alternative to de-identifying. FedRAMP constrains deployment topology as well as the list of models, and it expects documented control implementation.</p>
+
+<p>For EU customer records feeding a support assistant, minimise the fields to what the task needs, declare the purpose, make sure the endpoint region is permitted, and list every store for erasure. For clinical narratives drafted by an assistant, strip direct identifiers before the call, send the narrative, reattach locally, and log access.</p>
+
+<p>For a federal agency whose preferred model is not in an authorised environment, the model is unavailable for that data: route through an authorised environment, or keep the data out. FedRAMP is a boundary and procurement fact and not a configuration setting. </p>
+<p>When a GDPR erasure request arrives for a customer whose tickets seeded an evaluation dataset and a vector index, deletion must reach the logs, the dataset and the index, since derived data is still that person's data.</p>
+
+<ul class="rules" aria-label="Decision rules for regulatory regimes">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-5.4-01"><span class="when">EU customer records feeding a support assistant</span><span class="then">Minimise fields to what the task needs, declare the purpose, make sure the endpoint region is permitted, and list every store for erasure.<span class="why">GDPR binds payload contents, purpose and location.</span></span></li>
+<li data-facet="F-5.4-02"><span class="when">Clinical narratives drafted by an assistant</span><span class="then">Strip direct identifiers before the call, send the narrative, reattach locally, and log access.<span class="why">HIPAA binds what leaves the covered boundary.</span></span></li>
+<li data-facet="F-5.4-03"><span class="when">A federal agency deployment where the preferred model is not in an authorised environment</span><span class="then">The model is unavailable for that data. Route through an authorised environment, or keep the data out.<span class="why">FedRAMP is a boundary and procurement fact, not a configuration setting.</span></span></li>
+<li data-facet="F-5.4-04"><span class="when">A GDPR erasure request arrives for a customer whose support tickets seeded an evaluation dataset and a vector index</span><span class="then">Deletion must reach the logs, the evaluation dataset and the index.<span class="why">Derived data is still that person's data.</span></span></li>
+</ul>
+</section>
+
+<section class="concept" id="c5.5" data-src="5.5" data-terms="retention auditability stated purpose bounded duration audit record immutability decision trace erasure scope breach surface de-identify mutable logs explainability">
+<h3>Retain with a purpose and a duration, and keep the audit record unalterable<span class="sec">§5.5</span></h3>
+
+<p>Retention requires a stated purpose and a bounded duration. Storage is a decision that creates obligations, and "it might be useful later" is not a purpose. Every retained interaction is erasure scope, breach surface and discoverable material. A team that proposes keeping every request and response indefinitely for future evaluation work is told to define the purpose and the duration, and to de-identify what is kept.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 168" role="img" aria-labelledby="f54c-t f54c-d">
+<title id="f54c-t">Three different records, each with its own purpose</title>
+<desc id="f54c-d">Three boxes. Raw interactions are kept in a bounded window, for example 30 days, de-identified and purpose-coded, for incident investigation. The decision trace holds inputs used, versions, thresholds and outcome, under its own longer-lived policy, so a specific decision can be explained. The audit record holds what was sent, when, under what purpose, which model and prompt version, what returned and the outcome, and it is immutable.</desc>
+<rect class="bx" x="2" y="10" width="196" height="122"/>
+<text class="b tc" x="100" y="32">Raw interactions</text>
+<text class="m tc" x="100" y="54">bounded window, e.g. 30 days</text><text class="m tc" x="100" y="72">de-identified</text><text class="m tc" x="100" y="90">purpose-coded</text><text class="s tc" x="100" y="116">for incident investigation</text>
+<rect class="bb" x="210" y="10" width="196" height="122"/>
+<text class="b tc tb2" x="308" y="32">Decision trace</text>
+<text class="m tc" x="308" y="54">inputs used, versions,</text><text class="m tc" x="308" y="72">thresholds, outcome</text><text class="m tc" x="308" y="90">its own, longer policy</text><text class="s tc" x="308" y="116">to explain one decision</text>
+<rect class="bb" x="418" y="10" width="196" height="122"/>
+<text class="b tc tb2" x="516" y="32">Audit record</text>
+<text class="m tc" x="516" y="54">what was sent, and when</text><text class="m tc" x="516" y="72">purpose, model, prompt version</text><text class="m tc" x="516" y="90">what returned, the outcome</text><text class="s tc" x="516" y="116">immutable</text>
+<text class="s" x="2" y="156">A record the operations team can edit is not evidence that a boundary was crossed.</text>
+</svg>
+</div>
+<figcaption>Each box answers a different question. Raw interactions have a short window, and the decision trace is kept under its own, longer policy.</figcaption>
+</figure>
+
+<p>The audit record holds what was sent, when, under what purpose, which model and prompt version, what returned and the outcome. </p>
+<p>It must be immutable, because an audit trail that can be edited is not evidence. Inference: immutability and erasure meet by de-identifying what the record holds and by deleting under a stated policy, a point to settle with counsel. If auditability is met only by application logs that the operations team can edit, reject it.</p>
+
+<p>An incident investigation that needs recent traffic gets a bounded window, for example 30 days, de-identified and purpose-coded. If a regulator may ask why a specific decision was made, retain the decision trace under its own policy. Explainability needs the trace, which is narrower and longer-lived than raw logs.</p>
+
+<ul class="rules" aria-label="Decision rules for retention and auditability">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-5.5-01"><span class="when">A team proposes retaining all requests and responses indefinitely for future evaluation work</span><span class="then">Reject. Define the purpose and the duration, and de-identify what is kept.<span class="why">Indefinite retention of regulated content creates open-ended obligations.</span></span></li>
+<li data-facet="F-5.5-02"><span class="when">Incident investigation needs recent traffic</span><span class="then">A bounded window (for example 30 days), de-identified and purpose-coded.<span class="why">Purpose and duration are both stated.</span></span></li>
+<li data-facet="F-5.5-03"><span class="when">A regulator may ask why a specific decision was made</span><span class="then">Retain the decision trace (inputs used, versions, thresholds, outcome) under its own policy.<span class="why">Explainability needs the trace, which is narrower and longer-lived than raw logs.</span></span></li>
+<li data-facet="F-5.5-04"><span class="when">Auditability is met by application logs that the operations team can edit</span><span class="then">Reject.<span class="why">Mutable records are not evidence of a boundary crossing.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: what indefinite retention adds up to</summary>
+<div>
+<p>This is a worked example, not a corpus rule, and the volume is invented. At 50,000 requests a day, a 30-day window holds <span class="num" data-calc="50000*30" data-expect="1500000">1,500,000</span> interactions at any time. Kept indefinitely, the store reaches <span class="num" data-calc="50000*365" data-expect="18250000">18,250,000</span> after one year, and it keeps growing.</p>
+<p>Each of those interactions is something an erasure request has to find, something a breach exposes, and something a discovery process can demand. A scheduled redaction job over that store treats the problem after the decision to store the field has been made, which is why the corpus calls it a repair and not a control.</p>
+</div>
+</details>
+</section>
+
+<section class="bites" id="b-o5.4">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide gives no sample for compliance, and its three samples sit in Domains 2, 3 and 4. The scenarios below come from this project's own set, and the <a href="#/traps">Trap families</a> page defines each label. <span class="lbl">Inference</span>Expect options that sound like governance and leave the data crossing, and one that fires first.</p>
+
+<p class="stem">A healthcare client requires that patient identifiers never leave its network, and the team proposes adding "do not repeat or store patient identifiers" to the system prompt.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>De-identify the record in the pipeline before the API call, hold the re-identification map inside the network, and re-associate locally on return.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-overspec">OVERSPEC</a>Keep the prompt instruction and support it with evaluation showing 99.4% compliance. The corpus tags this OVERSPEC in appearance, because it looks like extra rigour, and insufficient in fact: a measured rate is still a tendency, and the requirement is absolute.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-architected">ARCHITECTED</a>Sign a data processing agreement with the provider and document the residual risk. It reads as the mature governance answer and allocates liability, and it does not stop the data crossing. The agreement may still be required, and it is insufficient alone.</span></li>
+</ul>
+
+<p class="stem">A federal agency wants the highest-capability model available, which is not offered in an authorised environment.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Deploy on an authorised environment using an available model, and state the capability trade-off explicitly to the sponsor.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-architected">ARCHITECTED</a>Use the preferred model and add compensating controls plus enhanced monitoring. It sounds rigorous, but authorisation is a property of the environment, and no control added on top confers it.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>Use the preferred model for non-sensitive requests and the authorised one for sensitive requests, routed by a model-side classification of the input. The routing decision is itself probabilistic, so regulated data reaches the unauthorised environment whenever the classifier is wrong.</span></li>
+</ul>
+
+<p><span class="lbl">Design shape</span>A team wants to keep every interaction indefinitely to build evaluation datasets later. The answer defines a bounded window with a stated purpose, de-identifies what is kept, and holds a separate longer-lived decision trace for auditability. Restricting access to the team by role is <a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>, since it leaves the retention scope and the breach surface as they were. A scheduled redaction job over the store is <a class="fam" href="#/traps/f-repair">REPAIR</a>.</p>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>A client says identifiers must never reach the model, and a teammate proposes a prompt instruction plus a compliance evaluation. Another team wants to keep all interactions for later evaluation work. What do you say to each?</span></summary>
+<div class="ans">
+<p>For the identifiers, reject the prompt instruction. It acts after the data has crossed, and a measured rate is a tendency. De-identify or tokenise in the pipeline before the call and re-associate locally. For the retention, reject indefinite storage and define a purpose and a bounded duration, de-identify what is kept, and hold a separate decision trace for audit under its own policy.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li><a href="#/o1.2/c1.10">O1.2</a>, §1.10: redaction belongs at the input boundary, before the model sees anything, which is the same placement as the first row here.</li>
+<li><a href="#/o3.2/c3.3">O3.2</a>, §3.3: a control that is deterministic and enforced at the point of access, as opposed to a prompt rule, is the shared logic.</li>
+<li><a href="#/o3.4/c3.6">O3.4</a>, §3.6: the trace store holds regulated content and needs redaction, retention and access control designed with the pipeline.</li>
+<li><a href="#/o4.6/c4.12">O4.6</a>, §4.12: the regulated overlay on logging is the monitoring side of this retention rule.</li>
+<li><a href="#/o5.1/c5.1">O5.1</a>, §5.1: the guardrail layers are independent controls, and this chapter adds §5.3's timing test: a compliance control has to act before the data crosses.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 5, fourth objective. Course corpus §5.3 to §5.5. No live-document check was needed: the chapter states control-placement rules, and its account of each regime is the course corpus's reading and not legal advice or a statement of what any provider offers. The request volumes and the 99.4% rate are invented for illustration.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>A required control cannot depend on the model. De-identify or tokenise before the call, re-associate locally, and audit the crossing. A control that acts after the request is assembled is too late.</li>
+<li>A prompt instruction is a tendency, and a high measured compliance rate, a documented risk or a larger model does not turn it into a guarantee. Absolute requirements need a deterministic control that fires first.</li>
+<li>GDPR and HIPAA bind the payload: purpose, minimisation, erasure that reaches derived stores, and what leaves the boundary. FedRAMP binds the environment, and no setting confers authorisation.</li>
+<li>Retain only with a stated purpose and a bounded duration, and de-identify what is kept. Keep a separate decision trace for explainability.</li>
+<li>An audit record must be immutable. Logs the operations team can edit are not evidence.</li>
+</ol>
+</aside>
+</div>

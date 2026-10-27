@@ -1,0 +1,323 @@
+<div class="chapter">
+<div class="main">
+
+<p>A research brief splits into four independent threads. One agent that takes them in turn needs 40, 55, 35 and 50 seconds, so the report arrives after <span class="num" data-calc="40+55+35+50" data-expect="180">180</span> seconds. Four agents working at once, one branch each, finish when the slowest branch does, after 55 seconds. The price is tokens (words and word parts): typically four to five times a single agent's spend, because context one agent held once is duplicated across every agent.</p>
+
+<p>The multi-agent design in the corpus has one <dfn data-def="The agent that splits the task, delegates the parts, passes each subagent its context, handles failures and decides when the work is done.">coordinator</dfn> and several <dfn data-def="A specialist agent that the coordinator starts for one narrow part of the task. Its context is isolated, so it knows only what the coordinator passed it.">subagents</dfn>. The coordinator divides the task, hands out the parts and brings the results together. Subagents never talk to one another. Every message passes through the coordinator, an arrangement called <dfn data-def="An arrangement with one coordinator at the centre and subagents on the spokes. Subagents never communicate directly with each other.">hub-and-spoke</dfn>.</p>
+
+<p>Find the reason the scenario gives for more agents before adding any. After a defect, ask what the coordinator did before asking what a subagent did, because each subagent sees only what the coordinator gave it.</p>
+
+<section class="concept" id="c1.5" data-src="1.5" data-terms="single agent multi-agent justification token multiplier latency parallel fan-out context isolation privilege separation handoff cost">
+<h3>Add agents only for a reason the scenario states<span class="sec">§1.5</span></h3>
+
+<p>The corpus accepts three reasons for more than one agent, and the scenario must state at least one. The first is parallelism under a latency requirement, which buys <dfn data-def="Elapsed time from request to result, as the person waiting experiences it. With parallel branches it equals the longest branch.">wall-clock time</dfn>. The second is <dfn data-def="Giving each thread of work its own context window, so a long task does not overflow one window and one thread's material cannot contaminate another's reasoning.">context isolation</dfn>. The third is <dfn data-def="Giving each role only the tools it needs, set in its configuration, such as a drafter with no write access or a verifier with no search access.">privilege separation</dfn>. If the scenario states none of them, a single agent with the right tools is the answer.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 246" role="img" aria-labelledby="f14a-t f14a-d">
+<title id="f14a-t">The same four research threads run in turn and run together</title>
+<desc id="f14a-d">Two timelines for four independent research threads of 40, 55, 35 and 50 seconds. One agent working in turn lays them end to end and finishes at 180 seconds. Four subagents started in one coordinator turn run side by side and finish at 55 seconds, the longest branch. A note says the price is typically 4 to 5 times the tokens of one agent.</desc>
+<text class="b" x="2" y="32">One agent in turn</text>
+<text class="s" x="2" y="48">the baseline spend</text>
+<rect class="bx" x="180" y="14" width="93.3" height="42"/>
+<rect class="bx" x="273.3" y="14" width="128.4" height="42"/>
+<rect class="bx" x="401.7" y="14" width="81.6" height="42"/>
+<rect class="bx" x="483.3" y="14" width="116.7" height="42"/>
+<text class="m tc" x="226.7" y="32">Thread 1</text><text class="s tc" x="226.7" y="48">40 s</text>
+<text class="m tc" x="337.5" y="32">Thread 2</text><text class="s tc" x="337.5" y="48">55 s</text>
+<text class="m tc" x="442.5" y="32">Thread 3</text><text class="s tc" x="442.5" y="48">35 s</text>
+<text class="m tc" x="541.7" y="32">Thread 4</text><text class="s tc" x="541.7" y="48">50 s</text>
+<path class="ls" d="M180 66H600M180 61V71M600 61V71"/>
+<text class="m tc" x="390" y="86">Wall clock is the sum: <tspan data-calc="40+55+35+50" data-expect="180">180</tspan> s</text>
+<text class="b" x="2" y="134">Four subagents</text>
+<text class="s" x="2" y="150">in one coordinator turn</text>
+<rect class="bb" x="180" y="104" width="93.3" height="16"/><text class="s" x="281.3" y="116">Thread 1, 40 s</text>
+<rect class="bb" x="180" y="124" width="128.4" height="16"/><text class="s" x="316.4" y="136">Thread 2, 55 s</text>
+<rect class="bb" x="180" y="144" width="81.6" height="16"/><text class="s" x="269.6" y="156">Thread 3, 35 s</text>
+<rect class="bb" x="180" y="164" width="116.7" height="16"/><text class="s" x="304.7" y="176">Thread 4, 50 s</text>
+<path class="ls" d="M180 190H308.4M180 185V195M308.4 185V195"/>
+<text class="m" x="180" y="208">Wall clock is the longest branch: 55 s</text>
+<rect class="by" x="404" y="100" width="208" height="96"/>
+<text class="b" x="414" y="120">The price</text>
+<text class="m" x="414" y="136">Typically 4 to 5× the token spend</text>
+<text class="m" x="414" y="152">of one agent, because shared</text>
+<text class="m" x="414" y="168">context is duplicated across</text>
+<text class="m" x="414" y="184">the isolated agents.</text>
+<path class="ln" d="M180 224H600M180 219V229M320 219V229M460 219V229M600 219V229"/>
+<text class="s tc" x="180" y="241">0 s</text><text class="s tc" x="320" y="241">60 s</text><text class="s tc" x="460" y="241">120 s</text><text class="s tc" x="600" y="241">180 s</text>
+</svg>
+</div>
+<figcaption>Both rows do the same four jobs. In turn, the wait is the sum of the branches. Together, it is the longest branch, and the token bill goes up.</figcaption>
+</figure>
+
+<p>Suppose each of four research threads adds 30,000 tokens of material. A single agent then holds <span class="num" data-calc="4*30000" data-expect="120000">120,000</span> tokens when it begins to synthesise, with thread one's material still in the window while it reasons about thread four. Four isolated agents hold 30,000 each, which keeps every window small even though the total across agents is higher, and a <dfn data-def="The subagent that writes the final report from the findings the other subagents returned.">synthesis agent</dfn> receives four structured summaries, compact records with named fields, instead of four transcripts.</p>
+
+<p>Privilege separation is set in configuration: the drafting role is built without a write tool, and the verifying role without a search tool. Every split also adds a <dfn data-def="A point where work and context pass from one agent to another, or from an agent to a person.">handoff</dfn> between the coordinator and a subagent, and each handoff loses information. A direct channel between subagents would dissolve both the isolation and the privilege boundary, and the token cost would remain.</p>
+
+<p>That makes multi-agent the most expensive rung of the <a href="#/o1.3">pattern ladder</a>, so only the three reasons justify the climb. A sequential task has no independent branches to run together, and where cost is the named pillar the multiplier works against it. The corpus gives stakeholders one sentence: "We pay more tokens to buy wall-clock time and clean separation of privilege."</p>
+
+<ul class="rules" aria-label="Decision rules for single agent versus multi-agent">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-1.5-01"><span class="when">Four independent research threads, and turnaround is a stated commitment</span><span class="then">Multi-agent, with parallel fan-out.<span class="why">The latency requirement funds the token multiplier.</span></span></li>
+<li data-facet="F-1.5-02"><span class="when">One agent's context would exceed the window, or threads would contaminate each other</span><span class="then">Multi-agent.<span class="why">Context isolation is the justification.</span></span></li>
+<li data-facet="F-1.5-03"><span class="when">A drafting role must not have write access, and a verifier must not have search access</span><span class="then">Multi-agent.<span class="why">Privilege separation is the justification.</span></span></li>
+<li data-facet="F-1.5-04"><span class="when">A sequential task with no latency constraint, where one tool set would serve</span><span class="then">Single agent.<span class="why">Nothing funds the multiplier.</span></span></li>
+<li data-facet="F-1.5-05"><span class="when">Cost is the stated pillar and the subtasks are sequential</span><span class="then">Single agent.<span class="why">Multi-agent moves the named pillar the wrong way.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: Anthropic's own token figures</summary>
+<div>
+<p>This is not a corpus rule. In Anthropic's post "How we built our multi-agent research system" (13 June 2025), "agents typically use about 4× more tokens than chat interactions" and multi-agent systems "use about 15× more tokens than chats".</p>
+<p>Those baselines are chats, and the corpus's 4 to 5× is measured against a single agent. Dividing the two figures gives <span class="num" data-calc="15/4" data-round="2" data-expect="3.75">3.75</span>. The post does not state that ratio, so this is an inference, and it lands just under the corpus range.</p>
+<p>The post says multi-agent systems "excel at valuable tasks that involve heavy parallelization, information that exceeds single context windows, and interfacing with numerous complex tools". Parallelism and context isolation appear in the corpus list too. It names as poor fits the problem areas that "require all agents to share the same context or involve many dependencies between agents".</p>
+<p>Its cost condition is that the task's value be "high enough to pay for the increased performance", which is the corpus's rule that the multiplier needs funding.</p>
+</div>
+</details>
+</section>
+
+<section class="concept" id="c1.6" data-src="1.6" data-terms="coordinator subagent hub-and-spoke root cause decomposition partition context passing error handling termination structured error recovery policy spawning Task tool procedural goal-oriented prompt">
+<h3>Ask what the coordinator did before blaming a subagent<span class="sec">§1.6</span></h3>
+
+<p>The coordinator owns four things. Decomposition is how it splits the task before delegating, for example into distinct subtopics or source types. Context passing is what each subagent receives, and in what form. Error handling is what happens when a subagent fails. Termination criteria say when the work stops. A subagent's context is isolated, so it knows only what the coordinator passed it.</p>
+
+<p>Because the coordinator owns those four things, an output-level symptom in a multi-agent system usually traces to it and not to a subagent. A subagent that returned correct results on the ground it was assigned, meaning its part of the task, has done its job. A wrong report then points at how the parts were assigned, what was passed, how failure was handled or when the loop stopped.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 288" role="img" aria-labelledby="f14b-t f14b-d">
+<title id="f14b-t">Hub-and-spoke: where a symptom shows and where its cause usually sits</title>
+<desc id="f14b-d">A coordinator box at the top lists four duties: decomposition, context passing, error handling and termination. Three subagent boxes sit below it, each joined to the coordinator by one arrow down carrying the task and context and one arrow up carrying the result. Crossed-out dashed red lines between neighbouring subagents are labelled no direct channel. A red note under the subagents says defects show up there, and a note inside the coordinator says the cause usually sits in one of its four duties.</desc>
+<rect class="bb" x="60" y="8" width="496" height="92"/>
+<text class="h tc tb2" x="308" y="31">Coordinator</text>
+<text class="m tc" x="122" y="58">Decomposition</text>
+<text class="m tc" x="246" y="58">Context passing</text>
+<text class="m tc" x="370" y="58">Error handling</text>
+<text class="m tc" x="494" y="58">Termination</text>
+<text class="s tc" x="308" y="84">The cause of an output defect usually sits in one of these four</text>
+<path class="ln" d="M83 102V194" marker-end="url(#ah)"/>
+<path class="ln" d="M107 194V104" marker-end="url(#ah)"/>
+<path class="ln" d="M296 102V194" marker-end="url(#ah)"/>
+<path class="ln" d="M320 194V104" marker-end="url(#ah)"/>
+<path class="ln" d="M509 102V194" marker-end="url(#ah)"/>
+<path class="ln" d="M533 194V104" marker-end="url(#ah)"/>
+<text class="s te" x="288" y="152">task and context</text>
+<text class="s" x="328" y="152">result</text>
+<rect class="bx" x="20" y="196" width="150" height="56"/>
+<text class="b tc" x="95" y="219">Subagent A</text>
+<text class="s tc" x="95" y="237">own context, narrow tools</text>
+<rect class="bx" x="233" y="196" width="150" height="56"/>
+<text class="b tc" x="308" y="219">Subagent B</text>
+<text class="s tc" x="308" y="237">own context, narrow tools</text>
+<rect class="bx" x="446" y="196" width="150" height="56"/>
+<text class="b tc" x="521" y="219">Subagent C</text>
+<text class="s tc" x="521" y="237">own context, narrow tools</text>
+<path class="lr dash" d="M170 240H233"/>
+<path class="lr" d="M195 234l13 13M208 234l-13 13"/>
+<text class="s tr tc" x="201.5" y="210">no direct</text>
+<text class="s tr tc" x="201.5" y="224">channel</text>
+<path class="lr dash" d="M383 240H446"/>
+<path class="lr" d="M408 234l13 13M421 234l-13 13"/>
+<text class="s tr tc" x="414.5" y="210">no direct</text>
+<text class="s tr tc" x="414.5" y="224">channel</text>
+<text class="s tr" x="20" y="274">Defects show up in the subagents' outputs: a gap, a duplicate, a missing citation, a dead run.</text>
+</svg>
+</div>
+<figcaption>Every message passes through the coordinator. A defect shows up in a subagent's output, and the cause usually sits in one of the coordinator's four duties.</figcaption>
+</figure>
+
+<p>Three terms in the rules below need a gloss. A prompt is procedural when it lists steps, and goal-oriented when it states the goal and the quality criteria. With <dfn data-def="Returning a failure to the coordinator as data it can act on, such as the type of failure, what was attempted and any partial results, instead of a bare error string.">structured error propagation</dfn>, a failure returns to the coordinator as data it can act on. A recovery policy is the coordinator's rule for what happens next: retry, skip or escalate.</p>
+
+<p>The <code>Task</code>-equivalent is the capability that lets a coordinator start subagents at all. When it is missing from the coordinator's configuration, there is nothing to delegate with.</p>
+
+<ul class="rules" aria-label="Decision rules for coordinator responsibilities and root-cause location">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-1.6-01"><span class="when">The report misses whole subtopics, and every subagent returned correct results</span><span class="then">The coordinator's decomposition was too narrow.<span class="why">Rules out: subagent query quality.</span></span></li>
+<li data-facet="F-1.6-02"><span class="when">Two subagents investigated the same ground</span><span class="then">The coordinator did not partition the space before delegating.<span class="why">Rules out: missing deduplication after the fact.</span></span></li>
+<li data-facet="F-1.6-03"><span class="when">The final report's citations are wrong or missing</span><span class="then">Content and metadata were passed as merged free text.<span class="why">Rules out: the synthesis agent failing to "remember to cite".</span></span></li>
+<li data-facet="F-1.6-04"><span class="when">One subagent's failure terminated the whole run</span><span class="then">There was no structured error propagation and no coordinator recovery policy.<span class="why">Rules out: the subagent being unreliable.</span></span></li>
+<li data-facet="F-1.6-05"><span class="when">The coordinator attempts everything itself and never delegates</span><span class="then">The <code>Task</code>-equivalent spawning capability is absent from its configuration.<span class="why">Rules out: a system prompt that does not mention delegation.</span></span></li>
+<li data-facet="F-1.6-06"><span class="when">Research output is shallow and checklist-like</span><span class="then">The coordinator prompt is procedural instead of goal-oriented.<span class="why">Rules out: too few subagents.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: how the Agent SDK expresses these controls</summary>
+<div>
+<p>This is not a corpus rule. It comes from the Agent SDK page "Subagents in the SDK", read on 25 October 2026. A coordinator starts a subagent by calling the Agent tool. The page says the tool appears as "Task" in the initial tool list and that tool-use blocks before Claude Code v2.1.63 also named it "Task", which is the "Task-equivalent" of the corpus row.</p>
+<p>A subagent definition takes a description, a prompt and an optional list of tools, among other fields. A tool left out of that list "isn't in the subagent's session at all", with "no permission prompt or error". That is removal by configuration, the form of least privilege that §3.2 requires.</p>
+<p>The page also says that an ordinary subagent starts with a fresh context window. The only content passed down is the Agent tool's prompt string, and only the subagent's final message comes back. A fork, which copies the parent conversation, is the exception. These two narrow channels are where handoff loss happens, which is why §1.7 is about the passing format.</p>
+<p>The runtime does not enforce the corpus's topology. The page says a subagent can spawn subagents of its own, with 3 layers below the main agent allowed by default, and that a subagent given the <code>SendMessage</code> tool is told the names of other agents it can message. Hub-and-spoke is a design choice made in configuration.</p>
+<p>The page's advice for a coordinator that answers directly instead of delegating is to name the subagent in the prompt and write a clear description. Inference: that advice suits a coordinator that has the tool and leaves it unused, while the corpus row covers the case where the tool is absent.</p>
+</div>
+</details>
+</section>
+
+<section class="concept" id="c1.7" data-src="1.7" data-terms="context passing structured handoff content metadata citation provenance attribution escalation summary transcript coverage annotation graceful degradation empty result timeout conflicting values audit trail synthesis">
+<h3>Pass findings with their sources attached<span class="sec">§1.7</span></h3>
+
+<p>A synthesis agent can cite only what reaches it as a separate field. So the coordinator passes each finding as content plus <dfn data-def="The facts about where a finding came from: source URL, document name, page and date. Also called provenance.">metadata</dfn>: its provenance, meaning source URL, document name, page and date. Merge the two into free text during aggregation and attribution, the link from a claim to its source, is lost. An instruction to cite cannot restore it, because the agent cannot cite metadata it never received.</p>
+
+<p>Conflicts and audits depend on the same separation. When two sources report different values, keep both with their attribution and mark the conflict. The coordinator decides which to use. A regulated audit trail needs the citation, the input and the prompt version, and flattened provenance loses all three.</p>
+
+<p>The receiver of a handoff can also be a person. A human who receives an escalation does not have the transcript, so the handoff summary must stand alone. It carries the entity ID, an issue summary, the root cause, the actions already taken, the amount or quantity at stake, the recommended action and the reason for escalating.</p>
+
+<p>A gap in the synthesis goes back to the coordinator, which sends targeted queries and runs the synthesis again. With only 3 of 5 sources returned, failing the run discards three good sources. The coordinator synthesises instead, with coverage annotations that mark what is well supported and what is missing. That is <dfn data-def="When part of the input is missing, the system still produces a result and says where the gap is, instead of failing the whole run.">graceful degradation</dfn>.</p>
+
+<p>Zero results from a subagent is a finding. Read zero results as a timeout and the coordinator retries for nothing. Read a timeout as zero results and an access failure goes unreported as an empty finding.</p>
+
+<ul class="rules" aria-label="Decision rules for context passing and structured handoff">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-1.7-01"><span class="when">The synthesis subagent must cite sources</span><span class="then">Pass findings as <code>{content, metadata}</code> with source URL, document name and page.<span class="why">Citation requires the metadata to survive as metadata.</span></span></li>
+<li data-facet="F-1.7-02"><span class="when">The synthesis output has coverage gaps</span><span class="then">The coordinator evaluates, re-delegates targeted queries and re-invokes synthesis.<span class="why">Refinement is the coordinator's job.</span></span></li>
+<li data-facet="F-1.7-03"><span class="when">Human reviewers keep re-asking for information the system already gathered</span><span class="then">Pass a structured handoff summary that is self-contained.<span class="why">The human has no transcript access.</span></span></li>
+<li data-facet="F-1.7-04"><span class="when">Upstream inputs were partially unavailable (3 of 5 sources returned)</span><span class="then">Synthesise with coverage annotations marking what is well supported and what is missing.<span class="why">Graceful degradation: do not fail the whole run.</span></span></li>
+<li data-facet="F-1.7-05"><span class="when">A subagent returns "0 results"</span><span class="then">Accept it as a valid finding.<span class="why">An empty result is information; a timeout is an access failure.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: one finding, before and after</summary>
+<div>
+<p>This is a worked example, not a corpus rule, and its figures are invented. Merged into free text, three findings reach the synthesis agent as one sentence: <code>Revenue rose 12%, margins fell 2 points and headcount is flat, per the filings.</code> The agent can write "per the filings" and nothing more exact.</p>
+<p>Passed as records, each finding keeps its own source: <code>{content: "Revenue rose 12% in 2025", metadata: {url, document: "Annual report 2025", page: 14}}</code>. The page number is a field, so it reaches the report intact. If a press release gives a different revenue figure, both records go forward with their attribution and the conflict is marked.</p>
+</div>
+</details>
+</section>
+
+<section class="concept" id="c1.8" data-src="1.8" data-terms="orchestration topology parallel fan-out sequential chaining iterative refinement sufficiency criteria iteration cap single turn dependency termination goal-oriented prompt">
+<h3>Fan out what is independent and chain only real dependencies<span class="sec">§1.8</span></h3>
+
+<p>Three shapes cover the choices. In <dfn data-def="The coordinator dispatches independent subtasks together and aggregates their results, so the wall-clock time is that of the longest branch.">parallel fan-out</dfn> the coordinator sends independent subtasks out together. In <dfn data-def="Running subagents one after another because each one's input depends on the previous one's output, such as a step that needs an entity extracted by the step before it.">sequential chaining</dfn> step B needs step A's extracted entity, which is a real data dependency. <dfn data-def="A loop in which the coordinator delegates, synthesises, evaluates the result for gaps, re-delegates targeted queries and synthesises again, until stated criteria are met.">Iterative refinement</dfn> repeats a loop when one pass cannot guarantee coverage. Serialise only what depends on an earlier result, and send everything else out in one turn.</p>
+
+<p>Parallel delegations must be issued in a single coordinator turn. The Agent SDK documentation defines a turn as one round trip: the coordinator produces output that includes tool calls, the tools run, and the results feed back to it.</p>
+
+<p>The corpus rule is that delegations spread across turns run one after another and raise no error. Issued over four turns, the four research branches take 40 + 55 + 35 + 50 = <span class="num" data-calc="40+55+35+50" data-expect="180">180</span> seconds again.</p>
+
+<p>The refinement loop runs delegate, synthesise, evaluate for gaps, re-delegate targeted queries and re-synthesise. The coordinator needs <dfn data-def="The conditions a coordinator checks the synthesis against to decide that the work is finished, for example that every subtopic in the brief has two sources.">sufficiency criteria</dfn> to know when to stop. An iteration cap is a safety net that limits spend and says nothing about quality, so a loop that never ends is missing criteria, and a tighter cap does not supply them.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 282" role="img" aria-labelledby="f14c-t f14c-d">
+<title id="f14c-t">An iterative refinement loop that ends on stated criteria, with a cap as a safety net</title>
+<desc id="f14c-d">Left to right: the coordinator delegates to three subagents in one turn, the results are synthesised into one report, and the coordinator evaluates the report against stated criteria. A blue arrow marked met leads to a finished report. A blue return path marked gap found carries targeted queries back to the coordinator for another pass. A red dashed arrow from the loop leads to an iteration cap box that says the cap is a safety net and judges nothing about the report. A yellow note gives an example of stated criteria.</desc>
+<rect class="bx" x="2" y="44" width="108" height="72"/>
+<text class="b tc" x="56" y="68">Coordinator</text>
+<text class="m tc" x="56" y="86">delegates all</text>
+<text class="m tc" x="56" y="102">in one turn</text>
+<rect class="bx" x="140" y="21" width="92" height="30"/><text class="m tc" x="186" y="40">Subagent A</text>
+<rect class="bx" x="140" y="65" width="92" height="30"/><text class="m tc" x="186" y="84">Subagent B</text>
+<rect class="bx" x="140" y="109" width="92" height="30"/><text class="m tc" x="186" y="128">Subagent C</text>
+<path class="ln" d="M110 80L138 37" marker-end="url(#ah)"/>
+<path class="ln" d="M110 80H138" marker-end="url(#ah)"/>
+<path class="ln" d="M110 80L138 123" marker-end="url(#ah)"/>
+<path class="ln" d="M232 36L260 76" marker-end="url(#ah)"/>
+<path class="ln" d="M232 80H260" marker-end="url(#ah)"/>
+<path class="ln" d="M232 124L260 84" marker-end="url(#ah)"/>
+<rect class="bx" x="262" y="44" width="92" height="72"/>
+<text class="b tc" x="308" y="76">Synthesise</text>
+<text class="m tc" x="308" y="94">one report</text>
+<path class="ln" d="M354 80H378" marker-end="url(#ah)"/>
+<rect class="bb" x="380" y="44" width="116" height="72"/>
+<text class="b tc tb2" x="438" y="68">Evaluate</text>
+<text class="m tc" x="438" y="86">against stated</text>
+<text class="m tc" x="438" y="102">criteria</text>
+<path class="lb" d="M496 80H526" marker-end="url(#ah-b)"/>
+<text class="s tc tb2" x="511" y="70">met</text>
+<rect class="bb" x="528" y="56" width="86" height="48"/>
+<text class="b tc" x="571" y="84">Report done</text>
+<path class="lb" d="M438 118V172H56V120" marker-end="url(#ah-b)"/>
+<rect class="pl" x="134" y="162" width="226" height="20"/>
+<text class="m tc" x="247" y="176">gap found: re-delegate targeted queries</text>
+<path class="lr dash" d="M400 172V204" marker-end="url(#ah-r)"/>
+<rect class="by" x="2" y="206" width="270" height="66"/>
+<text class="b" x="12" y="226">Stopping rule: stated criteria</text>
+<text class="m" x="12" y="244">For example, every subtopic in the brief</text>
+<text class="m" x="12" y="260">has at least two sources.</text>
+<rect class="br" x="300" y="206" width="314" height="66"/>
+<text class="b tr" x="310" y="226">Iteration cap: a safety net</text>
+<text class="m" x="310" y="244">It ends a run that never meets the criteria</text>
+<text class="m" x="310" y="260">and judges nothing about the report.</text>
+</svg>
+</div>
+<figcaption>The coordinator delegates in one turn, synthesises, then checks the report against stated criteria. A gap sends targeted queries around the loop again, and met criteria end it. The cap stands outside the loop as a safety net.</figcaption>
+</figure>
+
+<p>The coordinator's prompt states goals and quality criteria and gives no step-by-step procedure. A prompt that dictates the steps leaves the coordinator nothing to decide, and the research it directs comes out shallow and checklist-shaped, as in the last row of §1.6.</p>
+
+<ul class="rules" aria-label="Decision rules for orchestration topology">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-1.8-01"><span class="when">Three independent aspects of one customer issue</span><span class="then">Parallel fan-out in a single turn, then synthesise.<span class="why">Independent work done in series wastes wall clock and repeats context fetches.</span></span></li>
+<li data-facet="F-1.8-02"><span class="when">Step B needs Step A's extracted entity</span><span class="then">Sequential chaining.<span class="why">It is a real dependency.</span></span></li>
+<li data-facet="F-1.8-03"><span class="when">Coverage of the synthesis cannot be guaranteed in one pass</span><span class="then">An iterative refinement loop with stated sufficiency criteria.<span class="why">Gap evaluation and re-delegation belong to the coordinator.</span></span></li>
+<li data-facet="F-1.8-04"><span class="when">A refinement loop runs indefinitely</span><span class="then">Add explicit quality criteria for the coordinator to evaluate against.<span class="why">Termination is a criteria problem, not a counter problem.</span></span></li>
+<li data-facet="F-1.8-05"><span class="when">The coordinator emits its delegations across successive turns</span><span class="then">Fix it to one turn.<span class="why">Otherwise the parallel design is sequential in practice.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: a refinement loop, and turns in the Agent SDK</summary>
+<div>
+<p>This is a worked example, not a corpus rule. A coordinator researches five subtopics and states two criteria: each subtopic has at least two independent sources, and no two findings conflict without an annotation. After the first pass, subtopics one to three have two sources each, subtopic four has one and subtopic five has none, so <span class="num" data-calc="2/5*100" data-expect="40">40</span>% of the subtopics fail the first criterion.</p>
+<p>The coordinator sends two targeted queries in one turn, runs the synthesis again and checks again. When every subtopic has two sources and no conflict is unannotated, the loop ends. A cap of five passes stands behind this as a safety net. If the cap ends the run instead, the report may still miss the criteria, and the cap has judged nothing about it.</p>
+<p>The Agent SDK pages read for this chapter (25 October 2026) list safety nets of this kind: a <code>maxTurns</code> limit, a spend cap (<code>maxBudgetUsd</code>) that counts subagent spend, and limits on subagent nesting depth and concurrency. These bound a run and judge nothing about the report.</p>
+<p>The subagent page also says a subagent the main agent spawns runs in the background by default, with its report arriving in a later turn, and that Claude waits when its next action needs the report. Inference: whether delegations issued one per turn run in series therefore depends on the runtime and on whether the coordinator waits. The exam rule stays as the corpus states it: issue independent delegations together.</p>
+</div>
+</details>
+</section>
+
+<section class="bites" id="b-o1.4">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide's three sample questions cover Domains 3, 2 and 4, so Domain 1 has no official sample. The shapes below come from this project's own scenario set, and the <a href="#/traps">Trap families</a> page defines each label. <span class="lbl">Inference</span>Expect a stem that shows a defect in the final report and asks where the fix belongs, and check what the coordinator did before choosing a subagent change.</p>
+
+<p class="stem">A research report omits entire subtopics, although each subagent returned correct results.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Widen the coordinator's decomposition and have it explicitly partition the space before delegating.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-wrong-axis">WRONG-AXIS</a>Improve the search subagents' query construction. Right vocabulary, wrong owner: each subagent did its job on the ground it was assigned.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>Increase the number of subagents to broaden coverage. More agents on the same narrow partition produce more of the same gap.</span></li>
+</ul>
+
+<p class="stem">A sequential analysis task has no stated latency, context or privilege constraint.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>A single agent with the required tool set.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-architected">ARCHITECTED</a>A coordinator plus three specialist subagents, for separation of concerns. It reads as the more rigorous design, and it adds 4 to 5 times the tokens and a handoff at every boundary to meet no stated requirement.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-wrong-axis">WRONG-AXIS</a>Two agents that pass results directly to each other, with no coordinator. The coordinator boundary is what buys context isolation and per-role privilege. A direct channel removes both and still pays the multi-agent token cost.</span></li>
+</ul>
+
+<p><span class="lbl">Design shape</span>Human agents receiving escalations keep asking customers for details the system already collected. The answer is a structured handoff summary with the entity ID, root cause, actions taken, amount and recommended action. Giving the humans the raw transcript is <a class="fam" href="#/traps/f-discard">DISCARD</a>: it replaces a compact designed artifact with the whole history, which they must now read end to end.</p>
+<p>Escalating earlier is <a class="fam" href="#/traps/f-wrong-axis">WRONG-AXIS</a>, because the context would still not be transferred, and it lowers the autonomous resolution rate.</p>
+
+<p>A billing dispute with three independent issues is investigated one issue at a time. The answer decomposes it into three issues and dispatches them from a single coordinator turn, with shared customer context, then synthesises one resolution. A faster model is <a class="fam" href="#/traps/f-wrong-axis">WRONG-AXIS</a>, because it shortens each call and leaves the serial order in place. Dispatching across three successive turns is <a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>: the decomposition is right and the execution is still sequential.</p>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>A research report leaves out whole subtopics, yet every subagent's output is correct. One colleague proposes better search queries for the subagents, another proposes more subagents. Where does the fix go, and why do both proposals miss?</span></summary>
+<div class="ans">
+<p>The fix goes in the coordinator: widen its decomposition and have it partition the whole space explicitly before it delegates. The subagents did their job on the ground they were assigned, so better queries cannot reach ground nobody assigned. More subagents on the same narrow partition repeat the same gap.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li><a href="#/o1.3">O1.3</a>, §1.3: this chapter leans on the ladder. Move right only when the rung to the left cannot meet a stated requirement, and multi-agent is the last rung, so §1.5's justification test is that rule applied once more.</li>
+<li><a href="#/o1.2/c1.10">O1.2</a>, §1.10: this chapter also leans on it. Context not captured at the input boundary does not exist downstream, which is a subagent's position, and the consumer sets the output contract, here a synthesis agent or a human with no transcript.</li>
+<li><a href="#/o1.5">O1.5</a>, §1.11: the coordinator's first duty continues there, with a stopping rule of one evaluation criterion and one failure mode per unit and structured summaries passed between units.</li>
+<li><a href="#/o1.6">O1.6</a>, §1.12: a stated latency commitment removes serial designs before any are compared, so independent steps fan out as in §1.8, and where cost is the named pillar, §1.5 keeps sequential work on one agent.</li>
+<li><a href="#/o3.2">O3.2</a>, §3.2: least privilege means the capability does not exist, which is how a drafting role ends up with no write tool. <a href="#/o3.1">O3.1</a>, §3.1 splits an agent that holds 22 tools into role-scoped agents of 4 to 6 tools.</li>
+<li><a href="#/o5.4">O5.4</a>, §5.5: an audit record holds what was sent and which model and prompt version produced the output, which flattened provenance (§1.7) cannot supply.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 1, fourth objective; the guide states the objective in one line and gives no further detail. Course corpus §1.5 to §1.8. The branch times, the 30,000-token threads and the examples in the folds are this chapter's illustrations, not corpus figures. Live checks, read 2026-10-25: Anthropic, "How we built our multi-agent research system", 13 June 2025 (anthropic.com/engineering/multi-agent-research-system), for the first fold; Anthropic, "Subagents in the SDK" (code.claude.com/docs/en/agent-sdk/subagents), for the §1.6 fold and the last two paragraphs of the §1.8 fold; Anthropic, "How the agent loop works" (code.claude.com/docs/en/agent-sdk/agent-loop), for the definition of a turn in §1.8 and the caps in its fold.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>More than one agent needs a reason the scenario states: parallelism under a latency requirement, context isolation, or privilege separation. With none, use one agent. The price is typically 4 to 5 times the tokens, plus information loss at every handoff.</li>
+<li>Hub-and-spoke: subagents never talk to each other. The coordinator owns decomposition, context passing, error handling and termination, so an output defect usually traces to it.</li>
+<li>A subagent knows only what the coordinator passed. Pass findings as content plus metadata, because an instruction to cite cannot restore metadata that never arrived.</li>
+<li>A human receiving an escalation has no transcript, so the handoff summary stands alone. With partial inputs, synthesise and annotate coverage. Zero results is a finding; a timeout is an access failure.</li>
+<li>Independent work fans out in a single coordinator turn. Chain steps only on a real data dependency. Across turns, delegations run in sequence and no error appears.</li>
+<li>Refinement ends on stated sufficiency criteria, and the cap is a safety net. The coordinator's prompt states goals and criteria, never steps.</li>
+</ol>
+</aside>
+</div>

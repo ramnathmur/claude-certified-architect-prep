@@ -1,0 +1,144 @@
+<div class="chapter">
+<div class="main">
+
+<p>A claims assistant has had a successful pilot with 40 users, and the plan is to roll it out to 800, which is twenty times as many. The pilot's failure rate was low, its users were happy, and the build team sat next to them. A manager asks for a capacity plan: how many requests a day, what rate limits, what the bill will be.</p>
+
+<p>The capacity plan is a fair request, and it is not the first thing to produce. Scaling changes who sends requests and what they send, as well as how many. What has the pilot been quietly assuming?</p>
+
+<section class="concept" id="c6.11" data-src="6.11" data-terms="pilot to scale assumption audit input distribution support load review load rare failures cost model extrapolate staffing capacity rate limits routine event">
+<h3>List the assumptions the pilot relied on before planning capacity<span class="sec">§6.11</span></h3>
+
+<p>The corpus discriminator is which small-scale assumptions stop holding at large scale. There are three classes. The input distribution widens, the support and human-review load grows, and rare failures become routine. The sequence is to surface the assumptions first, and the cost model and model choice follow from them. The failure mode is to extrapolate pilot cost and pilot accuracy linearly onto a wider population.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 176" role="img" aria-labelledby="f65a-t f65a-d">
+<title id="f65a-t">Three assumptions that hold in a 40-user pilot and break at 800 users</title>
+<desc id="f65a-d">Three rows comparing the pilot with full scale. Inputs: 40 users with a narrow input mix, against 800 users with input types the pilot never sampled. Review load: 12 percent of volume reviewed by the build team, against 4,800 reviews a day, about 30 staff. Rare failures: one in 500, seen twice in 200 cases, against about 80 events a day.</desc>
+<text class="s" x="122" y="14">In the pilot</text><text class="s" x="362" y="14">At full scale</text>
+<text class="b" x="2" y="46">Inputs</text>
+<rect class="bx" x="122" y="22" width="230" height="40"/><text class="m" x="132" y="46">40 users, a narrow input mix</text>
+<rect class="br" x="362" y="22" width="252" height="40"/><text class="m" x="372" y="46">800 users, input types never sampled</text>
+<text class="b" x="2" y="94">Review load</text>
+<rect class="bx" x="122" y="70" width="230" height="40"/><text class="m" x="132" y="94">12% reviewed by the build team</text>
+<rect class="br" x="362" y="70" width="252" height="40"/><text class="m" x="372" y="94">4,800 reviews a day, about 30 staff</text>
+<text class="b" x="2" y="142">Rare failures</text>
+<rect class="bx" x="122" y="118" width="230" height="40"/><text class="m" x="132" y="142">1 in 500, seen twice in 200 cases</text>
+<rect class="br" x="362" y="118" width="252" height="40"/><text class="m" x="372" y="142">about 80 events a day</text>
+</svg>
+</div>
+<figcaption>Each pair in the figure is the same fact at two scales, and the 4,800 reviews, 30 staff and 80 events assume 800 users at 50 requests a day, as the fold shows. The left side is why the pilot looked easy, and the right side is the work that arrives.</figcaption>
+</figure>
+
+<p>For a successful 40-user pilot going to 800 users, list which input, support-load and edge-case assumptions may not hold, then rebuild the cost model. The wider population brings input types the pilot never sampled. A 1-in-500 failure seen twice in a 200-case pilot is a routine event at scale: rare is relative to volume, and at that volume it is several events a day.</p>
+
+<p>If human review absorbed 12% of pilot volume, convert it into a staffing line at projected volume before rollout. The pilot review was done by the build team and is invisible in the pilot cost. Rate limits and infrastructure capacity for the new volume are necessary, and they are not the binding constraint. They are the visible constraint, and the input distribution is the one that bites.</p>
+
+<ul class="rules" aria-label="Decision rules for the assumption audit">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-6.11-01"><span class="when">A successful 40-user pilot is going to 800 users</span><span class="then">List which input, support-load and edge-case assumptions may not hold, then rebuild the cost model.<span class="why">The wider population brings input types the pilot never sampled.</span></span></li>
+<li data-facet="F-6.11-02"><span class="when">A 1-in-500 failure seen twice in a 200-case pilot</span><span class="then">Plan for it as a routine event.<span class="why">Rare is relative to volume, and at scale it is several events a day.</span></span></li>
+<li data-facet="F-6.11-03"><span class="when">Human review absorbed 12% of pilot volume</span><span class="then">Convert it to a staffing line at projected volume before rollout.<span class="why">Pilot review was done by the build team and is invisible in the pilot cost.</span></span></li>
+<li data-facet="F-6.11-04"><span class="when">Rate limits and infrastructure capacity for the new volume</span><span class="then">Necessary, and not the binding constraint.<span class="why">It is the visible constraint, and the input distribution is the one that bites.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: the staffing and failure sums</summary>
+<div>
+<p>This is a worked example, not a corpus rule, and the volumes are invented. Suppose 800 users send 50 requests a day each, which is <span class="num" data-calc="800*50" data-expect="40000">40,000</span> requests. A failure at 1 in 500 happens <span class="num" data-calc="40000/500" data-expect="80">80</span> times a day. The pilot saw it twice in 200 cases, which looked like a footnote, and at this volume it is daily work.</p>
+<p>At 12% review, <span class="num" data-calc="40000*12%" data-expect="4800">4,800</span> items a day need a person. At three minutes each that is <span class="num" data-calc="4800*3/60" data-expect="240">240</span> hours, or <span class="num" data-calc="240/8" data-expect="30">30</span> people on eight-hour shifts, a line that appeared in no pilot budget.</p>
+</div>
+</details>
+</section>
+
+<section class="concept" id="c6.12" data-src="6.12" data-terms="handoff monitoring iteration evaluation suite acceptance criteria named owner deputy re-check routine operational telemetry quality telemetry silent degradation input shift evaluation set drift">
+<h3>Hand over the means to detect degradation, and not only the code<span class="sec">§6.12</span></h3>
+
+<p>The corpus discriminator is whether the receiving team can answer "is it still working?" without the original team. A handover has four items: the evaluation suite, the acceptance criteria, a named owner who is a person with a deputy, and the re-check routine. </p>
+<p>Monitoring has two layers. Operational telemetry covers latency, errors, cost and volume. Quality telemetry covers evaluation scores, the human-override rate and the confidence distribution, which is how often the system reports high or low confidence.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 206" role="img" aria-labelledby="f65b-t f65b-d">
+<title id="f65b-t">A handover that runs and a handover that can tell when it stops working</title>
+<desc id="f65b-d">Top row, two boxes. The first, in plain style, lists what makes the system runnable: the repository, documentation and training sessions. The second, in blue, lists what makes degradation detectable: the evaluation suite, the acceptance criteria, a named owner with a deputy, and the re-check routine. Below, two boxes for monitoring. Operational telemetry covers latency, errors, cost and volume. Quality telemetry covers evaluation scores, the human-override rate and the confidence distribution. A note says degradation is silent and operational telemetry stays flat.</desc>
+<rect class="bx" x="2" y="10" width="250" height="76"/>
+<text class="b" x="14" y="32">Makes it runnable</text><text class="m" x="14" y="54">repository, documentation,</text><text class="m" x="14" y="70">training sessions</text>
+<rect class="bb" x="268" y="10" width="346" height="76"/>
+<text class="b tb2" x="280" y="32">Makes degradation detectable</text><text class="m" x="280" y="54">evaluation suite, acceptance criteria,</text><text class="m" x="280" y="70">named owner with a deputy, re-check routine</text>
+<rect class="bx" x="2" y="100" width="300" height="64"/>
+<text class="b" x="14" y="122">Operational telemetry</text><text class="m" x="14" y="144">latency, errors, cost, volume</text>
+<rect class="bb" x="316" y="100" width="298" height="64"/>
+<text class="b tb2" x="328" y="122">Quality telemetry</text><text class="m" x="328" y="140">evaluation scores, override rate,</text><text class="m" x="328" y="156">confidence distribution</text>
+<text class="s" x="2" y="192">Degradation is silent: nothing crashes, outputs stay plausible, and only the right-hand boxes move.</text>
+</svg>
+</div>
+<figcaption>A team given only the left side can run the system and cannot tell when it has gone wrong. The blue boxes are what make the question answerable.</figcaption>
+</figure>
+
+<p>If a system is transferring to an internal operations team, hand over the evaluation suite, the thresholds, a named owner and a deputy, the re-check cadence and the implementation guidance. Then the receiving team can detect and act without the original team. </p>
+<p>A handover of repository access, documentation and training sessions is insufficient, since nothing in it detects a change in behaviour. Ownership assigned to a team and not to a person is insufficient too, because a distributed owner is no owner.</p>
+
+<p>If complaints rise after launch while error rates stay flat, check for a shift in the input distribution and re-run the evaluation suite, since silent quality degradation does not show in operational telemetry. If the evaluation set is unchanged twelve months after launch, iteration is broken, because the set has drifted away from what the system actually processes.</p>
+
+<ul class="rules" aria-label="Decision rules for handoff, monitoring and iteration">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-6.12-01"><span class="when">A system is transferring to an internal operations team</span><span class="then">The evaluation suite, thresholds, a named owner and deputy, the re-check cadence, plus the implementation guidance.<span class="why">The receiving team can detect and act without the original team.</span></span></li>
+<li data-facet="F-6.12-02"><span class="when">The handover consists of repository access, documentation and training sessions</span><span class="then">Insufficient.<span class="why">Nothing in it detects a change in behaviour.</span></span></li>
+<li data-facet="F-6.12-03"><span class="when">Ownership is assigned to a team rather than a person</span><span class="then">Insufficient.<span class="why">A distributed owner is no owner.</span></span></li>
+<li data-facet="F-6.12-04"><span class="when">Complaints rise after launch while error rates are flat</span><span class="then">Check input-distribution shift and re-run the evaluation suite.<span class="why">Silent quality degradation does not show in operational telemetry.</span></span></li>
+<li data-facet="F-6.12-05"><span class="when">The evaluation set is unchanged twelve months after launch</span><span class="then">Broken iteration.<span class="why">The set has drifted away from what the system actually processes.</span></span></li>
+</ul>
+</section>
+
+<section class="bites" id="b-o6.5">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide's three samples sit in Domains 2, 3 and 4, so none of them is a sample for this domain. The scenarios below come from this project's own set, and the <a href="#/traps">Trap families</a> page defines each label. <span class="lbl">Inference</span>Expect options that do a real and necessary task in the wrong order, or that transfer capability without the means to detect failure.</p>
+
+<p class="stem">A successful pilot is to be rolled out to twenty times the user base.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Identify which assumptions held at pilot scale and may not hold at full scale (input variety, support and review load, edge-case frequency), and rebuild the cost and model-tier decisions on those findings.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>Project infrastructure capacity and rate limits for the new request volume. It is a real and necessary step that skips the assumptions which determine what to project.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-architected">ARCHITECTED</a>Move to a higher-capability model ahead of rollout to absorb the wider variety of inputs. It sounds prudent and spends money before anyone has characterised the inputs it is meant to handle.</span></li>
+</ul>
+
+<p class="stem">A delivered system is being handed to the client's internal team.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Transfer the evaluation suite, the acceptance thresholds and the trigger for action, a named owner with a deputy, and the routine for re-running the suite on a stated cadence and after any model or input-format change.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-architected">ARCHITECTED</a>Transfer the repository, full architecture documentation and training sessions. It is thorough and effortful, and silent on how the team detects that the system has stopped working.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-repair">REPAIR</a>Retain a support arrangement with the delivery team for the first year. It keeps the capability with the wrong party and defers the handover instead of completing it.</span></li>
+</ul>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>A 40-user pilot is going to 800 users, and the delivery team will hand the system to operations after launch. What do you produce before the rollout, and what do you hand over?</span></summary>
+<div class="ans">
+<p>Before the rollout, an assumption audit: which input, support-load and edge-case assumptions may not hold, then the cost model rebuilt on that list, with review converted to a staffing line. At handover, the evaluation suite, the acceptance thresholds, a named owner with a deputy, and the re-check routine, plus the implementation guidance, so that the operations team can tell when quality drifts.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li><a href="#/o6.4/c6.8">O6.4</a>, §6.8: the implementation guidance is part of the handover, and Inference: the decision record travels with it.</li>
+<li><a href="#/o4.6/c4.12">O4.6</a>, §4.12: the two telemetry layers here are the monitoring and the quality sampling there.</li>
+<li><a href="#/o4.2/c4.3">O4.2</a>, §4.3: an evaluation set that has not grown is the set drifting from production, and rebuilding it from real failures is the iteration step.</li>
+<li><a href="#/o6.3/c6.10">O6.3</a>, §6.10: the recurring review and the feedback loop are a routine. Inference: the named owner is who runs it.</li>
+<li><a href="#/o5.3/c5.8">O5.3</a>, §5.8: review percentage times volume times minutes is the headcount sum behind the staffing line.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 6, fifth objective. Course corpus §6.11 and §6.12. No live-document check was needed: the chapter states lifecycle rules and no product facts. The user counts, the request volume, the review time and the shift length are invented for illustration, apart from the corpus's 12% and 1-in-500 figures.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>Scaling changes the inputs and not only the volume. List the assumptions at risk before the capacity plan: input distribution, support and review load, rare failures.</li>
+<li>A rare failure is routine at volume. Convert pilot review into a staffing line, and do not extrapolate pilot cost or accuracy linearly.</li>
+<li>Rate limits and capacity are necessary, and the input distribution is the constraint that bites.</li>
+<li>A handover that can detect degradation holds the evaluation suite, the acceptance criteria, a named person as owner with a deputy, and the re-check routine.</li>
+<li>Degradation is silent. When complaints rise and errors are flat, check input shift and re-run the suite. An evaluation set that never grows is a broken iteration.</li>
+</ol>
+</aside>
+</div>

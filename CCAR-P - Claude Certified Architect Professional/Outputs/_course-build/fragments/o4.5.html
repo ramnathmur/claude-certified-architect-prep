@@ -1,0 +1,129 @@
+<div class="chapter">
+<div class="main">
+
+<p>A service has a p95 limit of 2,800 ms and gets a latency complaint. Nobody has stage timings. A team decides to halve the retrieval step. A profile, which nobody has run yet, would show that it takes 224 ms, or <span class="num" data-calc="224/2800*100" data-expect="8">8</span>% of the budget. Halving it saves <span class="num" data-calc="224/2" data-expect="112">112</span> ms, which is <span class="num" data-calc="112/2800*100" data-expect="4">4</span>% of the total, and the complaint stays. </p>
+<p>Generation takes 2,016 ms, <span class="num" data-calc="2016/2800*100" data-expect="72">72</span>% of the budget, and nobody looked. The figures are illustrative.</p>
+
+<p>Every token is a cost line and a latency line at once. Which levers cut both, which cut one, and which only look like savings?</p>
+
+<section class="concept" id="c4.11" data-src="4.11" data-terms="optimization token cost latency profile stage prompt caching cache-breaking cascade escalation trigger retrieval relevance floor streaming batch async output shaping compliance hard limit">
+<h3>Profile first, cache first, and remove nothing the requirement needs<span class="sec">§4.11</span></h3>
+
+<p>Profile which stage dominates the budget before optimising anything. The fields that make a profile possible are listed in <a href="#/o4.6/c4.12">O4.6</a>. With no stage-level timing, a latency complaint is answered by profiling first, since halving a stage worth 8% of the budget buys only 4%. The corpus discriminator is whether a saving preserves everything the requirement demands. Reordering for cache reuse loses nothing, and truncation loses content.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 168" role="img" aria-labelledby="f45a-t f45a-d">
+<title id="f45a-t">Where a 2,800 ms budget goes, and what halving a small stage buys</title>
+<desc id="f45a-d">One horizontal bar for a 2,800 millisecond budget. Generation is 72 percent, 2,016 milliseconds, the widest segment. The retrieval step is 8 percent, 224 milliseconds. All other stages together are 20 percent, 560 milliseconds. A note says halving retrieval saves 112 milliseconds, 4 percent of the total, while the dominant stage is not examined.</desc>
+<text class="s" x="28" y="14">one request, p95, 2,800 ms</text>
+<rect class="bx" x="28" y="24" width="112" height="40"/><text class="m tc" x="84" y="49">Others 20%</text>
+<rect class="by" x="140" y="24" width="44.8" height="40"/>
+<rect class="bb" x="184.8" y="24" width="403.2" height="40"/><text class="b tc" x="386" y="49">Generation 72%</text>
+<text class="s" x="162" y="82">Retrieval 8%</text>
+<path class="ls" d="M162 70V76"/>
+<text class="m" x="28" y="112">Halve retrieval: saves <tspan data-calc="224/2" data-expect="112">112</tspan> ms, <tspan data-calc="112/2800*100" data-expect="4">4</tspan>% of the total.</text>
+<text class="m" x="28" y="132">Generation took 72% of the budget, and the team never looked at it.</text>
+<text class="s" x="28" y="156">Bar widths are to scale.</text>
+</svg>
+</div>
+<figcaption>The yellow segment is the stage that was chosen. The blue segment is the one holding most of the time, and only a profile shows it.</figcaption>
+</figure>
+
+<p>The highest-value lever is prompt caching: static content first and dynamic content last (how long a cache lasts, the smallest prompt it works on and the write premium are covered in <a href="#/o2.5/c2.8">O2.5</a>), which cuts time-to-first-token and cost together with no quality loss (§2.8).</p>
+<p>Any variation in the prefix, such as a timestamp, a session ID or a user name, destroys reuse. If a large identical policy preamble is sent on every request and latency and cost are both named, order it first and cache it.</p>
+<p>Cutting the preamble by 60% is a compliance regression where the removed sections are required. Summarising it with an extra model call adds a full invocation and degrades precision.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 190" role="img" aria-labelledby="f45b-t f45b-d">
+<title id="f45b-t">Optimisations that keep the requirement whole and ones that do not</title>
+<desc id="f45b-d">Two boxes. The left, in blue, lists four optimisations that keep what the requirement needs: prompt caching with static content first, a cascade whose trigger is measured per segment, batch or async for a nightly job, and passages that clear the relevance floor. The right, in red, lists three that lose content, add a cost or help nothing: cutting required preamble sections, an extra model call to summarise, and streaming where nobody is watching. A note says an optimisation that breaches a stated constraint is not an optimisation.</desc>
+<rect class="bb" x="2" y="12" width="298" height="140"/>
+<text class="b tb2" x="14" y="34">Keeps what the requirement needs</text>
+<text class="m" x="14" y="62">Prompt caching: static first, dynamic last</text>
+<text class="m" x="14" y="86">Cascade, trigger measured per segment</text>
+<text class="m" x="14" y="110">Batch or async for a nightly job</text>
+<text class="m" x="14" y="134">Passages that clear the relevance floor</text>
+<rect class="br" x="316" y="12" width="298" height="140"/>
+<text class="b tr" x="328" y="34">Loses content, adds cost, or helps nothing</text>
+<text class="m" x="328" y="62">Cutting required preamble sections</text>
+<text class="m" x="328" y="86">An extra model call to summarise</text>
+<text class="m" x="328" y="110">Streaming where nobody is watching</text>
+<text class="s" x="2" y="178">An optimisation that breaches a stated quality, policy or compliance constraint is not an optimisation.</text>
+</svg>
+</div>
+<figcaption>The test is the corpus discriminator. A saving that keeps every requirement whole is a lever, and one that does not is a regression.</figcaption>
+</figure>
+
+<p>For a quality floor plus a budget ceiling with mixed task difficulty, use a cascade: a smaller model for the routine class, escalation for the rest, with the trigger validated for each segment and not assumed. The trigger is the rule that decides a request needs the larger model, such as a confidence signal or a failed check (§5.8 lists the valid signals). </p>
+<p>A nightly batch job with a latency complaint wants batch or async processing and output shaping (trimming what the model is asked to write, so fewer output tokens are generated), because nobody is watching a cursor and streaming changes nothing there. </p>
+<p>If retrieval fetches the top 20 passages, reduce it to those that clear the relevance floor (a minimum retrieval score, set in advance like any bar), since noise in the middle of the window costs tokens and accuracy.</p>
+
+<ul class="rules" aria-label="Decision rules for cost and latency optimisation">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-4.11-01"><span class="when">Identical large policy preamble on every request, with latency and cost both named</span><span class="then">Order static content first and enable prompt caching.<span class="why">The stable prefix is reused, both metrics improve and nothing is lost.</span></span></li>
+<li data-facet="F-4.11-02"><span class="when">Same situation, with a proposal to cut the preamble by 60%</span><span class="then">Reject if the removed sections are required.<span class="why">It is a compliance regression and not a saving.</span></span></li>
+<li data-facet="F-4.11-03"><span class="when">Same situation, with a proposal to summarise the preamble with an extra model call at request time</span><span class="then">Reject.<span class="why">It adds a full model invocation with its own cost and latency, and degrades policy precision.</span></span></li>
+<li data-facet="F-4.11-04"><span class="when">A quality floor plus a budget ceiling, with mixed task difficulty</span><span class="then">A cascade: a small model for the routine class, escalate the rest, with the trigger validated per segment.<span class="why">It matches capability to what each class actually requires.</span></span></li>
+<li data-facet="F-4.11-05"><span class="when">Nightly batch job, latency complaint</span><span class="then">Batch or async, and output shaping.<span class="why">Nobody is watching a cursor, and streaming changes nothing here.</span></span></li>
+<li data-facet="F-4.11-06"><span class="when">Retrieval fetches the top 20 passages</span><span class="then">Reduce to the passages that clear the relevance floor.<span class="why">Noise in the middle of the window costs tokens and accuracy.</span></span></li>
+<li data-facet="F-4.11-07"><span class="when">A latency complaint, with no stage-level timing collected</span><span class="then">Profile first.<span class="why">Halving a stage worth 8% of the budget buys 4%.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: a cascade priced, and the batch rate in the documentation</summary>
+<div>
+<p>This is a worked example, not a corpus rule, and the prices are invented. A service makes 100,000 requests a day, and 80% are routine. A large model at $0.02 a request would cost $<span class="num" data-calc="100000*0.02" data-expect="2000">2,000</span> a day. </p>
+<p>A cascade sends the 80,000 routine requests to a small model at $0.002, which costs $<span class="num" data-calc="80000*0.002" data-expect="160">160</span>, and the other 20,000 to the large model, which costs $<span class="num" data-calc="20000*0.02" data-expect="400">400</span>. The total is $560 a day, a saving of $<span class="num" data-calc="2000-560" data-expect="1440">1,440</span>, or <span class="num" data-calc="(2000-560)/2000*100" data-expect="72">72</span>%.</p>
+<p>That saving holds only if the small model clears the quality floor on the routine class. The corpus says to validate the escalation trigger for each segment, because a segment where the small model falls short has to escalate or the saving becomes a regression.</p>
+<p>On batch, Anthropic's model documentation (live docs, read 2026-10-25) says Batch API requests are 50% cheaper. A nightly job that costs $2,000 on demand would cost $<span class="num" data-calc="2000*50%" data-expect="1000">1,000</span> as a batch, a case where nobody waits for the result.</p>
+</div>
+</details>
+</section>
+
+<section class="bites" id="b-o4.5">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide's Domain 2 sample is the top lever of this chapter. It describes an 8,000-token system prompt sent on every request with a short varying message, and asks which optimisation addresses latency and cost together. The answer is to place the static prompt and policy first and enable prompt caching, and <a href="#/o2.5">O2.5</a> works it through. The scenario below comes from this project's own set, and the <a href="#/traps">Trap families</a> page defines each label.</p>
+<p><span class="lbl">Inference</span>Expect options that save a number by removing content, and one that reuses it.</p>
+
+<p class="stem">An identical large system preamble is sent on every request, and both p95 latency and monthly cost are over target.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Reorder so the static preamble comes first and the varying input last, and enable prompt caching.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-discard">DISCARD</a>Truncate the preamble to the sections used most often. It removes required content to solve a problem that reuse solves without any loss.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-wrong-axis">WRONG-AXIS</a>Enable response streaming to bring the latency number down. Streaming changes perceived latency and not total completion time, and it does nothing for cost.</span></li>
+</ul>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>A team halves a 224 ms stage to fix a latency complaint, and another wants to cut a 60% share of the policy preamble to save tokens. What do you ask for, and what do you recommend instead?</span></summary>
+<div class="ans">
+<p>Ask for stage timings first. Halving a stage worth 8% of the budget buys 4%, and the dominant stage may be elsewhere. Reject the cut if the removed sections are required, because it is a compliance regression. Put the static preamble first and enable prompt caching, which reuses the same content and lowers both latency and cost.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li><a href="#/o2.5/c2.8">O2.5</a>, §2.8: the caching rule and the timestamp trap are worked through there. This chapter ranks caching first among the levers.</li>
+<li><a href="#/o3.3/c3.4">O3.3</a>, §3.4: the stage budget table is how the profile is read, and the same section says to look for wasted latency before cutting retrieved context.</li>
+<li><a href="#/o1.5/c1.11">O1.5</a>, §1.11: routing by confidence tier is the cascade, and the validated trigger is the same measured split.</li>
+<li><a href="#/o3.6/c3.12">O3.6</a>, §3.12: fewer, better passages after reranking are the retrieval lever.</li>
+<li><a href="#/o4.3/c4.9">O4.3</a>, §4.9: Inference: each of these is a change to production, so it goes through the regression set and a controlled A/B before it reaches everyone.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 4, fifth objective, and section 8, Sample 2, summarised above. Course corpus §4.11. Live check, read 2026-10-25: Anthropic, "Models overview" (platform.claude.com/docs/en/models/overview), for the 50% batch discount in the last fold. The stage timings, the request volumes and the model prices are invented for illustration.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>A token is a cost line and a latency line. Profile which stage dominates before optimising, because halving an 8% stage buys 4%.</li>
+<li>Prompt caching is the highest-value lever: static first, dynamic last. A timestamp, session ID or user name in the prefix destroys reuse.</li>
+<li>Do not cut required preamble content or add a summarising model call. Neither is a saving.</li>
+<li>Cascade a small model for the routine class and validate the escalation trigger per segment. Use batch or async for a nightly job, since streaming changes nothing there.</li>
+<li>Fewer, better passages are often cheaper and more accurate than the top 20. An optimisation that breaches a stated quality, policy or compliance constraint is not one.</li>
+</ol>
+</aside>
+</div>

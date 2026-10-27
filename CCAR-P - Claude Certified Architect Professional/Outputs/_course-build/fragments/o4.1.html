@@ -1,0 +1,173 @@
+<div class="chapter">
+<div class="main">
+
+<p>A business sponsor says a new support assistant "must be fast, accurate, and safe". The team's dashboard tracks three numbers: average response time, average response length and daily request volume. None of the three says whether the assistant is accurate or safe, and none can stop a launch. The sponsor has given three adjectives, and an evaluation needs numbers that can pass or fail.</p>
+
+<p>Suppose the assistant handles 12,000 tickets a month at a model spend of $3,600, and 9,000 of the tickets end resolved. The cost per resolved ticket is $<span class="num" data-calc="3600/9000" data-expect="0.4">0.40</span>. A report in cost per token would not show that. The figures are illustrative.</p>
+
+<section class="concept" id="c4.1" data-src="4.1" data-terms="metric named failure denominator segment threshold declared in advance baseline anchor post-hoc hard zero deterministic check p95 time-to-first-token cost per resolved ticket">
+<h3>Fix the bar before any score is seen<span class="sec">§4.1</span></h3>
+
+<p>A finished metric has four parts: a named failure, a denominator (the count the failures are measured against), a segment (the slice of traffic it is reported on), and a threshold set before results are seen. The corpus discriminator is when the number was chosen. A bar fixed before any score gates a decision. A bar chosen afterwards only describes the result.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 222" role="img" aria-labelledby="f41a-t f41a-d">
+<title id="f41a-t">Three adjectives turned into finished metrics</title>
+<desc id="f41a-d">A grid with four columns: named failure, denominator, segment and threshold. The accurate row reads wrong resolution, resolved tickets, by ticket category, beat the manual process's 8 percent. The hard zero row reads another customer's ID in an output, every output, all traffic, 0 per N by a code check. The safe row reads harmful output, 10,000 sampled outputs, by topic, under 0.1 percent and not 0 percent. A note says every bar is fixed before any score is seen.</desc>
+<text class="s" x="80" y="14">Named failure</text><text class="s" x="214" y="14">Denominator</text><text class="s" x="348" y="14">Segment</text><text class="s" x="482" y="14">Threshold, set first</text>
+<text class="b" x="2" y="52">Accurate</text>
+<rect class="bx" x="80" y="22" width="126" height="44"/><text class="m tc" x="143" y="48">Wrong resolution</text>
+<rect class="bx" x="214" y="22" width="126" height="44"/><text class="m tc" x="277" y="48">Resolved tickets</text>
+<rect class="bx" x="348" y="22" width="126" height="44"/><text class="m tc" x="411" y="48">By ticket category</text>
+<rect class="bb" x="482" y="22" width="132" height="44"/><text class="m tc" x="548" y="40">Beat the manual</text><text class="m tc" x="548" y="56">process's 8%</text>
+<text class="b" x="2" y="108">Hard zero</text>
+<rect class="bx" x="80" y="78" width="126" height="44"/><text class="m tc" x="143" y="96">Another customer's</text><text class="m tc" x="143" y="112">ID in an output</text>
+<rect class="bx" x="214" y="78" width="126" height="44"/><text class="m tc" x="277" y="104">Every output</text>
+<rect class="bx" x="348" y="78" width="126" height="44"/><text class="m tc" x="411" y="104">All traffic</text>
+<rect class="bb" x="482" y="78" width="132" height="44"/><text class="m tc" x="548" y="96">0 per N, checked</text><text class="m tc" x="548" y="112">by code</text>
+<text class="b" x="2" y="164">Safe</text>
+<rect class="bx" x="80" y="134" width="126" height="44"/><text class="m tc" x="143" y="160">Harmful output</text>
+<rect class="bx" x="214" y="134" width="126" height="44"/><text class="m tc" x="277" y="152">10,000 sampled</text><text class="m tc" x="277" y="168">outputs</text>
+<rect class="bx" x="348" y="134" width="126" height="44"/><text class="m tc" x="411" y="160">By topic</text>
+<rect class="bb" x="482" y="134" width="132" height="44"/><text class="m tc" x="548" y="152">Under 0.1%,</text><text class="m tc" x="548" y="168">not 0%</text>
+<text class="s" x="2" y="206">Every bar is fixed before any score is seen. Only a code check can hold a hard zero.</text>
+</svg>
+</div>
+<figcaption>Each row is one requirement written as a metric. The blue boxes are thresholds, and each one has an anchor outside the results.</figcaption>
+</figure>
+
+<p>Where does a bar come from before there are results? From the success criterion, from frontier reality (what the best systems achieve), or from the error rate of the process being replaced. If an existing manual process has a measured 8% error rate, the bar is tied to that figure and beats it. An anchored bar is still a bar, and "we'll decide later" is not one.</p>
+
+<p>If a stakeholder asks to "calibrate the threshold once we see baseline numbers", reject it. Set the bar now and revise it later as a recorded decision, because a post-hoc bar is only ever revised downward. </p>
+<p>A bar of 0% ("0 per N" means zero failures in the N outputs checked) is allowed only where a deterministic check can enforce it, such as a PII field present or a citation span missing. For an open-ended, model-judged property, re-anchor 0% to a small achievable rate, for example under 0.1% of 10,000 samples. An unachievable bar becomes non-binding at the first miss.</p>
+
+<p>Latency is reported at p95 or p99 (the time that 95% or 99% of requests come in at or under) and not as a mean, with time-to-first-token for an interactive surface and total time for a batch one (§3.5). Cost is reported per unit of business work, such as per resolved ticket or per claim, and not per token.</p>
+
+<ul class="rules" aria-label="Decision rules for defining metrics">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-4.1-01"><span class="when">New capability, no baseline yet</span><span class="then">Set the bar from the success criterion, frontier reality or the current process's error rate.<span class="why">An anchored bar is still a bar. "We'll decide later" is not.</span></span></li>
+<li data-facet="F-4.1-02"><span class="when">Stakeholder asks to "calibrate the threshold once we see baseline numbers"</span><span class="then">Reject. Set it now, and revise it later as a recorded decision.<span class="why">A post-hoc bar is only ever revised downward.</span></span></li>
+<li data-facet="F-4.1-03"><span class="when">Existing manual process with a measured 8% error rate is being replaced</span><span class="then">A bar tied to and beating 8%.<span class="why">The replacement's bar has a real-world anchor.</span></span></li>
+<li data-facet="F-4.1-04"><span class="when">Open-ended safety property, proposed bar of 0%</span><span class="then">Re-anchor to a small non-zero rate (for example under 0.1% of 10,000).<span class="why">An unachievable bar becomes non-binding on first miss.</span></span></li>
+<li data-facet="F-4.1-05"><span class="when">Requirement is "outputs must never contain another customer's account ID"</span><span class="then">0 per N, by a deterministic check.<span class="why">Code can enforce it exactly.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: a bar set after the result, and what 0.1% of 10,000 means</summary>
+<div>
+<p>This is a worked example, not a corpus rule, and its numbers are invented. A team plans a 95% accuracy bar, then measures a baseline of 91% and proposes to calibrate the bar to the baseline, at 90%. The bar has moved down <span class="num" data-calc="95-90" data-expect="5">5</span> points, and the system that was going to fail now passes. </p>
+<p>A bar fixed at 95% before the run gates the launch, and lowering it becomes a recorded decision with a name against it.</p>
+<p>A bar of under 0.1% of 10,000 sampled outputs allows fewer than <span class="num" data-calc="10000*0.1%" data-expect="10">10</span> failures in the sample. A bar of 0% fails on the first miss in a model-judged property, where the grader itself is imperfect, so the team stops treating it as binding.</p>
+<p>The cost line in the opening shows the denominator at work. Divided by all 12,000 tickets, $3,600 gives $<span class="num" data-calc="3600/12000" data-expect="0.3">0.30</span> a ticket. Divided by the 9,000 resolved tickets, it gives $0.40, which is the figure the business pays per unit of work.</p>
+</div>
+</details>
+</section>
+
+<section class="concept" id="c4.2" data-src="4.2" data-terms="safety security metric family emitted content permitted action adversarial suite injection block rate unauthorized tool invocation least-privilege audit classifier model-graded pii both">
+<h3>Score what the model says apart from what the system permits<span class="sec">§4.2</span></h3>
+
+<p>Safety measures what the model says: policy-violating, toxic or non-compliant output. Security measures what the system permits: an injection reaching a tool, an over-scoped credential, or data leaving through a tool result. The corpus discriminator is whether the risk is realised by what the model emits or by what the system allows it to do.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 254" role="img" aria-labelledby="f41b-t f41b-d">
+<title id="f41b-t">Safety and security as two metric families</title>
+<desc id="f41b-d">A comparison of two columns. Safety scores what the model says, the harm is emitted text, it is measured as a rate over a stated denominator graded by a model or classifier, and an example is discriminatory language. Security scores what the system permits the model to do, the harm is a permitted action, it is measured by an adversarial suite with an injection block rate, unauthorized tool calls and a privilege audit, and an example is an instruction in a document that triggers a refund call. A bar at the bottom says that another policyholder's identifier in an output is both, enforced by a deterministic PII check and logged under both.</desc>
+<text class="b tc tb2" x="235" y="16">Safety</text><text class="b tc tb2" x="487" y="16">Security</text>
+<text class="s" x="2" y="50">What it scores</text>
+<rect class="bx" x="120" y="26" width="230" height="38"/><text class="m tc" x="235" y="49">What the model says</text>
+<rect class="bx" x="360" y="26" width="254" height="38"/><text class="m tc" x="487" y="43">What the system permits</text><text class="m tc" x="487" y="58">the model to do</text>
+<text class="s" x="2" y="94">The harm is</text>
+<rect class="bx" x="120" y="70" width="230" height="38"/><text class="m tc" x="235" y="93">Emitted text</text>
+<rect class="bx" x="360" y="70" width="254" height="38"/><text class="m tc" x="487" y="93">A permitted action</text>
+<text class="s" x="2" y="138">Instrument</text>
+<rect class="bx" x="120" y="114" width="230" height="38"/><text class="m tc" x="235" y="131">Rate over a stated denominator,</text><text class="m tc" x="235" y="146">graded by a model or classifier</text>
+<rect class="bx" x="360" y="114" width="254" height="38"/><text class="m tc" x="487" y="131">Adversarial suite: block rate,</text><text class="m tc" x="487" y="146">unauthorized calls, privilege audit</text>
+<text class="s" x="2" y="182">Example</text>
+<rect class="bx" x="120" y="158" width="230" height="38"/><text class="m tc" x="235" y="181">Discriminatory language</text>
+<rect class="bx" x="360" y="158" width="254" height="38"/><text class="m tc" x="487" y="175">An instruction in a document</text><text class="m tc" x="487" y="190">triggers a refund call</text>
+<rect class="by" x="2" y="206" width="612" height="40"/>
+<text class="m" x="14" y="224">Another policyholder's identifier in an output counts as both. A deterministic PII</text>
+<text class="m" x="14" y="239">check enforces it, and the metric is logged under both families.</text>
+</svg>
+</div>
+<figcaption>Read down a column to see a family. A system can pass every safety metric and fail every security control, because the two measure different things.</figcaption>
+</figure>
+
+<p>The instruments differ with the families. Safety is a rate over a stated denominator, graded by a model or a classifier. Security is an adversarial suite: the block rate on attempted injections, the count of unauthorized tool invocations, and a least-privilege audit. A system can pass every safety metric and fail every security control.</p>
+
+<p>Classify each requirement by where the harm sits. "Must not produce discriminatory language" is safety, since the harm is in the emitted text. "A malicious instruction inside a retrieved document must not trigger a refund tool call" is security, because the harm is a permitted action. "Must not be able to read records outside the requesting customer's account" is security too, an authorization scope measured by audit and adversarial probe.</p>
+
+<p>"Outputs must not include another policyholder's identifier" is both. A deterministic PII check is the enforcing control, a content check that enforces a security property, so count it in both the safety and the security metrics, and neither report leaves it out. If someone proposes to cover a prompt-injection risk with a tone rubric, reject it, because a quality rubric cannot measure whether a tool fired.</p>
+
+<ul class="rules" aria-label="Decision rules for safety and security metrics">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-4.2-01"><span class="when">"The assistant must not produce discriminatory language"</span><span class="then">Safety.<span class="why">The harm is in the emitted text.</span></span></li>
+<li data-facet="F-4.2-02"><span class="when">"A malicious instruction inside a retrieved document must not trigger a refund tool call"</span><span class="then">Security.<span class="why">The harm is a permitted action, not a sentence.</span></span></li>
+<li data-facet="F-4.2-03"><span class="when">"The agent must not be able to read records outside the requesting customer's account"</span><span class="then">Security.<span class="why">It is authorization scope, measured by audit and adversarial probe.</span></span></li>
+<li data-facet="F-4.2-04"><span class="when">"Outputs must not include another policyholder's identifier"</span><span class="then">Both. A deterministic PII check is the enforcing control.<span class="why">A content check enforces a security property, so log it under both.</span></span></li>
+<li data-facet="F-4.2-05"><span class="when">Proposal to cover a prompt-injection risk with a tone rubric</span><span class="then">Reject.<span class="why">A quality rubric cannot measure whether a tool fired.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: reading an adversarial suite</summary>
+<div>
+<p>This is a worked example, not a corpus rule, and its numbers are invented. A suite of 250 documents, each hiding an instruction that tries to trigger a refund call, is run against the agent. It blocks <span class="num" data-calc="250-3" data-expect="247">247</span> of them, a block rate of <span class="num" data-calc="247/250*100" data-round="1" data-expect="98.8">98.8</span>%, and 3 documents trigger an unauthorized refund call. Against a bar of zero unauthorized calls, that run fails, whatever the 98.8% says.</p>
+<p>Inference: the count of unauthorized tool invocations is a deterministic check on the tool log, so a bar of zero is allowed for it under §4.1. The block rate across varied attacks is a rate over a suite, so it takes a threshold set before the run. The same suite shows nothing about tone. That is why a tone rubric cannot stand in for it.</p>
+</div>
+</details>
+</section>
+
+<section class="bites" id="b-o4.1">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide's one Domain 4 sample asks where to look first when a RAG system returns confident, wrong answers after a document refresh. It is worked through in <a href="#/o4.4">O4.4</a> (and the chapter on RAG indexing, <a href="#/o3.5">O3.5</a>), so this objective has no official sample. </p>
+<p>The shapes below come from this project's own scenario set, and the <a href="#/traps">Trap families</a> page defines each label. <span class="lbl">Inference</span>Expect options that look like measurement and fail one of the four parts of a metric, or that use the wrong instrument for the family.</p>
+
+<p class="stem">A business sponsor states the assistant "must be fast, accurate, and safe".</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Convert each adjective into a metric with a named failure, a denominator, a reporting segment and a threshold agreed before measurement begins.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-wrong-axis">WRONG-AXIS</a>Track average response time, average response length and daily request volume. These are collectable telemetry and not decision-gating metrics: none has a named failure, a denominator and a threshold, and a mean response time is the wrong form for "fast".</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-architected">ARCHITECTED</a>Define one composite quality score and set its pass bar after establishing a baseline. A single tidy number sounds like executive reporting, but it cannot be diagnosed when it moves, and the bar is chosen after the result.</span></li>
+</ul>
+
+<p class="stem">A RAG agent with tool access ingests third-party documents, and the risk raised is instruction injection.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Build an adversarial suite of injected documents and measure the block rate on unauthorized tool invocations, alongside a least-privilege audit of the agent's tool set.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-wrong-axis">WRONG-AXIS</a>Add prompt-injection wording to the safety rubric the model grader scores. It has the right vocabulary and the wrong instrument, since a content rubric cannot observe whether a tool call fired.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>Log every tool invocation and review the logs weekly. It detects after the fact, with no measured block rate and no reduction of the permitted capability.</span></li>
+</ul>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>A stakeholder wants to agree the accuracy bar "once we see the baseline", and a teammate wants a tone rubric to cover prompt injection. What do you say to each, and where does each requirement sit?</span></summary>
+<div class="ans">
+<p>Reject the delayed bar. Set it now from the success criterion, frontier reality or the error rate of the process being replaced, and revise it later as a recorded decision, because a bar set after the results is only ever lowered. Reject the tone rubric as well. Injection is a security risk, the harm being a permitted action, and it needs an adversarial suite that counts unauthorized tool invocations and a least-privilege audit.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li><a href="#/o1.6/c1.12">O1.6</a>, §1.12: a metric is stated in the unit the listener measures, and a latency commitment is written against the tail. This chapter turns that into the four parts of a metric.</li>
+<li><a href="#/o3.3/c3.5">O3.3</a>, §3.5: time-to-first-token for an interactive surface and total time for a batch one, the latency form used here.</li>
+<li><a href="#/o3.2/c3.2">O3.2</a>, §3.2: the least-privilege audit that measures security is the same removal-first reasoning, and a removed tool cannot be invoked by an injection.</li>
+<li><a href="#/o4.2">O4.2</a>, §4.3: a metric needs a dataset to be measured on, and that objective covers how the dataset is built.</li>
+<li><a href="#/o5.1">O5.1</a>, §5.1: guardrail layering is the build side of these safety and security families.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 4, first objective. Course corpus §4.1 and §4.2. No live-document check was needed: the chapter states metric-definition rules and no product facts. The ticket volume, the spend, the 95%, 91% and 90% figures and the 250-document suite are invented for illustration.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>A finished metric has a named failure, a denominator, a segment and a threshold set before results are seen. A bar chosen afterwards describes the result and does not gate it.</li>
+<li>Anchor the bar in the success criterion, frontier reality or the process being replaced. Refuse to calibrate it to the baseline.</li>
+<li>A hard zero is allowed only where a deterministic check enforces it. For an open-ended, model-judged property, use a small non-zero rate.</li>
+<li>Latency at p95 or p99, with time-to-first-token for interactive and total time for batch. Cost per unit of business work.</li>
+<li>Safety scores what the model says. Security scores what the system permits, with an adversarial suite and a least-privilege audit. A tone rubric cannot measure a tool call.</li>
+</ol>
+</aside>
+</div>

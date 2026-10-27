@@ -1,0 +1,257 @@
+<div class="chapter">
+<div class="main">
+
+<p>Should 50,000 monthly invoices go through a fixed five-step pipeline or through an <dfn data-def="A design in which the model chooses its own next step, one action at a time, instead of following a path written in advance.">agent</dfn>, a model that picks its own next step? Of the 50,000, 96% (<span class="num" data-calc="50000*96%" data-expect="48000">48,000</span>) come from 40 known vendors in stable formats, and 4% (<span class="num" data-calc="50000*4%" data-expect="2000">2,000</span>) are one-offs, malformed or new. The pipeline cannot process the 2,000. The agent can process all 50,000, but it spends agent-level cost and response time on the 48,000 that never needed it.</p>
+
+<p>The corpus lays the options out as a five-rung ladder. First is the plain call: one prompt, one response. Second is an <dfn data-def="A large language model (LLM) given retrieval, tools or memory. It can fetch documents at request time, call functions or use information kept from earlier interactions.">augmented LLM</dfn>, a large language model (LLM) given retrieval (fetching documents at request time), tools (functions it can call) or memory (information kept between interactions). Third is a <dfn data-def="A design in which fixed steps run in code and the code, not the model, sets the path. A workflow can branch, because the branches are written down in advance.">workflow</dfn>, which runs fixed steps in your code. Fourth is the agent, and fifth is a multi-agent system, a coordinator over specialists.</p>
+
+<p>Move right only when the rung to the left demonstrably cannot meet a requirement the scenario states. Each move right costs more: the same request can take different routes (<dfn data-def="The same input can take different routes or give different results on different runs.">nondeterminism</dfn>), and response times spread out (latency variance). Calls multiply, and with them the tokens (words and word parts) you pay for. Results get harder to evaluate, and a wrong action reaches further (a wider <dfn data-def="How far the effects of one wrong action reach.">blast radius</dfn>).</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 250" role="img" aria-labelledby="f13a-t f13a-d">
+<title id="f13a-t">The pattern ladder and the question that separates its middle rungs</title>
+<desc id="f13a-d">Five boxes in a row, left to right: plain call, augmented LLM, workflow, agent and multi-agent. A dashed line between the workflow and the agent marks the question "can the paths be written down in advance?". The three rungs to its left have paths that can be listed in advance. The agent finds its path at runtime. Multi-agent sits outside the question and is covered in a later chapter. Under each rung is the kind of requirement that pays for the move onto it. An arrow along the bottom shows cost rising from left to right.</desc>
+<text class="b tc" x="308" y="13">Can the paths a request may take be written down in advance?</text>
+<path class="lb dash" d="M371.5 20V212"/>
+<text class="s tc" x="181" y="36">Yes: the paths can be listed</text>
+<text class="s tc" x="435" y="36">No: found at runtime</text>
+<path class="ls" d="M2 50V44H360V50M383 50V44H487V50"/>
+<rect class="bx" x="2" y="52" width="104" height="68"/>
+<text class="b tc" x="54" y="76">Plain call</text>
+<text class="m tc" x="54" y="94">One prompt,</text>
+<text class="m tc" x="54" y="110">one response</text>
+<rect class="bb" x="129" y="52" width="104" height="68"/>
+<text class="b tc" x="181" y="76">Augmented LLM</text>
+<text class="m tc" x="181" y="94">Retrieval, tools,</text>
+<text class="m tc" x="181" y="110">or memory</text>
+<rect class="bb" x="256" y="52" width="104" height="68"/>
+<text class="b tc" x="308" y="76">Workflow</text>
+<text class="m tc" x="308" y="94">Fixed steps</text>
+<text class="m tc" x="308" y="110">in code</text>
+<rect class="bb" x="383" y="52" width="104" height="68"/>
+<text class="b tc" x="435" y="76">Agent</text>
+<text class="m tc" x="435" y="94">The model picks</text>
+<text class="m tc" x="435" y="110">the path</text>
+<rect class="fl" x="510" y="52" width="104" height="68"/>
+<text class="b tc" x="562" y="76">Multi-agent</text>
+<text class="m tc" x="562" y="94">Coordinator +</text>
+<text class="m tc" x="562" y="110">specialists</text>
+<path class="ln" d="M108 86H127" marker-end="url(#ah)"/>
+<path class="ln" d="M235 86H254" marker-end="url(#ah)"/>
+<path class="ln" d="M362 86H381" marker-end="url(#ah)"/>
+<path class="ln" d="M489 86H508" marker-end="url(#ah)"/>
+<text class="s" x="2" y="142">What pays for the move onto each rung</text>
+<rect class="fl" x="2" y="150" width="104" height="60"/>
+<text class="m tc" x="54" y="176">The default:</text>
+<text class="m tc" x="54" y="192">start here</text>
+<rect class="fl" x="129" y="150" width="104" height="60"/>
+<text class="m tc" x="181" y="168">Needs current or</text>
+<text class="m tc" x="181" y="184">private data on</text>
+<text class="m tc" x="181" y="200">a fixed path</text>
+<rect class="fl" x="256" y="150" width="104" height="60"/>
+<text class="m tc" x="308" y="168">Known steps in</text>
+<text class="m tc" x="308" y="184">a set order;</text>
+<text class="m tc" x="308" y="200">branches listed</text>
+<rect class="fl" x="383" y="150" width="104" height="60"/>
+<text class="m tc" x="435" y="168">Unknown steps;</text>
+<text class="m tc" x="435" y="184">each depends on</text>
+<text class="m tc" x="435" y="200">what came before</text>
+<rect class="fl" x="510" y="150" width="104" height="60"/>
+<text class="m tc" x="562" y="176">Covered in</text>
+<text class="m tc" x="562" y="192">chapter O1.4</text>
+<text class="s" x="2" y="232">Cheapest and most predictable</text>
+<text class="s te" x="612" y="232">Most expensive, widest blast radius</text>
+<path class="ln" d="M2 240H612" marker-end="url(#ah)"/>
+</svg>
+</div>
+<figcaption>Read left to right. Blue marks the three patterns the objective names. The dashed line marks the question that separates the workflow from the agent, and the text under each rung says what kind of requirement pays for moving onto it.</figcaption>
+</figure>
+
+<section class="concept" id="c1.3" data-src="1.3" data-terms="pattern ladder rung enumerability enumerable paths routing branching workflow agent augmented llm retrieval hybrid exception route validation gate cheapest rung stated requirement maturity">
+<h3>Ask whether the paths can be written down in advance<span class="sec">§1.3</span></h3>
+
+<p>A set of paths is <dfn data-def="A set of paths is enumerable when every route a request may take can be written down before any request runs.">enumerable</dfn> when you can list every route a request may take before it runs. Enumerable paths belong in code. If the next action depends on a discovery that cannot be listed in advance, the model has to choose it. That requirement alone pays for an agent. Without it, sitting further right earns no credit.</p>
+
+<p>Branching does not make a path unlistable. Take a request that is classified and sent to one of five specialised handlers. The five branches are written down, so the model chooses from a fixed menu. That is <dfn data-def="A workflow pattern in which a request is classified and then dispatched to one of several specialised handlers. The branches are listed in advance, so the model chooses from a fixed menu.">routing</dfn>, and it is still a workflow.</p>
+
+<p>Needing data is a different question from choosing the path. When a task needs current or private data and the path is fixed, retrieval solves it. The result is an augmented LLM, and it adds no nondeterminism to the control flow, the order in which steps run.</p>
+
+<p>Traffic can be mixed. In the opening example, 96% of invoices share a known format and 4% are novel. Give each population, meaning each group of similar requests, the cheapest rung that handles it. A workflow takes the 96%. A <dfn data-def="A check inside a workflow that tests an intermediate result and sends failures down a different route.">validation gate</dfn>, a check inside the workflow that sends failures down a different route, hands the other 4% to an agent on an exception route.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 206" role="img" aria-labelledby="f13b-t f13b-d">
+<title id="f13b-t">A workflow with a validation gate and an agentic exception route</title>
+<desc id="f13b-d">Invoices enter a fixed pipeline: steps 1 and 2, then a validation gate at step 3, then steps 4 and 5, then the output. 48,000 invoices a month, 96 percent, pass the gate and stay in the pipeline. 2,000 a month, 4 percent, fail the gate and go down to an agent with document-inspection tools, whose result joins the output.</desc>
+<text class="b" x="118" y="36">Workflow: fixed steps in code</text>
+<rect class="bx" x="2" y="46" width="92" height="56"/>
+<text class="b tc" x="48" y="70">Invoices</text>
+<text class="m tc" x="48" y="88">50,000 a month</text>
+<path class="ln" d="M96 74H116" marker-end="url(#ah)"/>
+<rect class="bx" x="118" y="46" width="88" height="56"/>
+<text class="m tc" x="162" y="78">Steps 1 to 2</text>
+<path class="ln" d="M208 74H226" marker-end="url(#ah)"/>
+<rect class="bb" x="228" y="46" width="104" height="56"/>
+<text class="b tc" x="280" y="69">Step 3</text>
+<text class="m tc" x="280" y="88">validation gate</text>
+<path class="ln" d="M334 74H406" marker-end="url(#ah)"/>
+<text class="m tc" x="370" y="63"><tspan data-calc="50000*96%" data-expect="48000">48,000</tspan> pass</text>
+<text class="s tc" x="370" y="91">96%</text>
+<rect class="bx" x="408" y="46" width="80" height="56"/>
+<text class="m tc" x="448" y="78">Steps 4 to 5</text>
+<path class="ln" d="M490 74H514" marker-end="url(#ah)"/>
+<rect class="bx" x="516" y="46" width="98" height="56"/>
+<text class="b tc" x="565" y="78">Output</text>
+<path class="lb" d="M280 104V144" marker-end="url(#ah-b)"/>
+<text class="m" x="290" y="126"><tspan data-calc="50000*4%" data-expect="2000">2,000</tspan> fail the gate (4%)</text>
+<rect class="bb" x="186" y="146" width="236" height="50"/>
+<text class="b tc" x="304" y="168">Agent as the exception route</text>
+<text class="m tc" x="304" y="186">with document-inspection tools</text>
+<path class="lb" d="M424 171H565V104" marker-end="url(#ah-b)"/>
+</svg>
+</div>
+<figcaption>The pipeline takes every invoice up to the gate. The 48,000 that pass stay on the cheap rung, and only the 2,000 that fail reach the agent.</figcaption>
+</figure>
+
+<ul class="rules" aria-label="Decision rules for the pattern ladder">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-1.3-01"><span class="when">Five known steps, in the same order, on every request</span><span class="then">Build a workflow.<span class="why">The paths are enumerable, and code is cheaper, faster and testable.</span></span></li>
+<li data-facet="F-1.3-02"><span class="when">Classify the request, then dispatch it to one of five specialised handlers</span><span class="then">Still a workflow: the routing pattern.<span class="why">Enumerated branches are routing, not agency.</span></span></li>
+<li data-facet="F-1.3-03"><span class="when">The number of steps is unknown, and each action depends on what the last one found</span><span class="then">Use an agent.<span class="why">A non-enumerable path is the requirement that funds the move right.</span></span></li>
+<li data-facet="F-1.3-04"><span class="when">The task needs current or private data, but the path is fixed</span><span class="then">Use an augmented LLM.<span class="why">Retrieval solves it without control-flow nondeterminism.</span></span></li>
+<li data-facet="F-1.3-05"><span class="when">96% of traffic is one known format and 4% is novel</span><span class="then">Build a workflow with an agentic exception route.<span class="why">Match each population to the cheapest rung that handles it.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: what Anthropic's own post says about patterns</summary>
+<div>
+<p>This is not a corpus rule. It comes from Anthropic's post "Building effective agents", published 19 December 2024. The post defines workflows as systems where models and tools are orchestrated through predefined code paths, and agents as systems where models dynamically direct their own processes and tool usage. Its basic building block is a model enhanced with retrieval, tools and memory, the same combination the ladder's second rung names.</p>
+<p>The post names five workflow patterns: prompt chaining, routing, parallelisation, orchestrator-workers and evaluator-optimiser. Prompt chaining splits a task into a sequence of steps. Routing classifies an input and directs it to a specialised follow-up task. Parallelisation runs subtasks at the same time, either as independent sections or as repeated runs that vote.</p>
+<p>In orchestrator-workers a central model breaks the task down, delegates to worker models and synthesises their results. Its subtasks are determined by the orchestrator from the specific input and are not pre-defined, which separates it from parallelisation. In evaluator-optimiser, one call generates a response while another evaluates it, in a loop.</p>
+<p>On when to use agents, the post says they suit open-ended problems where the required number of steps is difficult or impossible to predict and a fixed path cannot be hardcoded. It also recommends the simplest solution possible, and says agentic systems often trade latency and cost for better task performance.</p>
+</div>
+</details>
+</section>
+
+<section class="concept" id="c1.4" data-src="1.4" data-terms="reverse direction under-engineering over-engineering disqualifying phrases scope unknown tools runtime adaptive planning prompt chaining fixed pipeline sla p95 tail mean cost distribution rigid simplicity default">
+<h3>Read the setup for the sentence that rules a workflow out<span class="sec">§1.4</span></h3>
+
+<p>The opposite error is staying too far left. Three phrases in a setup rule the workflow out: "scope is not known up front", "each step depends on what the previous step discovered" and "the relevant tools are identified at runtime". Any one of them makes the path unlistable, which eliminates the workflow before the options are compared.</p>
+
+<p>A workflow forced onto an unlistable task silently handles only the enumerated part. Adding tests to a legacy codebase of unknown structure shows why. The code has to be mapped first, and what the map shows decides the next step, so no fixed script can react to it. An agent with dynamic adaptive planning revises its plan as dependencies surface.</p>
+
+<p>The two designs differ in the shape of their cost. A workflow's cost is a point, because every request makes the same calls. An agent's cost is a distribution, because some requests take many more calls than the average. Budget against the <dfn data-def="The slowest and costliest few percent of requests, the ones far out on the long side of the distribution.">tail</dfn> (the slowest and costliest few percent of requests) and not against the mean (the average).</p>
+
+<p>A stated service-level agreement (<dfn data-def="Service-level agreement: a stated commitment about how a service performs, such as how fast it responds.">SLA</dfn>), a commitment about performance such as response time, filters designs before they are compared. A <dfn data-def="The 95th percentile: the value that 95% of requests come in at or under. A p95 latency limit means 95% of requests must finish within the limit.">p95</dfn> target means that 95% of requests must finish within the limit, so it measures the tail, and an agent whose mean passes can still fail it.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 232" role="img" aria-labelledby="f13c-t f13c-d">
+<title id="f13c-t">A workflow's latency is a point and an agent's is a distribution, against a p95 limit</title>
+<desc id="f13c-d">A time axis from 0 to 36 seconds. A dashed vertical line marks the p95 limit at 15 seconds. The workflow appears as a single narrow bar at 7.5 seconds, left of the limit. The agent appears as a wide curve with a long right tail. Its mean is 13.5 seconds, just left of the limit, and its 95th percentile is 30 seconds, far to the right of it. The workflow passes. The agent's mean passes and its p95 fails.</desc>
+<text class="b tc" x="265" y="14">p95 limit: 15 s</text>
+<path class="ln dash" d="M265 22V190"/>
+<text class="b" x="40" y="44">Workflow: a point</text>
+<path class="ls" d="M40 96H580"/>
+<rect class="bb" x="148.5" y="52" width="8" height="44"/>
+<text class="m te" x="142" y="76">5 calls = <tspan data-calc="5*1.5" data-expect="7.5">7.5 s</tspan></text>
+<text class="m tb2" x="275" y="76">p95 is 7.5 s: passes</text>
+<text class="b" x="40" y="120">Agent: a distribution</text>
+<path class="ls" d="M40 190H580"/>
+<path class="bb" d="M70 190C96 190 124 136 160 136C204 136 228 154 265 161C310 169 340 174 370 177C410 181 450 185 490 187C520 189 550 190 580 190Z"/>
+<path class="lb dash" d="M242.5 134V190"/>
+<text class="m te" x="238" y="130">mean <tspan data-calc="9*1.5" data-expect="13.5">13.5 s</tspan></text>
+<text class="m tb2" x="275" y="130">mean is inside the limit</text>
+<path class="lr" d="M490 158V190"/>
+<text class="m tc tr" x="490" y="136">p95: 20 calls = <tspan data-calc="20*1.5" data-expect="30">30 s</tspan></text>
+<text class="m tc tr" x="490" y="152">fails the limit</text>
+<path class="ls" d="M40 190V196M190 190V196M340 190V196M490 190V196"/>
+<text class="s tc" x="40" y="210">0 s</text>
+<text class="s tc" x="190" y="210">10 s</text>
+<text class="s tc" x="340" y="210">20 s</text>
+<text class="s tc" x="490" y="210">30 s</text>
+<text class="s te" x="580" y="226">time to finish one request</text>
+</svg>
+</div>
+<figcaption>Compare each marker with the dashed 15-second limit. The workflow takes 7.5 seconds every time. The agent's mean of 13.5 seconds is inside the limit, and its 95th-percentile request at 30 seconds is far outside it. The curve's shape is illustrative, and the call counts are assumptions set out in the worked example below.</figcaption>
+</figure>
+
+<p>Simplicity is the default. A task with a known path, such as the same six-section review for every submission, gets a fixed pipeline (<dfn data-def="A workflow pattern in which a fixed sequence of steps runs in order and each step's output feeds the next.">prompt chaining</dfn>: each step's output feeds the next).</p>
+
+<p>When the scenario states that the path cannot be known in advance, the simpler rung is wrong and loses the item. A team that wants an agent because the workflow "feels rigid" has stated no requirement, so ask which path cannot be listed.</p>
+
+<ul class="rules" aria-label="Decision rules for workflow versus agent">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-1.4-01"><span class="when">A request to add thorough tests to a legacy codebase of unknown structure</span><span class="then">An agent with dynamic adaptive planning.<span class="why">Scope is discovered by mapping first, so no fixed script can react to it.</span></span></li>
+<li data-facet="F-1.4-02"><span class="when">"Produce the same six-section review for every submission"</span><span class="then">A fixed pipeline (prompt chaining).<span class="why">It is predictable and reproducible, and agency adds nondeterminism for nothing.</span></span></li>
+<li data-facet="F-1.4-03"><span class="when">An agent is chosen, and a p95 latency SLA is stated</span><span class="then">Re-check the choice: the agent's tail may fail the SLA even if its mean passes.<span class="why">An SLA filters designs before they are compared.</span></span></li>
+<li data-facet="F-1.4-04"><span class="when">A team proposes an agent "because the workflow feels rigid"</span><span class="then">Reject it unless a non-enumerable requirement is stated.<span class="why">Rigidity is a feeling, and enumerability is the test.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: the invoice pipeline, costed and timed</summary>
+<div>
+<p>This is a worked example, not a corpus rule. Assume $3 per million input tokens and $15 per million output tokens; these are round figures for the arithmetic, not a quoted price. The pipeline makes 5 calls per invoice, each with 4,000 tokens in and 500 out. That is <span class="num" data-calc="5*4000" data-expect="20000">20,000</span> in and <span class="num" data-calc="5*500" data-expect="2500">2,500</span> out, which costs $<span class="num" data-calc="20000*3/1000000+2500*15/1000000" data-expect="0.0975">0.0975</span> per invoice and $<span class="num" data-calc="50000*0.0975" data-expect="4875">4,875</span> a month across 50,000 invoices.</p>
+<p>The agent averages 9 calls per invoice. Because the Messages API is stateless (the model keeps no conversation between calls), each call sends the full history so far, so assume an average of 12,000 tokens in and 400 out per call. That is <span class="num" data-calc="9*12000" data-expect="108000">108,000</span> in and <span class="num" data-calc="9*400" data-expect="3600">3,600</span> out: $<span class="num" data-calc="108000*3/1000000+3600*15/1000000" data-expect="0.378">0.378</span> per invoice and $<span class="num" data-calc="50000*0.378" data-expect="18900">18,900</span> a month, or <span class="num" data-calc="18900/4875" data-round="1" data-expect="3.9">3.9</span> times the pipeline.</p>
+<p>The hybrid sends 48,000 invoices through the pipeline at $0.0975 and 2,000 to the agent at $0.378. That is $<span class="num" data-calc="48000*0.0975" data-expect="4680">4,680</span> plus $<span class="num" data-calc="2000*0.378" data-expect="756">756</span>, or $<span class="num" data-calc="48000*0.0975+2000*0.378" data-expect="5436">5,436</span> a month. The 2,000 also pay for the three pipeline calls made up to the gate, at $<span class="num" data-calc="4000*3/1000000+500*15/1000000" data-expect="0.0195">0.0195</span> each, which adds $<span class="num" data-calc="2000*3*0.0195" data-expect="117">117</span> and makes $<span class="num" data-calc="5436+117" data-expect="5553">5,553</span>.</p>
+<p>That is <span class="num" data-calc="(5553-4875)/4875*100" data-round="1" data-expect="13.9">13.9</span>% above the pure pipeline, against <span class="num" data-calc="(18900-4875)/4875*100" data-round="0" data-expect="288">288</span>% above for the pure agent. It prices every exception invoice at the agent's average, though the exceptions are the hard cases.</p>
+<p>For the timing in the figure, assume each call takes 1.5 seconds. The pipeline always takes 5 calls, or <span class="num" data-calc="5*1.5" data-expect="7.5">7.5</span> seconds. The agent averages 9 calls, or <span class="num" data-calc="9*1.5" data-expect="13.5">13.5</span> seconds, and its 95th-percentile invoice takes 20 calls, or <span class="num" data-calc="20*1.5" data-expect="30">30</span> seconds. Against a p95 limit of 15 seconds, the pipeline passes, and the agent's mean passes while its p95 fails.</p>
+</div>
+</details>
+</section>
+
+<section class="bites" id="b-o1.3">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide's three sample questions cover Domains 3, 2 and 4, so Domain 1 has no official sample. The two scenarios below come from this project's own set, not from Anthropic. Each wrong option carries a family label, and the <a href="#/traps">Trap families</a> page defines all eight.</p>
+<p>The corpus says both directions appear as separate items. <span class="lbl">Inference</span>Expect one stem that sounds sophisticated over enumerable requirements, and one that states a requirement a workflow cannot meet. A third shape may ask which statement justifies a design: the sound one cites a requirement from the scenario, and the weak ones cite a general virtue such as "agents are more flexible".</p>
+
+<p class="stem">A document pipeline is described as intelligent and adaptive. Its stated requirements are five fixed steps.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Build a fixed workflow with a validation gate, and route gate failures to an agentic exception path.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-architected">ARCHITECTED</a>Build it as an agent so the system can adapt to future document types. It sounds more capable and future-proof, but nothing in the stated requirements is non-enumerable, so the agent adds cost and latency variance on 100% of traffic to serve a hypothetical.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>Build a workflow with no exception route and send anything unhandled to a human queue. It is the right rung for the majority, but it drops the stated requirement to handle novel formats.</span></li>
+</ul>
+<p>The corpus stem is short, and its explanation of the half-move refers to a requirement to handle novel formats that the stem does not spell out. In a full item, expect that requirement to be stated, as the 4% of novel traffic is in the opening example.</p>
+
+<p class="stem">An open-ended investigation can only be scoped by exploring first, such as adding tests to a legacy codebase of unknown structure.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Use an agent with adaptive planning: map the structure, prioritise high-impact areas and adapt as dependencies surface.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>Use a fixed pipeline with predetermined steps, extended to cover the most likely cases. It covers the enumerable subset and silently drops the requirement that made the task non-enumerable.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-discard">DISCARD</a>Send one large single-pass prompt covering the entire codebase at once. It replaces staged, adaptive work with a monolith that dilutes attention across everything.</span></li>
+</ul>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>One team wants an agent for a six-section review it produces for every submission, because the workflow "feels rigid". Another wants a fixed script to add tests to a codebase nobody has mapped. How do you rule on each?</span></summary>
+<div class="ans">
+<p>The first is a fixed pipeline. The review has the same six sections every time, so its paths can be listed, and "feels rigid" states no requirement that an agent would meet. The second is an agent with adaptive planning. Scope is discovered by mapping first, so no fixed script can react to what the mapping finds.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li>Leans on <a href="#/o1.1">O1.1</a>, §1.1: the decision found there is what a rung has to carry out. "Workflow" there means the business process whose steps are scored one by one, and here it names a design pattern, fixed steps run by code.</li>
+<li>Leans on <a href="#/o1.2/c1.10">O1.2</a>, §1.10: code takes the work it does exactly, such as arithmetic, lookups and mandatory order, at a single step. Here the same reasoning covers a whole path that can be listed in advance.</li>
+<li><a href="#/o1.4">O1.4</a>, §1.5: the ladder's fifth rung follows the same rule. A coordinator over specialists needs one stated justification from three: parallelism under a latency requirement, context isolation or per-role tool privilege. Otherwise one agent with the right tools is the answer.</li>
+<li><a href="#/o1.5">O1.5</a>, §1.11: plans get the same split, a fixed pipeline for known scope and dynamic adaptive decomposition for discovered scope. Its confidence-tier split, a cheap path for routine cases and an expensive one for hard cases, parallels this chapter's hybrid.</li>
+<li><a href="#/o1.6">O1.6</a>, §1.12: a stated SLA is a filter applied before designs are compared, and the point-versus-distribution cost shape returns there.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 1, third objective. Course corpus §1.3 and §1.4. Live checks, read 2026-10-25: Anthropic, "Building effective agents", published 19 December 2024 (anthropic.com/engineering/building-effective-agents), for the definitions, the five workflow patterns and the guidance on agents in the first fold; Anthropic documentation, "Using the Messages API" (platform.claude.com/docs/en/build-with-claude/working-with-messages), for the statement that the API is stateless and the full conversational history is sent each time. The token rates, call counts and call times in the second fold are assumptions chosen for the arithmetic, not prices or measurements.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>The ladder runs plain call, augmented LLM, workflow, agent, multi-agent. Move right only when the rung to the left demonstrably cannot meet a stated requirement.</li>
+<li>Enumerability is the test: can the paths be written down in advance? If so, they belong in code. Choosing from a fixed menu of branches is routing, and it is still a workflow.</li>
+<li>Current or private data on a fixed path needs retrieval, an augmented LLM. Mixed traffic gets a workflow with an agentic exception route.</li>
+<li>A setup sentence that makes the path unlistable rules the workflow out. A workflow on such a task silently handles only the enumerated part.</li>
+<li>Workflow cost is a point and agent cost is a distribution. Budget against the tail, and test a stated p95 SLA against the agent's tail, not its mean.</li>
+<li>"Feels rigid" is a feeling. Reject an agent unless the scenario states a non-enumerable requirement.</li>
+</ol>
+</aside>
+</div>

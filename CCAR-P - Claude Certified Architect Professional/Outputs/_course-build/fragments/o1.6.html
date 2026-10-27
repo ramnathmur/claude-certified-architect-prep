@@ -1,0 +1,149 @@
+<div class="chapter">
+<div class="main">
+
+<p>An invoice pipeline processes 50,000 invoices a month, and three people judge it in three different units. The finance director asks what an invoice costs: $2.10 by hand, now $<span class="num" data-calc="0.11+0.38" data-expect="0.49">0.49</span>, made of $0.11 of compute and $0.38 of residual human review.</p>
+
+<p>The operations director asks how long an invoice takes a person: 11 minutes before, 2 now. The CIO asks whether the pipeline keeps its promise: a <dfn data-def="The response time that 95 out of every 100 requests meet or beat. It describes the slow end of the distribution, so a commitment written against it is a commitment about the tail.">p95</dfn> of 7.5 seconds against a limit of 10.</p>
+
+<p>Those three answers belong to three of the five pillars the guide names: cost, efficiency and <dfn data-def="Service-level agreement: a stated commitment on a measure such as response time, availability or accuracy.">performance SLAs</dfn>, meaning stated commitments such as a response-time limit. A scenario names one pillar, and the design that moves that pillar is the answer. This chapter separates the pillars and shows how the named one constrains the architecture.</p>
+
+<section class="concept" id="c1.12" data-src="1.12" data-terms="business value pillars efficiency transformation productivity cost performance SLA p95 tail request path ingest unit economics named pillar general virtue stakeholder">
+<h3>Name the pillar first, then let it constrain the design<span class="sec">§1.12</span></h3>
+
+<p>The guide names five pillars, and each is a different unit. The unit is what lets you tell them apart, because the same project reads differently under each.</p>
+
+<table class="tbl">
+<thead><tr><th>Pillar</th><th>The unit</th><th>The question it answers</th></tr></thead>
+<tbody>
+<tr><td>Efficiency</td><td>Input per unit of output, such as minutes per invoice</td><td>Is the same work done with less?</td></tr>
+<tr><td>Transformation</td><td>A capability that did not exist before</td><td>Can we now do something we could not do at all?</td></tr>
+<tr><td>Productivity</td><td>Output per person, or what the freed time goes to</td><td>Are the same people producing more, or better?</td></tr>
+<tr><td>Cost</td><td>Total unit economics, such as cost per transaction</td><td>What does the solution itself cost to run?</td></tr>
+<tr><td>Performance SLA</td><td>A stated commitment on speed, availability or accuracy</td><td>Is the promise kept?</td></tr>
+</tbody>
+</table>
+
+<p>Efficiency and productivity sit close together. Efficiency reduces the input for a fixed output: an invoice takes 2 minutes of a person where it took 11. Productivity changes what the freed capacity does: the team that stopped keying invoices now works exceptions and vendor disputes. Which one to lead with depends on who is listening.</p>
+
+<p>Cost is more than the inference bill. Total cost includes inference, retrieval infrastructure, human review time, error remediation and maintenance. A design that halves inference cost and doubles human review time has made the total worse. At high volume the lever that moves cost is routing by difficulty, with the smallest model that clears the bar for each tier, the split described in <a href="#/o1.5/c1.11">O1.5</a>.</p>
+
+<p>A performance SLA behaves differently from the other four. It is a filter applied before designs are compared, not a tiebreaker after. It is written against the tail, the slowest few percent of requests, so a design whose average meets it can still miss it.</p>
+
+<p>A workflow's cost per request is close to one number because its steps are fixed. An agent's cost is a distribution, since the number of calls varies, so the budget has to cover the tail.</p>
+
+<p>Here is a worked example with invented figures. The commitment is a p95 of 3 seconds, and each model call takes about 0.8 seconds at p95. Treat the times as additive, which is a simplification. The chain has five calls: two enrichment calls (E1 and E2) that depend only on the stored document, then retrieval (R), a draft (D) and a check (V), each using the result before it.</p>
+
+<p>In series the chain takes <span class="num" data-calc="5*0.8" data-expect="4">4.0</span> seconds and fails. Running E1 and E2 together saves one slot and leaves <span class="num" data-calc="4*0.8" data-expect="3.2">3.2</span> seconds, still over. Precomputing them at <dfn data-def="The moment a document or record enters the system. Work done then is done once, before any request needs it.">ingest</dfn> takes them off the <dfn data-def="The steps that run while the user waits for an answer.">request path</dfn>. Three calls remain, taking <span class="num" data-calc="3*0.8" data-expect="2.4">2.4</span> seconds, with <span class="num" data-calc="3-2.4" data-expect="0.6">0.6</span> seconds to spare.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 244" role="img" aria-labelledby="f16a-t f16a-d">
+<title id="f16a-t">Three designs for five model calls, against a 3-second p95 commitment</title>
+<desc id="f16a-d">A time chart with a dashed blue line at 3 seconds. Row one runs five calls in series and ends at 4.0 seconds, past the line. Row two runs the two enrichment calls together, then retrieve, draft and check, and ends at 3.2 seconds, still past the line. Row three precomputes the enrichment at ingest, leaving retrieve, draft and check, and ends at 2.4 seconds, before the line with 0.6 seconds to spare.</desc>
+<text class="b tc tb2" x="430" y="14">Commitment: p95 of 3 s</text>
+<text class="m" x="2" y="56">Five calls in series</text>
+<text class="m" x="2" y="114">Enrichment run together</text>
+<text class="m" x="2" y="172">Enrichment at ingest</text>
+<rect class="br" x="190" y="34" width="64" height="36"/><text class="m tc" x="222" y="56">E1</text>
+<rect class="br" x="254" y="34" width="64" height="36"/><text class="m tc" x="286" y="56">E2</text>
+<rect class="br" x="318" y="34" width="64" height="36"/><text class="m tc" x="350" y="56">R</text>
+<rect class="br" x="382" y="34" width="64" height="36"/><text class="m tc" x="414" y="56">D</text>
+<rect class="br" x="446" y="34" width="64" height="36"/><text class="m tc" x="478" y="56">V</text>
+<text class="b tr" x="518" y="56">4.0 s: fails</text>
+<rect class="br" x="190" y="92" width="64" height="18"/><text class="m tc" x="222" y="105">E1</text>
+<rect class="br" x="190" y="110" width="64" height="18"/><text class="m tc" x="222" y="123">E2</text>
+<rect class="br" x="254" y="92" width="64" height="36"/><text class="m tc" x="286" y="114">R</text>
+<rect class="br" x="318" y="92" width="64" height="36"/><text class="m tc" x="350" y="114">D</text>
+<rect class="br" x="382" y="92" width="64" height="36"/><text class="m tc" x="414" y="114">V</text>
+<text class="b tr" x="454" y="114">3.2 s: fails</text>
+<rect class="bb" x="190" y="150" width="64" height="36"/><text class="m tc" x="222" y="172">R</text>
+<rect class="bb" x="254" y="150" width="64" height="36"/><text class="m tc" x="286" y="172">D</text>
+<rect class="bb" x="318" y="150" width="64" height="36"/><text class="m tc" x="350" y="172">V</text>
+<text class="b tb2" x="440" y="172">2.4 s: passes</text>
+<text class="s" x="440" y="188">0.6 s to spare</text>
+<path class="lb dash" d="M430 22V196"/>
+<path class="ln" d="M190 196H590"/>
+<path class="ln" d="M190 196V201M270 196V201M350 196V201M430 196V201M510 196V201M590 196V201"/>
+<text class="s tc" x="190" y="215">0 s</text>
+<text class="s tc" x="270" y="215">1 s</text>
+<text class="s tc" x="350" y="215">2 s</text>
+<text class="s tc" x="430" y="215">3 s</text>
+<text class="s tc" x="510" y="215">4 s</text>
+<text class="s tc" x="590" y="215">5 s</text>
+<text class="s" x="2" y="238">Each box is one call of about 0.8 s at p95: E enrichment, R retrieve, D draft, V check.</text>
+</svg>
+</div>
+<figcaption>Each row is a design for the same five calls, and the dashed line is the commitment. Running the two enrichment calls together still leaves four steps in sequence, because retrieval needs their results. Only precomputing them at ingest finishes before the line.</figcaption>
+</figure>
+
+<p>The SLA removed designs before quality came up. A commitment of a 3-second p95 rules out a nine-call agent at the start, because tuning does not bring a nine-call agent to a 3-second p95. The same logic removes whole patterns from the ladder of <a href="#/o1.3">O1.3</a>, which is why a stated figure in a scenario is read first.</p>
+
+<p>The scenario names one pillar, and the correct design moves that pillar. An answer that cites a general virtue, such as accuracy or elegance, instead of the stated requirement is the distractor. When two designs both work and only one meets the stated commitment, pick that one. The technically superior design that misses the SLA is the trap.</p>
+
+<p>Transformation is argued differently. If the capability did not exist before, there is no baseline cost to compare against, so efficiency has no denominator and forcing the comparison understates the case. Finally, state the architecture in the unit the listener measures in: minutes, dollars, throughput or a commitment met. Accuracy and other model metrics are inputs to the business case.</p>
+
+<ul class="rules" aria-label="Decision rules for business value pillars">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-1.12-01"><span class="when">A p95 latency commitment of 3 seconds meets a proposed 5-step serial chain</span><span class="then">Parallelise the independent steps and move enrichment off the request path by precomputing it at ingest.<span class="why">The SLA eliminates serial depth before quality is compared.</span></span></li>
+<li data-facet="F-1.12-02"><span class="when">Cost is the named pillar at high volume</span><span class="then">Route by confidence tier, with the smallest model that clears the bar for each tier.<span class="why">Difficulty-based routing is the lever that moves cost.</span></span></li>
+<li data-facet="F-1.12-03"><span class="when">A design halves inference cost and doubles human review time</span><span class="then">Reject it.<span class="why">Total cost includes human time, so this is a regression.</span></span></li>
+<li data-facet="F-1.12-04"><span class="when">The capability did not previously exist</span><span class="then">Argue transformation.<span class="why">Efficiency has no denominator, and forcing a per-unit comparison understates the case.</span></span></li>
+<li data-facet="F-1.12-05"><span class="when">A non-engineer stakeholder asks whether it is working</span><span class="then">Answer in minutes, dollars, throughput or the commitment met.<span class="why">Model metrics are an input to the business case, not the case.</span></span></li>
+<li data-facet="F-1.12-06"><span class="when">Two designs both work and only one meets the stated commitment</span><span class="then">Pick the one that meets the commitment.<span class="why">The technically superior design that misses the SLA is the trap.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: the invoice pipeline in dollars, and a cost trap</summary>
+<div>
+<p>A worked example with invented figures, not a corpus rule. At 50,000 invoices a month, handling by hand at $2.10 an invoice costs $<span class="num" data-calc="50000*2.10" data-expect="105000">105,000</span> a month, or $<span class="num" data-calc="50000*2.10*12" data-expect="1260000">1,260,000</span> a year. The pipeline at $0.49 an invoice costs $<span class="num" data-calc="50000*0.49" data-expect="24500">24,500</span> a month, or $<span class="num" data-calc="50000*0.49*12" data-expect="294000">294,000</span> a year, with the human review already inside that figure.</p>
+<p>Both costs price a minute of a person at about $0.19: 11 minutes cost $2.10, and the 2 minutes of review cost $<span class="num" data-calc="0.19*2" data-expect="0.38">0.38</span>.</p>
+<p>Now the trap. Halve the compute, from $0.11 to $<span class="num" data-calc="0.11/2" data-expect="0.055">0.055</span>, and double the review, from $0.38 to $<span class="num" data-calc="0.38*2" data-expect="0.76">0.76</span>. An invoice then costs $<span class="num" data-calc="0.055+0.76" data-expect="0.815">0.815</span> against today's $0.49, a rise of <span class="num" data-calc="(0.815-0.49)/0.49*100" data-expect="66" data-round="0">66</span>%. The inference line looks cheaper while the total is dearer.</p>
+</div>
+</details>
+</section>
+
+<section class="bites" id="b-o1.6">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide's three sample questions cover Domains 3, 2 and 4, so Domain 1 has no official sample. The shape below comes from this project's own scenario set, not from Anthropic. Each wrong option carries a family label, and the <a href="#/traps">Trap families</a> page defines all eight. <span class="lbl">Inference</span>Expect stems with two workable designs and one named pillar, and stems that ask how to justify a design to a stakeholder.</p>
+
+<p class="stem">A team must meet a stated p95 latency commitment. Its agentic design has a mean latency that fits, and a tail that does not.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Restructure to a workflow with the independent steps parallelised and enrichment precomputed at ingest, keeping the agent only for the exception population.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>Keep the agentic design and tune prompts to reduce the average number of tool calls. It improves the mean, while the commitment is written against the tail.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-repair">REPAIR</a>Add caching, retries and a monitoring alert on SLA breaches. It instruments and mitigates a breach that the architecture will keep producing, and leaves its cause in place.</span></li>
+</ul>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>A team proposes an agent that averages nine model calls for a request with a p95 commitment of 3 seconds, and the average looks fine in testing. What do you check, and what do you change?</span></summary>
+<div class="ans">
+<p>The commitment is written against the tail, so the average does not settle it, and nine calls will not reach 3 seconds by tuning. Move to a workflow: run the independent steps together, precompute enrichment at ingest, and keep the agent only for the exception population.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li><a href="#/o1.3">O1.3</a>, §1.3 and §1.4: this chapter leans on the pattern ladder. A stated commitment removes rungs of it at design time, and workflow cost is a point where agent cost is a distribution.</li>
+<li><a href="#/o1.5/c1.11">O1.5</a>, §1.11: the confidence-tier split is the cost lever named here, and the smallest model that clears the bar for each tier is the choice made inside it.</li>
+<li><a href="#/o1.4">O1.4</a>, §1.8: independent work fans out in parallel and the wall clock is the longest branch, which is the arithmetic behind the SLA example.</li>
+<li><a href="#/o2.1">O2.1</a>, §2.1: choosing the model for each tier is the trade-off that chapter works through.</li>
+<li><a href="#/o6.3">O6.3</a>, §6.9: how a service commitment is worded for a system whose output varies is covered there. This chapter treats the commitment as a filter on designs.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 1, sixth objective. Course corpus §1.12. No live-document check was needed: the chapter states design rules and no product facts. All dollar, minute and second figures are invented for illustration.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>Five pillars, five units: efficiency (input per output), transformation (a capability that did not exist), productivity (output per person), cost (total unit economics) and performance SLA (a stated commitment).</li>
+<li>The scenario names one pillar, and the design that moves it wins. An answer that cites a general virtue in its place is the distractor.</li>
+<li>An SLA is a filter applied before designs are compared. It is written against the tail, so a good average does not meet it.</li>
+<li>Cost is total: inference, retrieval infrastructure, human review, error remediation and maintenance. Halving inference while doubling review is a regression.</li>
+<li>At volume, route by confidence tier with the smallest model that clears the bar for each tier. When the capability is new, argue transformation.</li>
+<li>Answer a stakeholder in their own unit: minutes, dollars, throughput or the commitment met.</li>
+</ol>
+</aside>
+</div>

@@ -1,0 +1,121 @@
+<div class="chapter">
+<div class="main">
+
+<p>Suppose a bank's assistant handles 40,000 conversations a month, 14 turns each on average, which is <span class="num" data-calc="40000*14" data-expect="560000">560,000</span> turns in all. The team wants every reply formal, and wants any refund above $500 sent to a person. They write both rules into the first message of each conversation. On a long call, a customer asks for $620 at turn 12 and the assistant, by then casual, approves it.</p>
+
+<p>The rules were written down and they were still not in force. Where a rule lives decides whether the model treats it as an instruction on turn 12.</p>
+
+<section class="concept" id="c2.2" data-src="2.2" data-terms="system prompt persistent constraint first user message environment variable guardrail refusal boundary escalation trigger template scope layer per-tool per-agent">
+<h3>Put persistent rules in the system prompt, and scope each guardrail to its layer<span class="sec">§2.2</span></h3>
+
+<p>The <dfn data-def="The instruction block a developer sets before the user speaks. It frames every turn of the conversation.">system prompt</dfn> is the instruction block set before the user speaks. It is the only location with durable authority across the whole conversation, so tone, persona and response-format rules for the whole conversation belong there.</p>
+
+<p>The other places fail, each in its own way. A rule stated in the first user message is not durable: it loses authority once the conversation moves past that turn. A rule "set" through an environment variable has no effect at all, because environment variables configure infrastructure and never reach the model.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 184" role="img" aria-labelledby="f22a-t f22a-d">
+<title id="f22a-t">Where a rule lives decides whether it holds on every turn</title>
+<desc id="f22a-d">A ten-turn timeline with three rows. A rule in the system prompt is shown as a blue bar across all ten turns. A rule in the first user message is shown as a red box on turn 1 only, followed by a dashed box marked authority lost after the first turn. A rule set through an environment variable is a dashed box across all ten turns marked never reaches the model, no effect.</desc>
+<text class="s" x="2" y="16">Turn</text>
+<text class="s tc" x="211" y="16">1</text><text class="s tc" x="253" y="16">2</text><text class="s tc" x="295" y="16">3</text><text class="s tc" x="337" y="16">4</text><text class="s tc" x="379" y="16">5</text><text class="s tc" x="421" y="16">6</text><text class="s tc" x="463" y="16">7</text><text class="s tc" x="505" y="16">8</text><text class="s tc" x="547" y="16">9</text><text class="s tc" x="589" y="16">10</text>
+<text class="b" x="2" y="43">System prompt</text>
+<text class="s" x="2" y="57">tone, persona, guardrails</text>
+<rect class="bb" x="190" y="30" width="420" height="28"/>
+<text class="m tc" x="400" y="48">In force on every turn</text>
+<text class="b" x="2" y="85">First user message</text>
+<text class="s" x="2" y="99">stated once, at the start</text>
+<rect class="br" x="190" y="72" width="42" height="28"/>
+<text class="m tc" x="211" y="90">rule</text>
+<rect class="ls dash" x="232" y="72" width="378" height="28"/>
+<text class="s tc" x="421" y="90">authority lost after the first turn</text>
+<text class="b" x="2" y="127">Environment variable</text>
+<text class="s" x="2" y="141">set at deploy time</text>
+<rect class="ls dash" x="190" y="114" width="420" height="28"/>
+<text class="s tc" x="400" y="132">never reaches the model: no effect</text>
+<text class="s" x="2" y="172">Each column is one turn. Blue means the rule is in force on that turn.</text>
+</svg>
+</div>
+<figcaption>Only the system prompt covers all ten turns. The first-message rule covers turn 1, and the environment variable covers none, because the model never sees it.</figcaption>
+</figure>
+
+<p>Guardrails follow the same placement. A <dfn data-def="A boundary on what the model will do, such as a refusal boundary or an escalation trigger.">guardrail</dfn> is a refusal boundary or an escalation trigger, and it belongs in the system prompt. It is a design decision made when the system prompt is written, and a monitoring alert added later does not replace it.</p>
+
+<p>Scope matters as well. Suppose a guardrail must react differently depending on which tool or sub-agent is active. Put it in a per-tool or per-agent system prompt, at the layer where the risk occurs, and leave the top level with what applies everywhere. One blanket top-level rule either over-restricts the contexts that do not need it or under-restricts the one that does.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 166" role="img" aria-labelledby="f22b-t f22b-d">
+<title id="f22b-t">A guardrail sits in the layer where its risk occurs</title>
+<desc id="f22b-d">A large box for the top-level system prompt holds tone, persona and rules that apply everywhere. Inside it, a blue box for a refund sub-agent carries the rule to escalate any refund above 500 dollars, and a muted box for an order-status sub-agent carries no escalation rule because it only reads.</desc>
+<rect class="bx" x="2" y="8" width="612" height="150"/>
+<text class="b" x="14" y="30">Top-level system prompt: tone, persona and rules that apply everywhere</text>
+<rect class="bb" x="22" y="50" width="270" height="94"/>
+<text class="b tc tb2" x="157" y="76">Refund sub-agent</text>
+<text class="m tc" x="157" y="100">Escalate any refund above $500</text>
+<text class="s tc" x="157" y="122">risk: money leaves the account</text>
+<rect class="fl" x="324" y="50" width="270" height="94"/>
+<text class="b tc" x="459" y="76">Order-status sub-agent</text>
+<text class="m tc" x="459" y="100">Read-only lookups</text>
+<text class="s tc" x="459" y="122">no escalation rule needed</text>
+</svg>
+</div>
+<figcaption>The refund rule lives with the agent that can move money, and the read-only agent carries none. The $500 limit is invented for the example.</figcaption>
+</figure>
+
+<p>The guide's objective also names templates, meaning prompts with fixed text and slots for variable content. The corpus rules for this section are about where rules live and how guardrails are scoped, and the corpus has no separate rule for templates. Modular prompts are covered in <a href="#/o2.5">O2.5</a>.</p>
+
+<ul class="rules" aria-label="Decision rules for system prompts and guardrails">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-2.2-01"><span class="when">A tone, persona or response-format rule must hold for the whole conversation</span><span class="then">Put it in the system prompt.<span class="why">It is the only location with authority across every turn.</span></span></li>
+<li data-facet="F-2.2-02"><span class="when">A rule is stated in the first user message</span><span class="then">It is not durable.<span class="why">It loses authority once the conversation moves past that turn.</span></span></li>
+<li data-facet="F-2.2-03"><span class="when">A rule is "set" through an environment variable</span><span class="then">It has no effect at all.<span class="why">Environment variables do not reach model behaviour.</span></span></li>
+<li data-facet="F-2.2-04"><span class="when">A refusal boundary or an escalation trigger is needed</span><span class="then">Put it in the system prompt.<span class="why">A guardrail is a design decision made at system-prompt time, not a monitoring afterthought.</span></span></li>
+<li data-facet="F-2.2-05"><span class="when">A guardrail must react differently depending on which tool or sub-agent is active</span><span class="then">Scope it to the relevant layer, such as a per-tool or per-agent system prompt, and avoid one blanket top-level rule.<span class="why">A single global guardrail either over-restricts contexts that do not need it or under-restricts the one that does. Guardrails belong at the layer where the risk occurs.</span></span></li>
+</ul>
+</section>
+
+<section class="bites" id="b-o2.2">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide's three sample questions cover Domains 3, 2 and 4. The Domain 2 sample is about prompt caching and is worked through in <a href="#/o2.5">O2.5</a>, so this objective has none. The shape below comes from this project's own scenario set, not from Anthropic, and the <a href="#/traps">Trap families</a> page defines each label. <span class="lbl">Inference</span>Expect options that all state the right rule and differ only in where it is placed.</p>
+
+<p class="stem">A team needs a behavioural rule to hold for the whole conversation. Where does it belong?</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>In the system prompt.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-wrong-axis">WRONG-AXIS</a>In the first user message. The idea is right, since the rule is stated, but the location is wrong, because it loses authority mid-conversation.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-wrong-axis">WRONG-AXIS</a>In an environment variable set at deploy time. It confuses infrastructure configuration with a model-facing instruction, and it never reaches the model at all.</span></li>
+</ul>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>A formal-tone rule sits in the first user message and an escalation limit sits in an environment variable. Where does each belong, and what changes if one agent needs a stricter guardrail than the rest?</span></summary>
+<div class="ans">
+<p>Both belong in the system prompt. The first message loses authority as the conversation moves on, and an environment variable never reaches the model. For the stricter agent, scope the guardrail to that agent's own layer with a per-agent prompt, instead of tightening one global rule.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li><a href="#/o1.2/c1.10">O1.2</a>, §1.10: a step that must always happen is enforced by a precondition in code, because a prompt cannot guarantee it. Inference: a guardrail that cannot afford a miss wants both a system-prompt rule and a check in code.</li>
+<li><a href="#/o2.4">O2.4</a>, §2.5: the model sees only what each request carries. That is the reason a rule that never reaches the request has no effect.</li>
+<li><a href="#/o2.5">O2.5</a>, §2.9: modular prompts and Skills are how the same instructions are reused across prompts.</li>
+<li><a href="#/o5.1">O5.1</a>, §5.1: guardrail layering is worked through there. This chapter fixes where the prompt-level layer sits.</li>
+<li><a href="#/o7.1">O7.1</a>, §7.8: hooks and permission rules are the deterministic layer for a rule that cannot rely on the model's compliance.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 2, second objective, and section 8 for the Domain 2 sample question (prompt caching, O2.5). Course corpus §2.2. No live-document check was needed: the chapter states placement rules and no product facts. The bank's volumes and the $500 and $620 figures are invented for illustration.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>Tone, persona, response format, refusal boundaries and escalation triggers live in the system prompt, the only location with authority across every turn.</li>
+<li>A rule in the first user message loses authority once the conversation moves on. A rule in an environment variable has no effect on the model at all.</li>
+<li>A guardrail is a design decision made when the system prompt is written, not a monitoring afterthought.</li>
+<li>Scope a guardrail to the layer where the risk occurs, with a per-tool or per-agent prompt, instead of one blanket top-level rule.</li>
+<li>A rule the model never receives has no effect, whatever the deployment settings say.</li>
+</ol>
+</aside>
+</div>

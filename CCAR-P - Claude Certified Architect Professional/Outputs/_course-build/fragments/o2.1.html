@@ -1,0 +1,139 @@
+<div class="chapter">
+<div class="main">
+
+<p>A support team classifies 2,000,000 tickets a month, each into one of 12 queues. The answer is a single label that must come back in under a second. A test on 500 hand-labelled tickets shows that a small model reaches the accuracy the team set as its bar. A stakeholder still asks for the biggest model, to be safe.</p>
+
+<p>On Anthropic's models page, read on 2026-10-25, the largest current model lists at $10 per million input tokens and the smallest at $0.10, a ratio of <span class="num" data-calc="10/0.10" data-expect="100">100</span> to 1. At 2,000,000 tickets a month, that ratio is the whole argument. The chapter is about when the gap buys something and when it is headroom nobody asked for.</p>
+
+<section class="concept" id="c2.1" data-src="2.1" data-terms="model selection task fit headroom accuracy bar latency-gated classification benchmark upgrade trigger reasoning depth extended thinking fine-tune volume">
+<h3>Match the model to the task, not to the ceiling<span class="sec">§2.1</span></h3>
+
+<p>The discriminator is the task's complexity and ambiguity, set against cost and latency at the volume the task actually runs. A narrow, bounded task such as choosing one of 12 labels does not need the most capable tier. The answer is the smallest, fastest model that clears the <dfn data-def="The minimum accuracy a task needs, set in advance and measured on representative inputs.">accuracy bar</dfn>, because cost and latency compound at volume.</p>
+
+<p>Complexity can run the other way. Multi-step synthesis across ambiguous sources, at low volume, calls for the higher-capability model. Here task complexity, not volume, is the binding constraint, and a small model would be the wrong saving.</p>
+
+<p>Suppose a stakeholder asks for "the biggest model, to be safe" and names no complexity driver. Push back and ask what specifically requires it. <dfn data-def="Capability beyond what the task needs. It has a price and, with no stated requirement behind it, buys nothing the task uses.">Headroom</dfn> bought without a requirement is unpriced cost.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 200" role="img" aria-labelledby="f21a-t f21a-d">
+<title id="f21a-t">Four models on the same classification traffic: accuracy against monthly cost</title>
+<desc id="f21a-d">A table with a bar for each of four models. Haiku 5.5 scores 95.8% on the test and costs $120 a month, shown as a thin blue bar. Sonnet 5.5 scores 96.4% and costs $2,400. Opus 5.5 scores 96.6% and costs $4,800. Fable 5.1 scores 96.9% and costs $12,000, the longest bar. All four clear the 95% accuracy bar. The accuracy figures are invented.</desc>
+<text class="s" x="2" y="14">Model</text>
+<text class="s" x="140" y="14">Test accuracy (invented)</text>
+<text class="s" x="310" y="14">Monthly cost for 2,000,000 tickets</text>
+<text class="b" x="2" y="43">Haiku 5.5</text>
+<text class="m" x="140" y="43">95.8%</text>
+<rect class="bb" x="310" y="26" width="2" height="24"/>
+<text class="m" x="320" y="43">$<tspan data-calc="1000*0.10+40*0.50" data-expect="120">120</tspan></text>
+<text class="b" x="2" y="81">Sonnet 5.5</text>
+<text class="m" x="140" y="81">96.4%</text>
+<rect class="bx" x="310" y="64" width="40" height="24"/>
+<text class="m" x="358" y="81">$<tspan data-calc="1000*2+40*10" data-expect="2400">2,400</tspan></text>
+<text class="b" x="2" y="119">Opus 5.5</text>
+<text class="m" x="140" y="119">96.6%</text>
+<rect class="bx" x="310" y="102" width="80" height="24"/>
+<text class="m" x="398" y="119">$<tspan data-calc="1000*4+40*20" data-expect="4800">4,800</tspan></text>
+<text class="b" x="2" y="157">Fable 5.1</text>
+<text class="m" x="140" y="157">96.9%</text>
+<rect class="bx" x="310" y="140" width="200" height="24"/>
+<text class="m" x="518" y="157">$<tspan data-calc="1000*10+40*50" data-expect="12000">12,000</tspan></text>
+<text class="s" x="2" y="188">Accuracy bar set before the test: 95%. All four clear it.</text>
+</svg>
+</div>
+<figcaption>The three larger models clear the same 95% bar as the smallest, at <span class="num" data-calc="2400/120" data-expect="20">20</span>, <span class="num" data-calc="4800/120" data-expect="40">40</span> and <span class="num" data-calc="12000/120" data-expect="100">100</span> times its monthly cost. The accuracy figures are invented. The prices come from the models page, read on 2026-10-25.</figcaption>
+</figure>
+
+<p>A workload that already meets its accuracy bar does not need a newer, more capable model because one exists. Upgrade only when a specific unmet requirement drives it, such as an accuracy gap or a missing capability, and run a <dfn data-def="A test of candidate models on representative inputs, scored against the accuracy bar, run before a choice is committed.">benchmark</dfn> before switching: a test of the candidate on representative inputs.</p>
+
+<p>A switch with no gap behind it adds cost and latency risk for no proven gain, and can silently change behaviour on edge cases.</p>
+
+<p>A second rule is about reasoning depth. Suppose one step needs deep multi-step reasoning across ambiguous, high-stakes trade-offs, and latency is not gated. Enable <dfn data-def="A setting in which the model reasons at length before it gives its answer.">extended thinking</dfn> for that step. Do not move the whole workload to a larger model, because extended thinking targets the bottleneck, reasoning depth, without paying to upsize every other call.</p>
+<p>Current API versions expose this capability as adaptive thinking with an effort setting. The fold at the end of this section gives the dated detail.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 160" role="img" aria-labelledby="f21b-t f21b-d">
+<title id="f21b-t">Two ways to buy extra reasoning for a five-step workflow</title>
+<desc id="f21b-d">Two rows of five steps: extract, look up, check rules, weigh options and draft. In the red row every step runs on a larger model. In the blue row only the fourth step, weigh options, uses extended thinking, and the other four steps are unchanged.</desc>
+<text class="b tr" x="5" y="16">Move the whole workload to a larger model</text>
+<rect class="br" x="5" y="26" width="110" height="40"/><text class="m tc" x="60" y="50">Extract</text>
+<rect class="br" x="129" y="26" width="110" height="40"/><text class="m tc" x="184" y="50">Look up</text>
+<rect class="br" x="253" y="26" width="110" height="40"/><text class="m tc" x="308" y="50">Check rules</text>
+<rect class="br" x="377" y="26" width="110" height="40"/><text class="m tc" x="432" y="50">Weigh options</text>
+<rect class="br" x="501" y="26" width="110" height="40"/><text class="m tc" x="556" y="50">Draft</text>
+<text class="b tb2" x="5" y="96">Enable extended thinking for the one hard step</text>
+<rect class="bx" x="5" y="106" width="110" height="40"/><text class="m tc" x="60" y="130">Extract</text>
+<rect class="bx" x="129" y="106" width="110" height="40"/><text class="m tc" x="184" y="130">Look up</text>
+<rect class="bx" x="253" y="106" width="110" height="40"/><text class="m tc" x="308" y="130">Check rules</text>
+<rect class="bb" x="377" y="106" width="110" height="40"/><text class="m tc" x="432" y="123">Weigh options</text><text class="m tc" x="432" y="139">extended thinking</text>
+<rect class="bx" x="501" y="106" width="110" height="40"/><text class="m tc" x="556" y="130">Draft</text>
+</svg>
+</div>
+<figcaption>The red row pays for the larger model on every call. The blue row pays for extra reasoning only on the step where reasoning is the bottleneck.</figcaption>
+</figure>
+
+<ul class="rules" aria-label="Decision rules for model selection">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-2.1-01"><span class="when">A narrow, bounded, high-volume classification task with a latency limit</span><span class="then">Choose the smallest, fastest model that clears the accuracy bar.<span class="why">Cost and latency compound at volume, and the task does not need frontier reasoning.</span></span></li>
+<li data-facet="F-2.1-02"><span class="when">Multi-step synthesis across ambiguous sources, at low volume</span><span class="then">Choose the higher-capability model.<span class="why">Task complexity, not volume, is the binding constraint here.</span></span></li>
+<li data-facet="F-2.1-03"><span class="when">A stakeholder asks for "the biggest model, to be safe" and states no complexity driver</span><span class="then">Push back and ask what specifically requires it.<span class="why">Headroom bought without a requirement is unpriced cost, not safety.</span></span></li>
+<li data-facet="F-2.1-04"><span class="when">A production workload already meets its accuracy bar and a newer, more capable model becomes available</span><span class="then">Upgrade only if a specific unmet requirement drives it, and benchmark before switching.<span class="why">A switch not tied to an actual gap adds cost and latency risk for no proven gain, and can silently change behaviour on edge cases.</span></span></li>
+<li data-facet="F-2.1-05"><span class="when">A task needs deep multi-step reasoning across ambiguous, high-stakes trade-offs, and latency is not stated as gated</span><span class="then">Enable extended thinking for that step instead of moving the whole workload to a larger model.<span class="why">It targets the actual bottleneck, reasoning depth, without paying to upsize every other call.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: the ticket classifier in dollars, and what the docs say about thinking now</summary>
+<div>
+<p>A worked example, not a corpus rule. Assume each ticket is 500 input tokens and 20 output tokens (invented figures). Two million tickets a month is <span class="num" data-calc="2000000*500/1000000" data-expect="1000">1,000</span> million input tokens and <span class="num" data-calc="2000000*20/1000000" data-expect="40">40</span> million output tokens. At the prices on the models page (read 2026-10-25), Haiku 5.5 charges $0.10 per million input tokens and $0.50 per million output tokens, so the month costs $<span class="num" data-calc="1000*0.10+40*0.50" data-expect="120">120</span>.</p>
+<p>Sonnet 5.5 ($2 and $10) costs $<span class="num" data-calc="1000*2+40*10" data-expect="2400">2,400</span> on the same traffic, Opus 5.5 ($4 and $20) costs $<span class="num" data-calc="1000*4+40*20" data-expect="4800">4,800</span>, and Fable 5.1 ($10 and $50) costs $<span class="num" data-calc="1000*10+40*50" data-expect="12000">12,000</span>. The page lists Haiku 5.5 as "from" its price, so treat $120 as the floor of the range.</p>
+<p>On thinking, the same page describes the current models as using adaptive thinking, where the model decides how much to think and an effort setting steers it. The manual form of extended thinking, a fixed thinking budget, is deprecated on the 4.6 models and rejected on later ones (extended-thinking page, read 2026-10-25). The corpus rule stands as written: spend reasoning on the one step where it is the bottleneck.</p>
+</div>
+</details>
+</section>
+
+<section class="bites" id="b-o2.1">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide's three sample questions cover Domains 3, 2 and 4. The Domain 2 sample is about prompt caching and is worked through in <a href="#/o2.5">O2.5</a>, so this objective has no sample of its own, though one of that sample's wrong options, the smallest model regardless of task fit, touches model selection.</p>
+<p>The shape below comes from this project's own scenario set, not from Anthropic, and the <a href="#/traps">Trap families</a> page defines each label. <span class="lbl">Inference</span>Expect a stem that gives the volume, a latency limit and an accuracy bar, with options that differ in size.</p>
+
+<p class="stem">A team must classify a high volume of support tickets under a latency limit. Which model choice fits?</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Select the smallest, fastest model that clears the accuracy bar on representative tickets, benchmarked before committing.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-architected">ARCHITECTED</a>Default to the most capable model available, to be safe. It sounds more thorough, but nothing about a bounded, high-volume, latency-gated classification calls for extra reasoning, and the extra cost and latency compound at volume.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>Fine-tune a smaller model, which means training it further on your own examples, without first testing whether a base model already clears the bar. Fine-tuning is a legitimate lever, but it is the expensive answer to a problem a base-model evaluation might already solve.</span></li>
+</ul>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>A classifier already meets its accuracy bar on the current model, and a larger model has just been released. Separately, one step in another workflow needs deep reasoning over ambiguous trade-offs, with no latency limit. What do you do in each case?</span></summary>
+<div class="ans">
+<p>In the first case, do not upgrade unless a specific unmet requirement drives it, and benchmark before any switch. In the second, enable extended thinking for that step and leave the rest of the workload on the model it already uses.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li><a href="#/o1.5/c1.11">O1.5</a>, §1.11, and <a href="#/o1.6/c1.12">O1.6</a>, §1.12: confidence-tier routing sends routine cases to the smallest model that clears the bar and hard ones to a stronger model. This chapter leans on them for where the split falls, and chooses the model inside each tier.</li>
+<li><a href="#/o4.1">O4.1</a>, §4.1: the accuracy bar used here is a threshold declared in advance. Without it, "clears the bar" has no meaning.</li>
+<li><a href="#/o3.3">O3.3</a>, §3.4: accuracy-latency budgeting is the same trade-off argued at the level of a configuration.</li>
+<li><a href="#/o2.3">O2.3</a>, §2.4: reasoning cues in a prompt are the prompt-level way to ask for step-by-step reasoning. Inference: extended thinking is the model-level setting for the same need.</li>
+<li><a href="#/o2.5">O2.5</a>, §2.8: prompt caching is another lever on cost and latency at volume, applied to a repeated prefix and not to the choice of model.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 2, first objective, and section 8 for the Domain 2 sample question (prompt caching, O2.5). Course corpus §2.1. Live documents read on 2026-10-25: the models overview (https://platform.claude.com/docs/en/models/overview) for model names, prices and thinking modes, and the extended-thinking page (https://platform.claude.com/docs/en/build-with-claude/extended-thinking) for the deprecation. The ticket counts, token counts and accuracy figures are invented for illustration.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>Match capability to the task's complexity at its real volume, not to the model's ceiling. A narrow, bounded, high-volume, latency-gated task takes the smallest, fastest model that clears the accuracy bar.</li>
+<li>Multi-step synthesis across ambiguous sources at low volume takes the higher-capability model. Complexity, not volume, is the binding constraint.</li>
+<li>"The biggest model, to be safe" with no stated complexity driver: ask what requires it. Headroom without a requirement is unpriced cost.</li>
+<li>A workload that meets its bar needs no upgrade. Upgrade for a specific unmet requirement, and benchmark before switching.</li>
+<li>Deep reasoning on one step means extended thinking for that step, not a larger model for every call.</li>
+</ol>
+</aside>
+</div>

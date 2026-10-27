@@ -1,7 +1,18 @@
 # CCAR-P — Twelve-Month Roadmap
 
 **Created:** 2026-08-18, the day CCAR-F was passed (851/720).
-**Status:** Phases 0, 2 and 4 closed; **parallel track.** CCDV-F became the active exam on
+**Status, 2026-10-22: ⭐ the active exam.** Target: sit before **2026-12-07**, when exam content
+changes, and book at least 48 hours ahead. A syllabus run is under way: one lecture and one 5-item
+section drill per official objective, in guide order, then Papers 1–5. Its checkpoint is
+`prep with quiz/section-drills/PROGRESS.md`. O7.1 was taught and drilled 2026-10-22. The guide's
+provenance caveat closed the same day.
+**Course build, 2026-10-25:** a single-file professor course, `Outputs/CCAR-P_Syllabus-Course_v1.html`,
+is being authored beside the syllabus run. Ram approved D1 to D7 at the built length (about 58k
+words). **2026-10-26: 33 of 38 objectives are written** (D1 to D5 complete, O6.1 to O6.3; O6.4, O6.5
+and D7 remain). A 14-objective build (D1, D2, O3.1, O3.2, O3.5) was sent to Ram mid-day, and the file on
+disk now holds all 33. D1 to D4 have had one cold-review round, with the findings fixed; D5's round is half applied. The checkpoint is `Outputs/_course-build/PROGRESS.md`.
+
+**Previous status (2026-08-29), kept for the record:** Phases 0, 2 and 4 closed; **parallel track.** CCDV-F became the active exam on
 2026-08-19; this project is kept warm rather than paused. Exam guide obtained and reconciled
 2026-08-25 — see the provenance caveat in `EXAM-FACTS_v1.md`. Corpus complete 2026-08-25, mock-exam
 engine built 2026-08-29. Path A/B remains the one open Phase 0 item; Phase 1 (official syllabus) has
@@ -14,12 +25,29 @@ completed.)*
 > (its largest) and its Security domain. Phase 3's production work now has a second purpose: it is
 > also the exposure CCDV-F assumes and this ordering does not otherwise supply.
 
+> **Revised plan, 2026-10-22: Ram's decisions, recorded via `/sync-up`. Supersedes the 2026-08-19
+> ordering above.**
+> - **CCAR-P is the active exam.** CCDV-F becomes the secondary track.
+> - **Sit before 2026-12-07.** Pearson VUE changes the exam content that day, and updated guides
+>   publish 2026-11-17. A sitting before then is on guide v1.0, which is what the corpus and papers
+>   are built against. That is the Path A timing below.
+> - **Syllabus run.** Each of the 38 official objectives gets one chat lecture, then a 5-item HTML
+>   section drill (4 single + 1 multiple-response, Practice Mode). Order is the guide's, D1→D7, with
+>   O7.1 first because it was already taught. Every miss gets 2 reinforcement items on the same
+>   decision, from the opposite direction. Drills are built by `tools/build-drill.js`, gated by
+>   `tools/drill-gate.js`, cold-audited (round 1 in full, round 2 on changed items), and logged in
+>   `EXAM-LOG.md` under "Section drills". Checkpoint: `prep with quiz/section-drills/PROGRESS.md`.
+> - **Papers 1–5 come after the syllabus** as the readiness check, so no paper hits an untaught domain.
+> - **Calendar:** lectures done by about 2026-11-27, at about one objective a day, leaving a week for
+>   the papers and booking.
+
 ## Two dates that anchor everything
 
 | Date | What |
 |---|---|
 | **2027-08-18** | CCAR-F expires. Free non-proctored renewal if done on time; full price and full exam if it lapses |
-| **Target sitting** | Set once Phase 1 completes. See the two options below |
+| **Target sitting** | **Before 2026-12-07** (set 2026-10-22). Cancel/reschedule closes 48 hours before the appointment. *(Previously: "Set once Phase 1 completes. See the two options below.")* |
+| **2026-12-07** | CCAR-P exam content changes. Updated guide publishes 2026-11-17 (Pearson VUE, read 2026-10-22) |
 
 Holding CCAR-F is **not** a prerequisite for CCAR-P and does not upgrade into it — they are separate
 exams. But letting F lapse while chasing P means losing a credential already earned, so the renewal
@@ -72,15 +100,19 @@ without colliding with P revision.
 - [x] Download the **CCAR-P Official Exam Guide (PDF)** → `sources/CCAR-P_Official-Exam-Guide_v1.0.pdf`
       (2026-08-25, via a third-party repo's cited S3 mirror — not a direct Partner Academy login; see
       the provenance caveat in `EXAM-FACTS_v1.md`)
-- [ ] Sign in to Anthropic Partner Academy with the Infosys Claude Partner Network account and
-      re-fetch the guide directly, to close the provenance caveat above
+- [x] Sign in to Anthropic Partner Academy with the Infosys Claude Partner Network account and
+      re-fetch the guide directly, to close the provenance caveat above. *(Closed 2026-10-22 with no
+      sign-in: the public Partner Academy certifications page links the identical file, and a fresh
+      fetch is byte-identical. See `EXAM-FACTS_v1.md`.)*
 - [x] Reconcile every ⚠️ in `EXAM-FACTS_v1.md`; move confirmed rows to VERIFIED (2026-08-25) — two
       items remain genuinely open (scenario pooling, multi-response scoring), not caveat-blocked
 - [x] Confirm the real domain list and weightings — all seven names and percentages matched the
       community source exactly; `CCAR-P_Domain-N` stub table in the corpus index now carries the
       confirmed names and weights. *(Corrected 2026-08-29: this line said the domain files were
       "still not created" long after Phase 2 completed. All seven exist.)*
-- [ ] Decide Path A or Path B and write the target date into this file
+- [x] Decide Path A or Path B and write the target date into this file. *(2026-10-22: sit before
+      2026-12-07, the Path A timing, driven by the exam's content change that day. See "Revised plan,
+      2026-10-22" above.)*
 
 **Nothing else starts until Phase 0 closes.** This is the lesson from Foundations, where a community
 guide's wrong scenario count reached generated practice material.
@@ -110,6 +142,10 @@ guide's wrong scenario count reached generated practice material.
       following the house style playbook (`my blueprints/Ram Preferred HTML Style.md`).
       *(Corrected 2026-08-30 via `/sync-up` — this previously said only Domains 3 and 4 were built.)*
 
+> **Syllabus run started 2026-10-22.** O7.1 was taught (§7.1, §7.2, §7.8, plus the §7.4/§7.5 review
+> configuration) and its section drill built. D7's §7.8 corpus rationale was corrected the same day:
+> permission lists merge across scopes. Live state: `prep with quiz/section-drills/PROGRESS.md`.
+>
 > **Partially studied — updated 2026-08-26 (via `/sync-up`).** Domains 1, 2, 3, and 4 of 7 have now
 > been taught in chat across sessions (3 and 4 also read via their HTML builds). Domains 5, 6, and 7
 > remain unread. **Paper 1 generated 2026-08-30 (63 items, full AUTHOR mode), not yet sat.**
@@ -175,15 +211,17 @@ guide's wrong scenario count reached generated practice material.
       confirmed domains. v1 ported the feedback loop only; v2 adds the item-fidelity half — see
       `Outputs/CCAR-P_Mock-Exam-Engine-Audit_v1.md`
 - [x] Supporting ledgers: `CCAR-P_Objective-Map_v1.md` (78 sections → 38 objectives),
-      `FACET-LEDGER.md` (351 facets), `STEM-LEDGER.md` (48 seeded stems, Jaccard calibrated to 0.30),
+      `FACET-LEDGER.md` (351 facets at build; 372 after the 2026-09-01 D2 expansion, corrected 2026-10-22), `STEM-LEDGER.md` (48 seeded stems, Jaccard calibrated to 0.30),
       `ARCHETYPE-LEDGER.md` (8 shapes, 8 distractor families), `GENERATION-INTELLIGENCE.md`
 - [x] `mock-exams/CCAR-P_MockTest-TEMPLATE_v1.html` and `mock-exams/DASHBOARD.html`, with
       `tools/run-gate.js` running fidelity-gate check 1 in Node
-- [x] **D2 corpus expansion — done 2026-09-02, per Ram's decision.** 21 new decision-table rows added
+- [x] **D2 corpus expansion — done 2026-09-01, per Ram's decision** *(date corrected 2026-10-22 from
+      09-02, matching `FACET-LEDGER.md`, the orchestration prompt, and the domain file's own timestamp)*. 21 new decision-table rows added
       across all 9 D2 sections (18 → 39 facets), closing the supply crisis that had fully exhausted
       D2's facets after Paper 4 (see `GENERATION-INTELLIGENCE.md` F-01/F-34). D2 needed zero fallback
       mechanism for Paper 5; re-check remaining supply before Paper 7 or 8
-- [ ] Generate and sit papers on the Foundations cadence. Target ≥10 scored papers
+- [ ] Generate and sit papers on the Foundations cadence. Target ≥10 scored papers. *(2026-10-22:
+      Papers 1–5 are now sat after the syllabus run, before 2026-12-07. Papers 6–10 only if time allows.)*
 - [ ] `EXAM-LOG.md` per-paper: domain breakdown, per-question misses, Professor's Note
 - [ ] Insights Round every 3 scored papers
 - [ ] Confirmed-weakness rule: a domain weakest on two consecutive papers gets a quota bump
@@ -191,7 +229,9 @@ guide's wrong scenario count reached generated practice material.
 ### Phase 5 — Final approach (final 6 weeks)
 - [ ] Miss corpus → mistake-pattern artifact, the way `CCA-Prep_Mistake-Patterns_v1.html` was built
 - [ ] Trap sheet, setter's-eye
-- [ ] Re-verify `EXAM-FACTS_v1.md` against the guide — check for a version bump
+- [ ] Re-verify `EXAM-FACTS_v1.md` against the guide — check for a version bump. *(A revision is
+      announced, read on Pearson VUE 2026-10-22: the updated guide publishes 2026-11-17, and content
+      changes 2026-12-07. Guide v1.0 governs a sitting before 2026-12-07.)*
 - [ ] Two clean papers in Exam Mode (no per-question feedback) before booking
 - [ ] Book Pearson VUE
 

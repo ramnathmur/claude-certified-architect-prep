@@ -1,0 +1,186 @@
+<div class="chapter">
+<div class="main">
+
+<p>A support agent has two tools that overlap: <code>search_orders</code> and <code>lookup_account</code>. In one week the routing log shows <span class="num" data-calc="5000*6%" data-expect="300">300</span> wrong calls out of 5,000 requests, which is 6%. Every one of the 300 is a request that both tools could answer, such as "where is my refund?", which can mean an order's status or a billing record. The other <span class="num" data-calc="5000-300" data-expect="4700">4,700</span> route correctly.</p>
+
+<p>One engineer proposes adding twelve examples of obvious requests to the prompt. Another proposes five examples of requests like the refund one. The first group of examples describes cases that already work, and the second describes the cases in the log.</p>
+
+<section class="concept" id="c2.3" data-src="2.3" data-terms="few-shot zero-shot examples ambiguous target count format routing failure distribution convenient examples rationale">
+<h3>Aim the examples at the cases that fail<span class="sec">§2.3</span></h3>
+
+<p><dfn data-def="A prompt that includes worked examples, each pairing an input with the output wanted. The model matches the pattern the examples show.">Few-shot prompting</dfn> puts worked examples in the prompt. Use it when prose instructions produce inconsistent output, or when a specific case is ambiguous. A prompt with instructions and no examples is <dfn data-def="A prompt that gives instructions and no worked examples.">zero-shot</dfn>, and the guide's objective names it next to few-shot. The corpus gives no decision rule for it, so this chapter states none.</p>
+
+<p>The corpus sets two sizes. When a model formats output inconsistently despite clear instructions, add 3 to 4 examples of the exact required format. When it misroutes an ambiguous request between two tools, add 4 to 6 examples aimed at exactly that ambiguity, each with a stated rationale for the tool chosen. In the opening case, the five examples go on requests that fit both tools.</p>
+
+<p>The proposal to add 10 to 15 examples of clear-cut, unambiguous cases is rejected. Examples teach by pattern-matching to what they show, and the clear-cut requests are the 4,700 that already route correctly. Volume spent there takes context window space and leaves the 300 where they were.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 182" role="img" aria-labelledby="f23a-t f23a-d">
+<title id="f23a-t">Where the examples land: clear-cut requests or the ambiguous ones</title>
+<desc id="f23a-d">Two boxes side by side. The wide left box holds clear-cut requests, which the model already routes correctly, and contains twelve small example markers. The narrower blue right box holds the ambiguous requests, where all 300 weekly misroutes sit, and contains five markers. Under the left box, option A, twelve clear-cut examples, is rejected because it misses the 300 misroutes. Under the right box, option B, five targeted examples, is adopted because it matches the failure.</desc>
+<rect class="bx" x="2" y="8" width="392" height="104"/>
+<text class="b" x="14" y="30">Clear-cut requests</text>
+<text class="s" x="14" y="48">the model already routes these correctly</text>
+<rect class="bx" x="14" y="66" width="14" height="14"/><rect class="bx" x="40" y="66" width="14" height="14"/><rect class="bx" x="66" y="66" width="14" height="14"/><rect class="bx" x="92" y="66" width="14" height="14"/><rect class="bx" x="118" y="66" width="14" height="14"/><rect class="bx" x="144" y="66" width="14" height="14"/>
+<rect class="bx" x="14" y="88" width="14" height="14"/><rect class="bx" x="40" y="88" width="14" height="14"/><rect class="bx" x="66" y="88" width="14" height="14"/><rect class="bx" x="92" y="88" width="14" height="14"/><rect class="bx" x="118" y="88" width="14" height="14"/><rect class="bx" x="144" y="88" width="14" height="14"/>
+<rect class="bb" x="410" y="8" width="204" height="104"/>
+<text class="b tb2" x="422" y="30">Ambiguous requests</text>
+<text class="s" x="422" y="48">all 300 misroutes sit here</text>
+<rect class="bx" x="422" y="66" width="14" height="14"/><rect class="bx" x="448" y="66" width="14" height="14"/><rect class="bx" x="474" y="66" width="14" height="14"/><rect class="bx" x="500" y="66" width="14" height="14"/><rect class="bx" x="526" y="66" width="14" height="14"/>
+<path class="ls" d="M2 124V130H394V124M410 124V130H614V124"/>
+<text class="m tc" x="198" y="150">Option A: 12 clear-cut examples</text>
+<text class="s tc" x="198" y="168">Rejected: they miss the 300 misroutes</text>
+<text class="m tc" x="512" y="150">Option B: 5 targeted examples</text>
+<text class="s tc" x="512" y="168">Adopted: they match the failure</text>
+</svg>
+</div>
+<figcaption>Each small square is one example in the prompt. Twelve land in the group that already works, and five land in the group that fails.</figcaption>
+</figure>
+
+<p>The same logic applies to examples already in the prompt. If they were drawn from the easiest, most common cases, replace them with examples drawn from the observed failure distribution, whatever their count. At the other end, when a single well-chosen example already resolves an ambiguous formatting case in testing, ship with it. Padding to an arbitrary count adds nothing.</p>
+
+<ul class="rules" aria-label="Decision rules for few-shot prompting">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-2.3-01"><span class="when">Model inconsistently formats output despite clear instructions</span><span class="then">Add 3 to 4 examples of the exact required format.<span class="why">Instructions have already failed; examples fix format precision directly.</span></span></li>
+<li data-facet="F-2.3-02"><span class="when">Model misroutes an ambiguous request between two tools</span><span class="then">Add 4 to 6 examples targeted at exactly that ambiguity.<span class="why">Targeting the failure case is what fixes it, not example volume.</span></span></li>
+<li data-facet="F-2.3-03"><span class="when">Proposal to add 10 to 15 examples of clear-cut, unambiguous cases</span><span class="then">Reject.<span class="why">It does not touch the actual ambiguous cases causing the error.</span></span></li>
+<li data-facet="F-2.3-04"><span class="when">Few-shot examples are already in place but drawn from the easiest, most common cases, not the cases causing failures</span><span class="then">Replace them with examples drawn from the observed failure distribution.<span class="why">Examples teach by pattern-matching to what they show, so ones that do not resemble the failure mode do not transfer to it, regardless of count.</span></span></li>
+<li data-facet="F-2.3-05"><span class="when">A single well-chosen example already resolves an ambiguous formatting case in testing</span><span class="then">Ship with that one targeted example instead of padding to an arbitrary count.<span class="why">Targeting the ambiguity is the lever, and one example that resolves the case in testing needs no padding.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: what Anthropic's prompting guidance says about examples</summary>
+<div>
+<p>This is a dated note, not a corpus rule. Anthropic's prompting guidance (live docs, read 2026-10-25) asks for examples that are relevant, diverse and structured. Diverse means they cover edge cases and vary enough that the model does not pick up an unintended pattern.</p>
+<p>Structured means each example sits in an <code>&lt;example&gt;</code> tag, with several wrapped in <code>&lt;examples&gt;</code>. The page says to "Include 3-5 examples for best results", and also notes that worked examples shape how Claude reasons inside its thinking.</p>
+<p>The page's range of 3 to 5 sits close to the corpus's 3 to 4 and 4 to 6 and does not match either. Answer exam items with the corpus numbers. Guides are due to be updated on 17 November 2026, so watch for a change in wording.</p>
+<p>A worked example, not a corpus rule: one example for the opening case reads as an input and a decision. Input: "Where is my refund?" Tool chosen: <code>lookup_account</code>. Reason: the customer asks about money returned, which sits on the billing record, and gives no order number. The stated reason is what lets the model separate this request from one that names an order.</p>
+</div>
+</details>
+</section>
+
+<section class="concept" id="c2.4" data-src="2.4" data-terms="chain-of-thought reasoning cue think step by step single-step multi-step latency budget bounded cue scratchpad verified sufficiency">
+<h3>Add a reasoning cue only where the task has steps<span class="sec">§2.4</span></h3>
+
+<p>A <dfn data-def="A line in the prompt, such as think step by step, that asks the model to write out its reasoning before it answers.">chain-of-thought cue</dfn> asks the model to write out its reasoning before the answer. Add one when the task has several steps to get through: multi-step math, multi-stage analysis, a comparison across N items, or a stepwise transformation. Leave it off a single-step task, such as translating one sentence. There is nothing to reason through, and the cue only adds tokens (the word pieces the model reads and writes) and latency.</p>
+
+<p>A multi-step task does not always need the cue. If it already reasons correctly and consistently without one, verified in testing, don't add it. The cue's cost in tokens and latency is paid for by a measured accuracy gap, and a task that already performs correctly has no gap to close.</p>
+
+<p>Sometimes the task shape calls for deliberation and a latency budget limits it. Then use a bounded or structured cue, such as a <dfn data-def="A short, fixed space in the answer where the model writes brief working before it commits to a result.">scratchpad</dfn> of fixed length, instead of open-ended chain-of-thought. It keeps most of the accuracy benefit inside the budget.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 204" role="img" aria-labelledby="f23b-t f23b-d">
+<title id="f23b-t">Choosing a reasoning cue from the task shape, a test result and a latency budget</title>
+<desc id="f23b-d">A decision path with three questions across the top. First: does the task have several steps to reason through? If no, add no cue. If yes, second: is it already correct in testing without a cue? If yes, add no cue. If no, third: would the reasoning breach a latency budget? If yes, use a bounded cue such as a short fixed scratchpad. If no, add an open step-by-step cue.</desc>
+<text class="s" x="2" y="14">Start at the left: look at the task shape first.</text>
+<rect class="bx" x="2" y="26" width="120" height="60"/>
+<text class="m tc" x="62" y="51">Several steps to</text>
+<text class="m tc" x="62" y="69">reason through?</text>
+<rect class="bx" x="152" y="26" width="138" height="60"/>
+<text class="m tc" x="221" y="51">Already correct in</text>
+<text class="m tc" x="221" y="69">testing, no cue?</text>
+<rect class="bx" x="320" y="26" width="138" height="60"/>
+<text class="m tc" x="389" y="45">Latency budget the</text>
+<text class="m tc" x="389" y="61">reasoning would</text>
+<text class="m tc" x="389" y="77">breach?</text>
+<rect class="bb" x="488" y="26" width="126" height="60"/>
+<text class="m tc" x="551" y="51">Add an open</text>
+<text class="m tc" x="551" y="69">step-by-step cue</text>
+<path class="ln" d="M124 62H150" marker-end="url(#ah)"/>
+<text class="s tc" x="137" y="54">yes</text>
+<path class="ln" d="M292 62H318" marker-end="url(#ah)"/>
+<text class="s tc" x="305" y="54">no</text>
+<path class="ln" d="M460 62H486" marker-end="url(#ah)"/>
+<text class="s tc" x="473" y="54">no</text>
+<path class="ln" d="M62 88V128" marker-end="url(#ah)"/>
+<text class="s" x="70" y="112">no</text>
+<path class="ln" d="M221 88V128" marker-end="url(#ah)"/>
+<text class="s" x="229" y="112">yes</text>
+<path class="lb" d="M389 88V128" marker-end="url(#ah-b)"/>
+<text class="s" x="397" y="112">yes</text>
+<rect class="fl" x="2" y="130" width="120" height="60"/>
+<text class="m tc" x="62" y="155">No cue:</text>
+<text class="m tc" x="62" y="173">single step</text>
+<rect class="fl" x="152" y="130" width="138" height="60"/>
+<text class="m tc" x="221" y="155">No cue:</text>
+<text class="m tc" x="221" y="173">already correct</text>
+<rect class="bb" x="320" y="130" width="138" height="60"/>
+<text class="m tc" x="389" y="155">Bounded cue:</text>
+<text class="m tc" x="389" y="173">short fixed scratchpad</text>
+</svg>
+</div>
+<figcaption>Follow the arrows from the first question. Three of the four outcomes add no open-ended reasoning, and only a multi-step task with a gap and no tight budget gets the open cue.</figcaption>
+</figure>
+
+<ul class="rules" aria-label="Decision rules for chain-of-thought cues">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-2.4-01"><span class="when">Multi-step reasoning or comparison task</span><span class="then">Add a "think step by step" cue.<span class="why">It improves accuracy on tasks that require deliberation.</span></span></li>
+<li data-facet="F-2.4-02"><span class="when">Single-step task, such as translating one sentence</span><span class="then">Don't add a reasoning cue.<span class="why">It adds latency and cost with no accuracy benefit on a task with no steps to reason through.</span></span></li>
+<li data-facet="F-2.4-03"><span class="when">A multi-step task already reasons correctly and consistently without an explicit cue, verified in testing</span><span class="then">Don't add the cue.<span class="why">The cue's cost in tokens and latency is justified only by a measured accuracy gap, and a task already performing correctly doesn't need it added by default.</span></span></li>
+<li data-facet="F-2.4-04"><span class="when">A multi-step reasoning task also carries a latency budget the extra reasoning tokens would breach</span><span class="then">Use a bounded or structured reasoning cue, such as a short fixed scratchpad, instead of open-ended chain-of-thought.<span class="why">The task shape still calls for deliberation, and a bounded version keeps most of the accuracy benefit inside the budget.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: pricing a cue, and what the API calls thinking</summary>
+<div>
+<p>This is a worked example, not a corpus rule. A translation feature handles 200,000 requests a month. Suppose a cue made each reply carry 150 extra output tokens, an assumption chosen for the arithmetic. That is <span class="num" data-calc="200000*150" data-expect="30000000">30,000,000</span> tokens a month. Anthropic's model overview (live docs, read 2026-10-25) lists Claude Sonnet 5.5 output at $10 per million tokens, so the cue costs $<span class="num" data-calc="30000000*10/1000000" data-expect="300">300</span> a month and the translations come out no better.</p>
+<p>For latency, assume the model writes 80 tokens a second, again an assumption. An open-ended chain of 600 tokens of reasoning takes <span class="num" data-calc="600/80" data-expect="7.5">7.5</span> seconds before the answer starts. A scratchpad capped at about 120 tokens takes <span class="num" data-calc="120/80" data-expect="1.5">1.5</span> seconds, which fits a 3-second budget.</p>
+<p>The API also has a separate thinking feature. Live docs read on 2026-10-25 say the manual form, set with <code>budget_tokens</code>, is deprecated on the Claude 4.6 models and rejected with a 400 error from 4.7 onward. Adaptive thinking, with depth set by an effort setting, replaces it. Thinking tokens are billed as output tokens and count toward the context window.</p>
+<p>Inference: the corpus rows above concern a cue written in the prompt, and the thinking parameter is a separate control, covered with model choice in <a href="#/o2.1">O2.1</a>.</p>
+</div>
+</details>
+</section>
+
+<section class="bites" id="b-o2.3">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide's three sample questions cover Domains 3, 2 and 4. The Domain 2 sample is about prompt caching and is worked through in <a href="#/o2.5">O2.5</a>, so this objective has none. The two scenarios below come from this project's own set, and the <a href="#/traps">Trap families</a> page defines each label. <span class="lbl">Inference</span>Expect options that all sound like improvements and differ in what they target: the failing cases, or something that merely adds volume.</p>
+
+<p class="stem">An agent misroutes an ambiguous request between two tools.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Add 4 to 6 few-shot examples targeted at exactly this kind of ambiguous phrasing, each with a stated rationale for the tool chosen.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>Add 10 to 15 examples covering a broad range of clear, unambiguous requests. These are more examples, and the wrong ones, because none touches the failure case.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-repair">REPAIR</a>Rewrite the system prompt instructions to be more explicit. The instructions are already failing, and more prose does not fix a consistency problem that examples exist to solve.</span></li>
+</ul>
+
+<p class="stem">A single-step translation feature is being specified.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Don't add a chain-of-thought cue. The task is single-step and gains nothing from one.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-architected">ARCHITECTED</a>Add it anyway "for consistency with other features". It sounds thorough and uniform, and it adds cost and latency to a task the corpus treats as not needing it.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-repair">REPAIR</a>Add it only after accuracy is observed to drop. This is a reactive patch to a symptom, instead of matching the technique to the task shape from the start.</span></li>
+</ul>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>An agent still misroutes requests that fit two tools, and a teammate proposes twelve more examples of clear-cut requests. A separate feature translates single sentences, and another teammate wants a step-by-step cue on it for consistency. What do you do with each?</span></summary>
+<div class="ans">
+<p>Reject the twelve. They describe cases that already work, so they leave the failures untouched. Add 4 to 6 examples aimed at the ambiguous phrasing, each with a stated reason for the tool chosen. Leave the cue off the translation feature: it has a single step, so the cue adds tokens and latency and gains no accuracy.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li><a href="#/o2.2/c2.2">O2.2</a>, §2.2: instructions and examples both travel in the prompt, and §2.3 starts from instructions that have already failed. The system prompt remains where durable rules live.</li>
+<li><a href="#/o2.1">O2.1</a>, §2.1: the choice of model and the API's thinking setting sit beside the prompt cue. A task that needs deeper reasoning can be met at either level, and the cost of each is weighed there.</li>
+<li><a href="#/o1.6/c1.12">O1.6</a>, §1.12: a stated latency commitment filters designs before they are compared, which is how a latency budget limits the open cue in §2.4.</li>
+<li><a href="#/o4.3">O4.3</a>, §4.3: that section puts coverage over count for evaluation datasets. Inference: it is the same logic as targeting over volume for examples, applied to a different artefact.</li>
+<li><a href="#/o4.5">O4.5</a>, §4.11: a cue is a token and latency cost, and the case for adding one rests on a measured gap, which is the kind of evidence that section asks for.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 2, third objective, and section 8 for the Domain 2 sample question (prompt caching, O2.5). Course corpus §2.3 and §2.4, including the rows added on 1 September 2026. The corpus holds no zero-shot rule, so none appears here. Live checks, read 2026-10-25: Anthropic prompting guidance (platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices) for the first fold; Anthropic extended-thinking documentation (platform.claude.com/docs/en/build-with-claude/extended-thinking) and model overview (platform.claude.com/docs/en/models/overview) for the second fold. The request volumes, the 150-token cue, the 80 tokens a second and the 3-second budget are assumptions chosen for the arithmetic.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>When instructions have already failed, add examples. Use 3 to 4 for output format and 4 to 6 aimed at an ambiguity. Examples teach by resemblance to what they show.</li>
+<li>Reject 10 to 15 clear-cut examples. Replace convenient examples with ones drawn from the observed failures, and ship a single example that resolves the case in testing.</li>
+<li>A reasoning cue belongs on multi-step tasks: math, analysis, comparison across N items, stepwise transformation. A single-step task gets none.</li>
+<li>If a multi-step task is already correct and consistent without a cue, verified in testing, leave the cue out. A measured accuracy gap is what pays for it.</li>
+<li>When a latency budget would be breached, use a bounded or structured cue such as a short fixed scratchpad, instead of open-ended chain-of-thought.</li>
+</ol>
+</aside>
+</div>

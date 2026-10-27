@@ -1,0 +1,136 @@
+<div class="chapter">
+<div class="main">
+
+<p>On Monday morning, the share of sampled answers marked wrong from a support assistant jumps from 4% to 19%, a rise of <span class="num" data-calc="19-4" data-expect="15">15</span> points. The knowledge base was re-indexed on Sunday night. The model version, the prompt and the response times are unchanged. The answers are fluent and confident, and they are wrong. The figures are illustrative.</p>
+
+<p>Someone proposes moving to a more capable model, since "the model has started hallucinating". The model is the layer that changed least and costs most to swap, so what does the symptom point at?</p>
+
+<section class="concept" id="c4.10" data-src="4.10" data-terms="diagnosis order data retrieval prompt context model mismatch hallucination grounding refusal escalation truncation compaction timeline fault layer recall indexing chunking few-shot">
+<h3>Check data and retrieval first, and the model last<span class="sec">§4.10</span></h3>
+
+<p>The corpus gives an order: data and retrieval, then prompt and context, then model mismatch. Each earlier layer poisons everything downstream, and checking it is far cheaper. The discriminator is which layer the symptom's timing and shape point at, and not which layer is quickest to swap. By the timeline rule, a sharp drop with a change immediately before it makes the change the hypothesis.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 172" role="img" aria-labelledby="f44a-t f44a-d">
+<title id="f44a-t">The diagnosis order, from cheapest layer to most expensive</title>
+<desc id="f44a-d">Three boxes in a row. First, data and retrieval: re-index, coverage and chunking, checked with Recall at k against gold passages. Second, prompt and context: instructions, examples, position and history. Third, model mismatch, a conclusion reached only when the first two are cleared. An arrow runs below from cheapest to check, which poisons everything after it, to most expensive to change. A note gives the timeline rule: a sharp drop right after a change makes the change the hypothesis.</desc>
+<rect class="bb" x="2" y="10" width="188" height="84"/>
+<text class="b tc tb2" x="96" y="32">1. Data and retrieval</text>
+<text class="m tc" x="96" y="54">re-index, coverage, chunking</text><text class="m tc" x="96" y="70">Recall@k vs gold passages</text>
+<rect class="bx" x="214" y="10" width="188" height="84"/>
+<text class="b tc" x="308" y="32">2. Prompt and context</text>
+<text class="m tc" x="308" y="54">instructions, examples,</text><text class="m tc" x="308" y="70">position, history</text>
+<rect class="bx" x="426" y="10" width="188" height="84"/>
+<text class="b tc" x="520" y="32">3. Model mismatch</text>
+<text class="m tc" x="520" y="54">a conclusion, reached only</text><text class="m tc" x="520" y="70">when 1 and 2 are cleared</text>
+<path class="ln" d="M192 52H212" marker-end="url(#ah)"/><path class="ln" d="M404 52H424" marker-end="url(#ah)"/>
+<path class="ln" d="M2 116H610" marker-end="url(#ah)"/>
+<text class="s" x="2" y="136">Cheapest to check, and poisons everything after it</text>
+<text class="s te" x="614" y="136">Most expensive to change</text>
+<text class="s" x="2" y="160">Timeline rule: a sharp drop right after a change makes the change the hypothesis.</text>
+</svg>
+</div>
+<figcaption>Work from the left. The model is a conclusion reached after the first two boxes have been cleared, and it is never the opening move.</figcaption>
+</figure>
+
+<p>Match the symptom to the layer. Confidently wrong right after a refresh or re-index points at retrieval and indexing, and the model, which did not change, is not the cause. Wrong on one document or query type and correct elsewhere points at data coverage or chunking and not a general capability deficit. Correct facts with the required format or steps missing points at the prompt.</p>
+
+<p>Format that varies across runs despite explicit instructions needs few-shot examples (§2.3), and more prose has already failed. Failing only on long inputs, with mid-document facts missed, is context structure and position (§2.6), not an exceeded window. </p>
+<p>Forgetting a fact from two turns ago in a short conversation is the application not resending history (§2.5), since the API is stateless: it keeps nothing between calls, and the application must send the history each time. Failing broadly on multi-step reasoning, with retrieval verified and the prompt clean, is model mismatch.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 176" role="img" aria-labelledby="f44b-t f44b-d">
+<title id="f44b-t">Three causes behind one symptom, an unsupported claim</title>
+<desc id="f44b-d">Three boxes. Cause A, the context held the answer: a grounding or prompt fault, fixed with cited spans plus a verbatim check. Cause B, nothing relevant was retrieved: a retrieval fault, fixed in retrieval with an explicit refusal or escalation path. Cause C, truncation or compaction: a context management fault, fixed by extracting the critical facts verbatim. A note says the same symptom has three causes with three different fixes.</desc>
+<text class="s" x="2" y="14">An unsupported claim: where was the answer?</text>
+<rect class="bb" x="2" y="24" width="188" height="110"/>
+<text class="b tc tb2" x="96" y="46">Cause A: context had it</text>
+<text class="m tc" x="96" y="70">Grounding or prompt fault</text>
+<text class="m tc" x="96" y="94">Fix: cited spans plus</text><text class="m tc" x="96" y="110">a verbatim check</text>
+<rect class="bx" x="214" y="24" width="188" height="110"/>
+<text class="b tc" x="308" y="46">Cause B: nothing relevant</text>
+<text class="m tc" x="308" y="70">Retrieval fault</text>
+<text class="m tc" x="308" y="94">Fix retrieval, and add a</text><text class="m tc" x="308" y="110">refusal or escalation path</text>
+<rect class="bx" x="426" y="24" width="188" height="110"/>
+<text class="b tc" x="520" y="46">Cause C: truncation</text>
+<text class="m tc" x="520" y="70">Context management fault</text>
+<text class="m tc" x="520" y="94">Fix: extract the critical</text><text class="m tc" x="520" y="110">facts verbatim</text>
+<text class="s" x="2" y="162">The same symptom has three causes, and each has a different fix.</text>
+</svg>
+</div>
+<figcaption>Ask where the answer was at the moment of generation. The three branches lead to the grounding, the retrieval and the context-management layers.</figcaption>
+</figure>
+
+<p>"Hallucination" names three faults in the corpus. If the context contained the answer and the claim was unsupported, the fault is grounding or the prompt, and the fix is cited spans plus a verbatim check. </p>
+<p>If retrieval returned nothing relevant, fix retrieval and add an explicit refusal or escalation path. If the claim was fabricated under truncation or compaction, it is a context-management fault (compaction means summarising older context to make room), and the fix is to extract the critical facts verbatim into a structured block that the summary never touches.</p>
+
+<ul class="rules" aria-label="Decision rules for diagnosis order">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-4.10-01"><span class="when">Confidently wrong right after a document refresh or re-index</span><span class="then">Retrieval and indexing.<span class="why">Rules out: the model, which did not change.</span></span></li>
+<li data-facet="F-4.10-02"><span class="when">Wrong on one document or query type, correct elsewhere</span><span class="then">Data coverage or chunking.<span class="why">Rules out: a general capability deficit.</span></span></li>
+<li data-facet="F-4.10-03"><span class="when">Facts correct, required format or steps missing</span><span class="then">Prompt and instructions.<span class="why">Rules out: retrieval.</span></span></li>
+<li data-facet="F-4.10-04"><span class="when">Format inconsistent across runs despite explicit instructions</span><span class="then">Few-shot examples are needed.<span class="why">Rules out: too little prose instruction, which has already failed.</span></span></li>
+<li data-facet="F-4.10-05"><span class="when">Fails only on long inputs, and misses mid-document facts</span><span class="then">Context structure and position.<span class="why">Rules out: the context window being exceeded.</span></span></li>
+<li data-facet="F-4.10-06"><span class="when">Forgets a fact from two turns ago in a short conversation</span><span class="then">The application is not resending history.<span class="why">Rules out: a context limit, since the API is stateless.</span></span></li>
+<li data-facet="F-4.10-07"><span class="when">Fails broadly on multi-step reasoning, with retrieval verified and the prompt clean</span><span class="then">Model mismatch.<span class="why">Everything upstream has already been cleared.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: what checking retrieval first looks like</summary>
+<div>
+<p>This is a worked example, not a corpus rule, and its counts are invented. The team keeps 50 questions with gold passage IDs. Before the re-index, the gold passage was in the top five results for 44 of them, a Recall@5 of <span class="num" data-calc="44/50" data-expect="0.88">0.88</span>. After the re-index it is in the top five for 30, a Recall@5 of <span class="num" data-calc="30/50" data-expect="0.6">0.60</span>.</p>
+<p>That is a drop of <span class="num" data-calc="(44-30)/50*100" data-expect="28">28</span> points in a layer that sits before the model, and it accounts for the wrong answers without any change to the model.</p>
+<p>An upgrade to a larger model would have kept the same missing passages and produced fluent answers on top of them. The check is one script run against a fixed question set.</p>
+</div>
+</details>
+</section>
+
+<section class="bites" id="b-o4.4">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide's Sample 3 is this chapter's failure, and it is the one official Domain 4 sample. A RAG system suddenly returns confident but incorrect answers after a document refresh, while latency and model version are unchanged, and the question asks where to investigate first. The answer is the retrieval and indexing step.</p>
+<p>The guide's reason is that confident-but-wrong answers after a refresh, with the model and latency unchanged, point to retrieval feeding the model poor context, for example a broken re-index or mismatched embeddings. The other options blame silent weight changes, a low temperature and a shrunken context window, and none of them would be triggered specifically by a document refresh. <a href="#/o3.5">O3.5</a> covers why indexes degrade after a refresh. The <a href="#/traps">Trap families</a> page defines the labels below.</p>
+
+<p>The project's corpus words the same scenario with different wrong options:</p>
+
+<p class="stem">A RAG assistant becomes confidently wrong in the week following a corpus refresh.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Check retrieval first: measure Recall@k against gold passage IDs and inspect how the refreshed documents were chunked and indexed.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-discard">DISCARD</a>Move to a higher-capability model. It replaces a component that was never implicated, and produces more fluent answers built on the same missing passages.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-repair">REPAIR</a>Add an instruction to the system prompt not to state facts it cannot support. It patches the symptom downstream of a data fault, and cannot conjure material that was never retrieved.</span></li>
+</ul>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>After a re-index, a RAG assistant gives confident wrong answers, and a teammate says the model has started hallucinating. Separately, an assistant forgets a customer's name from two turns ago. Where does each investigation start?</span></summary>
+<div class="ans">
+<p>For the re-index, start with retrieval and indexing: measure Recall@k against gold passages and inspect the chunking of the refreshed documents. The model did not change, and the timeline names the re-index as the hypothesis. For the forgotten name, check whether the application resends the conversation history, because the API keeps nothing between calls and a short conversation cannot have exceeded the window.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li><a href="#/o3.5/c3.10">O3.5</a>, §3.10: index coupling and post-refresh degradation are the cause behind the guide's sample, and that chapter says why the embedding model and the index must match.</li>
+<li><a href="#/o2.4/c2.5">O2.4</a>, §2.5 and §2.6: forgetting in a short conversation and missing a mid-document fact are the two context rows here, with their fixes.</li>
+<li><a href="#/o2.3/c2.3">O2.3</a>, §2.3: inconsistent format despite instructions is the few-shot row, and examples are the fix that prose has not delivered.</li>
+<li><a href="#/o4.2/c4.7">O4.2</a>, §4.7: a retrieval row scored apart from a generation row is the measurement this chapter's first check uses.</li>
+<li><a href="#/o3.4/c3.6">O3.4</a>, §3.6: traces with retrieved chunk IDs and document versions are the evidence this diagnosis reads.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 4, fourth objective, and section 8, Sample 3 with its rationale, summarised above. Course corpus §4.10. No live-document check was needed: the chapter states diagnosis rules and no product facts. The error rates, the question counts and the Recall@5 values are invented for illustration.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>Diagnose in this order: data and retrieval, then prompt and context, then model mismatch. Each earlier layer poisons the ones after it, and checking is cheaper.</li>
+<li>A sharp drop right after a change makes the change the hypothesis. Confidently wrong right after a refresh means retrieval and indexing.</li>
+<li>Wrong on one document or query type means coverage or chunking. Right facts with wrong format means the prompt. Inconsistent format despite instructions needs few-shot examples.</li>
+<li>Long-input misses are structure and position. Forgetting two turns back is the application not resending history.</li>
+<li>Three hallucination causes, three fixes: grounding with cited spans, retrieval plus a refusal path, and context management with verbatim critical facts. Model mismatch is a conclusion, never an opening move.</li>
+</ol>
+</aside>
+</div>

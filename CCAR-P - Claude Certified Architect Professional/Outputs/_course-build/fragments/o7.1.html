@@ -1,0 +1,239 @@
+<div class="chapter">
+<div class="main">
+
+<p>Four engineers work in one repository. Three of them get generated code that follows the team's naming convention. The fourth joined last week and gets code that does not. Nobody changed the model, the prompt or the code, and the new engineer's pull requests keep failing review on the same point.</p>
+
+<p>The convention sits in the other three engineers' personal configuration files, on their laptops. It never reached the repository, so a fresh clone inherits none of it. Which configuration belongs where, and which of it is a request and which is a rule?</p>
+
+<section class="concept" id="c7.1" data-src="7.1" data-terms="configuration scope durable enablement claude.md user level project level directory rules concatenate version control clone onboarding skill override /context inherited artifact">
+<h3>Put shared standards where a clone inherits them<span class="sec">§7.1</span></h3>
+
+<p>The corpus lists four levels of instruction file: user (<code>~/.claude/CLAUDE.md</code>), project (<code>CLAUDE.md</code> or <code>.claude/CLAUDE.md</code> in the repository), directory-level files, and <code>.claude/rules/*.md</code>. They are concatenated from the root down to the working directory. The live documentation (read 2026-10-27) adds that files above the working directory load at launch, and files in subdirectories load when Claude works with files there. Every discovered file contributes, and the corpus documents no override precedence between CLAUDE.md levels.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 176" role="img" aria-labelledby="f71a-t f71a-d">
+<title id="f71a-t">The same convention in a user-level file and in a committed project file</title>
+<desc id="f71a-d">Two rows of four engineers. In the first row, the convention lives in a user-level file. Engineers 1 to 3 have it, and engineer 4, the new joiner who cloned the repository, has nothing. In the second row, the convention lives in the committed project file, and all four engineers have it. A note says user-level files are not in version control, so a clone inherits none of them.</desc>
+<text class="b" x="2" y="42">User-level</text><text class="m" x="2" y="58">file</text>
+<rect class="bb" x="130" y="20" width="86" height="44"/><text class="m tc" x="173" y="46">E1: has it</text>
+<rect class="bb" x="226" y="20" width="86" height="44"/><text class="m tc" x="269" y="46">E2: has it</text>
+<rect class="bb" x="322" y="20" width="86" height="44"/><text class="m tc" x="365" y="46">E3: has it</text>
+<rect class="br" x="418" y="20" width="108" height="44"/><text class="m tc" x="472" y="46">E4, new: none</text>
+<text class="b" x="2" y="110">Committed</text><text class="m" x="2" y="126">project file</text>
+<rect class="bb" x="130" y="88" width="86" height="44"/><text class="m tc" x="173" y="114">E1: has it</text>
+<rect class="bb" x="226" y="88" width="86" height="44"/><text class="m tc" x="269" y="114">E2: has it</text>
+<rect class="bb" x="322" y="88" width="86" height="44"/><text class="m tc" x="365" y="114">E3: has it</text>
+<rect class="bb" x="418" y="88" width="108" height="44"/><text class="m tc" x="472" y="114">E4, new: has it</text>
+<text class="s" x="2" y="162">User-level files are not in version control, so a clone inherits none of them.</text>
+</svg>
+</div>
+<figcaption>The top row is the failure and the bottom row is the repair. The only difference between them is which file holds the convention.</figcaption>
+</figure>
+
+<p>Project-level files are version-controlled and reach everyone who clones. User-level files reach one person and are invisible in code review. The test is whether a thing survives a clone and reaches someone who was not present: if it does not, it is not enablement. When three engineers apply a convention and a new fourth does not, move the convention from their user-level files into the project file and commit it. </p>
+<p>The command <code>/context</code> shows what actually loaded into the current session, and <code>/memory</code> answers a different question, which is where the memory files are.</p>
+
+<p>A partner team that wants your Claude Code setup needs version-controlled shared configuration, skills and commands, plus an onboarding path to follow, because the artifact is inherited and nothing depends on who attended what. A recorded walkthrough is rejected: it is durable and frozen, and teaches the old setup with full confidence on the day it changes. A shared chat channel for questions is rejected as reactive support and not an inherited artifact.</p>
+
+<p>Poor results on a large legacy codebase, blamed on repo size and contributor count, point to missing committed context: write the conventions and structure into the project files. </p>
+<p>A personal override is available too. One engineer who wants a private <code>/commit</code> behaviour places <code>~/.claude/skills/commit/SKILL.md</code>, and a personal skill overrides a project skill of the same name, so teammates are unaffected. A subdirectory file added to "override" the project file is rejected, since files concatenate and a conflict leaves the model with two contradictory instructions.</p>
+
+<ul class="rules" aria-label="Decision rules for configuration scope">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-7.1-01"><span class="when">Three engineers apply a convention, a fourth (new) does not, same repo</span><span class="then">The convention lives in the originals' <code>~/.claude/CLAUDE.md</code>. Move it to project level and commit it.<span class="why">User-level config is not in version control, so a clone inherits none of it.</span></span></li>
+<li data-facet="F-7.1-02"><span class="when">A partner team wants to adopt your Claude Code setup</span><span class="then">Version-controlled shared configuration, skills and commands, plus an onboarding path they follow.<span class="why">The artifact is inherited, and nothing depends on who attended what.</span></span></li>
+<li data-facet="F-7.1-03"><span class="when">Same situation, offered as a recorded walkthrough</span><span class="then">Reject.<span class="why">It is durable and frozen, and teaches the old setup with full confidence the day it changes.</span></span></li>
+<li data-facet="F-7.1-04"><span class="when">Same situation, offered as a shared chat channel for questions</span><span class="then">Reject.<span class="why">It is reactive support and not an inherited artifact.</span></span></li>
+<li data-facet="F-7.1-05"><span class="when">Results on a large legacy codebase are poor, and the team blames repo size and contributor count</span><span class="then">Write the conventions and structure into committed project context.<span class="why">Missing committed context is the blocker. Size, language and contributor count are not.</span></span></li>
+<li data-facet="F-7.1-06"><span class="when">One engineer wants their own <code>/commit</code> behaviour without affecting the team</span><span class="then"><code>~/.claude/skills/commit/SKILL.md</code>, with the same name, as a personal override.<span class="why">Personal skills override project skills of the same name, and teammates are unaffected.</span></span></li>
+<li data-facet="F-7.1-07"><span class="when">A subdirectory file is added to "override" the project file for that directory</span><span class="then">Reject.<span class="why">Files concatenate, so both load, and a conflict leaves the model with two contradictory instructions.</span></span></li>
+</ul>
+</section>
+
+<section class="concept" id="c7.2" data-src="7.2" data-terms="configuration mechanism selection claude.md rules paths glob skill allowed-tools context fork hook deny rule always loaded tokens on invocation guidance enforcement auditable followed enforced">
+<h3>Ask when it must apply, then how hard it must hold<span class="sec">§7.2</span></h3>
+
+<p>Choose a mechanism with two questions, in order. First, when must this be in effect: always, on matching paths, or on invocation. Second, how hard must it hold: as guidance, as a capability boundary, as isolation, or as unconditional enforcement. A behaviour that a configuration mechanism governs is corrected at that mechanism, and not by prose placed beside it.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 190" role="img" aria-labelledby="f71b-t f71b-d">
+<title id="f71b-t">Two questions that select a configuration mechanism</title>
+<desc id="f71b-d">Two columns of pairs. Left, when must it apply: always, so project CLAUDE.md; on matching paths, so a .claude/rules entry with paths globs; on invocation, so a skill or a command. Right, how hard must it hold: guidance, so prose; a boundary, so allowed-tools in frontmatter; isolation, so context fork; enforced, so a hook or a deny rule.</desc>
+<text class="s" x="2" y="14">When must it apply?</text><text class="s" x="316" y="14">How hard must it hold?</text>
+<rect class="bx" x="2" y="22" width="120" height="30"/><text class="m" x="10" y="42">Always</text>
+<rect class="bb" x="140" y="22" width="158" height="30"/><text class="m" x="148" y="42">Project CLAUDE.md</text>
+<rect class="bx" x="2" y="60" width="120" height="30"/><text class="m" x="10" y="80">On matching paths</text>
+<rect class="bb" x="140" y="60" width="158" height="30"/><text class="m" x="148" y="80">.claude/rules, paths</text>
+<rect class="bx" x="2" y="98" width="120" height="30"/><text class="m" x="10" y="118">On invocation</text>
+<rect class="bb" x="140" y="98" width="158" height="30"/><text class="m" x="148" y="118">A skill or a command</text>
+<path class="ln" d="M124 37H138" marker-end="url(#ah)"/><path class="ln" d="M124 75H138" marker-end="url(#ah)"/><path class="ln" d="M124 113H138" marker-end="url(#ah)"/>
+<rect class="bx" x="316" y="22" width="110" height="30"/><text class="m" x="324" y="42">Guidance</text>
+<rect class="bb" x="444" y="22" width="170" height="30"/><text class="m" x="452" y="42">Prose in the file</text>
+<rect class="bx" x="316" y="60" width="110" height="30"/><text class="m" x="324" y="80">Boundary</text>
+<rect class="bb" x="444" y="60" width="170" height="30"/><text class="m" x="452" y="80">allowed-tools</text>
+<rect class="bx" x="316" y="98" width="110" height="30"/><text class="m" x="324" y="118">Isolation</text>
+<rect class="bb" x="444" y="98" width="170" height="30"/><text class="m" x="452" y="118">context: fork</text>
+<rect class="bx" x="316" y="136" width="110" height="30"/><text class="m" x="324" y="156">Enforced</text>
+<rect class="bb" x="444" y="136" width="170" height="30"/><text class="m" x="452" y="156">A hook or a deny rule</text>
+<path class="ln" d="M428 37H442" marker-end="url(#ah)"/><path class="ln" d="M428 75H442" marker-end="url(#ah)"/><path class="ln" d="M428 113H442" marker-end="url(#ah)"/><path class="ln" d="M428 151H442" marker-end="url(#ah)"/>
+<text class="s" x="2" y="184">Audited, followed and enforced are three requirements with three mechanisms.</text>
+</svg>
+</div>
+<figcaption>Read each column as a lookup. The left column sets the loading, the right column sets the strength, and a rule usually needs one choice from each.</figcaption>
+</figure>
+
+<p>Universal coding standards belong in the project CLAUDE.md, since they are needed every session and on-demand invocation would depend on memory. </p>
+<p>A convention that applies only to test files and bleeds elsewhere belongs in a <code>.claude/rules/</code> entry with a glob for the test paths, which is deterministic path matching and not the model's inference from headings. </p>
+<p>A 500-line CLAUDE.md that mixes standards, pull-request checklists and deploy steps should keep the universal standards, move workflow procedures to skills and file-scoped conventions to rules. Always-loaded tokens are paid every session, and occasional procedures should cost nothing when unused. Moving everything into skills is rejected, because universal standards would then need explicit invocation every time.</p>
+
+<p>When a skill uses a tool it should not touch, scope <code>allowed-tools</code> in that skill's frontmatter. Adding "do not use that tool" to the skill body is rejected, since advisory prose competes with context and does not set the condition. </p>
+<p>When a skill's exploratory output crowds the main task out of context, set <code>context: fork</code>, which runs the skill in an isolated subagent context and returns only the result. "Be concise" is rejected because it asks the model to simulate isolation instead of imposing it.</p>
+
+<p>A rule that must hold every time, whatever any prompt says, needs deterministic enforcement: a hook, or a <code>deny</code> rule in the settings permissions (§7.8). Instruction prose is weighed against other context, and enforcement is not. A style preference proposed for deterministic enforcement is rejected, since it turns a suggestion into a hard failure that someone must merge a config change to undo.</p>
+
+<ul class="rules" aria-label="Decision rules for configuration mechanism selection">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-7.2-01"><span class="when">A skill uses a tool it should not touch</span><span class="then">Scope <code>allowed-tools</code> in that skill's frontmatter.<span class="why">The frontmatter key is the mechanism that governs the behaviour.</span></span></li>
+<li data-facet="F-7.2-02"><span class="when">Same situation, fixed by adding "do not use that tool" to the skill body</span><span class="then">Reject.<span class="why">Advisory prose competes with context and does not set the condition.</span></span></li>
+<li data-facet="F-7.2-03"><span class="when">A skill's exploratory output crowds the main task out of context</span><span class="then">Set <code>context: fork</code>.<span class="why">It runs the skill in an isolated subagent context, and only the result returns.</span></span></li>
+<li data-facet="F-7.2-04"><span class="when">Same situation, fixed by adding "be concise" to the skill</span><span class="then">Reject.<span class="why">It asks the model to simulate isolation instead of imposing it.</span></span></li>
+<li data-facet="F-7.2-05"><span class="when">A convention applies only to test files but bleeds elsewhere</span><span class="then">A <code>.claude/rules/</code> entry with a glob for the test paths.<span class="why">It is deterministic path matching and not model inference from headings.</span></span></li>
+<li data-facet="F-7.2-06"><span class="when">Universal coding standards</span><span class="then">Project CLAUDE.md.<span class="why">They are needed every session, and on-demand invocation would depend on memory.</span></span></li>
+<li data-facet="F-7.2-07"><span class="when">A 500-line CLAUDE.md mixing standards, PR checklists and deploy steps</span><span class="then">Keep the universal standards. Move workflow procedures to skills and file-scoped conventions to <code>.claude/rules/</code>.<span class="why">Always-loaded tokens are paid every session, and occasional procedures should cost nothing when unused.</span></span></li>
+<li data-facet="F-7.2-08"><span class="when">Same situation, fixed by moving everything into skills</span><span class="then">Reject.<span class="why">Universal standards would then need explicit invocation every time.</span></span></li>
+<li data-facet="F-7.2-09"><span class="when">A rule must hold every time regardless of what any prompt says</span><span class="then">Deterministic enforcement: a hook, or a <code>deny</code> rule in <code>settings.json</code> permissions (§7.8).<span class="why">Instruction prose is weighed against other context, and enforcement is not.</span></span></li>
+<li data-facet="F-7.2-10"><span class="when">A style preference is proposed for deterministic enforcement</span><span class="then">Reject.<span class="why">It converts a suggestion into a hard failure that someone must merge a config change to undo.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: the token cost of a long file, and what the documentation says</summary>
+<div>
+<p>This is a worked example, not a corpus rule, and the sizes are assumptions. Suppose a line costs about 12 tokens, so a 500-line CLAUDE.md is <span class="num" data-calc="500*12" data-expect="6000">6,000</span> tokens at the start of every session. With 1,000 sessions a day across a team, that is <span class="num" data-calc="6000*1000" data-expect="6000000">6,000,000</span> tokens a day. Cutting the file to 120 lines of universal standards gives <span class="num" data-calc="120*12*1000" data-expect="1440000">1,440,000</span>, and the moved procedures cost nothing until invoked.</p>
+<p>Anthropic's Claude Code documentation (live docs, read 2026-10-27) agrees with the direction. It says CLAUDE.md files are concatenated and not overridden, and it advises under 200 lines per file, because longer files consume more context and reduce adherence. It describes path-scoped rules as loading when matching files are opened, and it says instructions are context and not enforced configuration. </p>
+<p>Its import syntax allows a depth of four hops. The corpus warns that sources disagree on that number, so never key an answer on it.</p>
+<p>One point in the documentation differs from the corpus row. It describes <code>allowed-tools</code> as tools Claude may use without asking permission while the skill runs, and <code>disallowed-tools</code> as tools removed from the pool. The exam rule stays as the corpus states it, and a real design should test which key does what on the version in use.</p>
+</div>
+</details>
+</section>
+
+<section class="concept" id="c7.8" data-src="7.8" data-terms="deterministic enforcement hooks permission rules deny ask allow first match wins pretooluse matcher managed policy settings precedence settings.json settings.local.json merge specificity">
+<h3>Enforce in settings and hooks, since instructions only shape what Claude tries<span class="sec">§7.8</span></h3>
+
+<p>Permission rules sit in <code>settings.json</code> under <code>permissions</code>, in three arrays: <code>allow</code>, <code>ask</code> and <code>deny</code>. Entries name a tool and optionally a pattern, such as <code>Bash(git push *)</code>. Claude Code enforces them, and the model does not. Instructions in a prompt or CLAUDE.md shape what Claude tries to do, and they do not change what Claude Code allows.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 192" role="img" aria-labelledby="f71c-t f71c-d">
+<title id="f71c-t">How permission rules resolve, and how a hook differs from a rule</title>
+<desc id="f71c-d">Top row: rules from every scope are merged, then checked in the order deny, ask, allow, and the first match wins. A note says specificity never enters, so a broad deny beats a narrow allow. Bottom row, two boxes. A permission rule answers may this run, and it is enforced by Claude Code outside the model. A hook runs your own code at a lifecycle point, and a PreToolUse hook can block before the call runs.</desc>
+<rect class="bx" x="2" y="12" width="150" height="52"/><text class="m tc" x="77" y="34">Rules from every</text><text class="m tc" x="77" y="50">scope, merged</text>
+<rect class="br" x="176" y="12" width="120" height="52"/><text class="b tc tr" x="236" y="34">deny</text><text class="s tc" x="236" y="52">checked first</text>
+<rect class="by" x="320" y="12" width="120" height="52"/><text class="b tc" x="380" y="34">ask</text><text class="s tc" x="380" y="52">checked second</text>
+<rect class="bb" x="464" y="12" width="150" height="52"/><text class="b tc tb2" x="539" y="34">allow</text><text class="s tc" x="539" y="52">checked last</text>
+<path class="ln" d="M154 38H174" marker-end="url(#ah)"/><path class="ln" d="M298 38H318" marker-end="url(#ah)"/><path class="ln" d="M442 38H462" marker-end="url(#ah)"/>
+<text class="s" x="2" y="84">First match wins. Specificity never enters, so a broad deny beats a narrow allow.</text>
+<rect class="bx" x="2" y="98" width="300" height="64"/>
+<text class="b" x="14" y="120">A permission rule</text><text class="m" x="14" y="140">answers: may this run?</text><text class="s" x="14" y="156">Enforced by Claude Code, not the model.</text>
+<rect class="bb" x="316" y="98" width="298" height="64"/>
+<text class="b tb2" x="328" y="120">A hook</text><text class="m" x="328" y="140">runs your code at a lifecycle point</text><text class="s" x="328" y="156">A PreToolUse hook can block the call.</text>
+<text class="s" x="2" y="184">The two sit in the same settings files and answer different questions.</text>
+</svg>
+</div>
+<figcaption>The top row is the order of evaluation. The bottom row is the reason a permission rule and a hook are not two names for the same layer.</figcaption>
+</figure>
+
+<p>If a capability must never be exercised, whatever any prompt says, add a <code>deny</code> rule in the settings permissions. A strongly worded CLAUDE.md instruction is rejected, since it shapes what Claude tries and does not change what is allowed. </p>
+<p>If an action must happen every time a tool runs, such as a format, a test or an audit entry, use a hook on the relevant event, scoped by a matcher. A reminder to run the formatter in the project file is rejected, because it competes with everything else in context.</p>
+
+<p>If a tool call must be stopped before it executes, use a <code>PreToolUse</code> hook or a <code>deny</code> permission rule, since both act before execution and a log acts after. When a narrow <code>allow</code> exists and a broad <code>deny</code> also matches, the call is denied: the first match in the deny, ask, allow order wins. A team style preference proposed for a hook or a deny rule is rejected as over-specification.</p>
+
+<p>Settings precedence runs from managed enterprise policy, then the command line, then <code>.claude/settings.local.json</code>, then <code>.claude/settings.json</code>, then <code>~/.claude/settings.json</code>. Nothing below managed policy overrides it. If an organisation must guarantee a rule survives every local override, use managed policy settings. The shared project file is <code>.claude/settings.json</code>, which everyone who clones receives, and the local file is one developer's personal override.</p>
+
+<p>Instruction files and settings files behave in opposite ways. Instruction files concatenate, and none overrides another. Settings files have a winner: a single-value key takes its value from the highest scope, while list keys such as <code>permissions.allow</code>, <code>ask</code> and <code>deny</code> merge across every scope, and the merged rules run deny, ask, allow. A <code>deny</code> in any scope beats an <code>allow</code> in any scope. Inference: a managed-policy value on a single-value key still outranks every lower scope.</p>
+
+<ul class="rules" aria-label="Decision rules for hooks and permission rules">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-7.8-01"><span class="when">A capability must never be exercised, regardless of any prompt</span><span class="then">A <code>deny</code> rule in <code>settings.json</code> permissions.<span class="why">It is enforced by Claude Code, outside the model's discretion.</span></span></li>
+<li data-facet="F-7.8-02"><span class="when">Same situation, addressed by a strongly worded CLAUDE.md instruction</span><span class="then">Reject.<span class="why">It shapes what Claude tries to do and does not change what is allowed.</span></span></li>
+<li data-facet="F-7.8-03"><span class="when">An action must happen every time a tool runs (format, test, audit entry)</span><span class="then">A hook on the relevant event, scoped by matcher.<span class="why">The action always happens, rather than depending on the model choosing it.</span></span></li>
+<li data-facet="F-7.8-04"><span class="when">Same situation, addressed by "remember to run the formatter" in the project file</span><span class="then">Reject.<span class="why">A reminder competes with everything else in context.</span></span></li>
+<li data-facet="F-7.8-05"><span class="when">A tool call must be stopped before it executes</span><span class="then">A <code>PreToolUse</code> hook, or a <code>deny</code> permission rule.<span class="why">Both act before execution, and a log acts after.</span></span></li>
+<li data-facet="F-7.8-06"><span class="when">A narrow <code>allow</code> exists and a broad <code>deny</code> also matches</span><span class="then">Denied.<span class="why">The first match in the deny, ask, allow order wins, and specificity is irrelevant.</span></span></li>
+<li data-facet="F-7.8-07"><span class="when">An organisation must guarantee a rule survives every local override</span><span class="then">Managed policy settings.<span class="why">Nothing below it in the precedence order can override it.</span></span></li>
+<li data-facet="F-7.8-08"><span class="when">A team style preference is proposed for a hook or a deny rule</span><span class="then">Reject.<span class="why">It is over-specification: a suggestion converted into a hard failure that someone must merge a config change to undo.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: what the hooks documentation says</summary>
+<div>
+<p>These are dated notes, not corpus rules (live docs, read 2026-10-27). Anthropic's hooks guide describes hooks as user-defined shell commands run at lifecycle points, which gives deterministic control, so that certain actions always happen instead of relying on the model. It configures them in the settings files, under the user and project <code>settings.json</code>.</p>
+<p>A <code>PreToolUse</code> hook runs before a tool call and can block it: a script that exits with code 2 blocks the action and passes its message to Claude as feedback, and a hook that exits 0 can print JSON with a <code>permissionDecision</code> of deny. </p>
+<p>When several hooks match, the most restrictive answer applies, in the order deny, defer, ask, allow. The memory documentation adds that CLAUDE.md is context and not enforced configuration, and that blocking a tool or path is done with a permissions deny rule in managed settings or with a hook.</p>
+</div>
+</details>
+</section>
+
+<section class="bites" id="b-o7.1">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide's three samples sit in Domains 2, 3 and 4, so none of them is a sample for this domain. Its Sample 1, on removing capabilities, is a Domain 3 item. Inference: a deny rule applies the same removal-first logic. </p>
+<p>The scenarios below come from this project's own set, and the <a href="#/traps">Trap families</a> page defines each label. <span class="lbl">Inference</span>Expect options that fix the symptom with a prompt, a reminder or a wiki page, and one that changes the mechanism.</p>
+
+<p class="stem">A newly hired engineer's generated code omits a convention the other three engineers always get.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>The convention is in the other engineers' user-level configuration and not at project level. Move it into the version-controlled project configuration and confirm with <code>/context</code>.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-repair">REPAIR</a>Have the new engineer prefix every prompt with the convention. It patches each session downstream of a configuration gap that a committed file closes once, and it fails silently the first time they forget.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>Add the convention to a team wiki page and link it in the onboarding email. It transfers the knowledge to a human and never reaches the model's request at all.</span></li>
+</ul>
+
+<p class="stem">A skill must be prevented from performing destructive operations.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Set <code>allowed-tools</code> in the skill's SKILL.md frontmatter to the minimal set it needs.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-repair">REPAIR</a>Add an instruction inside the skill body telling it not to perform destructive operations. It asks the model to honour a boundary that the frontmatter can impose, and it competes with everything else in context.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-wrong-axis">WRONG-AXIS</a>Configure the restriction in <code>.mcp.json</code> or the project CLAUDE.md. The intent is right and the mechanism is wrong, since skill tool scoping lives in SKILL.md frontmatter.</span></li>
+</ul>
+
+<p class="stem">An agent must never be able to force-push, and a CLAUDE.md instruction saying so has not held.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Add a <code>deny</code> rule for the force-push command pattern to the <code>settings.json</code> permissions.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-repair">REPAIR</a>Restate the prohibition more forcefully and in more places in CLAUDE.md. Instructions shape what Claude tries and do not change what Claude Code allows, so more prose is more of what already failed.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>Add an <code>allow</code> rule listing every git command the agent may run, on the grounds that an allow-list is stricter. It narrows the default path and does not stop a matching call the way an explicit <code>deny</code> does, and it breaks every legitimate command nobody thought to list.</span></li>
+</ul>
+
+<p><span class="lbl">Design shape</span>A rule must hold on every developer machine and cannot be overridden locally. The answer is managed policy settings. Putting it in the project <code>.claude/settings.json</code> and requiring review is <a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>, since review controls what is committed and not what runs. Putting it in the project CLAUDE.md is <a class="fam" href="#/traps/f-wrong-axis">WRONG-AXIS</a>, because instruction files concatenate and cannot produce a rule that wins a conflict.</p>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>A new hire's code misses a convention the others get. Separately, an agent keeps running a command that a CLAUDE.md line forbids, and a coding standard sits in a 500-line CLAUDE.md beside deploy steps. What do you change in each case?</span></summary>
+<div class="ans">
+<p>Move the convention from the others' user-level files into the committed project file and check with <code>/context</code>. For the forbidden command, add a <code>deny</code> permission rule, because instructions shape what Claude tries and do not change what is allowed. In the long file, keep the universal standards, move procedures to skills and file-scoped conventions to <code>.claude/rules/</code>, and leave the always-loaded part short.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li><a href="#/o3.2/c3.2">O3.2</a>, §3.2: a deny rule is least privilege in configuration, since the capability is refused and not merely logged.</li>
+<li><a href="#/o5.1/c5.2">O5.1</a>, §5.2: removing a capability or moving it behind a separate service is the same principle, applied to an agent's tools.</li>
+<li><a href="#/o6.4/c6.8">O6.4</a>, §6.8: committed shared configuration is a handover artifact, and a recorded walkthrough or a chat channel fails there for the same reasons.</li>
+<li><a href="#/o2.5/c2.9">O2.5</a>, §2.9: shared, versioned skills are the reuse strategy, and a personal override is the sanctioned exception.</li>
+<li><a href="#/o7.3">O7.3</a>, §7.7 and §7.8: the last objective in the domain uses the same layers to find which one owns a symptom.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 7, first objective. Course corpus §7.1, §7.2 and §7.8. Live checks, read 2026-10-27: Anthropic, "How Claude remembers your project" (code.claude.com/docs/en/memory); "Extend Claude with skills" (code.claude.com/docs/en/skills), first 100,000 of 118,114 characters; "Automate actions with hooks" (code.claude.com/docs/en/hooks-guide). The engineers, the 12 tokens a line and the session counts are invented for illustration.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>Shared standards go in committed project files, since user-level files are not in version control and a clone inherits none of them. Verify with <code>/context</code>.</li>
+<li>Instruction files concatenate, and none overrides another. A personal skill overrides a project skill of the same name. A recorded walkthrough and a chat channel are not inherited artifacts.</li>
+<li>Pick a mechanism by two questions: when it applies (always, on paths, on invocation) and how hard it holds (guidance, boundary, isolation, enforcement). Fix a behaviour at its mechanism and not with prose beside it.</li>
+<li>Keep always-loaded files to universal standards. Procedures go to skills, and path-specific conventions go to <code>.claude/rules/</code> with globs.</li>
+<li>Instructions shape what Claude tries. A <code>deny</code> rule or a hook changes what happens. Permissions resolve deny, ask, allow, first match wins, and specificity never counts.</li>
+<li>Managed policy sits above every local override. Do not convert a style preference into a hook or a deny rule.</li>
+</ol>
+</aside>
+</div>

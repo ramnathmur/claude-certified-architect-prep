@@ -1,0 +1,140 @@
+<div class="chapter">
+<div class="main">
+
+<p>A claims assistant must reach five systems: a claims database, a policy document store, a fraud-scoring service, an issue tracker and a medical-necessity review. A team proposes giving the model a tool for every one of them, so that "the agent can decide". That answer is wrong for at least two of the five, and for different reasons.</p>
+
+<p>Take the fraud score, which must run on every claim above a threshold. If it is a tool and the model skips it on 1% of the 20,000 qualifying claims a day, <span class="num" data-calc="20000*1%" data-expect="200">200</span> claims go through unscored every day. The skip rate is invented, and the point holds at any rate above zero.</p>
+
+<section class="concept" id="c3.13" data-src="3.13" data-terms="mcp model context protocol direct api cli tool resource catalog agent-to-agent community server custom server orchestration layer who decides cost gradient deterministic">
+<h3>Ask who decides what happens next<span class="sec">§3.13</span></h3>
+
+<p>The corpus discriminator is one question: who decides what happens next, your code, the model, or another agent? The cost gradient runs in one direction. A direct API call is cheaper than an MCP tool call, and an MCP tool call is cheaper than an agent-to-agent handoff. Each step up buys flexibility and spends determinism, meaning the same input always taking the same path.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 196" role="img" aria-labelledby="f37a-t f37a-d">
+<title id="f37a-t">Three mechanisms, by who decides, along a cost gradient</title>
+<desc id="f37a-d">Three boxes in a row. In the first, your code decides: a direct API or CLI call for a known, mandatory, deterministic step with one round trip. In the second, the model decides: an MCP tool is an action the model chooses to call, and an MCP resource is read-only content the model can consult. In the third, another agent decides: agent-to-agent hands over a task to a side that brings its own judgment, context and accountability. An arrow along the bottom runs from cheapest and most deterministic on the left to most flexible and most expensive on the right.</desc>
+<rect class="bb" x="2" y="8" width="188" height="130"/>
+<text class="h tb2" x="14" y="32">Your code decides</text>
+<text class="b" x="14" y="52">Direct API or CLI call</text>
+<text class="m" x="14" y="72">Known, mandatory step</text><text class="m" x="14" y="88">One round trip</text><text class="m" x="14" y="104">Deterministic, testable</text>
+<rect class="bx" x="214" y="8" width="188" height="130"/>
+<text class="h" x="226" y="32">The model decides</text>
+<text class="b" x="226" y="52">MCP tool or resource</text>
+<text class="m" x="226" y="72">Tool: an action the model</text><text class="m" x="226" y="88">chooses to call</text><text class="m" x="226" y="104">Resource: read-only content</text><text class="m" x="226" y="120">the model can consult</text>
+<rect class="bx" x="426" y="8" width="188" height="130"/>
+<text class="h" x="438" y="32">Another agent decides</text>
+<text class="b" x="438" y="52">Agent-to-agent</text>
+<text class="m" x="438" y="72">Hands over a task</text><text class="m" x="438" y="88">The other side brings its</text><text class="m" x="438" y="104">own judgment, context and</text><text class="m" x="438" y="120">accountability</text>
+<path class="ln" d="M2 160H610" marker-end="url(#ah)"/>
+<text class="s" x="2" y="182">Cheapest and most deterministic</text>
+<text class="s te" x="614" y="182">Most flexible, most cost and latency</text>
+</svg>
+</div>
+<figcaption>Move to the right only when something to the left cannot do the job. The left box gives up no determinism, and the right box gives up the most.</figcaption>
+</figure>
+
+<p>Use a direct API or CLI call (a command-line tool) for a known, mandatory, deterministic step. If a record must be fetched on every request and the ID is already known, call the API in pre-processing, because no model decision exists to make. </p>
+<p>If a control must run on every qualifying request, call it directly from the orchestration layer and do not expose it as a tool. A tool lets the model choose not to call it.</p>
+
+<p>Use <dfn data-def="Model Context Protocol: an open standard for how a server offers actions, readable content and templates to an AI application.">MCP</dfn> when the model should choose. An MCP tool is an action the model chooses to call. If the agent should decide whether and when to search a document store, that is an MCP tool, since the decision depends on the conversation. </p>
+<p>An MCP resource is read-only content the model can consult. If the agent needs to know what content exists before it queries, expose a catalog as a resource, which gives it the map as readable context instead of exploratory model turns.</p>
+
+<p>For a standard third-party system such as an issue tracker, source control or chat, use an existing community MCP server, after vetting it. Claude Code's documentation warns that servers which fetch external content can expose you to prompt injection (live docs, read 2026-10-26). Custom effort belongs on workflows nothing else covers.</p>
+<p>Use agent-to-agent when the other side brings its own judgment, context and accountability: work that needs separate domain judgment and separate audit attribution, where the determination must be owned by the other function.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 222" role="img" aria-labelledby="f37b-t f37b-d">
+<title id="f37b-t">Five claims integrations, each matched to a mechanism</title>
+<desc id="f37b-d">Five rows. The claims database uses a direct API call in pre-processing, because the claim ID is already known. The policy document store uses an MCP tool plus a catalog resource, because the search depends on the conversation. The fraud scoring service uses a direct API call from the orchestration layer, because it must run on every qualifying claim. The issue tracker uses an existing community MCP server, because it is a standard third-party system. The medical necessity review uses agent-to-agent, because it needs separate judgment and a separate audit owner.</desc>
+<text class="s" x="2" y="14">System</text><text class="s" x="186" y="14">Mechanism</text><text class="s" x="412" y="14">Why</text>
+<rect class="bx" x="2" y="22" width="170" height="30"/><text class="m" x="10" y="42">Claims database</text>
+<rect class="bb" x="186" y="22" width="212" height="30"/><text class="m" x="194" y="42">Direct API, pre-processing</text>
+<text class="s" x="412" y="42">The claim ID is already known</text>
+<rect class="bx" x="2" y="60" width="170" height="30"/><text class="m" x="10" y="80">Policy document store</text>
+<rect class="bx" x="186" y="60" width="212" height="30"/><text class="m" x="194" y="80">MCP tool, plus catalog resource</text>
+<text class="s" x="412" y="80">Search depends on the conversation</text>
+<rect class="bx" x="2" y="98" width="170" height="30"/><text class="m" x="10" y="118">Fraud scoring service</text>
+<rect class="bb" x="186" y="98" width="212" height="30"/><text class="m" x="194" y="118">Direct API, orchestration layer</text>
+<text class="s" x="412" y="118">Must run on every claim</text>
+<rect class="bx" x="2" y="136" width="170" height="30"/><text class="m" x="10" y="156">Issue tracker</text>
+<rect class="bx" x="186" y="136" width="212" height="30"/><text class="m" x="194" y="156">Community MCP server</text>
+<text class="s" x="412" y="156">A standard third-party system</text>
+<rect class="bx" x="2" y="174" width="170" height="30"/><text class="m" x="10" y="194">Medical necessity review</text>
+<rect class="bx" x="186" y="174" width="212" height="30"/><text class="m" x="194" y="194">Agent-to-agent</text>
+<text class="s" x="412" y="190">Separate judgment and</text><text class="s" x="412" y="204">a separate audit owner</text>
+</svg>
+</div>
+<figcaption>Blue marks the two direct calls, the cheapest rung. Each choice traces back to who decides, and one system out of five needs another agent.</figcaption>
+</figure>
+
+<ul class="rules" aria-label="Decision rules for connection protocols">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-3.13-01"><span class="when">A record must be fetched on every request and the ID is already known</span><span class="then">Direct API call in pre-processing.<span class="why">No model decision exists to make. It is one hop, deterministic and testable.</span></span></li>
+<li data-facet="F-3.13-02"><span class="when">A control that must run on every qualifying request</span><span class="then">Direct API from the orchestration layer, not a tool.<span class="why">Exposing it as a tool lets the model choose not to call it.</span></span></li>
+<li data-facet="F-3.13-03"><span class="when">The agent should decide whether and when to search a document store</span><span class="then">MCP tool.<span class="why">The decision depends on the conversation.</span></span></li>
+<li data-facet="F-3.13-04"><span class="when">The agent needs to know what content exists before querying</span><span class="then">MCP resource exposing a catalog.<span class="why">It provides the map as readable context instead of exploratory model turns.</span></span></li>
+<li data-facet="F-3.13-05"><span class="when">A standard third-party system (issue tracker, source control, chat)</span><span class="then">Existing community MCP server.<span class="why">Custom effort belongs on workflows nothing else covers.</span></span></li>
+<li data-facet="F-3.13-06"><span class="when">Work needing separate domain judgment and separate audit attribution</span><span class="then">Agent-to-agent.<span class="why">The determination must be owned by the other function.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: what the MCP and Claude Code documentation say</summary>
+<div>
+<p>These are dated notes, not corpus rules (live docs, read 2026-10-26). The MCP architecture page describes a host, such as Claude Code, that creates one client for each server. A server offers three primitives: tools, which are executable functions, resources, which are data sources that give context, and prompts, which are reusable templates. A client finds them with list requests such as <code>tools/list</code>, and the listings can change.</p>
+<p>The page names two transports, stdio for local servers and Streamable HTTP for remote ones, and recommends OAuth for the remote case.</p>
+<p>In Claude Code, <code>claude mcp add</code> registers a server. HTTP is recommended for remote servers, and the older SSE transport is deprecated. A server loads at local scope by default, at project scope through a <code>.mcp.json</code> file shared with the team, or at user scope across all projects, and Claude Code asks for approval before using project-scoped servers in an interactive session.</p>
+<p> The docs warn to verify that you trust each server before connecting it, because servers that fetch external content can expose you to prompt injection. </p>
+<p>The protocol page also notes that a client combining many servers can use progressive tool discovery instead of loading every tool at once, which is the subject of <a href="#/o3.8">O3.8</a>. No agent-to-agent specification was read for this chapter. The part of the architecture page read here does not say whether the model or the application triggers the read of a resource, and the corpus rule treats a resource as content the agent can consult.</p>
+</div>
+</details>
+</section>
+
+<section class="bites" id="b-o3.7">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide's one Domain 3 sample is about least privilege and is worked through in <a href="#/o3.2">O3.2</a>, so none of them is a sample for this domain. The scenario below comes from this project's own set, and the <a href="#/traps">Trap families</a> page defines each label. <span class="lbl">Inference</span>Expect the stem to state whether a step is mandatory, chosen by the model or owned by another function, and to offer options one rung too high.</p>
+
+<p class="stem">A compliance scoring service must run on every claim above a threshold, and the team proposes exposing it as an agent tool.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Call it directly from the orchestration layer whenever the threshold is met, keeping it outside the model's discretion.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>Expose it as an MCP tool with a system-prompt rule requiring the agent to call it on every qualifying claim. It makes a mandatory control probabilistic, and adds a model decision's latency and cost to a deterministic step.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-architected">ARCHITECTED</a>Delegate the scoring to a dedicated compliance agent that decides when to run. It buys a full inference loop and a second failure surface to perform what is a function call with fixed inputs.</span></li>
+</ul>
+
+<p><span class="lbl">Design shape</span>The project's lesson text adds a related shape. An agent needs to know what documents exist before it searches. The answer is a catalog exposed as an MCP resource. Pasting the catalog into the system prompt bloats every request with content that goes stale when the catalog changes. A <code>list_everything</code> tool needs the model to remember to call it and spends a turn on what a resource supplies as context.</p>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>An assistant must run a fraud check on every large claim, search a policy store when a question needs it, and file a ticket in a widely used issue tracker. Which mechanism fits each, and why?</span></summary>
+<div class="ans">
+<p>The fraud check is a direct API call from the orchestration layer, because it is mandatory and a tool would let the model skip it. The policy search is an MCP tool, since whether and when to search depends on the conversation. The ticket goes through an existing community MCP server, because the tracker is a standard third-party system and a custom server would repeat maintained work.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li><a href="#/o1.3/c1.3">O1.3</a>, §1.3: "who decides" is the pattern-ladder question in another form. Paths that can be listed belong in code, and the cost gradient here mirrors the ladder.</li>
+<li><a href="#/o3.2/c3.3">O3.2</a>, §3.3: where actions on a shared third-party integration must be attributable to the operator, per-user credential substitution applies, so a ticket is filed as the operator and not as a shared service account.</li>
+<li><a href="#/o1.4/c1.5">O1.4</a>, §1.5: an agent-to-agent handoff is a multi-agent boundary, with the same price in tokens and in information lost at the handoff.</li>
+<li><a href="#/o3.8">O3.8</a>, §3.14: a catalog exposed as a resource is the start of progressive discovery, where the agent loads detail when it needs it.</li>
+<li><a href="#/o3.1/c3.1">O3.1</a>, §3.1: every MCP tool joins the tool surface, so the size and confusability rules there apply to tools from all configured servers.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 3, seventh objective. Course corpus §3.13. Live checks, read 2026-10-26: the Model Context Protocol architecture page (modelcontextprotocol.io/docs/learn/architecture), and Anthropic's Claude Code MCP page (code.claude.com/docs/en/mcp), of which the first 100,000 of about 150,000 characters were read. No agent-to-agent specification was checked. The claim volume, the skip rate and the five-system example are invented for illustration.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>The discriminator is who decides: your code, the model or another agent. Each step up the cost gradient buys flexibility and spends determinism.</li>
+<li>A known, mandatory step is a direct API or CLI call. A control that must run on every qualifying request is called from the orchestration layer, never offered as a tool.</li>
+<li>An MCP tool is an action the model chooses. An MCP resource is read-only content, such as a catalog of what exists.</li>
+<li>For a standard third-party system, use an existing community MCP server. Build custom only for workflows nothing else covers.</li>
+<li>Use agent-to-agent only when the other side brings its own judgment and owns the determination and its audit trail.</li>
+</ol>
+</aside>
+</div>

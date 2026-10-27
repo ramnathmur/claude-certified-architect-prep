@@ -1,0 +1,197 @@
+<div class="chapter">
+<div class="main">
+
+<p>A claims workflow has ten steps. Tested on its own, each step is right 96% of the time, and every step passes its test. End to end, the workflow is right only about <span class="num" data-calc="0.96*0.96*0.96*0.96*0.96*0.96*0.96*0.96*0.96*0.96*100" data-round="0" data-expect="66">66</span>% of the time. No step is the culprit, and the team's reflex is to find a better model.</p>
+
+<p>That is one risk among several that this objective names. A second is an agent that follows an instruction hidden in a document it was asked to summarise. A third is a fluent figure that nobody can tell is invented. Each has a signature, a structural control and a wrong control that looks the same from a distance.</p>
+
+<section class="concept" id="c5.6" data-src="5.6" data-terms="failure mode diagnosis symptom signature timing retrieval indexing history attention model version drift compounding checkpoints indirect prompt injection risk register consequence reversibility regression set">
+<h3>Read the symptom's timing before blaming the model<span class="sec">§5.6</span></h3>
+
+<p>Reason from when and where the failure appears. A capability explanation that ignores the timing is almost always wrong. The corpus gives six signatures. Confidently wrong right after a content refresh points at retrieval and indexing, and not the model's reasoning. No memory of something said two turns earlier, in a short conversation, is the application not resending history, and not an exceeded window.</p>
+
+<p>Quality that degrades only on long inputs, on mid-document content, is uneven attention across position and not input length alone. Behaviour that changed with no code deployment is model version drift and not a prompt regression. An agent that took an unrequested action after processing an external document is an indirect prompt injection and not user error. A pipeline where every step passes its own test, with far lower end-to-end accuracy, is compounding across steps.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 176" role="img" aria-labelledby="f52a-t f52a-d">
+<title id="f52a-t">Accuracy that every step passes and the chain still loses</title>
+<desc id="f52a-d">Four horizontal bars showing end-to-end accuracy when each step is right 96 percent of the time. One step, 96 percent. Two steps, 92 percent. Five steps, 82 percent. Ten steps, 66 percent, drawn in red. A note says each step passes its own test and a chain of ten does not.</desc>
+<text class="s" x="90" y="14">end-to-end accuracy, each step 96% right</text>
+<text class="m" x="2" y="46">1 step</text>
+<rect class="bb" x="90" y="28" width="288" height="24"/><text class="m" x="386" y="46"><tspan data-calc="96" data-expect="96">96</tspan>%</text>
+<text class="m" x="2" y="80">2 steps</text>
+<rect class="bb" x="90" y="62" width="276.5" height="24"/><text class="m" x="374" y="80"><tspan data-calc="0.96*0.96*100" data-round="0" data-expect="92">92</tspan>%</text>
+<text class="m" x="2" y="114">5 steps</text>
+<rect class="bb" x="90" y="96" width="244.6" height="24"/><text class="m" x="342" y="114"><tspan data-calc="0.96*0.96*0.96*0.96*0.96*100" data-round="0" data-expect="82">82</tspan>%</text>
+<text class="m" x="2" y="148">10 steps</text>
+<rect class="br" x="90" y="130" width="199.5" height="24"/><text class="m tr" x="297" y="148"><tspan data-calc="0.96*0.96*0.96*0.96*0.96*0.96*0.96*0.96*0.96*0.96*100" data-round="0" data-expect="66">66</tspan>%</text>
+<text class="s" x="2" y="170">Each step passes its own test, and the product of ten of them is 66%. Bars are to scale.</text>
+</svg>
+</div>
+<figcaption>The loss builds up in the multiplication. A better model that lifts each step slightly shifts every bar only slightly.</figcaption>
+</figure>
+
+<p>For a ten-step agent at 96% per step delivering about 66% end to end, insert deterministic validation checkpoints mid-chain. They interrupt the compounding, and a better model shifts each step only marginally. </p>
+<p>If the same prompt and code behave differently this week, check the pinned model version and run the regression set, since, with the code unchanged, drift is the explanation the corpus gives, after any change in data or traffic has been ruled out. A RAG answer that turned confident and wrong the day the corpus was re-indexed points at chunking, embedding version and index freshness.</p>
+
+<p>In a risk register, rank by consequence and reversibility, and not by frequency alone. A rare irreversible action ranks above a frequent recoverable one.</p>
+
+<ul class="rules" aria-label="Decision rules for failure-mode diagnosis">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-5.6-01"><span class="when">Confidently wrong immediately after a content refresh</span><span class="then">Retrieval and indexing.<span class="why">Rules out: the model's reasoning ability.</span></span></li>
+<li data-facet="F-5.6-02"><span class="when">No memory of something said two turns earlier, in a short conversation</span><span class="then">The application is not resending history.<span class="why">Rules out: the context window being exceeded.</span></span></li>
+<li data-facet="F-5.6-03"><span class="when">Quality degrades only on long inputs, on mid-document content</span><span class="then">Uneven attention across position.<span class="why">Rules out: input length alone.</span></span></li>
+<li data-facet="F-5.6-04"><span class="when">Behaviour changed with no code deployment</span><span class="then">Model version drift.<span class="why">Rules out: a prompt regression.</span></span></li>
+<li data-facet="F-5.6-05"><span class="when">Every step passes its own test, and end-to-end accuracy is far lower</span><span class="then">Compounding across steps (0.96<sup>10</sup> is about 66%).<span class="why">Rules out: any single step.</span></span></li>
+<li data-facet="F-5.6-06"><span class="when">An agent took an unrequested action after processing an external document</span><span class="then">Indirect prompt injection.<span class="why">Rules out: user error.</span></span></li>
+<li data-facet="F-5.6-07"><span class="when">RAG answers turned confident and wrong the day the corpus was re-indexed</span><span class="then">Investigate chunking, embedding version and index freshness.<span class="why">The timing points at the pipeline change and not the model.</span></span></li>
+<li data-facet="F-5.6-08"><span class="when">A ten-step agent at 96% per step delivers about 66% end to end</span><span class="then">Insert deterministic validation checkpoints mid-chain.<span class="why">It interrupts compounding, and a better model shifts each step marginally.</span></span></li>
+<li data-facet="F-5.6-09"><span class="when">Same prompt, same code, different behaviour this week</span><span class="then">Check the pinned model version and run the regression set.<span class="why">Drift is the only explanation consistent with no code change.</span></span></li>
+<li data-facet="F-5.6-10"><span class="when">Risk register ranking: a rare irreversible action against a frequent recoverable one</span><span class="then">Rank the irreversible one higher.<span class="why">Professional-tier risk ranking weights consequence and reversibility, not frequency alone.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: why a slightly better model does not rescue the chain</summary>
+<div>
+<p>This is a worked example, not a corpus rule. Lift each step from 96% to 97% and the ten-step chain rises from 66% to <span class="num" data-calc="0.97*0.97*0.97*0.97*0.97*0.97*0.97*0.97*0.97*0.97*100" data-round="0" data-expect="74">74</span>%. A one-point gain per step still leaves about one task in four wrong.</p>
+<p>A deterministic checkpoint in the middle of the chain does something different: it stops an error from being carried into the later steps, where it can multiply. The corpus prefers it for that reason.</p>
+</div>
+</details>
+</section>
+
+<section class="concept" id="c5.7" data-src="5.7" data-terms="prompt injection untrusted retrieved content one channel indirect injection privilege removal validate requested action filter delimited block data eligibility authorisation human approval send email">
+<h3>Remove the privilege that an injection would hijack<span class="sec">§5.7</span></h3>
+
+<p>Instructions and data share one channel, so any text the model reads can try to act as an instruction. Indirect injection arrives through retrieved web pages, PDFs, support tickets, code comments, calendar invites and email bodies. The failure looks like a legitimate tool call that no user asked for. The structural control is to remove privilege from the model and to validate the requested action, not the text that requested it.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 190" role="img" aria-labelledby="f52b-t f52b-d">
+<title id="f52b-t">An injected instruction, and the two ways to meet it</title>
+<desc id="f52b-d">Top row: a third-party document with a hidden instruction goes to the model, which reads data and instructions in one channel, and the model can call a send-email tool, a privileged action. Bottom row, two controls. The structural control, in blue, removes the send capability or requires human approval on send. The filter for known phrasings is a useful layer, but novel phrasings pass and the capability is untouched.</desc>
+<rect class="br" x="2" y="12" width="170" height="60"/>
+<text class="b tc tr" x="87" y="34">Third-party document</text><text class="m tc" x="87" y="54">hides an instruction</text>
+<rect class="bx" x="224" y="12" width="150" height="60"/>
+<text class="b tc" x="299" y="34">The model</text><text class="m tc" x="299" y="52">data and instructions</text><text class="m tc" x="299" y="66">in one channel</text>
+<rect class="bx" x="426" y="12" width="188" height="60"/>
+<text class="b tc" x="520" y="34">Send-email tool</text><text class="m tc" x="520" y="54">a privileged action</text>
+<path class="lr" d="M174 42H222" marker-end="url(#ah-r)"/><path class="lr" d="M376 42H424" marker-end="url(#ah-r)"/>
+<rect class="bb" x="2" y="100" width="300" height="70"/>
+<text class="b tb2" x="14" y="122">The structural control</text>
+<text class="m" x="14" y="142">Remove the send capability, or</text><text class="m" x="14" y="158">require human approval on send.</text>
+<rect class="bx" x="316" y="100" width="298" height="70"/>
+<text class="b" x="328" y="122">A filter for known phrasings</text>
+<text class="m" x="328" y="142">A useful layer. Novel phrasings pass,</text><text class="m" x="328" y="158">and the capability is untouched.</text>
+</svg>
+</div>
+<figcaption>The red arrows are the attack path. The blue box cuts it at the capability, and the filter on the right watches the text and leaves the path open.</figcaption>
+</figure>
+
+<p>If an agent summarises third-party documents and holds a tool that can send email, remove the send capability or require human approval on send. An injection then has no privileged action to hijack. A filter for known injection phrasings stays as a layer and is rejected as the control, because novel phrasings pass and the capability is untouched.</p>
+
+<p>When retrieved content must go into the context, wrap it in a delimited block that the system prompt declares to be data, and never let eligibility or authorisation decisions depend on its contents. That reduces the attack surface without pretending the channel is separated. For an agent that handles only internally authored, access-controlled content and holds no external tools, delimiting plus input validation is proportionate, since a human gate would cost more than the risk.</p>
+
+<ul class="rules" aria-label="Decision rules for prompt injection">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-5.7-01"><span class="when">An agent summarises third-party documents and holds a tool that can send email</span><span class="then">Remove the send capability, or require human approval on send.<span class="why">Injection has no privileged action to hijack.</span></span></li>
+<li data-facet="F-5.7-02"><span class="when">Same agent, and the proposal is a filter for known injection phrasings</span><span class="then">Keep it as a layer, and reject it as the control.<span class="why">Novel phrasings pass, and the capability is untouched.</span></span></li>
+<li data-facet="F-5.7-03"><span class="when">Retrieved content must be included in context</span><span class="then">Wrap it in a delimited block that the system prompt declares as data, and never let eligibility or authorisation decisions depend on its contents.<span class="why">It reduces the attack surface without pretending the channel is separated.</span></span></li>
+<li data-facet="F-5.7-04"><span class="when">The agent processes only internally authored, access-controlled content and holds no external tools</span><span class="then">Delimiting plus input validation is proportionate.<span class="why">Exposure is lower, and a human gate would cost more than the risk.</span></span></li>
+</ul>
+</section>
+
+<section class="concept" id="c5.9" data-src="5.9" data-terms="independent verification confident output deterministic validation self-check second model correlated database lookup citation existence schema constraint cheap to detect expensive to propagate">
+<h3>Verify from outside the model<span class="sec">§5.9</span></h3>
+
+<p>Catching confident but wrong output needs verification that is independent of the model. A check is independent when it can fail while the model succeeds and succeed while the model fails. A check that draws on the same process cannot do that. Asking the same model to double-check, making a second call with the same context, and trusting a self-reported confidence score are all not independent.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 178" role="img" aria-labelledby="f52c-t f52c-d">
+<title id="f52c-t">How independent each kind of check is</title>
+<desc id="f52c-d">Three boxes from left to right. Not independent, in red: asking the same model to double-check, a second call with the same context, and a self-reported confidence score. Weakly independent, in yellow: a second model, because correlated training data means two models can agree and both be wrong. Independent, in blue: deterministic validation against structured source data, a database lookup, schema and constraint checks, and existence checks on every citation.</desc>
+<rect class="br" x="2" y="10" width="196" height="132"/>
+<text class="b tr" x="14" y="32">Not independent</text>
+<text class="m" x="14" y="56">Same model, double-check</text><text class="m" x="14" y="76">Second call, same context</text><text class="m" x="14" y="96">Self-reported confidence</text>
+<rect class="by" x="210" y="10" width="196" height="132"/>
+<text class="b" x="222" y="32">Weakly independent</text>
+<text class="m" x="222" y="56">A second model</text><text class="m" x="222" y="80">Correlated training data:</text><text class="m" x="222" y="96">two can agree and both</text><text class="m" x="222" y="112">be wrong</text>
+<rect class="bb" x="418" y="10" width="196" height="132"/>
+<text class="b tb2" x="430" y="32">Independent</text>
+<text class="m" x="430" y="56">Check against source data</text><text class="m" x="430" y="76">Database lookup</text><text class="m" x="430" y="96">Schema and constraints</text><text class="m" x="430" y="116">Citation existence</text>
+<text class="s" x="2" y="166">Read left to right as less to more independent of the process that made the error.</text>
+</svg>
+</div>
+<figcaption>The test for each box is whether the check can disagree with the model for reasons the model cannot see. The right-hand box is the one built to.</figcaption>
+</figure>
+
+<p>Verification pays most immediately after steps whose errors are cheap to detect and expensive to propagate. If extracted figures must match the source document, compare them deterministically against the structured source, which fails independently of the generation. </p>
+<p>If cited policy clauses must exist, look each citation up in the policy database before release. For free-text summary quality with no ground truth, use a second-model or rubric-based check and state its correlation limits. It is the best available and not a guarantee.</p>
+
+<p>A self-critique pass to catch hallucination is accepted as a quality improvement and rejected as the control, since it reduces the rate and shares the failure mode.</p>
+
+<ul class="rules" aria-label="Decision rules for independent verification">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-5.9-01"><span class="when">Extracted figures must match the source document</span><span class="then">A deterministic comparison against the structured source.<span class="why">It fails independently of the generation.</span></span></li>
+<li data-facet="F-5.9-02"><span class="when">Cited policy clauses must exist</span><span class="then">Look each citation up in the policy database before release.<span class="why">Existence is checkable without the model.</span></span></li>
+<li data-facet="F-5.9-03"><span class="when">Free-text summary quality with no ground truth available</span><span class="then">A second-model or rubric-based check, with its correlation limits stated.<span class="why">It is the best available, not a guarantee, and the answer says so.</span></span></li>
+<li data-facet="F-5.9-04"><span class="when">A team proposes a self-critique pass to catch hallucination</span><span class="then">Accept it as a quality improvement, and reject it as the control.<span class="why">It reduces the rate and shares the failure mode.</span></span></li>
+</ul>
+</section>
+
+<section class="bites" id="b-o5.2">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide's one Domain 4 sample is the first signature in §5.6: confident wrong answers after a document refresh, with the model unchanged, point at retrieval. <a href="#/o4.4">O4.4</a> works through it. </p>
+<p>The guide gives no sample for injection or verification, and its Sample 1 shares the removal-first logic of §5.7. The shapes below come from this project's own set, and the <a href="#/traps">Trap families</a> page defines each label. <span class="lbl">Inference</span>Expect a symptom whose timing or channel names the layer, and options that patch downstream of it.</p>
+
+<p class="stem">An agent that summarises customer-submitted documents sent emails that no user requested.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Remove the email-send capability from the agent and route outbound messages through a service that requires human approval.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>Add a filter that detects and strips instruction-like text from submitted documents. It is a useful layer that catches known phrasings and leaves the privileged capability in place.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-repair">REPAIR</a>Strengthen the system prompt to say that content inside documents is never to be followed as an instruction. It is a prompt-level tendency defending an architectural exposure.</span></li>
+</ul>
+
+<p class="stem">A system produces fluent, confident, occasionally fabricated figures, and the team proposes a second pass in which the model reviews its own output.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Validate every emitted figure deterministically against the structured source record and block release on a mismatch.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-wrong-axis">WRONG-AXIS</a>Add a self-critique pass in which the model checks its own output for errors. It has the right vocabulary and the wrong source, since the check comes from the process that produced the error.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>Use a second, different model as a checker and accept the output when both agree. It is more independent than a self-check and still correlated, since two models can agree and both be wrong.</span></li>
+</ul>
+
+<p><span class="lbl">Design shape</span>A RAG assistant turns confident and wrong the week after a corpus refresh. The answer investigates retrieval and indexing: chunk boundaries, embedding model version, stale or duplicated index entries. A higher-capability model is <a class="fam" href="#/traps/f-discard">DISCARD</a>, because the timing points away from the model. Adding "only answer from the provided context" to the system prompt is <a class="fam" href="#/traps/f-repair">REPAIR</a>, since the model is already faithfully reporting wrong context.</p>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>A ten-step agent passes every step test and fails one task in three. A summarising agent with an email tool sent mail nobody asked for. A system invents figures. What does each call for?</span></summary>
+<div class="ans">
+<p>The ten-step agent needs deterministic validation checkpoints mid-chain, because 96% per step compounds to about 66%. The summariser needs its send capability removed, or human approval on send, since an injection has nothing to hijack then. The figures need deterministic validation against the structured source record, because only a check from outside the model is independent of the error.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li><a href="#/o4.4/c4.10">O4.4</a>, §4.10: the symptom-to-layer table is the same reasoning, and that chapter adds the diagnosis order and the three kinds of hallucination.</li>
+<li><a href="#/o5.1/c5.2">O5.1</a>, §5.2: removing a capability or moving it behind a separate service is the structural control for injection.</li>
+<li><a href="#/o4.2/c4.6">O4.2</a>, §4.6: a model grader from the same family shares the generator's blind spots, which is the reason a self-check is not independent.</li>
+<li><a href="#/o2.4/c2.6">O2.4</a>, §2.6: uneven attention across position is the signature of long-input misses, and the fix there is structure.</li>
+<li><a href="#/o3.7/c3.13">O3.7</a>, §3.13: a control that must always run is called by code and not offered as a tool. Inference: an injected instruction then cannot talk the model out of it.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 5, second objective, and section 8, Samples 1 and 3, summarised above. Course corpus §5.6, §5.7 and §5.9. No live-document check was needed: the chapter states risk-diagnosis and control rules and no product facts. The chain length and the per-step accuracies other than the corpus's 96% are invented for illustration.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>Reason from the symptom's timing and place: refresh points at retrieval, short-conversation amnesia at history, mid-document misses at position, no-code-change at version drift.</li>
+<li>Steps compound: 0.96<sup>10</sup> is about 66%. Insert deterministic checkpoints mid-chain, since a better model shifts each step only slightly.</li>
+<li>Rank risks by consequence and reversibility, not frequency alone.</li>
+<li>Injection follows from one channel for instructions and data. Remove the privilege, or put a human gate on it. A filter is a layer, not the control.</li>
+<li>Wrap retrieved content as delimited data, and never base eligibility or authorisation on it.</li>
+<li>Verify from outside the model: source data, database lookups, schemas and citation existence. Where source data exists, a self-check or a second model is a quality gain and not the control. Where it does not, a second-model or rubric check is the best available, with its limits stated.</li>
+</ol>
+</aside>
+</div>

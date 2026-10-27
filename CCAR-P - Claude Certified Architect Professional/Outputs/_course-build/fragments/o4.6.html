@@ -1,0 +1,134 @@
+<div class="chapter">
+<div class="main">
+
+<p>One morning the daily bill for an assistant is three times what it was, response times are up, and the quality score has not moved. Nothing was announced. The team's logs hold the final answer and a timestamp for each request, which is enough to show that the bill rose and not enough to say why.</p>
+
+<p>The logs did not capture which prompt version served each request, or how many input tokens were read from the cache. If they had, the cause would take a minute to find. What should a production log contain so that a metric that moves can be tied to a layer and a release?</p>
+
+<section class="concept" id="c4.12" data-src="4.12" data-terms="observability logging attribution prompt version model identifier trace id token counts cache-read latency by stage online proxies stratified sampling alerting rates leading indicators regulated redaction retention monitoring evals">
+<h3>Log for attribution, so a moving metric can name its cause<span class="sec">§4.12</span></h3>
+
+<p>Evals measure a frozen set, and monitoring measures the distribution nobody anticipated. Both are required, and a system that passed its evals can still drift in production. The corpus discriminator is whether the logged fields let you say which layer and which release moved a metric.</p>
+<p>The one field that cannot be left out is the prompt version and model identifier on every request. Without it, no change in a metric can be tied to a release.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 214" role="img" aria-labelledby="f46a-t f46a-d">
+<title id="f46a-t">The fields of a log record that make a request attributable</title>
+<desc id="f46a-d">Five boxes that together make one request's log record. Identity: trace ID, and prompt and model version. Retrieval: retrieved document IDs and scores. Actions: tool calls with arguments and results. Cost and time: token counts split into input, output and cache-read, and latency by stage. Safety and outcome: guardrail verdicts and an outcome signal. A note says the prompt and model version is the field that ties a changed metric to a release.</desc>
+<rect class="bb" x="2" y="12" width="196" height="80"/>
+<text class="b tc tb2" x="100" y="34">Identity</text>
+<text class="m tc" x="100" y="56">trace ID</text><text class="m tc" x="100" y="72">prompt and model version</text>
+<rect class="bx" x="210" y="12" width="196" height="80"/>
+<text class="b tc" x="308" y="34">Retrieval</text>
+<text class="m tc" x="308" y="56">document IDs</text><text class="m tc" x="308" y="72">scores</text>
+<rect class="bx" x="418" y="12" width="196" height="80"/>
+<text class="b tc" x="516" y="34">Actions</text>
+<text class="m tc" x="516" y="56">tool calls with</text><text class="m tc" x="516" y="72">arguments and results</text>
+<rect class="bx" x="2" y="104" width="304" height="68"/>
+<text class="b tc" x="154" y="126">Cost and time</text>
+<text class="m tc" x="154" y="148">tokens: input, output, cache-read</text><text class="m tc" x="154" y="164">latency by stage</text>
+<rect class="bx" x="318" y="104" width="296" height="68"/>
+<text class="b tc" x="466" y="126">Safety and outcome</text>
+<text class="m tc" x="466" y="148">guardrail verdicts</text><text class="m tc" x="466" y="164">outcome signal</text>
+<text class="s" x="2" y="198">The prompt and model version, in blue, is the field that ties a changed metric to a release.</text>
+</svg>
+</div>
+<figcaption>Each box answers a question after an incident: who served it, what it read, what it did, what it cost and how it ended.</figcaption>
+</figure>
+
+<p>That is the corpus's minimum log. It also names online proxies, such as the escalation rate, retry rate, thumbs-down rate, conversation length and abandonment, which move before the offline metrics do. Sample live traffic for quality in strata, across segments and across verdict classes, and include the high-confidence automated stream. Alert on rates, on segment rates and on leading indicators, and not on individual events.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 196" role="img" aria-labelledby="f46b-t f46b-d">
+<title id="f46b-t">Cost and latency up, quality flat: the caching signature</title>
+<desc id="f46b-d">Four bars for the day before and the day after a prompt change. The cache-read share of input tokens falls from 75 percent to 0. The input cost index rises from 1.0 to about 3.1. A note says that cost and latency moving together while quality holds points at the token or caching layer, so check the cache-read counts and the prompt-version field.</desc>
+<text class="s" x="2" y="14">Same traffic, same quality, a new prompt version</text>
+<text class="m" x="2" y="46">Cache-read share, before</text>
+<rect class="bb" x="190" y="28" width="225" height="24"/><text class="m" x="423" y="46">75%</text>
+<text class="m" x="2" y="80">Cache-read share, after</text>
+<rect class="br" x="190" y="62" width="2" height="24"/><text class="m tr" x="200" y="80">0%</text>
+<text class="m" x="2" y="124">Input cost, before</text>
+<rect class="bx" x="190" y="106" width="100" height="24"/><text class="m" x="298" y="124">1.0</text>
+<text class="m" x="2" y="158">Input cost, after</text>
+<rect class="br" x="190" y="140" width="307.7" height="24"/><text class="m tr" x="505" y="158">about <tspan data-calc="1/(0.75*0.1+0.25)" data-round="1" data-expect="3.1">3.1</tspan>×</text>
+<text class="s" x="2" y="188">Cost and latency up with quality flat: check cache-read counts and the prompt-version field.</text>
+</svg>
+</div>
+<figcaption>The two bars at the top show the cause and the two at the bottom show the effect. Without the cache-read count in the log, only the bottom pair would be visible.</figcaption>
+</figure>
+
+<p>Two fields in that record need a gloss. A guardrail verdict records whether each guardrail layer allowed or blocked the request. The outcome signal is the online proxy for how the request ended, such as an escalation, a retry or a thumbs-down.</p>
+
+<p>The signature to learn is cost and latency moving together while quality holds. That points at the token or caching layer and not at model behaviour. When the quality metric moves and the cause is unknown with only final outputs logged, add the prompt and model version, the retrieved IDs, the tool calls and the staged latency. Output alone cannot name the layer that produced it.</p>
+
+<p>A dashboard of aggregate averages needs per-segment breakdowns, since it reproduces the masking trap in real time. Alerting on every individual error gets ignored within a week, so alert on rates. If only complaints and flagged outputs are sampled, add stratified sampling of the high-confidence stream, because novel error patterns appear first where nobody is looking.</p>
+
+<p>After an incident, "add monitoring" is accepted as prevention and not as the root-cause fix, since instrumentation diagnoses the next incident and not this one. In a regulated sector, redact real-traffic logs at write time, define retention and restrict access. The evaluation sample inherits the same obligations.</p>
+
+<ul class="rules" aria-label="Decision rules for logging and monitoring">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-4.12-01"><span class="when">A quality metric moved, the cause is unknown, and only final outputs are logged</span><span class="then">Add prompt and model version, retrieved IDs, tool calls and staged latency.<span class="why">Output alone cannot name the layer that produced it.</span></span></li>
+<li data-facet="F-4.12-02"><span class="when">Cost tripled overnight, latency is up, and quality is flat</span><span class="then">Check cache-read token counts and the prompt-version field.<span class="why">That combination points at the caching or token layer.</span></span></li>
+<li data-facet="F-4.12-03"><span class="when">The dashboard shows aggregate averages only</span><span class="then">Add per-segment breakdowns.<span class="why">It is the masking trap reproduced in real time.</span></span></li>
+<li data-facet="F-4.12-04"><span class="when">Alerting is configured to fire on every individual error</span><span class="then">Alert on rates and segment rates instead.<span class="why">Per-event alerting is ignored within a week.</span></span></li>
+<li data-facet="F-4.12-05"><span class="when">Only complaints and flagged outputs are sampled for quality</span><span class="then">Add stratified sampling of the high-confidence stream.<span class="why">Novel error patterns appear first where nobody is looking.</span></span></li>
+<li data-facet="F-4.12-06"><span class="when">Post-incident, the proposed remedy is "add monitoring"</span><span class="then">Accept it as prevention, not as the root-cause fix.<span class="why">Instrumentation diagnoses the next incident, not this one.</span></span></li>
+<li data-facet="F-4.12-07"><span class="when">Regulated sector, with real-traffic logs</span><span class="then">Redact at write, define retention, and restrict access.<span class="why">It is a control with an auditor attached.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: why a lost cache raises the bill about threefold</summary>
+<div>
+<p>This is a worked example, not a corpus rule, and the 75% share is invented. Anthropic's model documentation (live docs, read 2026-10-25) prices a cache read at 0.1 times the base input price for most current models, and at 0.05 times on Opus 5.5 and Sonnet 5.5. Take 0.1 times. If 75% of input tokens were cache reads, the input cost per unit was <span class="num" data-calc="0.75*0.1+0.25" data-expect="0.325">0.325</span> of the full price.</p>
+<p>Suppose a new prompt version puts a timestamp at the start of the static block, so the cache never hits. The input cost becomes 1.0, which is <span class="num" data-calc="1/0.325" data-round="1" data-expect="3.1">3.1</span> times the earlier figure. </p>
+<p>Output tokens and quality are unchanged, so where input tokens are most of the bill, the whole bill follows that ratio. The prefix is also processed again on every request, which fits the higher latency. Only the cache-read count and the prompt-version field make this visible in a minute.</p>
+</div>
+</details>
+</section>
+
+<section class="bites" id="b-o4.6">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide's one Domain 4 sample is about diagnosing a RAG failure after a refresh and is worked through in <a href="#/o4.4">O4.4</a>, so this objective has no official sample. The scenario below comes from this project's own set, and the <a href="#/traps">Trap families</a> page defines each label. <span class="lbl">Inference</span>Expect a production symptom with no explanation in the logs, and options that differ in whether the new capture can attribute a cause.</p>
+
+<p class="stem">A system that performed well in pre-production degrades in production, and the team cannot say why.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Instrument for attribution (prompt and model version, retrieved document IDs, tool calls, staged latency, split token counts, outcome signals) and add stratified sampling of live traffic through the grading stack.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-wrong-axis">WRONG-AXIS</a>Expand the pre-production evaluation set. The eval set is a frozen distribution and cannot observe production drift, which is the actual gap.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>Log every request and response in full and review them when problems arise. It is volume without the attribution fields, and in a regulated sector it creates a retention and PII exposure of its own.</span></li>
+</ul>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>Cost tripled overnight, latency rose and quality is flat, and the proposed remedy is to "add monitoring". Which fields would you check, and how do you treat the monitoring proposal?</span></summary>
+<div class="ans">
+<p>Check the cache-read token counts and the prompt-version field, since cost and latency moving together with quality holding points at the caching or token layer. Accept more monitoring as prevention for the next incident and not as the root-cause fix for this one, which comes from reading those two fields and correcting what changed in the prompt.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li><a href="#/o3.4">O3.4</a>, §3.6 and §3.7: traces and stratified sampling are the same capture seen from the integration side, and both chapters say the store inherits the sensitivity of what it holds.</li>
+<li><a href="#/o2.5/c2.8">O2.5</a>, §2.8: a cache that stops hitting is the cause behind the signature in this chapter, and the timestamp trap there is how it happens.</li>
+<li><a href="#/o4.2/c4.4">O4.2</a>, §4.4: per-segment reporting is the cure for the aggregate dashboard here, and stratified sampling of the automated stream carries over.</li>
+<li><a href="#/o4.4">O4.4</a>, §4.10: diagnosis needs the fields this chapter logs, and the order of layers there decides which field to read first.</li>
+<li><a href="#/o5.4">O5.4</a>, §5.5: retention and auditability set the rules for the redaction and retention steps in the regulated overlay.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 4, sixth objective. Course corpus §4.12. Live check, read 2026-10-25: Anthropic, "Models overview" (platform.claude.com/docs/en/models/overview), for the cache-read price multipliers in the fold. The 75% cache-read share and the overnight cost change are invented for illustration.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>Evals measure a frozen set, and monitoring measures what nobody anticipated. Both are required.</li>
+<li>Log for attribution: trace ID, prompt and model version, retrieved IDs and scores, tool calls, token counts split input, output and cache-read, latency by stage, guardrail verdicts and an outcome signal.</li>
+<li>Cost and latency up with quality flat means the token or caching layer. Check cache-read counts and the prompt-version field.</li>
+<li>Per-segment dashboards, alerts on rates and leading indicators, and stratified sampling that includes the high-confidence stream.</li>
+<li>"Add monitoring" after an incident is prevention and not the root-cause fix. In a regulated sector, redact at write, set retention and restrict access.</li>
+</ol>
+</aside>
+</div>
