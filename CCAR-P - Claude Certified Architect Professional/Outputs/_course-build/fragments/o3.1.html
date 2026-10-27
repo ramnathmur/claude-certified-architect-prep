@@ -1,0 +1,122 @@
+<div class="chapter">
+<div class="main">
+
+<p>An operations agent has collected 22 tools over three quarters, because each new integration was added to the agent that already existed. Each tool definition, with its name, description and input schema, averages about 200 tokens. The agent therefore carries <span class="num" data-calc="22*200" data-expect="4400">4,400</span> tokens of definitions before it reads a word of the request. At 40,000 requests a day, that is <span class="num" data-calc="22*200*40000" data-expect="176000000">176,000,000</span> tokens a day spent describing tools.</p>
+
+<p>A week of traces shows the misroutes sitting in three near-duplicate pairs: <code>get_customer</code> with <code>get_account</code>, <code>search_tickets</code> with <code>search_knowledge</code>, and <code>send_notification</code> with <code>create_alert</code>. On requests that touch those pairs the agent picks the wrong tool 11% of the time. On the other sixteen tools the rate is under 2%. The figures are illustrative.</p>
+
+<section class="concept" id="c3.1" data-src="3.1" data-terms="tool surface capability bloat decision space token tax discrimination blast radius role-scoped agents descriptions constrained tool cross-role flexibility near-duplicate misroute">
+<h3>Shrink the decision space before polishing descriptions<span class="sec">§3.1</span></h3>
+
+<p>A tool costs three things. It costs tokens on every request, because tool definitions are a fixed per-request tax paid whether the tool is called or not. It costs discrimination on every turn, since the model must pick between candidates by reading their descriptions. And it costs <dfn data-def="How far the effects of one wrong or hostile action reach. Each tool an agent holds adds to the damage possible if it is misused.">blast radius</dfn> when misused, since every tool is also a capability the agent can use.</p>
+
+<p>Misroutes concentrate in near-duplicate pairs, and the error rate rises faster than the tool count. Pairs grow faster than tools, because each new tool can pair with every tool already there: 10 tools make <span class="num" data-calc="10*9/2" data-expect="45">45</span> possible pairs, and 22 tools make <span class="num" data-calc="22*21/2" data-expect="231">231</span>.</p>
+
+<p>The corpus discriminator is whether the failure comes from the size of the decision space or from the quality of individual descriptions. Cut the number of candidate tools first. Sharpen descriptions only for the confusable pairs that survive the cut.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 224" role="img" aria-labelledby="f31a-t f31a-d">
+<title id="f31a-t">Splitting one 22-tool agent into role-scoped agents</title>
+<desc id="f31a-d">On the left, one agent holds 22 tools, about 4,400 tokens of definitions on every request. Three red boxes mark the near-duplicate pairs where misroutes sit, and a note says the other 16 tools misroute under 2 percent. An arrow labelled split leads to four role-scoped agents on the right that together hold all 22 tools: a customer agent with 6 tools and 1,200 tokens of definitions, a knowledge agent with 6 tools and 1,200 tokens, a notification agent with 5 tools and 1,000 tokens, and an operations agent with 5 tools and 1,000 tokens. A note says each request sees 5 or 6 tools and confusable pairs no longer share an agent.</desc>
+<rect class="bx" x="2" y="14" width="270" height="190"/>
+<text class="b" x="14" y="36">One agent, 22 tools</text>
+<rect class="br" x="14" y="46" width="246" height="28"/><text class="m tc" x="137" y="65">get_customer / get_account</text>
+<rect class="br" x="14" y="80" width="246" height="28"/><text class="m tc" x="137" y="99">search_tickets / search_knowledge</text>
+<rect class="br" x="14" y="114" width="246" height="28"/><text class="m tc" x="137" y="133">send_notification / create_alert</text>
+<text class="s" x="14" y="164">16 other tools, misrouted under 2%</text>
+<text class="m" x="14" y="190"><tspan data-calc="22*200" data-expect="4400">4,400</tspan> tokens of definitions a request</text>
+<path class="ln" d="M276 109H326" marker-end="url(#ah)"/>
+<text class="s tc" x="301" y="100">split</text>
+<rect class="bb" x="332" y="14" width="282" height="38"/>
+<text class="b tc" x="473" y="30">Customer agent: 6 tools</text><text class="m tc" x="473" y="45"><tspan data-calc="6*200" data-expect="1200">1,200</tspan> tokens of definitions</text>
+<rect class="bb" x="332" y="58" width="282" height="38"/>
+<text class="b tc" x="473" y="74">Knowledge agent: 6 tools</text><text class="m tc" x="473" y="89"><tspan data-calc="6*200" data-expect="1200">1,200</tspan> tokens of definitions</text>
+<rect class="bb" x="332" y="102" width="282" height="38"/>
+<text class="b tc" x="473" y="118">Notification agent: 5 tools</text><text class="m tc" x="473" y="133"><tspan data-calc="5*200" data-expect="1000">1,000</tspan> tokens of definitions</text>
+<rect class="bb" x="332" y="146" width="282" height="38"/>
+<text class="b tc" x="473" y="162">Operations agent: 5 tools</text><text class="m tc" x="473" y="177"><tspan data-calc="5*200" data-expect="1000">1,000</tspan> tokens of definitions</text>
+<text class="s" x="332" y="200">6 + 6 + 5 + 5 = <tspan data-calc="6+6+5+5" data-expect="22">22</tspan> tools. Each request sees 5 or 6.</text>
+<text class="s" x="332" y="216">Confusable pairs no longer share an agent.</text>
+</svg>
+</div>
+<figcaption>The red boxes on the left are where the misroutes sit. After the split, each request carries five or six definitions, and the pairs are separated by role.</figcaption>
+</figure>
+
+<p>With 20 or more tools spanning several unrelated roles, split into role-scoped agents of 4 to 6 tools each. That moves confusable pairs into different agents, and the discrimination problem disappears where mitigation would only shrink it. If two tools inside one scoped agent are still confused, expand both descriptions with input formats, boundaries and when-not-to-use. Once the decision space is small, descriptions are the primary selection lever.</p>
+
+<p>A generic tool such as <code>fetch_url</code>, used outside its intended scope, is replaced with a constrained tool that validates its own inputs. The boundary then holds at the interface, where an instruction in a prompt would hold it only probabilistically.</p>
+
+<p>One exception is sanctioned. A scoped agent that needs a simple cross-role lookup on nearly every turn gets a narrowly scoped cross-role tool, because coordinator round-trips on a high-frequency need cost more than the scoping saves. Complex cross-role cases still route through the coordinator.</p>
+
+<p>A stakeholder may ask to keep every tool available "for flexibility". Push back with the per-request token cost and the measured misroute rate. Flexibility on a tool surface cannot be told apart from ambiguity.</p>
+
+<ul class="rules" aria-label="Decision rules for tool surface sizing">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-3.1-01"><span class="when">One agent holds 20+ tools spanning several unrelated roles, misrouting between near-duplicates</span><span class="then">Split into role-scoped agents of 4 to 6 tools each.<span class="why">It moves confusable pairs into different agents, and the discrimination problem disappears rather than being mitigated.</span></span></li>
+<li data-facet="F-3.1-02"><span class="when">Two tools in the same scoped agent are still confused</span><span class="then">Expand both descriptions with input formats, boundaries and when-not-to-use.<span class="why">Descriptions are the primary selection lever once the decision space is already small.</span></span></li>
+<li data-facet="F-3.1-03"><span class="when">A generic tool (<code>fetch_url</code>) is being used outside its intended scope</span><span class="then">Replace it with a constrained tool that validates its own inputs.<span class="why">It enforces the boundary at the interface, not probabilistically in a prompt.</span></span></li>
+<li data-facet="F-3.1-04"><span class="when">A scoped agent needs one simple cross-role lookup on nearly every turn</span><span class="then">Give it a narrowly scoped cross-role tool.<span class="why">Coordinator round-trips on a high-frequency need cost more than the scoping buys.</span></span></li>
+<li data-facet="F-3.1-05"><span class="when">A stakeholder asks to keep all tools available "for flexibility"</span><span class="then">Push back with the per-request token cost and the measured misroute rate.<span class="why">Flexibility on a tool surface is indistinguishable from ambiguity.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: the arithmetic of the split, and what Anthropic's documentation says about descriptions</summary>
+<div>
+<p>This is a worked example, not a corpus rule, and the 200 tokens a tool is an assumption. The largest of the four agents has 6 tools, which is <span class="num" data-calc="6*200" data-expect="1200">1,200</span> tokens of definitions. Against 4,400, each request saves at least <span class="num" data-calc="4400-1200" data-expect="3200">3,200</span> tokens. At 40,000 requests a day, that is <span class="num" data-calc="3200*40000" data-expect="128000000">128,000,000</span> tokens a day, before any gain from fewer wrong tool calls. </p>
+<p>The figure ignores the routing step that picks an agent for each request. Its tokens, time and own misroute rate have to be counted before the saving is claimed.</p>
+<p>Anthropic's documentation on defining tools (live docs, read 2026-10-26) says the API builds a system prompt from the tool definitions, so every definition is input on every request. It calls the description "by far the most important factor in tool performance" and asks for at least 3 to 4 sentences per tool: what it does, when to use it and when not, and what each parameter means. </p>
+<p>It also advises consolidating related operations into fewer tools, and prefixing tool names with the service when tools span several services.</p>
+<p>Inference: that advice fits the corpus order of work. Fewer candidates first, then fuller descriptions for the pairs that remain.</p>
+</div>
+</details>
+</section>
+
+<section class="bites" id="b-o3.1">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide's Sample 1 is filed under Domain 3 and is worked through in <a href="#/o3.2">O3.2</a>, yet it shares this chapter's logic. A support agent holds tools to read tickets, draft replies, issue refunds and delete accounts, and staff need only the first two. The answer removes the refund and delete tools from the configuration. The wrong options add logging, add a confirmation prompt or swap in a larger model. </p>
+<p>The <a href="#/traps">Trap families</a> page defines the labels below.</p>
+
+<p class="stem">An agent with 22 tools misroutes 11% of requests touching three near-duplicate tool pairs.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Split the agent into role-scoped agents, so each request sees only the 4 to 6 tools its role uses, then tighten descriptions on any pair still confusable inside one agent.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>Write more detailed descriptions for all 22 tools. It improves discrimination and leaves the decision space, the token tax and the privilege surface as they were.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-architected">ARCHITECTED</a>Put a routing classifier in front of the agent. It sounds like separation of concerns, and it adds a component, a hop and a failure mode to compensate for a configuration problem that scoping solves outright.</span></li>
+</ul>
+
+<p><span class="lbl">Inference</span>Expect the options to differ on whether they reduce the number of candidates or only describe them better.</p>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>An agent holds 22 tools and misroutes between three near-duplicate pairs. A teammate proposes rewriting all 22 descriptions, and a stakeholder wants every tool kept "for flexibility". How do you answer each?</span></summary>
+<div class="ans">
+<p>Split the agent into role-scoped agents of 4 to 6 tools, so the pairs land in different agents and each request pays for far fewer definitions. Rewrite descriptions only for a pair that is still confused inside one agent. To the stakeholder, show the per-request token cost and the measured misroute rate, since flexibility on a tool surface reads as ambiguity.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li><a href="#/o1.4/c1.5">O1.4</a>, §1.5: privilege separation is one of the three reasons for more than one agent, and role-scoped tool sets are how it is built. Here the split is chosen to shrink the decision space.</li>
+<li><a href="#/o3.8">O3.8</a>, §3.14: for 60 tools across 8 systems the corpus answer is an index with expansion, where §3.1 splits into agents. Inference: a split removes tools from an agent's reach, and discovery keeps every tool reachable but out of view until it is asked for.</li>
+<li><a href="#/o3.2">O3.2</a>, §3.2: the blast radius cost leads there. Removing a capability beats compensating controls such as logging.</li>
+<li><a href="#/o2.3/c2.3">O2.3</a>, §2.3: a misroute between two tools can also be answered with 4 to 6 targeted examples. This chapter says to cut the candidates first.</li>
+<li><a href="#/o3.3">O3.3</a>, §3.4: tool definitions add input tokens to every request, so a latency and cost budget has to count them. Inference: that section does not itself mention tool tokens.</li>
+<li><a href="#/o5.1">O5.1</a>, §5.2: least privilege in tool scoping is worked through there, from the safety side.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 3, first objective, and section 8, Sample 1, summarised above. Course corpus §3.1. Live check, read 2026-10-26: Anthropic, "Define tools" (platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools), for the second fold. The 22 tools, the 200-token average, the request volume and the misroute rates are invented for illustration.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>A tool costs tokens on every request, discrimination on every turn and blast radius when misused. Misroutes concentrate in near-duplicate pairs.</li>
+<li>Cut the decision space first. With 20+ tools across unrelated roles, split into role-scoped agents of 4 to 6 tools.</li>
+<li>Descriptions are the lever once the space is small: input formats, boundaries and when-not-to-use.</li>
+<li>Replace a generic tool with a constrained one that validates its own inputs, so the boundary holds at the interface.</li>
+<li>A high-frequency cross-role lookup earns a narrow cross-role tool. "For flexibility" is answered with the token cost and the misroute rate.</li>
+</ol>
+</aside>
+</div>

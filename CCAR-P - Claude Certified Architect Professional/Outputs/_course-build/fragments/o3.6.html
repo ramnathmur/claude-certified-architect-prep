@@ -1,0 +1,164 @@
+<div class="chapter">
+<div class="main">
+
+<p>Field technicians use an assistant built on 8,000 troubleshooting articles. One asks why ERR_5521 happens after an upgrade. Search returns five articles about upgrade errors, each on topic and none mentioning ERR_5521. The one article that explains the code ranks far down, because every upgrade article sits in the same tight cluster of meaning and the code itself carries almost none.</p>
+
+<p>On queries that mix plain description with an exact code, the dense search finds the right article 34% of the time. With a second search that matches exact terms, and the two rankings fused, an invented test of the same queries reaches 89%, a gain of <span class="num" data-calc="89-34" data-expect="55">55</span> points. The same assistant also gets questions that no search over articles can answer.</p>
+
+<section class="concept" id="c3.11" data-src="3.11" data-terms="retrieval mechanism dense lexical bm25 hybrid fused ranking structured query sql graph traversal metadata filter data shape query pattern identifiers aggregation embeddings">
+<h3>Pick the mechanism from the data shape and the query pattern<span class="sec">§3.11</span></h3>
+
+<p>Choose on two axes: what the data is, and what the query does. A single mechanism across a mixed corpus is wrong for most of its query types. "RAG means a vector database" is a habit, and the vector search is one mechanism among several.</p>
+
+<p><dfn data-def="Search by embeddings, numeric summaries of meaning. It finds text that means the same thing in different words.">Dense retrieval</dfn> is strong on paraphrase and conceptual similarity, and weak on exact identifiers, codes, part numbers and rare proper nouns. A rare identifier carries almost no distributional meaning, so its vector is near-noise. <dfn data-def="Search that scores documents by the exact terms they share with the query, the best-known scorer being BM25.">Lexical retrieval</dfn> is the opposite: strong on exact terms and identifiers, weak on paraphrase.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 228" role="img" aria-labelledby="f36a-t f36a-d">
+<title id="f36a-t">What the query says, and the mechanism it calls for</title>
+<desc id="f36a-d">Five rows, each pairing a kind of query on the left with a mechanism on the right. A conceptual question in plain language uses dense retrieval. An exact error code or part number uses lexical retrieval or hybrid. Prose with inline identifiers, queried both ways, uses hybrid with fused ranking. A question such as how many X in region Y this quarter uses a structured query. A question such as what superseded a part uses foreign-key or graph traversal. A note says a metadata filter is applied inside the query.</desc>
+<rect class="bx" x="2" y="8" width="300" height="32"/><text class="m" x="12" y="28">Conceptual question in plain language</text>
+<rect class="bb" x="340" y="8" width="274" height="32"/><text class="b" x="350" y="28">Dense retrieval</text>
+<rect class="bx" x="2" y="48" width="300" height="32"/><text class="m" x="12" y="68">Exact error code or part number</text>
+<rect class="bb" x="340" y="48" width="274" height="32"/><text class="b" x="350" y="68">Lexical, or hybrid</text>
+<rect class="bx" x="2" y="88" width="300" height="32"/><text class="m" x="12" y="108">Prose with identifiers, queried both ways</text>
+<rect class="bb" x="340" y="88" width="274" height="32"/><text class="b" x="350" y="108">Hybrid with fused ranking</text>
+<rect class="bx" x="2" y="128" width="300" height="32"/><text class="m" x="12" y="148">How many X in region Y this quarter</text>
+<rect class="bb" x="340" y="128" width="274" height="32"/><text class="b" x="350" y="148">Structured query (SQL)</text>
+<rect class="bx" x="2" y="168" width="300" height="32"/><text class="m" x="12" y="188">What superseded part 88-2210J</text>
+<rect class="bb" x="340" y="168" width="274" height="32"/><text class="b" x="350" y="188">Foreign-key or graph traversal</text>
+<path class="ln" d="M304 24H338" marker-end="url(#ah)"/><path class="ln" d="M304 64H338" marker-end="url(#ah)"/><path class="ln" d="M304 104H338" marker-end="url(#ah)"/><path class="ln" d="M304 144H338" marker-end="url(#ah)"/><path class="ln" d="M304 184H338" marker-end="url(#ah)"/>
+<text class="s" x="2" y="220">A metadata filter goes inside the query, so ranking happens within the eligible set.</text>
+</svg>
+</div>
+<figcaption>Read each row as a rule of thumb from the corpus. The mechanism follows from what the query asks, and the last two rows are not similarity problems at all.</figcaption>
+</figure>
+
+<p>Hybrid retrieval earns its place when the corpus and the query mix contain both prose and exact identifiers: run both searches and combine them with fused ranking, one ordering built from the two. Where the corpus is pure narrative with no identifiers, queried in natural language, use dense only. A lexical index and a fusion step there buy nothing.</p>
+
+<p>Some questions are not retrieval problems. Counting, summing, filtering and joining belong to a structured query against the relational source, because aggregation has no vector-space answer. A relationship lookup such as what superseded a part is foreign-key or graph traversal. A graph is for multi-hop relationship questions only, and it is expensive to build and maintain. A metadata filter is part of the query itself.</p>
+
+<ul class="rules" aria-label="Decision rules for retrieval mechanism">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-3.11-01"><span class="when">Prose corpus, conceptual questions in natural language</span><span class="then">Dense retrieval.<span class="why">Paraphrase tolerance is exactly what embeddings provide.</span></span></li>
+<li data-facet="F-3.11-02"><span class="when">Query contains an exact error code or part number</span><span class="then">Lexical, or hybrid.<span class="why">Rare identifiers carry almost no distributional meaning, and their vectors are near-noise.</span></span></li>
+<li data-facet="F-3.11-03"><span class="when">Corpus contains prose explanation with identifiers inline, and users query both ways</span><span class="then">Hybrid with fused ranking.<span class="why">This is the condition hybrid exists for.</span></span></li>
+<li data-facet="F-3.11-04"><span class="when">"How many X in region Y this quarter"</span><span class="then">A structured query against the relational source.<span class="why">Aggregation has no vector-space answer.</span></span></li>
+<li data-facet="F-3.11-05"><span class="when">"What superseded part 88-2210J"</span><span class="then">Foreign-key or graph traversal.<span class="why">It is a relationship lookup, not a similarity problem.</span></span></li>
+<li data-facet="F-3.11-06"><span class="when">Pure narrative corpus with no identifiers, queried in natural language</span><span class="then">Dense only.<span class="why">Adding a lexical index and a fusion step buys nothing.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: one assistant, three sources, a router</summary>
+<div>
+<p>This is a worked example, not a corpus rule, and its sources and numbers are invented. The assistant reaches three sources: 8,000 troubleshooting articles in prose with codes inline, a 45,000-row parts catalogue in a relational database, and an equipment hierarchy with sub-assemblies, compatible parts and superseded-by links.</p>
+<p>A router classifies each query by shape and sends it on. "Compressor is short-cycling on a model 400" goes to dense retrieval over the articles, filtered to model 400. "What does ERR_5521 mean" goes to lexical retrieval. "Is part 88-2210J still in stock" is a SQL lookup on the catalogue and no retrieval at all. "What replaced the 88-2210J" is a traversal over the hierarchy.</p>
+<p>Only "why does the compressor fail after the ERR_5521 sequence" justifies hybrid, since it mixes prose and a code.</p>
+<p>The 34% against 89% from the opening is what justifies the second index to a stakeholder. A general claim that hybrid is better does not.</p>
+</div>
+</details>
+</section>
+
+<section class="concept" id="c3.12" data-src="3.12" data-terms="reranking top-k candidate set retrieve wide rerank narrow depth ranking problem latency attention gradient chunking mechanism">
+<h3>Rerank when the right document is there but ranked low<span class="sec">§3.12</span></h3>
+
+<p>The standard pattern is to retrieve wide, with a fast approximate search returning the top 20 to 50 candidates, and rerank narrow. A <dfn data-def="A second, slower and more accurate model that rescores the candidates and reorders them, so the best few can be passed on.">reranker</dfn> rescores the candidates, and the top 3 to 5 go into context. The discriminator is whether the right document is absent from the candidate set or present and ranked low.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 204" role="img" aria-labelledby="f36b-t f36b-d">
+<title id="f36b-t">Retrieve wide, rerank narrow, and how to read a missing document</title>
+<desc id="f36b-d">Top row, left to right: a fast search returns 20 to 50 candidates, a reranker rescores them with an accurate model and adds latency, and the top 3 to 5 chunks go into context. Below, two diagnosis boxes. If the right document ranks 8 to 15 it is already in the set, so add reranking. If it is not in the top 50, change the mechanism or the chunking, because depth cannot surface it. A note says the reranking stage has to fit the latency budget.</desc>
+<rect class="bx" x="2" y="12" width="180" height="62"/>
+<text class="b tc" x="92" y="38">Retrieve wide</text><text class="m tc" x="92" y="58">top 20 to 50, fast search</text>
+<rect class="bb" x="218" y="12" width="180" height="62"/>
+<text class="b tc" x="308" y="38">Rerank narrow</text><text class="m tc" x="308" y="58">accurate, adds latency</text>
+<rect class="bx" x="434" y="12" width="180" height="62"/>
+<text class="b tc" x="524" y="38">Into context</text><text class="m tc" x="524" y="58">top 3 to 5 chunks</text>
+<path class="ln" d="M184 43H216" marker-end="url(#ah)"/><path class="ln" d="M400 43H432" marker-end="url(#ah)"/>
+<rect class="bb" x="2" y="92" width="300" height="76"/>
+<text class="b" x="14" y="114">Right document ranks 8 to 15</text>
+<text class="m" x="14" y="134">It is already in the set: add reranking.</text>
+<text class="s" x="14" y="154">Raising k only adds weaker chunks.</text>
+<rect class="br" x="314" y="92" width="300" height="76"/>
+<text class="b tr" x="326" y="114">Right document not in the top 50</text>
+<text class="m" x="326" y="134">Change the mechanism or the chunking.</text>
+<text class="s" x="326" y="154">Depth cannot surface what is never matched.</text>
+<text class="s" x="2" y="192">The reranking stage adds latency, and it has to fit the budget set in §3.4.</text>
+</svg>
+</div>
+<figcaption>The first question is where the right document is. Present but low means a ranking problem. Absent means a retrieval problem, and more depth will not help.</figcaption>
+</figure>
+
+<p>Raising top-k costs more tokens, more money, more latency and a worse attention gradient, the uneven attention across a longer context (§2.6). Reranking costs a latency stage that must fit the budget. If the correct document is consistently at rank 8 to 15, add a reranking stage over the existing candidates. If it is not in the top 50 at all, change the retrieval mechanism or the chunking, and leave the depth alone.</p>
+
+<p>If top-k has already been raised to 40 and the context is crowded, reduce the number of chunks passed on and rerank to 3 to 5, because fewer, better chunks beat more, noisier ones. If reranking would breach a stated latency SLA, reduce the candidate width, or fund the stage by recovering latency elsewhere. The budget is the constraint, and reranking is the technique.</p>
+
+<ul class="rules" aria-label="Decision rules for retrieval depth and reranking">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-3.12-01"><span class="when">Correct document consistently retrieved at rank 8 to 15</span><span class="then">Add a reranking stage over the existing candidate set.<span class="why">It is a ranking problem, and the candidates are already there.</span></span></li>
+<li data-facet="F-3.12-02"><span class="when">Correct document not in the top 50 at all</span><span class="then">Change the retrieval mechanism or the chunking, not the depth.<span class="why">Depth cannot surface something the mechanism never matches.</span></span></li>
+<li data-facet="F-3.12-03"><span class="when">Top-k already raised to 40 and context is crowded</span><span class="then">Reduce k and rerank to 3 to 5.<span class="why">Fewer, better chunks beat more, noisier ones.</span></span></li>
+<li data-facet="F-3.12-04"><span class="when">Reranking would breach the stated latency SLA</span><span class="then">Reduce candidate width, or fund the stage by recovering latency elsewhere.<span class="why">The budget is the constraint, not the technique.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: what raising k costs against reranking</summary>
+<div>
+<p>This is a worked example, not a corpus rule, and the chunk size and volume are assumptions. At 500 tokens a chunk, raising k from 5 to 25 adds 20 chunks, which is <span class="num" data-calc="20*500" data-expect="10000">10,000</span> tokens a request. At 30,000 requests a day that is <span class="num" data-calc="20*500*30000" data-expect="300000000">300,000,000</span> extra input tokens a day, and the document that was ranked eighth still sits among 20 weaker neighbours.</p>
+<p>Retrieving 20 and reranking to the top 5 keeps the context at <span class="num" data-calc="5*500" data-expect="2500">2,500</span> tokens and puts the right document near the top. The price is one more stage. If that stage takes 300 ms and the budget has 200 ms of slack, the stage needs 100 ms recovered elsewhere, or a narrower candidate set.</p>
+</div>
+</details>
+</section>
+
+<section class="bites" id="b-o3.6">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide's one Domain 3 sample is about least privilege and is worked through in <a href="#/o3.2">O3.2</a>, so none of them is a sample for this domain. The two shapes below come from this project's own scenario set, and the <a href="#/traps">Trap families</a> page defines each label. <span class="lbl">Inference</span>Expect the data shape and the query pattern to sit in the stem, and options that change the wrong layer.</p>
+
+<p class="stem">Field technicians query a prose troubleshooting corpus using plain descriptions and exact error codes, and code-based queries have a 34% hit rate.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Add lexical retrieval alongside dense and fuse the rankings, because the corpus and the query mix both contain exact identifiers and prose.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>Tune the embedding model and increase top-k until the code-based queries succeed. It raises recall by flooding context and leaves the identifier weakness in place.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-architected">ARCHITECTED</a>Build a knowledge graph over the equipment hierarchy. It is an expensive answer to a lexical-matching problem, with a graph to maintain afterwards.</span></li>
+</ul>
+
+<p class="stem">The correct document is retrieved but consistently ranks eighth, and answers use the wrong source.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Add a reranking stage that reorders the existing top-20 candidates down to the top 3 to 5 passed into context.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>Raise top-k from 5 to 25 so the correct document is always included. It gets the document into context at the cost of 20 lower-relevance chunks, more spend and a worse attention gradient.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-discard">DISCARD</a>Replace the retrieval mechanism with a different embedding model. It swaps out a mechanism that is already surfacing the right document, to fix a ranking problem.</span></li>
+</ul>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>An assistant's technicians query by plain description and by exact error code, and code queries often miss. Separately, a team finds the right article at rank 11 and proposes raising k to 40. What do you recommend in each case?</span></summary>
+<div class="ans">
+<p>For the code queries, add lexical retrieval beside the dense search and fuse the rankings, since the corpus and the queries mix prose and identifiers. For rank 11, the document is already a candidate, so add reranking and pass only the top 3 to 5 into context. Raising k to 40 would flood the context with weaker chunks and worsen the attention problem.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li><a href="#/o3.5/c3.8">O3.5</a>, §3.8: when the right document is not in the top 50, chunking is the other thing to change, and that chapter covers where chunk boundaries fall.</li>
+<li><a href="#/o3.3/c3.4">O3.3</a>, §3.4: a reranking stage is the usual place to spend slack, and the budget table decides whether it fits.</li>
+<li><a href="#/o2.4/c2.6">O2.4</a>, §2.6: a longer context weakens attention in the middle, which is the cost of raising top-k.</li>
+<li><a href="#/o3.2/c3.3">O3.2</a>, §3.3: the metadata filter that scopes a query is also where an entitlement filter belongs, inside the query.</li>
+<li><a href="#/o4.4">O4.4</a>, §4.10: diagnosis checks data and retrieval before the model, and this chapter is a list of the retrieval faults to check.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 3, sixth objective. Course corpus §3.11 and §3.12. No live-document check was needed: the chapter states retrieval-selection rules and no product facts. The article counts, the hit rates of 34% and 89%, the chunk size and the request volume are invented for illustration, except that the 34% also appears in the corpus scenario.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>Choose retrieval on two axes: the data shape and the query pattern. "RAG" does not mean a vector database.</li>
+<li>Dense for paraphrase and concepts. Lexical for exact codes and identifiers. Hybrid with fused ranking only when the corpus and the queries mix both.</li>
+<li>Counts, sums and joins are structured queries. Relationship lookups are foreign-key or graph traversal, and a graph is for multi-hop questions only.</li>
+<li>Retrieve wide, 20 to 50, and rerank narrow, to 3 to 5. Right document at rank 8 to 15 means rerank. Not in the top 50 means change the mechanism or the chunking.</li>
+<li>Raising top-k adds tokens, cost, latency and a worse attention gradient. Reranking is a latency stage that has to fit the budget.</li>
+</ol>
+</aside>
+</div>

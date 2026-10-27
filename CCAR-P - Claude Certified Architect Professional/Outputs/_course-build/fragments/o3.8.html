@@ -1,0 +1,129 @@
+<div class="chapter">
+<div class="main">
+
+<p>An enterprise agent can reach 60 tools across 8 systems, and each tool definition averages about 200 tokens. Every request therefore carries <span class="num" data-calc="60*200" data-expect="12000">12,000</span> tokens of tool definitions, which is <span class="num" data-calc="12000*50000" data-expect="600000000">600,000,000</span> tokens a day at 50,000 requests. The median request uses 1.4 tools and touches exactly one system, so most of that surface is irrelevant to the request that paid for it. The figures are illustrative.</p>
+
+<p>One option is to load a short index of the eight systems and fetch the detail only for the system a request needs. That is cheaper in tokens, and it adds a step. When is the step worth taking, and when is loading everything the better answer?</p>
+
+<section class="concept" id="c3.14" data-src="3.14" data-terms="progressive discovery monolithic context index namespace expansion round-trip discovery failure promote high-frequency base surface catalog resource small stable surface caching">
+<h3>Compare the token saving with the discovery round-trip<span class="sec">§3.14</span></h3>
+
+<p>A monolithic surface loads everything on every request, and the full token cost is paid whether or not any of it is used. Progressive discovery loads a compact index and fetches detail on demand. The corpus discriminator is whether the surface is large enough for the token saving to exceed the cost of the discovery round-trip.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 176" role="img" aria-labelledby="f38a-t f38a-d">
+<title id="f38a-t">Tool-definition tokens per request under three designs</title>
+<desc id="f38a-d">Three horizontal bars. Monolithic loads 12,000 tokens of tool definitions on every request. Progressive discovery loads a 1,200-token index and then a 1,500-token expansion, 2,700 tokens in all, with one extra round trip. Promoting six busy tools into the base makes the base 2,400 tokens, with the 1,500-token expansion needed only on requests that go beyond those tools. A line says the saving is 9,300 tokens a request, about 465 million a day.</desc>
+<text class="s" x="160" y="14">tool-definition tokens in each request, drawn to scale</text>
+<text class="m" x="2" y="46">Monolithic</text>
+<rect class="br" x="160" y="28" width="400" height="26"/><text class="m" x="168" y="46">12,000 tokens, every request</text>
+<text class="m" x="2" y="86">Progressive</text>
+<rect class="bb" x="160" y="68" width="40" height="26"/><rect class="bx" x="200" y="68" width="50" height="26"/>
+<text class="m" x="260" y="86">1,200 + 1,500 = <tspan data-calc="1200+1500" data-expect="2700">2,700</tspan> and one extra trip</text>
+<text class="m" x="2" y="126">Promote six busy tools</text>
+<rect class="bb" x="160" y="108" width="80" height="26"/><rect class="fl" x="240" y="108" width="50" height="26"/>
+<text class="m" x="300" y="126">2,400 base, +1,500 only when expanding</text>
+<text class="m" x="2" y="164">Saving per request: 12,000 - 2,700 = <tspan data-calc="12000-2700" data-expect="9300">9,300</tspan> tokens, about <tspan data-calc="9300*50000" data-expect="465000000">465,000,000</tspan> a day</text>
+</svg>
+</div>
+<figcaption>The blue segment is the index or base surface that every request pays for. The plain segment is the expansion, paid only when a request needs it. Bar lengths are to scale.</figcaption>
+</figure>
+
+<p>Progressive discovery has two costs. Requests that need expansion pay one extra model turn. And there is a discovery failure mode: the agent may miss a capability that exists because the index entry did not make it visible. Two mitigations come with it. Write index entries as a usable map, and promote high-frequency capabilities into the base surface so that the common path never pays the round-trip.</p>
+
+<p>With 60 tools across 8 systems and a median request touching one system, use a namespace-level index with on-demand expansion. A namespace here is one system's group of tools, and its index entry says what lives there and when to come. If trace data shows six tools account for 61% of calls, promote those six into the base surface. The common path then stops paying the round-trip.</p>
+
+<p>Monolithic wins in three cases. First, a small stable surface: five stable tools load all at once, and below roughly ten tools discovery costs more than it saves. Second, a latency budget that cannot absorb a round-trip, because the trip costs more than the surface does.</p>
+<p>Third, content needed on every single request has nothing to discover: order it first and cache it, which is a caching answer. A large document catalog the agent should know about is exposed as a readable resource, so the map stays current and is consulted on demand.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 186" role="img" aria-labelledby="f38b-t f38b-d">
+<title id="f38b-t">Deciding between loading everything and discovering on demand</title>
+<desc id="f38b-d">A decision path with two questions. First: is the content needed on every request? If yes, order it first and cache it, which is a caching answer. If no, second: is the surface small and stable, or is there no room in the latency budget for a round trip? If yes, load everything up front with no discovery layer. If no, use an index with on-demand expansion and promote the busiest tools into the base surface.</desc>
+<rect class="bx" x="2" y="14" width="170" height="60"/>
+<text class="m tc" x="87" y="40">Needed on every</text><text class="m tc" x="87" y="58">request?</text>
+<rect class="bx" x="214" y="14" width="200" height="60"/>
+<text class="m tc" x="314" y="40">Small and stable, or a</text><text class="m tc" x="314" y="58">budget with no spare trip?</text>
+<rect class="bb" x="456" y="14" width="158" height="60"/>
+<text class="m tc" x="535" y="34">Index plus expansion;</text><text class="m tc" x="535" y="50">promote the busiest</text><text class="m tc" x="535" y="66">tools into the base</text>
+<path class="ln" d="M174 44H212" marker-end="url(#ah)"/><text class="s tc" x="193" y="36">no</text>
+<path class="ln" d="M416 44H454" marker-end="url(#ah-b)"/><text class="s tc" x="435" y="36">no</text>
+<path class="ln" d="M87 76V112" marker-end="url(#ah)"/><text class="s" x="95" y="98">yes</text>
+<path class="ln" d="M314 76V112" marker-end="url(#ah)"/><text class="s" x="322" y="98">yes</text>
+<rect class="fl" x="2" y="114" width="170" height="60"/>
+<text class="m tc" x="87" y="140">Order it first and</text><text class="m tc" x="87" y="158">cache it (§2.8)</text>
+<rect class="fl" x="214" y="114" width="200" height="60"/>
+<text class="m tc" x="314" y="140">Load everything up front</text><text class="m tc" x="314" y="158">no discovery layer</text>
+</svg>
+</div>
+<figcaption>Follow the arrows from the left. Two of the three outcomes keep everything loaded, and discovery is the answer only when neither condition holds.</figcaption>
+</figure>
+
+<ul class="rules" aria-label="Decision rules for progressive discovery">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-3.14-01"><span class="when">60 tools across 8 systems, median request touches one system</span><span class="then">Namespace-level index plus on-demand expansion.<span class="why">Most of the surface is irrelevant to any given request.</span></span></li>
+<li data-facet="F-3.14-02"><span class="when">Trace data shows six tools account for 61% of calls</span><span class="then">Promote those six into the base surface.<span class="why">The common path stops paying the round-trip.</span></span></li>
+<li data-facet="F-3.14-03"><span class="when">Five stable tools and a tight latency budget</span><span class="then">Load them all, and skip discovery.<span class="why">The round-trip costs more than the surface does.</span></span></li>
+<li data-facet="F-3.14-04"><span class="when">A large document catalog the agent should be aware of</span><span class="then">Expose it as a readable resource.<span class="why">The map stays current and is consulted on demand.</span></span></li>
+<li data-facet="F-3.14-05"><span class="when">A large identical block needed on every request</span><span class="then">Order it first with prompt caching.<span class="why">Nothing is being discovered, because it is always required.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: the arithmetic, and what Anthropic's tool search does</summary>
+<div>
+<p>This is a worked example, not a corpus rule, and the sizes are assumptions. Eight namespace entries of 150 tokens make a 1,200-token index. A request that expands one namespace adds about 7.5 tools, which is <span class="num" data-calc="7.5*200" data-expect="1500">1,500</span> tokens, so such a request carries 2,700 against 12,000. Promoting six tools of 200 tokens each raises the base to <span class="num" data-calc="1200+6*200" data-expect="2400">2,400</span> tokens, and the 61% of calls that those six serve need no expansion.</p>
+<p>If expansion costs an extra 250 ms, an assumption, then a request that needs it takes 250 ms longer. The saving buys that only when the surface is large. At 5 tools of 200 tokens, the whole surface is <span class="num" data-calc="5*200" data-expect="1000">1,000</span> tokens, and the index alone would be most of it.</p>
+<p>Anthropic's tool search tool (live docs, read 2026-10-26) is this pattern as a feature. Tools marked <code>defer_loading: true</code> stay out of the context until Claude finds them by search, with 5 matches returned by default, and the page advises keeping the 3 to 5 most frequently used tools non-deferred. That echoes the corpus's promotion rule, though the page says 3 to 5 tools where the corpus example promotes six. </p>
+<p>Every definition is still sent in the request so that the search can run, but deferred ones are kept out of the model's context until they are found. The prompt prefix is untouched, so caching is preserved.</p>
+<p>The page recommends tool search at 10 or more tools or more than 10,000 tokens of definitions. It suggests standard tool calling for fewer than 10 tools, or when every tool is used in every request. It says selection accuracy degrades beyond 30 to 50 tools. The corpus's figure of roughly ten tools agrees with the page.</p>
+</div>
+</details>
+</section>
+
+<section class="bites" id="b-o3.8">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide's one Domain 3 sample is about least privilege and is worked through in <a href="#/o3.2">O3.2</a>, so none of them is a sample for this domain. </p>
+<p>The scenario below comes from this project's own set, and the <a href="#/traps">Trap families</a> page defines each label. <span class="lbl">Inference</span>Expect the stem to give a size and a token cost, and to test the reverse direction as well: a small surface with a latency limit and a proposal to add discovery.</p>
+
+<p class="stem">An agent carries 60 tool definitions totalling about 12,000 tokens per request and misroutes frequently. The median request touches one of eight systems.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Expose eight namespace-level entries with expansion on demand, and promote the highest-frequency tools into the base surface based on the measured call distribution.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-wrong-axis">WRONG-AXIS</a>Paste the full tool catalog into the system prompt so the agent always has visibility. It relocates monolithic context into the prompt and adds a staleness problem, while the token cost and the discrimination load stay as they were.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-discard">DISCARD</a>Remove the least-used tools until the surface fits. It eliminates required capabilities to solve a presentation problem, when restructuring how the surface is shown keeps them all.</span></li>
+</ul>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>One team has 60 tools and wants to load a short index and expand on demand. Another has five stable tools under a tight latency budget and wants to do the same. A third needs a 3,000-token policy block on every request. What do you say to each?</span></summary>
+<div class="ans">
+<p>The first team is right. The surface is large and a request touches little of it, so use an index with expansion and promote the busiest tools into the base. The second should load all five tools, because a round-trip costs more than the small surface does. The third is a caching case: order the block first and cache it, since nothing is being discovered.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li><a href="#/o3.1/c3.1">O3.1</a>, §3.1: discovery is a second way to shrink the decision space, by showing a request fewer tools. Splitting into role-scoped agents is the first.</li>
+<li><a href="#/o2.5/c2.8">O2.5</a>, §2.8: content needed on every request belongs at the front of a cached prefix, which is the third case where loading everything is right.</li>
+<li><a href="#/o2.4/c2.6">O2.4</a>, §2.6: a long monolithic surface puts most of itself in the weak middle of the context.</li>
+<li><a href="#/o3.7/c3.13">O3.7</a>, §3.13: a catalog exposed as an MCP resource is the same pattern for content, a map that is read on demand.</li>
+<li><a href="#/o3.3/c3.4">O3.3</a>, §3.4: the discovery round-trip is latency, and the budget table says whether it fits.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 3, eighth objective. Course corpus §3.14. Live check, read 2026-10-26: Anthropic, "Tool search tool" (platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool), for the last fold. The tool counts, the 200-token definitions, the request volume and the 250 ms are assumptions chosen for the arithmetic.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>Monolithic loads the whole surface on every request. Progressive loads an index and fetches detail on demand. Compare the token saving with the round-trip.</li>
+<li>Progressive costs one extra turn on requests that expand, and risks a missed capability. Write the index as a usable map and promote high-frequency tools into the base.</li>
+<li>Sixty tools across eight systems, one system per request: index plus expansion. Six tools carrying 61% of calls: promote them.</li>
+<li>A small, stable surface, or a latency budget with no room for a trip, loads everything. Below roughly ten tools, discovery costs more than it saves.</li>
+<li>A large catalog becomes a readable resource. Content needed on every request is ordered first and cached.</li>
+</ol>
+</aside>
+</div>

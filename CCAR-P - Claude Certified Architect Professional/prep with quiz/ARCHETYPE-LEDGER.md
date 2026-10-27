@@ -1,6 +1,6 @@
 # CCAR-P Archetype Ledger — v1
 
-**Built:** 2026-08-29 · **Instances:** Paper 1 populated both instance tables 2026-08-30 (63 shape rows, 8-family tally); Paper 2 appended 2026-08-31 (63 more shape rows, 8-family tally); Paper 3 appended 2026-08-31 (63 more shape rows, 8-family tally). Rebuilt from the shipped HTML files, not from a session's own account.
+**Built:** 2026-08-29 · **Instances:** Paper 1 populated both instance tables 2026-08-30 (63 shape rows, 8-family tally); Paper 2 appended 2026-08-31 (63 more shape rows, 8-family tally); Paper 3 appended 2026-08-31 (63 more shape rows, 8-family tally); Paper 4 appended 2026-08-31 (63 more shape rows, 8-family tally, first paper with real per-row direction values); Paper 5 appended 2026-09-01 (63 more shape rows, 8-family tally, first paper post-D2-corpus-expansion). Rebuilt from the shipped HTML files, not from a session's own account.
 
 Two taxonomies live here. **Shapes** are how an item is put together — the rhetorical form of the stem
 and what it asks the candidate to do. **Families** are how a distractor is wrong. An item has one shape
@@ -253,6 +253,132 @@ approved re-frames are recorded here at ban time.
 | S5 | 7.3 | F-7.3-02 | normal | 3 | shipped | |
 | S8 | 7.8 | F-7.8-06+F-7.8-07 | normal | 3 | shipped | |
 | S3 | 7.2 | F-7.2-03 | normal | 3 | shipped | |
+| S6 | 1.1 | F-1.1-04 | inverted | 4 | shipped | |
+| S4 | 1.10 | F-1.10-04 | inverted | 4 | shipped | |
+| S5 | 1.3 | F-1.3-03 | normal | 4 | shipped | |
+| S1 | 1.6 | F-1.6-03 | normal | 4 | shipped | |
+| S5 | 1.11 | F-1.11-05 | inverted | 4 | shipped | |
+| S2 | 1.12 | F-1.12-04 | normal | 4 | shipped | |
+| S6 | 1.2 | F-1.2-04 | inverted | 4 | shipped | |
+| S1 | 1.9 | F-1.9-03 | normal | 4 | shipped | |
+| S5 | 1.4 | F-1.4-03 | normal | 4 | shipped | |
+| S5 | 1.5 | F-1.5-03 | normal | 4 | shipped | |
+| S5 | 1.11 | F-1.11-06 | normal | 4 | shipped | |
+| S5 | 2.1 | F-2.1-01 | inverted | 4 | shipped | |
+| S8 | 2.2 | F-2.2-01 | inverted | 4 | shipped | |
+| S1 | 2.3 | M-2.3 | normal | 4 | shipped | |
+| S3 | 2.5 | M-2.5 | normal | 4 | shipped | |
+| S8 | 2.9 | M-2.9 | normal | 4 | shipped | |
+| S1 | 2.4 | F-2.4-01 | inverted | 4 | shipped | |
+| S1 | 2.7 | F-2.7-01 | inverted | 4 | shipped | |
+| S2 | 2.8 | F-2.8-01 | inverted | 4 | shipped | |
+| S4 | 3.1 | F-3.1-05 | inverted | 4 | shipped | |
+| S8 | 3.2 | F-3.2-04 | normal | 4 | shipped | |
+| S2 | 3.4 | F-3.4-03 | inverted | 4 | shipped | |
+| S1 | 3.6 | F-3.6-03 | normal | 4 | shipped | |
+| S3 | 3.10 | F-3.10-02 | inverted | 4 | shipped | |
+| S1 | 3.12 | F-3.12-01 | normal | 4 | shipped | |
+| S4 | 3.13 | F-3.13-04 | normal | 4 | shipped | |
+| S1 | 3.14 | F-3.14-04 | normal | 4 | shipped | |
+| S4 | 3.1 | M-3.1 | normal | 4 | shipped | |
+| S2 | 3.3 | F-3.3-04 | normal | 4 | shipped | |
+| S1 | 3.5 | F-3.5-04 | normal | 4 | shipped | |
+| S6 | 3.7 | F-3.7-04 | normal | 4 | shipped | |
+| S3 | 4.2 | F-4.2-02 | normal | 4 | shipped | |
+| S6 | 4.4 | F-4.4-02 | normal | 4 | shipped | |
+| S3 | 4.9 | F-4.9-05 | normal | 4 | shipped | |
+| S3 | 4.10 | F-4.10-04 | inverted | 4 | shipped | |
+| S1 | 4.11 | F-4.11-02 | inverted | 4 | shipped | |
+| S1 | 4.12 | F-4.12-04 | normal | 4 | shipped | |
+| S3 | 4.2 | F-4.2-04 | normal | 4 | shipped | |
+| S6 | 4.6 | F-4.6-01 | normal | 4 | shipped | |
+| S3 | 4.9 | F-4.9-07 | normal | 4 | shipped | |
+| S4 | 4.10 | F-4.10-05 | normal | 4 | shipped | |
+| S8 | 5.1 | F-5.1-02 | normal | 4 | shipped | |
+| S3 | 5.6 | F-5.6-05 | normal | 4 | shipped | |
+| S2 | 5.8 | F-5.8-05 | normal | 4 | shipped | |
+| S8 | 5.3 | F-5.3-02 | inverted | 4 | shipped | |
+| S6 | 5.10 | F-5.10-02 | normal | 4 | shipped | |
+| S8 | 5.1 | F-5.1-04 | normal | 4 | shipped | |
+| S3 | 5.6 | F-5.6-06 | normal | 4 | shipped | |
+| S2 | 5.8 | M-5.8 | normal | 4 | shipped | |
+| S2 | 5.5 | F-5.5-02 | normal | 4 | shipped | |
+| S7 | 6.1 | F-6.1-03 | normal | 4 | shipped | |
+| S7 | 6.4 | F-6.4-04 | normal | 4 | shipped | |
+| S7 | 6.9 | F-6.9-02 | inverted | 4 | shipped | |
+| S7 | 6.8 | F-6.8-03 | normal | 4 | shipped | |
+| S7 | 6.12 | F-6.12-02 | normal | 4 | shipped | |
+| S7 | 6.6 | F-6.6-04 | inverted | 4 | shipped | |
+| S7 | 6.6 | F-6.6-03 | normal | 4 | shipped | |
+| S7 | 6.9 | F-6.9-04 | normal | 4 | shipped | |
+| S7 | 6.8 | F-6.8-04 | normal | 4 | shipped | |
+| S3 | 7.2 | F-7.2-02 | normal | 4 | shipped | |
+| S5 | 7.3 | F-7.3-03 | normal | 4 | shipped | |
+| S2 | 7.8 | F-7.8-02 | normal | 4 | shipped | |
+| S3 | 7.1 | F-7.1-03 | normal | 4 | shipped | |
+| S6 | 1.1 | F-1.1-05 | inverted | 5 | shipped | |
+| S4 | 1.10 | F-1.10-05 | normal | 5 | shipped | |
+| S5 | 1.3 | F-1.3-05 | normal | 5 | shipped | |
+| S1 | 1.7 | F-1.7-02 | inverted | 5 | shipped | |
+| S5 | 1.11 | M-1.11 | normal | 5 | shipped | |
+| S2 | 1.12 | F-1.12-05 | normal | 5 | shipped | |
+| S6 | 1.2 | M-1.2 | normal | 5 | shipped | |
+| S4 | 1.9 | F-1.9-05 | normal | 5 | shipped | |
+| S5 | 1.4 | M-1.4 | inverted | 5 | shipped | |
+| S4 | 1.8 | F-1.8-02 | normal | 5 | shipped | |
+| S2 | 1.12 | F-1.12-06 | normal | 5 | shipped | |
+| S5 | 2.1 | F-2.1-04 | inverted | 5 | shipped | |
+| S8 | 2.2 | F-2.2-05 | inverted | 5 | shipped | |
+| S4 | 2.4 | F-2.4-03 | inverted | 5 | shipped | |
+| S2 | 2.6 | F-2.6-02 | normal | 5 | shipped | |
+| S2 | 2.8 | F-2.8-02 | inverted | 5 | shipped | |
+| S5 | 2.1 | F-2.1-05 | normal | 5 | shipped | |
+| S1 | 2.3 | F-2.3-04 | normal | 5 | shipped | |
+| S2 | 2.7 | F-2.7-02 | normal | 5 | shipped | |
+| S4 | 3.1 | F-3.1-01 | inverted | 5 | shipped | |
+| S8 | 3.2 | M-3.2 | normal | 5 | shipped | |
+| S5 | 3.4 | F-3.4-05 | normal | 5 | shipped | |
+| S1 | 3.6 | F-3.6-04 | normal | 5 | shipped | |
+| S4 | 3.8 | F-3.8-03 | normal | 5 | shipped | |
+| S4 | 3.11 | F-3.11-03 | normal | 5 | shipped | |
+| S4 | 3.13 | F-3.13-05 | normal | 5 | shipped | |
+| S1 | 3.14 | F-3.14-05 | normal | 5 | shipped | |
+| S2 | 3.3 | M-3.3 | normal | 5 | shipped | |
+| S6 | 3.5 | M-3.5 | normal | 5 | shipped | |
+| S6 | 3.7 | F-3.7-05 | normal | 5 | shipped | |
+| S1 | 3.9 | F-3.9-02 | inverted | 5 | shipped | |
+| S6 | 4.1 | F-4.1-04 | normal | 5 | shipped | |
+| S1 | 4.7 | F-4.7-01 | normal | 5 | shipped | |
+| S3 | 4.9 | M-4.9 | inverted | 5 | shipped | |
+| S4 | 4.10 | F-4.10-07 | normal | 5 | shipped | |
+| S1 | 4.11 | F-4.11-03 | normal | 5 | shipped | |
+| S6 | 4.12 | F-4.12-05 | normal | 5 | shipped | |
+| S6 | 4.1 | F-4.1-05 | normal | 5 | shipped | |
+| S6 | 4.8 | F-4.8-01 | normal | 5 | shipped | |
+| S4 | 4.10 | M-4.10 | normal | 5 | shipped | |
+| S1 | 4.11 | F-4.11-07 | normal | 5 | shipped | |
+| S8 | 5.2 | F-5.2-04 | normal | 5 | shipped | |
+| S3 | 5.6 | F-5.6-07 | normal | 5 | shipped | |
+| S2 | 5.8 | F-5.8-01 | inverted | 5 | shipped | |
+| S8 | 5.3 | F-5.3-04 | inverted | 5 | shipped | |
+| S1 | 5.11 | F-5.11-02 | normal | 5 | shipped | |
+| S8 | 5.2 | M-5.2 | normal | 5 | shipped | |
+| S1 | 5.9 | F-5.9-01 | normal | 5 | shipped | |
+| S8 | 5.4 | F-5.4-04 | normal | 5 | shipped | |
+| S6 | 5.10 | F-5.10-04 | normal | 5 | shipped | |
+| S7 | 6.6 | F-6.6-01 | inverted | 5 | shipped | |
+| S7 | 6.4 | M-6.4 | inverted | 5 | shipped | |
+| S6 | 6.10 | F-6.10-04 | inverted | 5 | shipped | |
+| S3 | 6.7 | F-6.7-04 | normal | 5 | shipped | |
+| S1 | 6.11 | F-6.11-03 | normal | 5 | shipped | |
+| S7 | 6.2 | F-6.2-04 | normal | 5 | shipped | |
+| S7 | 6.6 | M-6.6 | normal | 5 | shipped | |
+| S7 | 6.5 | M-6.5 | normal | 5 | shipped | |
+| S3 | 6.7 | M-6.7 | normal | 5 | shipped | |
+| S3 | 7.2 | F-7.2-04 | normal | 5 | shipped | |
+| S4 | 7.5 | F-7.5-01 | normal | 5 | shipped | |
+| S2 | 7.8 | F-7.8-03 | normal | 5 | shipped | |
+| S3 | 7.1 | F-7.1-01 | inverted | 5 | shipped | |
 
 ---
 
@@ -313,6 +439,8 @@ Rebuilt from shipped papers, never from a generating session's own tally.
 | 1 | 38 | 34 | 21 | 21 | 16 | 11 | 23 | 17 |
 | 2 | 38 | 42 | 16 | 28 | 11 | 13 | 22 | 11 |
 | 3 | 24 | 38 | 20 | 30 | 19 | 12 | 29 | 9 |
+| 4 | 34 | 36 | 18 | 29 | 19 | 8 | 28 | 9 |
+| 5 | 31 | 34 | 16 | 28 | 19 | 11 | 31 | 11 |
 
 ---
 

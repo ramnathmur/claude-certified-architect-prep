@@ -1,0 +1,154 @@
+<div class="chapter">
+<div class="main">
+
+<p>A claims assistant handles 200,000 requests a day, and its escalation rate is rising. A full trace of one request, with the prompt, the retrieved chunks, the tool arguments and the tool results, averages 30 KB. Tracing everything stores <span class="num" data-calc="200000*30/1000000" data-expect="6">6</span> GB a day, about <span class="num" data-calc="6*365/1000" data-round="1" data-expect="2.2">2.2</span> TB a year, and copies claimant data into a second store. The figures are illustrative.</p>
+
+<p>Tracing 1% of all requests at random stores 60 MB a day and catches about <span class="num" data-calc="2000*1%" data-expect="20">20</span> of the 2,000 escalations that happen daily. Neither policy answers the team's question, which is why the escalation rate is rising.</p>
+
+<section class="concept" id="c3.6" data-src="3.6" data-terms="observability trace log line decision path tool calls retrieved chunks document versions correlation id per-stage timing guardrail redaction retention access control second copy">
+<h3>Trace the decision path, not only the output<span class="sec">§3.6</span></h3>
+
+<p>The unit of observability is the <dfn data-def="The record of one request's path through the system: each tool call with arguments and results, the context retrieved, the decision points, all tied to one identifier.">trace</dfn>, not the log line. A useful trace captures the tool calls with their arguments and results, the retrieved chunk IDs with document versions and scores, the decision points and guardrail firings, and one correlation ID from the first hop to the last.</p>
+
+<p>The corpus discriminator is whether the capture explains why the output was produced or only that it was. Without the decision path, a confidently wrong answer looks the same as a correct one at the response layer. A log of requests and responses says what happened and nothing about why.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 178" role="img" aria-labelledby="f34a-t f34a-d">
+<title id="f34a-t">What a trace keeps at each stage of one request</title>
+<desc id="f34a-d">A bar across the top says one correlation ID runs through every hop. Below it, five boxes in a row. Retrieve keeps chunk IDs, document versions and scores. Tool call keeps arguments and results. Decision point keeps the branch taken, guardrail firings and the confidence check. Generation keeps the prompt and the output, and every stage is timed. The final answer, in the last box, is all that a request and response log keeps.</desc>
+<text class="b tc tb2" x="308" y="16">One correlation ID on every hop, and time per stage</text>
+<path class="lb" d="M2 28H608M2 22V34M608 22V34"/>
+<rect class="bb" x="2" y="44" width="110" height="52"/><text class="b tc" x="57" y="74">Retrieve</text>
+<rect class="bb" x="126" y="44" width="110" height="52"/><text class="b tc" x="181" y="74">Tool call</text>
+<rect class="bb" x="250" y="44" width="110" height="52"/><text class="b tc" x="305" y="68">Decision</text><text class="b tc" x="305" y="85">point</text>
+<rect class="bb" x="374" y="44" width="110" height="52"/><text class="b tc" x="429" y="74">Generation</text>
+<rect class="br" x="498" y="44" width="110" height="52"/><text class="b tc" x="553" y="74">Final answer</text>
+<path class="ln" d="M114 70H124" marker-end="url(#ah)"/><path class="ln" d="M238 70H248" marker-end="url(#ah)"/><path class="ln" d="M362 70H372" marker-end="url(#ah)"/><path class="ln" d="M486 70H496" marker-end="url(#ah)"/>
+<text class="m tc" x="57" y="118">chunk IDs</text><text class="m tc" x="57" y="134">document versions</text><text class="m tc" x="57" y="150">scores</text>
+<text class="m tc" x="181" y="118">arguments</text><text class="m tc" x="181" y="134">results</text>
+<text class="m tc" x="305" y="118">branch taken</text><text class="m tc" x="305" y="134">guardrail firings</text><text class="m tc" x="305" y="150">confidence check</text>
+<text class="m tc" x="429" y="118">prompt and output</text>
+<text class="m tc tr" x="553" y="118">all a request and</text><text class="m tc tr" x="553" y="134">response log keeps</text>
+</svg>
+</div>
+<figcaption>The four blue stages are what explain a wrong answer. A request and response log keeps only the red box, which says that the answer was wrong and not why.</figcaption>
+</figure>
+
+<p>When wrong answers are intermittent and the team sees only inputs and final outputs, instrument the tool calls, the retrieved context with document versions, and the decision points. That tells you which stage produced the error. When there is a latency regression and only end-to-end timing exists, add per-stage timing. That turns "the system got slow" into "the reranker got slow".</p>
+
+<p>A request that spans several agents and tools needs one correlation ID propagated through every hop. Without it the trace fragments and cannot be reassembled. Traces also hold prompts and retrieved documents, which makes the trace store a second copy of sensitive data. Design its redaction, retention and access control at the same time as the pipeline, because the observability system inherits the sensitivity of what it captures.</p>
+
+<ul class="rules" aria-label="Decision rules for trace depth">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-3.6-01"><span class="when">Intermittent wrong answers, team can see only inputs and final outputs</span><span class="then">Instrument tool calls, retrieved context with document versions, and decision points.<span class="why">It tells you which stage produced the error, rather than that one did.</span></span></li>
+<li data-facet="F-3.6-02"><span class="when">Latency regression, only end-to-end timing captured</span><span class="then">Add per-stage timing.<span class="why">It turns "the system got slow" into "the reranker got slow".</span></span></li>
+<li data-facet="F-3.6-03"><span class="when">A request spans several agents and tools</span><span class="then">Propagate one correlation ID through every hop.<span class="why">Without it, the trace fragments and cannot be reassembled.</span></span></li>
+<li data-facet="F-3.6-04"><span class="when">Traces will contain regulated content</span><span class="then">Design redaction, retention and access control on the trace store at the same time as the pipeline.<span class="why">The observability system inherits the sensitivity of what it captures.</span></span></li>
+</ul>
+</section>
+
+<section class="concept" id="c3.7" data-src="3.7" data-terms="sampling stratified uniform rare events errors escalations low-confidence audit metadata routine successes cardinality metrics labels retention per stratum full-fidelity cost">
+<h3>Sample by stratum so the rare events are all kept<span class="sec">§3.7</span></h3>
+
+<p>The corpus discriminator is whether the events you need to see are common or rare. Uniform sampling is calibrated to the common case, and failures are rare. So capture all of the high-information events and only a slice of the routine traffic. The stratified policy keeps 100% of errors, escalations, low-confidence paths and audit-relevant requests, and a small percentage of routine successes.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 236" role="img" aria-labelledby="f34b-t f34b-d">
+<title id="f34b-t">A stratified sampling policy for 200,000 requests a day</title>
+<desc id="f34b-d">Five rows, each a stratum of requests with a bar for the share traced. Errors, 100 percent, 1,000 requests a day. Escalations, 100 percent, 2,000. Low confidence, 100 percent, 4,000. Regulated access, 100 percent of metadata with a redacted payload. Routine successes, 2 percent, 3,860 of 193,000. A total line says 10,860 of 200,000 requests, 5.4 percent, are traced.</desc>
+<text class="s" x="190" y="14">share of each stratum traced, from 0 to 100%</text>
+<text class="m" x="2" y="46">Errors</text>
+<rect class="bb" x="190" y="28" width="320" height="26"/><text class="m" x="198" y="46">100%</text><text class="m" x="520" y="46"><tspan data-calc="200000*0.5%" data-expect="1000">1,000</tspan> a day</text>
+<text class="m" x="2" y="82">Escalations</text>
+<rect class="bb" x="190" y="64" width="320" height="26"/><text class="m" x="198" y="82">100%</text><text class="m" x="520" y="82"><tspan data-calc="200000*1%" data-expect="2000">2,000</tspan> a day</text>
+<text class="m" x="2" y="118">Low confidence</text>
+<rect class="bb" x="190" y="100" width="320" height="26"/><text class="m" x="198" y="118">100%</text><text class="m" x="520" y="118"><tspan data-calc="200000*2%" data-expect="4000">4,000</tspan> a day</text>
+<text class="m" x="2" y="154">Regulated access</text>
+<rect class="by" x="190" y="136" width="320" height="26"/><text class="m" x="198" y="154">100% of metadata, payload redacted</text>
+<text class="m" x="2" y="190">Routine successes</text>
+<rect class="bx" x="190" y="172" width="6.4" height="26"/><text class="m" x="204" y="190">2%</text><text class="m" x="520" y="190"><tspan data-calc="193000*2%" data-expect="3860">3,860</tspan> of 193,000</text>
+<text class="m" x="2" y="226">Full traces a day: <tspan data-calc="1000+2000+4000+3860" data-expect="10860">10,860</tspan> of 200,000, or <tspan data-calc="10860/200000*100" data-round="1" data-expect="5.4">5.4</tspan>%, plus regulated metadata</text>
+</svg>
+</div>
+<figcaption>Every rare, high-information stratum is kept whole. The routine majority is sampled thinly. The counts per stratum are invented and assumed not to overlap.</figcaption>
+</figure>
+
+<p>For baselines and regression detection, a small uniform sample of routine successes is enough, since baselines need only enough samples to be stable. For regulated data, audit needs the fact of access and not the content, so keep 100% of access metadata with the payload redacted. Retention is set per stratum: short for routine samples, regulation-length for audit metadata.</p>
+
+<p>Metrics follow a separate rule. They carry low-cardinality dimensions (a small, fixed set of values) such as tool name, model, tenant tier and outcome class. User, session and document IDs belong in traces. If someone proposes labelling metrics by user ID for per-user slicing, reject it and serve that need from traces. High-cardinality labels make the metrics backend slow and expensive.</p>
+
+<p>Reject a proposal for 100% full-fidelity capture "and we'll optimise later". At these volumes it is unaffordable, and it creates a second sensitive store.</p>
+
+<ul class="rules" aria-label="Decision rules for trace sampling">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-3.7-01"><span class="when">High volume, need to characterise failures</span><span class="then">100% of errors, escalations and low-confidence paths, and 1 to 5% of successes.<span class="why">It captures every high-information event at a fraction of full-capture cost.</span></span></li>
+<li data-facet="F-3.7-02"><span class="when">High volume, need baseline distributions and regression detection</span><span class="then">A small uniform sample of routine successes.<span class="why">Baselines only need enough samples to be stable.</span></span></li>
+<li data-facet="F-3.7-03"><span class="when">Regulated data accessed, audit requires proof of access</span><span class="then">100% of access metadata with a redacted payload.<span class="why">Audit needs the fact of access, not the content.</span></span></li>
+<li data-facet="F-3.7-04"><span class="when">Someone proposes labelling metrics by user ID to enable per-user slicing</span><span class="then">Reject, and serve that need from traces.<span class="why">High-cardinality labels make the metrics backend slow and expensive.</span></span></li>
+<li data-facet="F-3.7-05"><span class="when">Someone proposes 100% full-fidelity capture "and we'll optimise later"</span><span class="then">Reject, on cost and on data-protection exposure.<span class="why">At these volumes it is unaffordable and creates a second sensitive store.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: the storage arithmetic of the three policies</summary>
+<div>
+<p>This is a worked example, not a corpus rule, and the 30 KB trace and the stratum sizes are assumptions. Tracing everything stores 200,000 traces of 30 KB, which is 6 GB a day, and <span class="num" data-calc="6*365" data-expect="2190">2,190</span> GB, about 2.2 TB, over a year. Tracing 1% uniformly stores <span class="num" data-calc="200000*1%*30/1000" data-expect="60">60</span> MB a day and keeps 1% of the 2,000 escalations, which is 20.</p>
+<p>The stratified policy traces 10,860 requests. At 30 KB each that is <span class="num" data-calc="10860*30/1000" data-expect="325.8">325.8</span> MB a day, a bit over five times the uniform sample, and it holds all 2,000 escalations, all 1,000 errors and all 4,000 low-confidence paths. Alongside it, metrics with low-cardinality labels show that something moved. The traces show why, for the strata kept.</p>
+<p>Inference: a request is known to have failed or escalated only when it ends, so the keep-or-drop decision for those strata is made after the request finishes, and its trace has to be held until then.</p>
+</div>
+</details>
+</section>
+
+<section class="bites" id="b-o3.4">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide's one Domain 3 sample is about least privilege and is worked through in <a href="#/o3.2">O3.2</a>, so none of them is a sample for this domain. The shapes below come from this project's own scenario set, and the <a href="#/traps">Trap families</a> page defines each label. <span class="lbl">Inference</span>Expect a stem that names a production symptom, a volume or a cost limit, and options that differ in what is captured and how much.</p>
+
+<p class="stem">A RAG-backed agent intermittently returns wrong answers, and the team has request and response logging only.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Add tracing that records retrieved chunk IDs with document versions and scores, every tool call and result, and the decision points, all tied to one correlation ID.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>Increase log retention and add full request and response bodies at 100%. It is more volume of the same low-information capture, and it still records outcomes and not causes.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-repair">REPAIR</a>Add a user feedback widget and triage from reported issues. It reacts after the fact, and confidently wrong answers are the failure users are least likely to report.</span></li>
+</ul>
+
+<p class="stem">A service handles 200,000 requests a day, full tracing is unaffordable, and the team needs to diagnose a rising escalation rate.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Stratify: trace 100% of errors, escalations and low-confidence paths, 2% of routine successes, and keep redacted metadata for every regulated-data access.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-wrong-axis">WRONG-AXIS</a>Sample uniformly at 1% across all traffic. It is the textbook answer to a volume problem, applied to a rare-event problem, and it captures almost none of the escalations.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-overspec">OVERSPEC</a>Trace everything at full fidelity and revisit storage cost next quarter. It buys total coverage nobody asked for, at a cost the scenario says is unavailable, and it duplicates sensitive data into a new store.</span></li>
+</ul>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>A team logs every request and response and still cannot explain intermittent wrong answers. At 200,000 requests a day they also say they will sample 1% to save money. What do you change in each case?</span></summary>
+<div class="ans">
+<p>Move from logs to traces: tool calls with results, retrieved chunk IDs with document versions and scores, and decision points, tied by one correlation ID, so the stage that produced the error can be found. Replace the uniform 1% with strata: keep every error, escalation and low-confidence request, and a small share of routine successes, because the failures are rare and a uniform slice catches few of them.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li><a href="#/o3.2/c3.3">O3.2</a>, §3.3: a retrieved chunk that a user may not see is still written to the trace when a filter runs after retrieval. The trace store holds a second copy of what was retrieved.</li>
+<li><a href="#/o3.3/c3.4">O3.3</a>, §3.4: a stage budget table needs per-stage timings, and the per-stage timing rule here is what supplies them.</li>
+<li><a href="#/o1.4/c1.7">O1.4</a>, §1.7: provenance passed as separate fields is what lets a trace or an audit record show a claim's source. A correlation ID does the same job across hops.</li>
+<li><a href="#/o4.4">O4.4</a>, §4.10: diagnosis checks data and retrieval before the model, and the trace is where that evidence lives.</li>
+<li><a href="#/o4.6">O4.6</a>, §4.12: logging for attribution continues the same subject on the evaluation side.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 3, fourth objective. Course corpus §3.6 and §3.7. No live-document check was needed: the chapter states monitoring rules and no product facts. The request volume, the 30 KB trace, the stratum sizes and the escalation counts are invented for illustration.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>The unit of observability is the trace. Capture tool calls with results, retrieved chunk IDs with document versions and scores, decision points and guardrail firings, under one correlation ID.</li>
+<li>A log of requests and responses says that a wrong answer happened and not why. Add per-stage timing so a slow system becomes a named slow stage.</li>
+<li>The trace store is a second copy of sensitive data. Design its redaction, retention and access control with the pipeline.</li>
+<li>Failures are rare, so sample by stratum: 100% of errors, escalations, low-confidence paths and audit metadata, and a small share of routine successes.</li>
+<li>Metrics carry low-cardinality labels. User, session and document IDs go in traces. Retention is set per stratum.</li>
+<li>Reject full-fidelity capture "to optimise later": it is unaffordable and creates a second sensitive store.</li>
+</ol>
+</aside>
+</div>

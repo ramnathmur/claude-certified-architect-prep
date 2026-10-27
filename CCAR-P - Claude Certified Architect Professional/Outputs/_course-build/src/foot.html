@@ -1,0 +1,356 @@
+</main>
+<footer class="site">Pinned to exam guide v1.0 (July 2026). Anthropic has announced that exam content changes on 7 December 2026 and that updated guides publish on 17 November 2026.</footer>
+<script type="application/json" id="course-data">{{COURSE_JSON}}</script>
+<script>
+(function () {
+  'use strict';
+  var doc = document, root = doc.documentElement;
+  root.classList.add('js');
+  var KEY = 'ccarp-course:v1';
+  var S = { read: {}, skip: {}, last: null, theme: null, start: null, sit: null };
+  try { var raw = JSON.parse(localStorage.getItem(KEY) || '{}'); for (var k in raw) S[k] = raw[k]; } catch (e) {}
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+
+  var DATA = JSON.parse(doc.getElementById('course-data').textContent);
+  var pages = [].slice.call(doc.querySelectorAll('.page'));
+  var byId = {}, meta = {};
+  pages.forEach(function (p) { byId[p.getAttribute('data-id')] = p; });
+  DATA.pages.forEach(function (m) { meta[m.id] = m; });
+  var order = DATA.pages.map(function (m) { return m.id; });
+  var current = null;
+
+  function $(s, c) { return (c || doc).querySelector(s); }
+  function $$(s, c) { return [].slice.call((c || doc).querySelectorAll(s)); }
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function isObj(id) { return meta[id] && meta[id].kind === 'obj'; }
+  function pageTitle(id) { var m = meta[id]; return m.kind === 'obj' ? m.oid + ' ' + m.title : m.title; }
+  function shortTitle(id) { var t = pageTitle(id); return t.length > 58 ? t.slice(0, 56).replace(/\s+\S*$/, '') + '…' : t; }
+
+  /* ---------- theme ---------- */
+  $('#btn-theme').addEventListener('click', function () {
+    var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next); S.theme = next; save();
+  });
+
+  /* ---------- routing ---------- */
+  function parseHash() {
+    var h = location.hash.replace(/^#\/?/, ''), p = h.split('/');
+    return { id: decodeURIComponent(p[0] || ''), a: p[1] ? decodeURIComponent(p[1]) : '' };
+  }
+  function go(id, anchor) {
+    var target = '#/' + id + (anchor ? '/' + anchor : '');
+    var same = location.hash === target;
+    current = id;
+    try { location.hash = target; } catch (e) {}
+    // A static preview (for example a data: document) cannot set the hash, and re-visiting the current address fires no event: navigate directly in both cases.
+    if (same || location.hash !== target) show(id, anchor);
+  }
+  doc.addEventListener('click', function (e) {
+    var a = e.target.closest ? e.target.closest('a[href^="#/"]') : null;
+    if (!a || e.ctrlKey || e.metaKey || e.shiftKey || e.button) return;
+    e.preventDefault();
+    var p = a.getAttribute('href').replace(/^#\//, '').split('/');
+    if (byId[decodeURIComponent(p[0])]) go(decodeURIComponent(p[0]), p[1] ? decodeURIComponent(p[1]) : '');
+  });
+  function route() {
+    var r = parseHash();
+    show(r.id && byId[r.id] ? r.id : 'start', r.a);
+  }
+  function show(id, anchor) {
+    var page = byId[id];
+    pages.forEach(function (p) { p.classList.toggle('on', p === page); });
+    current = id; if (id !== 'start') S.last = id; save();
+    doc.title = pageTitle(id) + ' · CCAR-P course';
+    syncNav(id);
+    var t = anchor ? page.querySelector('[id="' + anchor + '"]') : null;
+    if (t && page.contains(t)) t.scrollIntoView(); else window.scrollTo(0, 0);
+    var h1 = $('h1', page);
+    if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); }
+    closeDrawer();
+  }
+  function syncNav(id) {
+    var dom = meta[id] ? meta[id].dom : 0;
+    $$('.tabs a').forEach(function (a) {
+      if (+a.getAttribute('data-dom') === dom) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current');
+    });
+    $$('#drawer-list a[data-id]').forEach(function (a) {
+      if (a.getAttribute('data-id') === id) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+    });
+  }
+  window.addEventListener('hashchange', route);
+
+  /* ---------- pager ---------- */
+  function pagerLink(id, cls, label) {
+    return '<a class="' + cls + '" href="#/' + id + '" rel="' + (cls === 'pv' ? 'prev' : 'next') + '"><small>' + label + '</small>' + esc(shortTitle(id)) + '</a>';
+  }
+  function buildPagers() {
+    pages.forEach(function (p) {
+      var id = p.getAttribute('data-id'), i = order.indexOf(id);
+      var nav = doc.createElement('nav');
+      nav.className = 'pager'; nav.setAttribute('aria-label', 'Previous and next sheet');
+      var mid = '';
+      if (isObj(id) && meta[id].written) mid = '<button class="readbtn" type="button" data-read="' + id + '" aria-pressed="false"><span class="bx"><svg viewBox="0 0 14 14" fill="none" stroke-width="2.4" aria-hidden="true"><path d="M2 7.5L5.5 11L12 3.5"/></svg></span>Mark as read</button>';
+      nav.innerHTML = (i > 0 ? pagerLink(order[i - 1], 'pv', 'Previous') : '<span></span>') + '<div class="mid">' + mid + '</div>' + (i < order.length - 1 ? pagerLink(order[i + 1], 'nx', 'Next') : '<span></span>');
+      $('.sheet-in', p).appendChild(nav);
+    });
+  }
+
+  /* ---------- read state ---------- */
+  function setRead(id, v, manual) {
+    if (v) { S.read[id] = 1; delete S.skip[id]; }
+    else { delete S.read[id]; if (manual) S.skip[id] = 1; }
+    save(); syncRead();
+  }
+  function syncRead() {
+    var n = 0, objs = DATA.pages.filter(function (m) { return m.kind === 'obj'; });
+    objs.forEach(function (m) { if (S.read[m.id]) n++; });
+    $('#prog-n').textContent = n;
+    $('#prog-bar').style.setProperty('--p', Math.round(n / 38 * 100) + '%');
+    $$('[data-read]').forEach(function (b) { b.setAttribute('aria-pressed', S.read[b.getAttribute('data-read')] ? 'true' : 'false'); });
+    $$('[data-tick]').forEach(function (t) { t.textContent = S.read[t.getAttribute('data-tick')] ? '✓' : ''; });
+    $$('.pip').forEach(function (r) {
+      var id = r.getAttribute('data-id'), m = meta[id];
+      r.classList.toggle('w', !!(m && m.written)); r.classList.toggle('r', !!S.read[id]);
+    });
+    $$('[data-st]').forEach(function (s) {
+      var id = s.getAttribute('data-st'), m = meta[id];
+      s.textContent = S.read[id] ? 'Read' : (m && m.written ? 'Written' : 'Not written yet');
+      s.classList.toggle('on', !!S.read[id]);
+    });
+    var c = $('#cont');
+    if (c) {
+      var ok = S.last && S.last !== 'start' && byId[S.last];
+      var a = $('a', c), note = $('#ctanote');
+      if (ok) { a.setAttribute('href', '#/' + S.last); var mm = meta[S.last]; a.textContent = 'Continue at ' + (mm.kind === 'obj' ? mm.oid : mm.title); note.textContent = mm.kind === 'obj' ? mm.title : 'Where you left off.'; }
+      else { a.setAttribute('href', '#/o1.1'); a.textContent = 'Start with O1.1'; note.textContent = 'First of 38 sheets, in guide order.'; }
+    }
+  }
+  doc.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-read]') : null;
+    if (!b) return;
+    var id = b.getAttribute('data-read');
+    setRead(id, !S.read[id], true);
+  });
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        var id = en.target.getAttribute('data-end');
+        if (id === current && isObj(id) && meta[id].written && !S.read[id] && !S.skip[id]) setRead(id, true, false);
+      });
+    }, { threshold: 0.5 });
+    $$('.endmark').forEach(function (m) { io.observe(m); });
+  }
+
+  /* ---------- sheet index ---------- */
+  var drawer = $('#drawer'), btnIndex = $('#btn-index');
+  function plainLink(id) {
+    return '<li><a href="#/' + id + '" data-id="' + id + '"><span>' + esc(meta[id].title) + '</span><span class="tick"></span></a></li>';
+  }
+  function buildDrawer() {
+    var h = '<div class="grp"><ul class="plain">' + ['start', 'exam', 'plan'].map(plainLink).join('') + '</ul></div>';
+    DATA.domains.forEach(function (d) {
+      h += '<div class="grp" data-dom="' + d.n + '" style="--dci:var(--d' + d.n + 'i)"><h3><svg viewBox="0 0 18 18" aria-hidden="true"><rect width="18" height="18" fill="url(#h-d' + d.n + ')"/></svg><a href="#/d' + d.n + '" data-id="d' + d.n + '">D' + d.n + ' ' + esc(d.short) + '</a><span>' + d.weight + '%</span></h3><ul>';
+      DATA.pages.filter(function (m) { return m.kind === 'obj' && m.dom === d.n; }).forEach(function (m) {
+        h += '<li><a href="#/' + m.id + '" data-id="' + m.id + '"' + (m.written ? '' : ' class="stubp"') + '><span class="oid">' + m.oid + '</span><span>' + esc(m.title) + '</span><span class="tick" data-tick="' + m.id + '"></span></a></li>';
+      });
+      h += '</ul></div>';
+    });
+    h += '<div class="grp"><ul class="plain">' + ['traps', 'glossary', 'coverage', 'sources'].map(plainLink).join('') + '</ul></div>';
+    $('#drawer-list').innerHTML = h;
+  }
+  function openDrawer() { drawer.classList.add('on'); btnIndex.setAttribute('aria-expanded', 'true'); var f = $('#dfilter'); setTimeout(function () { f.focus(); }, 30); }
+  function closeDrawer() { if (!drawer.classList.contains('on')) return; drawer.classList.remove('on'); btnIndex.setAttribute('aria-expanded', 'false'); }
+  btnIndex.addEventListener('click', function () { if (drawer.classList.contains('on')) closeDrawer(); else openDrawer(); });
+  $('#drawer-x').addEventListener('click', closeDrawer);
+  $('#drawer-list').addEventListener('click', function (e) { if (e.target.closest && e.target.closest('a')) closeDrawer(); });
+  doc.addEventListener('mousedown', function (e) {
+    if (drawer.classList.contains('on') && !drawer.contains(e.target) && !btnIndex.contains(e.target)) closeDrawer();
+  });
+  $('#dfilter').addEventListener('input', function () {
+    var q = this.value.toLowerCase().trim();
+    $$('#drawer-list li').forEach(function (li) { li.style.display = !q || li.textContent.toLowerCase().indexOf(q) > -1 ? '' : 'none'; });
+    $$('#drawer-list .grp').forEach(function (g) {
+      var vis = $$('li', g).some(function (li) { return li.style.display !== 'none'; });
+      g.style.display = vis || !q ? '' : 'none';
+    });
+  });
+
+  /* ---------- search ---------- */
+  var scrim = $('#scrim'), qIn = $('#q'), resEl = $('#res'), IDX = null, hits = [], sel = 0, lastFocus = null;
+  function cleanText(el) {
+    var c = el.cloneNode(true);
+    $$('svg,script,style,.pager,.tb', c).forEach(function (n) { n.parentNode.removeChild(n); });
+    return (c.textContent || '').replace(/\s+/g, ' ').trim();
+  }
+  function buildIndex() {
+    IDX = [];
+    pages.forEach(function (p) {
+      var id = p.getAttribute('data-id'), m = meta[id], title = pageTitle(id);
+      var body = cleanText(p);
+      IDX.push({ id: id, a: '', title: title, kind: m.kind === 'obj' ? 'Sheet' : 'Page', terms: m.oid || '', text: body, w: 2 });
+      $$('.concept', p).forEach(function (c) {
+        var h = $('h3', c), ct = h ? h.childNodes[0].textContent.trim() : '';
+        var tx = cleanText(c);
+        IDX.push({ id: id, a: c.id, title: ct, kind: (m.oid || title) + ' · section ' + c.getAttribute('data-src'), terms: (c.getAttribute('data-terms') || '') + ' ' + c.getAttribute('data-src'), text: tx, w: 4 });
+      });
+      $$('dfn', p).forEach(function (d) {
+        var c = d.closest('.concept');
+        IDX.push({ id: id, a: c ? c.id : '', title: d.textContent.trim(), kind: 'Term · ' + (m.oid || title), terms: d.getAttribute('data-def') || '', text: d.getAttribute('data-def') || d.textContent, w: 6 });
+      });
+    });
+  }
+  function score(it, toks) {
+    var t = it.title.toLowerCase(), tm = it.terms.toLowerCase(), x = it.text.toLowerCase(), s = it.w;
+    for (var i = 0; i < toks.length; i++) {
+      var k = toks[i];
+      if (t.indexOf(k) > -1) s += 12; else if (tm.indexOf(k) > -1) s += 7; else if (x.indexOf(k) > -1) s += 1; else return 0;
+    }
+    return s;
+  }
+  function snippet(it, toks) {
+    var x = it.text, lx = x.toLowerCase(), pos = -1;
+    for (var i = 0; i < toks.length && pos < 0; i++) pos = lx.indexOf(toks[i]);
+    if (pos < 0) pos = 0;
+    var from = Math.max(0, pos - 50), to = Math.min(x.length, pos + 110);
+    var sn = esc((from > 0 ? '…' : '') + x.slice(from, to) + (to < x.length ? '…' : ''));
+    toks.forEach(function (k) { if (k.length > 1) sn = sn.replace(new RegExp('(' + esc(k).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'ig'), '<mark>$1</mark>'); });
+    return sn;
+  }
+  function runSearch() {
+    var q = qIn.value.toLowerCase().trim();
+    if (!IDX) buildIndex();
+    if (!q) {
+      hits = DATA.pages.filter(function (m) { return !m.oid; }).map(function (m) { return { id: m.id, a: '', title: m.title, kind: 'Page', text: '' }; });
+    } else {
+      var toks = q.replace(/§/g, '').split(/\s+/).filter(Boolean);
+      hits = IDX.map(function (it) { return { it: it, s: score(it, toks) }; }).filter(function (r) { return r.s > 0; })
+        .sort(function (a, b) { return b.s - a.s; }).slice(0, 14).map(function (r) { return { id: r.it.id, a: r.it.a, title: r.it.title, kind: r.it.kind, sn: snippet(r.it, toks) }; });
+    }
+    sel = 0; renderHits();
+  }
+  function renderHits() {
+    if (!hits.length) { resEl.innerHTML = '<li><a href="#" tabindex="-1" aria-disabled="true"><b>No match</b><small>Try a single word, an objective number such as O3.5, or a section number such as 3.9.</small></a></li>'; return; }
+    resEl.innerHTML = hits.map(function (h, i) {
+      return '<li><a role="option" id="r' + i + '" href="#/' + h.id + (h.a ? '/' + h.a : '') + '" aria-selected="' + (i === sel) + '"><b>' + esc(h.title) + '</b><small>' + esc(h.kind || '') + '</small>' + (h.sn ? '<span>' + h.sn + '</span>' : '') + '</a></li>';
+    }).join('');
+    qIn.setAttribute('aria-activedescendant', 'r' + sel);
+  }
+  function openSearch() { lastFocus = doc.activeElement; scrim.classList.add('on'); qIn.value = ''; runSearch(); qIn.focus(); }
+  function closeSearch() { scrim.classList.remove('on'); if (lastFocus && lastFocus.focus) lastFocus.focus(); }
+  qIn.addEventListener('input', runSearch);
+  $('#btn-search').addEventListener('click', openSearch);
+  scrim.addEventListener('mousedown', function (e) { if (e.target === scrim) closeSearch(); });
+  resEl.addEventListener('click', function (e) { var a = e.target.closest && e.target.closest('a'); if (a && a.getAttribute('aria-disabled') !== 'true') closeSearch(); else if (a) e.preventDefault(); });
+  function moveSel(d) {
+    if (!hits.length) return;
+    sel = (sel + d + hits.length) % hits.length; renderHits();
+    var el = $('#r' + sel); if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest' });
+  }
+
+  /* ---------- keyboard ---------- */
+  doc.addEventListener('keydown', function (e) {
+    var t = e.target, tag = t && t.tagName, typing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (t && t.isContentEditable);
+    var open = scrim.classList.contains('on');
+    if (e.key === 'Escape') { if (open) closeSearch(); else closeDrawer(); return; }
+    if (open) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); moveSel(1); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); moveSel(-1); }
+      else if (e.key === 'Enter') { var h = hits[sel]; if (h && h.id) { e.preventDefault(); go(h.id, h.a); closeSearch(); } }
+      return;
+    }
+    if ((e.key === '/' && !typing) || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')) { e.preventDefault(); openSearch(); return; }
+    if (typing || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+    var i = order.indexOf(current);
+    if (e.key === 'ArrowRight' && i < order.length - 1) go(order[i + 1]);
+    else if (e.key === 'ArrowLeft' && i > 0) go(order[i - 1]);
+  });
+
+  /* ---------- month plan ---------- */
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function iso(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function pd(s) { var p = s.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function fmt(d) { return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }); }
+  function monday(d) { var x = new Date(d), w = (x.getDay() + 6) % 7; x.setDate(x.getDate() - w); return x; }
+  function makePlan(startISO, sitISO) {
+    var s = pd(startISO), e = pd(sitISO), days = [], warn = [];
+    for (var d = new Date(s); d < e; d.setDate(d.getDate() + 1)) days.push(new Date(d));
+    var N = days.length;
+    if (N < 1) return { days: [], warn: ['Pick a sit date after the start date.'], rows: [] };
+    var rest = N >= 8 ? 1 : 0;
+    var papers = N >= 14 ? 5 : Math.max(0, Math.min(5, N - 9));
+    var refresh = N >= 22 ? Math.min(5, Math.max(2, Math.round(N * 0.12))) : (N >= 14 ? 2 : 0);
+    var A = N - rest - papers - refresh;
+    var objs = DATA.pages.filter(function (m) { return m.kind === 'obj'; });
+    function fill(cap) {
+      var b = [], cur = [], n = 0;
+      objs.forEach(function (o) {
+        var c = o.sections.length;
+        if (cur.length && n + c > cap) { b.push(cur); cur = []; n = 0; }
+        cur.push(o); n += c;
+      });
+      if (cur.length) b.push(cur);
+      return b;
+    }
+    var total = objs.reduce(function (a, o) { return a + o.sections.length; }, 0);
+    var cap = Math.max(1, Math.ceil(total / Math.max(A, 1))), b = fill(cap);
+    while (b.length > A && cap < 40) { cap++; b = fill(cap); }
+    if (b.length > A) warn.push('There are not enough days to cover all 38 objectives before this sit date. Move the date later or start earlier.');
+    var perDay = (38 / Math.max(A, 1));
+    if (perDay > 2.4) warn.push('That pace is about ' + perDay.toFixed(1) + ' objectives a day. The syllabus run assumes about one a day with a drill after each.');
+    var rows = [], i;
+    for (i = 0; i < days.length; i++) rows.push({ d: days[i], ph: 'A', html: '' });
+    var idx = 0;
+    for (i = 0; i < b.length && idx < rows.length; i++, idx++) {
+      rows[idx].ph = 'A';
+      rows[idx].html = '<b>Learn</b> ' + b[i].map(function (o) { return '<a href="#/' + o.id + '">' + o.oid + '</a>'; }).join(' · ') + ' <span class="muted">(' + b[i].reduce(function (a, o) { return a + o.sections.length; }, 0) + ' sections; then the drill for each)</span>';
+    }
+    while (idx < A) { rows[idx].ph = 'A'; rows[idx].html = '<b>Catch-up</b> <span class="muted">Clear the drill backlog and re-read any chapter you marked unread.</span>'; idx++; }
+    var dorder = [3, 1, 4, 5, 6, 2, 7];
+    for (i = 0; i < refresh; i++) {
+      var ds = dorder.filter(function (x, j) { return Math.floor(j * refresh / 7) === i; });
+      rows[idx].ph = 'B';
+      rows[idx].html = '<b>Review</b> ' + ds.map(function (n) { return '<a href="#/d' + n + '">D' + n + '</a>'; }).join(' · ') + ' <span class="muted">Re-read the Remember boxes, then say each chapter back.</span>';
+      idx++;
+    }
+    for (i = 1; i <= papers; i++) {
+      rows[idx].ph = 'C';
+      rows[idx].html = '<b>Paper ' + i + '</b> <span class="muted">Sit it in Practice Mode, then review every miss by section.</span>';
+      idx++;
+    }
+    if (rest && idx < rows.length) { rows[idx].ph = 'R'; rows[idx].html = '<b>Rest</b> <span class="muted">Light review only. Check that your ID matches your registration name and that your test setup works.</span>'; idx++; }
+    return { rows: rows, warn: warn, N: N };
+  }
+  function renderPlan() {
+    var host = $('#plan-app'); if (!host) return;
+    var today = new Date();
+    var start = S.start || iso(today), sit = S.sit || DATA.sitDefault;
+    var h = '<form class="planform" onsubmit="return false"><div><label for="p-start">Start date</label><input id="p-start" type="date" value="' + start + '"></div><div><label for="p-sit">Exam date</label><input id="p-sit" type="date" value="' + sit + '"></div><button type="button" id="p-reset">Start today</button></form>';
+    var plan = makePlan(start, sit), notes = plan.warn.slice();
+    if (pd(sit) >= pd('2026-12-07')) notes.push('This exam date is on or after 7 December 2026, when exam content changes. This course is written for guide v1.0.');
+    h += notes.map(function (n) { return '<div class="note red"><p>' + esc(n) + '</p></div>'; }).join('');
+    if (plan.rows.length) {
+      h += '<div class="phase-key"><span>Learn</span><span class="B">Review</span><span class="C">Papers</span></div>';
+      var wk = null, open = false;
+      plan.rows.forEach(function (r) {
+        var m = monday(r.d), key = iso(m);
+        if (key !== wk) { if (open) h += '</div>'; wk = key; open = true; h += '<div class="wk"><h3>Week of ' + fmt(m) + '</h3>'; }
+        var we = r.d.getDay() === 0 || r.d.getDay() === 6;
+        h += '<div class="dayrow ' + r.ph + (we ? ' we' : '') + '"><div class="dt">' + fmt(r.d) + '</div><div>' + r.html + '</div></div>';
+      });
+      if (open) h += '</div>';
+      h += '<p class="small muted" style="margin-top:1.2rem">Exam day: ' + fmt(pd(sit)) + '. ' + plan.N + ' study days before it.</p>';
+    }
+    host.innerHTML = h;
+    $('#p-start').addEventListener('change', function () { S.start = this.value || null; save(); renderPlan(); });
+    $('#p-sit').addEventListener('change', function () { S.sit = this.value || null; save(); renderPlan(); });
+    $('#p-reset').addEventListener('click', function () { S.start = iso(new Date()); save(); renderPlan(); });
+  }
+
+  /* ---------- init ---------- */
+  buildPagers(); buildDrawer(); renderPlan(); syncRead(); route();
+  window.__course = { S: S, order: order, show: show, go: go, meta: meta, makePlan: makePlan, syncRead: syncRead, KEY: KEY };
+})();
+</script>
+</body>
+</html>

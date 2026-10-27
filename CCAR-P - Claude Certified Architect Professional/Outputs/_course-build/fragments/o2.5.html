@@ -1,0 +1,183 @@
+<div class="chapter">
+<div class="main">
+
+<p>An application sends the same 8,000-token policy prompt with every request, followed by a customer message of about 100 tokens. Each request is therefore <span class="num" data-calc="8000/8100*100" data-round="1" data-expect="98.8">98.8</span>% identical to the one before it. At 100,000 requests a day, <span class="num" data-calc="100000*8000" data-expect="800000000">800,000,000</span> of the tokens the service sends are repeats. The figures are illustrative.</p>
+
+<p>Two kinds of repetition appear in this objective. The first is repeated text inside one application, which caching can reuse. The second is repeated prompts across teams, where each team keeps its own copy of something similar and the copies slowly drift apart.</p>
+
+<section class="concept" id="c2.8" data-src="2.8" data-terms="prompt caching prefix byte-identical static dynamic time-to-first-token invalidation timestamp retention window shared prefix per-tool block cache hit ordering">
+<h3>Put the static part first and keep it identical<span class="sec">§2.8</span></h3>
+
+<p><dfn data-def="Reuse of an unchanged beginning of the prompt across requests, so the model does not process it from scratch each time. It reuses the input prefix and never stores a reply.">Prompt caching</dfn> lets Claude reuse a cached prefix, the opening stretch of a prompt, across requests. The prefix has to be byte-identical and stable. That means static content goes first and dynamic content goes last, outside the cached prefix. Caching cuts latency, measured as time-to-first-token (how long until the reply begins), and cost together.</p>
+
+<p>For an identical large system prompt and policy followed by a varying user message, order the static content first and enable caching. Truncating the policy loses content the application needs. Moving it into a few-shot block (§2.3) creates no stable prefix to reuse. Caching also does not store replies: it reuses an input prefix, and only while that prefix is identical and first.</p>
+
+<p>Any change inside the prefix invalidates the cache for the whole block, even a single token. Suppose a block is byte-identical except for a timestamp at its very start. Move the timestamp out to after the cached prefix. Dynamic content must sit strictly after the stable part.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 216" role="img" aria-labelledby="f25a-t f25a-d">
+<title id="f25a-t">Prompt order decides whether the prefix can be reused</title>
+<desc id="f25a-d">Two panels. The first, ordered for reuse, shows a tool A request and a tool B request. Each starts with the same shared static prefix, marked as read from cache, then a block specific to its tool, then dynamic content last. The second panel shows a request with a timestamp at the very start. The same static prefix follows it, but the first token has changed, so the whole block misses the cache.</desc>
+<text class="s" x="2" y="14">Ordered for reuse: shared prefix, then per-tool block, then dynamic content</text>
+<text class="s" x="2" y="34">Tool A request</text>
+<rect class="bb" x="2" y="40" width="290" height="28"/><text class="m tc" x="147" y="58">Shared prefix: read from cache</text>
+<rect class="bx" x="296" y="40" width="130" height="28"/><text class="m tc" x="361" y="58">Tool A block</text>
+<rect class="fl" x="430" y="40" width="184" height="28"/><text class="m tc" x="522" y="58">Dynamic content last</text>
+<text class="s" x="2" y="88">Tool B request</text>
+<rect class="bb" x="2" y="94" width="290" height="28"/><text class="m tc" x="147" y="112">Shared prefix: read from cache</text>
+<rect class="bx" x="296" y="94" width="130" height="28"/><text class="m tc" x="361" y="112">Tool B block</text>
+<rect class="fl" x="430" y="94" width="184" height="28"/><text class="m tc" x="522" y="112">Dynamic content last</text>
+<text class="s tr" x="2" y="152">A timestamp at the start of the static block</text>
+<rect class="br" x="2" y="158" width="100" height="28"/><text class="m tc" x="52" y="176">Timestamp</text>
+<rect class="bx" x="106" y="158" width="320" height="28"/><text class="m tc" x="266" y="176">Same static prefix, shifted: whole block misses</text>
+<rect class="fl" x="430" y="158" width="184" height="28"/><text class="m tc" x="522" y="176">Dynamic content</text>
+<text class="s" x="2" y="208">Any change inside the prefix, even one token, invalidates the cache for the whole block.</text>
+</svg>
+</div>
+<figcaption>In the top two rows the shared part is first and identical, so both tools hit the cache on it. In the bottom row the timestamp changes the first token of the block.</figcaption>
+</figure>
+
+<p>Caching only pays within its retention window, the time a cached prefix stays available, 5 minutes by default (the fold below has the dated detail). If a large static prefix is a caching candidate but requests arrive only once every 20 minutes, longer than that window, accept that caching will not help and evaluate other cost and latency levers. Each request recomputes the prefix from scratch.</p>
+
+<p>When two downstream tools each need a different static block, structure the prompt as the shared prefix, then the per-tool static block, then the dynamic content. Putting the common part first keeps the cache hit rate on the shared portion across tool variants, where the per-tool part first would force a full-prompt divergence for each.</p>
+
+<ul class="rules" aria-label="Decision rules for prompt caching">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-2.8-01"><span class="when">Identical large system prompt and policy sent on every request, with a varying user message after it</span><span class="then">Order the static content first and enable prompt caching.<span class="why">A stable prefix gets reused, and it cuts latency and cost together.</span></span></li>
+<li data-facet="F-2.8-02"><span class="when">A byte-identical static block has a small dynamic timestamp inserted at the very start</span><span class="then">Move the dynamic timestamp out of the static block, to after the cached prefix.<span class="why">Any change inside the supposedly static prefix, even one token, invalidates the cache for the whole block.</span></span></li>
+<li data-facet="F-2.8-03"><span class="when">A large static prefix is a caching candidate, but requests reach it only once every 20 minutes, longer than the cache's retention window</span><span class="then">Accept that caching won't help this workload, and evaluate other cost and latency levers.<span class="why">Caching pays off only within its retention window. A longer cadence recomputes the prefix from scratch regardless.</span></span></li>
+<li data-facet="F-2.8-04"><span class="when">A stable prefix is shared, but two downstream tools each need a different static block appended before the shared dynamic content</span><span class="then">Order it as shared prefix, then per-tool static block, then dynamic content.<span class="why">Ordering the common part first preserves the cache hit rate on the shared portion across tool variants.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: what the caching documentation adds, with the sums</summary>
+<div>
+<p>These are dated notes, not corpus rules (live docs, read 2026-10-25; the first 100,000 of 162,264 characters of the caching page were read). The prefix is built in the order tools, then system, then messages, and a change at one level invalidates that level and every later one.</p>
+<p>The minimum cacheable prompt is 512 tokens on the four current models, and a shorter prompt runs uncached with no error. The default lifetime is 5 minutes, or 1 hour with <code>"ttl": "1h"</code>, and each use refreshes it at no extra cost. Caching is requested by adding a <code>cache_control</code> marker, <code>{"type": "ephemeral"}</code>, at the end of the part to be cached, and a request may carry up to 4 such breakpoints.</p>
+<p>Price multipliers on the base input price are 1.25 times for a 5-minute write, 2 times for a 1-hour write, and 0.05 times for a read on Sonnet 5.5.</p>
+<p>A worked example, with the Sonnet 5.5 input price of $2 per million tokens from the model overview: the 8,000-token prefix costs $<span class="num" data-calc="8000*2/1000000" data-expect="0.016">0.016</span> a request uncached and $<span class="num" data-calc="8000*2*0.05/1000000" data-expect="0.0008">0.0008</span> as a read. At 100,000 requests a day that is $<span class="num" data-calc="100000*0.016" data-expect="1600">1,600</span> against $<span class="num" data-calc="100000*0.0008" data-expect="80">80</span>, a saving of $<span class="num" data-calc="1600-80" data-expect="1520">1,520</span> a day, plus a write whenever the cache expires, which steady traffic rarely allows.</p>
+<p>The 20-minute row differs in practice. At the default lifetime, a request every 20 minutes writes the prefix each time, at $<span class="num" data-calc="8000*2*1.25/1000000" data-expect="0.02">0.02</span> against $0.016 uncached, so caching would cost more. The page's 1-hour option keeps such a prefix warm, at a 2 times write price. Inference: the corpus rule assumes the default window. Answer exam items with the corpus rule, and test the 1-hour option in a real design.</p>
+</div>
+</details>
+</section>
+
+<section class="concept" id="c2.9" data-src="2.9" data-terms="modular prompts skills versioned shared duplication drift pinned version extend parameterise fork catalog discoverable partner team onboarding">
+<h3>Share versioned components instead of private copies<span class="sec">§2.9</span></h3>
+
+<p>A <dfn data-def="A prompt built from shared components that many prompts reuse, instead of one long block rewritten for each use.">modular prompt</dfn> is assembled from shared parts. A <dfn data-def="A packaged set of instructions, and optionally files and scripts, that Claude loads when a task calls for it.">Skill</dfn> packages instructions that Claude loads when a task needs them. The team-scale answer for either is versioned, shared, reviewable components, instead of per-project copy-paste. Domain 7 applies the same logic to Claude Code configuration.</p>
+
+<p>When several teams each keep their own copy of a similar system prompt, behaviour drifts silently, with no single source of truth. Consolidate them into versioned shared components. A change in behaviour then becomes one reviewable event, instead of a separate silent drift in each of N copies.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 206" role="img" aria-labelledby="f25b-t f25b-d">
+<title id="f25b-t">One shared component, versioned, found through a catalog and pinned by teams</title>
+<desc id="f25b-d">On the left, a catalog box says teams find the component there before they write their own. An arrow leads to the middle column, a shared component with two versions. Version 1 is the staged-rollout version and version 2 is the latest edit. On the right, Team A and Team B are pinned to version 1, and Team C uses version 2. A note says one edit is one reviewable event and teams adopt it when ready.</desc>
+<rect class="bb" x="2" y="30" width="130" height="120"/>
+<text class="b tc tb2" x="67" y="54">Catalog</text>
+<text class="m tc" x="67" y="76">Teams find the</text>
+<text class="m tc" x="67" y="92">component here</text>
+<text class="m tc" x="67" y="108">before they write</text>
+<text class="m tc" x="67" y="124">their own</text>
+<path class="ln" d="M134 90H176" marker-end="url(#ah)"/>
+<text class="s" x="180" y="22">Shared component, versioned</text>
+<rect class="bx" x="180" y="36" width="120" height="44"/>
+<text class="b tc" x="240" y="54">v1</text><text class="s tc" x="240" y="70">staged rollout</text>
+<rect class="bx" x="180" y="104" width="120" height="44"/>
+<text class="b tc" x="240" y="122">v2</text><text class="s tc" x="240" y="138">latest edit</text>
+<rect class="bx" x="420" y="30" width="194" height="30"/><text class="m tc" x="517" y="50">Team A: pinned to v1</text>
+<rect class="bx" x="420" y="66" width="194" height="30"/><text class="m tc" x="517" y="86">Team B: pinned to v1</text>
+<rect class="bb" x="420" y="122" width="194" height="30"/><text class="m tc" x="517" y="142">Team C: on v2</text>
+<path class="ln" d="M302 58L418 45" marker-end="url(#ah)"/>
+<path class="ln" d="M302 58L418 81" marker-end="url(#ah)"/>
+<path class="lb" d="M302 126H418" marker-end="url(#ah-b)"/>
+<text class="s" x="2" y="180">One edit is one reviewable event, and teams adopt it when they are ready.</text>
+<text class="s" x="2" y="198">A differing constraint is added by parameterising or extending the component, not by forking it.</text>
+</svg>
+</div>
+<figcaption>Teams pin to the version they have tested and move up on their own schedule. The catalog is how a team learns that the component exists.</figcaption>
+</figure>
+
+<p>Version the shared component explicitly. When one is updated and some consumers are deliberately still pinned to the older version for a staged rollout, explicit versions let each team pin and upgrade independently. Without versions, every consumer has to accept every edit immediately, and everyone gets every change the moment it is made.</p>
+
+<p>Suppose a team needs 90% of an existing shared Skill and one constraint differs. Parameterise or extend the Skill for that constraint, and do not fork a full copy. A fork becomes a second, silently drifting copy, which is the failure versioned reuse exists to prevent.</p>
+
+<p>With many small single-purpose snippets and no way to find them, teams re-author the same snippet independently. Keep a discoverable, indexed catalog of shared components. Version control fixes drift once a component is found. It does nothing for a team that never learns the component exists.</p>
+
+<ul class="rules" aria-label="Decision rules for modular prompts and Skills">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-2.9-01"><span class="when">Multiple teams each maintain their own copy of similar system prompts</span><span class="then">Consolidate into versioned, shared modular prompts or Skills.<span class="why">A behaviour change becomes one reviewable event, instead of N silent drifts.</span></span></li>
+<li data-facet="F-2.9-02"><span class="when">A shared component is updated, but some consuming teams are deliberately pinned to an older version for a staged rollout</span><span class="then">Version the component explicitly so teams can pin and upgrade independently, and do not force every consumer onto the latest edit at once.<span class="why">Versioned reuse means controlled adoption. An unversioned shared prompt forces every consumer to accept every edit immediately.</span></span></li>
+<li data-facet="F-2.9-03"><span class="when">A team needs 90% of a shared Skill's behaviour, with one differing constraint</span><span class="then">Parameterise or extend the existing Skill for that constraint, and do not fork a full copy.<span class="why">A fork becomes a second, silently drifting copy, the exact failure versioned reuse exists to prevent.</span></span></li>
+<li data-facet="F-2.9-04"><span class="when">Many small single-purpose prompt snippets have no discovery mechanism, and teams keep re-authoring the same one</span><span class="then">Maintain a discoverable, indexed catalog of shared components, in addition to version control on each one.<span class="why">Version control solves drift once a component is found, and does nothing for teams who never find it.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: how Skills load, and what they cost in tokens</summary>
+<div>
+<p>These are dated notes, not corpus rules (live docs, Agent Skills overview, read 2026-10-25). A Skill is a directory with a <code>SKILL.md</code> file, loaded in three levels. The name and description of every Skill are always loaded, about 100 tokens each. The body of <code>SKILL.md</code>, under 5,000 tokens, loads when the Skill triggers. Bundled files and scripts load only when needed, and a script's output enters the context and its code does not.</p>
+<p>A worked example, with assumed sizes. A team has 20 Skills with 4,000-token bodies. Loading every body up front would put <span class="num" data-calc="20*4000" data-expect="80000">80,000</span> tokens in the context. Loading by level puts <span class="num" data-calc="20*100" data-expect="2000">2,000</span> tokens of descriptions there and adds a 4,000-token body when one Skill triggers, <span class="num" data-calc="2000+4000" data-expect="6000">6,000</span> in all.</p>
+<p>The page limits a name to 64 characters of lowercase letters, numbers and hyphens, and a description to 1,024 characters that must say what the Skill does and when to use it.</p>
+<p>Custom Skills do not sync across surfaces: the API, Claude Code and claude.ai each hold their own. Claude Code reads <code>.claude/skills/</code> in a project and shares Skills through plugins. The page also warns to use Skills only from trusted sources, and to audit them like installed software.</p>
+</div>
+</details>
+</section>
+
+<section class="bites" id="b-o2.5">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide's Sample 2 is this chapter's caching question, and it is the one official Domain 2 sample. An application sends the same 8,000-token system prompt and policy document on every request, followed by a short, varying user message, and both latency and cost are concerns. The answer places the static prompt and policy before the dynamic content and enables prompt caching.</p>
+<p>The guide's reason is that stable content first lets a repeated prefix be reused, which reduces both time-to-first-token and per-request cost without discarding required context. Its wrong options truncate the policy to 1,000 tokens, which loses needed policy. They switch to the smallest model regardless of task fit, which risks quality. They move the policy into a few-shot block, which creates no cacheable, reusable prefix. The <a href="#/traps">Trap families</a> page defines the labels used below.</p>
+
+<p>The project's corpus words the same scenario with different wrong options, and tags them:</p>
+
+<p class="stem">An identical large policy preamble is sent on every request, and both latency and cost are concerns.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Order the static preamble first and enable prompt caching.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>Split the preamble across two requests. It relocates the same token cost and does not touch caching.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-repair">REPAIR</a>Summarise the preamble with the model at request time. It adds a whole extra model call to solve a problem caching already solves, and it risks losing policy precision.</span></li>
+</ul>
+
+<p class="stem">A partner team wants to adopt your prompt and tooling setup.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Version-controlled shared configuration, prompts and Skills, with an onboarding path new team members actually follow.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>A recorded walkthrough. It transfers knowledge once and does not stay current as prompts evolve.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-repair">REPAIR</a>A shared chat channel for questions. It is reactive support, where a durable, versioned artifact is needed.</span></li>
+</ul>
+
+<p><span class="lbl">Inference</span>Expect the caching items to turn on small details of ordering, such as a timestamp at the top of a static block, and the reuse items on a choice between a copy and a version.</p>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>A service sends the same 8,000-token policy on every request, and a developer has added the current time as the first line of it. Caching has stopped saving anything. Why, and what is the fix? Separately, a team wants a shared Skill but needs one constraint changed.</span></summary>
+<div class="ans">
+<p>The time changes the first token of the block on every request, so the prefix is never identical and the whole block misses the cache. Move the time after the cached prefix, with the other dynamic content. For the Skill, parameterise or extend it for the one constraint, because a fork would become a second copy that drifts.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li><a href="#/o2.4/c2.5">O2.4</a>, §2.5: a stateless API resends the whole history each call, and that history is a repeated prefix. Inference: it is the natural candidate for caching. A cached prefix still counts toward the window, because caching changes the price and not the size.</li>
+<li><a href="#/o2.2/c2.2">O2.2</a>, §2.2: the system prompt is a block that is often identical across requests. Inference: that makes it a natural part of the cached prefix.</li>
+<li><a href="#/o4.5">O4.5</a>, §4.11: the title of that section names caching as the first lever for cost and latency, ahead of the others.</li>
+<li><a href="#/o3.8">O3.8</a>, §3.14: the three-level loading of Skills is a small case of progressive discovery against a monolithic context.</li>
+<li><a href="#/o7.1">O7.1</a>, §7.1: the same rule for Claude Code configuration. Shared, versioned and scoped settings persist, where one person's local copy does not.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 2, fifth objective, and section 8, Sample 2 with its rationale, paraphrased above. Course corpus §2.8 and §2.9, including the rows added on 1 September 2026. Live checks, read 2026-10-25: Anthropic, "Prompt caching" (platform.claude.com/docs/en/build-with-claude/prompt-caching), first 100,000 of 162,264 characters; "Models overview" (platform.claude.com/docs/en/models/overview) for the price; "Agent Skills overview" (platform.claude.com/docs/en/agents-and-tools/agent-skills/overview). The request volumes, token counts and the 20-Skill example are assumptions chosen for the arithmetic.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>Caching reuses a byte-identical input prefix, never a reply. Put static content first and dynamic content last, outside the prefix. It cuts latency and cost together.</li>
+<li>One changed token inside the prefix invalidates the whole block. A dynamic timestamp goes after the cached prefix.</li>
+<li>Caching helps only within its retention window. A 20-minute cadence means look at other levers. With two tools, order shared prefix, per-tool block, then dynamic content.</li>
+<li>Teams that keep private copies drift silently. Share versioned components, so a change is one reviewable event.</li>
+<li>Version so teams can pin and upgrade on their own schedule. Parameterise or extend a Skill for one differing constraint, and do not fork it.</li>
+<li>A catalog solves finding what exists, and version control solves drift. A walkthrough or a chat channel is neither.</li>
+</ol>
+</aside>
+</div>

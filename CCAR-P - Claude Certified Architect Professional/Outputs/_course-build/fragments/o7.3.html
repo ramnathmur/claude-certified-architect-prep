@@ -1,0 +1,140 @@
+<div class="chapter">
+<div class="main">
+
+<p>A team convention holds in some Claude Code sessions and fails in others. Same repository, same week, same machine. A teammate finds that writing the convention at the top of every prompt in capitals makes it hold in four sessions out of five. Of 50 sessions a week, that leaves <span class="num" data-calc="50*20%" data-expect="10">10</span> failures. The failures are now occasional enough that the team stops investigating them.</p>
+
+<p>The workaround has done something worse than leave a gap. It has hidden the pattern that would have located the cause. A symptom that appears in some sessions and not others is usually conditional and not random, and the first job is to find the condition.</p>
+
+<section class="concept" id="c7.7" data-src="7.7" data-terms="operational debugging layer owns the symptom bisection determinism /context conditional loading context pollution fork compact least privilege retrieval indexing prompt model last evidence test set">
+<h3>Find the layer that owns the symptom<span class="sec">§7.7</span></h3>
+
+<p>The method is to identify the layer that owns the symptom. Bisection, halving the change set until the culprit appears, assumes determinism that an agentic system does not have. The corpus gives a ladder of six rungs, taken in order. Inference: each rung is usually a cheaper question than the one below it.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 212" role="img" aria-labelledby="f73a-t f73a-d">
+<title id="f73a-t">The debugging ladder, from the cheapest question to the last</title>
+<desc id="f73a-d">Six rows, each a question with its tool or hint. One: is the content loaded, check with context. Two: is it in the right layer for the strength needed, pick the mechanism. Three: is context polluted or stale, fork the verbose step and avoid compacting away exact values. Four: is the tooling wired and scoped, remove what is not needed. Five: retrieval and indexing, the first suspect after a data change. Six: the prompt or the model, last and not first.</desc>
+<rect class="bb" x="2" y="8" width="420" height="26"/><text class="m" x="10" y="26">1  Is the content loaded?</text>
+<rect class="bx" x="432" y="8" width="182" height="26"/><text class="m" x="440" y="26">check with /context</text>
+<rect class="bx" x="2" y="42" width="420" height="26"/><text class="m" x="10" y="60">2  Is it in the right layer for the strength needed?</text>
+<rect class="bx" x="432" y="42" width="182" height="26"/><text class="m" x="440" y="60">pick the mechanism</text>
+<rect class="bx" x="2" y="76" width="420" height="26"/><text class="m" x="10" y="94">3  Is the context polluted or stale?</text>
+<rect class="bx" x="432" y="76" width="182" height="26"/><text class="m" x="440" y="94">fork it; do not compact</text>
+<rect class="bx" x="2" y="110" width="420" height="26"/><text class="m" x="10" y="128">4  Is the tooling wired and scoped?</text>
+<rect class="bx" x="432" y="110" width="182" height="26"/><text class="m" x="440" y="128">remove what is unneeded</text>
+<rect class="bx" x="2" y="144" width="420" height="26"/><text class="m" x="10" y="162">5  Retrieval and indexing?</text>
+<rect class="bx" x="432" y="144" width="182" height="26"/><text class="m" x="440" y="162">suspect after a data change</text>
+<rect class="br" x="2" y="178" width="420" height="26"/><text class="m" x="10" y="196">6  The prompt or the model?</text>
+<rect class="br" x="432" y="178" width="182" height="26"/><text class="m tr" x="440" y="196">last, not first</text>
+</svg>
+</div>
+<figcaption>Work down the rows and stop at the first one that explains the evidence. The model is the last row, and the rows above it are usually cheaper to check.</figcaption>
+</figure>
+
+<p>Rung 1 asks whether the content is loaded, and <code>/context</code> shows what actually loaded into the session. Rung 2 asks whether it sits in the right layer for the strength required: guidance, tool scope, isolation or enforcement (§7.2). Rung 3 asks whether context is polluted or stale. Use <code>context: fork</code> to isolate verbose work. <code>/compact</code> risks losing exact values, dates and specifics, and mid-task it is rejected, because the loss lands on exactly the values the implementation still needs.</p>
+
+<p>Rung 4 asks whether the tooling is wired and scoped, and least privilege means removing the unneeded capability and not logging or confirming its use. Rung 5 is retrieval and indexing, the first suspect when accuracy drops after a data change. Rung 6, the prompt or the model, comes last. The evidence rule is that output varies between runs, so a fix is demonstrated against a test set and not one clean run.</p>
+
+<p>Read the stem for what it excludes. Behaviour that differs between engineers on the same repository points at configuration scope, user level against project level, and rules out the model and tool versions. Behaviour that works in some sessions and not others on the same machine points at conditional loading, so check what <code>/context</code> reports, since conditional is not intermittent.</p>
+
+<p>A fact from two turns ago missing in a short conversation means the application (an API-based one, as in §2.5) is not sending the history, and rules out an exhausted window. Accuracy that collapsed right after a document refresh, with confident answers, is retrieval and indexing, since confident and wrong is correct reasoning over wrong retrieved content. </p>
+<p>A subagent that holds a tool and never uses it correctly is a wiring and permissions problem and not prompt wording. Exploratory output that pushed the original task out of focus is context pollution, and the verbose step is forked.</p>
+</section>
+
+<section class="concept" id="c7.8" data-src="7.8" data-terms="deterministic enforcement hooks permission rules deny ask allow first match wins pretooluse matcher managed policy debugging rung enforcement strength">
+<h3>When a rule did not hold, move it to enforcement<span class="sec">§7.8</span></h3>
+
+<p>The ladder's second rung asks how hard a rule must hold. When the answer is "every time, whatever any prompt says", the symptom's owner is the wrong layer: the rule sits in guidance and needs enforcement. Instructions in a prompt or CLAUDE.md shape what Claude tries to do, and permission rules are enforced by Claude Code and decide what is allowed. </p>
+<p>These are the eight §7.8 rules, seen from the debugging side, and <a href="#/o7.1/c7.8">O7.1</a> lays out the settings and precedence in detail.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 168" role="img" aria-labelledby="f73b-t f73b-d">
+<title id="f73b-t">Four strengths, from guidance to enforcement</title>
+<desc id="f73b-d">Four boxes rising in strength from left to right. Guidance: instructions in CLAUDE.md or a skill, which shape what Claude tries. Tool scope: allowed-tools and removed capabilities, which limit what is available. Isolation: context fork, which keeps verbose work out of the main context. Enforcement: a deny rule, a hook or managed policy, which Claude Code applies whatever the model decides.</desc>
+<rect class="bx" x="2" y="70" width="146" height="70"/>
+<text class="b tc" x="75" y="92">Guidance</text><text class="m tc" x="75" y="112">instructions that shape</text><text class="m tc" x="75" y="128">what Claude tries</text>
+<rect class="bx" x="164" y="50" width="146" height="90"/>
+<text class="b tc" x="237" y="72">Tool scope</text><text class="m tc" x="237" y="92">allowed-tools, removed</text><text class="m tc" x="237" y="108">capabilities</text>
+<rect class="bx" x="326" y="30" width="146" height="110"/>
+<text class="b tc" x="399" y="52">Isolation</text><text class="m tc" x="399" y="72">context: fork keeps</text><text class="m tc" x="399" y="88">verbose work out of</text><text class="m tc" x="399" y="104">the main context</text>
+<rect class="bb" x="488" y="10" width="126" height="130"/>
+<text class="b tc tb2" x="551" y="32">Enforcement</text><text class="m tc" x="551" y="54">a deny rule,</text><text class="m tc" x="551" y="70">a hook, or</text><text class="m tc" x="551" y="86">managed policy,</text><text class="m tc" x="551" y="102">applied whatever</text><text class="m tc" x="551" y="118">the model decides</text>
+<text class="s" x="2" y="160">The strength required picks the box, and prose beside the wrong box does not move the rule to the right one.</text>
+</svg>
+</div>
+<figcaption>Taller boxes hold harder, in this course's ordering of the corpus strengths. A rule written in the first box cannot be made to hold like the last one by wording it more firmly.</figcaption>
+</figure>
+
+<p>If a capability must never be exercised, add a <code>deny</code> rule in the settings permissions, and reject a more strongly worded CLAUDE.md line. If an action must happen every time a tool runs, such as a format, a test or an audit entry, use a hook scoped by a matcher, and reject a reminder in the project file. </p>
+<p>If a call must be stopped before it executes, use a <code>PreToolUse</code> hook or a <code>deny</code> rule, since a log acts after.</p>
+
+<p>A narrow <code>allow</code> and a broad <code>deny</code> that both match give a denial, because the first match in the deny, ask, allow order wins and specificity is irrelevant. To guarantee that a rule survives every local override, use managed policy settings, since nothing below it in the precedence order can override it. A team style preference proposed for a hook or a deny rule is rejected as over-specification.</p>
+
+<ul class="rules" aria-label="Decision rules for hooks and permission rules, from the debugging side">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-7.8-01"><span class="when">A capability must never be exercised, regardless of any prompt</span><span class="then">A <code>deny</code> rule in <code>settings.json</code> permissions.<span class="why">It is enforced by Claude Code, outside the model's discretion.</span></span></li>
+<li data-facet="F-7.8-02"><span class="when">Same situation, addressed by a strongly worded CLAUDE.md instruction</span><span class="then">Reject.<span class="why">It shapes what Claude tries to do and does not change what is allowed.</span></span></li>
+<li data-facet="F-7.8-03"><span class="when">An action must happen every time a tool runs (format, test, audit entry)</span><span class="then">A hook on the relevant event, scoped by matcher.<span class="why">The action always happens, rather than depending on the model choosing it.</span></span></li>
+<li data-facet="F-7.8-04"><span class="when">Same situation, addressed by "remember to run the formatter" in the project file</span><span class="then">Reject.<span class="why">A reminder competes with everything else in context.</span></span></li>
+<li data-facet="F-7.8-05"><span class="when">A tool call must be stopped before it executes</span><span class="then">A <code>PreToolUse</code> hook, or a <code>deny</code> permission rule.<span class="why">Both act before execution, and a log acts after.</span></span></li>
+<li data-facet="F-7.8-06"><span class="when">A narrow <code>allow</code> exists and a broad <code>deny</code> also matches</span><span class="then">Denied.<span class="why">The first match in the deny, ask, allow order wins, and specificity is irrelevant.</span></span></li>
+<li data-facet="F-7.8-07"><span class="when">An organisation must guarantee a rule survives every local override</span><span class="then">Managed policy settings.<span class="why">Nothing below it in the precedence order can override it.</span></span></li>
+<li data-facet="F-7.8-08"><span class="when">A team style preference is proposed for a hook or a deny rule</span><span class="then">Reject.<span class="why">It is over-specification: a suggestion converted into a hard failure that someone must merge a config change to undo.</span></span></li>
+</ul>
+</section>
+
+<section class="bites" id="b-o7.3">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide's three samples sit in Domains 2, 3 and 4, so none of them is a sample for this domain. The scenarios below come from this project's own set, and the <a href="#/traps">Trap families</a> page defines each label. <span class="lbl">Inference</span>Expect a stem full of environmental detail where each detail eliminates a layer, and options that patch the symptom or swap the model.</p>
+
+<p class="stem">A convention holds in some Claude Code sessions and not others, in the same repository during the same week.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Run <code>/context</code> in a working session and a failing one and compare what loaded. The rule is in a file that is not consistently discovered: the wrong level, the wrong directory, or a path-scoped glob that does not match.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-repair">REPAIR</a>Restate the convention at the top of every prompt in capitals. It patches each session downstream of a loading problem, and mostly-working suppresses the diagnostic signal.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-discard">DISCARD</a>Move to a more capable model on the grounds that instruction-following is inconsistent. It replaces a working component to explain a symptom the configuration layer already accounts for.</span></li>
+</ul>
+
+<p class="stem">An agent must never be able to force-push, and a CLAUDE.md instruction saying so has not held.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Add a <code>deny</code> rule for the force-push command pattern to the <code>settings.json</code> permissions.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-repair">REPAIR</a>Restate the prohibition more forcefully and in more places in CLAUDE.md. Instructions shape what Claude tries and do not change what Claude Code allows, so more prose is more of what already failed.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>Add an <code>allow</code> rule listing every git command the agent may run, because an allow-list is stricter. It narrows the default path and does not stop a matching call the way an explicit <code>deny</code> does, and it breaks every legitimate command nobody listed.</span></li>
+</ul>
+
+<p><span class="lbl">Design shape</span>A rule must hold on every developer machine and cannot be overridden locally. The answer is managed policy settings. Putting it in the project <code>.claude/settings.json</code> and requiring review is <a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>, since review controls what is committed and not what runs. Putting it in the project CLAUDE.md is <a class="fam" href="#/traps/f-wrong-axis">WRONG-AXIS</a>, because instruction files concatenate and cannot produce a rule that wins a conflict.</p>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>A convention holds in some sessions only, and separately an agent ignores a "never force-push" line in CLAUDE.md. Where does each investigation start, and what is the fix?</span></summary>
+<div class="ans">
+<p>For the convention, run <code>/context</code> in a working session and a failing one and compare what loaded, since conditional behaviour has a condition and the model is the last suspect. For the force-push, the rule needs enforcement: add a <code>deny</code> permission rule, because the CLAUDE.md line shapes what Claude tries and does not change what is allowed.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li><a href="#/o7.1/c7.2">O7.1</a>, §7.2: rung 2 of the ladder is the mechanism choice there, and the strength of the rule decides the layer.</li>
+<li><a href="#/o4.4/c4.10">O4.4</a>, §4.10: the diagnosis order there, data and retrieval before the prompt and the model, is the same shape as the ladder.</li>
+<li><a href="#/o5.2/c5.6">O5.2</a>, §5.6: reading when a symptom appears and where, before blaming the model, is the discipline of both chapters.</li>
+<li><a href="#/o2.4/c2.7">O2.4</a>, §2.7: compaction risks the exact values that the hybrid pattern there extracts and keeps verbatim.</li>
+<li><a href="#/o3.4/c3.6">O3.4</a>, §3.6: a trace is the evidence that shows which layer produced a symptom.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 7, third objective. Course corpus §7.7 and §7.8. No live-document check was needed for this chapter: it applies rules and a method from the corpus, and the Claude Code documentation read for <a href="#/o7.1">O7.1</a> on 2026-10-27 covers the settings and hooks facts. The session counts in the opening are invented for illustration.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>Find the layer that owns the symptom, in order: is it loaded (<code>/context</code>), is it in the right layer, is context polluted, is the tooling wired and scoped, retrieval and indexing, and the prompt or model last.</li>
+<li>Read the stem for what it excludes. Differences between engineers point at scope, some sessions and not others at conditional loading, confident wrong answers after a refresh at retrieval.</li>
+<li>Behaviour that works sometimes is conditional and not random. A workaround that works four times in five hides the signal.</li>
+<li>Do not <code>/compact</code> mid-task when exact values are needed. Fork verbose work with <code>context: fork</code>.</li>
+<li>A rule that must always hold moves to enforcement: a <code>deny</code> rule, a hook, or managed policy. Permissions resolve deny, ask, allow with the first match winning, and a style preference is not converted into a hard failure.</li>
+</ol>
+</aside>
+</div>

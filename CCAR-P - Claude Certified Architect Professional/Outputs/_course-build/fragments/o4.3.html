@@ -1,0 +1,139 @@
+<div class="chapter">
+<div class="main">
+
+<p>A support team rewrites its assistant's prompt. On ten examples that someone picked by hand, the new version reads better, and the team wants to ship it to every user. Ten hand-picked examples are persuasive, and they are not evidence. Nobody chose them at random, nobody declared in advance what "better" means, and nothing says the edit did not break a rare case.</p>
+
+<p>What does a prompt change need before it reaches all users? The corpus answers with an order, and every step in it exists because the step before it cannot answer one particular question.</p>
+
+<section class="concept" id="c4.9" data-src="4.9" data-terms="prompt change release path regression set controlled a/b one variable per variant randomization unit user session guardrail primary metric fixed duration segment staged rollout control arm attribution">
+<h3>Regression first, then A/B, then staged rollout<span class="sec">§4.9</span></h3>
+
+<p>The order is a regression evaluation on the fixed set, then a controlled A/B test on metrics defined in advance, then a staged rollout. </p>
+<p>A regression evaluation replays a fixed test set to check that nothing that worked has got worse. A controlled A/B test splits live traffic between the current prompt and the new one. Regression comes first because the A/B costs live traffic and only the fixed set over-samples rare segments. The A/B comes second because the fixed set cannot report on the live distribution, real load or production latency.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 190" role="img" aria-labelledby="f43a-t f43a-d">
+<title id="f43a-t">The release path for a prompt change</title>
+<desc id="f43a-d">Three boxes in a row joined by arrows. First, a regression run on the fixed set, which over-samples rare segments and spends no live traffic. Second, a controlled A/B with one variable per variant, randomised by user or session, with metrics and guardrails declared first. Third, a staged rollout that widens in stages after the A/B reads clean. Under the first two boxes, a note says why each step comes where it does.</desc>
+<rect class="bb" x="2" y="10" width="188" height="96"/>
+<text class="b tc tb2" x="96" y="32">Regression run</text>
+<text class="m tc" x="96" y="54">fixed set, rare segments</text><text class="m tc" x="96" y="70">over-sampled</text><text class="m tc" x="96" y="86">no live traffic spent</text>
+<rect class="bx" x="214" y="10" width="188" height="96"/>
+<text class="b tc" x="308" y="32">Controlled A/B</text>
+<text class="m tc" x="308" y="54">one variable per variant</text><text class="m tc" x="308" y="70">random by user or session</text><text class="m tc" x="308" y="86">metrics declared first</text>
+<rect class="bx" x="426" y="10" width="188" height="96"/>
+<text class="b tc" x="520" y="32">Staged rollout</text>
+<text class="m tc" x="520" y="54">widen in stages</text><text class="m tc" x="520" y="70">after the A/B reads clean</text>
+<path class="ln" d="M192 58H212" marker-end="url(#ah)"/><path class="ln" d="M404 58H424" marker-end="url(#ah)"/>
+<text class="s" x="2" y="130">Goes first: the A/B costs live</text><text class="s" x="2" y="146">traffic, and only the fixed set</text><text class="s" x="2" y="162">over-samples rare segments.</text>
+<text class="s" x="214" y="130">Goes second: the fixed set cannot</text><text class="s" x="214" y="146">show the live distribution, real</text><text class="s" x="214" y="162">load or production latency.</text>
+</svg>
+</div>
+<figcaption>Each step answers a question the previous one cannot. A change that skips a step leaves one of the questions unasked.</figcaption>
+</figure>
+
+<p>The corpus discriminator is whether the change was checked before it touched traffic, and whether a result could be attributed to it. Change one variable per variant. If a variant changes the prompt, the model and the retrieval depth together, split it into separate variants. Otherwise a win is unattributable, and the next regression has three suspects.</p>
+
+<p>Randomise by user or session and never per request. A per-request split flips a conversation between prompts mid-thread, which corrupts the behaviour and the metric together. Declare the primary metric and the guardrails before launch, and let the guardrails only block. A variant that improves the primary metric and breaches the declared latency guardrail is not shipped.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 214" role="img" aria-labelledby="f43b-t f43b-d">
+<title id="f43b-t">What to randomise, and when to stop</title>
+<desc id="f43b-d">Two panels above a timeline. On the left, randomising per request sends one user's four turns to prompts A, B, A, B, so the conversation flips mid-thread. On the right, randomising per user keeps all of one user's turns on prompt A. Below, a 14-day timeline with a dashed marker at day 4 that says looks favourable, keep running, and an end at day 14 where the result is read.</desc>
+<text class="b tr" x="2" y="16">Random per request</text>
+<text class="s" x="2" y="34">one user's conversation</text>
+<rect class="bx" x="2" y="42" width="60" height="30"/><text class="m tc" x="32" y="62">A</text>
+<rect class="bb" x="68" y="42" width="60" height="30"/><text class="m tc" x="98" y="62">B</text>
+<rect class="bx" x="134" y="42" width="60" height="30"/><text class="m tc" x="164" y="62">A</text>
+<rect class="bb" x="200" y="42" width="60" height="30"/><text class="m tc" x="230" y="62">B</text>
+<text class="s tr" x="2" y="92">The prompt flips mid-thread.</text>
+<text class="b tb2" x="316" y="16">Random per user or session</text>
+<text class="s" x="316" y="34">one user's conversation</text>
+<rect class="bx" x="316" y="42" width="60" height="30"/><text class="m tc" x="346" y="62">A</text>
+<rect class="bx" x="382" y="42" width="60" height="30"/><text class="m tc" x="412" y="62">A</text>
+<rect class="bx" x="448" y="42" width="60" height="30"/><text class="m tc" x="478" y="62">A</text>
+<rect class="bx" x="514" y="42" width="60" height="30"/><text class="m tc" x="544" y="62">A</text>
+<text class="s" x="316" y="92">The whole conversation stays on one prompt.</text>
+<text class="s" x="2" y="126">Declared duration: 14 days</text>
+<rect class="bb" x="2" y="136" width="612" height="22"/>
+<path class="lr dash" d="M175.7 130V168"/>
+<text class="m" x="184" y="177">day 4 looks favourable: keep running</text>
+<text class="s te" x="614" y="196">day 14: read the result</text>
+<text class="s" x="2" y="196">day 1</text>
+</svg>
+</div>
+<figcaption>The top row decides the unit of randomisation. The bottom row shows the stopping rule: a good-looking day 4 is not the declared end.</figcaption>
+</figure>
+
+<p>Fix the duration and the sample size in advance. A test that looks favourable at day 4 of a planned 14 runs to day 14, because stopping on good news inflates the false-positive rate, the chance of declaring a win that is only noise.</p>
+<p>The corpus gives no rule for sizing the duration or the sample, and a real test sizes them from the smallest difference worth detecting. </p>
+<p>Report by segment as well as in aggregate. If the aggregate improves by 1.5 points and one segment regresses by 12, do not ship on the aggregate, since segment masking applies to A/B results as it does to accuracy.</p>
+
+<p>If a change has already shipped to 100% with no control arm, state that no clean comparison exists. A before-and-after reading is confounded by everything else that changed in the window.</p>
+
+<ul class="rules" aria-label="Decision rules for the prompt release path">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-4.9-01"><span class="when">A prompt edit looked better on ten hand-picked examples</span><span class="then">Run the regression set first, then a controlled A/B.<span class="why">Ten non-randomly chosen examples is persuasive and is not evidence.</span></span></li>
+<li data-facet="F-4.9-02"><span class="when">A variant changes prompt, model and retrieval depth together</span><span class="then">Split into separate variants.<span class="why">A win is unattributable, and the next regression has three suspects.</span></span></li>
+<li data-facet="F-4.9-03"><span class="when">The A/B is randomised per request</span><span class="then">Re-randomise by user or session.<span class="why">Conversations flip prompts mid-thread, corrupting behaviour and metric together.</span></span></li>
+<li data-facet="F-4.9-04"><span class="when">The test looks favourable at day 4 of a planned 14</span><span class="then">Run to the declared duration.<span class="why">Stopping on good news inflates the false-positive rate.</span></span></li>
+<li data-facet="F-4.9-05"><span class="when">A variant improves the primary metric but breaches the declared latency guardrail</span><span class="then">Do not ship.<span class="why">Guardrails were declared to block precisely this.</span></span></li>
+<li data-facet="F-4.9-06"><span class="when">The aggregate improves 1.5 points, and one segment regresses 12</span><span class="then">Do not ship on the aggregate.<span class="why">Segment masking applies to A/B results as it does to accuracy.</span></span></li>
+<li data-facet="F-4.9-07"><span class="when">A change has already shipped to 100% with no control arm</span><span class="then">State that no clean comparison exists.<span class="why">Before and after is confounded by everything else in the window.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: how an aggregate gain and a segment loss fit together</summary>
+<div>
+<p>This is a worked example, not a corpus rule, and its shares are invented. Suppose the regressing segment carries 10% of traffic and falls by 12 points. For the aggregate to rise by 1.5 points, the other 90% of traffic has to gain 3.0 points on average, because <span class="num" data-calc="0.9*3-0.1*12" data-round="1" data-expect="1.5">1.5</span> is the weighted sum of the two changes.</p>
+<p>Nothing in the aggregate hints at the 12-point loss. Inference: looking at the result every day for 14 days gives noise 14 chances to cross the threshold, which is why the corpus fixes the duration in advance.</p>
+</div>
+</details>
+</section>
+
+<section class="bites" id="b-o4.3">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide's one Domain 4 sample is about diagnosing a RAG failure after a document refresh and is worked through in <a href="#/o4.4">O4.4</a>, so this objective has no official sample. The scenario below comes from this project's own set, and the <a href="#/traps">Trap families</a> page defines each label. <span class="lbl">Inference</span>Expect a stem where a change looks good on a few examples and the options differ in what is checked before and after exposure.</p>
+
+<p class="stem">A prompt change improves output on a set of examples the team reviewed manually.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Run the change against the fixed regression set first, then a controlled A/B against the current prompt with the primary metric and guardrails declared in advance, then roll out in stages.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-repair">REPAIR</a>Deploy to 100% and monitor the quality dashboard for regressions. It catches damage after users absorb it, and with no control arm the comparison is confounded.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>Skip the regression set and go straight to a live A/B because live traffic is more representative. Live traffic delivers rare segments at natural frequency, so a regression confined to one of them will not surface.</span></li>
+</ul>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>A prompt edit wins on a day-4 reading of a planned 14-day test, with an aggregate gain of 1.5 points, while one segment is down 12. The test also randomised each request. What do you tell the team?</span></summary>
+<div class="ans">
+<p>Do not ship. Run to day 14, because stopping on good news inflates false positives. Do not read the aggregate alone, since the segment that lost 12 points is hidden inside it. Re-run with randomisation by user or session, so a conversation stays on one prompt, and change one variable per variant so a result can be attributed.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li><a href="#/o4.1/c4.1">O4.1</a>, §4.1: the primary metric and the guardrails need thresholds declared before launch, which is the same rule applied to a test.</li>
+<li><a href="#/o4.2/c4.4">O4.2</a>, §4.4: segment reporting is why one segment's 12-point loss is visible, and the regression set is the fixed set built there.</li>
+<li><a href="#/o3.3/c3.4">O3.3</a>, §3.4: a declared latency guardrail is the SLA of that section, and a variant that breaches it does not ship.</li>
+<li><a href="#/o4.4">O4.4</a>, §4.10: when a regression does appear in production, diagnosis checks data and retrieval before the model.</li>
+<li><a href="#/o4.5">O4.5</a>, §4.11: Inference: caching, routing and retrieval changes are production changes too, so the same path applies to them.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 4, third objective. Course corpus §4.9. No live-document check was needed: the chapter states release-process rules and no product facts. The traffic shares in the fold and the 14-day plan are invented for illustration.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>The order is regression on the fixed set, then a controlled A/B on metrics declared in advance, then a staged rollout. Ten hand-picked examples are not evidence.</li>
+<li>One variable per variant. A variant that changes prompt, model and retrieval depth together is split.</li>
+<li>Randomise by user or session, never per request.</li>
+<li>Declare the primary metric and the guardrails before launch. A breached guardrail means do not ship.</li>
+<li>Run to the declared duration. Report by segment, since a good aggregate can hide a 12-point loss. With no control arm, say that no clean comparison exists.</li>
+</ol>
+</aside>
+</div>

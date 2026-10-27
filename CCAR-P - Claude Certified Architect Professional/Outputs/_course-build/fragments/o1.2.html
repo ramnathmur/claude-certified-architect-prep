@@ -1,0 +1,191 @@
+<div class="chapter">
+<div class="main">
+
+<p>A support team runs an AI triage system on 12,000 tickets a month. Reviewers change the category on about 4% of them, which is <span class="num" data-calc="12000*4%" data-expect="480">480</span> corrections a month. What the architecture does with those corrections decides whether the system ever improves. If a fix overwrites the field, the correction is lost. If it is stored as an event and routed somewhere that changes behaviour, the team gains 480 labelled examples a month.</p>
+
+<p>A system has four stages: input, processing, output and feedback. The corpus's reading is that the fourth is the one omitted when a system ships.</p>
+
+<p>The chapter's second idea is placement. Each rule goes at the earliest stage that can enforce it, because a filter further downstream only repairs what an earlier stage could have prevented. To place a rule, ask which stage first has what it needs to enforce it, and if two stages can, take the earlier one.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 312" role="img" aria-labelledby="f12a-t f12a-d">
+<title id="f12a-t">The four stages of an end-to-end system and its feedback loop</title>
+<desc id="f12a-d">Four boxes in a row: input, processing, output and feedback. A blue return path leaves the feedback box, runs under the row past five places where a correction can land (evaluation set, prompt and examples, retrieval and index, routing thresholds, model choice) and ends at the input box. A second row shows logs, dashboards and alerts, which record what happened and change nothing.</desc>
+<rect class="bx" x="2" y="14" width="132" height="98"/>
+<text class="h tc" x="68" y="36">Input</text>
+<text class="m tc" x="68" y="58">Acquire</text>
+<text class="m tc" x="68" y="75">Validate, normalise</text>
+<text class="m tc" x="68" y="92">Decide what to trust</text>
+<rect class="bx" x="162" y="14" width="132" height="98"/>
+<text class="h tc" x="228" y="36">Processing</text>
+<text class="m tc" x="228" y="58">Model for judgment</text>
+<text class="m tc" x="228" y="75">Code for arithmetic,</text>
+<text class="m tc" x="228" y="92">lookups, sequencing</text>
+<rect class="bx" x="322" y="14" width="132" height="98"/>
+<text class="h tc" x="388" y="36">Output</text>
+<text class="m tc" x="388" y="58">A contract set by</text>
+<text class="m tc" x="388" y="75">its consumer: schema,</text>
+<text class="m tc" x="388" y="92">destination, tolerance</text>
+<rect class="bb" x="482" y="14" width="132" height="98"/>
+<text class="h tc tb2" x="548" y="36">Feedback</text>
+<text class="m tc" x="548" y="58">A correctness signal</text>
+<text class="m tc" x="548" y="75">reaches something</text>
+<text class="m tc" x="548" y="92">that changes behaviour</text>
+<path class="ln" d="M136 63H159" marker-end="url(#ah)"/>
+<path class="ln" d="M296 63H319" marker-end="url(#ah)"/>
+<path class="lb" d="M456 63H479" marker-end="url(#ah-b)"/>
+<path class="lb" d="M548 114V190H68V114" marker-end="url(#ah-b)"/>
+<text class="s tc" x="308" y="178">A signal closes the loop only when it lands on one of these and changes the system</text>
+<path class="lb" d="M108.5 190V206M201 190V206M315 190V206M413 190V206M500.5 190V206"/>
+<rect class="bb" x="80" y="206" width="57" height="24"/><text class="m tc" x="108.5" y="222">Eval set</text>
+<rect class="bb" x="151" y="206" width="100" height="24"/><text class="m tc" x="201" y="222">Prompt, examples</text>
+<rect class="bb" x="265" y="206" width="100" height="24"/><text class="m tc" x="315" y="222">Retrieval, index</text>
+<rect class="bb" x="379" y="206" width="68" height="24"/><text class="m tc" x="413" y="222">Thresholds</text>
+<rect class="bb" x="461" y="206" width="79" height="24"/><text class="m tc" x="500.5" y="222">Model choice</text>
+<text class="b tr" x="2" y="264">Not feedback</text>
+<rect class="fl" x="2" y="274" width="62" height="26"/><text class="m tc" x="33" y="291">Logs</text>
+<rect class="fl" x="72" y="274" width="84" height="26"/><text class="m tc" x="114" y="291">Dashboards</text>
+<rect class="fl" x="164" y="274" width="62" height="26"/><text class="m tc" x="195" y="291">Alerts</text>
+<path class="ls dash" d="M232 287H268" marker-end="url(#ah-g)"/>
+<text class="s" x="276" y="284">They record what happened and carry no correctness label,</text>
+<text class="s" x="276" y="300">so nothing here changes the design.</text>
+</svg>
+</div>
+<figcaption>The first three stages run in order. The fourth is closed only when a correction lands on something that changes behaviour. Logs, dashboards and alerts sit outside the loop.</figcaption>
+</figure>
+
+<section class="concept" id="c1.9" data-src="1.9" data-terms="feedback loop override signal eval set implicit explicit outcome proxy logging dashboard monitoring">
+<h3>Feedback is closed only when something changes<span class="sec">§1.9</span></h3>
+
+<p>A loop is <dfn data-def="A feedback loop is closed when a correctness signal reaches something that changes the system's behaviour: the evaluation set, the prompt or examples, the retrieval layer, routing thresholds or the choice of model.">closed</dfn> when a correctness signal reaches something that changes the system's behaviour. Signals come in three kinds. Implicit ones are almost free: a reviewer edits a draft, overrides a category or rejects a suggestion. Explicit ones take effort, such as ratings or a labelling queue.</p>
+
+<p>Outcome signals are the most decisive and often the slowest. Whether a ticket reopened shows within days, while the loss ratio (claims paid against premiums earned, in insurance) takes a year to settle. A fast signal, such as the override rate or the reopen rate, is added as a proxy alongside the slow one.</p>
+
+<p>The gap between what the model produced and what the human shipped is labelled data that costs almost nothing to collect. It only counts if the correction is stored as an event beside the original prediction.</p>
+
+<p>Then it has somewhere to go. Two destinations are the evaluation set (the fixed test cases the system is scored against) and the prompt or its few-shot examples (sample inputs and answers shown to the model). The others are the retrieval and indexing layer, the routing thresholds that decide what goes to a human, and the choice of model.</p>
+
+<p>Someone has to own that step, and a regular review of the disagreement cases is one way to do it.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 196" role="img" aria-labelledby="f12b-t f12b-d">
+<title id="f12b-t">Which feedback signals arrive in time to steer a monthly release</title>
+<desc id="f12b-d">A twelve-month timeline with a dashed line for each monthly release. The override rate and the seven-day reopen rate each show a blue dot at every month. The loss ratio shows a single dark dot at month twelve.</desc>
+<text class="s" x="172" y="12">Each dashed line is a monthly release</text>
+<path class="ls dash" d="M172 20V150M210.2 20V150M248.4 20V150M286.5 20V150M324.7 20V150M362.9 20V150M401.1 20V150M439.3 20V150M477.5 20V150M515.6 20V150M553.8 20V150M592 20V150"/>
+<path class="ln" d="M172 150H592"/>
+<text class="b" x="2" y="30">Override rate</text><text class="s" x="2" y="46">implicit, same day</text>
+<text class="b" x="2" y="72">Reopen at 7 days</text><text class="s" x="2" y="88">outcome, fast proxy</text>
+<text class="b" x="2" y="114">Loss ratio</text><text class="s" x="2" y="130">outcome, 12 months</text>
+<g class="fb"><circle cx="172" cy="34" r="5"/><circle cx="210.2" cy="34" r="5"/><circle cx="248.4" cy="34" r="5"/><circle cx="286.5" cy="34" r="5"/><circle cx="324.7" cy="34" r="5"/><circle cx="362.9" cy="34" r="5"/><circle cx="401.1" cy="34" r="5"/><circle cx="439.3" cy="34" r="5"/><circle cx="477.5" cy="34" r="5"/><circle cx="515.6" cy="34" r="5"/><circle cx="553.8" cy="34" r="5"/><circle cx="592" cy="34" r="5"/></g>
+<g class="fb"><circle cx="172" cy="76" r="5"/><circle cx="210.2" cy="76" r="5"/><circle cx="248.4" cy="76" r="5"/><circle cx="286.5" cy="76" r="5"/><circle cx="324.7" cy="76" r="5"/><circle cx="362.9" cy="76" r="5"/><circle cx="401.1" cy="76" r="5"/><circle cx="439.3" cy="76" r="5"/><circle cx="477.5" cy="76" r="5"/><circle cx="515.6" cy="76" r="5"/><circle cx="553.8" cy="76" r="5"/><circle cx="592" cy="76" r="5"/></g>
+<circle class="fi" cx="592" cy="118" r="6"/>
+<rect class="pl" x="436" y="108" width="146" height="20"/>
+<text class="s te" x="578" y="122">arrives once, at month 12</text>
+<text class="s" x="172" y="172">month 1</text>
+<text class="s te" x="592" y="172">month 12</text>
+</svg>
+</div>
+<figcaption>The override rate and the reopen rate arrive before every monthly release. The loss ratio arrives once a year, so on its own it cannot steer a monthly cycle. The seven-day reopen window is an illustration.</figcaption>
+</figure>
+
+<p>Logs, dashboards and monitoring alerts do not close a loop. They record what happened without saying whether it was right, so they change nothing by themselves.</p>
+
+<ul class="rules" aria-label="Decision rules for the feedback stage">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-1.9-01"><span class="when">A deployed system with human reviewers has shown no improvement in six months</span><span class="then">Capture the overrides and route them into the evaluation set and the prompt.<span class="why">The signal exists and is being discarded.</span></span></li>
+<li data-facet="F-1.9-02"><span class="when">The scenario's architecture lists only input, processing and output</span><span class="then">The feedback path is what is missing.<span class="why">There are four stages, and this is the one omitted at ship time.</span></span></li>
+<li data-facet="F-1.9-03"><span class="when">The outcome signal arrives 12 months later</span><span class="then">Add a fast proxy alongside it, such as override rate or reopen rate.<span class="why">A loop that closes annually cannot steer a monthly release cycle.</span></span></li>
+<li data-facet="F-1.9-04"><span class="when">The team proposes a monitoring dashboard as the improvement mechanism</span><span class="then">It is insufficient on its own.<span class="why">It shows what happened, carries no correctness label and changes nothing.</span></span></li>
+<li data-facet="F-1.9-05"><span class="when">Citations go wrong after a document refresh</span><span class="then">Route the signal to the retrieval and indexing layer.<span class="why">The failure is in retrieval, not in the model.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: three signals wired for the triage system</summary>
+<div>
+<p>The 480 overrides are one of three signals worth wiring (a worked example, not a corpus rule). In practice an override is one stored row: the ticket ID, the model's category, the reviewer's category, the prompt version and a timestamp. Rows where the two categories differ are the disagreement cases, and sampling them into the evaluation set is a single query.</p>
+<p>The triage system also drafts a first reply. The edit distance between that draft and what the agent actually sent is a second signal: heavily edited drafts go into the evaluation set, and lightly edited ones confirm the pattern is working. Both of these are implicit signals.</p>
+<p>The third is the reopen rate at seven days, joined back to the original category and confidence. It is an outcome signal that arrives within days, which is why it works as a fast proxy, and it can catch a failure the other two miss: a confident, plausible triage that resolves the ticket wrongly. Each signal has a named destination, which is what makes it feedback.</p>
+</div>
+</details>
+</section>
+
+<section class="concept" id="c1.10" data-src="1.10" data-terms="input boundary output contract deterministic code redaction precondition validation confidence field">
+<h3>Put each rule at the earliest stage that can enforce it<span class="sec">§1.10</span></h3>
+
+<p>Start at the front. The <dfn data-def="The place where outside data enters the system. It acquires the data, validates and normalises it, and decides how far to trust it.">input boundary</dfn> does three jobs: it acquires the data from a webhook, a queue or an upload, it validates and normalises it, and it decides what to trust. Content from outside your control is untrusted until the boundary decides otherwise. The boundary also fixes what the rest of the system can never recover, because context that was not captured here does not exist downstream.</p>
+
+<p>Processing is the model call plus the code around it. The common mistake is giving the model work that code does exactly: arithmetic, lookups, schema validation, threshold checks and required sequencing. Redaction is the same kind of work, and it belongs at the boundary, before the model sees anything.</p>
+
+<p>Take a support agent that sometimes acts on the wrong account because it skipped identity verification. A firmer prompt makes skipping less likely. A <dfn data-def="A check in code that blocks a step until a required earlier step has returned, so the order holds every time instead of most of the time.">programmatic precondition</dfn> is a check in code that blocks the account-action tool until the verification call returns a verified identifier, and that rules skipping out.</p>
+
+<p>The output is a contract, and whoever consumes it sets the terms. A service that routes on the result needs a field it can parse and an explicit confidence value it can compare with a threshold, because routing is code and code cannot act on prose. How the confidence value is produced and calibrated is a separate design question, and routing only needs the field to exist.</p>
+
+<p>A human reviewer needs the reasoning and the citations beside the verdict.</p>
+
+<ul class="rules" aria-label="Decision rules for the input boundary and the output contract">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-1.10-01"><span class="when">Unsupported file types reach the model and produce garbage</span><span class="then">Reject them at input validation.<span class="why">Only the boundary can stop them before the model sees them. Later stages can only detect the damage.</span></span></li>
+<li data-facet="F-1.10-02"><span class="when">Personal data must not reach the model</span><span class="then">Redact before the model call.<span class="why">Filtering the output afterwards does not undo the exposure.</span></span></li>
+<li data-facet="F-1.10-03"><span class="when">Step A must always come before step B</span><span class="then">Make it a programmatic precondition that blocks B until A returns.<span class="why">A prompt instruction is probabilistic; a precondition is deterministic.</span></span></li>
+<li data-facet="F-1.10-04"><span class="when">A downstream service routes on the model's output</span><span class="then">Return a JSON contract with an explicit confidence field.<span class="why">Routing is code, so it needs a field and not prose.</span></span></li>
+<li data-facet="F-1.10-05"><span class="when">A human reviewer consumes the output</span><span class="then">Put the reasoning and citations beside the verdict.<span class="why">The consumer determines the shape.</span></span></li>
+<li data-facet="F-1.10-06"><span class="when">Customer tier and history would help the model</span><span class="then">Attach them at the input boundary.<span class="why">They cost nothing there and cannot be recovered later.</span></span></li>
+</ul>
+</section>
+
+<section class="bites" id="b-o1.2">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide's three sample questions cover Domains 3, 2 and 4, so Domain 1 has no official sample. The two shapes below come from this project's own scenario set, not from Anthropic. Each wrong option carries a family label, and the <a href="#/traps">Trap families</a> page defines all eight. <span class="lbl">Inference</span>Expect a stem that names an output's consumer, and a stem where personal data must be handled before the model call.</p>
+
+<p class="stem">An accurate system with human reviewers shows no measurable improvement after six months.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Capture reviewer corrections as labelled events and route the disagreement cases into the evaluation set and prompt revisions.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-architected">ARCHITECTED</a>Add a monitoring dashboard for accuracy, latency and volume. It sounds like the professional answer, but it only measures the plateau.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-discard">DISCARD</a>Move to a more capable model. It replaces a working part instead of adding the missing one, and a system with no feedback path cannot improve at any ceiling.</span></li>
+</ul>
+
+<p class="stem">A support agent occasionally acts on the wrong account because the identity check is skipped.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Add a programmatic precondition: block the account-action tool until the verification call has returned a verified identifier.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-repair">REPAIR</a>Strengthen the system prompt to always verify first. It handles at the prompt layer a sequence that must hold every time, so enforcement stays probabilistic.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>Add few-shot examples that show the correct call order. It raises compliance without guaranteeing it, on a requirement that needs a guarantee.</span></li>
+</ul>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>A triage tool shows reviewers its category, and a reviewer fixes a wrong one by editing the field. Six months on, accuracy is flat. Which stage is missing, and what is the first change?</span></summary>
+<div class="ans">
+<p>Feedback is missing. Store each edit as an event next to the original prediction, then route those disagreements to the evaluation set and to prompt revisions. The overwritten field is the discarded signal.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li><a href="#/o1.1">O1.1</a>, §1.1: the fast proxy (override rate, reopen rate) first appears there, for steps whose outcome arrives 12 months later.</li>
+<li><a href="#/o1.3">O1.3</a>, §1.3: "paths that can be listed in advance belong in code" widens this chapter's deterministic-work rule from one step to a whole workflow.</li>
+<li><a href="#/o3.5/c3.10">O3.5</a>, §3.10: wrong citations after a refresh are routed to the retrieval and indexing layer here and diagnosed there.</li>
+<li><a href="#/o4.2">O4.2</a>, §4.3: reviewer overrides are real production traces, the first source an evaluation set should draw on. <a href="#/o4.6">O4.6</a>, §4.12 records the prompt and model version per request so a change can be attributed.</li>
+<li><a href="#/o5.4">O5.4</a>, §5.3: a control that fires after the request is assembled is too late, which is §1.10's redaction rule applied to regulated data.</li>
+<li><a href="#/o5.3">O5.3</a>, §5.8: a reviewer shown a fluent conclusion without its evidence tends to approve it. Inference: §1.10's rule to put reasoning and citations beside the verdict guards against that risk.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 1, second objective. Course corpus §1.9 and §1.10. No live-document check was needed: the chapter states architecture rules and no product facts.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>Four stages: input, processing, output, feedback. Feedback is closed only when a correctness signal reaches something that changes behaviour.</li>
+<li>Logs, dashboards and alerts record what happened and carry no correctness label. They are not feedback.</li>
+<li>The cheapest labelled data is the gap between what the model produced and what the human shipped, stored as an event. A slow outcome signal needs a fast proxy.</li>
+<li>The input boundary acquires, validates and normalises, and decides what to trust. Context not captured there does not exist downstream.</li>
+<li>Arithmetic, lookups, schema checks, redaction and mandatory order belong in code. "Must always" gets a precondition in code, because a prompt cannot guarantee it.</li>
+<li>The output contract is set by its consumer: a service needs a parseable field and a confidence value, a reviewer needs reasoning and citations.</li>
+</ol>
+</aside>
+</div>

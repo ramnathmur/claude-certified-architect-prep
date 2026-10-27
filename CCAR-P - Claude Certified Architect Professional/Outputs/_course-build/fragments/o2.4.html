@@ -1,0 +1,227 @@
+<div class="chapter">
+<div class="main">
+
+<p>A support chat runs for 50 turns, and each turn, a customer message and the reply, adds about 300 tokens (a token is a word or a piece of a word). The first call sends 300 tokens. The fiftieth sends <span class="num" data-calc="50*300" data-expect="15000">15,000</span>. Added up over the whole chat, the calls send <span class="num" data-calc="300*50*51/2" data-expect="382500">382,500</span> tokens, which is <span class="num" data-calc="382500/15000" data-expect="25.5">25.5</span> times the 15,000 the conversation contains. The figures are illustrative.</p>
+
+<p>One fact about the API produces that multiple: it keeps nothing between calls. The same fact explains why the model can seem to forget something said two turns ago. Once history has to be resent, a second problem follows: what to keep as it grows, and where to place the parts that must not be missed.</p>
+
+<section class="concept" id="c2.5" data-src="2.5" data-terms="stateless api messages array history resend forgot context window session id cross-session summarize truncate tokens per call diagnosis">
+<h3>Resend the whole history on every call<span class="sec">§2.5</span></h3>
+
+<p>Claude's API is <dfn data-def="Each call is independent and the server keeps no memory of earlier calls. Anything the model should know must travel in the request.">stateless</dfn>: every call stands alone, with no server-side memory. So every request must carry the complete conversation history in the <dfn data-def="The list of earlier turns, user and assistant, that the application sends with each call so the model can see the conversation so far.">messages array</dfn>. All continuity is the application's job to build and resend on every request.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 186" role="img" aria-labelledby="f24a-t f24a-d">
+<title id="f24a-t">Each call carries the whole conversation so far</title>
+<desc id="f24a-d">Four rows of request bars. Call 1 carries one turn, 300 tokens. Call 2 carries two turns, 600 tokens. Call 3 carries three turns, 900 tokens. After a note that calls 4 to 49 grow the same way, call 50 carries turns 1 to 50, 15,000 tokens. A yellow note on the right says the server keeps nothing between calls and everything the model needs travels in each request.</desc>
+<text class="b" x="2" y="40">Call 1</text>
+<rect class="bx" x="70" y="24" width="40" height="22"/><text class="s tc" x="90" y="39">T1</text>
+<text class="m" x="120" y="40">300 tokens</text>
+<text class="b" x="2" y="70">Call 2</text>
+<rect class="bx" x="70" y="54" width="40" height="22"/><text class="s tc" x="90" y="69">T1</text>
+<rect class="bx" x="110" y="54" width="40" height="22"/><text class="s tc" x="130" y="69">T2</text>
+<text class="m" x="160" y="70">600 tokens</text>
+<text class="b" x="2" y="100">Call 3</text>
+<rect class="bx" x="70" y="84" width="40" height="22"/><text class="s tc" x="90" y="99">T1</text>
+<rect class="bx" x="110" y="84" width="40" height="22"/><text class="s tc" x="130" y="99">T2</text>
+<rect class="bx" x="150" y="84" width="40" height="22"/><text class="s tc" x="170" y="99">T3</text>
+<text class="m" x="200" y="100">900 tokens</text>
+<text class="s" x="70" y="122">calls 4 to 49 grow the same way</text>
+<text class="b" x="2" y="148">Call 50</text>
+<rect class="bb" x="70" y="132" width="300" height="22"/><text class="m tc" x="220" y="148">turns 1 to 50</text>
+<text class="m" x="380" y="148"><tspan data-calc="50*300" data-expect="15000">15,000</tspan> tokens</text>
+<rect class="by" x="490" y="24" width="124" height="130"/>
+<text class="m" x="502" y="46">The server keeps</text>
+<text class="m" x="502" y="62">nothing between</text>
+<text class="m" x="502" y="78">calls. Everything</text>
+<text class="m" x="502" y="94">the model needs</text>
+<text class="m" x="502" y="110">travels in each</text>
+<text class="m" x="502" y="126">request.</text>
+<text class="s" x="2" y="176">T1 is turn 1. Each turn adds 300 tokens. Bars after call 3 are not to scale.</text>
+</svg>
+</div>
+<figcaption>Each bar is one request. Every request repeats all earlier turns, so the cost of a call grows with the length of the conversation.</figcaption>
+</figure>
+
+<p>Two symptoms look alike and have different causes. If Claude "forgot" something from two turns ago in a short conversation, the application is not including the prior messages. The context window (the most tokens a request may hold) cannot be full that early.</p>
+
+<p>If latency and cost rise as a conversation passes 50 turns, the full history is being resent every call, so more turns mean more tokens. Longer model responses and a slow database do not explain it.</p>
+
+<p>To cut the tokens resent without losing continuity, summarise or truncate older turns, and keep resending the full messages array, summary included, on every call. Full here means everything that was kept: the summary plus the turns that remain.</p>
+
+<p>Two client sessions for one user need the same handling: the application merges their histories and passes the combined history explicitly. The API will not correlate sessions, because a stateless API has no session identity and a shared identifier on the request does not create one.</p>
+
+<ul class="rules" aria-label="Decision rules for the stateless API">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-2.5-01"><span class="when">Claude "forgot" something from 2 turns ago, in a short conversation</span><span class="then">The application isn't including prior messages in the <code>messages</code> array.<span class="why">Rules out: the context window being exceeded, which is impossible this early.</span></span></li>
+<li data-facet="F-2.5-02"><span class="when">Latency and cost rise as a conversation passes 50 turns</span><span class="then">The full history is resent every call, so more turns mean more tokens.<span class="why">Rules out: the model generating longer responses, or a database slowdown.</span></span></li>
+<li data-facet="F-2.5-03"><span class="when">A team wants to reduce the tokens resent every call as a conversation grows, without losing continuity</span><span class="then">Summarise or truncate older turns, and keep resending the full <code>messages</code> array, summary included, on every call.<span class="why">Statelessness isn't the thing to remove, since every call still needs complete context. The fix shrinks what is resent and does not skip the resend.</span></span></li>
+<li data-facet="F-2.5-04"><span class="when">Two separate client sessions for the same user, hitting the API independently, need to share conversation context</span><span class="then">The application merges the histories and passes the combined history explicitly in <code>messages</code>.<span class="why">There is no server-side session identity in a stateless API. Cross-session continuity is an application responsibility, and a shared identifier on the request does not enable it.</span></span></li>
+</ul>
+</section>
+
+<section class="concept" id="c2.6" data-src="2.6" data-terms="lost in the middle attention long input findings first headings structured facts highlight restructure shorten synthesis short input">
+<h3>Put what matters where attention holds<span class="sec">§2.6</span></h3>
+
+<p>"Lost in the middle" names a pattern in long inputs. The model uses the beginning and the end reliably, and its <dfn data-def="How strongly the model weighs each part of its input when it produces the next word.">attention</dfn> to the middle is weaker. A synthesis agent given a long document can therefore miss a critical finding that sits halfway through it. The mitigation is structural: key findings first, explicit section headings, and structured data instead of verbose prose.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 176" role="img" aria-labelledby="f24b-t f24b-d">
+<title id="f24b-t">Reliable at the edges of a long input, degraded in the middle</title>
+<desc id="f24b-d">A U-shaped curve across the length of a long input. It is high at the start and at the end, labelled reliable, and low in the middle, labelled degraded. Below the axis, a blue box at the start holds a key-findings summary and a red box in the middle holds a buried finding. A note says the curve is a schematic shape and not a measurement.</desc>
+<text class="s" x="2" y="14">How reliably the model uses each part of a long input (schematic)</text>
+<path class="lb" d="M40 44C150 44 200 104 310 106C420 104 470 44 580 44"/>
+<text class="m tc tb2" x="90" y="34">Reliable</text>
+<text class="m tc tb2" x="530" y="34">Reliable</text>
+<text class="m tc tr" x="310" y="80">Degraded in the middle</text>
+<path class="ls" d="M40 116H580"/>
+<rect class="bb" x="40" y="124" width="150" height="26"/>
+<text class="m tc" x="115" y="141">Key findings summary</text>
+<rect class="br" x="250" y="124" width="120" height="26"/>
+<text class="m tc" x="310" y="141">Buried finding</text>
+<text class="s" x="40" y="168">Start of input</text>
+<text class="s tc" x="310" y="168">Middle</text>
+<text class="s te" x="580" y="168">End of input</text>
+</svg>
+</div>
+<figcaption>A finding in the middle sits where attention is weakest. Moving the findings to the start puts them where attention is reliable.</figcaption>
+</figure>
+
+<p>Shortening the input under an arbitrary token limit is the wrong fix. It risks cutting exactly the information that was missed. The structural fix puts the findings where the model reads closely. Rotating which source appears first across runs only changes whose content sits in the weak middle position.</p>
+
+<p>The scope of the fix varies. If one precision-critical fact sits mid-document and the failure is fabricating that single value, pull the fact into a short structured highlight near the top or end, and leave it in place as well. If many facts matter equally and none dominates, convert the input to explicit headed sections grouped by topic, even without one findings-first summary.</p>
+
+<p>If the total input is short, well under the model's effective context, ordering does not matter. The effect is a function of total input length, and a short input does not trigger it. Applying restructuring to such input is overhead with no measured benefit.</p>
+
+<ul class="rules" aria-label="Decision rules for lost in the middle">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-2.6-01"><span class="when">Long synthesis input misses critical mid-document findings</span><span class="then">Restructure: findings first, headings and structured facts.<span class="why">It fixes the attention pattern directly, at the source.</span></span></li>
+<li data-facet="F-2.6-02"><span class="when">A single precision-critical fact sits mid-document, and the failure is fabricating that one value</span><span class="then">Pull that fact into a short structured highlight near the top or end, in addition to leaving it in place.<span class="why">Restructuring everything targets pervasive degradation. One known critical fact needs surfacing at the positions where attention holds.</span></span></li>
+<li data-facet="F-2.6-03"><span class="when">The question is whether ordering matters when the total input is short, well under the model's effective context</span><span class="then">No.<span class="why">The phenomenon depends on total input length relative to the attention pattern, and a short input does not trigger it. Restructuring there is unneeded overhead.</span></span></li>
+<li data-facet="F-2.6-04"><span class="when">Scattered facts of equal importance, with no single dominant finding</span><span class="then">Convert to explicit headed sections grouped by topic, even without one findings-first summary.<span class="why">Structure is the fix, and it is not limited to a top summary. Section-level organisation restores retrievability across the middle.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: a highlight block, and what the documentation adds</summary>
+<div>
+<p>This is a worked example, not a corpus rule. An agent summarises a 120-page contract, and the notice period of 90 days sits in a clause on page 61. The summary states 60 days. Leave the clause where it is, and add a block at the top of the input: <code>Key terms: notice period 90 days (clause 14.2, page 61).</code> The model now meets the value at a position where attention holds.</p>
+<p>Anthropic's prompting guidance (live docs, read 2026-10-25) advises placing long documents of 20,000 tokens or more near the top of the prompt, above the query and instructions, and wrapping each in document tags. It reports that a query at the end improved quality by up to 30 percent in its tests.</p>
+<p>The context-window page also names "context rot", a decline in accuracy and recall as the token count grows, which is why curating the context matters as much as having room.</p>
+</div>
+</details>
+</section>
+
+<section class="concept" id="c2.7" data-src="2.7" data-terms="context window management hybrid extraction critical facts summary recent turns verbatim pinned block rolling summary re-summarise incrementally per-source budget retrieved documents">
+<h3>Extract what must stay exact, compress the rest<span class="sec">§2.7</span></h3>
+
+<p>The tested pattern is a hybrid. Extract the critical facts into a structured block, summarise the general discussion, and keep the recent turns verbatim, meaning word for word. A long session might hold amounts, identifiers and an allergy alongside general chatter. Summarising everything uniformly blurs those facts into vague paraphrase. Keeping only the most recent tokens drops any critical fact mentioned early.</p>
+
+<p>A decision made early may need to hold for hundreds of turns. Pin it into a persistent structured block that is included on every call, separate from the rolling summary, the running summary of older turns. A rolling summary can drift or drop a fact across repeated summarising passes. A pinned fact has a stable slot that the summarising process never touches.</p>
+
+<p>Summarising should run incrementally, as new turns roll off the retained window. One pass at the very end of the conversation either handles an unbounded amount of history at once or arrives too late to control token growth during the conversation.</p>
+
+<p>When retrieved documents and conversation history share one bounded window, give each source its own budget. Truncating whichever was added last lets one source crowd out the other unpredictably, depending on assembly order. An explicit per-source budget keeps both available.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 168" role="img" aria-labelledby="f24c-t f24c-d">
+<title id="f24c-t">One 60,000-token window assembled from five parts with their own budgets</title>
+<desc id="f24c-d">Five boxes in a row. A pinned block of 500 tokens that never changes. Critical facts of 1,500 tokens, kept verbatim. A rolling summary of 4,000 tokens, compressed. Retrieved documents of 24,000 tokens with their own budget. Recent turns of 20,000 tokens, kept verbatim. Together they use 50,000 tokens and leave 10,000 for the reply.</desc>
+<text class="s" x="4" y="14">Window in this example: 60,000 tokens, an illustrative figure</text>
+<rect class="bb" x="4" y="26" width="112" height="60"/>
+<text class="b tc" x="60" y="50">Pinned block</text><text class="m tc" x="60" y="70">500 tokens</text>
+<rect class="bb" x="128" y="26" width="112" height="60"/>
+<text class="b tc" x="184" y="50">Critical facts</text><text class="m tc" x="184" y="70">1,500 tokens</text>
+<rect class="bx" x="252" y="26" width="112" height="60"/>
+<text class="b tc" x="308" y="50">Summary</text><text class="m tc" x="308" y="70">4,000 tokens</text>
+<rect class="bx" x="376" y="26" width="112" height="60"/>
+<text class="b tc" x="432" y="50">Retrieved docs</text><text class="m tc" x="432" y="70">24,000 tokens</text>
+<rect class="bb" x="500" y="26" width="112" height="60"/>
+<text class="b tc" x="556" y="50">Recent turns</text><text class="m tc" x="556" y="70">20,000 tokens</text>
+<text class="s tc" x="60" y="104">never changes</text>
+<text class="s tc" x="184" y="104">verbatim</text>
+<text class="s tc" x="308" y="104">rolling, compressed</text>
+<text class="s tc" x="432" y="104">own budget</text>
+<text class="s tc" x="556" y="104">verbatim</text>
+<text class="m" x="4" y="136">500 + 1,500 + 4,000 + 24,000 + 20,000 = <tspan data-calc="500+1500+4000+24000+20000" data-expect="50000">50,000</tspan>, leaving <tspan data-calc="60000-50000" data-expect="10000">10,000</tspan> for the reply</text>
+<text class="s" x="4" y="156">Each source has its own budget, so documents cannot crowd out history, or the reverse.</text>
+</svg>
+</div>
+<figcaption>Blue boxes are kept exactly as written. The plain boxes are compressed or budgeted. The token figures are invented for the example.</figcaption>
+</figure>
+
+<ul class="rules" aria-label="Decision rules for context window management">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-2.7-01"><span class="when">Long conversation with precision-critical facts (amounts, IDs, allergies) plus general chatter</span><span class="then">Extract the critical facts into a structured block, summarise the rest, keep recent turns verbatim.<span class="why">It preserves precision where it matters and compresses where it doesn't.</span></span></li>
+<li data-facet="F-2.7-02"><span class="when">An early-conversation decision, such as a chosen configuration, must never change for the rest of a session that runs for hundreds of turns</span><span class="then">Pin it into a persistent structured block, re-included on every call, separate from the rolling summary.<span class="why">A rolling summary can drift or drop a fact across repeated passes. A fact that must never change needs a slot that summarising never touches.</span></span></li>
+<li data-facet="F-2.7-03"><span class="when">A team plans to summarise older turns automatically but is unsure how often to re-run the summarising step</span><span class="then">Re-summarise incrementally as new turns roll off the retained window, not once at the very end.<span class="why">A single end-of-conversation pass either processes unbounded history at once or arrives too late to control token growth.</span></span></li>
+<li data-facet="F-2.7-04"><span class="when">Retrieved documents and conversation history both need space in one bounded context window</span><span class="then">Budget each source independently against the window rather than truncating whichever was added last.<span class="why">Truncating by insertion order lets one source crowd out the other unpredictably. A per-source budget keeps both available regardless of assembly order.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: what the documentation says about windows and overflow</summary>
+<div>
+<p>These are dated notes, not corpus rules (live docs, read 2026-10-25). The four current models have a 1M-token context window by default, with a 128K-token maximum output. Everything counts toward the window: the system prompt, every message including tool results, images and documents, tool definitions, and the model's own output including thinking. A cached prefix still counts, because caching changes the price of a prefix and not its size.</p>
+<p>For long conversations the page names server-side compaction as the primary strategy, a beta feature on Claude 4.6 and later, and describes context editing, which clears old tool results or thinking blocks. An input already over the window returns a 400 error. On Claude 4.5 and newer models, an input plus <code>max_tokens</code> that goes over the window is accepted, and generation can stop with the reason <code>model_context_window_exceeded</code>.</p>
+<p>The corpus examples use bounded windows. A window of 1M tokens makes the budgeting problem rarer in practice and leaves the rules above in force, because the pinned block, the verbatim facts and the per-source budgets address accuracy and cost as well as capacity.</p>
+</div>
+</details>
+</section>
+
+<section class="bites" id="b-o2.4">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide's three sample questions cover Domains 3, 2 and 4. The Domain 2 sample is about prompt caching and is worked through in <a href="#/o2.5">O2.5</a>, so this objective has none. The scenarios below come from this project's own set, and the <a href="#/traps">Trap families</a> page defines each label. <span class="lbl">Inference</span>Expect a symptom with a tempting model-side explanation, and check whether the application sent the context before choosing it.</p>
+
+<p class="stem">Claude has no memory of a fact mentioned two turns earlier.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>The application is not including the full prior message history in the <code>messages</code> array.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-discard">DISCARD</a>The context window was exceeded. This swaps a plain application-layer fix for a model-capacity explanation that cannot fit a short conversation.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-wrong-axis">WRONG-AXIS</a>Claude needs a <code>session_id</code> parameter for persistent memory. That invents a mechanism the stateless API does not have.</span></li>
+</ul>
+
+<p class="stem">A long assistance session mixes a safety-critical fact with general chatter.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Extract the critical fact and quantities into a compact structured block, summarise the chatter, and keep the most recent exchanges verbatim.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-repair">REPAIR</a>Summarise the entire history. It compresses everything uniformly and degrades the critical fact into unsafe vagueness.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-discard">DISCARD</a>Keep only the most recent portion of the conversation. It drops the critical fact entirely if it was mentioned early and falls outside the retained window.</span></li>
+</ul>
+
+<p><span class="lbl">Design shape</span>A synthesis agent misses critical findings buried in the middle of a long input. The answer places a key-findings summary at the start and adds explicit section headings throughout. </p>
+<p>Summarising the whole input to a much shorter length is <a class="fam" href="#/traps/f-discard">DISCARD</a>, because it risks cutting the information the agent is missing. Alternating which source appears first across runs is <a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>: it rotates whose content sits in the weak middle and leaves the attention pattern alone.</p>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>A chat assistant forgets an order number given two turns earlier. Separately, a 40-page report synthesis misses a finding on page 22. What does each point to, and where does each fix go?</span></summary>
+<div class="ans">
+<p>The forgotten order number points to the application, which did not include the prior messages in the messages array. The fix is to send the history on every call, since the API keeps nothing. The missed finding on page 22 points to position. Restructure the input with a key-findings summary at the start and explicit headings, and do not just shorten it.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li><a href="#/o2.5">O2.5</a>, §2.8: the history resent on each call is a repeated prefix, and prompt caching is built for repeated prefixes. Inference: that is why this chapter and the next belong together.</li>
+<li><a href="#/o1.4/c1.7">O1.4</a>, §1.7: a subagent knows only what the coordinator passed it, the same rule as a stateless API. Context not sent does not exist for the receiver.</li>
+<li><a href="#/o2.2/c2.2">O2.2</a>, §2.2: the system prompt is part of every request, which is how it keeps authority on every turn. A rule never sent has no effect.</li>
+<li><a href="#/o3.8">O3.8</a>, §3.14: progressive discovery against a monolithic context is the other way to manage what the window holds, by loading less up front.</li>
+<li><a href="#/o4.4">O4.4</a>, §4.10: diagnosis checks the data and retrieval before the model. Inference: §2.5's root-cause table follows the same order, checking what the application sent before blaming the model.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 2, fourth objective, and section 8 for the Domain 2 sample question (prompt caching, O2.5). Course corpus §2.5 to §2.7, including the rows added on 1 September 2026. Live checks, read 2026-10-25: Anthropic, "Context windows" (platform.claude.com/docs/en/build-with-claude/context-windows) for the window, counting, compaction and overflow notes; Anthropic prompting guidance (platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices) for the placement of long documents. The 300-token turns, the 60,000-token window, its five budgets and the contract example are invented for illustration.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>The API is stateless. Every call carries the whole history in the messages array, and cost grows with it.</li>
+<li>A fact forgotten two turns ago means the application did not send it. A cost climbing past 50 turns means the full history is resent. Summarise or truncate old turns and still resend the array.</li>
+<li>Two sessions share context only if the application merges the histories. No session identifier does it.</li>
+<li>Attention is strong at the start and end of a long input. Fix a lost finding with findings first, headings and structured facts, not by shortening.</li>
+<li>One critical mid-document fact gets a short highlight near the top or end. A short input needs no restructuring.</li>
+<li>Extract exact facts, summarise the chatter, keep recent turns verbatim. Pin fixed decisions, re-summarise incrementally, and budget each source on its own.</li>
+</ol>
+</aside>
+</div>

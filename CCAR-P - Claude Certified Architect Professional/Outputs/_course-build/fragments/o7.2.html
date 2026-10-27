@@ -1,0 +1,236 @@
+<div class="chapter">
+<div class="main">
+
+<p>On Monday a team has two tasks for its AI coding tool. One is a library migration across 45 files, with three plausible ways to sequence it. The other is a single-file bug with a clear stack trace. Starting both in the same way is the mistake, and the difference between them has nothing to do with how hard each one looks.</p>
+
+<p>Six months after adoption, an executive asks whether the investment paid off. The team's answer is that invocations have grown every month. This objective covers the choices in between: how to start a task, how to correct one that went wrong, how to run the tool in a pipeline, and what to measure afterwards.</p>
+
+<section class="concept" id="c7.3" data-src="7.3" data-terms="plan mode direct execution approach determined spec blast radius approval audit reviewable plan combined pattern read-only">
+<h3>Plan when the approach is undetermined, and execute when it is fixed<span class="sec">§7.3</span></h3>
+
+<p>Plan mode explores, understands and designs, then presents a plan before executing. It uses read-only operations, so it has no side effects. Direct execution implements immediately. The combined pattern is to plan for investigation and design, have a human approve, then execute directly against the approved plan. The documented trap is to start directly and switch to planning when the task gets hard.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 196" role="img" aria-labelledby="f72a-t f72a-d">
+<title id="f72a-t">Deciding between plan mode and direct execution</title>
+<desc id="f72a-d">A question box asks whether the approach is already determined. If yes, go straight to direct execution, for example a function against a clear spec, a single-file fix, or a large task whose approach was settled in an approved design. If no, use plan mode, then a human approves the plan, then direct execution. A note says size is not the test.</desc>
+<rect class="bx" x="2" y="68" width="170" height="60"/>
+<text class="m tc" x="87" y="92">Is the approach</text><text class="m tc" x="87" y="110">already determined?</text>
+<rect class="bb" x="230" y="10" width="384" height="52"/>
+<text class="b tb2" x="242" y="30">Yes: direct execution</text><text class="m" x="242" y="50">a clear spec, a stack trace, an approved design</text>
+<path class="ln" d="M174 86L228 40" marker-end="url(#ah)"/><text class="s" x="190" y="58">yes</text>
+<path class="ln" d="M174 112L228 138" marker-end="url(#ah)"/><text class="s" x="190" y="136">no</text>
+<rect class="bx" x="230" y="112" width="112" height="52"/><text class="b tc" x="286" y="134">Plan mode</text><text class="s tc" x="286" y="152">read-only</text>
+<rect class="bx" x="368" y="112" width="112" height="52"/><text class="b tc" x="424" y="134">Human</text><text class="b tc" x="424" y="150">approves</text>
+<rect class="bb" x="506" y="112" width="108" height="52"/><text class="b tc tb2" x="560" y="134">Direct</text><text class="b tc tb2" x="560" y="150">execution</text>
+<path class="ln" d="M344 138H366" marker-end="url(#ah)"/><path class="ln" d="M482 138H504" marker-end="url(#ah)"/>
+<text class="s" x="2" y="186">Size is not the test. A large task with a settled approach executes directly.</text>
+</svg>
+</div>
+<figcaption>The question on the left decides the branch. Both branches end in direct execution, and only the second has a planning round before it.</figcaption>
+</figure>
+
+<p>The discriminator is whether the approach is already determined, and not the size or difficulty of the task. If several valid approaches exist and choosing wrong means expensive rework, plan first. If the spec fixes the approach, execute. A plan is also a reviewable artifact, which satisfies approval and audit requirements that a finished diff does not.</p>
+
+<p>Restructuring a monolith into services across dozens of files has many valid approaches, and a wrong one is expensive to unwind. Adding an integration with several valid approaches makes the approach the decision. A migration touching 45 or more files has blast radius, and a reversal halfway is costly. In a change-controlled environment, a multi-approach refactor needs a plan, because the plan is the artifact the approval process attaches to.</p>
+
+<p>Implementing a function against a well-defined input and output spec needs direct execution, since a planning round would be pure overhead. So does a single-file bug fix with a clear stack trace, where there is nothing to decide. A large task whose approach was settled in an approved design also executes directly, since size is not the discriminator.</p>
+
+<ul class="rules" aria-label="Decision rules for plan mode and direct execution">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-7.3-01"><span class="when">Restructure a monolith into services across dozens of files</span><span class="then">Plan mode.<span class="why">There are many valid approaches, and a wrong one is expensive to unwind.</span></span></li>
+<li data-facet="F-7.3-02"><span class="when">Add a new integration with multiple valid approaches</span><span class="then">Plan mode.<span class="why">The approach is the decision being made.</span></span></li>
+<li data-facet="F-7.3-03"><span class="when">A library migration touching 45+ files</span><span class="then">Plan mode.<span class="why">Blast radius, and a mid-migration reversal is costly.</span></span></li>
+<li data-facet="F-7.3-04"><span class="when">Implement a function against a well-defined input and output spec</span><span class="then">Direct execution.<span class="why">The spec determines the approach, and a planning round is pure overhead.</span></span></li>
+<li data-facet="F-7.3-05"><span class="when">A single-file bug fix with a clear stack trace</span><span class="then">Direct execution.<span class="why">There is nothing to decide.</span></span></li>
+<li data-facet="F-7.3-06"><span class="when">A large task, but the approach was settled in an approved design</span><span class="then">Direct execution.<span class="why">Size is not the discriminator.</span></span></li>
+<li data-facet="F-7.3-07"><span class="when">A multi-approach refactor in a change-controlled environment</span><span class="then">Plan mode.<span class="why">The plan doubles as the artifact the approval process attaches to.</span></span></li>
+</ul>
+</section>
+
+<section class="concept" id="c7.4" data-src="7.4" data-terms="workflow refinement technique interview pattern test-driven iteration concrete examples feedback batching review isolation failure signature independent instance">
+<h3>Match the technique to the failure you can see<span class="sec">§7.4</span></h3>
+
+<p>When a first attempt goes wrong, the stem usually shows the signature of the failure, and the signature selects the technique. The corpus names five: the interview pattern, test-driven iteration, concrete examples, feedback batching and review isolation. Batching covers two cases, so the figure has six rows.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 218" role="img" aria-labelledby="f72b-t f72b-d">
+<title id="f72b-t">Failure signatures and the technique each one calls for</title>
+<desc id="f72b-d">Six rows pairing a failure with a technique. Each version misses a different requirement: use the interview pattern. Correctness is checkable as an assertion: write tests first and feed concrete failures back. Output shape varies under the same instruction: add two or three input and output examples. Two review findings interact: fix them in one message. Findings are independent: fix them one at a time. The generating session reviews its own code: use an independent instance.</desc>
+<text class="s" x="2" y="14">What you see</text><text class="s" x="316" y="14">The technique</text>
+<rect class="bx" x="2" y="22" width="300" height="26"/><text class="m" x="10" y="40">Each version misses a different requirement</text>
+<rect class="bb" x="316" y="22" width="298" height="26"/><text class="m" x="324" y="40">Interview pattern: ask before building</text>
+<rect class="bx" x="2" y="56" width="300" height="26"/><text class="m" x="10" y="74">Correctness is checkable as an assertion</text>
+<rect class="bb" x="316" y="56" width="298" height="26"/><text class="m" x="324" y="74">Tests first, feed concrete failures back</text>
+<rect class="bx" x="2" y="90" width="300" height="26"/><text class="m" x="10" y="108">Output shape varies under one instruction</text>
+<rect class="bb" x="316" y="90" width="298" height="26"/><text class="m" x="324" y="108">Add 2 to 3 input and output examples</text>
+<rect class="bx" x="2" y="124" width="300" height="26"/><text class="m" x="10" y="142">Two review findings interact</text>
+<rect class="bb" x="316" y="124" width="298" height="26"/><text class="m" x="324" y="142">One detailed message for the pair</text>
+<rect class="bx" x="2" y="158" width="300" height="26"/><text class="m" x="10" y="176">Several findings, all independent</text>
+<rect class="bb" x="316" y="158" width="298" height="26"/><text class="m" x="324" y="176">Fix them one at a time</text>
+<rect class="bx" x="2" y="192" width="300" height="26"/><text class="m" x="10" y="210">The author is asked to review its own code</text>
+<rect class="bb" x="316" y="192" width="298" height="26"/><text class="m" x="324" y="210">An independent instance reviews it</text>
+</svg>
+</div>
+<figcaption>Read across a row. The left side is something you can observe in a transcript, and the right side is the technique that addresses that cause.</figcaption>
+</figure>
+
+<p>If each generated version misses a different requirement, the brief is incomplete, and iterating on the output never completes a brief. Use the interview pattern: have the model ask its clarifying questions before it implements. If correctness can be checked as an assertion and prose bug reports get partial fixes, write the test suite first and iterate by feeding concrete failures back. </p>
+<p>Tests are a machine-checkable definition of done, and prose edge cases are read inconsistently.</p>
+
+<p>If the shape of the output varies from run to run under an unchanged instruction, add 2 to 3 concrete input and output pairs, since examples show the format and the decision logic unambiguously. Lengthening the prose description is rejected, because it is still ambiguous and only longer.</p>
+
+<p>For review feedback, put interacting issues in one detailed message, because separate fixes to interacting issues contradict each other. Independent issues go one at a time, so that each change stays easy to verify. A session that generated code is less effective at reviewing it, because it retains its reasoning context and is unlikely to challenge its own decisions, so use an independent instance.</p>
+</section>
+
+<section class="concept" id="c7.5" data-src="7.5" data-terms="ai tooling pipeline non-interactive claude -p print output-format json json-schema ci context re-run prior findings batch api synchronous custom_id structured output parse">
+<h3>Make the output machine-readable at the source<span class="sec">§7.5</span></h3>
+
+<p>To run Claude Code in a pipeline, use <code>claude -p "&lt;prompt&gt;"</code>, equivalently <code>--print</code>. It processes the prompt, prints to stdout and exits. Without it, the pipeline hangs waiting for input. The corpus lists options that do not exist and must be rejected: <code>--batch</code> and <code>CLAUDE_HEADLESS=true</code>. Redirecting stdin from <code>/dev/null</code> is a workaround and not the mechanism.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 214" role="img" aria-labelledby="f72c-t f72c-d">
+<title id="f72c-t">Two choices for a pipeline job: how the output is read, and how the job runs</title>
+<desc id="f72c-d">Top row: if a program parses the output, use output format json with a json schema, which guarantees a well-formed shape. Bottom row: if a person is waiting, or the analysis fetches files mid-request, run it synchronously. Otherwise, run it through the Batch API, which is 50 percent cheaper with up to 24 hours and no latency guarantee.</desc>
+<rect class="bx" x="2" y="12" width="190" height="52"/><text class="m tc" x="97" y="34">A program parses</text><text class="m tc" x="97" y="50">the output</text>
+<rect class="bb" x="230" y="12" width="384" height="52"/>
+<text class="b tb2" x="242" y="32">--output-format json, with --json-schema</text><text class="m" x="242" y="52">a well-formed, parseable shape on every run</text>
+<path class="ln" d="M194 38H228" marker-end="url(#ah-b)"/>
+<rect class="bx" x="2" y="92" width="190" height="64"/><text class="m tc" x="97" y="114">Is someone waiting,</text><text class="m tc" x="97" y="130">or are tools needed</text><text class="m tc" x="97" y="146">mid-request?</text>
+<rect class="bx" x="230" y="86" width="384" height="32"/><text class="b" x="242" y="107">Yes: run it synchronously</text>
+<rect class="bb" x="230" y="130" width="384" height="40"/><text class="b tb2" x="242" y="148">No: the Batch API</text><text class="m" x="242" y="163">50% cheaper, up to 24 hours, no latency guarantee</text>
+<path class="ln" d="M194 112L228 102" marker-end="url(#ah)"/><path class="ln" d="M194 136L228 148" marker-end="url(#ah-b)"/>
+<text class="s" x="2" y="200">Batch cannot run a tool partway through a request, so a job that needs one is synchronous.</text>
+</svg>
+</div>
+<figcaption>The top choice is about the reader and the bottom choice is about the schedule. A job that needs a tool mid-request cannot be a batch job.</figcaption>
+</figure>
+
+<p>A person reading prose tolerates variation, and a program parsing fields does not. For structured output, <code>--output-format json</code> forces JSON and <code>--json-schema</code> enforces a schema for safe downstream parsing. </p>
+<p>The project instruction file can supply testing standards, fixture conventions and review criteria to the CI run, and existing test files in context prevent duplicate test generation. A review that posts near-duplicate comments on every push needs the prior run's findings fed in, with an instruction to report only new or still-unaddressed issues.</p>
+
+<p>The Batch API is 50% cheaper and allows up to 24 hours, with no latency guarantee. A <code>custom_id</code> matches outputs to inputs. It cannot execute a tool mid-request and return the result. </p>
+<p>An overnight tech-debt report that nobody is blocked on suits it. A blocking pre-merge check does not, because a developer is waiting. Non-urgent analysis that fetches related files mid-analysis also stays synchronous, since batch cannot execute tools during a request and the flexible deadline is irrelevant.</p>
+
+<ul class="rules" aria-label="Decision rules for AI tooling in the pipeline">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-7.5-01"><span class="when">Each finding must be posted as an inline PR comment (path, line, severity, fix)</span><span class="then"><code>--output-format json</code> with <code>--json-schema</code>.<span class="why">It guarantees a well-formed, parseable shape every run.</span></span></li>
+<li data-facet="F-7.5-02"><span class="when">Same situation, addressed by an "Output Format" section in CLAUDE.md</span><span class="then">Reject.<span class="why">Instruction context makes the format likely and not guaranteed.</span></span></li>
+<li data-facet="F-7.5-03"><span class="when">A CI job hangs indefinitely instead of completing</span><span class="then">Add <code>-p</code> or <code>--print</code>.<span class="why">Without it the tool waits for interactive input.</span></span></li>
+<li data-facet="F-7.5-04"><span class="when">A review posts near-duplicate comments on every push</span><span class="then">Include the prior run's findings in the re-run prompt.<span class="why">A blank-slate re-run re-litigates settled findings.</span></span></li>
+<li data-facet="F-7.5-05"><span class="when">An overnight tech-debt report, and nobody is blocked</span><span class="then">The Batch API.<span class="why">The deadline is flexible, and it saves 50% of the cost.</span></span></li>
+<li data-facet="F-7.5-06"><span class="when">A blocking pre-merge check</span><span class="then">Synchronous.<span class="why">A developer is waiting on it.</span></span></li>
+<li data-facet="F-7.5-07"><span class="when">Non-urgent analysis that fetches related files mid-analysis</span><span class="then">Synchronous.<span class="why">Batch cannot execute tools during a request, and the deadline is irrelevant.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: what the CLI documentation confirms, and a batch saving</summary>
+<div>
+<p>These are dated notes, not corpus rules (live docs, read 2026-10-27). Anthropic's CLI reference describes <code>claude -p "query"</code> as a query through the SDK that then exits. It can take piped input. <code>--output-format</code> accepts <code>text</code>, <code>json</code> and <code>stream-json</code>, and applies in print mode. <code>--json-schema</code> returns validated JSON matching a schema, also in print mode only. <code>--permission-mode</code> accepts <code>plan</code> among its values, which is how a session can start in plan mode.</p>
+<p>A worked example, not a corpus rule, with invented costs. A nightly report that costs $200 run synchronously costs $<span class="num" data-calc="200*50%" data-expect="100">100</span> as a batch, using the 50% discount in Anthropic's model documentation (live docs, read 2026-10-25). The saving applies only if the report needs no tool call partway through and can wait, since batch allows up to 24 hours and gives no latency guarantee.</p>
+</div>
+</details>
+</section>
+
+<section class="concept" id="c7.6" data-src="7.6" data-terms="measuring ai tooling value delivery outcome baseline confound activity metric leading indicator cycle time defect escape review latency onboarding invocations seats">
+<h3>Measure the delivery outcome, against a baseline set before adoption<span class="sec">§7.6</span></h3>
+
+<p>The value of AI tooling is the change in the delivery outcome it was adopted to improve. Invocation counts, seats onboarded, hours in the tool and lines of generated code accepted are not value. The discipline has three parts: name the metric before adoption, establish a baseline, and state the confound, the other change in the period that could explain the result. </p>
+<p>Activity data has one legitimate use, as a leading indicator during rollout, since low adoption explains a flat outcome metric.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 178" role="img" aria-labelledby="f72d-t f72d-d">
+<title id="f72d-t">Activity metrics and outcome metrics for the same adoption goals</title>
+<desc id="f72d-d">Two boxes. On the left, in red, activity metrics: invocations per engineer, seats provisioned, number of PRs the review job ran on, and volume of generated code accepted. On the right, in blue, outcome metrics: cycle time from first commit to merge, defects found in production per release, time from review requested to review completed, and time to a new engineer's first merged non-trivial change. A note gives the test: would the number move if the tool were used constantly and nothing shipped faster or better?</desc>
+<rect class="br" x="2" y="10" width="298" height="126"/>
+<text class="b tr" x="14" y="32">Activity: moves with usage</text>
+<text class="m" x="14" y="56">Invocations per engineer</text><text class="m" x="14" y="76">Seats provisioned</text><text class="m" x="14" y="96">PRs the review job ran on</text><text class="m" x="14" y="116">Generated code accepted</text>
+<rect class="bb" x="316" y="10" width="298" height="126"/>
+<text class="b tb2" x="328" y="32">Outcome: moves with delivery</text>
+<text class="m" x="328" y="56">Cycle time, commit to merge</text><text class="m" x="328" y="76">Production defects per release</text><text class="m" x="328" y="96">Review requested to completed</text><text class="m" x="328" y="116">Start date to first merged change</text>
+<text class="s" x="2" y="156">The test: would it move if the tool were used constantly and nothing shipped faster or better?</text>
+<text class="s" x="2" y="172">If yes, it is an activity metric.</text>
+</svg>
+</div>
+<figcaption>Each row on the left has a partner on the right for the same goal. The right column is the one that can support a claim that the investment paid off.</figcaption>
+</figure>
+
+<p>Match the metric to the adoption rationale. To shorten delivery cycles, use cycle time from first commit to merge. To reduce defect escape, use defects found in production per release. To cut review latency, use the time from review requested to review completed. To accelerate onboarding, use the time from a new engineer's start date to their first merged non-trivial change.</p>
+
+<p>Reject any metric chosen after the data was collected, because a metric selected because it moved is not evidence. Reject any with no pre-adoption baseline, because a figure with nothing to compare against is a number and not evidence. State the confound yourself: the team size changed, the release process changed, or a large refactor landed mid-quarter. Naming it is the difference between a measurement and a pitch.</p>
+
+<details class="deeper">
+<summary>Go deeper: a baseline and a confound in numbers</summary>
+<div>
+<p>This is a worked example, not a corpus rule, and its numbers are invented. In the quarter before adoption, cycle time from first commit to merge averaged 5.2 days. Six months later it averages 4.1 days, a fall of <span class="num" data-calc="(5.2-4.1)/5.2*100" data-round="1" data-expect="21.2">21.2</span>%.</p>
+<p>That is a result worth reporting, and only with its confound beside it. If the release process also changed in the period, say so, and say how much of the change you cannot separate. Invocations that grew every month would have been equally true if cycle time had not moved at all.</p>
+</div>
+</details>
+</section>
+
+<section class="bites" id="b-o7.2">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide's three samples sit in Domains 2, 3 and 4, so none of them is a sample for this domain. The scenarios below come from this project's own set, and the <a href="#/traps">Trap families</a> page defines each label. <span class="lbl">Inference</span>Expect the signature in the stem to name the technique, and options that act on the symptom or measure the wrong thing.</p>
+
+<p class="stem">A migration touches 45 or more files, with several viable sequencing strategies.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Use plan mode to explore and present a sequencing plan for approval, then execute directly against the approved plan.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>Begin executing and switch to planning once the task proves complex. By then structural decisions are sunk on a path chosen without deliberation, and reactive switching costs more than planning upfront.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-overspec">OVERSPEC</a>Adopt a standing rule that every change goes through plan mode and written approval, single-file fixes included. It is a stronger guarantee than the requirement asks for, and it taxes every routine change to control a risk that exists only where the approach is undetermined.</span></li>
+</ul>
+
+<p class="stem">An automated review's findings must be posted as inline PR comments by a downstream script.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Run non-interactively with <code>--output-format json</code> and <code>--json-schema</code>, so every finding carries path, line, severity and suggested fix in a guaranteed shape.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>Add a detailed "Output Format" section to the project CLAUDE.md. It raises compliance without guaranteeing it, and the parser fails on the run that deviates.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-repair">REPAIR</a>Have the downstream script parse the prose output with regular expressions. It builds tolerance for malformed output downstream instead of enforcing well-formed output at the source.</span></li>
+</ul>
+
+<p class="stem">An executive asks whether six months of AI tooling investment paid off.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Report the delivery outcome the tooling was adopted to improve, against its pre-adoption baseline, with the confounding changes in the period named.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-wrong-axis">WRONG-AXIS</a>Report that invocations grew every month and 90% of engineers are now active users. It measures adoption, which is a rollout indicator, and says nothing about delivery outcomes.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-architected">ARCHITECTED</a>Commission a developer satisfaction survey and report the sentiment score. It sounds rigorous and produces a number, and it substitutes perception for the delivery outcome the investment was justified on.</span></li>
+</ul>
+
+<p><span class="lbl">Design shape</span>Three attempts at a caching layer in an unfamiliar domain each miss a different requirement. The answer restarts with the interview pattern, asking about invalidation strategy, tolerance for stale reads, scoping and volume before implementing. </p>
+<p>Continuing to correct one missed requirement per round is <a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>, since the incomplete brief is never addressed. Moving to a more capable model is <a class="fam" href="#/traps/f-discard">DISCARD</a>, because it replaces a working tool instead of supplying the requirements it was never given.</p>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>A team has a 45-file migration with several sequencing options, a nightly report that needs no human, a review job whose output a script must parse, and an executive who asks if the tooling paid off. What do you choose for each?</span></summary>
+<div class="ans">
+<p>Plan the migration, get the plan approved, then execute directly. Run the nightly report through the Batch API if it needs no tool mid-request. Run the review job with <code>-p</code>, <code>--output-format json</code> and <code>--json-schema</code>, so the shape is guaranteed. For the executive, report a delivery outcome such as cycle time against its pre-adoption baseline, and name the confounds.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li><a href="#/o7.1/c7.1">O7.1</a>, §7.1: the project instruction file that supplies CI context is the committed configuration of that chapter. Inference: a non-interactive run draws on the same files.</li>
+<li><a href="#/o4.2/c4.5">O4.2</a>, §4.5: schema validation is a deterministic check, and enforcing the schema at the source is the same code-first rule.</li>
+<li><a href="#/o4.5/c4.11">O4.5</a>, §4.11: batch and async processing is the lever for a non-urgent job there, and its limit is the same.</li>
+<li><a href="#/o4.1/c4.1">O4.1</a>, §4.1: a metric named before adoption, with a baseline, is the same pre-declared bar applied to a tooling investment.</li>
+<li><a href="#/o7.3">O7.3</a>, §7.7 and §7.8: the next objective turns to finding which layer owns a symptom when the tooling misbehaves.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 7, second objective. Course corpus §7.3 to §7.6. Live checks: Anthropic, "CLI reference" (code.claude.com/docs/en/cli-reference), read 2026-10-27, and the model overview (platform.claude.com/docs/en/models/overview), read 2026-10-25, for the batch discount. The costs and the cycle-time figures in the folds are invented for illustration.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>Plan when the approach is undetermined and a wrong one is expensive. Execute when the spec or an approved design fixes it. Size is not the test, and switching to planning after a bad start is the documented trap.</li>
+<li>A plan is a reviewable artifact, which is what approval and audit processes attach to.</li>
+<li>Read the failure signature: a different miss each time means the interview pattern, a checkable assertion means tests first, a varying shape means 2 to 3 examples, interacting findings go together, independent ones go one at a time, and an author does not review its own code.</li>
+<li>In a pipeline, use <code>claude -p</code>. Get a parseable shape with <code>--output-format json</code> and <code>--json-schema</code>, and feed prior findings into a re-run. <code>--batch</code> and <code>CLAUDE_HEADLESS</code> do not exist.</li>
+<li>Batch is 50% cheaper and slow, and it cannot run a tool mid-request. Blocking checks are synchronous.</li>
+<li>Value is a delivery outcome against a baseline, with the confound named. Invocations, seats, hours and accepted lines are activity.</li>
+</ol>
+</aside>
+</div>

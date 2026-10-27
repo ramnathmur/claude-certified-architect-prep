@@ -7,9 +7,11 @@ overrides them.
 
 ## Status
 
-**Paper 1 generated 2026-08-30, not yet sat.** `CCAR-P_MockTest-1_v1.html`, 63 items, full AUTHOR mode.
+**Papers 1-5 generated (Paper 5 most recent, 2026-09-02), none yet sat.** Each is 63 items, full
+AUTHOR mode. See `..\EXAM-LOG.md` for the per-paper generation story and fidelity-gate results.
 
-*(Corrected 2026-08-30 via `/sync-up`. This section previously said "no paper generated yet" and named
+*(Updated 2026-08-31 via `/sync-up` — this section previously stopped at Paper 1. Corrected
+2026-08-30 via `/sync-up` before that: this section previously said "no paper generated yet" and named
 TRANSCRIBE as Paper 1's mode — both stale. A hybrid TRANSCRIBE/AUTHOR plan was proposed, then rejected
 in full: the corpus's 79 ready-made scenarios have the correct answer as the longest option 84% of the
 time, which would have made a verbatim Paper 1 answerable by length alone. Every paper, including
@@ -21,6 +23,10 @@ The mock-exam engine was built 2026-08-29 and lives here and in `..\`:
 |---|---|
 | `CCAR-P_MockTest-TEMPLATE_v1.html` | The exam engine. Practice Mode default, `validateItems()`, multi-response, three exports, mechanized cross-item lesson-collision check, two-layer per-item feedback (quick verdict, then a corpus-grounded deep dive below it), pass/fail running-accuracy pill. Ships with four demo items — replace the `ITEMS` array and nothing else |
 | `CCAR-P_MockTest-1_v1.html` | Paper 1, generated |
+| `CCAR-P_MockTest-2_v1.html` | Paper 2, generated |
+| `CCAR-P_MockTest-3_v1.html` | Paper 3, generated |
+| `CCAR-P_MockTest-4_v1.html` | Paper 4, generated — direction inversion begins |
+| `CCAR-P_MockTest-5_v1.html` | Paper 5, generated — D2 corpus expanded, shape-budget check mechanized |
 | `DASHBOARD.html` | Reads `..\DASHBOARD-DATA.jsonl`. Domain weights come from CCAR-P's own `EXAM-FACTS_v1.md` |
 | `..\CCAR-P-Orchestration-Prompt_v2.md` | How a paper is generated |
 | `..\FACET-LEDGER.md` · `..\STEM-LEDGER.md` · `..\ARCHETYPE-LEDGER.md` · `..\CCAR-P_Objective-Map_v1.md` | The four ledgers the generator reads and rebuilds |
@@ -61,9 +67,10 @@ corpus — neither applies to unofficial content here):
 If Ram sits one of these, **do not log it in `EXAM-LOG.md`** — that file is CCAR-P's one source of
 truth for standing, reserved for real attempts against confirmed-weight papers.
 
-## The paper being simulated (once Phase 4 starts)
+## The real paper these external mocks approximate
 
 63 items · 120 minutes · **no domain floor**, total score only, per the official guide v1.0 (July
-2026). Item structure (standalone vs. shared-scenario blocks) and multiple-response scoring
+2026) — now the actual shape of `CCAR-P_MockTest-1_v1.html` through `-5_v1.html` above, not a future
+target. Item structure (standalone vs. shared-scenario blocks) and multiple-response scoring
 (all-or-nothing vs. partial credit) are both still open — see the OPEN table in `..\..\EXAM-FACTS_v1.md`
 before assuming either.

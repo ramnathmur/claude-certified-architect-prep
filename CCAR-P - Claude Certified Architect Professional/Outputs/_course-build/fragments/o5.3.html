@@ -1,0 +1,119 @@
+<div class="chapter">
+<div class="main">
+
+<p>A document pipeline processes 40,000 documents a day, and its extraction accuracy is 94%, so it gets about <span class="num" data-calc="40000*6%" data-expect="2400">2,400</span> of them wrong each day. A wrong formatting detail costs almost nothing. A wrong financial figure is expensive. The team proposes to have people review every output at first and to relax the review as confidence in the system grows. The figures are illustrative.</p>
+
+<p>At three minutes a review, 40,000 reviews is <span class="num" data-calc="40000*3/60" data-expect="2000">2,000</span> hours of work a day, or <span class="num" data-calc="2000/8" data-expect="250">250</span> people on eight-hour shifts. Where should the scarce human attention go?</p>
+
+<section class="concept" id="c5.8" data-src="5.8" data-terms="human-in-the-loop routing confidence consequence threshold auto-approve calibrated signal automation bias sampling headcount blanket review accountability irreversible">
+<h3>Route by confidence and consequence together<span class="sec">§5.8</span></h3>
+
+<p>Route on two variables together: confidence and consequence. A strategy that names only one, or none, is incomplete by construction. The absolute rule is that above a consequence threshold the item goes to a human regardless of confidence. For any irreversible or externally visible action, such as a denial, a payment or a message to a customer, the human supplies accountability and not additional accuracy.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 206" role="img" aria-labelledby="f53a-t f53a-d">
+<title id="f53a-t">Routing by consequence first and confidence second</title>
+<desc id="f53a-d">A grid with two columns, low consequence and high consequence, and two rows, high confidence and low confidence. High confidence with low consequence is auto-approved, with a sample of the stream audited. Low confidence with low consequence is routed to review by a calibrated threshold. The whole high-consequence column is one tall box: a human reviews, regardless of confidence. A note says confidence comes from an independent signal and never from the model's own statement.</desc>
+<text class="s tc" x="245" y="16">Low consequence</text><text class="s tc" x="495" y="16">High consequence</text>
+<text class="m" x="2" y="62">High confidence</text>
+<rect class="bx" x="130" y="24" width="230" height="64"/>
+<text class="b tc" x="245" y="50">Auto-approve</text><text class="m tc" x="245" y="70">and audit a sample of the stream</text>
+<text class="m" x="2" y="134">Low confidence</text>
+<rect class="bx" x="130" y="96" width="230" height="64"/>
+<text class="b tc" x="245" y="122">Route to review</text><text class="m tc" x="245" y="142">by a calibrated threshold</text>
+<rect class="bb" x="376" y="24" width="238" height="136"/>
+<text class="b tc tb2" x="495" y="84">A human reviews</text><text class="m tc" x="495" y="104">whatever the confidence</text>
+<text class="s" x="2" y="190">Confidence comes from an independent signal, never from the model's own statement.</text>
+</svg>
+</div>
+<figcaption>Consequence sets the column and confidence sets the row only in the left column. In the right column the confidence is not consulted.</figcaption>
+</figure>
+
+<p>The corpus lists the valid confidence signals: agreement from an independent verifier, a retrieval score, a schema validation result, a calibrated classifier, and business rules such as amount, tenure or jurisdiction. The business rules mark the consequence side of the routing as much as the confidence side. The invalid signal is the model's own statement of how sure it is.</p>
+
+<p>For high volume, high accuracy and mixed consequence, auto-approve the high-confidence, low-consequence items. Route the rest by threshold, and always route the high-consequence ones. That puts a scarce resource where being wrong is expensive. </p>
+<p>To check that the auto-approved threshold is still right, take a continuous small sample of the auto-approved stream and audit it on a schedule. That measures the unsupervised path, and it differs from routing by sample, which would send a random slice of everything to review. A random 10% would reach only 10% of the costly financial items.</p>
+
+<p>The cost is review percentage times volume times minutes per review, which equals headcount, and the answer should state it. A scenario that states a volume is there to make blanket review unstaffable, so reject 100% review. Where work is genuinely low in volume and uniformly high in consequence, such as a handful of regulatory filings a month, reviewing every item is correct, because blanket review is wrong because of scale and not on principle.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 134" role="img" aria-labelledby="f53b-t f53b-d">
+<title id="f53b-t">Reviewers needed under two policies for 40,000 documents a day</title>
+<desc id="f53b-d">Two bars. Reviewing every document needs 250 reviewers at three minutes each on eight-hour shifts. Routing by consequence and confidence sends 9,400 documents to review and needs about 59 reviewers. A note says the auto-approved stream of 30,600 documents is sampled at 1 percent, which is 306 documents a day.</desc>
+<text class="m" x="2" y="38">Review all</text>
+<rect class="br" x="140" y="20" width="400" height="26"/><text class="m" x="148" y="38"><tspan data-calc="40000*3/60/8" data-expect="250">250</tspan> reviewers</text>
+<text class="m" x="2" y="80">Route</text>
+<rect class="bb" x="140" y="62" width="94" height="26"/><text class="m" x="242" y="80">about <tspan data-calc="(6000+3400)*3/60/8" data-round="0" data-expect="59">59</tspan> reviewers</text>
+<text class="s" x="2" y="116">Routed to review: 6,000 financial + 3,400 low-confidence = <tspan data-calc="6000+3400" data-expect="9400">9,400</tspan> a day.</text>
+<text class="s" x="2" y="130">Auto-approved: <tspan data-calc="40000-9400" data-expect="30600">30,600</tspan>, sampled at 1%, so <tspan data-calc="30600*1%" data-expect="306">306</tspan> audited a day.</text>
+</svg>
+</div>
+<figcaption>Both bars are to scale, at three minutes a review. Routing keeps the human attention on the financial figures and the uncertain items.</figcaption>
+</figure>
+
+<p>The failure mode is automation bias: a reviewer who is shown a fluent conclusion without its evidence approves it. Inference: a reviewer needs the evidence set beside the conclusion, or the human gate adds a signature and no check.</p>
+
+<ul class="rules" aria-label="Decision rules for human-in-the-loop routing">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-5.8-01"><span class="when">High volume, high accuracy, mixed consequence</span><span class="then">Auto-approve high-confidence, low-consequence items. Route the rest by threshold, and always route high-consequence items.<span class="why">It allocates a scarce resource to where being wrong is expensive.</span></span></li>
+<li data-facet="F-5.8-02"><span class="when">Any irreversible or externally visible action (denial, payment, message to a customer)</span><span class="then">A human, regardless of confidence.<span class="why">The human supplies accountability, not additional accuracy.</span></span></li>
+<li data-facet="F-5.8-03"><span class="when">Monitoring whether the auto-approved threshold is still correct</span><span class="then">A continuous small sample of the auto-approved stream, audited on a schedule.<span class="why">It measures the unsupervised path, and it is distinct from routing by sample.</span></span></li>
+<li data-facet="F-5.8-04"><span class="when">A volume figure is stated in the scenario, and 100% review is proposed</span><span class="then">Reject.<span class="why">The volume figure is there to make blanket review unstaffable.</span></span></li>
+<li data-facet="F-5.8-05"><span class="when">Genuinely low-volume, uniformly high-consequence work (a handful of regulatory filings a month)</span><span class="then">Human review of every item is correct.<span class="why">Blanket review is wrong because of scale, not on principle.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: the headcount sums behind the figure</summary>
+<div>
+<p>This is a worked example, not a corpus rule, and every count is invented. Suppose 15% of the 40,000 documents carry financial figures, which is <span class="num" data-calc="40000*15%" data-expect="6000">6,000</span>, and 10% of the other 34,000 are low-confidence, which is <span class="num" data-calc="34000*10%" data-expect="3400">3,400</span>. Together that is 9,400 reviews a day, <span class="num" data-calc="9400/40000*100" data-round="1" data-expect="23.5">23.5</span>% of the volume.</p>
+<p>At three minutes each, 9,400 reviews take <span class="num" data-calc="9400*3/60" data-expect="470">470</span> hours, which is about 59 people. Reviewing everything takes 250. The sampled audit adds 306 reviews, or about <span class="num" data-calc="306*3/60" data-expect="15.3">15.3</span> hours, and it is what tells the team whether the 30,600 auto-approved items are still accurate.</p>
+</div>
+</details>
+</section>
+
+<section class="bites" id="b-o5.3">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide gives no sample for human review, and its three samples sit in Domains 2, 3 and 4. The scenario below comes from this project's own set, and the <a href="#/traps">Trap families</a> page defines each label. <span class="lbl">Inference</span>Expect a stem that states a volume and a cost asymmetry, with options that review everything, review a random slice, or route on one variable only.</p>
+
+<p class="stem">A pipeline processes 40,000 documents a day at 94% extraction accuracy. Errors on financial figures are costly, and errors on formatting are not.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Route by consequence and confidence: auto-approve high-confidence non-financial extractions, send every financial-figure extraction and every low-confidence item to review, and continuously sample the auto-approved stream.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-architected">ARCHITECTED</a>Review 100% of outputs initially and relax as confidence grows. It reads as the prudent staged answer, it has no exit criterion or capacity plan, and 40,000 daily reviews is the reason the volume was stated.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-wrong-axis">WRONG-AXIS</a>Review a random 10% sample of all outputs. Uniform sampling meets costly cases in proportion to their rarity, and sampling is a calibration mechanism for the automated path and not a routing policy.</span></li>
+</ul>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>A system handles 40,000 items a day, a few of which authorise payments. A teammate proposes full review at first, and another proposes reviewing a random 10%. What routing do you propose, and what do you add to check it?</span></summary>
+<div class="ans">
+<p>Route on consequence and confidence together. Send every payment-related item to a human whatever the confidence, send low-confidence items by a calibrated threshold, and auto-approve the rest. Add a continuous small sample of the auto-approved stream, audited on a schedule, to check that the threshold still holds. Full review at 40,000 items a day cannot be staffed, and a random 10% meets the costly cases only as often as they occur.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li><a href="#/o5.1/c5.1">O5.1</a>, §5.1: human approval is the fourth guardrail layer, and this chapter sets which actions reach it.</li>
+<li><a href="#/o4.2/c4.4">O4.2</a>, §4.4: stratified sampling of the automated stream, and the rule that every segment clears the bar before oversight is reduced, are the audit side of this routing.</li>
+<li><a href="#/o4.1/c4.1">O4.1</a>, §4.1: the routing threshold is a bar, and it is declared before results, not tuned afterwards.</li>
+<li><a href="#/o4.2/c4.6">O4.2</a>, §4.6: a calibrated classifier as a confidence signal needs the same hand-labelled validation as a model grader.</li>
+<li><a href="#/o6.1">O6.1</a>, §6.3: error cost asymmetry as a design driver is the reason consequence is one of the two routing variables.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 5, third objective. Course corpus §5.8. No live-document check was needed: the chapter states routing rules and no product facts. The review time, the shares of financial and low-confidence items, the shift length and the 1% sample are invented for illustration.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>Route on confidence and consequence together. Above a consequence threshold, a human reviews whatever the confidence.</li>
+<li>Confidence comes from independent signals: a verifier, a retrieval score, schema validation, a calibrated classifier, business rules. The model's own statement of sureness is not one.</li>
+<li>Auto-approve high-confidence, low-consequence items, route the rest by threshold, and sample the auto-approved stream on a schedule.</li>
+<li>State the cost: review percentage times volume times minutes per review equals headcount. A stated volume rejects 100% review, and low volume with uniform high consequence accepts it.</li>
+<li>Automation bias means approving a fluent conclusion that arrives without its evidence.</li>
+</ol>
+</aside>
+</div>

@@ -1,0 +1,162 @@
+<div class="chapter">
+<div class="main">
+
+<p>A document-triage assistant has a contractual p95 limit of 3,000 ms end to end, meaning 95% of requests must finish within it. At p95 the stages take 120 ms for the edge and identity, 180 for the query embedding, 240 for the vector search, 300 for reranking, 1,900 for generation and 60 for assembly. That totals <span class="num" data-calc="120+180+240+300+1900+60" data-expect="2800">2,800</span> ms, leaving <span class="num" data-calc="3000-2800" data-expect="200">200</span> ms of slack.</p>
+
+<p>Quality is 91% on the evaluation set, and the business wants 95%. The figures are illustrative.</p>
+
+<p>Three proposals arrive, each with a good accuracy story and a time cost. Which of them can the assistant afford, and what should it do with the 200 ms?</p>
+
+<section class="concept" id="c3.4" data-src="3.4" data-terms="accuracy latency budget stage table p95 sla slack reranking self-critique larger model retrieved chunks prompt caching requirement-fit unpriced cost wasted latency stakeholder">
+<h3>Spend latency only where the stated requirement pays for it<span class="sec">§3.4</span></h3>
+
+<p>Accuracy and latency are both budgets, and most levers that buy accuracy spend latency: a larger model, more retrieved chunks, reranking, reasoning cues, self-critique passes and multi-hop retrieval. The method is a stage-level budget table at the percentile the SLA names. The corpus discriminator is whether an option satisfies the stated requirement or maximises an unstated one. The most accurate option is often the one that breaks the SLA.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 234" role="img" aria-labelledby="f33a-t f33a-d">
+<title id="f33a-t">Five options against a 3,000 ms p95 limit</title>
+<desc id="f33a-d">Horizontal bars of total p95 latency against a dashed limit at 3,000 milliseconds. Today is 2,800. Adding a self-critique pass makes it 4,200, which is 40 percent over. A larger generation model makes it 3,500. Retrieving the top 50 chunks makes it 3,100. A larger model after reordering and caching fits only if caching frees 500 milliseconds or more.</desc>
+<text class="b tc" x="480" y="14">p95 limit: 3,000 ms</text>
+<path class="ln dash" d="M480 20V212"/>
+<text class="m" x="2" y="46">Today</text>
+<rect class="bx" x="160" y="28" width="298.7" height="24"/><text class="m" x="168" y="45">2,800 ms</text>
+<text class="m" x="2" y="84">Add self-critique</text>
+<rect class="br" x="160" y="66" width="448" height="24"/><text class="m" x="168" y="83"><tspan data-calc="2800+1400" data-expect="4200">4,200</tspan> ms, <tspan data-calc="(4200-3000)/3000*100" data-expect="40">40</tspan>% over</text>
+<text class="m" x="2" y="122">Bigger model</text>
+<rect class="br" x="160" y="104" width="373.3" height="24"/><text class="m" x="168" y="121"><tspan data-calc="2800+700" data-expect="3500">3,500</tspan> ms</text>
+<text class="m" x="2" y="160">Top-50 retrieval</text>
+<rect class="br" x="160" y="142" width="330.7" height="24"/><text class="m" x="168" y="159"><tspan data-calc="2800+90+210" data-expect="3100">3,100</tspan> ms</text>
+<text class="m" x="2" y="198">Cache + bigger model</text>
+<rect class="bb" x="160" y="180" width="320" height="24"/><text class="m" x="168" y="197">fits if caching frees 500+ ms</text>
+<text class="s" x="2" y="228">Bars are total p95 latency. Only the last row can fit inside the limit.</text>
+</svg>
+</div>
+<figcaption>Three of the proposals go over the limit. The fourth stays inside it only if reordering the prompt and enabling caching free at least 500 ms, which has to be measured.</figcaption>
+</figure>
+
+<p>Take the proposals in turn. A self-critique pass costs about 1,400 ms and breaks the SLA. A proposed change that exceeds the stated SLA is rejected, or the SLA is reopened explicitly with the stakeholder. A breach is a decision to make with the business, never one to absorb silently. Reducing the retrieved chunks to make room for the pass removes a working mechanism and usually loses more accuracy than it buys.</p>
+
+<p>Look first for latency that is being wasted. One lever improves two things at once: put the static content first and enable prompt caching, which cuts time-to-first-token and cost together with no accuracy cost (§2.8). When the budget is tight and no slack exists, look for wasted latency in ordering, caching and redundant hops before cutting retrieved context. Cutting context loses more accuracy per millisecond saved than restructuring does.</p>
+
+<p>When there is slack and accuracy is short of target, spend the slack on the stage with the highest accuracy per millisecond, usually reranking. If accuracy is already above the target and an option offers more at triple the latency, reject it, because accuracy bought outside a requirement is unpriced cost. To a stakeholder, present the stage table and the measured accuracy change, not a preference.</p>
+
+<ul class="rules" aria-label="Decision rules for accuracy-latency budgeting">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-3.4-01"><span class="when">Stated p95 budget with slack, accuracy short of target</span><span class="then">Spend the slack on the highest accuracy-per-millisecond stage, usually reranking.<span class="why">It buys the requirement inside the budget.</span></span></li>
+<li data-facet="F-3.4-02"><span class="when">Proposed change exceeds the stated SLA</span><span class="then">Reject it, or reopen the SLA explicitly with the stakeholder.<span class="why">An SLA breach is a decision to be made with the business, not absorbed silently.</span></span></li>
+<li data-facet="F-3.4-03"><span class="when">Latency and cost both named, large identical preamble on every request</span><span class="then">Order static content first and enable prompt caching.<span class="why">A stable reused prefix cuts both, with no accuracy cost.</span></span></li>
+<li data-facet="F-3.4-04"><span class="when">Accuracy already above the stated target, and an option offers more at triple the latency</span><span class="then">Reject.<span class="why">Accuracy purchased outside a requirement is unpriced cost.</span></span></li>
+<li data-facet="F-3.4-05"><span class="when">Budget is tight and no slack exists</span><span class="then">Look for wasted latency (ordering, caching, redundant hops) before cutting retrieved context.<span class="why">Cutting context costs more accuracy per millisecond saved than restructuring does.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: the three proposals priced, and what caching has to free</summary>
+<div>
+<p>This is a worked example, not a corpus rule, and every timing is invented. The self-critique pass adds 1,400 ms, so the total is <span class="num" data-calc="2800+1400" data-expect="4200">4,200</span> ms, which is <span class="num" data-calc="(4200-3000)/3000*100" data-expect="40">40</span>% over the limit. A larger generation model raises generation from 1,900 to 2,600 ms, which adds 700 and gives <span class="num" data-calc="2800+700" data-expect="3500">3,500</span> ms. Retrieving the top 50 instead of the top 20 adds 90 ms to the search and 210 to the rerank, giving <span class="num" data-calc="2800+90+210" data-expect="3100">3,100</span> ms.</p>
+<p>The larger model needs 700 ms and the slack is 200, so the other changes must free at least <span class="num" data-calc="700-200" data-expect="500">500</span> ms. Moving a 3,100-token static preamble to the front and caching it is the candidate. No source here says it frees that much. The saving has to be measured on the real system, and if it falls short, the model change does not fit.</p>
+<p>One caution that is not a corpus rule: stage p95 figures do not add up to the end-to-end p95, because the p95 of a total is not the sum of the stage p95s. Use the table to see where time goes, then measure the end-to-end p95 itself.</p>
+</div>
+</details>
+</section>
+
+<section class="concept" id="c3.5" data-src="3.5" data-terms="streaming time-to-first-token total latency perceived latency interactive consumer batch consumer mean percentile p95 p99 tail">
+<h3>Match the fix to the consumer and the percentile<span class="sec">§3.5</span></h3>
+
+<p><dfn data-def="Sending the response to the consumer in pieces as the model produces them, instead of all at once when it is complete.">Streaming</dfn> changes time-to-first-token, how long a reader waits before the first words appear. It does not change total end-to-end latency. The discriminator is whether the consumer reads incrementally or waits for the complete response.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 222" role="img" aria-labelledby="f33b-t f33b-d">
+<title id="f33b-t">Streaming moves the first words earlier and leaves the finish time alone</title>
+<desc id="f33b-d">Three timelines over six seconds. A chat reader without streaming sees nothing until the full answer at six seconds. A chat reader with streaming sees the first words at 0.8 seconds, and words keep arriving until six seconds. A service that parses the finished response waits until six seconds either way.</desc>
+<text class="m" x="2" y="42">Chat, no streaming</text>
+<rect class="fl" x="120" y="24" width="456" height="26"/><text class="s" x="130" y="41">nothing visible until the full answer</text>
+<text class="m" x="2" y="94">Chat, streaming</text>
+<rect class="fl" x="120" y="76" width="60.8" height="26"/>
+<rect class="bb" x="180.8" y="76" width="395.2" height="26"/><text class="m" x="190" y="93">words arrive as they are written</text>
+<text class="s" x="181" y="117">first words at 0.8 s</text>
+<text class="m" x="2" y="146">Service, either way</text>
+<rect class="fl" x="120" y="128" width="456" height="26"/><text class="s" x="130" y="145">waits for the whole response, then acts</text>
+<text class="s te" x="576" y="169">acts at 6 s</text>
+<path class="ls" d="M120 180H576M120 175V185M272 175V185M424 175V185M576 175V185"/>
+<text class="s tc" x="120" y="200">0 s</text><text class="s tc" x="272" y="200">2 s</text><text class="s tc" x="424" y="200">4 s</text><text class="s tc" x="576" y="200">6 s</text>
+<text class="s te" x="576" y="216">time from the request, in an invented example</text>
+</svg>
+</div>
+<figcaption>The streaming reader sees text at 0.8 seconds. Every row still finishes at 6 seconds, so a consumer that waits for the whole response gains nothing.</figcaption>
+</figure>
+
+<p>For a human-facing chat surface where users say the system "feels slow", enable streaming. The complaint is about time-to-first-token. For a downstream service that consumes the whole response before it acts, streaming buys nothing, because the consumer cannot start early. Reduce total latency instead. When an interactive surface and a batch path share the pipeline, stream the interactive path only and optimise total time for the batch path.</p>
+
+<p>Budget at the percentile the SLA names, usually p95 or p99, and not at the mean. If a dashboard shows mean latency improved and users still complain, measure and optimise p95 or p99, because the SLA and the complaint both live in the tail.</p>
+
+<ul class="rules" aria-label="Decision rules for perceived and total latency">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-3.5-01"><span class="when">Human-facing chat surface, users complain the system "feels slow"</span><span class="then">Enable streaming.<span class="why">Time-to-first-token is what the complaint is actually about.</span></span></li>
+<li data-facet="F-3.5-02"><span class="when">Downstream service consumes the complete response before acting</span><span class="then">Streaming buys nothing. Reduce total latency instead.<span class="why">The consumer cannot start work early.</span></span></li>
+<li data-facet="F-3.5-03"><span class="when">Dashboard shows mean latency improved but users still complain</span><span class="then">Measure and optimise p95 and p99.<span class="why">The SLA and the complaint both live in the tail.</span></span></li>
+<li data-facet="F-3.5-04"><span class="when">Both an interactive surface and a batch path share the pipeline</span><span class="then">Stream the interactive path only, and optimise total time for the batch path.<span class="why">Two consumers have two different latency definitions.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: a mean that improves while the tail stays put</summary>
+<div>
+<p>This is a worked example, not a corpus rule, and its numbers are invented. Of 1,000 requests, 940 take 1.0 second and 60 take 9.0 seconds. The mean is <span class="num" data-calc="(940*1+60*9)/1000" data-expect="1.48">1.48</span> seconds. The p95 is 9.0 seconds, because 95% of requests (950) are only covered once the 9-second requests are included.</p>
+<p>A change makes the 940 fast requests 0.2 seconds quicker. The mean falls to <span class="num" data-calc="(940*0.8+60*9)/1000" data-expect="1.292">1.292</span> seconds, a visible improvement on a dashboard. The p95 is still 9.0 seconds, and the 60 users in the tail notice nothing.</p>
+</div>
+</details>
+</section>
+
+<section class="bites" id="b-o3.3">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide's one Domain 3 sample is about least privilege and is worked through in <a href="#/o3.2">O3.2</a>, so none of them is a sample for this domain. The shapes below come from this project's own scenario set, and the <a href="#/traps">Trap families</a> page defines each label. <span class="lbl">Inference</span>Expect a stem that names an SLA or a latency complaint, sometimes with a cost figure, and options that differ in accuracy and time.</p>
+
+<p class="stem">A system runs at 2,800 ms against a 3,000 ms p95 SLA and needs 4 more accuracy points. A proposed self-critique pass costs 1,400 ms.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Reject the self-critique pass. Reorder the static preamble to the front, enable prompt caching, and spend the recovered budget on a higher-capability generation model that fits inside the SLA.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-overspec">OVERSPEC</a>Add the pass and raise the SLA to 4,500 ms without consulting the business. It buys more accuracy than anyone asked for by breaking a contractual latency guarantee that was stated.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-discard">DISCARD</a>Reduce the number of retrieved chunks to make room for the pass. It removes a working mechanism instead of tuning the pipeline, and usually loses more accuracy than the pass returns.</span></li>
+</ul>
+
+<p class="stem">A service-to-service integration misses its latency SLA, and someone proposes enabling streaming.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Reject streaming for this consumer and reduce total latency at the slowest measured stage.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-wrong-axis">WRONG-AXIS</a>Enable streaming and report the improved time-to-first-token against the SLA. It has the right vocabulary and the wrong metric, because the consumer waits for the complete response either way.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>Report the improved mean latency after a change that leaves p95 unchanged. It is a real improvement, measured at the wrong percentile, which is not the one the SLA names.</span></li>
+</ul>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>A service is at 2,900 ms against a 3,000 ms p95 limit, and a teammate proposes a critique pass for 1,200 ms. Another proposes streaming for a downstream parser that reads only complete responses. What do you say to each?</span></summary>
+<div class="ans">
+<p>Reject the critique pass, since 2,900 plus 1,200 is 4,100 and the SLA is a stated requirement. Reopen the SLA with the business if the accuracy is truly needed. Reject streaming for the parser: it waits for the whole response, so only total latency matters, and the work is to cut it at the slowest stage. Report p95, the percentile the SLA names.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li><a href="#/o2.5/c2.8">O2.5</a>, §2.8: static content first with caching is the one lever that improves latency and cost together, and that section holds the rule and the timestamp trap.</li>
+<li><a href="#/o1.6/c1.12">O1.6</a>, §1.12: an SLA is a filter applied before designs are compared, and it is written against the tail. This chapter applies that filter stage by stage.</li>
+<li><a href="#/o2.3/c2.4">O2.3</a>, §2.4: a reasoning cue is an accuracy lever that costs latency, and a bounded cue is the answer when the budget is tight.</li>
+<li><a href="#/o4.5">O4.5</a>, §4.11: cost and latency optimisation is worked through there, with caching first.</li>
+<li><a href="#/o3.4">O3.4</a>, §3.6: a stage table needs stage timings, and trace depth decides whether you can measure them.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 3, third objective. Course corpus §3.4 and §3.5. No live-document check was needed: the chapter states budgeting rules and no product facts. The stage timings, the quality figures and the request counts are invented for illustration.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>Check each option against the stated SLA. The most accurate option is often the one that breaks it.</li>
+<li>Use a stage-level budget table at the percentile the SLA names. Spend slack on the highest accuracy-per-millisecond stage, usually reranking.</li>
+<li>An SLA breach is decided with the business. Reject the change or reopen the SLA explicitly.</li>
+<li>Find wasted latency before buying accuracy or cutting retrieved context: ordering, caching, redundant hops. Static content first with prompt caching cuts latency and cost together.</li>
+<li>Streaming moves time-to-first-token for a reader and leaves total latency alone. A consumer that waits for the whole response gains nothing from it.</li>
+<li>Budget at p95 or p99, and fix the tail when the mean improves and users still complain.</li>
+</ol>
+</aside>
+</div>

@@ -1,0 +1,241 @@
+<div class="chapter">
+<div class="main">
+
+<p>An insurance operations team puts four kinds of content behind one assistant: policy manuals with numbered clauses, an API reference for the claims system, a support-ticket archive, and a product specification table with 12,000 rows. No single chunking strategy fits all four. The objective is matching how you cut and index each kind of content to the shape it already has.</p>
+
+<p><dfn data-def="Retrieval-augmented generation: at request time, fetch the relevant pieces of your own documents and place them in the model's context, so it answers from them.">RAG</dfn>, or retrieval-augmented generation, exists because the model's weights hold general knowledge, while your organisation's specifics live elsewhere, change on their own schedule and carry access rules. A RAG pipeline fetches those specifics at request time and puts them in front of the model.</p>
+
+<p>It has five stages. Ingestion loads and cleans the documents. Chunking cuts them into pieces. Embedding turns each piece into a list of numbers, a vector, that places similar meanings close together. Indexing stores the vectors so the nearest ones can be found quickly. Retrieval fetches the best matches for a question. Diagnosing RAG starts by asking which stage failed.</p>
+
+<section class="concept" id="c3.8" data-src="3.8" data-terms="chunk boundaries fixed window overlap structure clause endpoint ticket table structured query tool">
+<h3>Cut where the document already has seams<span class="sec">§3.8</span></h3>
+
+<p>Define a <dfn data-def="The smallest span of a document that still makes sense when read completely out of context.">chunk</dfn> as the smallest span of a document that still makes sense when read completely out of context. That rules out a fixed 512-token window (a token is a word or part of a word) as a universal default, because a window cuts wherever the 512th token lands: mid-clause, mid-table, mid-function.</p>
+
+<p>It also tells you where to cut instead. A human author already marked the seams, in clauses, endpoints, tickets and functions, and those are the places where meaning is self-contained. A support ticket stays whole for the same reason: one reply makes no sense without the problem statement above it. Overlap of 10 to 15% is insurance against a sentence straddling a boundary. Good boundaries still come first.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 272" role="img" aria-labelledby="f35a-t f35a-d">
+<title id="f35a-t">Fixed windows against structure-led chunks on a policy manual</title>
+<desc id="f35a-d">A strip of five clauses of different lengths. Below it, five fixed-size windows whose four cut lines all fall inside a clause, drawn in red. Below that, five chunks that match the clause boundaries exactly. At the bottom, a 12,000-row table is not chunked and instead feeds a structured query tool.</desc>
+<text class="s" x="36" y="14">A policy manual: five clauses of different lengths</text>
+<rect class="bx" x="36" y="22" width="90" height="32"/><text class="m" x="44" y="42">Clause 1</text>
+<rect class="bx" x="126" y="22" width="150" height="32"/><text class="m" x="170" y="42">Clause 2</text>
+<rect class="bx" x="276" y="22" width="70" height="32"/><text class="m" x="294" y="42">Clause 3</text>
+<rect class="bx" x="346" y="22" width="130" height="32"/><text class="m" x="356" y="42">Clause 4</text>
+<rect class="bx" x="476" y="22" width="110" height="32"/><text class="m" x="484" y="42">Clause 5</text>
+<text class="b" x="36" y="78">Fixed 512-token windows</text>
+<rect class="bx" x="36" y="86" width="125" height="28"/><text class="m tc" x="98.5" y="104">1</text>
+<rect class="bx" x="161" y="86" width="125" height="28"/><text class="m tc" x="223.5" y="104">2</text>
+<rect class="bx" x="286" y="86" width="125" height="28"/><text class="m tc" x="348.5" y="104">3</text>
+<rect class="bx" x="411" y="86" width="125" height="28"/><text class="m tc" x="473.5" y="104">4</text>
+<rect class="bx" x="536" y="86" width="50" height="28"/><text class="m tc" x="561" y="104">5</text>
+<path class="lr dash" d="M161 22V58M286 22V58M411 22V58M536 22V58M161 84V114M286 84V114M411 84V114M536 84V114"/>
+<text class="s tr" x="36" y="130">All four cuts land inside a clause.</text>
+<text class="b" x="36" y="154">Chunks that follow the clauses</text>
+<rect class="bb" x="36" y="162" width="90" height="28"/><text class="m tc" x="81" y="180">Chunk 1</text>
+<rect class="bb" x="126" y="162" width="150" height="28"/><text class="m tc" x="201" y="180">Chunk 2</text>
+<rect class="bb" x="276" y="162" width="70" height="28"/><text class="m tc" x="311" y="180">Chunk 3</text>
+<rect class="bb" x="346" y="162" width="130" height="28"/><text class="m tc" x="411" y="180">Chunk 4</text>
+<rect class="bb" x="476" y="162" width="110" height="28"/><text class="m tc" x="531" y="180">Chunk 5</text>
+<text class="s" x="36" y="208">Each chunk carries clause number, heading path, effective date and jurisdiction.</text>
+<text class="s" x="36" y="236">12,000-row table: not chunked and not embedded</text>
+<rect class="bx" x="36" y="242" width="64" height="24"/>
+<path class="ls" d="M57 242V266M79 242V266M36 254H100"/>
+<path class="ln" d="M104 254H184" marker-end="url(#ah)"/>
+<rect class="bb" x="188" y="240" width="150" height="28"/><text class="m tc" x="263" y="258">Structured query tool</text>
+<text class="s" x="350" y="258">answers counts, filters and sums</text>
+</svg>
+</div>
+<figcaption>Equal windows cut through clauses 2, 3, 4 and 5. Cutting on the clause seams keeps each piece whole. The table is queried by filter, so it never enters the vector index.</figcaption>
+</figure>
+
+<ul class="rules" aria-label="Decision rules for chunk boundaries">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-3.8-01"><span class="when">A policy manual with numbered clauses and a heading hierarchy</span><span class="then">Chunk on clause boundaries, and carry clause number, heading path, effective date and jurisdiction as metadata.<span class="why">Version and jurisdiction are a correctness requirement for time-sensitive lookups.</span></span></li>
+<li data-facet="F-3.8-02"><span class="when">An API reference with one regular section per endpoint</span><span class="then">Chunk per endpoint, whole.<span class="why">Splitting parameters from the description produces two unusable chunks.</span></span></li>
+<li data-facet="F-3.8-03"><span class="when">Support threads of 3 to 40 messages</span><span class="then">Chunk per ticket, not per message.<span class="why">A single reply is unanswerable without the problem statement above it.</span></span></li>
+<li data-facet="F-3.8-04"><span class="when">A wide relational table of product specifications</span><span class="then">Do not embed it. Expose it as a structured query tool.<span class="why">Row embeddings are mostly noise, and aggregation has no vector-space answer.</span></span></li>
+<li data-facet="F-3.8-05"><span class="when">Unstructured prose with no headings at all</span><span class="then">Use fixed-size windows with overlap, as the fallback.<span class="why">The fallback is correct only where no structure exists to follow.</span></span></li>
+</ul>
+</section>
+
+<section class="concept" id="c3.9" data-src="3.9" data-terms="contextualization chunk context heading path title prepend embedding chunk size dilution metadata">
+<h3>Put the missing context into the chunk<span class="sec">§3.9</span></h3>
+
+<p>A chunk pulled from the middle of a long document loses the title and heading hierarchy that made it interpretable. "This limit does not apply to renewals" means nothing on its own. Ask one question: is the chunk missing context, or missing content? If it is on topic but ambiguous, prepend the document title and heading path to the chunk text before embedding, so the context lands inside the vector and not only in metadata.</p>
+
+<p>Enlarging chunks looks like a shortcut and costs precision. A bigger chunk spreads its embedding across more topics, so it matches queries less sharply. Contextualization adds what was missing without adding unrelated text to the same vector.</p>
+
+<p>Metadata keeps its own job, which is filtering, for example down to the policy version in force on a claim's date. It does not influence semantic similarity, so a heading path held only in metadata should also be prepended to the embedded text.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 196" role="img" aria-labelledby="f35b-t f35b-d">
+<title id="f35b-t">Three versions of one chunk: bare, doubled in size, and contextualized</title>
+<desc id="f35b-d">Three cards. The bare chunk says this limit does not apply to renewals and is ambiguous. The doubled chunk adds text on three other topics, which spreads the embedding and lowers precision. The contextualized chunk keeps the same size as the bare one and adds the title and heading path in front, so the context is inside the vector.</desc>
+<rect class="bx" x="2" y="8" width="192" height="180"/>
+<text class="b" x="14" y="30">Bare chunk</text>
+<text class="s" x="14" y="46">What was retrieved</text>
+<text class="m" x="14" y="80">…this limit does not</text>
+<text class="m" x="14" y="97">apply to renewals.</text>
+<text class="s tr" x="14" y="152">On topic, but which limit?</text>
+<text class="s tr" x="14" y="168">The meaning is ambiguous.</text>
+<rect class="bx" x="212" y="8" width="192" height="180"/>
+<text class="b" x="224" y="30">Doubled chunk</text>
+<text class="s tr" x="224" y="46">Wrong axis: more length</text>
+<rect class="bb" x="224" y="60" width="168" height="16"/><text class="m" x="230" y="72">renewals limit</text>
+<rect class="by" x="224" y="80" width="168" height="16"/><text class="m" x="230" y="92">excess amounts</text>
+<rect class="br" x="224" y="100" width="168" height="16"/><text class="m" x="230" y="112">claim forms</text>
+<rect class="fl" x="224" y="120" width="168" height="16"/><text class="m" x="230" y="132">cancellation terms</text>
+<text class="s tr" x="224" y="156">One vector now spread over</text>
+<text class="s tr" x="224" y="172">four topics: precision falls.</text>
+<rect class="bx" x="422" y="8" width="192" height="180"/>
+<text class="b" x="434" y="30">Contextualized chunk</text>
+<text class="s tb2" x="434" y="46">Right axis: more context</text>
+<rect class="by" x="434" y="58" width="168" height="22"/><text class="m" x="441" y="73">Motor policy &gt; Limits</text>
+<text class="m" x="434" y="102">…this limit does not</text>
+<text class="m" x="434" y="119">apply to renewals.</text>
+<text class="s tb2" x="434" y="152">Same size as the bare chunk.</text>
+<text class="s tb2" x="434" y="168">The context is in the vector.</text>
+</svg>
+</div>
+<figcaption>Left to right: the chunk as retrieved, the same chunk doubled in size, and the same chunk with its heading path in front.</figcaption>
+</figure>
+
+<ul class="rules" aria-label="Decision rules for chunk contextualization">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-3.9-01"><span class="when">Retrieved chunks are on topic but ambiguous out of context</span><span class="then">Prepend the title and heading path before embedding.<span class="why">It puts the missing context into the vector, not only into metadata.</span></span></li>
+<li data-facet="F-3.9-02"><span class="when">Retrieved chunks are genuinely cut off mid-idea</span><span class="then">Fix the boundary so it follows the document's structure.<span class="why">The problem is the cut, not the size.</span></span></li>
+<li data-facet="F-3.9-03"><span class="when">Precision drops as chunk size grows</span><span class="then">Reduce the size and contextualize instead.<span class="why">A larger chunk spreads its embedding across more topics.</span></span></li>
+<li data-facet="F-3.9-04"><span class="when">Metadata already holds the heading path but it is not embedded</span><span class="then">Also prepend it to the embedded text.<span class="why">Metadata can be filtered on, but it does not influence semantic similarity.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: what Anthropic's Contextual Retrieval adds</summary>
+<div>
+<p>This is not a corpus rule. It comes from Anthropic's post of 19 September 2024. The title-and-heading prefix described above is the cheap, structural version. Contextual Retrieval has Claude write a short explanation specific to each chunk, usually 50 to 100 tokens. That explanation is prepended to the chunk before embedding and before the keyword index (BM25, which matches exact terms) is built.</p>
+<p>In Anthropic's tests the top-20 retrieval failure rate, the share of relevant chunks that miss the top 20 results, fell from 5.7% to 3.7% with contextual embeddings alone, a reduction of <span class="num" data-calc="(5.7-3.7)/5.7*100" data-round="0" data-expect="35">35</span>%. Adding contextual BM25 took it to 2.9%, a reduction of <span class="num" data-calc="(5.7-2.9)/5.7*100" data-round="0" data-expect="49">49</span>%, and reranking on top (a second pass that re-orders the retrieved chunks by relevance) took it to 1.9%, a reduction of <span class="num" data-calc="(5.7-1.9)/5.7*100" data-round="0" data-expect="67">67</span>%.</p>
+<p>The post gives no recommended chunk size. It says only that chunk size, boundaries and overlap can all affect retrieval.</p>
+</div>
+</details>
+</section>
+
+<section class="concept" id="c3.10" data-src="3.10" data-terms="index coupling refresh degradation embedding model version re-index stale vectors golden queries diagnosis order">
+<h3>Keep chunking, embeddings and index in step<span class="sec">§3.10</span></h3>
+
+<p>An index is a <dfn data-def="Three things that must stay consistent: the chunking scheme that produced the chunks, the embedding model version that turned them into vectors, and the vector index that stores them. Change one without the others and the space becomes inconsistent.">coupled unit</dfn> of three things: the chunking scheme that produced the chunks, the embedding model version that turned them into vectors, and the vector index that stores the result. Change one without the others and the space becomes inconsistent.</p>
+
+<p>At query time the user's question is embedded too, and it must be embedded by the same model version as the index. Vectors from a different embedding model sit in a different geometry, so similarity scores between them are not reliable. The system raises no error and keeps answering fluently, with wrong answers.</p>
+
+<p>So when a RAG system turns confidently wrong the morning after a document refresh, start with retrieval and indexing. The model and the prompt did not change, and the refresh is the only thing that moved.</p>
+
+<p>Work through four checks in order: was the re-index complete, did the chunk schema change, did the embedding model version change, and were stale vectors for deleted documents left behind. Look at the prompt and the model only after all four have cleared.</p>
+
+<p>You can catch this before users do. After every re-index, run golden queries (a fixed list of real questions whose correct chunk IDs you already know) and block promotion when the hit rate, meaning how often the known-right chunk comes back, drops.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 288" role="img" aria-labelledby="f35c-t f35c-d">
+<title id="f35c-t">The coupled index and the order of checks after a refresh</title>
+<desc id="f35c-d">On the left, a document refresh feeds one coupled unit made of the chunking scheme, the embedding model version and the vector index. On the right, four numbered checks to run in order: is the re-index complete, did the chunk schema change, did the embedding model change, are stale vectors still in. A dashed box below them says that only after those four do you look at the prompt and then the model. A bar along the bottom states the prevention: golden queries after every re-index.</desc>
+<rect class="bx" x="2" y="12" width="150" height="30"/><text class="m tc" x="77" y="31">Document refresh</text>
+<path class="ln" d="M77 44V64" marker-end="url(#ah)"/>
+<rect class="ls dash" x="2" y="68" width="268" height="148"/>
+<text class="s" x="12" y="86">One coupled unit</text>
+<rect class="bb" x="14" y="94" width="244" height="30"/><text class="m tc" x="136" y="113">Chunking scheme</text>
+<rect class="bb" x="14" y="134" width="244" height="30"/><text class="m tc" x="136" y="153">Embedding model version</text>
+<rect class="bb" x="14" y="174" width="244" height="30"/><text class="m tc" x="136" y="193">Vector index</text>
+<text class="s tr" x="2" y="236">Out of step: no error, only confident</text>
+<text class="s tr" x="2" y="251">wrong answers.</text>
+<text class="b" x="300" y="22">Check in this order</text>
+<path class="ls" d="M312 66V84M312 108V126M312 150V168M312 192V206"/>
+<circle class="bb" cx="312" cy="54" r="12"/><text class="b tc" x="312" y="58">1</text>
+<circle class="bb" cx="312" cy="96" r="12"/><text class="b tc" x="312" y="100">2</text>
+<circle class="bb" cx="312" cy="138" r="12"/><text class="b tc" x="312" y="142">3</text>
+<circle class="bb" cx="312" cy="180" r="12"/><text class="b tc" x="312" y="184">4</text>
+<rect class="ls dash" x="300" y="206" width="314" height="44"/>
+<text class="b" x="336" y="53">Is the re-index complete?</text><text class="s" x="336" y="68">chunk count in the index against the source</text>
+<text class="b" x="336" y="95">Did the chunk schema change?</text><text class="s" x="336" y="110">diff the schema version</text>
+<text class="b" x="336" y="137">Did the embedding model change?</text><text class="s" x="336" y="152">index version against query-time version</text>
+<text class="b" x="336" y="179">Are stale vectors still in?</text><text class="s" x="336" y="194">deleted and superseded documents</text>
+<text class="b" x="312" y="224">Only then: the prompt, then the model</text><text class="s" x="312" y="240">the layers the refresh did not touch</text>
+<rect class="by" x="2" y="258" width="612" height="24"/>
+<text class="m" x="12" y="274">Prevention: golden queries with known-correct chunk IDs after every re-index. A hit-rate drop blocks promotion.</text>
+</svg>
+</div>
+<figcaption>The three parts of the index are versioned together. After a refresh the four checks run in this order, and the prompt and model come last because the refresh did not touch them.</figcaption>
+</figure>
+
+<ul class="rules" aria-label="Decision rules for index coupling and post-refresh degradation">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-3.10-01"><span class="when">Quality falls right after a nightly document reload</span><span class="then">Investigate the index: completeness, chunk schema, embedding version, stale vectors.<span class="why">The refresh is the only variable that moved.</span></span></li>
+<li data-facet="F-3.10-02"><span class="when">Answers cite clause numbers that do not match the quoted text</span><span class="then">Suspect a chunk-schema change or a partial re-index.<span class="why">Content and metadata have come apart.</span></span></li>
+<li data-facet="F-3.10-03"><span class="when">Retrieval scores dropped across the board with no content change</span><span class="then">Suspect embedding model version drift.<span class="why">Vectors from a different model live in a different geometry.</span></span></li>
+<li data-facet="F-3.10-04"><span class="when">Quality degraded gradually, with no deployment or refresh</span><span class="then">Now the model, the prompt or a drifting query distribution is in scope.<span class="why">There is no indexing event to correlate against.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: the refresh incident, step by step</summary>
+<div>
+<p>Six weeks after launch, a nightly reload of the policy manuals runs, and the manuals themselves have not changed. The next morning the assistant answers coverage questions confidently, and retrieval scores have dropped across the board. This is a worked example, not a corpus rule.</p>
+<p>Check 1 compares the chunk count in the index with the count the source should produce. If the source should yield 10,000 chunks and the index holds 7,000, the shortfall is <span class="num" data-calc="(10000-7000)/10000*100" data-expect="30">30</span>%, which points at a partial run. Check 2 diffs the chunk-schema version.</p>
+<p>Check 3 compares the embedding model version recorded on the index with the one used at query time, and a mismatch there is a silent failure. In this example check 3 finds it: the ingestion job used a floating model version, an alias that points at whatever the latest version is, and it moved. The fix pins the version to the index and re-embeds the whole corpus.</p>
+<p>To build golden queries, collect real questions users ask, record the chunk IDs that should come back for each, and keep the list fixed. Take the hit rate of the last good index as the baseline, and block promotion of any new index that falls below it.</p>
+</div>
+</details>
+</section>
+
+<section class="bites" id="b-o3.5">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide's Sample 3 is this chapter's failure. It files the question under Domain 4, Evaluation and Optimization, and asks where to look first when a RAG system returns confident but incorrect answers after a document refresh while latency and model version are unchanged. The answer is the retrieval and indexing step.</p>
+<p>The other three options blame silent weight changes, a low temperature and a shrunken context window. The guide's reason is that none of them would be triggered specifically by a document refresh, and the stem also says the model version is unchanged. </p>
+<p>The Trap families page tags the first two <a class="fam" href="#/traps/f-evidence-mismatch">EVIDENCE-MISMATCH</a>, because the evidence in the stem does not support them. The shrunken context window fails the same test, though the page does not name it. The <a href="#/traps">Trap families</a> page defines each label.</p>
+
+<p>The project's corpus words the same scenario with different wrong options, and tags them differently:</p>
+
+<p class="stem">A stable RAG system returns confident, fluent, incorrect answers the morning after a document refresh.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Investigate retrieval and indexing: re-index completeness, the chunking configuration, the embedding model version pinned to the index, and removal of superseded vectors.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-wrong-axis">WRONG-AXIS</a>Lower the sampling temperature. Temperature governs token selection and says nothing about which documents were retrieved.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-discard">DISCARD</a>Move to a higher-capability model. It replaces a working component, and a better model reading the wrong document still gives a wrong answer, only a more fluent one.</span></li>
+</ul>
+
+<p><span class="lbl">Design shape</span>Two more shapes come from the project's scenario set. In the first, a knowledge base mixes clause-numbered manuals, threaded tickets and a 12,000-row table. The answer chunks the manuals on clauses and the tickets per thread, and gives the table a structured query tool.</p>
+<p>Uniform 512-token windows are <a class="fam" href="#/traps/f-wrong-axis">WRONG-AXIS</a>, because they treat size as the decision when the decision is where the boundary falls. Embedding the table row by row is <a class="fam" href="#/traps/f-architected">ARCHITECTED</a>, because one index sounds cleaner and no retrieval tuning answers a counting question.</p>
+
+<p>In the second, retrieved chunks are on topic but too ambiguous to answer from, and someone proposes doubling the chunk size. Keep the size and prepend the title and heading path. Doubling is <a class="fam" href="#/traps/f-wrong-axis">WRONG-AXIS</a>. Holding the heading path in metadata and showing it in the prompt afterwards is <a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>: it helps the model read what it got and does nothing for which chunks are retrieved.</p>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>Retrieved chunks are on topic but too ambiguous to answer from, and a colleague proposes doubling the chunk size. What do you do instead, and why does the proposal backfire?</span></summary>
+<div class="ans">
+<p>Keep the size and prepend the document title and heading path to each chunk before embedding. Doubling spreads each embedding across more topics, so precision drops. The problem is missing context, and the fix adds context without adding unrelated text.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li><a href="#/o1.2/c1.9">O1.2</a>, §1.9: wrong citations after a document refresh are routed to this layer as a feedback signal.</li>
+<li><a href="#/o4.4">O4.4</a>, §4.10: the same failure is the case for checking data and retrieval before the model. The guide files its Sample 3 under Domain 4, and §4.10 checks retrieval with Recall@k against gold passage IDs, which measures how often the known-right passages appear in the top k results.</li>
+<li><a href="#/o3.6">O3.6</a>, §3.11: the next decision is the retrieval mechanism. The structured query tool for the 12,000-row table comes back there as the SQL case.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 3, fifth objective, and section 8, Sample 3 (filed under Domain 4). Course corpus §3.8 to §3.10; the 10 to 15% overlap range is the corpus's figure, and the guide gives none. Live check: Anthropic, "Introducing Contextual Retrieval", 19 September 2024, read 2026-10-24, for the figures in the first fold.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>A chunk is the smallest span that still makes sense read out of context. Let the document's structure set the boundaries: clauses, endpoints, tickets.</li>
+<li>Fixed windows are the fallback for prose with no structure. Overlap of 10 to 15% insures against a cut sentence and does not replace good boundaries.</li>
+<li>Data queried by filter or count is not embedded. Give it a structured query tool.</li>
+<li>On topic but ambiguous: prepend title and heading path before embedding. Cut off mid-idea: fix the boundary. Bigger chunks dilute the embedding.</li>
+<li>Chunking scheme, embedding model version and vector index are one coupled unit. Version them together.</li>
+<li>Confidently wrong right after a refresh: check re-index completeness, chunk schema, embedding version and stale vectors, then the prompt and the model.</li>
+</ol>
+</aside>
+</div>

@@ -1,0 +1,152 @@
+<div class="chapter">
+<div class="main">
+
+<p>A screening system reports <span class="num" data-calc="0.85*94+0.12*80+0.03*50" data-round="0" data-expect="91">91</span>% overall accuracy, and complaints come from one group of applicants. The applicants fall into three groups: 85% of them score 94% accuracy, 12% score 80%, and the last 3% score 50%. The team's reflex is to raise the overall target and retrain. The figures are illustrative.</p>
+
+<p>The 91% is a weighted average, and it can be pulled up by the 85% that works well while the 3% that does not is wrong half the time. The same averaging can hide the problem from the evaluation set as well as from the dashboard.</p>
+
+<section class="concept" id="c5.10" data-src="5.10" data-terms="bias fairness measurement aggregate accuracy subgroup stratified equal N per group proxy variables protected attribute fairness metrics base rates conflict recompute live traffic false-negative rate">
+<h3>Measure by subgroup, with enough cases in each<span class="sec">§5.10</span></h3>
+
+<p>Aggregate accuracy is a weighted average that hides subgroup failure. Evaluate on a set stratified by the subgroups the organisation is accountable for, with adequate N per group, meaning enough cases in each, and not a population-proportional sample. If the set holds 400 cases in proportion to the groups above, the 3% group has <span class="num" data-calc="400*3%" data-expect="12">12</span> of them, too few to measure a rate, against the working floor of about 30 per segment in §4.4.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 178" role="img" aria-labelledby="f55a-t f55a-d">
+<title id="f55a-t">An overall accuracy that hides one group, and the sample that would show it</title>
+<desc id="f55a-d">Three groups with their share of applicants, accuracy, and the number of cases each would get in a 400-case proportional set, or an equal-N set of 100 per group. Group A, 85 percent of applicants, 94 percent accurate, 340 proportional cases, 100 equal. Group B, 12 percent, 80 percent, 48 proportional, 100 equal. Group C, 3 percent, 50 percent, drawn in red, 12 proportional, 100 equal. A dashed line marks the overall accuracy of 91 percent.</desc>
+<text class="s" x="2" y="14">Group</text><text class="s" x="64" y="14">Share</text><text class="s" x="110" y="14">Accuracy</text><text class="s" x="440" y="14">Proportional</text><text class="s" x="544" y="14">Equal N</text>
+<text class="m" x="2" y="43">A</text><text class="m" x="64" y="43">85%</text>
+<rect class="bb" x="110" y="26" width="282" height="24"/><text class="m" x="398" y="43">94%</text><text class="m" x="440" y="43"><tspan data-calc="400*85%" data-expect="340">340</tspan> cases</text><text class="m" x="544" y="43">100</text>
+<text class="m" x="2" y="79">B</text><text class="m" x="64" y="79">12%</text>
+<rect class="bb" x="110" y="62" width="240" height="24"/><text class="m" x="356" y="79">80%</text><text class="m" x="440" y="79"><tspan data-calc="400*12%" data-expect="48">48</tspan> cases</text><text class="m" x="544" y="79">100</text>
+<text class="m" x="2" y="115">C</text><text class="m" x="64" y="115">3%</text>
+<rect class="br" x="110" y="98" width="150" height="24"/><text class="m tr" x="266" y="115">50%</text><text class="m tr" x="440" y="115">12 cases</text><text class="m" x="544" y="115">100</text>
+<path class="ln dash" d="M383 20V132"/>
+<text class="m tc" x="383" y="148">overall 91%</text>
+<text class="s" x="2" y="170">Equal N gives group C more than eight times the cases, with 300 in all and not 400.</text>
+</svg>
+</div>
+<figcaption>The dashed line is the figure on the dashboard, and the red bar is the group that fails. The right-hand columns show how many cases each sampling rule would give it.</figcaption>
+</figure>
+
+<p>Measure by subgroup. Removing the protected attribute from the input does not remove the bias, since proxy variables carry the same signal: postal code, school name, employment gaps, name morphology and phrasing register.</p>
+<p>It also removes the ability to detect the disparity, so a proposal to drop the attribute is rejected as the fairness control. For a small subgroup under a proportional sample, rebalance to equal N per group, since proportional sampling gives the least power where the risk is highest.</p>
+
+<p>Fairness metrics can conflict. Equal selection rate, equal false-negative rate and equal calibration cannot generally hold together when base rates differ. The conflict is mathematical, and the resolution is a stated decision: choose by which harm is being controlled, and record the rationale. Declare which harm is controlled, and therefore which definition of fairness is in force.</p>
+
+<p>Three terms in that rule need a gloss. The false-negative rate is the share of people who qualify and are wrongly rejected. Calibration means that a given score carries the same chance of the outcome for every group. The base rate is how common the outcome is within a group.</p>
+
+<p>Fairness is a measurement that moves with the population and not a property measured once. If it was measured at launch and signed off, recompute it on live traffic on a schedule.</p>
+
+<ul class="rules" aria-label="Decision rules for bias and fairness measurement">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-5.10-01"><span class="when">91% aggregate accuracy, with complaints concentrated in one group</span><span class="then">Disaggregate the metric by subgroup on a stratified set.<span class="why">The aggregate cannot show what is being reported.</span></span></li>
+<li data-facet="F-5.10-02"><span class="when">Proposal to drop the protected attribute from the input</span><span class="then">Reject as the fairness control.<span class="why">Proxies carry the signal, and measurement becomes impossible.</span></span></li>
+<li data-facet="F-5.10-03"><span class="when">A small subgroup, and a population-proportional evaluation sample</span><span class="then">Rebalance to equal N per group.<span class="why">Proportional sampling gives the least power where the risk is highest.</span></span></li>
+<li data-facet="F-5.10-04"><span class="when">Two fairness metrics cannot both be satisfied</span><span class="then">Choose by which harm is being controlled, and record the rationale.<span class="why">The conflict is mathematical, and the resolution is a stated decision.</span></span></li>
+<li data-facet="F-5.10-05"><span class="when">Fairness was measured once at launch and signed off</span><span class="then">Recompute on live traffic on a schedule.<span class="why">The applicant or customer population moves.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: why equal N costs fewer cases and shows more</summary>
+<div>
+<p>This is a worked example, not a corpus rule, and the shares are invented. A proportional sample of 400 cases gives groups of 340, 48 and 12. Equal N of 100 per group needs <span class="num" data-calc="3*100" data-expect="300">300</span> cases in all, which is fewer, and it gives the weakest group 100 cases against 12.</p>
+<p>The aggregate from an equal-N set no longer mirrors the applicant population. That is acceptable, since the set exists to measure each group, and the corpus sets the threshold against the worst-performing group. The same reasoning appears in §4.4, where a rate needs about 30 cases per segment. The 100 per group here is this example's choice, comfortably above that floor.</p>
+</div>
+</details>
+</section>
+
+<section class="concept" id="c5.11" data-src="5.11" data-terms="transparency disclosure explainability decision trace model-generated rationale contestability contestation route queue status regulator audit threshold logged">
+<h3>Keep a record of the decision, and tell people AI was involved<span class="sec">§5.11</span></h3>
+
+<p>Transparency has two distinct meanings, and a third need, contestability, sits beside them. Disclosure means the affected person knows AI was involved and how to reach a human. Explainability means a specific decision can be accounted for afterwards. The two need different mechanisms, and a design can meet one and miss the other.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 186" role="img" aria-labelledby="f55b-t f55b-d">
+<title id="f55b-t">Disclosure, explainability and contestability, and what is not an audit record</title>
+<desc id="f55b-d">Three blue boxes. Disclosure: people know AI is involved and how to reach a human, at the point of interaction. Explainability: a stored trace of one decision, with inputs, versions, score, threshold and rule. Contestability: a route to challenge a consequential decision, with a queue and a status field. A red bar below says a model-written rationale is plausible text about the decision, suits the end user, and is not the audit record.</desc>
+<rect class="bb" x="2" y="10" width="188" height="104"/>
+<text class="b tc tb2" x="96" y="32">Disclosure</text>
+<text class="m tc" x="96" y="56">people know AI is involved</text><text class="m tc" x="96" y="72">and how to reach a human,</text><text class="m tc" x="96" y="88">at the point of interaction</text>
+<rect class="bb" x="214" y="10" width="188" height="104"/>
+<text class="b tc tb2" x="308" y="32">Explainability</text>
+<text class="m tc" x="308" y="56">a stored trace of one</text><text class="m tc" x="308" y="72">decision: inputs, versions,</text><text class="m tc" x="308" y="88">score, threshold, rule</text>
+<rect class="bb" x="426" y="10" width="188" height="104"/>
+<text class="b tc tb2" x="520" y="32">Contestability</text>
+<text class="m tc" x="520" y="56">a route to challenge a</text><text class="m tc" x="520" y="72">consequential decision,</text><text class="m tc" x="520" y="88">with a queue and status</text>
+<rect class="br" x="2" y="128" width="612" height="46"/>
+<text class="m" x="14" y="148">A model-written rationale is plausible text about the decision. It suits the end user,</text>
+<text class="m" x="14" y="164">and it is not the audit record of what produced the outcome.</text>
+</svg>
+</div>
+<figcaption>Each blue box meets a different requirement. The red bar is the substitute that looks like explainability and is not a record.</figcaption>
+</figure>
+
+<p>The explainability artefact is a logged, reconstructable trace: the inputs used, the evidence retrieved, the prompt and model version, the score, the threshold in force, the rule applied and any human decision. A model-generated rationale is not an explainability artefact. It is plausible text about the decision and not a record of what produced it, and it can be confidently wrong about its own causes.</p>
+
+<p>If a regulator asks why a specific applicant was declined, produce the stored trace. Attaching a model-written explanation to each decision is useful for the end user and does not serve as the audit record. Where the requirement is that people know they are interacting with an AI system, provide disclosure at the point of interaction plus a stated route to a human. That is disclosure and not explainability.</p>
+
+<p>A consequential automated decision with no challenge path needs a contestation route, with a queue and a status field. The trace is cheap at write time and expensive to reconstruct after the fact, and the same holds for a route to a human, which is cheap at design time and costly after the first complaint.</p>
+
+<ul class="rules" aria-label="Decision rules for transparency">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-5.11-01"><span class="when">A regulator asks why a specific applicant was declined</span><span class="then">Produce the stored trace: fields used, versions, score, threshold, rule.<span class="why">It reconstructs the actual decision path.</span></span></li>
+<li data-facet="F-5.11-02"><span class="when">The team proposes attaching a model-written explanation to each decision</span><span class="then">It is useful for the end user and not for the audit record.<span class="why">A generated rationale can be confidently wrong about its own causes.</span></span></li>
+<li data-facet="F-5.11-03"><span class="when">The requirement is that people know they are interacting with an AI system</span><span class="then">Disclosure at the point of interaction, plus a stated route to a human.<span class="why">It is disclosure and not explainability, a different requirement with a different mechanism.</span></span></li>
+<li data-facet="F-5.11-04"><span class="when">A consequential automated decision with no challenge path</span><span class="then">Add a contestation route with a queue and a status field.<span class="why">It is cheap at design time and expensive after the first complaint.</span></span></li>
+</ul>
+</section>
+
+<section class="bites" id="b-o5.5">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide gives no sample for bias or transparency, and its three samples sit in Domains 2, 3 and 4. The scenarios below come from this project's own set, and the <a href="#/traps">Trap families</a> page defines each label. <span class="lbl">Inference</span>Expect a stem with a headline number and a group, or an auditor and a decision, and options that fix the wrong artefact.</p>
+
+<p class="stem">A screening system reports 91% overall accuracy and is generating complaints from one demographic group.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Rebuild the evaluation set stratified with equal N per group, report accuracy and false-negative rate per subgroup, and set the threshold against the worst-performing group.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-discard">DISCARD</a>Remove the demographic attribute from the model input. It discards the field and does not adjust the measurement, leaves the proxy signal untouched, and removes the ability to detect the disparity.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-wrong-axis">WRONG-AXIS</a>Raise the overall accuracy target and retrain until it is met. It optimises the aggregate that was concealing the problem.</span></li>
+</ul>
+
+<p class="stem">An auditor asks the team to explain why a particular automated decision was made.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Retrieve the stored decision trace: the input fields used, the retrieved evidence, the prompt and model versions, the score and the threshold in force.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-repair">REPAIR</a>Re-run the case and ask the model to explain its reasoning. It reconstructs an explanation after the fact from a non-deterministic process, instead of recording what happened.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>Provide the system prompt and the model card as the account of the decision. It documents the system's general behaviour and says nothing about this decision.</span></li>
+</ul>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>A system with 91% overall accuracy draws complaints from one group, and someone proposes dropping the demographic field. Separately, a regulator asks why one applicant was declined, and the team offers a model-written explanation. What do you do in each case?</span></summary>
+<div class="ans">
+<p>Keep the field and measure with it: build a set with equal N per group, report accuracy and false-negative rate per group, and set the threshold against the worst group, because dropping the field leaves the proxies and destroys the measurement. For the applicant, produce the stored decision trace of inputs, versions, score and threshold. The model-written explanation is for the user and is not the audit record.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li><a href="#/o4.2/c4.4">O4.2</a>, §4.4: the aggregate mask and the per-segment case floor are the same reasoning, here applied to groups of people.</li>
+<li><a href="#/o3.4/c3.6">O3.4</a>, §3.6: the decision trace is the trace that section says to capture, with the same correlation ID and the same redaction and retention duties.</li>
+<li><a href="#/o5.4/c5.5">O5.4</a>, §5.5: the decision trace is the longer-lived record there, kept under its own policy, while the audit record is the immutable one.</li>
+<li><a href="#/o5.3">O5.3</a>, §5.8: the route to a human in disclosure and contestation is the human side of that routing.</li>
+<li><a href="#/o6.2">O6.2</a>, §6.6: explaining the limits of automation to a stakeholder uses the same disclosure.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 5, fifth objective. Course corpus §5.10 and §5.11. No live-document check was needed: the chapter states measurement and record-keeping rules and no product facts. The group shares, the group accuracies and the 400-case set are invented for illustration.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>Aggregate accuracy is a weighted average that hides subgroup failure. Stratify by the groups the organisation is accountable for, with equal N per group, and report accuracy and false-negative rate for each.</li>
+<li>Removing the protected attribute leaves the proxies and destroys the measurement. Reject it as the fairness control.</li>
+<li>Fairness definitions can conflict when base rates differ. State which harm is controlled and record the rationale.</li>
+<li>Recompute fairness on live traffic on a schedule, since the population moves.</li>
+<li>Disclosure and explainability are different requirements. Explainability is a stored trace of inputs, versions, score and threshold, and a model-written rationale is not one. A consequential decision needs a contestation route.</li>
+</ol>
+</aside>
+</div>

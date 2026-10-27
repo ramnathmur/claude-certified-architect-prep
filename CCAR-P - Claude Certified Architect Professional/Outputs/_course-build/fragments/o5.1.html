@@ -1,0 +1,153 @@
+<div class="chapter">
+<div class="main">
+
+<p>A support assistant's only safety control is an output classifier, and it has started taking actions that users never requested. Suppose a document in a customer's upload contained an instruction, and the assistant followed it. The classifier, which reads what the assistant says, saw nothing wrong with the sentence. The assistant can also issue refunds of up to $10,000 with no one in the loop.</p>
+
+<p>The team's instinct is to retrain the classifier on the new failure. That makes the one existing layer better, and it leaves the design at one layer. What would a design look like in which this failure could not reach a refund?</p>
+
+<section class="concept" id="c5.1" data-src="5.1" data-terms="guardrail layering input validation output filtering scoped permissions human approval independent layers defense in depth single point of failure consequential action classifier">
+<h3>Stack independent layers, matched to consequence<span class="sec">§5.1</span></h3>
+
+<p>The corpus names four layers: input validation before the call, output filtering after it, scoped permissions, and human approval on consequential actions. The discriminator is whether the design has independent layers or one control carrying everything. The layers fail independently, so an incident has to clear all four. Adding a fifth flavour of one layer adds almost nothing, since it shares that layer's blind spot.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 152" role="img" aria-labelledby="f51a-t f51a-d">
+<title id="f51a-t">Four independent layers between a bad input and a consequential action</title>
+<desc id="f51a-d">A start box says 1,000,000 attempts. Four boxes follow in a row: input validation before the call, output filtering after it, scoped permissions, and human approval for refunds and deletes. Under each box is the number of attempts left after that layer, assuming each misses 10 percent and the misses are independent: 100,000, then 10,000, then 1,000, then 100. A note states the assumptions.</desc>
+<rect class="bx" x="2" y="20" width="96" height="60"/>
+<text class="b tc" x="50" y="44">1,000,000</text><text class="m tc" x="50" y="62">attempts</text>
+<rect class="bb" x="116" y="20" width="118" height="60"/>
+<text class="b tc" x="175" y="38">Input</text><text class="b tc" x="175" y="54">validation</text><text class="s tc" x="175" y="72">pre-call</text>
+<rect class="bb" x="242" y="20" width="118" height="60"/>
+<text class="b tc" x="301" y="38">Output</text><text class="b tc" x="301" y="54">filtering</text><text class="s tc" x="301" y="72">post-call</text>
+<rect class="bb" x="368" y="20" width="118" height="60"/>
+<text class="b tc" x="427" y="38">Scoped</text><text class="b tc" x="427" y="54">permissions</text><text class="s tc" x="427" y="72">least privilege</text>
+<rect class="bb" x="494" y="20" width="118" height="60"/>
+<text class="b tc" x="553" y="38">Human</text><text class="b tc" x="553" y="54">approval</text><text class="s tc" x="553" y="72">refunds, deletes</text>
+<path class="ln" d="M100 50H114" marker-end="url(#ah)"/><path class="ln" d="M236 50H240" marker-end="url(#ah)"/><path class="ln" d="M362 50H366" marker-end="url(#ah)"/><path class="ln" d="M488 50H492" marker-end="url(#ah)"/>
+<text class="m tc" x="175" y="102"><tspan data-calc="1000000*0.1" data-expect="100000">100,000</tspan> left</text>
+<text class="m tc" x="301" y="102"><tspan data-calc="1000000*0.1*0.1" data-round="0" data-expect="10000">10,000</tspan> left</text>
+<text class="m tc" x="427" y="102"><tspan data-calc="1000000*0.1*0.1*0.1" data-round="0" data-expect="1000">1,000</tspan> left</text>
+<text class="m tc" x="553" y="102"><tspan data-calc="1000000*0.1*0.1*0.1*0.1" data-round="0" data-expect="100">100</tspan> left</text>
+<text class="s" x="2" y="140">Invented counts: each layer misses 10% of attempts, and the misses are independent.</text>
+</svg>
+</div>
+<figcaption>Each layer removes most of what reaches it. The counts hold only while the misses are independent. A fifth check built on the same mechanism shares the blind spot and adds little, and a different kind of layer adds a lot.</figcaption>
+</figure>
+
+<p>Most layers are cheap: input validation, schema checks and permission scoping are small deterministic checks. One tuned safety classifier costs more to build and covers less. </p>
+<p>The failure mode of a single control is that it is bypassed by exactly the case it was not written for, with nothing behind it to catch the miss. Replacing four simple checks with one fine-tuned safety model gives correlated coverage from one mechanism, and independence is what layering buys.</p>
+
+<p>Match the layers to the consequence. Where an output classifier is the only control on a customer-facing assistant, add pre-call input validation, tool scoping and a human gate on consequential actions. </p>
+<p>If input validation, output filtering and scoped tools exist and the assistant can still issue refunds of up to $10,000 unattended, the uncovered layer is human approval on that irreversible action. A low-consequence internal drafting tool with no external output and no tools needs only input validation and output schema checks.</p>
+
+<ul class="rules" aria-label="Decision rules for guardrail layering">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-5.1-01"><span class="when">An output classifier is the only safety control on a customer-facing assistant</span><span class="then">Add pre-call input validation, tool scoping and a human gate on consequential actions.<span class="why">A single layer is a single point of failure, and the other three catch different classes.</span></span></li>
+<li data-facet="F-5.1-02"><span class="when">A team proposes replacing four simple checks with one fine-tuned safety model</span><span class="then">Reject.<span class="why">It gives correlated coverage from one mechanism, and independence is what the layering buys.</span></span></li>
+<li data-facet="F-5.1-03"><span class="when">The assistant already has input validation, output filtering and scoped tools, and can issue refunds up to $10,000 unattended</span><span class="then">Add the human-approval layer on the consequential action.<span class="why">The irreversible action is the uncovered layer.</span></span></li>
+<li data-facet="F-5.1-04"><span class="when">A low-consequence internal drafting tool with no external output and no tools</span><span class="then">Input validation and output schema checks are sufficient.<span class="why">Layers are matched to consequence, and permission scoping and human gates have nothing to cover here.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: what independence is worth in numbers</summary>
+<div>
+<p>This is a worked example, not a corpus rule, and every figure is invented. If each of four layers misses 10% of attempts and the misses are independent, the share that gets past all four is 0.1 four times over, which is <span class="num" data-calc="0.1*0.1*0.1*0.1*100" data-round="2" data-expect="0.01">0.01</span>%. Out of a million attempts, one layer lets <span class="num" data-calc="1000000*0.1" data-expect="100000">100,000</span> through and four let about 100 through.</p>
+<p>The result depends on the independence. If two layers share a blind spot, such as two checks built on the same classifier, their misses overlap, and more gets past both than the product suggests. That is the corpus's point about replacing four simple checks with one tuned model, and about adding a fifth flavour of one layer.</p>
+</div>
+</details>
+</section>
+
+<section class="concept" id="c5.2" data-src="5.2" data-terms="least privilege tool scoping removal monitor structured request separate service credential execute propose logging confirmation consequence reversible">
+<h3>Remove the capability, or take it out of the model's hands<span class="sec">§5.2</span></h3>
+
+<p>Least privilege means removing an unneeded capability, and not logging or confirming its use. If the task does not require the capability, delete it, because monitoring, confirming and rate-limiting all presuppose that the capability still exists. This matches the answer logic of the guide's sample on least privilege, covered in <a href="#/o3.2">O3.2</a>.</p>
+
+<p>When the agent needs the capability sometimes and misuse is consequential, use the strongest form: move the model out of the action path. The model emits a structured request, and a separate service that holds the credential validates it and executes. The privilege stays outside the model while the capability remains available. The stakeholder answer is: "The assistant cannot do X. It proposes; the existing system decides."</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 160" role="img" aria-labelledby="f51b-t f51b-d">
+<title id="f51b-t">The model proposes and a separate service executes</title>
+<desc id="f51b-d">Three boxes in a row. The model emits a structured request and holds no credential. A separate executing service holds the credential, validates the request and executes it. The existing system decides and records. A red dashed line under the row, labelled no direct path, shows that the model has no way to reach the system itself. A note quotes the stakeholder answer.</desc>
+<rect class="bx" x="2" y="12" width="188" height="72"/>
+<text class="b tc" x="96" y="34">The model</text><text class="m tc" x="96" y="56">emits a structured request</text><text class="m tc" x="96" y="72">holds no credential</text>
+<rect class="bb" x="214" y="12" width="188" height="72"/>
+<text class="b tc tb2" x="308" y="34">Executing service</text><text class="m tc" x="308" y="56">holds the credential</text><text class="m tc" x="308" y="72">validates, then executes</text>
+<rect class="bx" x="426" y="12" width="188" height="72"/>
+<text class="b tc" x="520" y="34">Existing system</text><text class="m tc" x="520" y="56">decides and records</text>
+<path class="ln" d="M192 48H212" marker-end="url(#ah)"/><path class="ln" d="M404 48H424" marker-end="url(#ah)"/>
+<path class="lr dash" d="M96 86V108H520V86"/>
+<rect class="pl" x="248" y="98" width="120" height="20"/>
+<text class="s tr tc" x="308" y="112">no direct path</text>
+<text class="s" x="2" y="148">"The assistant cannot do X. It proposes; the existing system decides."</text>
+</svg>
+</div>
+<figcaption>The credential sits in the middle box. The model can ask for the action and cannot perform it, so a hostile instruction in its context has nothing to execute.</figcaption>
+</figure>
+
+<p>The cases follow from consequence. If an agent holds a write or delete tool it has never legitimately needed, remove the tool, and the failure class disappears instead of being mitigated. </p>
+<p>If it needs the capability routinely and misuse is low-consequence and reversible, keep the tool and add logging, since removal would break the task. A proposal to keep a dangerous tool and log every invocation is rejected as the primary control, because logging is detection and the action still executes. </p>
+<p>A confirmation step is the right control when the capability is needed and consequential (§3.2). It is a half-move when the scenario says the capability is not needed, because then it should be removed.</p>
+
+<ul class="rules" aria-label="Decision rules for least privilege in tool scoping">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-5.2-01"><span class="when">An agent has a write or delete tool it has never legitimately needed</span><span class="then">Remove the tool.<span class="why">The failure class disappears rather than being mitigated.</span></span></li>
+<li data-facet="F-5.2-02"><span class="when">The agent needs the capability sometimes, and misuse is consequential</span><span class="then">The model emits a structured request, and a separate service holding the credential validates and executes it.<span class="why">Privilege stays outside the model while the capability remains available.</span></span></li>
+<li data-facet="F-5.2-03"><span class="when">The agent needs the capability routinely, and misuse is low-consequence and reversible</span><span class="then">Keep the tool, and add logging.<span class="why">Removal would break the task, and the consequence does not justify a gate.</span></span></li>
+<li data-facet="F-5.2-04"><span class="when">Proposal: keep the dangerous tool and log every invocation</span><span class="then">Reject as the primary control.<span class="why">Logging is detection, and the action still executes.</span></span></li>
+</ul>
+</section>
+
+<section class="bites" id="b-o5.1">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide's only sample that touches this objective is Sample 1, filed under Domain 3, and it is the same removal-first logic: a support agent holds refund and delete tools that staff never need, and the answer removes them from the configuration. Logging and confirmation prompts are the compensating controls it rejects. <a href="#/o3.2">O3.2</a> works through it. The two scenarios below come from this project's own set, and the <a href="#/traps">Trap families</a> page defines each label.</p>
+
+<p class="stem">A support assistant's only safety control is an output classifier, and it has begun taking actions users did not request.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Add independent layers: validate and delimit untrusted input before the call, scope the tool set to what the task requires, and gate consequential actions on human approval.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>Retrain the output classifier on the new failure examples. It improves the one layer that already exists, leaves the design at one layer, and does nothing about the action path.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-wrong-axis">WRONG-AXIS</a>Add detailed logging and alerting on unexpected tool calls. It is detection and not prevention, and a log records the action after it happened.</span></li>
+</ul>
+
+<p class="stem">An agent has a <code>delete_records</code> tool it does not need for its stated task.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Remove <code>delete_records</code> from the agent's tool definitions.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-wrong-axis">WRONG-AXIS</a>Keep the tool and log every invocation for audit. It has the right vocabulary and the wrong mechanism, since the deletion still happens.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-half-move">HALF-MOVE</a>Keep the tool but require a confirmation step before it executes. It is a partial version of the right answer that leaves the capability in place and depends on whoever confirms.</span></li>
+</ul>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>A team wants to retrain its output classifier after an assistant followed an injected instruction. Separately, an agent needs to issue a refund once a day, and a teammate wants to keep the refund tool and log each call. What do you recommend for each?</span></summary>
+<div class="ans">
+<p>Do not rely on the classifier alone. Add input validation, tool scoping and human approval for the consequential action, so that the layers fail independently. For the refund, have the model emit a structured request and let a separate service that holds the credential validate and execute it, with human approval for a consequential amount. Logging only records the refund after it happened.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li><a href="#/o3.2/c3.2">O3.2</a>, §3.2: the same rule from the integration side. Removal comes first, and logging, confirmation and time windows manage a privilege that is kept.</li>
+<li><a href="#/o4.1/c4.2">O4.1</a>, §4.2: the adversarial suite and the least-privilege audit there are how the security layers in this chapter are measured.</li>
+<li><a href="#/o5.3">O5.3</a>, §5.8: human approval is the fourth layer, and that chapter covers how to route work to people.</li>
+<li><a href="#/o3.1/c3.1">O3.1</a>, §3.1: blast radius is a tool-surface cost, and role-scoped agents shrink it.</li>
+<li><a href="#/o2.2/c2.2">O2.2</a>, §2.2: a guardrail written into the system prompt is one layer among these, and it stays probabilistic.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 5, first objective, and section 8, Sample 1, summarised above. Course corpus §5.1 and §5.2. No live-document check was needed: the chapter states control-design rules and no product facts. The attempt counts, the 10% miss rate and the refund limits other than the corpus's $10,000 are invented for illustration.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>Four layers: input validation before the call, output filtering after it, scoped permissions, and human approval on consequential actions. They fail independently, so an incident has to clear all four.</li>
+<li>One strong classifier is a single point of failure. Replacing four simple checks with one tuned model gives correlated coverage.</li>
+<li>Match layers to consequence: an unattended $10,000 refund needs a human gate, and a low-consequence drafting tool needs only input and schema checks.</li>
+<li>Least privilege means removal. Logging and confirmation presuppose that the capability stays.</li>
+<li>For a needed and consequential capability, the model emits a structured request and a separate service holding the credential validates and executes: "It proposes; the existing system decides."</li>
+</ol>
+</aside>
+</div>

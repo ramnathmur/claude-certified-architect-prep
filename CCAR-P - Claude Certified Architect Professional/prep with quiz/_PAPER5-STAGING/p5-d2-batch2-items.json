@@ -1,0 +1,135 @@
+{
+  "items": [
+    {
+      "g": 16,
+      "domain": "D2",
+      "section": "2.8",
+      "facet": "F-2.8-02",
+      "objective": "O2.5",
+      "cite": "D2 2.8",
+      "shape": "S2",
+      "direction": "inverted",
+      "format": "single",
+      "selectN": 1,
+      "stem": "A legal team requires a compliance disclaimer that reflects today's date to appear first in a high-volume, latency-sensitive support prompt built on a large, byte-identical cached prefix. Which placement satisfies the compliance requirement without invalidating the cache?",
+      "opts": [
+        {"l": "A", "t": "Insert the disclaimer ahead of the cached prefix, as the literal first bytes of the prompt.", "family": "EVIDENCE-MISMATCH"},
+        {"l": "B", "t": "Keep the prefix ordering unchanged, adding the disclaimer as the next block after it.", "family": null},
+        {"l": "C", "t": "Split the static prefix around the disclaimer so it sits mid-block, preserving partial reuse of the surrounding text.", "family": "HALF-MOVE"},
+        {"l": "D", "t": "Disable caching for this prompt and regenerate the full prefix with the disclaimer prepended on every call.", "family": "ARCHITECTED"}
+      ],
+      "whyRight": "The compliance requirement is about the disclaimer's presence and prominence, not its literal byte position. Keeping the static prefix first and adding the disclaimer immediately after it preserves the byte-identical cache while still surfacing the disclaimer at the very start of the response.",
+      "whyWrong": {
+        "A": "Treats 'first' as a literal byte-position requirement rather than the compliance team's actual intent, and inserting dynamic content ahead of the prefix invalidates the entire cache.",
+        "C": "Splitting the prefix around the disclaimer breaks the single stable prefix caching depends on, so the surrounding text is no longer byte-identical across calls.",
+        "D": "Discards a working cost and latency lever the workload doesn't need to give up, when the compliance need is satisfiable without disabling caching at all."
+      },
+      "deepDive": null,
+      "t1Clause": "the prompt is called at high volume, so the cached prefix stays within the cache's retention window",
+      "t1Alt": "D",
+      "source": "AUTHORED",
+      "block": null,
+      "blockLabel": null,
+      "factAnswerRaw": "Keep the prefix ordering unchanged, adding the disclaimer as the next block after it."
+    },
+    {
+      "g": 17,
+      "domain": "D2",
+      "section": "2.1",
+      "facet": "F-2.1-05",
+      "objective": "O2.1",
+      "cite": "D2 2.1",
+      "shape": "S5",
+      "direction": "normal",
+      "format": "single",
+      "selectN": 1,
+      "stem": "A contract-review pipeline runs 200 calls a day on a mid-tier model. One step needs deep reasoning over ambiguous, high-stakes clauses, and latency isn't a stated limit there. What is the lowest-cost change that meets the requirement without over-provisioning the rest of the pipeline?",
+      "opts": [
+        {"l": "A", "t": "Enable extended thinking only for the ambiguous-clause step, leaving the rest of the pipeline on the current model.", "family": null},
+        {"l": "B", "t": "Move the entire pipeline to a larger, more capable model to raise reasoning quality everywhere.", "family": "ARCHITECTED"},
+        {"l": "C", "t": "Add a strict token budget to the ambiguous step to control cost, without changing how it reasons.", "family": "WRONG-AXIS"},
+        {"l": "D", "t": "Fine-tune the current model on past contract decisions before touching this step's reasoning approach.", "family": "HALF-MOVE"}
+      ],
+      "whyRight": "Extended thinking is the lightest lever that reaches the reasoning depth the ambiguous step needs, leaving the other 200 daily calls on their current, cheaper model. Upgrading the entire pipeline reaches for a far more expensive rung the stated requirement never calls for.",
+      "whyWrong": {
+        "B": "Upgrading the entire pipeline raises capability everywhere the requirement doesn't call for it, adding cost and latency to 200 daily calls to fix a bottleneck in one step.",
+        "C": "A token budget controls spend but does nothing for reasoning quality on an ambiguous, high-stakes step — the bottleneck is depth, not tokens.",
+        "D": "Fine-tuning requires curating training data and a retraining cycle before it touches this step's reasoning, an expensive detour around a same-day fix."
+      },
+      "deepDive": null,
+      "t1Clause": "the reasoning gap is isolated to one step in the pipeline rather than spread across most of the workload",
+      "t1Alt": "B",
+      "source": "AUTHORED",
+      "block": null,
+      "blockLabel": null,
+      "factAnswerRaw": "Enable extended thinking for that step rather than moving the whole workload to a larger model"
+    },
+    {
+      "g": 18,
+      "domain": "D2",
+      "section": "2.3",
+      "facet": "F-2.3-04",
+      "objective": "O2.3",
+      "cite": "D2 2.3",
+      "shape": "S1",
+      "direction": "normal",
+      "format": "single",
+      "selectN": 1,
+      "stem": "A support bot's tool-routing prompt has six few-shot examples, all drawn from the most common, easily-routed requests, yet still misroutes high-value escalation requests weekly, flagged by the support-ops lead. Applying the principle that examples must target the failure distribution, which change is correct?",
+      "opts": [
+        {"l": "A", "t": "Add three or four examples demonstrating the exact required response format for escalation replies.", "family": "WRONG-AXIS"},
+        {"l": "B", "t": "Add a post-processing classifier that flags likely misroutes for a human reviewer to catch after the fact.", "family": "DETECTIVE-FOR-PREVENTIVE"},
+        {"l": "C", "t": "Keep the six examples as they are and add a default-tool fallback for any ambiguous escalation request.", "family": "EVIDENCE-MISMATCH"},
+        {"l": "D", "t": "Replace the six examples with new ones drawn from the actual misrouted escalation cases.", "family": null}
+      ],
+      "whyRight": "Few-shot examples teach by pattern-matching to what they show; examples drawn from easy, common cases don't resemble the ambiguous escalation requests actually failing. Replacing them with examples from the observed failure distribution targets exactly the pattern the prompt is missing, regardless of how many examples existed before.",
+      "whyWrong": {
+        "A": "This targets output-formatting precision, a real fix for inconsistent formatting, but the stated failure is misrouting to the wrong tool, not inconsistent response format.",
+        "B": "A classifier that flags likely misroutes for a human catches failures after they happen instead of fixing the routing prompt itself.",
+        "C": "A generic fallback for ambiguous requests contradicts the stated fact that these are high-value escalations needing correct, specific routing."
+      },
+      "deepDive": null,
+      "t1Clause": "the bot misroutes ambiguous escalation requests to the wrong tool",
+      "t1Alt": "A",
+      "source": "AUTHORED",
+      "block": null,
+      "blockLabel": null,
+      "factAnswerRaw": "Replace them with examples drawn from the observed failure distribution"
+    },
+    {
+      "g": 19,
+      "domain": "D2",
+      "section": "2.7",
+      "facet": "F-2.7-02",
+      "objective": "O2.4",
+      "cite": "D2 2.7",
+      "shape": "S2",
+      "direction": "normal",
+      "format": "single",
+      "selectN": 1,
+      "stem": "A coding-assistant session runs hundreds of turns. An early instruction — never modify files under one protected directory — must hold for the rest of the session, while older turns are summarized to control token cost. Which design satisfies both?",
+      "opts": [
+        {"l": "A", "t": "Let the rule live inside the rolling summary along with everything else from early turns.", "family": "DISCARD"},
+        {"l": "B", "t": "Pin the never-modify-this-directory rule in a persistent structured block, re-included every call, kept separate from the rolling summary.", "family": null},
+        {"l": "C", "t": "Stop summarizing altogether and resend the full unabridged history every call to guarantee nothing is lost.", "family": "ARCHITECTED"},
+        {"l": "D", "t": "Move the protected-directory rule into the system prompt once, then drop it from every later call to save tokens.", "family": "WRONG-AXIS"}
+      ],
+      "whyRight": "Pinning the rule into a stable structured block that sits outside the rolling summary guarantees it is resent unchanged every call, while the rest of the conversation still gets summarized to control token growth. A rule that must never change needs a slot summarization never touches.",
+      "whyWrong": {
+        "A": "Repeated re-summarization passes can paraphrase or drop the rule over hundreds of turns, risking exactly the drift a never-change requirement cannot tolerate.",
+        "C": "Resending the full unabridged history defeats the stated goal of controlling token cost as the conversation grows, an unneeded trade for a single pinned fact.",
+        "D": "Dropping the rule from later calls assumes the API remembers it between requests, but nothing sent in an earlier call persists unless it is resent."
+      },
+      "deepDive": null,
+      "t1Clause": "the early decision must hold unchanged for the rest of the session",
+      "t1Alt": "A",
+      "source": "AUTHORED",
+      "block": null,
+      "blockLabel": null,
+      "factAnswerRaw": "Pin that decision into a persistent structured block, re-included on every call, separate from the rolling summary"
+    }
+  ],
+  "notes": [
+    "g16 (inverted, F-2.8-02): the correct answer's mechanism (dynamic content placed after the stable prefix) surface-resembles 2.8's static-first ordering rule, but the tested lesson is distinct — resolving an apparent conflict between a literal 'disclaimer must be first' compliance reading and cache preservation by correctly scoping what the requirement actually demands (presence/prominence, not byte-0 position), per invGuidance. Flagging for the audit's rule-1 (genuine-difference) check; not raised as an IRREDUCIBLE case."
+  ]
+}

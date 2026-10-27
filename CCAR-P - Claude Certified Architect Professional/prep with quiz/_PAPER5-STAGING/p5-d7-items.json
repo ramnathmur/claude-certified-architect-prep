@@ -1,0 +1,135 @@
+{
+ "items": [
+  {
+   "g": 60,
+   "domain": "D7",
+   "section": "7.2",
+   "facet": "F-7.2-04",
+   "objective": "O7.1",
+   "cite": "D7 7.2",
+   "shape": "S3",
+   "direction": "normal",
+   "format": "multi",
+   "selectN": 2,
+   "stem": "A supply-chain team's skill was recently broadened to scan supplier price feeds, and now invokes a live stock-adjustment command that should never fire without a controller's sign-off; the model version is unchanged. The scan also floods context before the 2-hour finance-close deadline. Select two fixes.",
+   "opts": [
+    {"l": "A", "t": "Scope `allowed-tools` in the skill's frontmatter to exclude the stock-adjustment command.", "family": null},
+    {"l": "B", "t": "Set `context: fork` for the price-feed scan so only its summary returns to the main conversation.", "family": null},
+    {"l": "C", "t": "Add a project-wide `deny` rule in `settings.json` blocking the stock-adjustment command for every skill and integration.", "family": "OVERSPEC"},
+    {"l": "D", "t": "Pin the model version, since a version change most likely caused the skill to start invoking the command.", "family": "EVIDENCE-MISMATCH"}
+   ],
+   "whyRight": "Two independent gaps exist: the skill's own tool access was never scoped, so `allowed-tools` must exclude the stock-adjustment command, and its price-feed scan pollutes the same context the deadline depends on, which `context: fork` isolates without touching the tool boundary.",
+   "whyWrong": {
+    "C": "Blocking the command project-wide affects every other skill and integration too; the sign-off gap belongs to this one skill's own tool access, not to a company-wide restriction.",
+    "D": "The model version is stated as unchanged, so drift cannot explain why the command started firing; the cause is a tool boundary the frontmatter never set."
+   },
+   "deepDive": null,
+   "t1Clause": "should never fire without a controller's sign-off (restricted to this one skill only)",
+   "t1Alt": "C",
+   "source": "AUTHORED",
+   "block": null,
+   "blockLabel": null,
+   "factAnswerRaw": "Scope `allowed-tools` in that skill's frontmatter; Set `context: fork`"
+  },
+  {
+   "g": 61,
+   "domain": "D7",
+   "section": "7.5",
+   "facet": "F-7.5-01",
+   "objective": "O7.2",
+   "cite": "D7 7.5",
+   "shape": "S4",
+   "direction": "normal",
+   "format": "single",
+   "selectN": 1,
+   "stem": "A finance-ops team's nightly reconciliation job runs unattended in a cron container, fetches related ledger entries mid-analysis to confirm each anomaly, and feeds a pipeline that pages on-call by severity. One malformed record broke a night's paging. Which mechanism fits the requirement?",
+   "opts": [
+    {"l": "A", "t": "Add `-p` (`--print`) so the job runs non-interactively instead of waiting on stdin.", "family": "WRONG-AXIS"},
+    {"l": "B", "t": "Run with `--output-format json` and enforce `--json-schema` so every finding carries a guaranteed, parseable shape.", "family": null},
+    {"l": "C", "t": "Move the job to the Batch API, since nobody is waiting and it costs half as much.", "family": "EVIDENCE-MISMATCH"},
+    {"l": "D", "t": "Add a detailed 'Output Format' section to the project's CLAUDE.md describing the exact JSON shape every finding must follow.", "family": "HALF-MOVE"}
+   ],
+   "whyRight": "`--output-format json` combined with `--json-schema` guarantees every finding carries a well-formed, parseable shape on every run, which the downstream pipeline's severity-based paging depends on; a nightly cron schedule and a mid-analysis ledger lookup do not change that requirement.",
+   "whyWrong": {
+    "A": "Running non-interactively stops the job from hanging on stdin, but says nothing about whether each finding's fields are well-formed enough for the pipeline to parse.",
+    "C": "The job fetches related ledger entries mid-analysis, and the Batch API cannot execute a tool mid-request and return the result, disqualifying it regardless of the flexible deadline.",
+    "D": "A CLAUDE.md description raises the odds of a well-formed record but never guarantees one; the parser still fails on the first run that deviates from the description."
+   },
+   "deepDive": null,
+   "t1Clause": "fetches related ledger entries mid-analysis to confirm each anomaly",
+   "t1Alt": "C",
+   "source": "AUTHORED",
+   "block": null,
+   "blockLabel": null,
+   "factAnswerRaw": "`--output-format json` with `--json-schema`"
+  },
+  {
+   "g": 62,
+   "domain": "D7",
+   "section": "7.8",
+   "facet": "F-7.8-03",
+   "objective": "O7.3",
+   "cite": "D7 7.8",
+   "shape": "S2",
+   "direction": "normal",
+   "format": "multi",
+   "selectN": 2,
+   "stem": "A clinical-operations agent must never export patient identifiers outside the de-identified pipeline, regardless of prompt wording, and every export it does run must post an entry to the compliance audit log automatically. Which two configuration changes guarantee both? Select two.",
+   "opts": [
+    {"l": "A", "t": "Add a strongly-worded instruction to the project CLAUDE.md forbidding identifier exports and reminding the agent to log every export.", "family": "REPAIR"},
+    {"l": "B", "t": "Escalate both rules to managed enterprise policy settings, even though only this one agent's configuration is affected.", "family": "OVERSPEC"},
+    {"l": "C", "t": "Add a `deny` rule for the identifier-export command pattern to `settings.json` permissions.", "family": null},
+    {"l": "D", "t": "Add a `PostToolUse` hook, scoped to export events, that writes the audit-log entry automatically.", "family": null}
+   ],
+   "whyRight": "A `deny` rule blocks the export outside model discretion regardless of prompt wording, and a `PostToolUse` hook writes the audit-log entry every time an export event fires — both are enforced by Claude Code itself, independent of what any instruction asks the agent to do.",
+   "whyWrong": {
+    "A": "A CLAUDE.md instruction shapes what the agent tries to do; it does not change what Claude Code allows, so a determined or malformed prompt can still trigger the export.",
+    "B": "Managed policy fits a rule that must survive every local override across many machines; escalating one agent's rule there is more governance than a single agent's configuration needs."
+   },
+   "deepDive": null,
+   "t1Clause": "regardless of prompt wording",
+   "t1Alt": "A",
+   "source": "AUTHORED",
+   "block": null,
+   "blockLabel": null,
+   "factAnswerRaw": "A `deny` rule in `settings.json` permissions; A hook on the relevant event, scoped by matcher"
+  },
+  {
+   "g": 63,
+   "domain": "D7",
+   "section": "7.1",
+   "facet": "F-7.1-04",
+   "objective": "O7.1",
+   "cite": "D7 7.1",
+   "shape": "S3",
+   "direction": "inverted",
+   "format": "single",
+   "selectN": 1,
+   "stem": "A twelve-engineer team's Claude Code sessions stopped enforcing a convention the same morning a teammate edited the shared `.claude/rules/` file, and the CLI auto-updated overnight with a changelog entry describing a matching default change. What should the team investigate first?",
+   "opts": [
+    {"l": "A", "t": "Revert the teammate's edit to the shared rules file, since that change happened right before the symptom appeared.", "family": "EVIDENCE-MISMATCH"},
+    {"l": "B", "t": "Check the CLI version and changelog for that release, since it changed the same day and could explain the symptom.", "family": null},
+    {"l": "C", "t": "Move the convention into each engineer's personal configuration so no one else can edit it.", "family": "WRONG-AXIS"},
+    {"l": "D", "t": "Add a stronger instruction to the project CLAUDE.md restating the convention so the edit cannot undo it.", "family": "REPAIR"}
+   ],
+   "whyRight": "The config edit and the symptom happened on the same day, but so did a CLI update whose changelog names a matching default change; two candidate causes exist, and the changelog is checkable evidence a config-edit revert alone cannot rule out or confirm.",
+   "whyWrong": {
+    "A": "Reverting the edit treats the coincidence as the cause and ignores the changelog evidence naming a separate, simultaneous default change as an equally live candidate.",
+    "C": "Moving the convention to personal configuration addresses where a rule lives, not which of two same-day changes actually caused the symptom, and personal config is invisible in review besides.",
+    "D": "A stronger instruction changes what the model is told to try, not which of the two same-day changes actually produced the symptom the team still hasn't identified."
+   },
+   "deepDive": null,
+   "t1Clause": "the CLI auto-updated overnight with a changelog entry describing a matching default change",
+   "t1Alt": "A",
+   "source": "AUTHORED",
+   "block": null,
+   "blockLabel": null,
+   "factAnswerRaw": "Check the CLI version and changelog for that release, since it changed the same day and could explain the symptom."
+  }
+ ],
+ "notes": [
+  "g60/F-7.2-04: the anchor facet is itself a 'Reject' row ('adding be concise to the skill') with no positive Answer-column text of its own. Section 7.2 supplies only two positive mechanism rows (F-7.2-01 allowed-tools, F-7.2-03 context:fork) that pair into a genuine 2-of-4 multi-response item, and both Paper 1's and Paper 4's own 7.2 multi-response items already landed on that identical pairing under different surface nouns (dependency-update-PR/migration; code-review/git-rebase). g60 lands on the same pairing again for the same structural reason and cannot avoid it given the corpus's current supply. The scenario here (a supply-chain team's price-feed-scanning skill with a live warehouse-stock-adjustment command) is a different industry and concrete task from both priors, but flagging explicitly per dispatch instructions so the independent audit checks g60 against all four prior papers' D7 items specifically, not just a stem-similarity score.",
+  "g63's t1Alt (A) is a soft resolution, flagged the way Paper 4 flagged its own weakest D7 T1: section 7.1's decision table doesn't tabulate a 'coincidental config edit vs. simultaneous CLI-version default change' diagnostic branch. That root-cause-diagnosis logic sits closer to section 7.7's diagnostic-rung ordering (rung 2, is it the right configuration layer; the changelog check is evidence-gathering before attributing cause) than to 7.1's own scope/durability table. Recording as a likely near-IRREDUCIBLE case for the grounding audit to confirm rather than asserting a clean row match.",
+  "This batch's inline-code-token usage (allowed-tools, context: fork, settings.json, deny, PostToolUse, --output-format json, --json-schema, -p/--print, CLAUDE.md, .claude/rules/) runs well above the paper-wide 15% target within just these 4 items. D7 is not on the banned list (D1/D5/D6) and sections 7.2/7.5/7.8's own decision tables are themselves dense with these literal config tokens, so left in place for central paper-wide rebalancing rather than stripped for an artificial local target — consistent with Paper 4's own D7 batch note on this same point."
+ ]
+}

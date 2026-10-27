@@ -1,0 +1,157 @@
+<div class="chapter">
+<div class="main">
+
+<p>Suppose a pull request touches 14 files and about 800 changed lines, an average of <span class="num" data-calc="800/14" data-expect="57" data-round="0">57</span> lines per file. One prompt reads the whole diff and returns one verdict. The review comes back shallow, and it approves a pattern in one file that it flagged in another.</p>
+
+<p><dfn data-def="Splitting a task into units of work, each handled by its own call or step.">Decomposition</dfn> is the repair: split the task into units that each get one job. Most of Domain 1 uses it. A workflow splits a task into steps, an architecture splits a system into stages, and a multi-agent system splits it into roles.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 250" role="img" aria-labelledby="f15a-t f15a-d">
+<title id="f15a-t">A 14-file review split into per-file passes and one integration pass</title>
+<desc id="f15a-d">On the left, three of the fourteen per-file passes: file 1, file 2 and file 14. Each turns its diff into a structured summary. The three summaries join and feed a blue integration pass on the right, which reads the summaries and the dependency graph and never the raw diffs. Notes under each side give the one criterion and the one failure mode of that pass. A red bar at the bottom shows the rejected design, one call over all fourteen raw diffs.</desc>
+<text class="b" x="2" y="20">Pass 1: one call per file, in parallel</text>
+<text class="b" x="380" y="20">Pass 2: one call</text>
+<rect class="bx" x="2" y="34" width="104" height="34"/><text class="m tc" x="54" y="55">File 1 diff</text>
+<rect class="bx" x="2" y="76" width="104" height="34"/><text class="m tc" x="54" y="97">File 2 diff</text>
+<text class="s tc" x="54" y="126">...</text>
+<rect class="bx" x="2" y="130" width="104" height="34"/><text class="m tc" x="54" y="151">File 14 diff</text>
+<rect class="bx" x="150" y="34" width="120" height="34"/><text class="m tc" x="210" y="55">Structured summary</text>
+<rect class="bx" x="150" y="76" width="120" height="34"/><text class="m tc" x="210" y="97">Structured summary</text>
+<rect class="bx" x="150" y="130" width="120" height="34"/><text class="m tc" x="210" y="151">Structured summary</text>
+<path class="ln" d="M106 51H147" marker-end="url(#ah)"/>
+<path class="ln" d="M106 93H147" marker-end="url(#ah)"/>
+<path class="ln" d="M106 147H147" marker-end="url(#ah)"/>
+<path class="ln" d="M270 51H320V93M270 93H320M270 147H320V93"/>
+<path class="lb" d="M320 93H377" marker-end="url(#ah-b)"/>
+<rect class="bb" x="380" y="44" width="234" height="98"/>
+<text class="h tc tb2" x="497" y="68">Integration pass</text>
+<text class="m tc" x="497" y="90">Reads the 14 summaries</text>
+<text class="m tc" x="497" y="108">and the dependency graph,</text>
+<text class="m tc" x="497" y="126">never the raw diffs</text>
+<text class="s" x="2" y="186">One criterion: local correctness</text>
+<text class="s" x="2" y="202">Failure mode: a missed local bug</text>
+<text class="s" x="380" y="186">One criterion: cross-file consistency</text>
+<text class="s" x="380" y="202">Failure mode: a one-sided interface change</text>
+<rect class="br" x="2" y="214" width="612" height="28"/>
+<text class="m tc" x="308" y="232">Not this: one call over all 14 raw diffs. Attention dilutes and two criteria share one verdict.</text>
+</svg>
+</div>
+<figcaption>Follow the arrows into the blue box: they carry one short summary per file, so the second pass reads a record of each file and never the full diffs. The red bar is the design the split replaces.</figcaption>
+</figure>
+
+<section class="concept" id="c1.11" data-src="1.11" data-terms="decomposition granularity seam evaluation criterion failure mode attention dilution integration pass functional aspectual data-partition confidence tier risk tier blast radius fixed pipeline dynamic adaptive structured summary handoff over-decomposition">
+<h3>Cut where two criteria meet, and stop when handoffs cost more<span class="sec">§1.11</span></h3>
+
+<p>A task left in one unit fails in four ways. The first is <dfn data-def="The tendency of one pass over many inputs to go deep on some and shallow on others, in a way you cannot predict.">attention dilution</dfn>: a pass over many inputs goes deep on some and shallow on others, and you cannot predict which. The second is mixed criteria. If one unit is judged on accuracy, tone and completeness together, a failing score does not say which of them failed.</p>
+
+<p>The third is that a partial failure cannot be recovered, because the single call is redone whole. The fourth is that there is no <dfn data-def="The boundary between two units of work, where a validation, an approval or a cost control can attach.">seam</dfn>: no boundary where a validation, an approval or a cost control could attach.</p>
+
+<p>The corpus gives one granularity rule. Split until each unit has one <dfn data-def="The single question a unit's output is judged against, such as local correctness or cross-file consistency.">evaluation criterion</dfn> (the one question its output is judged on) and one <dfn data-def="The one way a unit can go wrong. With a single failure mode, a drop in quality points at its own fix.">failure mode</dfn> (the one way it can go wrong). Stop when the overhead of the handoffs exceeds the benefit. A unit with one criterion tells you what to fix when quality drops.</p>
+
+<p>Cut where two criteria meet or where a gate has to go in. A natural-sounding process name is no reason to cut. The review in the figure splits at the one place where two criteria meet: local correctness, judged file by file, and cross-file consistency, judged once over the results by an <dfn data-def="A final unit that combines the outputs of earlier passes and judges what only the whole shows, such as cross-file consistency.">integration pass</dfn>.</p>
+
+<p>There are five ways to cut. A functional split follows the stages of a process, such as extract, validate, enrich and format. An aspectual split sends the same input through different lenses, such as a security pass and a style pass. A data-partition split divides a corpus into chunks, as in a per-file pass followed by a cross-file pass.</p>
+
+<p>The remaining two cut by the case in front of you. A <dfn data-def="A split by how hard a case is: a cheap path for the routine majority and an expensive path for the hard minority. It is the main architectural lever on cost.">confidence-tier split</dfn> sends routine cases down a cheap path and hard cases down an expensive one, and it is the main architectural lever on cost. A <dfn data-def="A split by how much damage a wrong action can do and whether it can be undone: reversible actions run on their own and irreversible ones wait at a gate. It is the main governance lever.">risk-tier split</dfn> follows <dfn data-def="How much damage a wrong action can do, and whether the damage can be undone.">blast radius</dfn>, meaning how much damage a wrong action does and whether it can be undone. Reversible actions run on their own, and an irreversible one waits at a gate.</p>
+
+<figure class="fig">
+<div class="scroll">
+<svg class="sv" viewBox="0 0 616 156" role="img" aria-labelledby="f15b-t f15b-d">
+<title id="f15b-t">Two tier splits: by difficulty and by blast radius</title>
+<desc id="f15b-d">Two panels. On the left, a triage box sends about 90% of cases down a cheap path and about 10% down an expensive path; this split sets the cost. On the right, a rating box sends reversible actions to run on their own and an irreversible action to a gate; this split sets the governance.</desc>
+<text class="b" x="2" y="18">Confidence tier: sets the cost</text>
+<text class="b" x="316" y="18">Risk tier: sets the governance</text>
+<path class="ls dash" d="M308 8V150"/>
+<rect class="bb" x="2" y="46" width="100" height="68"/>
+<text class="m tc" x="52" y="69">Triage each</text><text class="m tc" x="52" y="85">case by</text><text class="m tc" x="52" y="101">difficulty</text>
+<rect class="bx" x="148" y="34" width="150" height="46"/>
+<text class="b tc" x="223" y="54">Routine, about 90%</text><text class="m tc" x="223" y="71">Cheap path</text>
+<rect class="bx" x="148" y="100" width="150" height="46"/>
+<text class="b tc" x="223" y="120">Hard, about 10%</text><text class="m tc" x="223" y="137">Expensive path</text>
+<path class="ln" d="M102 66H125V57H145" marker-end="url(#ah)"/>
+<path class="ln" d="M102 94H125V123H145" marker-end="url(#ah)"/>
+<rect class="bb" x="316" y="46" width="100" height="68"/>
+<text class="m tc" x="366" y="69">Rate each</text><text class="m tc" x="366" y="85">action by</text><text class="m tc" x="366" y="101">blast radius</text>
+<rect class="bx" x="462" y="34" width="150" height="46"/>
+<text class="b tc" x="537" y="54">Reversible</text><text class="m tc" x="537" y="71">Runs on its own</text>
+<rect class="by" x="462" y="100" width="150" height="46"/>
+<text class="b tc" x="537" y="120">Irreversible</text><text class="m tc" x="537" y="137">Waits at a gate</text>
+<path class="ln" d="M416 66H439V57H459" marker-end="url(#ah)"/>
+<path class="ln" d="M416 94H439V123H459" marker-end="url(#ah)"/>
+</svg>
+</div>
+<figcaption>Both splits route by case. The left one asks how hard the case is and moves the cost. The right one asks how much damage a wrong action can do and decides which actions need a gate.</figcaption>
+</figure>
+
+<p>The two tiers answer different questions. Difficulty sets the confidence seam and is what moves cost. Blast radius sets the risk seam and is what governs autonomy. A scenario that names cost as its pillar calls for the first, and one that mixes routine actions with a single action nobody can undo calls for the second.</p>
+
+<p>Separately from where to cut, the plan has a shape. A <dfn data-def="A sequence of steps fixed in advance, also called prompt chaining. It suits a known scope where reproducibility matters.">fixed pipeline</dfn> suits a scope you know in advance, and it is predictable and reproducible. <dfn data-def="A plan whose subtasks are generated from what earlier steps discover. It suits a scope that is unknown up front.">Dynamic adaptive decomposition</dfn> generates subtasks from what the earlier steps find, which suits an open-ended investigation. A review that always follows the same template gets the fixed pipeline, because adaptivity there adds nondeterminism, meaning results that can differ between runs, for nothing.</p>
+
+<p>What crosses a seam is a <dfn data-def="A compact record of one unit's findings in named fields, such as issues found, symbols changed and dependencies touched, passed to the next unit instead of the raw input.">structured summary</dfn>: issues found, exported symbols changed, dependencies touched. If the integration pass instead receives all 14 raw diffs, it carries the same dilution the split existed to remove. Every handoff also loses context that was implicit in the shared context window. A design split so finely that later steps lack what earlier ones knew should be merged. Over-decomposition is a real defect.</p>
+
+<ul class="rules" aria-label="Decision rules for decomposition">
+<li class="rh" aria-hidden="true"><span>If the scenario says</span><span>Then</span></li>
+<li data-facet="F-1.11-01"><span class="when">A 14-file pull request is reviewed in one pass and the output is shallow and inconsistent</span><span class="then">Run a per-file local pass in parallel, then one integration pass over the summaries.<span class="why">Two criteria, local correctness and cross-file consistency, need two units.</span></span></li>
+<li data-facet="F-1.11-02"><span class="when">The integration pass receives all 14 raw diffs</span><span class="then">Pass the structured per-file summaries instead.<span class="why">Raw payloads reintroduce the dilution the split existed to remove.</span></span></li>
+<li data-facet="F-1.11-03"><span class="when">90% of cases are routine, 10% are hard, and cost is the named pillar</span><span class="then">Split by confidence tier: a cheap path for routine cases, an expensive path for hard ones.<span class="why">Routing by difficulty is the primary architectural lever on cost.</span></span></li>
+<li data-facet="F-1.11-04"><span class="when">Most actions are reversible and one is irreversible</span><span class="then">Split by risk tier: reversible actions run on their own, the irreversible one is gated.<span class="why">Blast radius, not confidence, sets this seam.</span></span></li>
+<li data-facet="F-1.11-05"><span class="when">A design is split so finely that later steps lack context that earlier steps had</span><span class="then">Merge steps.<span class="why">Over-decomposition is a real defect.</span></span></li>
+<li data-facet="F-1.11-06"><span class="when">A review repeats and always follows the same template</span><span class="then">Use a fixed pipeline.<span class="why">It is predictable and reproducible; adaptivity adds nondeterminism for nothing.</span></span></li>
+</ul>
+
+<details class="deeper">
+<summary>Go deeper: the review and the tiers in numbers</summary>
+<div>
+<p>A worked example with invented figures, not a corpus rule. Suppose each per-file call takes 20 seconds. Fourteen in sequence take <span class="num" data-calc="14*20" data-expect="280">280</span> seconds. Fanned out in parallel, the wall clock is the longest branch, 20 seconds, and a 25-second integration pass brings the review to <span class="num" data-calc="20+25" data-expect="45">45</span> seconds. Each call also reads about <span class="num" data-calc="800/14" data-expect="57" data-round="0">57</span> lines instead of 800.</p>
+<p>A second example, again with invented prices. Take 10,000 cases a month, 90% of them routine, at $0.02 a case on the expensive path and $0.002 on the cheap one. Everything on the expensive path costs $<span class="num" data-calc="10000*0.02" data-expect="200">200</span>.</p>
+<p>Split by tier, the<span class="num" data-calc="10000*90%" data-expect="9000">9,000</span> routine cases cost $<span class="num" data-calc="9000*0.002" data-expect="18">18</span> and the <span class="num" data-calc="10000*10%" data-expect="1000">1,000</span> hard ones cost $<span class="num" data-calc="1000*0.02" data-expect="20">20</span>, a total of $<span class="num" data-calc="18+20" data-expect="38">38</span> plus the cost of the triage step. The saving holds only while triage costs less than the $<span class="num" data-calc="200-38" data-expect="162">162</span> it saves.</p>
+</div>
+</details>
+</section>
+
+<section class="bites" id="b-o1.5">
+<h2>Where the exam bites</h2>
+<p><span class="lbl">Known</span>The guide's three sample questions cover Domains 3, 2 and 4, so Domain 1 has no official sample. The shape below comes from this project's own scenario set, not from Anthropic. Each wrong option carries a family label, and the <a href="#/traps">Trap families</a> page defines all eight. <span class="lbl">Inference</span>Expect stems that describe a task's scope and ask which plan shape fits, and stems where one large pass produces shallow or inconsistent output.</p>
+
+<p class="stem">A large multi-file code review produces inconsistent verdicts and misses issues that span files.</p>
+<ul class="opts">
+<li class="ok"><span class="mark">Correct</span><span>Split it into two passes: parallel per-file passes, then one integration pass over the per-file structured summaries and the dependency graph.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-discard">DISCARD</a>Move to a more capable model with a larger context window. It replaces the model instead of fixing the structure, and attention dilution over a large mixed input persists at any capacity.</span></li>
+<li class="no"><span class="mark">Wrong</span><span><a class="fam" href="#/traps/f-repair">REPAIR</a>Add detailed instructions to the single prompt about consistency and cross-file effects. It patches with prose a defect caused by asking one unit to serve two evaluation criteria.</span></li>
+</ul>
+</section>
+
+<details class="say">
+<summary><b>Say it back</b><span>A review pipeline sends 40 changed files through one prompt, and its verdicts vary from file to file. Where do you cut, and what does the second unit receive?</span></summary>
+<div class="ans">
+<p>Cut where two criteria meet. Run one pass per file for local correctness, in parallel, then one integration pass for cross-file consistency. The integration pass receives each file's structured summary and the dependency graph, not the raw diffs.</p>
+</div>
+</details>
+
+<nav class="xlinks" aria-label="Connections to other chapters">
+<h2>Connections</h2>
+<ul>
+<li><a href="#/o1.3">O1.3</a>, §1.3: paths that can be listed in advance belong in code. This chapter leans on that test. The fixed-pipeline rule applies it to the plan, and dynamic decomposition is for scope that cannot be listed in advance.</li>
+<li><a href="#/o1.2/c1.10">O1.2</a>, §1.10: a rule goes at the earliest stage that can enforce it. A gate in a risk-tier split is one such rule, and it needs a seam to sit in.</li>
+<li><a href="#/o1.4">O1.4</a>, §1.7: content and metadata pass as separate fields. Inference: this chapter's structured summaries follow the same idea, compact records instead of raw payloads.</li>
+<li><a href="#/o1.4">O1.4</a>, §1.8: independent work fans out in parallel and the wall clock is the longest branch, so the per-file passes run together and the dependent integration pass runs after them. A coordinator issues parallel delegations in a single turn.</li>
+<li><a href="#/o1.6">O1.6</a>, §1.12: when cost is the named pillar, confidence-tier routing plus the smallest model that clears the bar for each tier is the lever that moves it.</li>
+</ul>
+</nav>
+
+<p class="src"><b>Sources.</b> Exam guide v1.0, section 6, Domain 1, fifth objective. Course corpus §1.11. No live-document check was needed: the chapter states design rules and no product facts. The time and price figures in the deeper block are invented for illustration.</p>
+</div>
+
+<aside class="remember" aria-label="Remember">
+<h2>Remember</h2>
+<ol>
+<li>Split until each unit has one evaluation criterion and one failure mode. Stop when the overhead of the handoffs exceeds the benefit.</li>
+<li>Cut where two criteria meet or where a gate must go in. A natural-sounding process name is no reason to cut.</li>
+<li>Five cuts: functional, aspectual, data-partition, confidence-tier (moves cost) and risk-tier (governs autonomy by blast radius).</li>
+<li>Fixed pipeline for a known scope, dynamic adaptive for a discovered one. A repeating template gets the pipeline.</li>
+<li>Pass structured summaries between units, never raw payloads. Merge steps that lose context the earlier ones had.</li>
+<li>Shallow or inconsistent output from one large pass is a structure fault. Add a pass with a different criterion; a bigger model (DISCARD) or longer instructions (REPAIR) leave the structure as it was.</li>
+</ol>
+</aside>
+</div>
